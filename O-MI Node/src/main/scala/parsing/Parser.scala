@@ -47,12 +47,12 @@ abstract trait Parser[Result] {
     XML.withSAXParser(saxParser)
   }
 
-  def parse(xml_msg: String, user: Option[UserInfo]) : Result
+  def parse(xml_msg: String) : Result
 
   //@deprecated("Not supported because of xml external entity attack fix, use this.XMLParser! -- TK", "2016-04-01")
   //def parse(xml_msg: xml.Node) : Result
   
-  def parse(xml_msg: File, user: Option[UserInfo]) : Result
+  def parse(xml_msg: File) : Result
   
   protected[this] def schemaPath : Array[javax.xml.transform.Source]
   

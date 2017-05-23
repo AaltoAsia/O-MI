@@ -31,16 +31,16 @@ import types.Path
 
 
 sealed trait AuthorizationResult{
-  def user: Option[UserInfo]
+  def user: UserInfo
 }
-case class Authorized(user: Option[UserInfo]) extends AuthorizationResult {def instance = this}
-case class Unauthorized(user: Option[UserInfo] = None) extends AuthorizationResult {def instance = this}
-case class Partial(authorized: JavaIterable[Path], user: Option[UserInfo]) extends AuthorizationResult
+case class Authorized(user: UserInfo) extends AuthorizationResult {def instance = this}
+case class Unauthorized(user: UserInfo = UserInfo()) extends AuthorizationResult {def instance = this}
+case class Partial(authorized: JavaIterable[Path], user: UserInfo) extends AuthorizationResult
 /**
  * Wraps a new O-MI request that is potentially modified from the original to pass authorization.
  * Can be used instead of [[Partial]] to define partial authorization. 
  */
-case class Changed(authorizedRequest: RawRequestWrapper, user: Option[UserInfo]) extends AuthorizationResult
+case class Changed(authorizedRequest: RawRequestWrapper, user: UserInfo) extends AuthorizationResult
 
 /**
  * Implement one method of this interface and register the class through AuthApiProvider.
@@ -118,8 +118,8 @@ trait AuthApiProvider extends AuthorizationExtension {
       def convertToWrapper: Try[AuthorizationResult] => Try[RequestWrapper] = {
         case Success(Unauthorized(user0)) => Failure(UnauthorizedEx())
         case Success(Authorized(user0)) => {
-          orgOmiRequest.user = user0.map(_.copy(remoteAddress = orgOmiRequest.user.flatMap(_.remoteAddress)))
-          log.debug(s"GOT USER:\nRemote: ${orgOmiRequest.user.flatMap(_.remoteAddress).getOrElse("Empty")}\nName: ${orgOmiRequest.user.flatMap(_.name).getOrElse("Empty")}")
+          orgOmiRequest.user = user0.copy(remoteAddress = orgOmiRequest.user.remoteAddress)
+          log.debug(s"GOT USER:\nRemote: ${orgOmiRequest.user.remoteAddress.getOrElse("Empty")}\nName: ${orgOmiRequest.user.name.getOrElse("Empty")}")
           Success(orgOmiRequest)
         }
         case Success(Changed(reqWrapper,user0)) => {

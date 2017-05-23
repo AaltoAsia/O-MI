@@ -34,6 +34,7 @@ import parsing.xmlGen.omi.OmiEnvelopeType;
 import parsing.xmlGen.omi.WriteRequestType;
 import types.OmiTypes.OmiRequest;
 import types.Path;
+import types.OmiTypes.UserInfo;
 
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.Marshaller;
@@ -154,16 +155,16 @@ public class AuthAPIService implements AuthApi {
                     ArrayList<Path> res_paths = getAvailablePaths(subjectInfo, success); //////////////////////////////
 
                     if (res_paths == null)
-                        return new Unauthorized(scala.Option.apply(null)); // UserInfo as scala Option
+                        return new Unauthorized(new UserInfo(UserInfo.apply$default$1(), UserInfo.apply$default$2())); // UserInfo
 
                     // Check if security module return "all" means allowing all tree (administrator mode or read_all mode)
                     if (res_paths.size() == 1) {
                         String obj_path = res_paths.get(0).toString();
                         if (obj_path.equalsIgnoreCase("all"))
-                            return new Authorized(scala.Option.apply(null));
+                            return new Authorized(new UserInfo(UserInfo.apply$default$1(), UserInfo.apply$default$2()));
                     }
 
-                    return new Partial(res_paths, scala.Option.apply(null));
+                    return new Partial(res_paths, new UserInfo(UserInfo.apply$default$1(),UserInfo.apply$default$2()));
                 } else
                     break;
             }
@@ -175,7 +176,7 @@ public class AuthAPIService implements AuthApi {
 
                 // the very first query to read the tree
                 if (nextObj.equalsIgnoreCase("Objects"))
-                    return new Authorized(scala.Option.apply(null));
+                    return new Authorized(new UserInfo(UserInfo.apply$default$1(), UserInfo.apply$default$2()));
 
                 requestBody += "\"" + nextObj + "\"";
 
@@ -193,7 +194,7 @@ public class AuthAPIService implements AuthApi {
 
             return sendPermissionRequest(isWrite, requestBody, subjectInfo, success); ////////////////////////////////
         } else {
-            return new Unauthorized(scala.Option.apply(null));
+            return new Unauthorized(new UserInfo(UserInfo.apply$default$1(), UserInfo.apply$default$2()));
         }
     }
 
@@ -475,7 +476,7 @@ public class AuthAPIService implements AuthApi {
             logger.debug("RESPONSE:"+response.toString());
 
             if (response.toString().equals("false")) {
-                return new Unauthorized(scala.Option.apply(null));
+                return new Unauthorized(new UserInfo(UserInfo.apply$default$1(), UserInfo.apply$default$2()));
             }
 
             JsonObject responseObject = new JsonParser().parse(response.toString()).getAsJsonObject();//response.toString(); //reuse variable
@@ -483,19 +484,17 @@ public class AuthAPIService implements AuthApi {
             String userName = responseObject.get("userID").getAsString();
             return isAuthenticated.equalsIgnoreCase("ok") ?
                     new Authorized(
-                            scala.Option.apply(
-                                    new types.OmiTypes.UserInfo(
-                                            scala.Option.apply(null),
-                                            scala.Option.apply(userName))))
+                            new UserInfo(
+                                    UserInfo.apply$default$1(),
+                                    scala.Option.apply(userName)))
                     :
                     new Unauthorized(
-                            scala.Option.apply(
-                                    new types.OmiTypes.UserInfo(
-                                            scala.Option.apply(null),
-                                            scala.Option.apply(userName))));
+                            new UserInfo(
+                                    UserInfo.apply$default$1(),
+                                    scala.Option.apply(userName)));
         } catch (Exception e) {
             logger.error("During http request", e);
-            return new Unauthorized(scala.Option.apply(null));
+            return new Unauthorized(new UserInfo(UserInfo.apply$default$1(), UserInfo.apply$default$2()));
         } finally {
             if(connection != null) {
                 connection.disconnect();

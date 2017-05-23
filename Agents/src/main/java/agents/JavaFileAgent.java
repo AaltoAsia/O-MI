@@ -118,7 +118,7 @@ public class JavaFileAgent extends JavaInternalAgent {
           null                            //Sender?
         );
 
-        Either<Iterable<ParseError>,OdfObjects> parseResult = OdfParser.parse(file, scala.Option.empty());
+        Either<Iterable<ParseError>,OdfObjects> parseResult = OdfParser.parse(file);
         if( parseResult.isLeft() ){
           return new StartFailed(
             "Invalid O-DF structure.", 

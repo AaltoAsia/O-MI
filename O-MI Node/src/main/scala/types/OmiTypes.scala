@@ -117,13 +117,13 @@ sealed trait RequestIDRequest extends JavaRequestIDRequest{
 }
 
 case class UserInfo(
-                   remoteAddress: Option[RemoteAddress],
+                   remoteAddress: Option[RemoteAddress] = None,
                    name: Option[String] = None
                    )
 
 sealed trait RequestWrapper {
   //def user(): Option[UserInfo]
-  var user: Option[UserInfo] = _
+  var user: UserInfo = _
   def rawRequest: String
   def ttl: Duration
   def parsed: OmiParseResult
@@ -138,7 +138,7 @@ sealed trait RequestWrapper {
  * Defines values from the beginning of O-MI message like ttl and message type
  * without parsing the whole request.
  */
-class RawRequestWrapper(val rawRequest: String, private val user0: Option[UserInfo]) extends RequestWrapper {
+class RawRequestWrapper(val rawRequest: String, private val user0: UserInfo) extends RequestWrapper {
   import RawRequestWrapper._
   import scala.xml.pull._
   user = user0
@@ -185,20 +185,20 @@ class RawRequestWrapper(val rawRequest: String, private val user0: Option[UserIn
   /**
    * Get the parsed request. Message is parsed only once because of laziness.
    */
-  lazy val parsed: OmiParseResult = parsing.OmiParser.parse(rawRequest, user)
+  lazy val parsed: OmiParseResult = parsing.OmiParser.parse(rawRequest)
 
   /**
    * Access the request easily and leave responsibility of error handling to someone else.
    * TODO: Only one request per xml message is supported currently
    */
   lazy val unwrapped = parsed match {
-    case Right(requestSeq) => Try(requestSeq.head)
+    case Right(requestSeq) => Try{ val req = requestSeq.head; req.user = user;req} // change user to correct, user parameter is MUTABLE and might be error prone. TODO change in future versions.
     case Left(errors) => Failure(ParseError.combineErrors(errors))
   }
 }
 
 object RawRequestWrapper {
-  def apply(rawRequest: String, user: Option[UserInfo]): RawRequestWrapper = new RawRequestWrapper(rawRequest, user)
+  def apply(rawRequest: String, user: UserInfo): RawRequestWrapper = new RawRequestWrapper(rawRequest, user)
 
   private def parseError(m: String) = throw new IllegalArgumentException("Pre-parsing: " + m)
 
@@ -251,7 +251,7 @@ case class ReadRequest(
   oldest: Option[Int ] = None,
   callback: Option[Callback] = None,
   ttl: Duration = 10.seconds,
-  private val user0: Option[UserInfo] = None,
+  private val user0: UserInfo = UserInfo(),
   senderInformation: Option[SenderInformation] = None
 
 ) extends OmiRequest  with OdfRequest{
@@ -301,7 +301,7 @@ case class PollRequest(
   callback: Option[Callback] = None,
   requestIDs: OdfTreeCollection[Long ] = OdfTreeCollection.empty,
   ttl: Duration = 10.seconds,
-  private val user0: Option[UserInfo] = None,
+  private val user0: UserInfo = UserInfo(),
   senderInformation: Option[SenderInformation] = None
 ) extends OmiRequest {
 
@@ -310,7 +310,7 @@ case class PollRequest(
   
   implicit def asReadRequest : xmlTypes.ReadRequestType = xmlTypes.ReadRequestType(
     None,
-    requestIDs.map{ 
+    requestIDs.map{
       id =>
       id.toString//xmlTypes.IdType(id.toString) //FIXME: id has different types with cacel and read
     }.toSeq,
@@ -334,7 +334,7 @@ case class SubscriptionRequest(
   oldest: Option[Int ] = None,
   callback: Option[Callback] = None,
   ttl: Duration = 10.seconds,
-  private val user0: Option[UserInfo] = None,
+  private val user0: UserInfo = UserInfo(),
   senderInformation: Option[SenderInformation] = None
 ) extends OmiRequest with SubLike with OdfRequest{
   user = user0
@@ -343,7 +343,7 @@ case class SubscriptionRequest(
   implicit def asReadRequest : xmlTypes.ReadRequestType = xmlTypes.ReadRequestType(
     None,
     Nil,
-    Some( 
+    Some(
       MsgType(
         Seq(
           odfAsDataRecord
@@ -370,7 +370,7 @@ case class WriteRequest(
   odf: OdfObjects,
   callback: Option[Callback] = None,
   ttl: Duration = 10.seconds,
-  private val user0: Option[UserInfo] = None,
+  private val user0: UserInfo = UserInfo(),
   senderInformation: Option[SenderInformation] = None
 ) extends OmiRequest with OdfRequest with PermissiveRequest{
 
@@ -380,7 +380,7 @@ case class WriteRequest(
   implicit def asWriteRequest : xmlTypes.WriteRequestType = xmlTypes.WriteRequestType(
     None,
     Nil,
-      Some( 
+      Some(
       MsgType(
         Seq(
           odfAsDataRecord
@@ -402,7 +402,7 @@ case class CallRequest(
   odf: OdfObjects,
   callback: Option[Callback] = None,
   ttl: Duration = 10.seconds,
-  private val user0: Option[UserInfo] = None,
+  private val user0: UserInfo = UserInfo(),
   senderInformation: Option[SenderInformation] = None
 ) extends OmiRequest with OdfRequest with PermissiveRequest {
   user = user0
@@ -412,7 +412,7 @@ case class CallRequest(
   implicit def asCallRequest : xmlTypes.CallRequestType = xmlTypes.CallRequestType(
     None,
     Nil,
-      Some( 
+      Some(
       MsgType(
         Seq(
           odfAsDataRecord
@@ -434,7 +434,7 @@ case class DeleteRequest(
   odf: OdfObjects,
   callback: Option[Callback] = None,
   ttl: Duration = 10.seconds,
-  private val user0: Option[UserInfo] = None,
+  private val user0: UserInfo = UserInfo(),
   senderInformation: Option[SenderInformation] = None
 ) extends OmiRequest with OdfRequest with PermissiveRequest{
   user = user0
@@ -444,7 +444,7 @@ case class DeleteRequest(
   implicit def asDeleteRequest : xmlTypes.DeleteRequestType = xmlTypes.DeleteRequestType(
     None,
     Nil,
-    Some( 
+    Some(
       MsgType(
         Seq(
           odfAsDataRecord
@@ -467,13 +467,13 @@ case class DeleteRequest(
 case class CancelRequest(
   requestIDs: OdfTreeCollection[Long ] = OdfTreeCollection.empty,
   ttl: Duration = 10.seconds,
-  private val user0: Option[UserInfo] = None,
+  private val user0: UserInfo = UserInfo(),
   senderInformation: Option[SenderInformation] = None
 ) extends OmiRequest {
   user = user0
   implicit def asCancelRequest : xmlTypes.CancelRequestType = xmlTypes.CancelRequestType(
     None,
-    requestIDs.map{ 
+    requestIDs.map{
       id =>
       xmlTypes.IdType(id.toString)
     }.toSeq
@@ -496,7 +496,7 @@ class ResponseRequest(
   val results: OdfTreeCollection[OmiResult],
   val ttl: Duration,
   val callback : Option[Callback] = None,
-  private val user0: Option[UserInfo] = None,
+  private val user0: UserInfo = UserInfo(),
   val senderInformation: Option[SenderInformation] = None
 ) extends OmiRequest  with PermissiveRequest with JavaResponseRequest{
   user = user0
@@ -522,7 +522,7 @@ class ResponseRequest(
       }.toVector.toSeq)
    
   def union(another: ResponseRequest): ResponseRequest ={
-    ResponseRequest( 
+    ResponseRequest(
       Results.unionReduce( (results ++ another.results).toVector ).toVector,
       if( ttl >= another.ttl) ttl else another.ttl
     )
@@ -541,14 +541,14 @@ class ResponseRequest(
   
   def withSenderInformation(si:SenderInformation):OmiRequest = this.copy( senderInformation = Some(si))
 
-  def odfResultsToWrites: Seq[WriteRequest] = results.collect{ 
+  def odfResultsToWrites: Seq[WriteRequest] = results.collect{
         case omiResult : OmiResult if omiResult.odf.nonEmpty =>
         val odf = omiResult.odf.get
         WriteRequest( odf, None,ttl)
   }.toVector
   def odfResultsToSingleWrite: WriteRequest ={
     WriteRequest(
-      odfResultsToWrites.foldLeft(OdfObjects()){ 
+      odfResultsToWrites.foldLeft(OdfObjects()){
         case (objects, write) => objects.union(write.odf)
       },
       None,

@@ -96,7 +96,7 @@ trait DBReadHandler extends DBHandlerBase{
                val reqTime: Long = new Date().getTime()
                foundOdf.foreach(n => {
                  store ! AddRead(n.path, reqTime)
-                 store ! AddUser(n.path, read.user.map(_.hashCode()), reqTime)
+                 store ! AddUser(n.path, read.user.remoteAddress.map(_.hashCode()), reqTime)
                })
              }
 

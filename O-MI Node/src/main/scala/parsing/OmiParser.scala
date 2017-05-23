@@ -45,12 +45,12 @@ object OmiParser extends Parser[OmiParseResult] {
    *  @param file XML formatted string to be parsed. Should be in O-MI format.
    *  @return OmiParseResults
    */
-  def parse(file: File, user: Option[UserInfo]): OmiParseResult = {
+  def parse(file: File): OmiParseResult = {
     val parsed = Try(
       XMLParser.loadFile(file)
     )
 
-    parseTry(parsed, user)
+    parseTry(parsed)
   }
 
 
@@ -60,18 +60,18 @@ object OmiParser extends Parser[OmiParseResult] {
    *  @param xml_msg XML formatted string to be parsed. Should be in O-MI format.
    *  @return OmiParseResults
    */
-  def parse(xml_msg: String, user: Option[UserInfo] = None): OmiParseResult = {
+  def parse(xml_msg: String): OmiParseResult = {
     /*Convert the string into scala.xml.Elem. If the message contains invalid XML, send correct ParseError*/
    val parsed = Try(
      XMLParser.loadString(xml_msg)
    )
-   parseTry(parsed, user)
+   parseTry(parsed)
 
   }
 
-  private def parseTry(parsed: Try[Elem], user: Option[UserInfo]): OmiParseResult = {
+  private def parseTry(parsed: Try[Elem]): OmiParseResult = {
     parsed match {
-      case Success(root) => parseOmi(root, user)
+      case Success(root) => parseOmi(root)
       case Failure(f) => Left( Iterable( ScalaXMLError(f.getMessage)))
     }
   }
@@ -83,9 +83,9 @@ object OmiParser extends Parser[OmiParseResult] {
    *  @return OmiParseResults
    */
   @deprecated("Not supported because of xml external entity attack fix, use this.XMLParser! -- TK", "2016-04-01")
-  def parse(root: xml.Node, user: Option[UserInfo]): OmiParseResult = parseOmi(root, user)
+  def parse(root: xml.Node): OmiParseResult = parseOmi(root)
 
-  private def parseOmi(root: xml.Node, user: Option[UserInfo]): OmiParseResult = schemaValidation(root) match {
+  private def parseOmi(root: xml.Node): OmiParseResult = schemaValidation(root) match {
     case errors : Seq[ParseError] if errors.nonEmpty=>
       Left(errors)
     case empty : Seq[ParseError] if empty.isEmpty =>
@@ -112,10 +112,10 @@ object OmiParser extends Parser[OmiParseResult] {
             }
 
             envelope.omienvelopetypeoption.value match {
-              case read: xmlTypes.ReadRequestType => parseRead(read, parseTTL(envelope.ttl), user)
-              case write: xmlTypes.WriteRequestType => parseWrite(write, parseTTL(envelope.ttl), user)
-              case delete: xmlTypes.DeleteRequestType => parseDelete(delete, parseTTL(envelope.ttl), user)
-              case call: xmlTypes.CallRequestType => parseCall(call, parseTTL(envelope.ttl), user)
+              case read: xmlTypes.ReadRequestType => parseRead(read, parseTTL(envelope.ttl))
+              case write: xmlTypes.WriteRequestType => parseWrite(write, parseTTL(envelope.ttl))
+              case delete: xmlTypes.DeleteRequestType => parseDelete(delete, parseTTL(envelope.ttl))
+              case call: xmlTypes.CallRequestType => parseCall(call, parseTTL(envelope.ttl))
               case cancel: xmlTypes.CancelRequestType => parseCancel(cancel, parseTTL(envelope.ttl))
               case response: xmlTypes.ResponseListType => parseResponse(response, parseTTL(envelope.ttl))
               case _ => throw new Exception("Unknown request type returned by scalaxb")
@@ -162,15 +162,14 @@ object OmiParser extends Parser[OmiParseResult] {
   def parseRequestID(id: xmlTypes.IdType): Long = id.value.trim.toLong
   def parseRequestID(id: String): Long = id.trim.toLong //ID might not be long!
 
-  private[this] def parseRead(read: xmlTypes.ReadRequestType, ttl: Duration, user: Option[UserInfo]): OmiParseResult = {
+  private[this] def parseRead(read: xmlTypes.ReadRequestType, ttl: Duration): OmiParseResult = {
     val callback = read.callback.map{ addr => RawCallback( addr.toString ) }
     if(read.requestID.nonEmpty) {
       Right(Iterable(
         PollRequest(
           callback,
           OdfTreeCollection(read.requestID.map(parseRequestID):_*),
-          ttl,
-          user
+          ttl
         )))
     } else{
       read.msg match {
@@ -189,8 +188,7 @@ object OmiParser extends Parser[OmiParseResult] {
                       read.newest.map(_.toInt),
                       read.oldest.map(_.toInt),
                       callback,
-                      ttl,
-                      user
+                      ttl
                     )
                   ))
                 case Some(interval) =>
@@ -201,8 +199,7 @@ object OmiParser extends Parser[OmiParseResult] {
                       read.newest.map(_.toInt),
                       read.oldest.map(_.toInt),
                       callback,
-                      ttl,
-                      user
+                      ttl
                     )
                   ))
               }
@@ -219,7 +216,7 @@ object OmiParser extends Parser[OmiParseResult] {
     }
   }
 
-  private[this] def parseWrite(write: xmlTypes.WriteRequestType, ttl: Duration, user: Option[UserInfo]): OmiParseResult = {
+  private[this] def parseWrite(write: xmlTypes.WriteRequestType, ttl: Duration): OmiParseResult = {
     write.msg match{
       case None => 
         Left(Iterable(OMIParserError("Write request without msg.")))
@@ -233,15 +230,14 @@ object OmiParser extends Parser[OmiParseResult] {
               WriteRequest(
                 odf,
                 callback,
-                ttl,
-                user
+                ttl
               )
             ))
         }
     }
   }
 
-  private[this] def parseCall(call: xmlTypes.CallRequestType, ttl: Duration, user: Option[UserInfo]): OmiParseResult = {
+  private[this] def parseCall(call: xmlTypes.CallRequestType, ttl: Duration): OmiParseResult = {
     call.msg match {
       case None => 
         Left(Iterable(OMIParserError("Call request without msg.")))
@@ -255,15 +251,14 @@ object OmiParser extends Parser[OmiParseResult] {
               CallRequest(
                 odf,
                 callback,
-                ttl,
-                user
+                ttl
               )
             ))
         }
     }
   }
 
-  private[this] def parseDelete(delete: xmlTypes.DeleteRequestType, ttl: Duration, user: Option[UserInfo]): OmiParseResult = {
+  private[this] def parseDelete(delete: xmlTypes.DeleteRequestType, ttl: Duration): OmiParseResult = {
     delete.msg match {
       case None => 
         Left(Iterable(OMIParserError("Delete request without msg.")))
@@ -277,8 +272,7 @@ object OmiParser extends Parser[OmiParseResult] {
               CallRequest(
                 odf,
                 callback,
-                ttl,
-                user
+                ttl
               )
             ))
         }

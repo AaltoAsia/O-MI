@@ -423,7 +423,7 @@ invalidOmiTest(
         </Objects>
       </msg>
     </read>
-  </omiEnvelope>""", None)
+  </omiEnvelope>""")
 temp should be equalTo Right(Iterable(ReadRequest(OdfObjects())))
 
     }

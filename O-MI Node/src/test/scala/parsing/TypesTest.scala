@@ -130,7 +130,7 @@ class TypesTest extends Specification {
   def xmlCancel: NodeSeq = xmlOmi("10", <cancel xmlns="omi.xsd" msgformat="odf"> <requestID>0</requestID> </cancel>)
   def xmlResponse: NodeSeq = xmlOmi("10", <response xmlns="omi.xsd" msgformat="odf"> {testOdfMsg} </response>)
 
-  def newRawRequestWrapper(xml: NodeSeq) = RawRequestWrapper(xml.toString, None)
+  def newRawRequestWrapper(xml: NodeSeq) = RawRequestWrapper(xml.toString, UserInfo())
 
   def pFiniteTTL   = newRawRequestWrapper(xmlReadFinite).ttl mustEqual 10.seconds
   def pInfiniteTTL = newRawRequestWrapper(xmlReadInfinite).ttl mustEqual Duration.Inf
