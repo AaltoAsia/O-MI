@@ -61,8 +61,7 @@ Warp10 details
 ==============
 
 * O-DF InfoItems are saved to Warp10 with *class name* that is built from the path of the O-DF hierarchy.
-  - They are paths but seperator is `.` (dot) instead of `/` because warp10 write syntax uses it.
-  - So the above example would become `Objects.model.humidity`
+  - So the above example would become `Objects/model/humidity`
 * Writes include the location data if it is sent in the same request as MetaData (as described above)
 * Reads include the location MetaData automatically
 * Tokens should be pasted to `application.conf` configuration file of O-MI Node but it is done automatically by the startup script if using warp10 release version.
@@ -70,6 +69,11 @@ Warp10 details
 
 Documentation Change log
 ========================
+
+2017-05-17
+----------
+
+* Changed '.' in the paths back to '/', because there was no need for conversion
 
 2016-09-12
 ----------
