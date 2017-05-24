@@ -10,7 +10,7 @@ import analytics.{AddUser, AddRead, AnalyticsStore}
 
 //import scala.collection.JavaConverters._ //JavaConverters provide explicit conversion methods
 //import scala.collection.JavaConversions.asJavaIterator
-import scala.xml.NodeSeq
+import scala.xml.{NodeSeq, PrettyPrinter}
 //import akka.http.StatusCode
 
 import types.OdfTypes._
@@ -64,8 +64,8 @@ trait DBReadHandler extends DBHandlerBase{
 
          //Find nodes from the request that HAVE METADATA OR DESCRIPTION REQUEST
          def nodesWithoutMetadata: Option[OdfObjects] = getOdfNodes(read.odf).collect {
-           case oii@OdfInfoItem(_, _, desc, mData,attr)
-            if desc.isDefined || mData.isDefined || attr.nonEmpty=> 
+           case oii@OdfInfoItem(_, _, desc, mData, typeValue,attr)
+           if desc.isDefined || mData.isDefined || typeValue.nonEmpty ||attr.nonEmpty=> 
               createAncestors(oii.copy(values = OdfTreeCollection()))
            case obj@OdfObject(pat, _, _, _, des, _,attr)
              if des.isDefined  || attr.nonEmpty => 
@@ -86,7 +86,10 @@ trait DBReadHandler extends DBHandlerBase{
                 .union( objectsWithValues )
 
 
-             val metaCombined = objectsWithMetadata.fold(objectsWithValuesAndAttributes)(metas => objectsWithValuesAndAttributes.union(metas) )
+             val metaCombined = objectsWithMetadata
+               .fold(objectsWithValuesAndAttributes){
+                 metas => objectsWithValuesAndAttributes.union(metas) 
+               }
              val found = Results.Read(metaCombined)
              val requestsPaths = leafs.map { _.path }
              val foundOdf = getLeafs(objectsWithValuesAndAttributes)

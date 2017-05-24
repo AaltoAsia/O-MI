@@ -6,6 +6,7 @@ import scala.util.{Success, Failure}
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, Future}
 import scala.concurrent.Future._
+import scala.xml.PrettyPrinter
 
 import com.typesafe.config.Config
 
@@ -96,7 +97,7 @@ class ParkingAgent(
   val findParkingPath = servicePath / "FindParking"
   val positionParameterPath = Path("Objects/Parameters/Destination")
   val arrivalTimeParameterPath = Path("Objects/Parameters/ArrivalTime")
-  val spotTypeParameterPath = Path("Objects/Parameters/WantedSpotType")
+  val spotTypeParameterPath = Path("Objects/Parameters/ParkingUsageType")
 
   override protected def handleCall(call: CallRequest) : Future[ResponseRequest] = {
       val methodInfoItemO = call.odf.get(findParkingPath)
@@ -214,7 +215,9 @@ class ParkingAgent(
     val spotTypeParamO: Option[String] =
       objects.get(spotTypeParameterPath ).collect{
         case iI: OdfInfoItem => getStringFromInfoItem(iI)
-      }.flatten
+      }.flatten.map{
+        case typeStr: String => if( typeStr.startsWith("mv:") ) typeStr.drop(3) else typeStr
+      }
     for{
       destination <- positionParamO
       spotType <- spotTypeParamO
@@ -236,21 +239,25 @@ class ParkingAgent(
     )
     results.map{
       case response: ResponseRequest =>
-        //log.debug( "Result from DB:\n " + response.asXML.toString)
+        log.debug( "Result from DB:" )//+ response.asXML.toString)
         val modifiedResponse = ResponseRequest(
           response.results.map{
             case result: OmiResult =>
               result.odf match{
                 case Some( objects: OdfObjects ) => 
+                  log.debug( "Result with ODF found:" )
                   result.copy(
                     odf = objects.get(parkingLotsPath).map{
                       case obj: OdfObject => 
+                        log.debug( s"found $parkingLotsPath" )
+                        val modifiedParkingLots = obj.objects.flatMap{
+                              case o: OdfObject => 
+                                log.debug( s"found parking lot" )
+                                handleParkingLotForCall(o,params)
+                            }
+                        log.debug( s"Found ${modifiedParkingLots.size} parking lots near the destination" )
                         obj.copy(
-                          objects = 
-                        obj.objects.flatMap{
-                          case o: OdfObject => 
-                            handleParkingLotForCall(o,params)
-                        }
+                          objects = modifiedParkingLots 
                         ).createAncestors
                     } 
                   )
@@ -258,7 +265,8 @@ class ParkingAgent(
               }
           }
         )
-        //log.debug( "Modified result:\n " + modifiedResponse.asXML.toString)
+       // val pp = new PrettyPrinter(100, 4)
+        //log.debug( "Modified result:\n " + pp.format(modifiedResponse.asXML.head))
         modifiedResponse
     }.recover{
       case e: Exception => 
@@ -337,13 +345,19 @@ class ParkingAgent(
     }.flatten
     positionO.flatMap{
       case position: GPSCoordinates => 
+        log.debug( s"Got location of parking lot" )
         if( positionCheck( param.destination, position) ){
-          val newSTs: Option[OdfObject] = obj.get(obj.path / "SpotTypes" ).flatMap{
+          log.debug( s"Parking lot is near" )
+          val newSTs: Option[OdfObject] = obj.get(obj.path / "ParkingSpaceTypes" ).flatMap{
             case spotTypesList : OdfObject =>
+              log.debug( s"Got ParkingSpaceTypes. Finding ${param.spotType}..." )
               val rightTypes = spotTypesList.get( spotTypesList.path / param.spotType ).collect{
-                case o: OdfObject => o 
+                case o: OdfObject => 
+                  log.debug( s"Got ${param.spotType}" )
+                  o
               }.toVector
               if( rightTypes.nonEmpty ){
+                log.debug( s"Modifying ParkingSpaceTypes to contain only ${param.spotType}" )
                 Some(
                   spotTypesList.copy(
                     objects = rightTypes
@@ -353,9 +367,10 @@ class ParkingAgent(
           }
           newSTs.map{
             case nSTs: OdfObject =>
+            log.debug( s"Modifying parking lot to contain new ParkingSpaceTypes" )
             obj.copy(
               objects = obj.objects.filter{
-                case o: OdfObject => o.path.last != "SpotTypes"
+                case o: OdfObject => o.path.last != "ParkingSpaceTypes"
               } ++ Vector(nSTs)
             )
           }

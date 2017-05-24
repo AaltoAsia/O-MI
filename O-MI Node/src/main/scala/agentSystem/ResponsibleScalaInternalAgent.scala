@@ -44,12 +44,9 @@ trait ResponsibleScalaInternalAgent
   protected def handleCall( call: CallRequest ) : Future[ResponseRequest]
 
   override def receive  = {
-    case Start() => respond(start)
-    case Restart() => respond(restart)
-    case Stop() => respond(stop)
     case write: WriteRequest => respondFuture(handleWrite(write))
     case read: ReadRequest => respondFuture(handleRead(read))
-    case call: CallRequest => handleCall(call)
+    case call: CallRequest => respondFuture(handleCall(call))
    }
 
 }
