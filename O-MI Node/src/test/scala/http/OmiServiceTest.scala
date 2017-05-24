@@ -45,7 +45,7 @@ class OmiServiceTest
   implicit val callbackHandler: CallbackHandler = new CallbackHandler(settings)( system, materializer)
   implicit val singleStores : SingleStores = new SingleStores(settings)
   implicit def default(implicit system: ActorSystem) = RouteTestTimeout(5.second)
-  implicit val dbConnection = new TestDB("omiServic-test")(
+  implicit val dbConnection = new TestDB("omiService-test")(
     system,
     singleStores,
     settings
