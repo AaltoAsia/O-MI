@@ -1,7 +1,7 @@
 <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
-  <Object type="ParkingService" prefix="schema http://www.schema.org/">
+  <Object type="ParkingService" prefix="schema http://www.schema.org/ mv http://www.schema.mobivoc.org/">
     <id>ParkingService</id>
-    <InfoItem name="FindParking">
+    <InfoItem name="FindParking" method="odf" >
       <MetaData>
         <InfoItem name="InfoItemType">
           <value>odf:Method</value>
@@ -12,8 +12,8 @@
               <Object type="FindParkingRequest">
                 <id>Parameters</id>
                 <description lang="English">List of possible parameters to request.</description>
-                <InfoItem name="WantedSpotType">
-                  <value>One of Car, Motorbike or ElectricVehicle.</value>
+                <InfoItem name="ParkingUsageType">
+                  <value>One of mv:CarParkingSpace, mv:MotorbikeParkingSpace or mv:ElectricVehicleParkingSpace.</value>
                 </InfoItem>
                 <InfoItem name="ArrivalTime">
                   <value type="dateTime">yyyy-mm-ddThh:mm:ss.sss+-hh:mm</value>
@@ -37,48 +37,49 @@
               <Object>
                 <id>ParkingService</id>
                 <Object type="list">
-                  <id>ParkingLots</id>
-                  <description lang="English">List of nearby parking lots.</description>
-                  <Object type="ParkingLot schema:ParkingFacility">
-                    <id>name of parking lot</id>
-                    <description lang="English">A parkig lot.</description>
-                    <InfoItem name="Owner"/><!-- Maybe use something from www.schema.org -->
-                    <InfoItem name="MaxParkingHours"/>
-                    <Object type="schema:OpeningHoursSpecification">
-                      <id>openingHoursSpecification</id>
-                      <InfoItem name="closes"/>
-                      <InfoItem name="opens"/>
-                    </Object>
-                    <Object type="schema:GeoCoordinates">
-                      <id>geo</id>
-                      <InfoItem name="latitude"/>
-                      <InfoItem name="longitude"/>
-                    </Object>
-                    <Object type="list">
-                      <id>ParkingSpotTypes</id>
-                      <Object type="ParkingSpotType">
-                        <id>ParkingSpotType</id>
-                        <InfoItem name="NumberOfSpots"/>
-                        <InfoItem name="NumberOfSpotsAvailable"/>
-                        <InfoItem name="HourlyPrice"/>
-                        <InfoItem name="MaxHeight"/>
-                        <InfoItem name="MaxWidth"/>
-                        <Object type="list">
-                          <id>Spots</id>
-                          <Object type="ParkingSpot">
-                            <id>Spot</id>
-                            <InfoItem name="Available"/>
-                            <InfoItem name="User"/>
+                  <id>ParkingFacilities</id>
+                    <description lang="English">List of nearby parking facilities.</description>
+                    <Object type="mv:ParkingFacility">
+                      <id>name of parking parking facility</id>
+                      <description lang="English">A parkig facility.</description>
+                      <InfoItem name="Owner" type="mv:isOwnedBy"/><!-- Maybe use something from www.schema.org -->
+                      <InfoItem name="MaxParkingHours"/>
+                      <Object type="schema:OpeningHoursSpecification">
+                        <id>openingHoursSpecification</id>
+                        <InfoItem name="closes"/>
+                        <InfoItem name="opens"/>
+                      </Object>
+                      <Object type="schema:GeoCoordinates">
+                        <id>geo</id>
+                        <InfoItem name="latitude"/>
+                        <InfoItem name="longitude"/>
+                      </Object>
+                      <Object type="list">
+                        <id>ParkingSpaceTypes</id>
+                        <Object type="mv:ParkingUsageType">
+                          <id>ParkingUsageType</id>
+                          <InfoItem name="TotalCapacity" type="mv:hasTotalCapacity"/>
+                          <InfoItem name="NumberOfVacantParkingSpaces" type="mv:hasNumberOfVacantParkingSpaces"/>
+                          <InfoItem name="HourlyPrice" type="mv:PriceParking"/><!-- Maybe rename to Pricing? -->
+                          <InfoItem name="MaxHeight" type="mv:hasVehicleHeightLimitInM"/>
+                          <InfoItem name="MaxLength" type="mv:hasVehiclLengthLimitInM"/>
+                          <InfoItem name="MaxWidth" type="mv:hasVehicleWidthLimitInM"/>
+                          <Object type="list">
+                            <id>ParkingSpaces</id>
+                            <Object type="mv:ParkingSpace">
+                              <id>Space</id>
+                              <InfoItem name="Available"/>
+                              <InfoItem name="User"/>
+                            </Object>
                           </Object>
                         </Object>
                       </Object>
-                    </Object>
                     <!-- For more specific presentation of this look at following
                      ParkingLots Object.  -->
                   </Object>
                 </Object>
               </Object>
-              </Objects>
+            </Objects>
           </value>
         </InfoItem>
       </MetaData>
@@ -86,13 +87,13 @@
     </InfoItem>
     <!-- How to define a list of Type A in O-DF? -->
     <Object type="list">
-      <id>ParkingLots</id>
-      <description lang="English">List of parking lots.</description>
+      <id>ParkingFacilities</id>
+      <description lang="English">List of parking facilities.</description>
       <!-- Multiple types seperated with space?-->
       <Object type="schema:ParkingFacility">
         <id>NorthernParkingLot</id>
         <description lang="English">Parking lot on northern side of Computer Science building.</description>
-        <InfoItem name="Owner"><!-- Maybe use something from www.schema.org -->
+        <InfoItem name="Owner" type="mv:isOwnedBy"><!-- Maybe use something from www.schema.org -->
           <value>Aalto University</value>
         </InfoItem>
         <InfoItem name="MaxParkingHours">
@@ -118,30 +119,63 @@
         </Object>
         <!-- How to define a list of Type A in O-DF? -->
         <Object type="list">
-          <id>SpotTypes</id>
+          <id>ParkingSpaceTypes</id>
           <description lang="English">List of different kind of parking spot types in the parking lot.</description>
-          <Object type="ParkingSpotType">
-            <id>ElectricVehicle</id>
-            <InfoItem name="NumberOfSpots">
+          <Object type="mv:ParkingUsageType">
+            <id>ElectricVehicleParkingSpace</id>
+            <InfoItem name="TotalCapacity" type="mv:hasTotalCapacity">
               <value type="xs:int">2</value>
             </InfoItem>
-            <InfoItem name="NumberOfSpotsAvailable">
+            <InfoItem name="NumberOfVacantParkingSpaces" type="mv:hasNumberOfVacantParkingSpaces">
               <value type="xs:int">2</value>
             </InfoItem>
-            <InfoItem name="HourlyPrice">
+            <InfoItem name="HourlyPrice" type="mv:PriceParking"><!-- Maybe rename to Pricing? -->
               <value type="xs:int">2</value>
             </InfoItem>
-            <InfoItem name="MaxHeight">
+            <InfoItem name="MaxHeight" type="mv:hasVehicleHeightLimitInM">
               <value type="xs:float">2.5</value>
             </InfoItem>
-            <InfoItem name="MaxWidth">
+            <InfoItem name="MaxWidth" type="mv:hasVehicleWidthLimitInM">
               <value type="xs:float">2.5</value>
             </InfoItem>
+            <InfoItem name="MaxLength" type="mv:hasVehicleLengthLimitInM">
+              <value type="xs:float">2.5</value>
+            </InfoItem>
+            <Object type="mv:Charger">
+              <id>Charger</id>
+              <InfoItem name="Brand" type="mv:Brand">
+                <value>Exampler</value>
+              </InfoItem>
+              <InfoItem name="Model" type="mv:Model">
+                <value>ExampleI</value>
+              </InfoItem>
+              <Object type="mv:Plug">
+                <id>Plug</id>
+                <InfoItem name="PlugType" type="mv:PlugType">
+                  <value>Schuko Plug</value>
+                </InfoItem>
+                <InfoItem name="Power" type="mv:Power">
+                  <value>2400W</value>
+                </InfoItem>
+                <InfoItem name="Voltage" type="mv:Voltage">
+                  <value>240V</value>
+                </InfoItem>
+                <InfoItem name="CableAvailable" type="mv:CableAvailable">
+                  <value>FALSE</value>
+                </InfoItem>
+                <InfoItem name="LockerAvailable" type="mv:LockerAvailable">
+                  <value>TRUE</value>
+                </InfoItem>
+                <InfoItem name="ChargingSpeed" type="mv:ChargingSpeed">
+                  <value>mv:Standard</value>
+                </InfoItem>
+              </Object>
+            </Object>
             <Object type="list">
-              <id>Spots</id>
-              <description lang="English">List of parking spot of previous type.</description>
-              <Object type="ParkingSpot">
-                <id>EVSpot1</id>
+              <id>Spaces</id>
+              <description lang="English">List of parking spaces of the previous type.</description>
+              <Object type="mv:ParkingSpace">
+                <id>EVSpace1</id>
                 <InfoItem name="Available">
                   <value>TRUE</value>
                 </InfoItem>
@@ -149,8 +183,8 @@
                   <value>NONE</value>
                 </InfoItem>
               </Object>
-              <Object type="ParkingSpot">
-                <id>EVSpot2</id>
+              <Object type="mv:ParkingSpace">
+                <id>EVSpace2</id>
                 <InfoItem name="Available">
                   <value>TRUE</value>
                 </InfoItem>
@@ -160,28 +194,31 @@
               </Object>
             </Object>
           </Object>
-          <Object type="ParkingSpotType">
-            <id>Car</id>
-            <InfoItem name="NumberOfSpots">
+          <Object type="mv:ParkingUsageType">
+            <id>CarParkingSpace</id>
+            <InfoItem name="TotalCapacity" type="mv:hasTotalCapacity">
               <value type="xs:int">6</value>
             </InfoItem>
-            <InfoItem name="NumberOfSpotsAvailable">
+            <InfoItem name="NumberOfVacantParkingSpaces" type="mv:hasNumberOfVacantParkingSpaces">
               <value type="xs:int">6</value>
             </InfoItem>
-            <InfoItem name="HourlyPrice">
+            <InfoItem name="HourlyPrice" type="mv:PriceParking"><!-- Maybe rename to Pricing? -->
               <value type="xs:int">2</value>
             </InfoItem>
-            <InfoItem name="MaxHeight">
+            <InfoItem name="MaxHeight" type="mv:hasVehicleHeightLimitInM">
               <value type="xs:float">2.5</value>
             </InfoItem>
-            <InfoItem name="MaxWidth">
+            <InfoItem name="MaxWidth" type="mv:hasVehicleWidthLimitInM">
+              <value type="xs:float">2.5</value>
+            </InfoItem>
+            <InfoItem name="MaxLength" type="mv:hasVehicleLengthLimitInM">
               <value type="xs:float">2.5</value>
             </InfoItem>
             <Object type="list">
-              <id>Spots</id>
-              <description lang="English">List of parking spot of previous type.</description>
-              <Object type="ParkingSpot">
-                <id>Spot1</id>
+              <id>Spaces</id>
+              <description lang="English">List of parking spaces of the previous type.</description>
+              <Object type="mv:ParkingSpace">
+                <id>Space1</id>
                 <InfoItem name="Available">
                   <value>TRUE</value>
                 </InfoItem>
@@ -189,8 +226,8 @@
                   <value>NONE</value>
                 </InfoItem>
               </Object>
-              <Object type="ParkingSpot">
-                <id>Spot2</id>
+              <Object type="mv:ParkingSpace">
+                <id>Space2</id>
                 <InfoItem name="Available">
                   <value>TRUE</value>
                 </InfoItem>
@@ -198,8 +235,8 @@
                   <value>NONE</value>
                 </InfoItem>
               </Object>
-              <Object type="ParkingSpot">
-                <id>Spot3</id>
+              <Object type="mv:ParkingSpace">
+                <id>Space3</id>
                 <InfoItem name="Available">
                   <value>TRUE</value>
                 </InfoItem>
@@ -207,8 +244,8 @@
                   <value>NONE</value>
                 </InfoItem>
               </Object>
-              <Object type="ParkingSpot">
-                <id>Spot4</id>
+              <Object type="mv:ParkingSpace">
+                <id>Space4</id>
                 <InfoItem name="Available">
                   <value>TRUE</value>
                 </InfoItem>
@@ -216,8 +253,8 @@
                   <value>NONE</value>
                 </InfoItem>
               </Object>
-              <Object type="ParkingSpot">
-                <id>Spot5</id>
+              <Object type="mv:ParkingSpace">
+                <id>Space5</id>
                 <InfoItem name="Available">
                   <value>TRUE</value>
                 </InfoItem>
@@ -225,8 +262,8 @@
                   <value>NONE</value>
                 </InfoItem>
               </Object>
-              <Object type="ParkingSpot">
-                <id>Spot6</id>
+              <Object type="mv:ParkingSpace">
+                <id>Space6</id>
                 <InfoItem name="Available">
                   <value>TRUE</value>
                 </InfoItem>
@@ -236,28 +273,31 @@
               </Object>
             </Object>
           </Object>
-          <Object type="ParkingSpotType">
-            <id>Motorbike</id>
-            <InfoItem name="NumberOfSpots">
+          <Object type="mv:ParkingUsageType">
+            <id>MotorbikeParkingSpace</id>
+            <InfoItem name="TotalCapacity" type="mv:hasTotalCapacity">
               <value type="xs:int">2</value>
             </InfoItem>
-            <InfoItem name="NumberOfSpotsAvailable">
+            <InfoItem name="NumberOfVacantParkingSpaces" type="mv:hasNumberOfVacantParkingSpaces">
               <value type="xs:int">2</value>
             </InfoItem>
-            <InfoItem name="HourlyPrice">
+            <InfoItem name="HourlyPrice" type="mv:PriceParking"><!-- Maybe rename to Pricing? -->
               <value type="xs:int">2</value>
             </InfoItem>
-            <InfoItem name="MaxHeight">
+            <InfoItem name="MaxHeight" type="mv:hasVehicleHeightLimitInM">
               <value type="xs:float">2.5</value>
             </InfoItem>
-            <InfoItem name="MaxWidth">
+            <InfoItem name="MaxWidth" type="mv:hasVehicleWidthLimitInM">
+              <value type="xs:float">2.5</value>
+            </InfoItem>
+            <InfoItem name="MaxLength" type="mv:hasVehicleLengthLimitInM">
               <value type="xs:float">2.5</value>
             </InfoItem>
             <Object type="list">
-              <id>Spots</id>
-              <description lang="English">List of parking spot of previous type.</description>
-              <Object type="ParkingSpot">
-                <id>BikeSpot1</id>
+              <id>Spaces</id>
+              <description lang="English">List of parking spaces of the previous type.</description>
+              <Object type="mv:ParkingSpace">
+                <id>BikeSpace1</id>
                 <InfoItem name="Available">
                   <value type="xs:boolean">TRUE</value>
                 </InfoItem>
@@ -265,8 +305,8 @@
                   <value>NONE</value>
                 </InfoItem>
               </Object>
-              <Object type="ParkingSpot">
-                <id>BikeSpot2</id>
+              <Object type="mv:ParkingSpace">
+                <id>BikeSpace2</id>
                 <InfoItem name="Available">
                   <value type="xs:boolean">TRUE</value>
                 </InfoItem>

@@ -175,6 +175,7 @@ private[this] def parseInfoItem(requestProcessTime: Timestamp, item: InfoItemTyp
           }
         )
     }.headOption,
+    item.typeValue,
     parseAttributes( item.attributes - "@name" )
   ) 
 }

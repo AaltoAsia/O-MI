@@ -276,7 +276,13 @@ case class OdfObjects(
    * Includes nodes that have type or description
    */
   lazy val objectsWithMetadata = getOdfNodes(this) collect {
-      case o @ OdfObject(_, _, _, _, desc, typeVal, attr) if desc.isDefined || typeVal.isDefined || attr.nonEmpty => o
+      case o @ OdfObject(_, _, _, _, desc, typeVal, attr) 
+        if desc.isDefined || typeVal.isDefined || attr.nonEmpty => o
+        /*
+      case ii @ OdfInfoItem( _, _, desc, metaData, typeVal, attr ) 
+        if desc.isDefined || typeVal.isDefined || attr.nonEmpty || metaData.isDefined => 
+          ii.copy( values = Vector() )
+          */
     } 
 
 }
@@ -290,7 +296,7 @@ case class OdfObject(
   description: Option[OdfDescription] = None,
   typeValue: Option[String] = None,
   attributes:           Map[String,String] = HashMap.empty
-  ) extends OdfObjectImpl(id, path, infoItems, objects, description, typeValue) with OdfNode with Serializable{
+  ) extends OdfObjectImpl(id, path, infoItems, objects, description, typeValue, attributes) with OdfNode with Serializable{
 
 
   def get(path: Path) : Option[OdfNode] = path match{
@@ -389,8 +395,9 @@ case class OdfInfoItem(
     values: OdfTreeCollection[OdfValue[Any]] = OdfTreeCollection(),
     description: Option[OdfDescription] = None,
     metaData: Option[OdfMetaData] = None,
+    typeValue: Option[String] = None,
     attributes:           Map[String,String] = HashMap.empty
-) extends OdfInfoItemImpl(path, values, description, metaData) with OdfNode {
+) extends OdfInfoItemImpl(path, values, description, metaData, typeValue, attributes) with OdfNode {
   require(path.length > 2,
     s"OdfInfoItem should have longer than two segment path (use OdfObjects for <Objects>): Path($path)")
   def get(path: Path): Option[OdfNode] = if (path == this.path) Some(this) else None
@@ -402,7 +409,9 @@ case class OdfInfoItem(
   def update(
     values:               OdfTreeCollection[OdfValue[Any]] = OdfTreeCollection(),
     description:          Option[OdfDescription] = None,
-    metaData:             Option[OdfMetaData] = None
+    metaData:             Option[OdfMetaData] = None,
+    typeValue: Option[String] = None,
+    attributes:           Map[String,String] = HashMap.empty
   ): OdfInfoItem ={
     this.copy( 
       values = if( values.nonEmpty ) values else this.values,

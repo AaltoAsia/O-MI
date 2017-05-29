@@ -238,7 +238,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
 
             db.run(processObjectI(path, description.nonEmpty))
 
-          case qry @ OdfInfoItem(path, rvalues, _, _,attr) =>
+          case qry @ OdfInfoItem(path, rvalues, _, _,typeValue,attr) =>
 
             val odfInfoItemI = getHierarchyNodeI(path) flatMap { nodeO =>
 
@@ -307,7 +307,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
           objectData :+ Some(
             reqInfoItems.foldLeft(resultOdf){(result, info) =>
               info match {
-                case qry @ OdfInfoItem(path, _, _, _,attr) if foundPaths contains path =>
+                case qry @ OdfInfoItem(path, _, _, _,typeValue,attr) if foundPaths contains path =>
                   result union createAncestors(qry)
                 case _ => result // else discard
               }

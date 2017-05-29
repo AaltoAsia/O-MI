@@ -42,6 +42,7 @@ trait InternalAgentResponse
 trait InternalAgentSuccess     extends InternalAgentResponse 
 case class CommandSuccessful() extends InternalAgentSuccess 
 
+
 class InternalAgentFailure(msg : String, exp : Option[Throwable] )  extends  Exception(msg, exp.getOrElse(null)) with InternalAgentResponse
 class CommandFailed(msg : String, exp : Option[Throwable] ) extends InternalAgentFailure(msg, exp) 
 case class StopFailed(msg : String, exp : Option[Throwable] ) extends CommandFailed(msg, exp) 
@@ -49,6 +50,9 @@ case class StartFailed(msg : String, exp : Option[Throwable] ) extends CommandFa
 
 sealed trait ResponsibleAgentMsg
 case class ResponsibleWrite( promise: Promise[ResponseRequest], write: WriteRequest)
+
+case class AgentConfigurationException( msg: String, exp: Option[Throwable] = None) 
+  extends Exception( msg, exp.getOrElse(null) )
 
 abstract class  ScalaInternalAgentTemplate(
   protected val requestHandler: ActorRef,
@@ -61,22 +65,17 @@ trait ScalaInternalAgent extends InternalAgent with ActorLogging{
   def agentSystem = context.parent
   final def name = self.path.name
   @deprecated("Use Actor's preRestart and postRestart methods instead.","o-mi-node-0.8.0") 
-  def restart : InternalAgentResponse = {
-    stop 
-    start
-  }
+  def restart : InternalAgentResponse = {CommandSuccessful()}
   protected def  requestHandler: ActorRef
   protected def dbHandler: ActorRef
   //These need to be implemented 
   @deprecated("Use Actor's preStart method instead.","o-mi-node-0.8.0") 
-  def start   : InternalAgentResponse 
+  def start   : InternalAgentResponse ={ CommandSuccessful()}
   @deprecated("Use Actor's postStop method instead.","o-mi-node-0.8.0") 
-  def stop    : InternalAgentResponse 
+  def stop    : InternalAgentResponse = { CommandSuccessful()}
   def receive  = {
-    case Start() => respond(start)
-    case Restart() => respond(restart)
-    case Stop() => respond(stop)
-   }
+    case any: Any => unhandled(any)
+  }
   final def writeToNode(write: WriteRequest) : Future[ResponseRequest] = writeToDB(write) 
   final def writeToDB(write: WriteRequest) : Future[ResponseRequest] = requestFromDB(write)
   final def readFromDB(read: ReadRequest) : Future[ResponseRequest] = requestFromDB(read)

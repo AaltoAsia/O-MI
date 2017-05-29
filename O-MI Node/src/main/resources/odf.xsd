@@ -61,7 +61,7 @@
 				<xs:documentation>Type definition for the InfoItem, such as "http://schema.org/latitude". From Version 2.0 onwards.</xs:documentation>
 			</xs:annotation>
 		</xs:attribute>
-		<xs:anyAttribute>
+		<xs:anyAttribute processContents="lax">
 			<xs:annotation>
 				<xs:documentation>Proprietary or extended attributes.</xs:documentation>
 			</xs:annotation>
