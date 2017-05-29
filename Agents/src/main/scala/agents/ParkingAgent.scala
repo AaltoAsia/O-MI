@@ -54,7 +54,7 @@ class ParkingAgent(
   val servicePath = Path( config.getString("servicePath"))
 
   //Path to object containing all parking lots.
-  val parkingLotsPath = Path( config.getString("parkingLotsPath"))
+  val parkingLotsPath = Path( config.getString("parkingFacilitiesPath"))
 
   //File used to populate node with initial state
   val startStateFile =  new File(config.getString("initialStateFile"))
@@ -95,9 +95,9 @@ class ParkingAgent(
       }
   }
   val findParkingPath = servicePath / "FindParking"
-  val positionParameterPath = Path("Objects/Parameters/Destination")
-  val arrivalTimeParameterPath = Path("Objects/Parameters/ArrivalTime")
-  val spotTypeParameterPath = Path("Objects/Parameters/ParkingUsageType")
+  val positionParameterPath     = Path("Objects/Parameters/Destination")
+  val arrivalTimeParameterPath  = Path("Objects/Parameters/ArrivalTime")
+  val spotTypeParameterPath     = Path("Objects/Parameters/ParkingUsageType")
 
   override protected def handleCall(call: CallRequest) : Future[ResponseRequest] = {
       val methodInfoItemO = call.odf.get(findParkingPath)
