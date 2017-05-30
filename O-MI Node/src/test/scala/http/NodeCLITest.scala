@@ -108,6 +108,10 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
     val correct: String  = listener.commands 
     resF should beEqualTo(correct ).await( 0, timeoutDuration)
   }
+
+  def ignoreConnectedToAgentMananger( connection: TestProbe ) : Unit ={
+    connection.ignoreMsg{ case Write(data, ack) => data.decodeString("UTF-8") == s"CLI connected to AgentManager.\n>" }
+  }
   def listAgentsTest= new Actorstest(AS){
     import system.dispatcher
     val agents = Vector(
@@ -153,6 +157,7 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
     val removeHandler = new RemoveTester( Path("Objects/aue" ) )
     val remote = new InetSocketAddress("Tester",22)
     val connection = TestProbe()//ActorRef( new DummyRemote(remote.toString()))
+    ignoreConnectedToAgentMananger(connection)
     val listenerRef = TestActorRef(new OmiNodeCLI(
       connection.ref,
       remote,
@@ -165,8 +170,7 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
    // val correct : String =  s"Agent $name started succesfully.\n" 
    /// resF should beEqualTo( correct ).await( 0, timeoutDuration)
     connection.send(listenerRef,strToMsg(s"start $name"))
-    ( connection.expectMsgType[Write].data.decodeString("UTF-8") must beEqualTo(s"CLI connected to AgentManager.\n>") ) and (
-    connection.expectMsgType[Write].data.decodeString("UTF-8") must beEqualTo(s">") ) and (
+    ( connection.expectMsgType[Write].data.decodeString("UTF-8") must beEqualTo(s">") ) and (
     connection.expectMsgType[Write].data.decodeString("UTF-8") must beEqualTo(s"Agent $name started.\n>") )
   }
   def stopAgentTest= new Actorstest(AS){
@@ -183,6 +187,7 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
     val removeHandler = new RemoveTester( Path("Objects/aue" ) )
     val remote = new InetSocketAddress("Tester",22)
     val connection = TestProbe()
+    ignoreConnectedToAgentMananger(connection)
     val listenerRef = TestActorRef(new OmiNodeCLI(
       connection.testActor,
       remote,
@@ -194,8 +199,7 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
     //val resF :Future[String ]= decodeWriteStr(listenerRef ? strToMsg(s"stop $name"))    
 
     connection.send(listenerRef,strToMsg(s"stop $name"))
-    ( connection.expectMsgType[Write].data.decodeString("UTF-8") must beEqualTo(s"CLI connected to AgentManager.\n>") ) and (
-    connection.expectMsgType[Write].data.decodeString("UTF-8") must beEqualTo(s">") ) and (
+    ( connection.expectMsgType[Write].data.decodeString("UTF-8") must beEqualTo(s">") ) and (
     connection.expectMsgType[Write].data.decodeString("UTF-8") must beEqualTo(s"Agent $name stopped.\n>") )
   }
   def unknownCmdTest = new Actorstest(AS){
@@ -208,6 +212,7 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
     val removeHandler = new RemoveTester( Path("Objects/aue" ) )
     val remote = new InetSocketAddress("Tester",22)
     val connection = TestProbe() //ActorRef( new DummyRemote(remote.toString()))
+    ignoreConnectedToAgentMananger(connection)
     val listenerRef = TestActorRef(new OmiNodeCLI(
       connection.ref,
       remote,
@@ -218,8 +223,7 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
     val listener = listenerRef.underlyingActor
     val correct: String  = "Unknown command. Use help to get information of current commands.\n>" 
     connection.send(listenerRef,strToMsg(s"aueo"))
-    ( connection.expectMsgType[Write].data.decodeString("UTF-8") must beEqualTo(s"CLI connected to AgentManager.\n>") ) and (
-    connection.expectMsgType[Write].data.decodeString("UTF-8") must beEqualTo(correct) )
+    connection.expectMsgType[Write].data.decodeString("UTF-8") must beEqualTo(correct) 
 
   }
   def removePathTest= new Actorstest(AS){
@@ -233,6 +237,7 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
     val removeHandler = new RemoveTester( Path(path) )
     val remote = new InetSocketAddress("Tester",22)
     val connection = TestProbe()//ActorRef( new DummyRemote(remote.toString()))
+    ignoreConnectedToAgentMananger(connection)
     val listenerRef = TestActorRef(new OmiNodeCLI(
       connection.ref,
       remote,
@@ -244,8 +249,7 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
     // val resF: Future[String ] =decodeWriteStr(listenerRef ? strToMsg(s"remove $path"))    
     val correct: String  = s"Successfully removed path $path\n>" 
     connection.send(listenerRef,strToMsg(s"remove $path"))
-    ( connection.expectMsgType[Write].data.decodeString("UTF-8") must beEqualTo(s"CLI connected to AgentManager.\n>") ) and (
-    connection.expectMsgType[Write].data.decodeString("UTF-8") must beEqualTo(correct) )
+    connection.expectMsgType[Write].data.decodeString("UTF-8") must beEqualTo(correct) 
   }
   def removeUnexistingPathTest= new Actorstest(AS){
     import system.dispatcher
@@ -258,6 +262,7 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
     val removeHandler = new RemoveTester( Path(path) )
     val remote = new InetSocketAddress("Tester",22)
     val connection = TestProbe()//ActorRef( new DummyRemote(remote.toString()))
+    ignoreConnectedToAgentMananger(connection)
     val listenerRef = TestActorRef(new OmiNodeCLI(
       connection.ref,
       remote,
@@ -268,8 +273,7 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
     val listener = listenerRef.underlyingActor
     val correct: String  = s"Given path does not exist\n>" 
     connection.send(listenerRef,strToMsg(s"remove $path" +"ueaueo"))
-    ( connection.expectMsgType[Write].data.decodeString("UTF-8") must beEqualTo(s"CLI connected to AgentManager.\n>") ) and (
-    connection.expectMsgType[Write].data.decodeString("UTF-8") must beEqualTo(correct) )
+    connection.expectMsgType[Write].data.decodeString("UTF-8") must beEqualTo(correct) 
   }
 
   def listSubsTest= new Actorstest(AS){
