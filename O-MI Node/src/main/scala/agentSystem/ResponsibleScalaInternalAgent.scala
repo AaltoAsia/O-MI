@@ -40,14 +40,18 @@ trait ResponsibleScalaInternalAgent
   with ResponsibleInternalAgent{
   import context.dispatcher
   protected def handleWrite( write: WriteRequest ) : Future[ResponseRequest] = writeToDB(write)
-  protected def handleRead( read: ReadRequest ) : Future[ResponseRequest] = readFromDB(read)
-  protected def handleCall( call: CallRequest ) : Future[ResponseRequest]
+  //protected def handleRead( read: ReadRequest ) : Future[ResponseRequest] = readFromDB(read)
+  protected def handleCall( call: CallRequest ) : Future[ResponseRequest] = {
+    Future{
+      Responses.NotImplemented()
+    }
+  }
 
   override def receive  = {
     case write: WriteRequest => respondFuture(handleWrite(write))
-    case read: ReadRequest => respondFuture(handleRead(read))
+    //case read: ReadRequest => respondFuture(handleRead(read))
     case call: CallRequest => respondFuture(handleCall(call))
-   }
+  }
 
 }
 

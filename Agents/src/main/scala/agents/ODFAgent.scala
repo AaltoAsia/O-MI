@@ -29,7 +29,7 @@ object ODFAgent extends PropsCreator{
 }
 // Scala XML contains also parsing package
 class ODFAgent(
-  override val config: Config,
+  val config: Config,
   requestHandler: ActorRef, 
   dbHandler: ActorRef
 ) extends ScalaInternalAgentTemplate(requestHandler,dbHandler){

@@ -311,34 +311,6 @@ class ParkingAgent(
       }
     }
   }
-  override protected def handleRead(read: ReadRequest) : Future[ResponseRequest] = {
-    log.info(s"$name is handling read:\n$read")
-
-    val result : Future[ResponseRequest] = readFromDB(read)
-
-    // Asynchronously handle request's execution's completion
-    result.onComplete{
-      case Success( response: ResponseRequest )=>
-        response.results.foreach{ 
-          case read: Results.Read =>
-            // This sends debug log message to O-MI Node logs if
-            // debug level is enabled (in logback.xml and application.conf)
-            log.debug(s"$name read paths successfully.")
-            log.info(s"$read")
-          case ie: OmiResult => 
-            log.warning(s"Something went wrong when $name read, $ie")
-        }
-      case Failure( t: Exception) => 
-        // This sends debug log message to O-MI Node logs if
-        // debug level is enabled (in logback.xml and application.conf)
-        log.warning(s"$name's read future failed, error: $t")
-        Responses.InternalError(t)
-    }
-    result.recover{
-      case t: Exception => 
-      Responses.InternalError(t)
-    }
-  }
 
   def positionCheck( destination: GPSCoordinates, lotsPosition: GPSCoordinates ) : Boolean = true 
   def handleParkingLotForCall( obj: OdfObject, param: ParkingParameters ): Option[OdfObject] ={

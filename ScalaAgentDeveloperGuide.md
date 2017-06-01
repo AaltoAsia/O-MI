@@ -1,58 +1,71 @@
-ScalaAgent.scala
-----------------
-Let's create an *interanal agent*, that gets a path to O-DF InfoItem from 
-configuration and writes random generated values to it every interval given in 
-configuration. First create class `ScalaAgent` that extends `ScalaInternalAgent`.
-and have `config` as constructor parameter.
+Scala Internal Agent Developer Guide
+=============
 
+[ScalaAgent](https://github.com/AaltoAsia/O-MI/blob/development/Agents/src/main/scala/agents/ScalaAgent.java)
 
+Let's create an *internal agent*, that gets a Path of an O-DF InfoItem from 
+configuration and writes random generated values to it on every interval given in 
+configuration. 
+
+To create an *internal agent* with scala we only need to create a class that
+extends abstract `ScalaInternalAgentTemplate` class and it's companion object
+that extends `PropsCreator`.
 
 ```Scala
-package agents
-
-import scala.util.{Random, Success, Failure}
-import scala.concurrent.ExecutionContext.Implicits._
-import scala.concurrent.Future
-import scala.concurrent.duration._
-import scala.collection.mutable.{Queue => MutableQueue}
-
-import java.sql.Timestamp;
-import java.util.Date
-import java.util.concurrent.TimeUnit
-
-import akka.util.Timeout
-import akka.pattern.ask
-import akka.actor.{Cancellable, Props, Actor}
-
-import com.typesafe.config.Config
-
-import types.Path
-import types.OdfTypes._
-import types.OmiTypes.WriteRequest
-import agentSystem._ 
-
-/**
- * Companion object for ScalaAgent. Extends PropsCreator to enforce recommended practice in Props creation.
- *  <a href="http://doc.akka.io/docs/akka/2.4/scala/actors.html#Recommended_Practices">Akka recommends to</a>.
- *
- *  @param _config Contains configuration for this agent, as given in application.conf.
- */
 object ScalaAgent extends PropsCreator {
-  /**
-   * Method for creating Props for ScalaAgent.
-   *  @param config Contains configuration for this agent, as given in application.conf.
-   */
-  def props( config: Config) : Props = { 
-    Props(new ScalaAgent(config)) 
+  def props( 
+    config: Config,
+    requestHandler: ActorRef,
+    dbHandler: ActorRef
+  ) : Props = { 
+    Props(
+      new ScalaAgent(
+        config, 
+        requestHandler,
+        dbHandler
+      )
+    ) 
   }  
-
 }
 
-/**
- * Pushes random numbers to given O-DF path at given interval.
- * Can be used in testing or as a base for other agents.
- */
-class ScalaAgent( override val config: Config)  extends ScalaInternalAgent{
+class ScalaAgent(
+  val config: Config,
+  requestHandler: ActorRef,
+  dbHandler: ActorRef
+) extdends ScalaInternalAgentTemplate(
+  requestHandler,
+  dbHandler
+){
+  ...
+}
+```
+
+Because of `ScalaInternalAgentTemplate` takes `requestHandler` and `dbHandler`
+as constructor paramaeters, we need to have them as constructor parameters of
+our `ScalaAgent`. To implement `PropsCreator` for our companion object we have 
+implement `props` method, that takes `config`,`requestHandler` and `dbHandler` 
+as parameters. Because we may want to have config stored while agent is running 
+we pass it as constructor parameter to our `ScalaAgent` instead of extracting
+configuration from it before creating `ScalaAgent`. 
+
+In constructor of `ScalaAgent` we want to parse a `Path` of an O-DF InfoItem and
+a duration, that defines how long `ScalaAgent` will wait between writing new
+value to the servers database. The config passed to the agent is the same
+configuration object that defines all information thot O-MI Node needs to
+instantiate it. For the Path of the InfoItem we get field "path" of type string from the config
+and create a `Path` from it, and for interval duration between write we get
+field "interval" of type duration as seconds from the config.
+
+```Scala
+class ScalaAgent( 
+  val config: Config,
+  requestHandler: ActorRef, 
+  dbHandler: ActorRef
+)  extends ScalaInternalAgentTemplate(requestHandler, dbHandler){
+
+
+  //Target O-DF path, parsed from configuration
+  val path : Path = Path(config.getString("path"))
 
   //Interval for scheluding generation of new values, parsed from configuration
   val interval : FiniteDuration= config.getDuration(
@@ -60,64 +73,37 @@ class ScalaAgent( override val config: Config)  extends ScalaInternalAgent{
     TimeUnit.SECONDS
   ).seconds
 
-  //Target O-DF path, parsed from configuration
-  val path : Path = Path(config.getString("path"))
+```
 
+To have `ScalaAgent` write to O-MI Node's database we create a `case class
+Update()` to be our message and schedule a cancellable job that send our
+`Uptade()` message to us after every `interval`. We store the cancellable job so
+that we can cancel it, if O-MI Node stops our `ScalaAgent`.
+
+```Scala
   //Message for updating values
   case class Update()
 
+  // Schelude update and save job, for stopping
+  // Will send Update() message to self every interval
+  private val updateSchedule: Cancellable= context.system.scheduler.schedule(
+    Duration.Zero,//Delay start
+    interval,//Interval between messages
+    self,//To
+    Update()//Message
+  )
+
+```
+
+To write new generated values to O-MI Node's database we create method `update`.
+
+```Scala
   //Random number generator for generating new values
   val rnd: Random = new Random()
   def newValueStr : String = rnd.nextInt().toString 
 
-  //Helper function for current timestamps
+  //Helper method for getting current timestamps
   def currentTimestamp : Timestamp = new Timestamp(  new java.util.Date().getTime() )
-
-  //Cancellable update of values, "mutable Option"
-  case class UpdateSchedule( var option: Option[Cancellable]  = None)
-  private val updateSchedule = UpdateSchedule( None )
-
-  /**
-   * Method to be called when a Start() message is received.
-   */
-  def start : InternalAgentResponse  ={
-
-    // Schelude update and save job, for stopping
-    // Will send Update() message to self every interval
-    updateSchedule.option = Some(
-      context.system.scheduler.schedule(
-        Duration.Zero,//Delay start
-        interval,//Interval between messages
-        self,//To
-        Update()//Message
-      )
-    )
-
-    CommandSuccessful()
-  }
-
-  /**
-   * Method to be called when a Stop() message is received.
-   * This should gracefully stop all activities that the agent is doing.
-   */
-  def stop : InternalAgentResponse = {
-    updateSchedule.option match{
-      //If agent has scheluded update, cancel job
-      case Some(job: Cancellable) =>
-
-        job.cancel() 
-
-        //Check if job was cancelled
-        if(job.isCancelled){
-          updateSchedule.option = None
-          CommandSuccessful()
-        } else StopFailed("Failed to stop agent.", None)
-
-      case None => 
-        CommandSuccessful()
-    }
-  }
-
 
   /**
    * Method to be called when a Update() message is received.
@@ -126,19 +112,11 @@ class ScalaAgent( override val config: Config)  extends ScalaInternalAgent{
    */
   def update() : Unit = {
 
-    // Generate new OdfValue 
-
-    // timestamp for the value
-    val timestamp : Timestamp = currentTimestamp
-    // type metadata, default is xs:string
-    val typeStr : String= "xs:integer"
-    //New value as String
-    val valueStr : String = newValueStr
-
-    val odfValue : OdfValue = OdfValue( newValueStr, typeStr, timestamp ) 
+    // Generate new OdfValue[Any](value, type, timestamp) 
+    val odfValue : OdfValue[Any] = OdfValue( newValueStr, "xs:integer", currentTimestamp ) 
 
     // Multiple values can be added at the same time but we add one
-    val odfValues : Vector[OdfValue] = Vector( odfValue )
+    val odfValues : Vector[OdfValue[Any]] = Vector( odfValue )
 
     // Create OdfInfoItem to contain the value. 
     val infoItem : OdfInfoItem = OdfInfoItem( path, odfValues)
@@ -156,7 +134,109 @@ class ScalaAgent( override val config: Config)  extends ScalaInternalAgent{
     val write : WriteRequest = WriteRequest( objects, None, interval )
 
     // Execute the request, execution is asynchronous (will not block)
-    val result : Future[ResponseRequest] = writeToNode(write) 
+    val result : Future[ResponseRequest] = writeToDB(write) 
+
+    // Asynchronously handle request's execution's completion
+    result.onComplete{
+      case Success( response: ResponseRequest )=>
+        log.info(s"$name wrote got ${response.results.length} results.")
+        response.results.foreach{ 
+          case wr: Results.Success =>
+            log.info(s"$name wrote paths successfully.")
+          case ie: OmiResult => 
+            log.warning(s"Something went wrong when $name writed, $ie")
+        }
+      case Failure( t: Throwable) => 
+        log.warning(s"$name's write future failed, error: $t")
+    }
+  }
+```
+
+To have method `update` called on everytime we receive `Update()` message we
+need to add following to our `receive` method.
+
+```Scala
+  /**
+   * Method that is inherited from akka.actor.Actor and handles incoming messages
+   * from other Actors.
+   */
+  override def receive : Actor.Receive = {
+    //ScalaAgent specific messages
+    case Update() => update
+  }
+```
+
+If O-MI Node stops our `ScalaAgent`, we need stop sending `Update()` message to
+ourself. After an `Actor` is stopped it will process current message and
+call `postStop` method for clean up. To cancel the sending of the `Update()`
+message we just call `cancel` method of the previously stored `Cancelllable` in
+the `postStop` method.
+```Scala
+  /**
+   * Method to be called when Agent is stopped.
+   * This should gracefully stop all activities that the agent is doing.
+   */
+  override def postStop : Unit = {
+    updateSchedule.cancel()
+  }
+```
+
+Now we have an *internal agent*, but to get O-MI Node to run it, we need to 
+compile it to a .jar file and put it to `deploy` directory, or if compiled with
+O-MI Node project, `InternalAgentLoader` will find it from project's .jar file.
+
+After this we have the final step, open the `application.conf` and add new object to
+`agent-system.internal-agents`. Object's format is: 
+
+```
+    {
+      name = "<name of agent>"
+      class = "<full class path of agent>"
+      language = "<scala or java>"
+      responsible = {
+        "<O-DF path that agent is responsible for>" = "<request types that agent handles, w= write and c = call>",
+        ...
+      }
+      ... <Other agent specific fields.>
+    }
+```
+
+Field `responsible` is only needed for `ResponsibleInternalAgent`.
+
+Lines to add for our example:
+
+```
+    {
+      name = "ScalaRAgent" 
+      class = "agents.ScalaAgent"
+      language = "scala"
+      path = "Objects/SAgent/sensor"
+      interval = 60 seconds
+    }
+```
+
+Finally you need to restart O-MI Node to update its configuration.
+
+Responsibility
+----------------------
+
+[ResponsbileScalaAgent](https://github.com/AaltoAsia/O-MI/blob/development/Agents/src/main/scala/agents/ResponsibleAgent.java)
+
+We want to make `ScalaAgent` to be *responsible* for it's path. 
+Let's create class `ResponsibleScalaAgent` that extends `ScalaAgent` with
+`ResponsibleScalaInternalAgent` and implement method `handelWrite` for it.
+
+```Scala
+  override protected def handleWrite(write: WriteRequest) : Future[ResponseRequest] = {
+    //All paths in write.odf is owned by this agent.
+    //There is nothing to check or do for data so it is just writen. 
+
+    // This sends debug log message to O-MI Node logs if
+    // debug level is enabled (in logback.xml and application.conf)
+    log.info(s"$name pushing data received through AgentSystem.")
+
+    // Asynchronous execution of request 
+    val result : Future[ResponseRequest] = writeToDB(write)
 
     // Asynchronously handle request's execution's completion
     result.onComplete{
@@ -173,264 +253,46 @@ class ScalaAgent( override val config: Config)  extends ScalaInternalAgent{
         // This sends debug log message to O-MI Node logs if
         // debug level is enabled (in logback.xml and application.conf)
         log.warning(s"$name's write future failed, error: $t")
+        Responses.InternalError(t)
+    }
+    result.recover{
+      case t: Throwable => 
+      Responses.InternalError(t)
     }
   }
-
-  /**
-   * Method that is inherited from akka.actor.Actor and handles incoming messages
-   * from other Actors.
-   */
-  override  def receive : Actor.Receive = {
-    //Following are inherited from ScalaInternalActor.
-    //Must tell/send return value to sender, ask pattern used.
-    case Start() => sender() ! start 
-    case Restart() => sender() ! restart 
-    case Stop() => sender() ! stop 
-    //ScalaAgent specific messages
-    case Update() => update
-  }
-}
 ```
 
-Now we have an *internal agent*, but to get O-MI Node to run it, we need to compile it to a .jar
-file and put it to `deploy` directory, or if compiled with O-MI Node project, `InternalAgentLoader`
-will find it from project's .jar file.
-
-After this we have the final step, open the `application.conf` and add new object to
-`agent-system.internal-agents`. Object's format is: 
-
-```
-"<name of agent>" = {
-  language = "<scala or java>"
-  class = "<class of agent>"
-  owns = ["<O-DF path owned by agent>", ...]
-  config = <json object> 
-}
-```
-
-Field `owns` is only needed for `ResponsibleInternalAgent`.
-
-Lines to add for our example:
-
-```
-    "ScalaAgent" = {
-      language = "scala"
-      class = "agents.ScalaAgent"
-      config = {
-        path = "Objects/ScalaAgent/sensor"
-        interval = 60 seconds
-      }
-    }
-```
-
-Finally you need to restart O-MI Node to update its configuration.
-
-ResponsibleAgent.scala
-----------------------
-We want to make `ScalaAgent` to be *responsible* for it's path. Let's create class 
-`ResponsibleScalaAgent` for this and implement method `handelWrite` for it.
-
+We also need to modify our receive to call `handleWrite` when `WriteRequest` is
+received. With `respondFuture` method we make sure that `WriteRequest` is
+answered correctly. 
 ```Scala
-package agents
-
-import akka.util.Timeout
-import akka.pattern.ask
-import akka.actor.{Cancellable, Props, Actor}
-import agentSystem._ 
-import types.Path
-import types.OdfTypes._
-import types.OmiTypes.WriteRequest
-import scala.concurrent.Future
-import scala.concurrent.duration._
-import java.sql.Timestamp;
-import java.util.Date
-import scala.util.{Random, Try}
-import scala.concurrent.ExecutionContext.Implicits._
-import scala.collection.mutable.{Queue => MutableQueue}
-import com.typesafe.config.Config
-import java.util.concurrent.TimeUnit
-
-/**
- * Companion object for BasciAgents. Extends PropsCreator to enforce recommended practice in Props creation.
- *  <a href="http://doc.akka.io/docs/akka/2.4/scala/actors.html#Recommended_Practices">Akka recommends to</a>.
- *
- *  @param _config Contains configuration for this agent, as given in application.conf.
- */
-object ScalaAgent extends PropsCreator {
-  /**
-   * Method for creating Props for ScalaAgent.
-   *  @param config Contains configuration for this agent, as given in application.conf.
-   */
-  def props( config: Config) : Props = { 
-    Props(new ScalaAgent(config)) 
-  }  
-
-}
-
-/**
- * Pushes random numbers to given O-DF path at given interval.
- * Can be used in testing or as a base for other agents.
- */
-class ScalaAgent( override val config: Config)  extends ScalaInternalAgent{
-
-  //Interval for scheluding generation of new values, parsed from configuration
-  val interval : FiniteDuration= config.getDuration(
-    "interval",
-    TimeUnit.SECONDS
-  ).seconds
-
-  //Target O-DF path, parsed from configuration
-  val path : Path = Path(config.getString("path"))
-
-  //Message for updating values
-  case class Update()
-
-  //Random number generator for generating new values
-  val rnd: Random = new Random()
-  def newValueStr : String = rnd.nextInt().toString 
-
-  //Helper function for current timestamps
-  def currentTimestamp : Timestamp = new Timestamp(  new java.util.Date().getTime() )
-
-  //Cancellable update of values, "mutable Option"
-  case class UpdateSchedule( var option: Option[Cancellable]  = None)
-  private val updateSchedule = UpdateSchedule( None )
-
-  /**
-   * Method to be called when a Start() message is received.
-   */
-  def start : InternalAgentResponse  ={
-
-    // Schelude update and save job, for stopping
-    // Will send Update() message to self every interval
-    updateSchedule.option = Some(
-      context.system.scheduler.schedule(
-        Duration.Zero,//Delay start
-        interval,//Interval between messages
-        self,//To
-        Update()//Message
-      )
-    )
-
-    CommandSuccessful()
-  }
-
-  /**
-   * Method to be called when a Stop() message is received.
-   * This should gracefully stop all activities that the agent is doing.
-   */
-  def stop : InternalAgentResponse = {
-    updateSchedule.option match{
-      //If agent has scheluded update, cancel job
-      case Some(job: Cancellable) =>
-
-        job.cancel() 
-
-        //Check if job was cancelled
-        if(job.isCancelled){
-          updateSchedule.option = None
-          CommandSuccessful()
-        } else CommandFailed("Failed to stop agent.")
-
-      case None => 
-        CommandSuccessful()
-    }
-  }
-
-
-  /**
-   * Method to be called when a Update() message is received.
-   * Made specifically for this agent to be used with the Akka scheduler.
-   * Updates values in target path.
-   */
-  def update() : Unit = {
-
-    // Generate new OdfValue 
-
-    // timestamp for the value
-    val timestamp : Timestamp = currentTimestamp
-    // type metadata, default is xs:string
-    val typeStr : String= "xs:integer"
-    //New value as String
-    val valueStr : String = newValueStr
-
-    val odfValue : OdfValue = OdfValue( newValueStr, typeStr, timestamp ) 
-
-    // Multiple values can be added at the same time but we add one
-    val odfValues : Vector[OdfValue] = Vector( odfValue )
-
-    // Create OdfInfoItem to contain the value. 
-    val infoItem : OdfInfoItem = OdfInfoItem( path, odfValues)
-
-    // Method createAncestors generates O-DF structure from the path of an OdfNode 
-    // and returns the root, OdfObjects
-    val objects : OdfObjects =  infoItem.createAncestors
-
-    // This sends debug log message to O-MI Node logs if
-    // debug level is enabled (in logback.xml and application.conf)
-    log.debug(s"$name pushing data...")
-
-    // Create O-MI write request
-    // interval as time to live
-    val write : WriteRequest = WriteRequest( objects, None, interval )
-
-    // Execute the request, execution is asynchronous (will not block)
-    val result : Future[ResponsibleAgentResponse] = writeToNode(write) 
-
-    // Do something if execution was of request was successful
-    result.onSuccess{
-      case s: SuccessfulWrite =>
-        // This sends debug log message to O-MI Node logs if
-        // debug level is enabled (in logback.xml and application.conf)
-        log.debug(s"$name pushed data successfully.")
-    }
-
-    // Do something if execution was of request failed
-    result.onFailure{
-      case e: Throwable => 
-        // This sends debug log message to O-MI Node logs if
-        // debug level is enabled (in logback.xml and application.conf)
-        log.warning(s"$name failed to write all data, error: $e")
-    }
-  }
-
-  /**
-   * Method that is inherited from akka.actor.Actor and handles incoming messages
-   * from other Actors.
-   */
   override  def receive : Actor.Receive = {
-    //Following are inherited from ScalaInternalActor.
-    //Must tell/send return value to sender, ask pattern used.
-    case Start() => sender() ! start 
-    case Restart() => sender() ! restart 
-    case Stop() => sender() ! stop 
+    //Following are inherited from ResponsibleScalaInternalActor.
+    case write: WriteRequest => respondFuture(handleWrite(write))
     //ScalaAgent specific messages
     case Update() => update
   }
-}
 ```
 
-Because of `AgentSystem` forwards only parts of O-DF struture that are owned by *internal agent* to
-the same *internal agent*, we do not need to check them. We are not doing any checks on data this
-time, so we write it and complete promise with result. `AgentSystem` writes data to database,
-because data was received from the owner of the paths in O-DF of the write request. 
-
-A *responsible internal agent* is ready to be added to O-MI Node.  We add a new object to
-`agent-system.internal-agents` in `application.conf`:
-
+We need to create companion object for our `ResponsibleScalaAgent` and add
+following to `application.conf` to run it.
 ```
-    "ResponsibleScalaAgent" = {
+    {
+      name = "ResponsibleScalaRAgent" 
       class = "agents.ResponsibleScalaAgent"
       language = "scala"
-      owns = [ "Objects/RAgent/sensor" ]
-      config = {
-        path = "Objects/ResponsibleScalaAgent/sensor"
-        interval = 60 seconds
+      responsible = {
+        "Objects/RSAgent/" = "w"
       }
+      path = "Objects/RSAgent/sensor"
+      interval = 60 seconds
     }
 ```
+The "w" assigned to path means that our agent is only responsible for 
+`WriteRequest`s and does not receive or handle `CallRequest`s for given path.
 
 Now restart O-MI Node to update its configuration.
+
 
 ODFAgent.scala
 ---------------
