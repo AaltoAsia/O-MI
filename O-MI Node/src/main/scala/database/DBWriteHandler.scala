@@ -213,8 +213,17 @@ trait DBWriteHandler extends DBHandlerBase {
     val metas = infoItems filter { _.hasMetadata }
 
     val iiDescriptions = infoItems filter { _.hasDescription }
+    val iiTypes = infoItems filter { _.typeValue.nonEmpty }
+    val iiAttr = infoItems filter { _.attributes.nonEmpty }
 
-    val updatedStaticItems = metas ++ iiDescriptions ++ newItems ++ objectMetadatas
+    val updatedStaticItems ={
+      metas ++ 
+      iiDescriptions ++ 
+      iiTypes ++ 
+      iiAttr ++ 
+      newItems ++ 
+      objectMetadatas
+    }
 
 
 

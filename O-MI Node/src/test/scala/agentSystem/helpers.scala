@@ -1,37 +1,21 @@
 package agentSystem
 import scala.util.Try
 import scala.concurrent.{ Future,ExecutionContext, TimeoutException, Promise }
+import scala.collection.mutable.{Map => MutableMap}
 
 import com.typesafe.config.Config
-import akka.actor.{ActorRef, Actor, ActorSystem, Props }
+import akka.actor.{ActorRef, Actor, ActorSystem, Props , Terminated}
+import akka.testkit.{TestActorRef}
 
 import agentSystem._
 import types.OmiTypes.{Responses, WriteRequest, ReadRequest, CallRequest, ResponseRequest}
 import http.CLICmds._
 import AgentEvents._
 
-
-trait StartFailure{
-   final def start: InternalAgentResponse  = {  
-      StartFailed("Test failure.",None)
-  }
-}
-trait StopFailure{
-   final def stop: InternalAgentResponse = { 
-      StopFailed("Test failure.",None)
-  }
-}
-trait StartSuccess{
-   final def start: InternalAgentResponse ={  
-    CommandSuccessful()
-  }
-}
-trait StopSuccess{
-   final def stop: InternalAgentResponse  = { 
-    CommandSuccessful()
-  }
-}
-class FailurePropsAgent(protected val requestHandler: ActorRef, protected val dbHandler: ActorRef) extends ScalaInternalAgent with StartFailure with StopFailure{
+class FailurePropsAgent(
+  protected val requestHandler: ActorRef, 
+  protected val dbHandler: ActorRef
+) extends ScalaInternalAgent{
   
   def config = ???
 }
@@ -41,16 +25,36 @@ object FailurePropsAgent extends PropsCreator{
   }
 }
 
-class FFAgent(protected val requestHandler: ActorRef, protected val dbHandler: ActorRef) extends ScalaInternalAgent with StartFailure with StopFailure{
+class FFAgent(
+  protected val requestHandler: ActorRef, 
+  protected val dbHandler: ActorRef
+) extends ScalaInternalAgent {
   def config = ???
+      throw StartFailed("Test failure.",None)
+   final override def stop: InternalAgentResponse = { 
+      throw StopFailed("Test failure.",None)
+  }
 }
-class FSAgent(protected val requestHandler: ActorRef, protected val dbHandler: ActorRef) extends ScalaInternalAgent with StartFailure with StopSuccess{
+class FSAgent(
+  protected val requestHandler: ActorRef, 
+  protected val dbHandler: ActorRef
+) extends ScalaInternalAgent {
   def config = ???
+      throw StartFailed("Test failure.",None)
 }
-class SFAgent(protected val requestHandler: ActorRef, protected val dbHandler: ActorRef) extends ScalaInternalAgent with StartSuccess with StopFailure{
+class SFAgent(
+  protected val requestHandler: ActorRef, 
+  protected val dbHandler: ActorRef
+) extends ScalaInternalAgent {
   def config = ???
+   final override def stop: InternalAgentResponse = { 
+      throw StopFailed("Test failure.",None)
+  }
 }
-class SSAgent(protected val requestHandler: ActorRef, protected val dbHandler: ActorRef) extends ScalaInternalAgent with StartSuccess with StopSuccess{
+class SSAgent(
+  protected val requestHandler: ActorRef, 
+  protected val dbHandler: ActorRef
+) extends ScalaInternalAgent {
   def config = ???
 }
 class WSAgent(_requestHandler: ActorRef, _dbHandler: ActorRef) extends SSAgent(_requestHandler, _dbHandler) with ResponsibleScalaInternalAgent{
@@ -93,7 +97,10 @@ object FSAgent extends PropsCreator{
   }
 }
 
-class CompanionlessAgent(protected val requestHandler: ActorRef, protected val dbHandler: ActorRef) extends ScalaInternalAgent with StartFailure with StopFailure{
+class CompanionlessAgent(
+  protected val requestHandler: ActorRef, 
+  protected val dbHandler: ActorRef
+) extends ScalaInternalAgent {
   def config = ???
 }
 
@@ -110,14 +117,20 @@ object WrongInterfaceAgent {
 
 }
 
-class NotPropsCreatorAgent(protected val requestHandler: ActorRef, protected val dbHandler: ActorRef)  extends ScalaInternalAgent with StartFailure with StopFailure{
+class NotPropsCreatorAgent(
+  protected val requestHandler: ActorRef, 
+  protected val dbHandler: ActorRef
+)  extends ScalaInternalAgent {
   def config = ???
 }
 object NotPropsCreatorAgent {
 
 }
 
-class WrongPropsAgent(protected val requestHandler: ActorRef, protected val dbHandler: ActorRef)  extends ScalaInternalAgent with StartFailure with StopFailure{
+class WrongPropsAgent(
+  protected val requestHandler: ActorRef, 
+  protected val dbHandler: ActorRef
+)  extends ScalaInternalAgent {
   def config = ???
 }
 object WrongPropsAgent extends PropsCreator{
@@ -126,16 +139,26 @@ object WrongPropsAgent extends PropsCreator{
   }
 }
 class TestManager( testAgents: scala.collection.mutable.Map[AgentName, AgentInfo],
-  protected val dbHandler: ActorRef = ActorRef.noSender,
-  protected val requestHandler: ActorRef = ActorRef.noSender
-  ) extends BaseAgentSystem with InternalAgentManager{
+  protected val dbHandler: ActorRef,
+  protected val requestHandler: ActorRef
+  )(implicit system: ActorSystem) extends BaseAgentSystem with InternalAgentManager{
   protected val agents: scala.collection.mutable.Map[AgentName, AgentInfo] = testAgents
+  agents.values.foreach{
+    case ai: AgentInfo => 
+      ai.agent.foreach{
+        ref =>
+         if( ref != ActorRef.noSender ) context.watch( ref)
+      }
+  
+  }
   protected def settings : AgentSystemConfigExtension = ???
   def receive : Actor.Receive = {
+    case nC: NewCLI => sender() ! connectCLI(nC.ip,nC.cliRef )
     case  start: StartAgentCmd  => handleStart( start)
     case  stop: StopAgentCmd  => handleStop( stop)
-    case  restart: ReStartAgentCmd  => handleRestart( restart )
     case ListAgentsCmd() => sender() ! agents.values.toVector
+    case Terminated(agentRef: ActorRef) => 
+      agentStopped(agentRef)
   }
   def getAgents = agents
 }
@@ -145,12 +168,34 @@ class TestManager( testAgents: scala.collection.mutable.Map[AgentName, AgentInfo
  class TestDummyRequestHandler() extends Actor {
     def receive: Actor.Receive = {
       case AgentStopped(name) => 
-      case AgentStarted(name) => 
+      case na: NewAgent =>
     }
  }
  class TestDummyDBHandler() extends Actor {
     def receive: Actor.Receive = {
       case AgentStopped(name) => 
-      case AgentStarted(name) => 
+      case na: NewAgent =>
     }
+ }
+ class TestLoader( testConfig : AgentSystemConfigExtension,
+  protected val dbHandler: ActorRef,
+  protected val requestHandler: ActorRef
+   ) extends BaseAgentSystem with InternalAgentLoader{
+   protected[this] val agents: scala.collection.mutable.Map[AgentName, AgentInfo] = MutableMap.empty
+   override protected[this] val settings = testConfig
+   def receive : Actor.Receive = {
+     case ListAgentsCmd() => sender() ! agents.values.toVector
+     case Terminated(agentRef) => agentStopped(agentRef)
+   }
+ }
+ object TestLoader{
+   def props(
+     testConfig: AgentSystemConfigExtension,
+     dbHandler: ActorRef,
+     requestHandler: ActorRef
+   ): Props = Props({
+    val loader = new TestLoader(testConfig,dbHandler,requestHandler)
+    loader.start()
+    loader
+   })
  }

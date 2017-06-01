@@ -117,11 +117,6 @@ class ResponsibleScalaAgent(
    * from other Actors.
    */
   override  def receive : Actor.Receive = {
-    //Following are inherited from ScalaInternalActor.
-    //Must tell/send return value to sender, ask pattern used.
-    case Start() => sender() ! start 
-    case Restart() => sender() ! restart 
-    case Stop() => sender() ! stop 
     //Following are inherited from ResponsibleScalaInternalActor.
     case write: WriteRequest => respondFuture(handleWrite(write))
     case read: ReadRequest => respondFuture(handleRead(read))

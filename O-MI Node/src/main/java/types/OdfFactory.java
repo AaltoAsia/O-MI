@@ -66,8 +66,36 @@ public class OdfFactory{
   /**
    *
    * @param path Path of O-DF InfoItem.
-   * @param values Values stored in InfoItew.
+   * @param values Values stored in InfoItem.
    * @param description Description of InfoItem.
+   * @param metaData MetaData of InfoItem.
+   * @param typeValue type parameter of InfoItem.
+   * @return OdfInfoItem
+   */
+  public static OdfInfoItem createOdfInfoItem(
+    Path path,
+    Iterable<OdfValue<Object>> values,
+    OdfDescription description,
+    OdfMetaData metaData,
+    String typeValue
+  ){
+    HashMap<String,String> attr = new HashMap<String,String>();
+    return new OdfInfoItem(
+        path,
+        OdfTreeCollection.fromJava(values),
+        scala.Option.apply(description),
+        scala.Option.apply(metaData),
+        scala.Option.apply(typeValue),
+        attr
+        );
+  }
+
+  /**
+   *
+   * @param path Path of O-DF InfoItem.
+   * @param values Values stored in InfoItem.
+   * @param description Description of InfoItem.
+   * @param metaData MetaData of InfoItem.
    * @return OdfInfoItem
    */
   public static OdfInfoItem createOdfInfoItem(
@@ -82,6 +110,7 @@ public class OdfFactory{
         OdfTreeCollection.fromJava(values),
         scala.Option.apply(description),
         scala.Option.apply(metaData),
+        scala.Option.empty(),
         attr
         );
   }
@@ -104,6 +133,7 @@ public class OdfFactory{
         OdfTreeCollection.fromJava(values),
         scala.Option.apply(description),
         scala.Option.empty(),//Look at type of MetaData.
+        scala.Option.empty(),
         attr
         );
   }
@@ -124,6 +154,7 @@ public class OdfFactory{
         OdfTreeCollection.fromJava(values),
         scala.Option.empty(),
         scala.Option.empty(),//Look at type of MetaData.
+        scala.Option.empty(),
         attr
         );
     }
@@ -145,6 +176,7 @@ public class OdfFactory{
         OdfTreeCollection.fromJava(values),
         scala.Option.empty(),
         scala.Option.apply(metaData),//Look at type of MetaData.
+        scala.Option.empty(),
         attr
         );
   }

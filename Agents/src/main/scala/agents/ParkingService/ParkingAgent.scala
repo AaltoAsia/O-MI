@@ -1,11 +1,15 @@
 package agents
+package parkingService
 
 import java.io.File
+import java.sql.Timestamp
+import java.util.Date
 
 import scala.util.{Success, Failure}
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, Future}
 import scala.concurrent.Future._
+import scala.xml.PrettyPrinter
 
 import com.typesafe.config.Config
 
@@ -47,18 +51,13 @@ class ParkingAgent(
   val dbHandler: ActorRef
 ) extends ResponsibleScalaInternalAgent{
   //Execution context
-  def start() ={
-    CommandSuccessful()
-  }
-  def stop() ={
-    CommandSuccessful()
-  }
   import context.dispatcher
+
   //Base path for service, contains at least all method
   val servicePath = Path( config.getString("servicePath"))
 
   //Path to object containing all parking lots.
-  val parkingLotsPath = Path( config.getString("parkingLotsPath"))
+  val parkingLotsPath = Path( config.getString("parkingFacilitiesPath"))
 
   //File used to populate node with initial state
   val startStateFile =  new File(config.getString("initialStateFile"))
@@ -69,13 +68,13 @@ class ParkingAgent(
         val msg = errors.mkString("\n")
         log.warning(s"Odf has errors, $name could not be configured.")
         log.debug(msg)
-        throw new Exception(s"Could not get initial state for $name. State O-DF had following errors: ${errors.mkString("\n")}.")
+        throw ParseError.combineErrors( errors )
       case Right(odf) => odf
     }
   } else if( !startStateFile.exists() ){
-    throw new Exception(s"Could not get initial state for $name. File $startStateFile do not exists.")
+    throw AgentConfigurationException(s"Could not get initial state for $name. File $startStateFile do not exists.")
   } else {
-    throw new Exception(s"Could not get initial state for $name. Could not read file $startStateFile.")
+    throw  AgentConfigurationException(s"Could not get initial state for $name. Could not read file $startStateFile.")
   }
 
   val initialWrite = writeToDB( WriteRequest(initialODF) )
@@ -99,9 +98,9 @@ class ParkingAgent(
       }
   }
   val findParkingPath = servicePath / "FindParking"
-  val positionParameterPath = Path("Objects/Parameters/Destination")
-  val arrivalTimeParameterPath = Path("Objects/Parameters/ArrivalTime")
-  val spotTypeParameterPath = Path("Objects/Parameters/WantedSpotType")
+  val positionParameterPath     = Path("Objects/Parameters/Destination")
+  val arrivalTimeParameterPath  = Path("Objects/Parameters/ArrivalTime")
+  val spotTypeParameterPath     = Path("Objects/Parameters/ParkingUsageType")
 
   override protected def handleCall(call: CallRequest) : Future[ResponseRequest] = {
       val methodInfoItemO = call.odf.get(findParkingPath)
@@ -202,7 +201,6 @@ class ParkingAgent(
         } yield GPSCoordinates( latitude, longitude )
         gpsO
   }
-  case class GPSCoordinates( latitude: Double, longitude: Double )
   case class ParkingParameters(
     destination: GPSCoordinates,
     spotType: String,
@@ -219,7 +217,9 @@ class ParkingAgent(
     val spotTypeParamO: Option[String] =
       objects.get(spotTypeParameterPath ).collect{
         case iI: OdfInfoItem => getStringFromInfoItem(iI)
-      }.flatten
+      }.flatten.map{
+        case typeStr: String => if( typeStr.startsWith("mv:") ) typeStr.drop(3) else typeStr
+      }
     for{
       destination <- positionParamO
       spotType <- spotTypeParamO
@@ -241,21 +241,25 @@ class ParkingAgent(
     )
     results.map{
       case response: ResponseRequest =>
-        //log.debug( "Result from DB:\n " + response.asXML.toString)
+        log.debug( "Result from DB:" )//+ response.asXML.toString)
         val modifiedResponse = ResponseRequest(
           response.results.map{
             case result: OmiResult =>
               result.odf match{
                 case Some( objects: OdfObjects ) => 
+                  log.debug( "Result with ODF found:" )
                   result.copy(
                     odf = objects.get(parkingLotsPath).map{
                       case obj: OdfObject => 
+                        log.debug( s"found $parkingLotsPath" )
+                        val modifiedParkingLots = obj.objects.flatMap{
+                              case o: OdfObject => 
+                                log.debug( s"found parking lot" )
+                                handleParkingLotForCall(o,params)
+                            }
+                        log.debug( s"Found ${modifiedParkingLots.size} parking lots near the destination" )
                         obj.copy(
-                          objects = 
-                        obj.objects.flatMap{
-                          case o: OdfObject => 
-                            handleParkingLotForCall(o,params)
-                        }
+                          objects = modifiedParkingLots 
                         ).createAncestors
                     } 
                   )
@@ -263,7 +267,8 @@ class ParkingAgent(
               }
           }
         )
-        //log.debug( "Modified result:\n " + modifiedResponse.asXML.toString)
+       // val pp = new PrettyPrinter(100, 4)
+        //log.debug( "Modified result:\n " + pp.format(modifiedResponse.asXML.head))
         modifiedResponse
     }.recover{
       case e: Exception => 
@@ -335,22 +340,6 @@ class ParkingAgent(
     }
   }
 
-  /**
-   * Method that is inherited from akka.actor.Actor and handles incoming messages
-   * from other Actors.
-   */
-  override  def receive : Actor.Receive = {
-    //Following are inherited from ScalaInternalActor.
-    //Must tell/send return value to sender, ask pattern used.
-    case Start() => sender() ! start 
-    case Restart() => sender() ! restart 
-    case Stop() => sender() ! stop 
-    //Following are inherited from ResponsibleScalaInternalActor.
-    case write: WriteRequest => respondFuture(handleWrite(write))
-    case read: ReadRequest => respondFuture(handleRead(read))
-    case call: CallRequest => respondFuture(handleCall(call))
-  }
-
   def positionCheck( destination: GPSCoordinates, lotsPosition: GPSCoordinates ) : Boolean = true 
   def handleParkingLotForCall( obj: OdfObject, param: ParkingParameters ): Option[OdfObject] ={
     val positionO: Option[GPSCoordinates] = obj.get( obj.path / "geo" ).collect{
@@ -358,13 +347,19 @@ class ParkingAgent(
     }.flatten
     positionO.flatMap{
       case position: GPSCoordinates => 
+        log.debug( s"Got location of parking lot" )
         if( positionCheck( param.destination, position) ){
-          val newSTs: Option[OdfObject] = obj.get(obj.path / "SpotTypes" ).flatMap{
+          log.debug( s"Parking lot is near" )
+          val newSTs: Option[OdfObject] = obj.get(obj.path / "ParkingSpaceTypes" ).flatMap{
             case spotTypesList : OdfObject =>
+              log.debug( s"Got ParkingSpaceTypes. Finding ${param.spotType}..." )
               val rightTypes = spotTypesList.get( spotTypesList.path / param.spotType ).collect{
-                case o: OdfObject => o 
+                case o: OdfObject => 
+                  log.debug( s"Got ${param.spotType}" )
+                  o
               }.toVector
               if( rightTypes.nonEmpty ){
+                log.debug( s"Modifying ParkingSpaceTypes to contain only ${param.spotType}" )
                 Some(
                   spotTypesList.copy(
                     objects = rightTypes
@@ -374,85 +369,16 @@ class ParkingAgent(
           }
           newSTs.map{
             case nSTs: OdfObject =>
+            log.debug( s"Modifying parking lot to contain new ParkingSpaceTypes" )
             obj.copy(
               objects = obj.objects.filter{
-                case o: OdfObject => o.path.last != "SpotTypes"
+                case o: OdfObject => o.path.last != "ParkingSpaceTypes"
               } ++ Vector(nSTs)
             )
           }
         } else None
     }
   }
-
-  /*
-    case class ParkingSpot(
-      name: String,
-      available: Option[String],
-      user: Option[String],
-    )
-    case class ParkingSpotType(
-      spotsTotal: Int,
-      spotsAvailable: Int,
-      hourlyPrice: String,
-      maxHeight: String,
-      maxWitdh: String
-    )
-    case class ParkingLot(
-      name: String,
-      owner: String,
-      geo: GPSCoordinates,
-      openingTime: String,
-      closingTime: String,
-      spotTypes: Seq[ParkingSpotType]
-    )
-    def extractValueFromInfoItem( iio: Option[OdfInfoItem] ): Option[String] = {
-      iio.flatMap{ 
-        case ii: OdfInfoItem =>
-          ii.value.headOption{
-            value => value.value.toString
-          }
-      }
-
-    }
-    def createPosition( obj: OdfObject ) : Position = {
-
-      val iiMap = obj.infoItems.map{ ii => ii.path.last -> ii }.toMap
-
-      val long = extractValueFromInfoItem(iiMap.get("Longitude")) 
-      val lati = extractValueFromInfoItem(iiMap.get("Latitude"))
-      val addr = extractValueFromInfoItem(iiMap.get("Address"))
-      if( long.isEmpty ){
-        throw new Exception("No longitude found for Position")
-      } else if( lati.isEmpty ){
-        throw new Exception("No latitude found for Position")
-      } else {
-        Position( 
-          addr,
-          long,
-          lati
-        )
-      }
-    }
-
-    def createParkingSpot( obj: OdfObject ) : ParkingSpot = {
-
-      val iiMap = obj.infoItems.map{ ii => ii.path.last -> ii }.toMap
-
-      val available = extractValueFromInfoItem(iiMap.get("Available"))
-      val user = extractValueFromInfoItem(iiMap.get("User"))
-      val spotType = extractValueFromInfoItem(iiMap.get("SpotType"))
-      if( long.isEmpty ){
-        throw new Exception("No longitude found for Position")
-      } else if( lati.isEmpty ){
-        throw new Exception("No latitude found for Position")
-      } else {
-        Position( 
-          addr,
-          long,
-          lati
-        )
-      }
-      */
 }
 
 

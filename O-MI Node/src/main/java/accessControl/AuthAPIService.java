@@ -49,14 +49,15 @@ import java.util.Iterator;
 public class AuthAPIService implements AuthApi {
 
     //TODO Settable
-    private final boolean useHTTPS = false;
-    private final int authServicePort = 80;
-    private final String authServiceURIScheme = useHTTPS ? "https://" : "http://";
-    private final String mainURI = useHTTPS ? "localhost" : "localhost:"+authServicePort;
-    private final String authServiceURI = authServiceURIScheme + mainURI + "/omi/auth0/permissions";
+    private String authServiceURI;// = authServiceURIScheme + mainURI + "/omi/auth0/permissions";
 
     private final Logger logger = LoggerFactory.getLogger(AuthAPIService.class);
 
+    public AuthAPIService(boolean useHTTPS, int authServicePort) {
+        String authServiceURIScheme = useHTTPS ? "https://" : "http://";
+        String mainURI = useHTTPS ? "localhost" : "localhost:"+authServicePort;
+        this.authServiceURI = authServiceURIScheme + mainURI + "/omi/auth0/permissions";;
+    }
 
     static {
         //for localhost testing only

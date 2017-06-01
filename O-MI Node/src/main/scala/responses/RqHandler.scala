@@ -39,72 +39,71 @@ import agentSystem.AgentName
 import agentSystem.AgentEvents._
 
 object RequestHandler{
-def props(
-subscriptionManager : ActorRef,
-dbHandler : ActorRef,
-settings: OmiConfigExtension,
-analyticsStore: Option[ActorRef]
-) = Props( 
- new RequestHandler(
-   subscriptionManager,
-   dbHandler,
-   settings,
-   analyticsStore
- )
-)
+  def props(
+    subscriptionManager : ActorRef,
+    dbHandler : ActorRef,
+    settings: OmiConfigExtension,
+    analyticsStore: Option[ActorRef]
+    ) = Props( 
+      new RequestHandler(
+        subscriptionManager,
+        dbHandler,
+        settings,
+        analyticsStore
+      )
+    )
 
 }
 
 class RequestHandler(
-protected val subscriptionManager : ActorRef,
-protected val dbHandler : ActorRef,
-protected val settings: OmiConfigExtension,
-protected val analyticsStore: Option[ActorRef]
+  protected val subscriptionManager : ActorRef,
+  protected val dbHandler : ActorRef,
+  protected val settings: OmiConfigExtension,
+  protected val analyticsStore: Option[ActorRef]
 ) extends Actor with ActorLogging
 with SubscriptionHandler
 with PollHandler
 with CancelHandler
 {
-import context.dispatcher
-case class AgentInformation( agentName: AgentName, running: Boolean, actorRef: ActorRef)
-private val agentResponsibilities: AgentResponsibilities = new AgentResponsibilities()
-private val agents: MutableMap[AgentName,AgentInformation] = MutableMap.empty
-def receive = {
-  case read: ReadRequest => respond( handleReadRequest( read ))
-  case write: WriteRequest => respond( handleWriteRequest( write ))
-  case call: CallRequest => respond( handleCallRequest( call ))
-  case response: ResponseRequest => respond(handleResponse(response)) 
-  case omiRequest: OmiRequest => respond(handleNonOdfRequest( omiRequest ))
-  case na: NewAgent => addAgent(na)
-  case na: AgentStopped => agentStopped(na.agentName)
-  case na: AgentStarted => agentStarted(na.agentName)
-
-}
-
-def handleReadRequest( read: ReadRequest) : Future[ResponseRequest] = {
-  implicit val to = Timeout(read.handleTTL)
-  log.debug("ReqeustHandler sending read to DBHandler.")
-  val responseFuture = (dbHandler ? read).mapTo[ResponseRequest] 
-  responseFuture.onComplete{
-    case Failure(t) =>
-    log.debug(s"ReqeustHandler failed to receive response from DBHandler: $t")
-    case Success(response) =>
-    log.debug(s"ReqeustHandler received successfully response from DBHandler.")
+  import context.dispatcher
+  case class AgentInformation( agentName: AgentName, running: Boolean, actorRef: ActorRef)
+  private val agentResponsibilities: AgentResponsibilities = new AgentResponsibilities()
+  private val agents: MutableMap[AgentName,AgentInformation] = MutableMap.empty
+  def receive = {
+    case read: ReadRequest => respond( handleReadRequest( read ))
+    case write: WriteRequest => respond( handleWriteRequest( write ))
+    case call: CallRequest => respond( handleCallRequest( call ))
+    case response: ResponseRequest => respond(handleResponse(response)) 
+    case omiRequest: OmiRequest => respond(handleNonOdfRequest( omiRequest ))
+    case na: NewAgent => addAgent(na)
+    case na: AgentStopped => agentStopped(na.agentName)
   }
-  responseFuture
-}
-def handleWriteRequest( write: WriteRequest) : Future[ResponseRequest] = {
-  log.info(s"ReqeustHandler handling OdfRequest...")
+
+  def handleReadRequest( read: ReadRequest) : Future[ResponseRequest] = {
+    implicit val to = Timeout(read.handleTTL)
+    log.debug("ReqeustHandler sending read to DBHandler.")
+    val responseFuture = (dbHandler ? read).mapTo[ResponseRequest] 
+    responseFuture.onComplete{
+      case Failure(t) =>
+        log.debug(s"ReqeustHandler failed to receive response from DBHandler: $t")
+      case Success(response) =>
+        log.debug(s"ReqeustHandler received successfully response from DBHandler.")
+    }
+    responseFuture
+  }
+
+  def handleWriteRequest( write: WriteRequest) : Future[ResponseRequest] = {
+    log.info(s"ReqeustHandler handling OdfRequest...")
     val responsibleToRequest = agentResponsibilities.splitRequestToResponsible( write )
     val fSeq = Future.sequence(
       responsibleToRequest.map{
         case (None, subrequest) =>  
           implicit val to = Timeout(subrequest.handleTTL)
           log.info(s"Asking DBHandler to handle request parts that are not owned by an Agent.")
-            (dbHandler ? subrequest).mapTo[ResponseRequest]
-          case (Some(agentName), subrequest) => 
-            log.info(s"Asking responsible Agent $agentName to handle part of request.")
-            askAgent(agentName,subrequest)
+          (dbHandler ? subrequest).mapTo[ResponseRequest]
+        case (Some(agentName), subrequest) => 
+          log.info(s"Asking responsible Agent $agentName to handle part of request.")
+          askAgent(agentName,subrequest)
           }.map{
             case future: Future[ResponseRequest] =>
               future.recover{
@@ -113,33 +112,33 @@ def handleWriteRequest( write: WriteRequest) : Future[ResponseRequest] = {
                   Responses.InternalError(e)
               }
           }
+          )
+    fSeq.map{
+      case responses =>
+        val results = responses.flatMap{
+          case response => response.results
+        }
+        ResponseRequest(
+          Results.unionReduce(results.toVector)
         )
-      fSeq.map{
-          case responses =>
-            val results = responses.flatMap{
-                case response => response.results
-              }
-              ResponseRequest(
-                Results.unionReduce(results.toVector)
-              )
-          }
-  
+    }
+
   }
-def handleCallRequest( call: CallRequest) : Future[ResponseRequest] = {
-  log.info(s"ReqeustHandler handling OdfRequest...")
+  def handleCallRequest( call: CallRequest) : Future[ResponseRequest] = {
+    log.info(s"ReqeustHandler handling OdfRequest...")
     val responsibleToRequest = agentResponsibilities.splitRequestToResponsible( call )
     val fSeq = Future.sequence(
       responsibleToRequest.map{
         case (None, subrequest) =>  
-          log.debug( "Call for serviceless path", subrequest.odf.asXML.toString)
+          //log.debug( "Call for serviceless path", subrequest.odf.asXML.toString)
           Future.successful{
-              Responses.NotFound(
-                "Call request for path that do not have responsible agent for service.")
-              
+            Responses.NotFound(
+              "Call request for path that do not have responsible agent for service.")
+
           }
-          case (Some(agentName), subrequest) => 
-            log.info(s"Asking responsible Agent $agentName to handle part of request.")
-            askAgent(agentName,subrequest)
+        case (Some(agentName), subrequest) => 
+          log.info(s"Asking responsible Agent $agentName to handle part of request.")
+          askAgent(agentName,subrequest)
           }.map{
             case future: Future[ResponseRequest] =>
               future.recover{
@@ -147,46 +146,40 @@ def handleCallRequest( call: CallRequest) : Future[ResponseRequest] = {
                   Responses.InternalError(e)
               }
           }
+          )
+    fSeq.map{
+      case responses =>
+        val results = responses.flatMap{
+          case response => response.results
+        }
+        ResponseRequest(
+          Results.unionReduce(results.toVector)
         )
-      fSeq.map{
-          case responses =>
-            val results = responses.flatMap{
-                case response => response.results
-              }
-              ResponseRequest(
-                Results.unionReduce(results.toVector)
-              )
-          }
-  
+    }
+
   }
 
   def handleResponse( response: ResponseRequest ): Future[ResponseRequest] ={
     handleNonOdfRequest(response.odfResultsToSingleWrite)
   }
   def handleNonOdfRequest( omiRequest: OmiRequest): Future[ResponseRequest] = {
-     omiRequest match {
-       case subscription: SubscriptionRequest => handleSubscription(subscription)
-       case poll: PollRequest => handlePoll(poll)
-       case cancel: CancelRequest => handleCancel(cancel)
-     }
+    omiRequest match {
+      case subscription: SubscriptionRequest => handleSubscription(subscription)
+      case poll: PollRequest => handlePoll(poll)
+      case cancel: CancelRequest => handleCancel(cancel)
+    }
   }
 
   private def addAgent( newAgent: NewAgent) = {
     agentResponsibilities.add(newAgent.responsibilities)
     agents += (newAgent.agentName -> AgentInformation( newAgent.agentName, true, newAgent.actorRef))
   }
+
   private def agentStopped( agentName: AgentName ) ={
-    agents.get(agentName).foreach{
-      case ai: AgentInformation =>
-        agents.update(agentName, ai.copy(running = false) )
-    }
+    agents -= agentName
+    agentResponsibilities.removeAgent(agentName)
   }
-  private def agentStarted( agentName: AgentName ) ={
-    agents.get(agentName).foreach{
-      case ai: AgentInformation =>
-        agents.update(agentName, ai.copy(running = true) )
-    }
-  }
+
   private def askAgent( agentName: AgentName, request: OmiRequest ): Future[ResponseRequest]={
     agents.get(agentName) match {
       case Some( ai: AgentInformation) if ai.running  =>  
@@ -226,9 +219,9 @@ def handleCallRequest( call: CallRequest) : Future[ResponseRequest] = {
     futureResponse.recover{
       case e: Exception =>
         Responses.InternalError(e)
-    }.map{
-      response => 
-        senderRef ! response
-    }
+        }.map{
+          response => 
+            senderRef ! response
+        }
   }
 }

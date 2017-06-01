@@ -29,6 +29,7 @@ import parsing.xmlGen.scalaxb.DataRecord
 import parsing.xmlGen.xmlTypes._
 import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 import types.OdfTypes._
+import types.OdfTypes.{QlmID => OdfQlmID}
 import types.OmiTypes.UserInfo
 import types._
 
@@ -175,6 +176,7 @@ private[this] def parseInfoItem(requestProcessTime: Timestamp, item: InfoItemTyp
           }
         )
     }.headOption,
+    item.typeValue,
     parseAttributes( item.attributes - "@name" )
   ) 
 }
@@ -252,8 +254,8 @@ private[this] def timeSolver(value: ValueType, requestProcessTime: Timestamp) = 
   case Some(cal) => 
     new Timestamp(cal.toGregorianCalendar().getTimeInMillis())
 }
-private[this] def parseQlmID( qlmIdType: QlmIDType): QlmID ={
-  QlmID(
+private[this] def parseQlmID( qlmIdType: QlmIDType): OdfQlmID ={
+  OdfQlmID(
     qlmIdType.value,
     qlmIdType.idType,
     qlmIdType.tagType,
