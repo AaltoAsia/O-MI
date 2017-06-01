@@ -61,7 +61,10 @@ public class ResponsibleJavaAgent extends JavaAgent implements ResponsibleIntern
   }
   
   // Constructor
-  public ResponsibleJavaAgent(Config conf, final ActorRef requestHandler, final ActorRef dbHandler) {
+  public ResponsibleJavaAgent(
+      Config conf,
+      final ActorRef requestHandler, 
+      final ActorRef dbHandler) {
     super(conf, requestHandler, dbHandler);
   }
 
@@ -114,7 +117,7 @@ public class ResponsibleJavaAgent extends JavaAgent implements ResponsibleIntern
    * from other Actors.
    */
   @Override
-  public void onReceive(Object message) throws StartFailed, CommandFailed {
+  public void onReceive(Object message){
     if( message instanceof WriteRequest ){
       WriteRequest write = (WriteRequest) message;
       respondFuture(handleWrite(write));

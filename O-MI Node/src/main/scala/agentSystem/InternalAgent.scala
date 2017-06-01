@@ -44,6 +44,8 @@ case class CommandSuccessful() extends InternalAgentSuccess
 
 
 class InternalAgentFailure(msg : String, exp : Option[Throwable] )  extends  Exception(msg, exp.getOrElse(null)) with InternalAgentResponse
+class InternalAgentConfigurationFailure( msg: String, exp: Option[Throwable] ) extends InternalAgentFailure( msg, exp )
+
 class CommandFailed(msg : String, exp : Option[Throwable] ) extends InternalAgentFailure(msg, exp) 
 case class StopFailed(msg : String, exp : Option[Throwable] ) extends CommandFailed(msg, exp) 
 case class StartFailed(msg : String, exp : Option[Throwable] ) extends CommandFailed(msg, exp) 

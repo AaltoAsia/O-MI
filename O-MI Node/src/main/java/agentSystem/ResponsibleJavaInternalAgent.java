@@ -43,7 +43,7 @@ public abstract class ResponsibleJavaInternalAgent extends JavaInternalAgent imp
 
   //public abstract void handleCall(CallRequest call);
   @Override
-  public void onReceive(Object message) throws StartFailed, CommandFailed {
+  public void onReceive(Object message) {
     if( message instanceof WriteRequest ){
       WriteRequest write = (WriteRequest) message;
       respondFuture(handleWrite(write));

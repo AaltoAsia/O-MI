@@ -137,7 +137,6 @@ class ScalaAgent(
     // Create O-MI write request
     // interval as time to live
     val write : WriteRequest = WriteRequest( objects, None, interval )
-    log.info(s"$name writing:\n $write")
 
     // Execute the request, execution is asynchronous (will not block)
     val result : Future[ResponseRequest] = writeToDB(write) 

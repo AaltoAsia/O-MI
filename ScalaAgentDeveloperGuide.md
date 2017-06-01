@@ -207,10 +207,10 @@ Lines to add for our example:
 
 ```
     {
-      name = "ScalaRAgent" 
+      name = "ScalaAgent" 
       class = "agents.ScalaAgent"
       language = "scala"
-      path = "Objects/SAgent/sensor"
+      path = "Objects/ScalaAgent/sensor"
       interval = 60 seconds
     }
 ```
