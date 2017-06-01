@@ -21,15 +21,20 @@ import akka.http.scaladsl.model.headers.HttpCookiePair;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.google.gson.JsonElement;
+
 import http.*;
+import jdk.nashorn.internal.parser.JSONParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import parsing.xmlGen.odf.*;
+import parsing.xmlGen.omi.MsgType;
 import parsing.xmlGen.omi.ObjectFactory;
-import parsing.xmlGen.omi.OmiEnvelope;
-import parsing.xmlGen.omi.WriteRequest;
+import parsing.xmlGen.omi.OmiEnvelopeType;
+import parsing.xmlGen.omi.WriteRequestType;
 import types.OmiTypes.OmiRequest;
 import types.Path;
+import types.OmiTypes.UserInfo;
 
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.Marshaller;
@@ -44,16 +49,15 @@ import java.util.Iterator;
 public class AuthAPIService implements AuthApi {
 
     //TODO Settable
-    private final boolean useHTTPS = false;
-    private final int authServicePort = 8088;
-    private final String authServiceURIScheme = useHTTPS ? "https://" : "http://";
-    private final String mainURI = useHTTPS ? "localhost" : "localhost:"+authServicePort;
-    //private final String authServiceURI = authServiceURIScheme + mainURI + "/omi/auth0/permissions";
-    private final String authServiceURI = authServiceURIScheme + mainURI + "/security/PermissionService";
-
+    private String authServiceURI;
 
     private final Logger logger = LoggerFactory.getLogger(AuthAPIService.class);
 
+    public AuthAPIService(boolean useHTTPS, int authServicePort) {
+        String authServiceURIScheme = useHTTPS ? "https://" : "http://";
+        String mainURI = useHTTPS ? "localhost" : "localhost:"+authServicePort;
+        this.authServiceURI = authServiceURIScheme + mainURI + "/omi/auth0/permissions";;
+    }
 
     static {
         //for localhost testing only
@@ -153,19 +157,19 @@ public class AuthAPIService implements AuthApi {
                     logger.debug("Root tree requested. forwarding to Partial API.");
 
                     //Getting paths according to the policies
-                    ArrayList<Path> res_paths = getAvailablePaths(subjectInfo, success);
+                    ArrayList<Path> res_paths = getAvailablePaths(subjectInfo, success); //////////////////////////////
 
                     if (res_paths == null)
-                        return Unauthorized.instance();
+                        return new Unauthorized(new UserInfo(UserInfo.apply$default$1(), UserInfo.apply$default$2())); // UserInfo
 
                     // Check if security module return "all" means allowing all tree (administrator mode or read_all mode)
                     if (res_paths.size() == 1) {
                         String obj_path = res_paths.get(0).toString();
                         if (obj_path.equalsIgnoreCase("all"))
-                            return Authorized.instance();
+                            return new Authorized(new UserInfo(UserInfo.apply$default$1(), UserInfo.apply$default$2()));
                     }
 
-                    return new Partial(res_paths);
+                    return new Partial(res_paths, new UserInfo(UserInfo.apply$default$1(),UserInfo.apply$default$2()));
                 } else
                     break;
             }
@@ -177,7 +181,7 @@ public class AuthAPIService implements AuthApi {
 
                 // the very first query to read the tree
                 if (nextObj.equalsIgnoreCase("Objects"))
-                    return Authorized.instance();
+                    return new Authorized(new UserInfo(UserInfo.apply$default$1(), UserInfo.apply$default$2()));
 
                 requestBody += "\"" + nextObj + "\"";
 
@@ -193,9 +197,9 @@ public class AuthAPIService implements AuthApi {
             logger.debug("isWrite:" + isWrite);
             logger.debug("Paths:" + requestBody);
 
-            return sendPermissionRequest(isWrite, requestBody, subjectInfo, success);
+            return sendPermissionRequest(isWrite, requestBody, subjectInfo, success); ////////////////////////////////
         } else {
-            return Unauthorized.instance();
+            return new Unauthorized(new UserInfo(UserInfo.apply$default$1(), UserInfo.apply$default$2()));
         }
     }
 
@@ -203,17 +207,17 @@ public class AuthAPIService implements AuthApi {
         ObjectFactory omiObjFactory = new ObjectFactory();
         parsing.xmlGen.odf.ObjectFactory odfObjFactory = new parsing.xmlGen.odf.ObjectFactory();
 
-        OmiEnvelope envelope = omiObjFactory.createOmiEnvelope();
-        envelope.setTtl(0);
+        OmiEnvelopeType envelope = omiObjFactory.createOmiEnvelopeType();
+        envelope.setTtl("0");
         envelope.setVersion("1.0");
 
-        WriteRequest writeReq = omiObjFactory.createWriteRequest();
+        WriteRequestType writeReq = omiObjFactory.createWriteRequestType();
         writeReq.setMsgformat("odf");
 
         ObjectsType allObjects = odfObjFactory.createObjectsType();
 
         ObjectType authObj = odfObjFactory.createObjectType();
-        QlmID authID = odfObjFactory.createQlmID();
+        QlmIDType authID = odfObjFactory.createQlmIDType();
         authID.setValue("AuthorizationRequest");
 
 
@@ -245,8 +249,11 @@ public class AuthAPIService implements AuthApi {
 
         allObjects.getObject().add(authObj);
 
+        MsgType msg = new MsgType();
+        msg.getContent().addAll(allObjects.getObject());
+
         // Write request
-        writeReq.setMsg(allObjects);
+        writeReq.setMsg(msg);
 
         // Envelope
         envelope.setWrite(writeReq);
@@ -473,10 +480,26 @@ public class AuthAPIService implements AuthApi {
 
             logger.debug("RESPONSE:"+response.toString());
 
-            return response.toString().equalsIgnoreCase("true") ? Authorized.instance() : Unauthorized.instance();
+            if (response.toString().equals("false")) {
+                return new Unauthorized(new UserInfo(UserInfo.apply$default$1(), UserInfo.apply$default$2()));
+            }
+
+            JsonObject responseObject = new JsonParser().parse(response.toString()).getAsJsonObject();//response.toString(); //reuse variable
+            String isAuthenticated = responseObject.get("result").getAsString();
+            String userName = responseObject.get("userID").getAsString();
+            return isAuthenticated.equalsIgnoreCase("ok") ?
+                    new Authorized(
+                            new UserInfo(
+                                    UserInfo.apply$default$1(),
+                                    scala.Option.apply(userName)))
+                    :
+                    new Unauthorized(
+                            new UserInfo(
+                                    UserInfo.apply$default$1(),
+                                    scala.Option.apply(userName)));
         } catch (Exception e) {
             logger.error("During http request", e);
-            return Unauthorized.instance();
+            return new Unauthorized(new UserInfo(UserInfo.apply$default$1(), UserInfo.apply$default$2()));
         } finally {
             if(connection != null) {
                 connection.disconnect();

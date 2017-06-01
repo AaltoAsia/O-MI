@@ -32,7 +32,7 @@ Resources
 Dependencies
 ------------
 * Java 1.8
-* For building: SBT`>=0.13.9` or SBT enabled IDE
+* For building: sbt http://www.scala-sbt.org/ or sbt enabled IDE
 
 Running
 -------
@@ -58,14 +58,15 @@ Compiling and packaging
 See [SBT Universal Plugin](http://www.scala-sbt.org/sbt-native-packager/formats/universal.html)
 for more packaging methods.
 
-<!---
-Currently not supported
-## Compiling a jar
+<!--- Currently not supported
+  Compiling a jar
+  ---------------
 
-1. Follow the instructions 1-4 in [Setup development environment](#setup-development-environment) below
-2. `sbt one-jar`
-3. Result can be found in `./target/scala-2.11/o-mi-node_2.11-0.1-SNAPSHOT-one-jar.jar`
--->
+  1. Follow the instructions 1-4 in [Setup development environment](#setup-development-environment) below
+  2. `sbt one-jar`
+  3. Result can be found in `./target/scala-2.11/o-mi-node_2.11-0.1-SNAPSHOT-one-jar.jar`
+
+--->
 
 Setup development environment
 -----------------------------
@@ -74,25 +75,48 @@ Setup development environment
 2. [Install sbt](http://www.scala-sbt.org/0.13/tutorial/Setup.html)
 3. (windows: logout, or put sbt into PATH yourself)
 4. Open a cmd or shell to the `O-MI` project directory
-5. You can (_optional step_)
-    - `sbt run`: run the project or better:
-    - `sbt` and then
-        - `re-start`: run the project in background (faster restart and sometimes works better than sbt run)
-        - `re-stop`: close the background process
-    - `sbt compile`: just compile the project
-    - `sbt stage`: creates file structure used in packaged version to the `./target/universal/stage/` directory
-    - `sbt release`: create release tar and zip packages
-    - `sbt debian:packageBin`: create release debian package (requires `dpkg`)
-    - `sbt doc`: compile api documentation
-    - `sbt test`: run tests
-    - `sbt systemTest`: run only system tests (the used requests and responses can be found in `ImplementationDetails.html`)
-    - `sbt clean coverage test coverageReport`: calculate test coverage and generate reports in `O-MI Node/target/scala-2.11/scoverage-report/`
-    - _extra info:_
-    - run any of above commands again when there is a file change by adding `~` in front, like `sbt ~re-start`
-    - all commands above compiles the needed files that are not yet compiled
-    - run many commands in sequence easier if you open sbt command line with `sbt`
+5. Then run `sbt re-start` to compile and run the Node
+6. Visit http://localhost:8080/ to see that it's working
+7. (_optional step_) Create an Eclipse IDE project
+  a. Run `sbt eclipse`
+  b. Open Eclipse IDE
+  c. Select File->import `Existing Projects into Workspace`.
 
-6. (_optional step_) Create an Eclipse project with `sbt eclipse` and then you can File->import `Existing Projects into Workspace` from eclipse.
+You can check the next section to learn more
+
+Simple Build Tool cheat sheet 
+-----------------------------
+
+Native SBT commands
+
+- `sbt compile`: just compile the project
+- `sbt clean`: remove compiled and temporary files
+- `sbt run`: run the project; We don't use this much, so sometimes it's broken and we don't even notice. We use `re-start` from Revolver which allows us to recompile and restart the node without exiting sbt, because restarting sbt takes unnecessary extra time.
+- `sbt doc`: compile api documentation
+- `sbt test`: run all tests
+
+Extra commands from plugins and other
+
+- We use sbt-revolver: run `sbt` and then write
+    - `re-start`: compile&run the project in background
+    - `re-stop`: close the background process
+- We use sbt-native-packager:
+    - `sbt stage`: creates file structure, used in packaged version, to the `./target/universal/stage/` directory
+    - `sbt debian:packageBin`: create release debian package (requires `dpkg` program installed)
+    - See native packager docs for configuring other packages. Our sbt configuration is in ./build.sbt.
+- We use sbt-scoverage:
+    - `sbt clean coverage test coverageReport`: calculate test coverage and generate reports in `O-MI Node/target/scala-2.11/scoverage-report/`   
+- We also have some extra commands for convenience:
+    - `sbt systemTest`: run only system tests (the used requests and responses can be found in `ImplementationDetails.html`)
+    - `sbt release`: create release tar and zip packages
+    
+_extra info:_
+
+- automatically run any of above commands when there is a file change by adding `~` in front, like `sbt ~re-start`
+- all commands above compiles the needed files that are not yet compiled
+- run many commands in sequence faster if you open a single sbt command line with `sbt`
+
+
 
 
 Configuration

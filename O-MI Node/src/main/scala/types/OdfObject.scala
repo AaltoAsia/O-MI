@@ -14,11 +14,13 @@
 package types
 package OdfTypes
 
+import java.sql.Timestamp
 import java.lang.{Iterable => JavaIterable}
 import javax.xml.datatype.{DatatypeConstants => XMLConst}
 
 import scala.collection.immutable.HashMap
 
+import parsing.xmlGen.scalaxb.DataRecord
 import parsing.xmlGen.xmlTypes._
 import types.OdfTypes.OdfTreeCollection._
 
@@ -29,7 +31,8 @@ class  OdfObjectImpl(
   infoItems:            OdfTreeCollection[OdfInfoItem],
   objects:              OdfTreeCollection[OdfObject],
   description:          Option[OdfDescription] = None,
-  typeValue:            Option[String] = None
+  typeValue:            Option[String] = None,
+  attributes:           Map[String,String] = HashMap.empty
 ) extends Serializable {
   require(path.length > 1,
     s"OdfObject should have longer than one segment path (use OdfObjects for <Objects>): Path($path)")
@@ -42,33 +45,43 @@ class  OdfObjectImpl(
     val thatInfo: HashMap[Path, OdfInfoItem] = HashMap(another.infoItems.map(ii => (ii.path, ii)): _*)
     val thisObj: HashMap[Path, OdfObject] = HashMap(objects.map(o => (o.path, o)): _*)
     val thatObj: HashMap[Path, OdfObject] = HashMap(another.objects.map(o => (o.path, o)): _*)
-    OdfObject(
-      (id ++ another.id).groupBy(_.value).values.collect {
-        case Seq(single) => single
-        case Seq(QlmID(valueA, idTypeA, tagTypeA, startDateA, endDateA, attrA),
-        QlmID(valueB, idTypeB, tagTypeB, startDateB, endDateB, attrB)) =>
-          QlmID(valueB, idTypeB orElse idTypeA, tagTypeB orElse tagTypeA,
-            unionOption(startDateB, startDateA) { case (b, a) =>
-              a compare b match {
-                case XMLConst.LESSER => a // a < b
-                case _ => b
-              }
-            },
-            unionOption(endDateB, endDateA) { case (b, a) =>
-              a compare b match {
-                case XMLConst.GREATER => a // a > b
-                case _ => b
+    val tmp: OdfTreeCollection[QlmID] = id
+    val tmp2: OdfTreeCollection[QlmID] = another.id
+    val idsWithDuplicate: Vector[QlmID] = (this.id.toVector ++ another.id.toVector)
+    val ids: Seq[QlmID]  = idsWithDuplicate.groupBy{ 
+      case qlmId: QlmID => qlmId.value 
+    }.values.collect{
+        case Seq(single: QlmID) => Seq(single)
+        case Seq( id: QlmID, otherId: QlmID) => 
+          if( id.unionable(otherId) ){
+            Seq(id.union(otherId))
+          } else Seq[QlmID](id, otherId )
+    }.toSeq.flatten
 
-              }
-            },
-            attrA ++ attrB
-          )
-      },
-      path,
+    OdfObject(
+      ids,
+        //case Seq(QlmIDType(valueA, attributesA), QlmIDType(valueB, attributesB)) => //idTypeB, tagTypeB, startDateB, endDateB, attrB)) =>
+          //QlmIDType(valueB, attributesA ++ attributesB)},//,
+  //          unionOption(startDateB, startDateA) { case (b, a) =>
+  //            a compare b match {
+  //              case XMLConst.LESSER => a // a < b
+  //              case _ => b
+  //            }
+  //          },
+  //          unionOption(endDateB, endDateA) { case (b, a) =>
+  //            a compare b match {
+  //              case XMLConst.GREATER => a // a > b
+  //              case _ => b
+
+  //            }
+  //          },
+  //          attrA ++ attrB
+            path,
       thisInfo.merged(thatInfo) { case ((k1, v1), (_, v2)) => (k1, v1.combine(v2)) }.values,
       thisObj.merged(thatObj) { case ((k1, v1), (_, v2)) => (k1, v1.combine(v2)) }.values,
       another.description orElse description,
-      another.typeValue orElse typeValue
+      another.typeValue orElse typeValue,
+      this.attributes ++ another.attributes
     )
   }
 
@@ -99,7 +112,9 @@ class  OdfObjectImpl(
               path,
               last.values,
               last.description.fold(last.description)(n => head.description),
-              last.metaData.fold(last.metaData)(n => head.metaData)
+              last.metaData.fold(last.metaData)(n => head.metaData),
+              last.typeValue.orElse(head.typeValue),
+              head.attributes ++ last.attributes 
               ) //use metadata and description from hierarchytree
           } yield infoI
     }
@@ -125,7 +140,8 @@ class  OdfObjectImpl(
           sharedObjsOut,
           //get description only if another has it too
           another.description.fold(another.description)(n => description),
-          typeValue
+          another.typeValue orElse typeValue,
+          attributes ++ another.attributes 
         )
       )
     }
@@ -231,18 +247,18 @@ class  OdfObjectImpl(
       /*Seq( QlmID(
         path.last, // require checks (also in OdfObject)
         attributes = Map.empty
-      )),*/id, //
-      description.map( des => des.asDescription ),
+      )),*/
+      id.map(_.asQlmIDType), //
+      description.map( des => des.asDescription ).toSeq,
       infoItems.map{ 
         info: OdfInfoItem =>
         info.asInfoItemType
       }.toSeq,
-      Object = objects.map{ 
+      ObjectValue = objects.map{
         subobj: OdfObject =>
         subobj.asObjectType
       }.toSeq,
-      typeValue,
-      Map.empty
+      attributes = Map.empty[String, DataRecord[Any]] ++  typeValue.map{ n => ("@type" -> DataRecord(n))} ++ attributesToDataRecord( this.attributes )
     )
   }
 }

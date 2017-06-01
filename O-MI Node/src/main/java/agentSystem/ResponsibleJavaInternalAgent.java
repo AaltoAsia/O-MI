@@ -16,15 +16,51 @@ import com.typesafe.config.Config;
 import scala.concurrent.Future;
 import scala.concurrent.ExecutionContext;
 
-import agentSystem.ResponsibilityRequest;
 import types.OmiTypes.WriteRequest;
+import types.OmiTypes.ReadRequest;
 import types.OmiTypes.ResponseRequest;
 import types.OmiTypes.Responses;
 import types.OdfTypes.OdfTreeCollection;
 
 public abstract class ResponsibleJavaInternalAgent extends JavaInternalAgent implements ResponsibleInternalAgent {
 
-  public abstract void handleWrite(WriteRequest write);
+  protected ResponsibleJavaInternalAgent(ActorRef requestHandler, ActorRef dbHandler){
+    super(requestHandler, dbHandler);
+  }
+  public Future<ResponseRequest> handleWrite(WriteRequest write){
+    return writeToDB(write);
+  };
+  public Future<ResponseRequest> handleRead(ReadRequest read){
+    return readFromDB(read);
+  };
+  //public abstract void handleCall(CallRequest call);
+  @Override
+  public void onReceive(Object message) throws StartFailed, CommandFailed {
+    if( message instanceof Start) {
+      // Start is received when this agent should start it's functionality
+      respond(start());
+
+    } else if( message instanceof Stop) {
+      // Stop is received when this agent should stop it's functionality
+      respond(stop());
+
+    } else if( message instanceof Restart) {
+      // Restart is received when this agent should restart
+      // default behaviour is to call stop() and then start()
+      respond(restart());
+    }  else if( message instanceof WriteRequest ){
+      WriteRequest write = (WriteRequest) message;
+      respondFuture(handleWrite(write));
+    }  else if( message instanceof ReadRequest ){
+
+      ReadRequest read = (ReadRequest) message;
+      respondFuture(handleRead(read));
+
+    } /*else if( message instanceof CallRequest ){
+      CallRequest call = (CallRequest) message;
+      handleCall(call);
+    }*/ else unhandled(message);
+  }
   
   final protected void passWrite(WriteRequest write){
     Timeout timeout = new Timeout( write.handleTTL() );
@@ -66,23 +102,4 @@ public abstract class ResponsibleJavaInternalAgent extends JavaInternalAgent imp
     }
   }
 
-  @Override
-  public void onReceive(Object message) throws StartFailed, CommandFailed {
-    if( message instanceof Start) {
-      // Start is received when this agent should start it's functionality
-      getSender().tell(start(),getSelf());
-
-    } else if( message instanceof Stop) {
-      // Stop is received when this agent should stop it's functionality
-      getSender().tell(stop(),getSelf());
-
-    } else if( message instanceof Restart) {
-      // Restart is received when this agent should restart
-      // default behaviour is to call stop() and then start()
-      getSender().tell(restart(),getSelf());
-    } else if( message instanceof WriteRequest ){
-      WriteRequest write = (WriteRequest) message;
-      handleWrite(write);
-    } else unhandled(message);
-  }
 }

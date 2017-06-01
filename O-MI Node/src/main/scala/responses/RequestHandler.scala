@@ -45,7 +45,7 @@ trait OmiRequestHandlerCore extends OmiRequestHandlerBase{
   protected val log: LoggingAdapter = Logging( system, this)
 
 }
-
+/*
 class RequestHandler(
   protected implicit val system :ActorSystem, 
   protected val agentSystem : ActorRef,
@@ -72,3 +72,4 @@ with CancelHandler
     case response: ResponseRequest => handleResponse(response)
   }
 }
+*/

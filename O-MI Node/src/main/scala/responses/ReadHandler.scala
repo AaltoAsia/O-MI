@@ -33,14 +33,17 @@ import types.OdfTypes._
 import types.OmiTypes._
 import http.{ActorSystemContext, Storages}
 
+/*
 trait ReadHandler extends OmiRequestHandlerBase {
   protected implicit def dbConnection: DB
   protected implicit def singleStores: SingleStores
   protected implicit def analyticsStore: Option[ActorRef]
+  */
   /** Method for handling ReadRequest.
     * @param read request
     * @return (xml response, HTTP status code)
     */
+   /*
   def handleRead(read: ReadRequest): Future[ResponseRequest] = {
      log.debug("Handling read.")
      read match{
@@ -52,7 +55,7 @@ trait ReadHandler extends OmiRequestHandlerBase {
              )
            ))
        )
-         
+     */    
          /*
        case ReadRequest(_,_,begin,end,newest,Some(oldest),_) =>
          Future.successful(
@@ -64,6 +67,7 @@ trait ReadHandler extends OmiRequestHandlerBase {
              )
            )
          )*/
+        /*
        case default: ReadRequest =>
          val leafs = getLeafs(read.odf)
          // NOTE: Might go off sync with tree or values if the request is large,
@@ -128,3 +132,4 @@ trait ReadHandler extends OmiRequestHandlerBase {
      }
    }
 }
+*/

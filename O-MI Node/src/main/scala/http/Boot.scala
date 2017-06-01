@@ -58,16 +58,16 @@ class OmiServer extends OmiNode{
   /**
    * Settings loaded by akka (typesafe config) and our [[OmiConfigExtension]]
    */
-  implicit val settings : OmiConfigExtension = OmiConfig(system)
+  val settings : OmiConfigExtension = OmiConfig(system)
 
-  implicit val singleStores = new SingleStores(settings)
-  implicit val dbConnection: DB = new DatabaseConnection()(
+  val singleStores = new SingleStores(settings)
+  val dbConnection: DB = new DatabaseConnection()(
     system,
     singleStores,
     settings
   )
 
-  implicit val callbackHandler: CallbackHandler = new CallbackHandler(settings)( system, materializer)
+  val callbackHandler: CallbackHandler = new CallbackHandler(settings)( system, materializer)
   val analytics: Option[ActorRef] =
     if(settings.enableAnalytics)
       Some(
@@ -80,23 +80,47 @@ class OmiServer extends OmiNode{
       )
     else None
 
-  val subscriptionManager = system.actorOf(SubscriptionManager.props(), "subscription-handler")
+  val dbHandler = system.actorOf(
+   DBHandler.props(
+     dbConnection,
+     singleStores,
+     callbackHandler,
+     analytics.filter(n => settings.enableWriteAnalytics)
+   ),
+   "database-handler"
+  )
+  
+  val subscriptionManager = system.actorOf(
+    SubscriptionManager.props(
+      settings,
+      singleStores,
+      callbackHandler
+    ),
+    "subscription-handler"
+  )
+
+
+  val requestHandler : ActorRef = system.actorOf(
+    RequestHandler.props(
+      subscriptionManager,
+      dbHandler,
+      settings,
+      analytics.filter(r => settings.enableReadAnalytics)
+    ),
+    "request-handler"
+  )
+
   val agentSystem = system.actorOf(
-   AgentSystem.props(analytics.filter(n => settings.enableWriteAnalytics)),
+   AgentSystem.props(
+     analytics.filter(n => settings.enableWriteAnalytics),
+     dbHandler,
+     requestHandler,
+     settings
+   ),
    "agent-system"
   )
 
-  implicit val requestHandler : RequestHandler = new RequestHandler(
-    )(system,
-    agentSystem,
-    subscriptionManager,
-    settings,
-    dbConnection,
-    singleStores,
-    analytics.filter(r => settings.enableReadAnalytics)
-    )
-
-  implicit val cliListener =system.actorOf(
+  val cliListener =system.actorOf(
     Props(
       new OmiNodeCLIListener(
         system,
@@ -108,9 +132,9 @@ class OmiServer extends OmiNode{
     "omi-node-cli-listener"
   )
 
-  saveSettingsOdf(system,agentSystem,settings)
+  saveSettingsOdf(system,requestHandler,settings)
 
-  implicit val httpExt = Http()
+  implicit val httpExt: HttpExt = Http()
   // create omi service actor
   val omiService = new OmiServiceImpl(
     system,
@@ -124,16 +148,16 @@ class OmiServer extends OmiNode{
   )
 
 
-  implicit val timeoutForBind = Timeout(5.seconds)
+  implicit val timeoutForBind: Timeout = Timeout(5.seconds)
 
 }
 trait OmiNode {
   implicit def system : ActorSystem 
   implicit def materializer: ActorMaterializer
-  implicit def requestHandler : OmiRequestHandlerBase
-  implicit def omiService : OmiService 
-  implicit def settings : OmiConfigExtension 
-  implicit def cliListener : ActorRef
+  def requestHandler : ActorRef
+  def omiService : OmiService 
+  def settings : OmiConfigExtension 
+  def cliListener : ActorRef
 
   implicit def httpExt: HttpExt
 
@@ -170,7 +194,7 @@ object OmiServer {
     new OmiServer()
   }
 
-  def saveSettingsOdf(system: ActorSystem, agentSystem: ActorRef, settings: OmiConfigExtension) :Unit = {
+  def saveSettingsOdf(system: ActorSystem, requestHandler: ActorRef, settings: OmiConfigExtension) :Unit = {
     if ( settings.settingsOdfPath.nonEmpty ) {
       import system.dispatcher // execution context for futures
       // Same timestamp for all OdfValues of the settings
@@ -195,7 +219,7 @@ object OmiServer {
       
       val write = WriteRequest( objects, None,  60  seconds)
       implicit val timeout = Timeout( 60 seconds)
-      val future : Future[ResponseRequest]= (agentSystem ? ResponsibilityRequest( "InitializationTest", write )).mapTo[ResponseRequest]
+      val future : Future[ResponseRequest]= (requestHandler ? write ).mapTo[ResponseRequest]
       future.onSuccess{
         case response: ResponseRequest=>
         Results.unionReduce(response.results).forall{

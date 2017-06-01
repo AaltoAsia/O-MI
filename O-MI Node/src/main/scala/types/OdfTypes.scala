@@ -14,12 +14,15 @@
 package types
 package OdfTypes
 
+import java.sql.Timestamp
 import java.lang.{Iterable => JavaIterable}
 
 import scala.collection.mutable.{Map => MutableMap}
+import scala.collection.immutable.HashMap
 import scala.collection.JavaConverters._
 import scala.language.existentials
 
+import parsing.xmlGen.scalaxb.DataRecord
 import parsing.xmlGen.xmlTypes._
 
 object OdfTreeCollection {
@@ -32,6 +35,161 @@ object OdfTreeCollection {
   import scala.language.implicitConversions
   implicit def seqToOdfTreeCollection[E](s: Iterable[E]): OdfTreeCollection[E] = OdfTreeCollection.fromIterable(s)
 }
+object QlmID{
+
+  case class TimeWindow(
+    val start: Option[Timestamp] = None, 
+    val end: Option[Timestamp] = None
+  ){
+    def intersect(that: TimeWindow): Boolean = {
+      val l:Boolean = (this.start, that.end) match {
+        case (Some(startTime), Some(endTime)) =>
+          startTime.getTime <= endTime.getTime
+        case (None, Some(endTime)) => true
+        case (Some(startTime), None) => true
+        case (None , None) => true
+      } 
+      val r: Boolean = (this.end, that.start) match {
+        case (Some(endTime), Some(startTime)) =>
+          endTime.getTime  >= startTime.getTime
+        case (None, Some(endTime)) => true
+        case (Some(startTime), None) => true
+        case (None , None) => true
+      }
+      l && r
+    }
+
+    def union( that: TimeWindow ): TimeWindow = {
+      assert( this.intersect(that) ) 
+        TimeWindow(
+          if( this.start.isEmpty || that.start.isEmpty ){
+            None  
+          } else {
+            this.start.flatMap{
+              st => 
+                that.start.map{
+                  ost => 
+                    if( st.before( ost ) ) st
+                    else ost
+                }
+            }
+          },
+          if( this.end.isEmpty || that.end.isEmpty ){
+            None 
+          } else {
+            this.end.flatMap{
+              et =>
+                that.end.map{
+                  oet => 
+                    if( et.after(oet) ) et 
+                    else oet
+                }
+            }
+          }
+        )
+    }
+  }
+}
+case class QlmID(
+  val value:String,
+  val idType: Option[String] = None,
+  val tagType: Option[String] = None,
+  val startDate: Option[Timestamp] = None,
+  val endDate: Option[Timestamp] = None,
+  val attributes: HashMap[String, String] = HashMap()
+){
+  import QlmID._
+  lazy val validityTimeWindow: Option[TimeWindow] ={
+  if( startDate.nonEmpty || endDate.nonEmpty ) Some(TimeWindow( startDate, endDate))
+    else None
+  }
+
+  def unionableIdType( that: QlmID ) ={
+      (idType, that.idType) match {
+        case (Some(id), Some(otherId)) =>  
+          id == otherId
+        case (None, Some(_)) => true
+        case (Some(_), None ) => true
+        case (None, None) => true
+      }
+  }
+  def unionableTagType( that: QlmID ) ={
+      (tagType, that.tagType) match {
+        case (Some(tag), Some(otherTag)) =>  
+          tag == otherTag
+        case (None, Some(_)) => true
+        case (Some(_), None ) => true
+        case (None, None) => true
+      }
+  }
+  def unionableValidityTimeWindow( that: QlmID ) ={
+      (validityTimeWindow, that.validityTimeWindow) match {
+        case (Some(tw), Some(ovtw)) =>  
+          tw.intersect(ovtw)
+        case (None, Some(_)) => true
+        case (Some(_), None ) => true
+        case (None, None) => true
+      }
+  }
+  def unionable( that: QlmID ) = {
+    value == that.value && 
+    unionableIdType(that) && 
+    unionableTagType(that) && 
+    unionableValidityTimeWindow(that)
+  }
+  def union( that: QlmID ): QlmID ={
+    assert( unionable( that) )
+    val tw: Option[TimeWindow] = (validityTimeWindow, that.validityTimeWindow) match {
+      case (Some(tw), Some(ovtw)) => Some(tw.union(ovtw))
+      case (None, Some(tw)) =>Some(tw )
+      case (Some(tw), None ) => Some(tw)
+      case (None, None) => None
+    }
+    QlmID(
+      value,
+      idType.orElse(that.idType),
+      tagType.orElse(that.tagType),
+      tw.flatMap( _.start),
+      tw.flatMap( _.end),
+      attributes ++ that.attributes
+    )
+  }
+  def asQlmIDType: QlmIDType = {
+    val idTypeAttr: Seq[(String,DataRecord[Any])] = idType.map{
+          typ =>
+            ("@idType" -> DataRecord(typ))
+        }.toSeq 
+    val tagTypeAttr: Seq[(String,DataRecord[Any])]  = tagType.map{
+          typ =>
+            ("@tagType" -> DataRecord(typ))
+        }.toSeq  
+  
+    val startDateAttr = startDate.map{
+              startDate =>
+                ("@startDate" -> DataRecord(timestampToXML(startDate)))
+            }.toSeq
+    val endDateAttr = endDate.map{
+              endDate =>
+                ("@endDate" -> DataRecord(timestampToXML(endDate)))
+        }.toSeq
+    QlmIDType(
+      value,
+      HashMap(
+        (
+        (
+          idTypeAttr ++ 
+          tagTypeAttr ++ 
+          startDateAttr ++
+          endDateAttr
+        ).toMap ++ attributes.mapValues(DataRecord(_))
+        ).toSeq:_*
+      )
+      
+    )
+  }
+
+}
+
 
 /** Sealed base trait defining all shared members of OdfNodes*/
 sealed trait OdfNode {
@@ -47,7 +205,9 @@ sealed trait OdfNode {
 /** Class presenting O-DF Objects structure*/
 case class OdfObjects(
   objects: OdfTreeCollection[OdfObject] = OdfTreeCollection(),
-  version: Option[String] = None) extends OdfObjectsImpl(objects, version) with OdfNode {
+  version: Option[String] = None,
+  attributes:           Map[String,String] = HashMap.empty
+) extends OdfObjectsImpl(objects, version, attributes) with OdfNode {
 
   /** Method for searching OdfNode from O-DF Structure */
   def get(path: Path) : Option[OdfNode] = {
@@ -73,14 +233,14 @@ case class OdfObjects(
   //def withValues: (Path, Seq[OdfValue[Any]]) => OdfObjects = { case (p, v) => withValues(p, v) } 
   def withValues(p: Path, v: Seq[OdfValue[Any]]): OdfObjects = {
     this.copy(
-      objects = objects map (o => if (o.path.isAncestor(p)) o.withValues(p,v) else o)
+      objects = objects map (o => if (o.path.isAncestorOf(p)) o.withValues(p,v) else o)
     )
   }
   def withValues(pathValuesPairs: Map[Path,OdfTreeCollection[OdfValue[Any]]]): OdfObjects = {
     this.copy(
       objects = objects map {
         case o : OdfObject=> 
-          if (pathValuesPairs.keys.exists( p => o.path.isAncestor(p))) 
+          if (pathValuesPairs.keys.exists( p => o.path.isAncestorOf(p))) 
             o.withValues(pathValuesPairs) 
           else o
       }
@@ -94,7 +254,7 @@ case class OdfObjects(
     metaData:             Option[OdfMetaData] = None
   ): OdfObjects ={
     this.copy(
-      objects = objects map (o => if (o.path.isAncestor(spath)) o.update(spath, values, description, metaData) else o)
+      objects = objects map (o => if (o.path.isAncestorOf(spath)) o.update(spath, values, description, metaData) else o)
     )
   }
 
@@ -103,7 +263,7 @@ case class OdfObjects(
     description: Option[OdfDescription] 
   ): OdfObjects ={
     this.copy(
-      objects = objects map (o => if (o.path.isAncestor(spath)) o.update(spath, description) else o)
+      objects = objects map (o => if (o.path.isAncestorOf(spath)) o.update(spath, description) else o)
     )
   }
 
@@ -116,7 +276,13 @@ case class OdfObjects(
    * Includes nodes that have type or description
    */
   lazy val objectsWithMetadata = getOdfNodes(this) collect {
-      case o @ OdfObject(_, _, _, _, desc, typeVal) if desc.isDefined || typeVal.isDefined => o
+      case o @ OdfObject(_, _, _, _, desc, typeVal, attr) 
+        if desc.isDefined || typeVal.isDefined || attr.nonEmpty => o
+        /*
+      case ii @ OdfInfoItem( _, _, desc, metaData, typeVal, attr ) 
+        if desc.isDefined || typeVal.isDefined || attr.nonEmpty || metaData.isDefined => 
+          ii.copy( values = Vector() )
+          */
     } 
 
 }
@@ -128,8 +294,9 @@ case class OdfObject(
   infoItems: OdfTreeCollection[OdfInfoItem] = OdfTreeCollection(),
   objects: OdfTreeCollection[OdfObject] = OdfTreeCollection(),
   description: Option[OdfDescription] = None,
-  typeValue: Option[String] = None
-  ) extends OdfObjectImpl(id, path, infoItems, objects, description, typeValue) with OdfNode with Serializable{
+  typeValue: Option[String] = None,
+  attributes:           Map[String,String] = HashMap.empty
+  ) extends OdfObjectImpl(id, path, infoItems, objects, description, typeValue, attributes) with OdfNode with Serializable{
 
 
   def get(path: Path) : Option[OdfNode] = path match{
@@ -188,7 +355,7 @@ case class OdfObject(
     this.copy(
       objects = objects map (
         o => 
-          if( pathValuesPairs.keys.exists( p => o.path.isAncestor(p) )) 
+          if( pathValuesPairs.keys.exists( p => o.path.isAncestorOf(p) )) 
             o.withValues(pathValuesPairs) 
           else o),
       infoItems = infoItems map (
@@ -205,7 +372,7 @@ case class OdfObject(
     metaData:             Option[OdfMetaData] = None
   ): OdfObject ={
     this.copy(
-      objects = objects map (o => if (o.path.isAncestor(spath)) o.update(spath, values, description, metaData) else o),
+      objects = objects map (o => if (o.path.isAncestorOf(spath)) o.update(spath, values, description, metaData) else o),
       infoItems = infoItems map (i => if (i.path == spath) i.update( values, description, metaData) else i) 
     ) 
   }
@@ -214,7 +381,7 @@ case class OdfObject(
     description:          Option[OdfDescription] 
   ): OdfObject ={
     this.copy(
-      objects = objects map (o => if (o.path.isAncestor(spath)) o.update(spath, description) else o),
+      objects = objects map (o => if (o.path.isAncestorOf(spath)) o.update(spath, description) else o),
       infoItems = infoItems map (i => if (i.path == spath) i.update(  description = description) else i),
       description = if( this.path == spath ) description else this.description
     ) 
@@ -227,8 +394,10 @@ case class OdfInfoItem(
     path: Path,
     values: OdfTreeCollection[OdfValue[Any]] = OdfTreeCollection(),
     description: Option[OdfDescription] = None,
-    metaData: Option[OdfMetaData] = None)
-  extends OdfInfoItemImpl(path, values, description, metaData) with OdfNode {
+    metaData: Option[OdfMetaData] = None,
+    typeValue: Option[String] = None,
+    attributes:           Map[String,String] = HashMap.empty
+) extends OdfInfoItemImpl(path, values, description, metaData, typeValue, attributes) with OdfNode {
   require(path.length > 2,
     s"OdfInfoItem should have longer than two segment path (use OdfObjects for <Objects>): Path($path)")
   def get(path: Path): Option[OdfNode] = if (path == this.path) Some(this) else None
@@ -240,7 +409,9 @@ case class OdfInfoItem(
   def update(
     values:               OdfTreeCollection[OdfValue[Any]] = OdfTreeCollection(),
     description:          Option[OdfDescription] = None,
-    metaData:             Option[OdfMetaData] = None
+    metaData:             Option[OdfMetaData] = None,
+    typeValue: Option[String] = None,
+    attributes:           Map[String,String] = HashMap.empty
   ): OdfInfoItem ={
     this.copy( 
       values = if( values.nonEmpty ) values else this.values,
@@ -262,6 +433,7 @@ case class OdfInfoItem(
 case class OdfDescription(
     value: String,
     lang: Option[String] = None) {
-  implicit def asDescription : Description= Description(value, lang, Map.empty)
+  implicit def asDescription : DescriptionType =
+    DescriptionType(value, lang.fold(Map.empty[String, DataRecord[Any]])(n=>Map(("@lang" -> DataRecord(n)))))
 }
 

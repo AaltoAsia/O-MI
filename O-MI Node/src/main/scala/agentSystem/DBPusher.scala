@@ -27,7 +27,7 @@ import analytics.{AddWrite, AnalyticsStore}
 import database._
 import parsing.xmlGen
 import parsing.xmlGen._
-import parsing.xmlGen.xmlTypes.MetaData
+import parsing.xmlGen.xmlTypes.MetaDataType
 import responses.CallbackHandler._
 import responses.CallbackHandler
 import types.OdfTypes._
@@ -43,7 +43,6 @@ trait  InputPusher  extends BaseAgentSystem{
 }
 
 trait DBPusher extends BaseAgentSystem{
-  import context.dispatcher
   protected implicit def dbConnection: DB
   protected implicit def singleStores: SingleStores
   protected implicit def callbackHandler: CallbackHandler

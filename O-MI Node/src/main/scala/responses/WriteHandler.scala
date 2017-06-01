@@ -30,12 +30,12 @@ import types.OmiTypes._
 import types.OdfTypes.OdfTreeCollection
 import http.{ActorSystemContext, Actors}
 
-trait WriteHandler extends OmiRequestHandlerBase{
-  protected def agentSystem : ActorRef
+
+//trait WriteHandler extends OmiRequestHandlerBase{
+  //protected def agentSystem : ActorRef
   /** Method for handling WriteRequest.
     * @param write request
     * @return (xml response, HTTP status code)
-    */
   def handleWrite( write: WriteRequest ) : Future[ResponseRequest] ={
     val ttl = write.handleTTL
     implicit val timeout = Timeout(ttl)
@@ -48,4 +48,5 @@ trait WriteHandler extends OmiRequestHandlerBase{
         Responses.InternalError(e)
       }
   }
-}
+    */
+//}

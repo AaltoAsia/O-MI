@@ -44,20 +44,6 @@ class InternalAgentLoaderTest(implicit ee: ExecutionEnv) extends Specification {
 
     "store successfully started agents to agents " >> skipped("random failures") //successfulAgents 
   }
- class TestLoader( testConfig : AgentSystemConfigExtension) extends BaseAgentSystem with InternalAgentLoader{
-   protected[this] val agents: scala.collection.mutable.Map[AgentName, AgentInfo] = MutableMap.empty
-   override protected[this] val settings = testConfig
-   def receive : Actor.Receive = {
-     case ListAgentsCmd() => sender() ! agents.values.toVector
-   }
- }
- object TestLoader{
-   def props( testConfig: AgentSystemConfigExtension) : Props = Props({
-    val loader = new TestLoader(testConfig)
-    loader.start()
-    loader
-   })
- }
 
  def missingAgentTest      = new Actorstest(logTestActorSystem){
    val classname = "unexisting"
@@ -66,13 +52,11 @@ class InternalAgentLoaderTest(implicit ee: ExecutionEnv) extends Specification {
    s"""
    agent-system{
      starting-timeout = 2 seconds
-     internal-agents {
-      "Missing" ={
-        language = "scala"
-        class = "$classname"
-        config = {}
-      }
-    }
+     internal-agents = [{
+      name = "Missing" 
+      language = "scala"
+      class = "$classname"
+     }]
    }
    """
    val config = ConfigFactory.parseString(configStr)
@@ -85,16 +69,14 @@ class InternalAgentLoaderTest(implicit ee: ExecutionEnv) extends Specification {
    val classname = "agentSystem.CompanionlessAgent"
    val exception = new java.lang.ClassNotFoundException(classname+"$")
    val configStr =
-   s"""
+     s"""
    agent-system{
      starting-timeout = 2 seconds
-     internal-agents {
-       "Missing" ={
+     internal-agents =[{
+         name = "Missing" 
          language = "scala"
          class = "$classname"
-         config = {}
-       }
-     }
+       }]
    }
    """
    val config = ConfigFactory.parseString(configStr)
@@ -110,13 +92,11 @@ class InternalAgentLoaderTest(implicit ee: ExecutionEnv) extends Specification {
    s"""
    agent-system{
      starting-timeout = 2 seconds
-     internal-agents {
-       "UnimplementedIA" ={
-         language = "scala"
-         class = "$classname"
-         config = {}
-       }
-     }
+     internal-agents =[{
+      name = "UnimplementedIA"
+      language = "scala"
+      class = "$classname"
+     }]
    }
    """
    val config = ConfigFactory.parseString(configStr)
@@ -132,13 +112,12 @@ class InternalAgentLoaderTest(implicit ee: ExecutionEnv) extends Specification {
    s"""
    agent-system{
      starting-timeout = 2 seconds
-     internal-agents {
-       "UnimplementedPC" ={
-         language = "scala"
-         class = "$classname"
-         config = {}
-       }
-     }
+     starting-timeout = 2 seconds
+     internal-agents =[{
+      name = "UnimplementedIA"
+      language = "scala"
+      class = "$classname"
+     }]
    }
    """
    val config = ConfigFactory.parseString(configStr)
@@ -154,13 +133,11 @@ class InternalAgentLoaderTest(implicit ee: ExecutionEnv) extends Specification {
    s"""
    agent-system{
      starting-timeout = 2 seconds
-     internal-agents {
-       "WrongProps" ={
-         language = "scala"
-         class = "$classname"
-         config = {}
-       }
-     }
+     internal-agents =[{
+       name= "WrongProps"
+       language = "scala"
+       class = "$classname"
+     }]
    }
    """
    val config = ConfigFactory.parseString(configStr)
@@ -181,13 +158,11 @@ class InternalAgentLoaderTest(implicit ee: ExecutionEnv) extends Specification {
    s"""
    agent-system{
      starting-timeout = 2 seconds
-     internal-agents {
-       "FailureProps" ={
-         language = "scala"
-         class = "$classname"
-         config = {}
-       }
-     }
+     internal-agents =[{
+       name= "FailureProps"
+       language = "scala"
+       class = "$classname"
+     }]
    }
    """
    val config = ConfigFactory.parseString(configStr)
@@ -204,18 +179,16 @@ class InternalAgentLoaderTest(implicit ee: ExecutionEnv) extends Specification {
      s"""
    agent-system{
      starting-timeout = 2 seconds
-     internal-agents {
-       "FailureAgent" ={
-         language = "scala"
-         class = "$classname"
-         config = {}
-       }
-     }
+     internal-agents =[{
+       name= "FailureAgent"
+       language = "scala"
+       class = "$classname"
+     }]
    }
    """
    val config = ConfigFactory.parseString(configStr)
    val warnings = Vector(
-     s"Class $classname could not be started. Received $exception"
+ s"Agent FailureAgent encountered exception during creation."
    )
    logWarningTest(new AgentSystemSettings(config), warnings )
  }
@@ -224,61 +197,63 @@ class InternalAgentLoaderTest(implicit ee: ExecutionEnv) extends Specification {
    val classname = "agentSystem.SSAgent"
    val classname2 = "unexisting"
    val classname3 = "agentSystem.SFAgent"
-   val matchAll = ActorRef.noSender
+   val matchAll = Some(ActorRef.noSender)
    val correctAgents = Vector(
-     AgentInfo("A1", classname, emptyConfig, matchAll , running = true, Seq.empty),
-     AgentInfo("A2", classname, emptyConfig, matchAll , running = true, Seq.empty),
-     AgentInfo("A3", classname, emptyConfig, matchAll , running = true, Seq.empty),
+     AgentInfo("A1", classname, emptyConfig, matchAll , running = true, Seq.empty, Scala()),
+     AgentInfo("A2", classname, emptyConfig, matchAll , running = true, Seq.empty, Scala()),
+     AgentInfo("A3", classname, emptyConfig, matchAll , running = true, Seq.empty, Scala()),
      //4 and 6, should fail without causing problem
-     AgentInfo("A5", classname3, emptyConfig, matchAll , running = true, Seq.empty),
-     AgentInfo("A7", classname3, emptyConfig, matchAll , running = true, Seq.empty)
+     AgentInfo("A5", classname3, emptyConfig, matchAll , running = true, Seq.empty, Scala()),
+     AgentInfo("A7", classname3, emptyConfig, matchAll , running = true, Seq.empty, Scala())
    )
    val configStr =
    s"""
    agent-system{
      starting-timeout = 5 seconds
-     internal-agents {
-       "A1" ={
+     internal-agents =[
+       {
+         name = "A1"
          class = "$classname"
          language = "scala"
-         config = {}
-       }
-       "A2" ={
+       },
+       {
+         name = "A2"
          class = "$classname"
          language = "scala"
-         config = {}
-       }
-       "A3" ={
+       },
+       {
+         name = "A3"
          class = "$classname"
          language = "scala"
-         config = {}
-       }
-       "A4" ={
+       },
+       {
+         name = "A4"
          class = "$classname2"
          language = "scala"
-         config = {}
-       }
-       "A5" ={
+       },
+       {
+         name = "A5"
          class = "$classname3"
          language = "scala"
-         config = {}
-       }
-       "A6" ={
+       },
+       {
+         name = "A6"
          class = "$classname2"
          language = "scala"
-         config = {}
-       }
-       "A7" ={
+       },
+       {
+         name = "A7" 
          class = "$classname3"
          language = "scala"
-         config = {}
        }
-     }
+     ] 
    }
    """
    val config =new AgentSystemSettings( ConfigFactory.parseString(configStr) )
    val timeout = config.internalAgentsStartTimout
-   val loader = system.actorOf(TestLoader.props(config), "agent-loader") 
+    val requestHandler = TestActorRef( new TestDummyRequestHandler() )
+    val dbHandler =  TestActorRef( new TestDummyDBHandler() )
+   val loader = system.actorOf(TestLoader.props(config,requestHandler,dbHandler), "agent-loader") 
    val res = (loader ? ListAgentsCmd())(timeout).mapTo[Vector[AgentInfo]].map {
      vec: Vector[AgentInfo] =>
        vec.map {
@@ -299,9 +274,12 @@ class InternalAgentLoaderTest(implicit ee: ExecutionEnv) extends Specification {
  )(
   implicit _system: ActorSystem 
   ) ={
+    
+    val requestHandler = TestActorRef( new TestDummyRequestHandler() )
+    val dbHandler =  TestActorRef( new TestDummyDBHandler() )
     val filters = warnings.map{ msg => EventFilter.warning(message = msg, occurrences = 1)}
     filterEvents(filters){
-      val loader = _system.actorOf(TestLoader.props(config), "agent-loader") 
+      val loader = _system.actorOf(TestLoader.props(config,dbHandler,requestHandler), "agent-loader") 
     }
  }
 }

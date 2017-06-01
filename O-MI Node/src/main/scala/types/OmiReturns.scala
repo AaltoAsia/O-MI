@@ -1,5 +1,7 @@
 package types
 package OmiTypes
+
+import parsing.xmlGen.scalaxb.DataRecord
 import types.OdfTypes.{ OdfTreeCollection, OdfObjects}
 import parsing.xmlGen.xmlTypes
 
@@ -39,9 +41,7 @@ class OmiReturn(
   def toReturnType: xmlTypes.ReturnType ={
     xmlTypes.ReturnType(
       "",
-      returnCode,
-      description,
-      Map.empty
+      Map(("@returnCode" -> DataRecord(returnCode)),("@description" -> DataRecord(description)))
     )
   }
 }
@@ -137,7 +137,10 @@ object Returns{
   case class ParseErrors(
     val errors: Vector[ParseError]
   ) extends OmiReturn(ReturnCode.Invalid) with ReturnTypes.Invalid {
-    override val description: Option[String] = Some(errors.mkString(",\n"))
+    override val description: Option[String] = Some(
+      errors.map{
+        error => error.getMessage
+      }.mkString(",\n"))
   }
 
   case class InternalError(

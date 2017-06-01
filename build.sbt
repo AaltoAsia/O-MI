@@ -13,7 +13,7 @@ addCommandAlias("systemTest", "omiNode/testOnly http.SystemTest")
 
 def commonSettings(moduleName: String) = Seq(
   name := s"O-MI-$moduleName",
-  version := "0.8.1",
+  version := "0.9.0-RC1",
   scalaVersion := "2.11.8",
   scalacOptions := Seq("-unchecked", "-feature", "-deprecation", "-encoding", "utf8", "-Xlint"),
   scalacOptions in (Compile,doc) ++= Seq("-groups", "-deprecation", "-implicits", "-diagrams", "-diagrams-debug", "-encoding", "utf8"),
@@ -53,7 +53,7 @@ lazy val omiNode = (project in file("O-MI Node")).
      javadocSettings ++ Seq(
       parallelExecution in Test := false,
       //packageDoc in Compile += (baseDirectory).map( _ / html
-      cleanFiles <+= baseDirectory { base => base / "logs"},
+      cleanFiles += {baseDirectory.value / "logs"},
       //cleanFiles <++= baseDirectory {_ * "*.db" get},
       target in (Compile, doc) := baseDirectory.value / "html" / "api",
       target in (JavaDoc, doc) := baseDirectory.value / "html" / "api" / "java",
@@ -64,7 +64,7 @@ lazy val agents = (project in file("Agents")).
   settings(commonSettings("Agents"): _*).
   settings(Seq(
     libraryDependencies ++= commonDependencies,
-    crossTarget <<= (unmanagedBase in omiNode)
+    crossTarget := (unmanagedBase in omiNode).value
     )).
     dependsOn(omiNode)
 
@@ -97,18 +97,20 @@ lazy val root = (project in file(".")).
     ////////////////////////////////////////////////
     //Locations to be cleared when using sbt clean//
     ////////////////////////////////////////////////
-      cleanFiles <++= (baseDirectory in omiNode) {base => Seq(
-        base / "html" / "api",
-        base / "lib",
-        base / "logs",
-        file("logs"))},
+      cleanFiles ++= {
+        val base = (baseDirectory in omiNode).value
+        Seq(
+          base / "html" / "api",
+          base / "lib",
+          base / "logs",
+          file("logs"))},
     
     ////////////////////////////////////////////////////////////////////////
     //Update version file so that the web browser displays current version//
     ////////////////////////////////////////////////////////////////////////
-      resourceGenerators in Compile <+= (baseDirectory in Compile in omiNode, version) map { (dir, currentVersion) =>
-        val file = dir / "html" / "VERSION"
-        IO.write(file, s"${currentVersion}")
+      resourceGenerators in Compile += Def.task {
+        val file =  (baseDirectory in Compile in omiNode).value / "html" / "VERSION"
+        IO.write(file, s"${version.value}")
         Seq(file)},
 
     ///////////////////////////////////////////////////////////////////////
@@ -124,14 +126,19 @@ lazy val root = (project in file(".")).
     ////////////////////////////
       serverLoading in Debian := Systemd,
     //Mappings tells the plugin which files to include in package and in what directory
-      mappings in Universal <++= (baseDirectory in omiNode) map (src => directory(src / "html")),
-      mappings in Universal <++= baseDirectory map (src => directory(src / "configs")),
-      mappings in Universal <+= (packageBin in Compile, sourceDirectory in omiNode) map { (_, src) =>
+      mappings in Universal ++= { directory((baseDirectory in omiNode).value / "html")},
+      mappings in Universal ++= {directory(baseDirectory.value / "configs")},
+      mappings in Universal += { 
+        println((packageBin in Compile).value)
+        val src = (sourceDirectory in omiNode).value
         val conf = src / "main" / "resources" / "application.conf"
         conf -> "configs/application.conf"},
-      mappings in Universal <++= (doc in Compile in omiNode, baseDirectory in omiNode) map { (_, base) =>
+      mappings in Universal ++= {
+        println((doc in Compile in omiNode).value)
+        val base = (baseDirectory in omiNode).value
         directory(base / "html" / "api").map(n => (n._1, "html/" + n._2))},
-      mappings in Universal <++= baseDirectory map { base =>
+      mappings in Universal ++= {
+        val base = baseDirectory.value
         Seq(
           base / "tools" / "callbackTestServer.py" -> "callbackTestServer.py",
           base / "README-release.md" -> "README.md",
