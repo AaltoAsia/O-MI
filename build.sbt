@@ -142,9 +142,10 @@ lazy val root = (project in file(".")).
         Seq(
           base / "tools" / "callbackTestServer.py" -> "callbackTestServer.py",
           base / "README-release.md" -> "README.md",
-          base / "AgentDeveloperGuide.md" -> "AgentDeveloperGuide.md",
-          base / "GettingStartedGuide.md" -> "GettingStartedGuide.md",
           base / "LICENSE.txt" -> "LICENSE.txt")},
+      mappings in Universal ++= {
+        val base = baseDirectory.value
+        directory(base / "docs").map(n => (n._1, n._2))},
 
     /////////////////////////////////////////////////////////////
     //Prevent aggregation of following commands to sub projects//
