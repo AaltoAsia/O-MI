@@ -64,11 +64,6 @@ class WSAgent(_requestHandler: ActorRef, _dbHandler: ActorRef) extends SSAgent(_
       Responses.InternalError( new Exception("Test failure.") )
      }
   }
-    override def handleRead(read: ReadRequest ) :Future[ResponseRequest] = {
-     Future.successful{
-      Responses.InternalError( new Exception("Test failure.") )
-     }
-  }
     override def handleCall(call: CallRequest ) :Future[ResponseRequest] = {
     Future.successful{
       Responses.InternalError( new Exception("Test failure.") )

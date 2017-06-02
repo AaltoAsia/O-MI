@@ -18,7 +18,7 @@ import akka.actor.ActorRef;
 import akka.util.Timeout;
 import static akka.pattern.Patterns.ask;
 import akka.japi.Creator;
-import akka.dispatch.Mapper;
+import akka.dispatch.*;
 import akka.dispatch.OnSuccess;
 import akka.dispatch.OnFailure;
 import akka.actor.Cancellable;
@@ -61,7 +61,10 @@ public class ResponsibleJavaAgent extends JavaAgent implements ResponsibleIntern
   }
   
   // Constructor
-  public ResponsibleJavaAgent(Config conf, final ActorRef requestHandler, final ActorRef dbHandler) {
+  public ResponsibleJavaAgent(
+      Config conf,
+      final ActorRef requestHandler, 
+      final ActorRef dbHandler) {
     super(conf, requestHandler, dbHandler);
   }
 
@@ -76,10 +79,6 @@ public class ResponsibleJavaAgent extends JavaAgent implements ResponsibleIntern
     return future;
   }
 
-  @Override
-  public Future<ResponseRequest> handleRead(ReadRequest read) {
-    return readFromDB(read);
-  }
   // Contains function for the asynchronous handling of write result
   public final class LogResult extends OnSuccess<ResponseRequest> {
       @Override public final void onSuccess(ResponseRequest response) {
@@ -106,19 +105,26 @@ public class ResponsibleJavaAgent extends JavaAgent implements ResponsibleIntern
       }
   }
 
+  @Override
+  public Future<ResponseRequest> handleCall(CallRequest call){
+    return Futures.successful( 
+        Responses.NotImplemented(Duration.apply(10,TimeUnit.SECONDS))
+    );
+  };
+
   /**
    * Method that is inherited from akka.actor.UntypedActor and handles incoming messages
    * from other Actors.
    */
   @Override
-  public void onReceive(Object message) throws StartFailed, CommandFailed {
+  public void onReceive(Object message){
     if( message instanceof WriteRequest ){
       WriteRequest write = (WriteRequest) message;
       respondFuture(handleWrite(write));
-    }  else if( message instanceof ReadRequest ){
+    }  else if( message instanceof CallRequest ){
 
-      ReadRequest read = (ReadRequest) message;
-      respondFuture(handleRead(read));
+      CallRequest call = (CallRequest) message;
+      respondFuture(handleCall(call));
 
     } else if( message instanceof String) {
       String str = (String) message;
