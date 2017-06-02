@@ -52,17 +52,6 @@ public abstract class JavaInternalAgent extends UntypedActor implements Internal
     return self().path().name();
   };
 
-  /**
-   * Default restart behaviour: call stop(); start();
-   */
-  @Override
-  public InternalAgentResponse restart(){
-    InternalAgentResponse result = stop();
-    if( result instanceof InternalAgentSuccess ){
-      return start();
-    } else return result;
-  }
-
 
   /**
    * Wrapper for easier request execution.
@@ -95,21 +84,7 @@ public abstract class JavaInternalAgent extends UntypedActor implements Internal
   }
 
   @Override
-  public void onReceive(Object message) throws StartFailed, CommandFailed {
-    if( message instanceof Start) {
-      // Start is received when this agent should start it's functionality
-      respond(start());
-
-    } else if( message instanceof Stop) {
-      // Stop is received when this agent should stop it's functionality
-      respond(stop());
-
-    } else if( message instanceof Restart) {
-      // Restart is received when this agent should restart
-      // default behaviour is to call stop() and then start()
-      respond(restart());
-
-    }
+  public void onReceive(Object message) {
   }
       
   final ExecutionContext ec = context().dispatcher();

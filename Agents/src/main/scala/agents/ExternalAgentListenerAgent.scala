@@ -46,7 +46,7 @@ object  ExternalAgentListener extends PropsCreator{
 /** AgentListener handles connections from agents.
   */
 class ExternalAgentListener(
-  override val config: Config, 
+  val config: Config, 
   requestHandler: ActorRef, 
   dbHandler: ActorRef
 ) extends ScalaInternalAgentTemplate(requestHandler,dbHandler)

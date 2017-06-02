@@ -85,57 +85,30 @@ public class JavaRoomAgent extends JavaInternalAgent {
             conf.getDuration("interval", TimeUnit.SECONDS),
             TimeUnit.SECONDS);	
 
-    odf = createOdf();
-  }
-
-
-  /**
-   * Method to be called when a Start() message is received.
-   */
-  @Override
-  public InternalAgentResponse start(){
-    try{
-      //Lets schelude a messge to us on every interval
-      //and save the reference so we can stop the agent.
-      intervalJob = context().system().scheduler().schedule(
+    //Lets schelude a messge to us on every interval
+    //and save the reference so we can stop the agent.
+    intervalJob = context().system().scheduler().schedule(
         Duration.Zero(),                //Delay start
         interval,                       //Interval between messages
         self(),                         //To 
         "Update",                       //Message, preferably immutable.
         context().system().dispatcher(),//ExecutionContext, Akka
         null                            //Sender?
-      );
+        );
 
-      return new CommandSuccessful();
-
-    } catch (Throwable t) {
-      //Normally in Akka if exception is thrown in child actor, it is 
-      //passed to its parent. That uses {@link SupervisorStrategy} to decide 
-      //what to do. With {@link StartFailed} we can tell AgentSystem that an 
-      //Exception was thrown during handling of Start() message.
-      return new StartFailed(t.getMessage(), scala.Option.apply(t) );
-    }
+    odf = createOdf();
   }
 
-
   /**
-   * Method to be called when a Stop() message is received.
+   * Method to be called when actor is stopped.
    * This should gracefully stop all activities that the agent is doing.
    */
   @Override
-  public InternalAgentResponse stop(){
+  public void postStop(){
 
     if (intervalJob != null){//is defined? 
       intervalJob.cancel();  //Cancel intervalJob
-      
-      // Check if intervalJob was cancelled
-      if( intervalJob.isCancelled() ){
-        intervalJob = null;
-      } else {
-        return new StartFailed("Failed to stop agent.", scala.Option.apply(null));
-      }
     } 
-    return new CommandSuccessful();
   }
 
   protected int writeCount = 0;
@@ -543,7 +516,7 @@ public class JavaRoomAgent extends JavaInternalAgent {
    * from other Actors.
    */
   @Override
-  public void onReceive(Object message) throws StartFailed, CommandFailed {
+  public void onReceive(Object message){
     if( message instanceof String) {
       String str = (String) message;
       if( str.equals("Update"))
