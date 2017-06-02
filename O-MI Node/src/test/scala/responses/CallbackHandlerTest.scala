@@ -1,20 +1,18 @@
 package responses
 
 import scala.concurrent.duration._
-import scala.concurrent.{Await, Future}
-
 import akka.actor.ActorSystem
 import akka.testkit.TestProbe
 import akka.util.Timeout
-import akka.stream.{ActorMaterializer, Materializer}
+import akka.stream.ActorMaterializer
 import akka.http.scaladsl.model.Uri
 import org.specs2.concurrent.ExecutionEnv
 import org.specs2.mutable._
 import com.typesafe.config.ConfigFactory
-
 import http.OmiConfigExtension
 import testHelpers.{Actors, SystemTestCallbackServer}
-import types.OmiTypes.{HTTPCallback, Responses}
+import types.OmiTypes._
+
 
 class CallbackHandlerTest(implicit ee: ExecutionEnv) extends Specification {
 

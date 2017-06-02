@@ -94,7 +94,12 @@ class OmiConfigExtension( val config: Config) extends Extension
   val numUniqueUserSampleWindowLength: FiniteDuration = config.getDuration("analytics.user.windowLength")
   val numberUsersInfoName: String = config.getString("analytics.user.averageNumberOfUsersInfoItemName")
   // Authorization
-  
+  //External API
+  val enableExternalAuthorization: Boolean = config.getBoolean("omi-service.authorization.enable-external-authorization-service")
+  val externalAuthorizationPort: Int = config.getInt("omi-service.authorization.authorization-service-port")
+  val externalAuthUseHttps: Boolean = config.getBoolean("omi-service.authorization.use-https")
+
+  //IP
   val inputWhiteListUsers: Vector[String]= config.getStringList("omi-service.input-whitelist-users").toVector
 
   val inputWhiteListIps: Vector[Vector[Byte]] = config.getStringList("omi-service.input-whitelist-ips").map{

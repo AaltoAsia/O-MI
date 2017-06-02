@@ -30,15 +30,17 @@ import types.OmiTypes._
 import types.Path
 
 
-sealed trait AuthorizationResult
-case object Authorized extends AuthorizationResult {def instance = this}
-case object Unauthorized extends AuthorizationResult {def instance = this}
-case class Partial(authorized: JavaIterable[Path]) extends AuthorizationResult
+sealed trait AuthorizationResult{
+  def user: UserInfo
+}
+case class Authorized(user: UserInfo) extends AuthorizationResult {def instance = this}
+case class Unauthorized(user: UserInfo = UserInfo()) extends AuthorizationResult {def instance = this}
+case class Partial(authorized: JavaIterable[Path], user: UserInfo) extends AuthorizationResult
 /**
  * Wraps a new O-MI request that is potentially modified from the original to pass authorization.
  * Can be used instead of [[Partial]] to define partial authorization. 
  */
-case class Changed(authorizedRequest: RawRequestWrapper) extends AuthorizationResult
+case class Changed(authorizedRequest: RawRequestWrapper, user: UserInfo) extends AuthorizationResult
 
 /**
  * Implement one method of this interface and register the class through AuthApiProvider.
@@ -65,7 +67,7 @@ trait AuthApi {
             isAuthorizedForType(httpRequest, isWrite = false, paths)
 
       }
-      case _ => Unauthorized
+      case _ => Unauthorized()
     }
   }
 
@@ -76,7 +78,7 @@ trait AuthApi {
    *  @param paths O-DF paths to all of the requested or to be written InfoItems.
    */
   def isAuthorizedForType(httpRequest: HttpRequest, isWrite: Boolean, paths: JavaIterable[Path]): AuthorizationResult = {
-    Unauthorized
+    Unauthorized()
   }
 
   /**
@@ -87,7 +89,7 @@ trait AuthApi {
    *  @param omiRequestXml contains the original request as received by the server.
    */
   def isAuthorizedForRawRequest(httpRequest: HttpRequest, omiRequestXml: String): AuthorizationResult = {
-    Unauthorized
+    Unauthorized()
   }
 }
 
@@ -114,11 +116,19 @@ trait AuthApiProvider extends AuthorizationExtension {
 
       // helper function
       def convertToWrapper: Try[AuthorizationResult] => Try[RequestWrapper] = {
-        case Success(Unauthorized) => Failure(UnauthorizedEx())
-        case Success(Authorized) => Success(orgOmiRequest)
-        case Success(Changed(reqWrapper)) => Success(reqWrapper)
-        case Success(Partial(maybePaths)) => {
-
+        case Success(Unauthorized(user0)) => Failure(UnauthorizedEx())
+        case Success(Authorized(user0)) => {
+          orgOmiRequest.user = user0.copy(remoteAddress = orgOmiRequest.user.remoteAddress)
+          log.debug(s"GOT USER:\nRemote: ${orgOmiRequest.user.remoteAddress.getOrElse("Empty")}\nName: ${orgOmiRequest.user.name.getOrElse("Empty")}")
+          Success(orgOmiRequest)
+        }
+        case Success(Changed(reqWrapper,user0)) => {
+          reqWrapper.user = user0
+          orgOmiRequest.user = user0
+          Success(reqWrapper)
+        }
+        case Success(Partial(maybePaths,user0)) => {
+          orgOmiRequest.user = user0
           val newOdfOpt = for {
             paths <- Option(maybePaths) // paths might be null
 

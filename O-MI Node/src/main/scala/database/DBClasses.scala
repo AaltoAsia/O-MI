@@ -18,7 +18,7 @@ import java.sql.Timestamp
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
-import parsing.xmlGen.xmlTypes.QlmID
+import parsing.xmlGen.xmlTypes.QlmIDType
 import slick.backend.DatabaseConfig
 //import slick.driver.H2Driver.api._
 import slick.driver.JdbcProfile

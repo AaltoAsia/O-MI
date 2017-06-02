@@ -18,9 +18,8 @@ import java.net.InetSocketAddress
 import scala.collection.JavaConversions.iterableAsScalaIterable
 import scala.concurrent.duration._
 import scala.concurrent.Await
-import scala.util.{Try, Success, Failure }
-
-import akka.actor.{Actor, ActorSystem, ActorLogging, ActorRef, Props}
+import scala.util.{Failure, Success, Try}
+import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, Props}
 import akka.http.scaladsl.model.RemoteAddress
 import akka.util.Timeout
 import akka.pattern.ask
@@ -29,24 +28,28 @@ import akka.io.{IO, Tcp}
 import akka.util.Timeout
 import org.slf4j.LoggerFactory
 import http.Authorization.ExtensibleAuthorization
-import http.{OmiConfig, IpAuthorization, OmiConfigExtension}
+import http.{IpAuthorization, OmiConfig, OmiConfigExtension}
 import parsing.OdfParser
 import types.OdfTypes._
-import types.OmiTypes.{WriteRequest, ResponseRequest, OmiResult, Results}
+import types.OmiTypes._
 import types._
 import agentSystem._
 import com.typesafe.config.Config
+
 import scala.concurrent.ExecutionContext.Implicits.global
 
 object  ExternalAgentListener extends PropsCreator{
-  def props( config: Config ): Props = {
-          Props(new ExternalAgentListener(config))
+  def props( config: Config, requestHandler: ActorRef, dbHandler: ActorRef ): Props = {
+          Props(new ExternalAgentListener(config,requestHandler, dbHandler))
   }
 }
 /** AgentListener handles connections from agents.
   */
-class ExternalAgentListener(override val config: Config)
-  extends ScalaInternalAgent
+class ExternalAgentListener(
+  val config: Config, 
+  requestHandler: ActorRef, 
+  dbHandler: ActorRef
+) extends ScalaInternalAgentTemplate(requestHandler,dbHandler)
   // NOTE: This class cannot implement authorization based on http headers as it is only a tcp server
   {
   class ExtAgentAuthorization extends {
@@ -61,41 +64,20 @@ class ExternalAgentListener(override val config: Config)
   import Tcp._
   implicit def actorSystem : ActorSystem = context.system
 
-  def start : InternalAgentResponse = {
+  override def preStart: Unit = {
     val binding = (IO(Tcp)  ? Tcp.Bind(self,
       new InetSocketAddress(interface, port)))(timeout)
-    Await.result(
-      binding.map{
-        case Bound(localAddress: InetSocketAddress) =>
-          CommandSuccessful()
-      }.recover{
-        case t : Throwable =>
-          StartFailed(t.getMessage, Some(t))
-      }, timeout
-    )
-
+    Await.result(binding, timeout )
   }
 
-  def stop : InternalAgentResponse = {
+  override def postStop : Unit = {
     val unbinding = (IO(Tcp)  ? Tcp.Unbind)(timeout)
-    Await.result(
-      unbinding.map{
-        case Tcp.Unbound =>
-          CommandSuccessful()
-      }.recover{
-        case t : Throwable =>
-          StopFailed(t.getMessage, Some(t))
-      }, timeout
-      )
-
+    Await.result( unbinding, timeout )
   }
   
   /** Partial function for handling received messages.
     */
   override  def receive  = {
-    case Start() => sender() ! start 
-    case Restart() => sender() ! restart 
-    case Stop() => sender() ! stop 
     case Bound(localAddress) =>
       // TODO: do something?
       // It seems that this branch was not executed?
@@ -148,7 +130,7 @@ object ExternalAgentHandler{
   */
 class ExternalAgentHandler(
     sourceAddress: InetSocketAddress,
-    agentSystem: ActorRef
+    requestHandler: ActorRef
   ) extends Actor with ActorLogging {
 
   import Tcp._
@@ -178,7 +160,7 @@ class ExternalAgentHandler(
       //check if the last part of the message contains closing xml tag
       if(storage.slice(lastCharIndex - 9, lastCharIndex + 1).endsWith("</Objects>")) {
 
-        val parsedEntries = OdfParser.parse(storage, None)
+        val parsedEntries = OdfParser.parse(storage)
         storage = ""
         parsedEntries match {
           case Left(errors) =>
@@ -187,7 +169,7 @@ class ExternalAgentHandler(
             val ttl  = Duration(5,SECONDS)
             implicit val timeout = Timeout(ttl)
             val write = WriteRequest( odf, None,  Duration(5,SECONDS))
-            val result = (agentSystem ? ResponsibilityRequest(sourceAddress.toString, write)).mapTo[ResponseRequest]
+            val result = (requestHandler ? write).mapTo[ResponseRequest]
             result.onComplete{
               case Success( response: ResponseRequest )=>
                 response.results.foreach{ 

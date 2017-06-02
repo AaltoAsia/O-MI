@@ -7,6 +7,7 @@ import java.sql.Timestamp;
 import scala.collection.immutable.HashMap;
 import scala.concurrent.duration.*;
 import types.OmiTypes.*;
+import types.OmiTypes.UserInfo;
 
   /**
    * Factory class for creating O-MI types used in Scala.
@@ -15,12 +16,13 @@ final public class OmiFactory{
   /**
    *
    * @param ttl Time to live of request.
-   * @param odf O-DF structure to be read. 
+   * @param odf O-DF structure to be read.
    * @param begin Timestamp defining begin of time frame to be read.
    * @param end Timestamp defining end of time frame to be read.
    * @param newest Number of newest values to be read.
    * @param oldest Number of oldest values to be read.
    * @param callback Callback address were results of this request should be sent.
+   * @return ReadRequest
    */
   public static ReadRequest createReadRequest(
       Duration ttl,
@@ -40,6 +42,7 @@ final public class OmiFactory{
         scala.Option.apply(oldest),
         scala.Option.apply(cb),
         ttl,
+            new UserInfo(UserInfo.apply$default$1(),UserInfo.apply$default$2()),
             scala.Option.empty()
         );
   }
@@ -47,11 +50,12 @@ final public class OmiFactory{
   /**
    *
    * @param ttl Time to live of request.
-   * @param odf O-DF structure to be read. 
+   * @param odf O-DF structure to be read.
    * @param begin Timestamp defining begin of time frame to be read.
    * @param end Timestamp defining end of time frame to be read.
    * @param newest Number of newest values to be read.
    * @param oldest Number of oldest values to be read.
+   * @return ReadRequest
    */
   public static ReadRequest createReadRequest(
       Duration ttl,
@@ -69,6 +73,7 @@ final public class OmiFactory{
         scala.Option.apply(oldest),
         scala.Option.empty(),
         ttl,
+            new UserInfo(UserInfo.apply$default$1(),UserInfo.apply$default$2()),
             scala.Option.empty()
         );
       }
@@ -76,9 +81,10 @@ final public class OmiFactory{
   /**
    *
    * @param ttl Time to live of request.
-   * @param odf O-DF structure to be read. 
+   * @param odf O-DF structure to be read.
    * @param begin Timestamp defining begin of time frame to be read.
    * @param end Timestamp defining end of time frame to be read.
+   * @return ReadRequest
    */
   public static ReadRequest createReadRequest(
       Duration ttl,
@@ -94,6 +100,7 @@ final public class OmiFactory{
         scala.Option.empty(),
         scala.Option.empty(),
         ttl,
+            new UserInfo(UserInfo.apply$default$1(),UserInfo.apply$default$2()),
             scala.Option.empty()
         );
       }
@@ -101,8 +108,9 @@ final public class OmiFactory{
   /**
    *
    * @param ttl Time to live of request.
-   * @param odf O-DF structure to be read. 
+   * @param odf O-DF structure to be read.
    * @param begin Timestamp defining begin of time frame to be read.
+   * @return ReadRequest
    */
   public static ReadRequest createReadRequest(
       Duration ttl,
@@ -117,6 +125,7 @@ final public class OmiFactory{
         scala.Option.empty(),
         scala.Option.empty(),
         ttl,
+            new UserInfo(UserInfo.apply$default$1(),UserInfo.apply$default$2()),
             scala.Option.empty()
 
         );
@@ -125,8 +134,9 @@ final public class OmiFactory{
   /**
    *
    * @param ttl Time to live of request.
-   * @param odf O-DF structure to be read. 
+   * @param odf O-DF structure to be read.
    * @param newest Number of newest values to be read.
+   * @return ReadRequest
    */
   public static ReadRequest createReadRequest(
       Duration ttl,
@@ -141,6 +151,7 @@ final public class OmiFactory{
         scala.Option.empty(),
         scala.Option.empty(),
         ttl,
+            new UserInfo(UserInfo.apply$default$1(),UserInfo.apply$default$2()),
             scala.Option.empty()
 
         );
@@ -149,10 +160,11 @@ final public class OmiFactory{
   /**
    *
    * @param ttl Time to live of request.
-   * @param odf O-DF structure to be read. 
+   * @param odf O-DF structure to be read.
    * @param begin Timestamp defining begin of time frame to be read.
    * @param end Timestamp defining end of time frame to be read.
    * @param callback Callback address were results of this request should be sent.
+   * @return ReadRequest
    */
   public static ReadRequest createReadRequest(
       Duration ttl,
@@ -170,6 +182,7 @@ final public class OmiFactory{
         scala.Option.empty(),
         scala.Option.apply(cb),
         ttl,
+            new UserInfo(UserInfo.apply$default$1(),UserInfo.apply$default$2()),
             scala.Option.empty()
         );
       }
@@ -177,9 +190,10 @@ final public class OmiFactory{
   /**
    *
    * @param ttl Time to live of request.
-   * @param odf O-DF structure to be read. 
+   * @param odf O-DF structure to be read.
    * @param begin Timestamp defining begin of time frame to be read.
    * @param callback Callback address were results of this request should be sent.
+   * @return ReadRequest
    */
   public static ReadRequest createReadRequest(
       Duration ttl,
@@ -197,6 +211,7 @@ final public class OmiFactory{
         scala.Option.empty(),
         scala.Option.apply(cb),
         ttl,
+            new UserInfo(UserInfo.apply$default$1(),UserInfo.apply$default$2()),
             scala.Option.empty()
         );
       }
@@ -204,9 +219,10 @@ final public class OmiFactory{
   /**
    *
    * @param ttl Time to live of request.
-   * @param odf O-DF structure to be read. 
+   * @param odf O-DF structure to be read.
    * @param newest Number of newest values to be read.
    * @param callback Callback address were results of this request should be sent.
+   * @return ReadRequest
    */
   public static ReadRequest createReadRequest(
       Duration ttl,
@@ -223,6 +239,7 @@ final public class OmiFactory{
         scala.Option.empty(),
         scala.Option.apply(cb),
         ttl,
+            new UserInfo(UserInfo.apply$default$1(),UserInfo.apply$default$2()),
             scala.Option.empty()
         );
       }
@@ -230,8 +247,9 @@ final public class OmiFactory{
   /**
    *
    * @param ttl Time to live of request.
-   * @param odf O-DF structure to be read. 
+   * @param odf O-DF structure to be read.
    * @param callback Callback address were results of this request should be sent.
+   * @return ReadRequest
    */
   public static ReadRequest createReadRequest(
       Duration ttl,
@@ -247,6 +265,7 @@ final public class OmiFactory{
         scala.Option.empty(),
         scala.Option.apply(cb),
         ttl,
+            new UserInfo(UserInfo.apply$default$1(),UserInfo.apply$default$2()),
             scala.Option.empty()
         );
       }
@@ -254,7 +273,8 @@ final public class OmiFactory{
   /**
    *
    * @param ttl Time to live of request.
-   * @param odf O-DF structure to be read. 
+   * @param odf O-DF structure to be read.
+   * @return ReadRequest
    */
   public static ReadRequest createReadRequest(
       Duration ttl,
@@ -268,6 +288,7 @@ final public class OmiFactory{
         scala.Option.empty(),
         scala.Option.empty(),
         ttl,
+            new UserInfo(UserInfo.apply$default$1(),UserInfo.apply$default$2()),
             scala.Option.empty()
         );
       }
@@ -275,8 +296,9 @@ final public class OmiFactory{
   /**
    *
    * @param ttl Time to live of request.
-   * @param requestIDs Iterable of requestIDs to be polled. 
+   * @param requestIDs Iterable of requestIDs to be polled.
    * @param callback Callback address were results of this request should be sent.
+   * @return PollRequest
    */
   public static PollRequest createPollRequest(
       Duration ttl,
@@ -288,6 +310,7 @@ final public class OmiFactory{
         scala.Option.apply(cb),
         types.JavaHelpers.requestIDsFromJava(requestIDs),
         ttl,
+            new UserInfo(UserInfo.apply$default$1(),UserInfo.apply$default$2()),
             scala.Option.empty()
 
         );
@@ -296,7 +319,8 @@ final public class OmiFactory{
   /**
    *
    * @param ttl Time to live of request.
-   * @param requestIDs Iterable of requestIDs to be polled. 
+   * @param requestIDs Iterable of requestIDs to be polled.
+   * @return PollRequest
    */
   public static PollRequest createPollRequest(
       Duration ttl,
@@ -306,6 +330,7 @@ final public class OmiFactory{
         scala.Option.empty(),
         types.JavaHelpers.requestIDsFromJava(requestIDs),
         ttl,
+            new UserInfo(UserInfo.apply$default$1(),UserInfo.apply$default$2()),
             scala.Option.empty()
 
         );
@@ -315,8 +340,9 @@ final public class OmiFactory{
    * Creates interval subscription with callback address.
    * @param ttl Time to live of subscription.
    * @param interval Interval of sending of subscriped data.
-   * @param odf O-DF structure to be subscriped. 
+   * @param odf O-DF structure to be subscriped.
    * @param callback Callback address were subscriped data is to be sent.
+   * @return SubscriptionRequest
    */
   public static SubscriptionRequest createSubscriptionRequest(
       Duration ttl,
@@ -332,6 +358,7 @@ final public class OmiFactory{
         scala.Option.empty(),
         scala.Option.apply(cb),
         ttl,
+            new UserInfo(UserInfo.apply$default$1(),UserInfo.apply$default$2()),
             scala.Option.empty()
         );
       }
@@ -340,7 +367,8 @@ final public class OmiFactory{
    * Creates interval subscription to be polled.
    * @param ttl Time to live of subscription.
    * @param interval Interval of sending of subscriped data.
-   * @param odf O-DF structure to be subscriped. 
+   * @param odf O-DF structure to be subscriped.
+   * @return SubscriptionRequest
    */
   public static SubscriptionRequest createSubscriptionRequest(
       Duration ttl,
@@ -354,6 +382,7 @@ final public class OmiFactory{
         scala.Option.empty(),
         scala.Option.empty(),
         ttl,
+            new UserInfo(UserInfo.apply$default$1(),UserInfo.apply$default$2()),
             scala.Option.empty()
 
         );
@@ -363,6 +392,7 @@ final public class OmiFactory{
    *
    * @param ttl Time to live of request.
    * @param results Iterable of O-MI result contained in O-MI response.
+   * @return ResponseRequest
    */
   public static ResponseRequest createResponseRequest(
       Duration ttl,
@@ -377,7 +407,8 @@ final public class OmiFactory{
   /**
    *
    * @param ttl Time to live of request.
-   * @param requestIDs Iterable of requestIDs to be cancelled. 
+   * @param requestIDs Iterable of requestIDs to be cancelled.
+   * @return CancelRequest
    */
   public static CancelRequest createCancelRequest(
       Duration ttl,
@@ -386,16 +417,18 @@ final public class OmiFactory{
     return new CancelRequest(
         types.JavaHelpers.requestIDsFromJava(requestIDs),
         ttl,
+            new UserInfo(UserInfo.apply$default$1(),UserInfo.apply$default$2()),
             scala.Option.empty()
 
-        ); 
+        );
       }
 
   /**
    * O-MI result of subscription request.
    * @param returnValue Return element of O-MI result element.
-   * @param requestIDs Iterable of requestIDs associated with request associated to this result. 
-   * @param odf O-DF structure that was subscriped. 
+   * @param requestIDs Iterable of requestIDs associated with request associated to this result.
+   * @param odf O-DF structure that was subscriped.
+   * @return OmiResult
    */
   public static OmiResult createOmiResult(
       OmiReturn returnValue,
@@ -412,7 +445,8 @@ final public class OmiFactory{
   /**
    * O-MI result of subscription or cancel request.
    * @param returnValue Return element of O-MI result element.
-   * @param requestIDs Iterable of requestIDs associated with request associated to this result. 
+   * @param requestIDs Iterable of requestIDs associated with request associated to this result.
+   * @return OmiResult
    */
   public static OmiResult createOmiResult(
       OmiReturn returnValue,
@@ -428,6 +462,7 @@ final public class OmiFactory{
   /**
    * O-MI result of subscription or cancel request.
    * @param returnValue Return element of O-MI result element.
+   * @return OmiResult
    */
   public static OmiResult createOmiResult(
       OmiReturn returnValue
@@ -442,8 +477,9 @@ final public class OmiFactory{
 
   /**
    *
-   * @param returnCode HTTP return code associated with O-MI request. Different from HTTP return code of actual HTTP request. 
-   * @param description Textual description of return value. 
+   * @param returnCode HTTP return code associated with O-MI request. Different from HTTP return code of actual HTTP request.
+   * @param description Textual description of return value.
+   * @return OmiReturn
    */
   public static OmiReturn createOmiReturn(
       String returnCode,
@@ -457,7 +493,8 @@ final public class OmiFactory{
 
   /**
    *
-   * @param returnCode HTTP return code associated with O-MI request. Different from HTTP return code of actual HTTP request. 
+   * @param returnCode HTTP return code associated with O-MI request. Different from HTTP return code of actual HTTP request.
+   * @return OmiReturn
    */
   public static OmiReturn createOmiReturn(
       String returnCode
@@ -473,6 +510,7 @@ final public class OmiFactory{
    * @param ttl Time to live of request.
    * @param odf O-DF structure to be written to O-MI Node.
    * @param callback Callback address were results of this request should be sent.
+   * @return WriteRequest
    */
   public static WriteRequest createWriteRequest(
       Duration ttl,
@@ -484,6 +522,7 @@ final public class OmiFactory{
         odf,
         scala.Option.apply(cb),
         ttl,
+            new UserInfo(UserInfo.apply$default$1(),UserInfo.apply$default$2()),
             scala.Option.empty()
         );
       }
@@ -492,6 +531,7 @@ final public class OmiFactory{
    *
    * @param ttl Time to live of request.
    * @param odf O-DF structure to be written to O-MI Node.
+   * @return WriteRequest
    */
   public static WriteRequest createWriteRequest(
       Duration ttl,
@@ -501,6 +541,7 @@ final public class OmiFactory{
         odf,
         scala.Option.empty(),
         ttl,
+            new UserInfo(UserInfo.apply$default$1(),UserInfo.apply$default$2()),
             scala.Option.empty()
         );
       }

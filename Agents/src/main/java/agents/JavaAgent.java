@@ -12,6 +12,7 @@ import scala.concurrent.ExecutionContext;
 import scala.collection.immutable.HashMap;
 import scala.util.*;
 import akka.actor.Props;
+import akka.actor.ActorRef;
 import akka.util.Timeout;
 import static akka.pattern.Patterns.ask;
 import akka.japi.Creator;
@@ -23,7 +24,6 @@ import akka.actor.Cancellable;
 import com.typesafe.config.Config;
 
 import agentSystem.JavaInternalAgent; 
-import agentSystem.ResponsibilityRequest;
 import agentSystem.*;
 import types.Path;
 import types.OmiTypes.*;
@@ -48,51 +48,35 @@ public class JavaAgent extends JavaInternalAgent {
    *
    *  @param _config Contains configuration for this agent, as given in application.conf.
    */
-  static public Props props(final Config _config) {
+  static public Props props(final Config _config, final ActorRef requestHandler, final ActorRef dbHandler) {
     return Props.create(new Creator<JavaAgent>() {
       private static final long serialVersionUID = 3573L;
 
       @Override
       public JavaAgent create() throws Exception {
-        return new JavaAgent(_config);
+        return new JavaAgent(_config, requestHandler, dbHandler);
       }
     });
   }
 
   protected Config config;
-
   protected FiniteDuration interval;
-
   protected Path path;
-
-  protected Cancellable intervalJob = null;
-
-  //Random for generating new values for path.
-  protected Random rnd = new Random();
-
+  protected Cancellable intervalJob;
 
   // Constructor
-  public JavaAgent(Config conf){
+  public JavaAgent(Config conf, final ActorRef requestHandler, final ActorRef dbHandler){
+    super(requestHandler,dbHandler);
     config = conf;
 
+    path = new Path(config.getString("path"));
     // Parse configuration for interval
     interval = new FiniteDuration(
             config.getDuration("interval", TimeUnit.SECONDS),
             TimeUnit.SECONDS);	
 
-    path = new Path(config.getString("path"));
-  }
 
-
-  /**
-   * Method to be called when a Start() message is received.
-   */
-  @Override
-  public InternalAgentResponse start(){
-    try{
-      //Lets schelude a messge to us on every interval
-      //and save the reference so we can stop the agent.
-      intervalJob = context().system().scheduler().schedule(
+    intervalJob = context().system().scheduler().schedule(
         Duration.Zero(),                //Delay start
         interval,                       //Interval between messages
         self(),                         //To 
@@ -100,39 +84,24 @@ public class JavaAgent extends JavaInternalAgent {
         context().system().dispatcher(),//ExecutionContext, Akka
         null                            //Sender?
       );
-
-      return new CommandSuccessful();
-
-    } catch (Throwable t) {
-      //Normally in Akka if exception is thrown in child actor, it is 
-      //passed to its parent. That uses {@link SupervisorStrategy} to decide 
-      //what to do. With {@link StartFailed} we can tell AgentSystem that an 
-      //Exception was thrown during handling of Start() message.
-      return new StartFailed(t.getMessage(), scala.Option.apply(t) );
-    }
   }
-
-
+  
   /**
-   * Method to be called when a Stop() message is received.
-   * This should gracefully stop all activities that the agent is doing.
+   * Method that is inherited from akka.actor.UntypedActor and handles incoming messages
+   * from other Actors.
    */
   @Override
-  public InternalAgentResponse stop(){
-
-    if (intervalJob != null){//is defined? 
-      intervalJob.cancel();  //Cancel intervalJob
-      
-      // Check if intervalJob was cancelled
-      if( intervalJob.isCancelled() ){
-        intervalJob = null;
-      } else {
-        return new StartFailed("Failed to stop agent.", scala.Option.apply(null));
-      }
-    } 
-    return new CommandSuccessful();
+  public void onReceive(Object message){
+    if( message instanceof String) {
+      String str = (String) message;
+      if( str.equals("Update"))
+        update();
+      else super.onReceive(message);
+    } else super.onReceive(message);
   }
 
+  //Random for generating new values for path.
+  protected Random rnd = new Random();
 
   /**
    * Method to be called when a "Update" message is received.
@@ -190,7 +159,7 @@ public class JavaAgent extends JavaInternalAgent {
 
     // This sends debug log message to O-MI Node logs if
     // debug level is enabled (in logback.xml and application.conf)
-    log.debug(name + " pushing data...");
+    log.debug(name() + " pushing data...");
 
     // Create O-MI write request
     // interval as time to live
@@ -199,11 +168,9 @@ public class JavaAgent extends JavaInternalAgent {
         objects   // O-DF
     );
     
-    // timeout for the write request, which means how long this agent waits for write results
-    Timeout timeout = new Timeout(interval);
 
     // Execute the request, execution is asynchronous (will not block)
-    Future<ResponseRequest> result = writeToNode(write, timeout);
+    Future<ResponseRequest> result = writeToDB(write);
 
     ExecutionContext ec = context().system().dispatcher();
     // Call LogResult function (below) when write was successful.
@@ -220,10 +187,10 @@ public class JavaAgent extends JavaInternalAgent {
           if( result instanceof Results.Success ){
             // This sends debug log message to O-MI Node logs if
             // debug level is enabled (in logback.xml and application.conf)
-            log.debug(name + " wrote paths successfully.");
+            log.info(name() + " wrote paths successfully.");
           } else {
             log.warning(
-                "Something went wrong when " + name + " writed, " + result.toString()
+                "Something went wrong when " + name() + " writed, " + result.toString()
                 );
           }
         }
@@ -233,24 +200,19 @@ public class JavaAgent extends JavaInternalAgent {
   public final class LogFailure extends OnFailure{
       @Override public final void onFailure(Throwable t) {
           log.warning(
-            name + "'s write future failed, error: " + t.getMessage()
+            name() + "'s write future failed, error: " + t.getMessage()
           );
       }
   }
 
 
-  
+
   /**
-   * Method that is inherited from akka.actor.UntypedActor and handles incoming messages
-   * from other Actors.
+   * Method to be called when actor is stopped.
+   * This should gracefully stop all activities that the agent is doing.
    */
   @Override
-  public void onReceive(Object message) throws StartFailed, CommandFailed {
-    if( message instanceof String) {
-      String str = (String) message;
-      if( str.equals("Update"))
-        update();
-      else super.onReceive(message);
-    } else super.onReceive(message);
+  public void postStop(){
+      intervalJob.cancel();  //Cancel intervalJob
   }
 }
