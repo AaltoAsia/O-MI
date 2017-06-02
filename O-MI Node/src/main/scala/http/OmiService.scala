@@ -269,8 +269,9 @@ trait OmiService
 
       //val eitherOmi = OmiParser.parse(requestString)
 
-
-      val originalReq = RawRequestWrapper(requestString, UserInfo(remoteAddress=Some(remote)))
+      //XXX: Corrected namespaces
+      val correctedRequestString = requestString.replace("\"omi.xsd\"", "\"http://www.opengroup.org/xsd/omi/1.0/\"").replace("\"odf.xsd\"", "\"http://www.opengroup.org/xsd/odf/1.0/\"")
+      val originalReq = RawRequestWrapper(correctedRequestString, UserInfo(remoteAddress=Some(remote)))
       val ttlPromise = Promise[ResponseRequest]()
       originalReq.ttl match {
         case ttl: FiniteDuration => ttlPromise.completeWith(
