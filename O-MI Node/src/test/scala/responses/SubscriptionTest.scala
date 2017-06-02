@@ -1,6 +1,6 @@
 package responses
 
-import agentSystem.{AgentSystem, DBPusher}
+import agentSystem.{AgentSystem }
 import akka.util.Timeout
 import akka.testkit.EventFilter
 import akka.pattern.ask

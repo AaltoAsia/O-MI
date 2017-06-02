@@ -23,7 +23,7 @@ import javax.xml.validation.{Schema, SchemaFactory, Validator}
 
 import scala.util.{Failure, Success, Try}
 import scala.xml.factory.XMLLoader
-import scala.xml.{Elem, Node, XML}
+import scala.xml.{Elem, Node, XML, NamespaceBinding}
 import akka.http.scaladsl.model.RemoteAddress
 import org.xml.sax.SAXException
 import types.{SchemaError,ParseError}
@@ -66,6 +66,7 @@ abstract trait Parser[Result] {
     val factory : SchemaFactory =
       SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI)
 
+    //println( scopeToStr(xml.scope))
     val schema: Schema = factory.newSchema(schemaPath)
     val validator: Validator = schema.newValidator()
       validator.validate(new StreamSource(new StringReader(xml.toString)))
@@ -86,5 +87,10 @@ abstract trait Parser[Result] {
     }
   }
 
+  def scopeToStr( scope: NamespaceBinding ) : String ={
+    val current = s"XML Namespace ${scope.prefix} from ${scope.uri}" 
+    val parent = if( scope.parent != null ) " parented by:\n" + scopeToStr(scope.parent) else ""
+    current + parent
+  }
   def currentTime() : Timestamp= new Timestamp( new Date().getTime ) 
 }

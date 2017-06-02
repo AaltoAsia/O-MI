@@ -38,7 +38,7 @@ import akka.http.scaladsl.server.RouteResult // implicit route2HandlerFlow
 
 import database._
 import agentSystem._
-import responses.{RequestHandler, SubscriptionManager, CallbackHandler, OmiRequestHandlerBase}
+import responses.{RequestHandler, SubscriptionManager, CallbackHandler}
 import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 import types.OdfTypes._
 import types.OmiTypes.{OmiReturn,OmiResult,Results,WriteRequest,ResponseRequest}
