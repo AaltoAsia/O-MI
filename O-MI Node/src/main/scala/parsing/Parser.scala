@@ -23,11 +23,11 @@ import javax.xml.validation.{Schema, SchemaFactory, Validator}
 
 import scala.util.{Failure, Success, Try}
 import scala.xml.factory.XMLLoader
-import scala.xml.{Elem, Node, XML}
-
+import scala.xml.{Elem, Node, XML, NamespaceBinding}
 import akka.http.scaladsl.model.RemoteAddress
 import org.xml.sax.SAXException
-import types.ParseError
+import types.{SchemaError,ParseError}
+import types.OmiTypes.UserInfo
 
 /**
  * Parser trait that parsers inherit,
@@ -47,14 +47,14 @@ abstract trait Parser[Result] {
     XML.withSAXParser(saxParser)
   }
 
-  def parse(xml_msg: String, user: Option[RemoteAddress]) : Result
+  def parse(xml_msg: String) : Result
 
   //@deprecated("Not supported because of xml external entity attack fix, use this.XMLParser! -- TK", "2016-04-01")
   //def parse(xml_msg: xml.Node) : Result
   
-  def parse(xml_msg: File, user: Option[RemoteAddress]) : Result
+  def parse(xml_msg: File) : Result
   
-  protected[this] def schemaPath : javax.xml.transform.Source
+  protected[this] def schemaPath : Array[javax.xml.transform.Source]
   
   /**
    * Method for checking does given xml confort schema of parser.
@@ -62,27 +62,35 @@ abstract trait Parser[Result] {
    * @return ParseErrors found while checking, if empty, successful
    */
   def schemaValidation(xml: Node): Seq[ParseError] = {
+    Try {
     val factory : SchemaFactory =
       SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI)
 
+    //println( scopeToStr(xml.scope))
     val schema: Schema = factory.newSchema(schemaPath)
     val validator: Validator = schema.newValidator()
-    Try {
       validator.validate(new StreamSource(new StringReader(xml.toString)))
     } match {
       case Success(a) =>
         Seq.empty;
-      case Failure(e) => e match {
+      case Failure(e) => 
+        
+        e match {
         case e: IOException =>
-          Seq(ParseError("Invalid XML, IO failure: " + e.getMessage))
+          Seq(SchemaError("IO failure: " + e.getMessage))
         case e: SAXException =>
-          Seq(ParseError("Invalid XML, schema failure: " + e.getMessage))
+          Seq(SchemaError(e.getMessage))
         case e: Exception=>
-          Seq(ParseError("Unknown exception: " + e.getMessage))
+          Seq(SchemaError("Unknown exception: " + e.getMessage))
         case _ => throw e
       }
     }
   }
 
+  def scopeToStr( scope: NamespaceBinding ) : String ={
+    val current = s"XML Namespace ${scope.prefix} from ${scope.uri}" 
+    val parent = if( scope.parent != null ) " parented by:\n" + scopeToStr(scope.parent) else ""
+    current + parent
+  }
   def currentTime() : Timestamp= new Timestamp( new Date().getTime ) 
 }

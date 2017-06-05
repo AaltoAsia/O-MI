@@ -6,15 +6,21 @@ import akka.event.Logging;
 import akka.event.LoggingAdapter;
 import com.typesafe.config.Config;
 
-import agentSystem.ResponsibilityRequest;
 import scala.concurrent.Future;
+import scala.concurrent.ExecutionContext;
+import akka.dispatch.Foreach;
 import akka.util.Timeout;
+
 import static akka.pattern.Patterns.ask;
 import agentSystem.InternalAgent;
+import types.OmiTypes.OmiRequest;
+import types.OmiTypes.OdfRequest;
 import types.OmiTypes.WriteRequest;
+import types.OmiTypes.ReadRequest;
+import types.OmiTypes.ActorSenderInformation;
 import types.OmiTypes.ResponseRequest;
 
-public abstract class JavaInternalAgent extends UntypedActor implements InternalAgent {
+public abstract class JavaInternalAgent extends UntypedActor implements InternalAgent{
   /**
    *  static public Props props(final Config _config)
    *  THIS STATIC METHOD MUST EXISTS FOR JavaInternalAgent. 
@@ -31,48 +37,70 @@ public abstract class JavaInternalAgent extends UntypedActor implements Internal
   //protected Config config;
 
   protected ActorRef agentSystem = context().parent();
+  protected ActorRef dbHandler;
+  protected ActorRef requestHandler;
 
-  /**
-   * Contains name of the agent as was given in application.conf
-   */
-  protected String name = self().path().name();
-
-  /**
-   * Default restart behaviour: call stop(); start();
-   */
-  @Override
-  public InternalAgentResponse restart(){
-    InternalAgentResponse result = stop();
-    if( result instanceof InternalAgentSuccess ){
-      return start();
-    } else return result;
+  protected JavaInternalAgent(ActorRef requestHandler, ActorRef dbHandler){
+    this.dbHandler = dbHandler;
+    this.requestHandler = requestHandler;
   }
+
+  /**
+   * Get name of the agent as was given in application.conf
+   */
+  protected String name(){ 
+    return self().path().name();
+  };
+
 
   /**
    * Wrapper for easier request execution.
    */
+  final public Future<ResponseRequest> requestFromDB( OdfRequest request){
+    Timeout timeout = new Timeout(request.handleTTL());
+    ActorSenderInformation asi = new ActorSenderInformation( name(), self());
+    OmiRequest requestWithSenderInformation = request.withSenderInformation( asi );
+    Future<Object> future = ask( dbHandler, requestWithSenderInformation, timeout);
+    Future<ResponseRequest> responseFuture = types.JavaHelpers.formatWriteFuture(future);
+    return responseFuture;
+  }
+
+  final public Future<ResponseRequest> readFromDB( ReadRequest read){ return requestFromDB(read);}
+  final public Future<ResponseRequest> writeToDB( WriteRequest write){ return requestFromDB(write);}
+
+  final public Future<ResponseRequest> requestFromNode( OdfRequest request){
+    Timeout timeout = new Timeout(request.handleTTL());
+    ActorSenderInformation asi = new ActorSenderInformation( name(), self());
+    OmiRequest requestWithSenderInformation = request.withSenderInformation( asi );
+    Future<Object> future = ask( requestHandler, requestWithSenderInformation, timeout);
+    Future<ResponseRequest> responseFuture = types.JavaHelpers.formatWriteFuture(future);
+    return responseFuture;
+  }
+  /**
+   * Wrapper for easier request execution.
+   */
   final public Future<ResponseRequest> writeToNode( WriteRequest write, Timeout timeout ){
-    ResponsibilityRequest rw = new ResponsibilityRequest(name, write);
-    Future<Object> future = ask( agentSystem,rw, timeout);
-    Future<ResponseRequest> result = types.JavaHelpers.formatWriteFuture(future);
-    return result;
+    return requestFromDB(write);
   }
 
   @Override
-  public void onReceive(Object message) throws StartFailed, CommandFailed {
-    if( message instanceof Start) {
-      // Start is received when this agent should start it's functionality
-      getSender().tell(start(),getSelf());
-
-    } else if( message instanceof Stop) {
-      // Stop is received when this agent should stop it's functionality
-      getSender().tell(stop(),getSelf());
-
-    } else if( message instanceof Restart) {
-      // Restart is received when this agent should restart
-      // default behaviour is to call stop() and then start()
-      getSender().tell(restart(),getSelf());
-
-    }
+  public void onReceive(Object message) {
+  }
+      
+  final ExecutionContext ec = context().dispatcher();
+  final protected void respond(Object msg ){
+    ActorRef senderRef = getSender();
+    senderRef.tell(msg,getSelf());
+  }
+  final protected void respondFuture(Future<ResponseRequest> responseFuture ){
+    ActorRef senderRef = getSender();
+    responseFuture.foreach(
+      new Foreach<ResponseRequest>(){
+        public void each(ResponseRequest response){
+          senderRef.tell(response,getSelf());
+        }
+      },
+      ec
+    ); 
   }
 }

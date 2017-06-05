@@ -1,6 +1,6 @@
 addSbtPlugin("io.spray" % "sbt-revolver" % "0.8.0")
 
-addSbtPlugin("com.typesafe.sbteclipse" % "sbteclipse-plugin" % "2.5.0")
+addSbtPlugin("com.typesafe.sbteclipse" % "sbteclipse-plugin" % "5.1.0")
 
 addSbtPlugin("org.scoverage" % "sbt-scoverage" % "1.3.5")
 
@@ -23,4 +23,4 @@ addSbtPlugin("com.earldouglas" % "xsbt-web-plugin" % "1.1.0")
 
 addSbtPlugin("com.typesafe.sbt" % "sbt-native-packager" % "1.0.3")
 
-
+addSbtPlugin("net.virtual-void" % "sbt-dependency-graph" % "0.8.2")

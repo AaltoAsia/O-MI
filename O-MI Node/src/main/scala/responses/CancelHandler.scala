@@ -32,18 +32,17 @@ import scala.xml.NodeSeq
 import akka.actor.ActorRef
 import akka.pattern.ask
 import akka.util.Timeout
-import http.{ActorSystemContext, Actors}
+import http.{ActorSystemContext, Actors, Settings, OmiConfigExtension }
 
-
-trait CancelHandler extends OmiRequestHandlerBase{
+trait CancelHandler {
 
   protected def subscriptionManager : ActorRef 
+  protected implicit val settings: OmiConfigExtension
   /** Method for handling CancelRequest.
     * @param cancel request
     * @return (xml response, HTTP status code) wrapped in a Future
     */
   def handleCancel(cancel: CancelRequest): Future[ResponseRequest] = {
-    log.debug("Handling cancel.")
     implicit val timeout = Timeout(10.seconds) // NOTE: ttl will timeout from elsewhere
     val jobs: Future[Seq[OmiResult]] = Future.sequence(cancel.requestIDs.map {
       id =>
@@ -56,7 +55,6 @@ trait CancelHandler extends OmiRequestHandlerBase{
       ).recoverWith{
         case e : Throwable => {
           val error = "Error when trying to cancel subcription: "
-          log.error(e, error)
           Future.successful(Results.InternalError(Some(error + e.toString)))
         }
       }

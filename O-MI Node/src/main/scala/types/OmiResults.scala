@@ -4,9 +4,10 @@ package OmiTypes
 import java.lang.{Iterable => JIterable}
 import scala.collection.JavaConversions._
 import scala.concurrent.duration._
-import parsing.xmlGen.{defaultScope, scalaxb, xmlTypes}
+import parsing.xmlGen.scalaxb.DataRecord
+import parsing.xmlGen.{omiDefaultScope, scalaxb, xmlTypes}
 import types.OdfTypes.{ OdfTreeCollection, OdfObjects}
-import parsing.xmlGen.xmlTypes.{ObjectsType, OmiEnvelope}
+import parsing.xmlGen.xmlTypes._
 import scala.reflect.ClassTag
 import scala.util.Try
 
@@ -34,16 +35,35 @@ class OmiResult(
   implicit def asRequestResultType : xmlTypes.RequestResultType ={
     xmlTypes.RequestResultType(
       returnValue.toReturnType,
-      requestIDs.headOption.map{
+      requestIDs.map{
         id => xmlTypes.IdType(id.toString)
       },
       odf.map{ 
         objects =>
-          scalaxb.DataRecord( Some("omi.xsd"), Some("msg"), odfMsg( scalaxb.toXML[ObjectsType]( objects.asObjectsType , None, Some("Objects"), defaultScope ) ) ) 
+          MsgType(
+            Seq(
+              DataRecord(None, Some("Objects"), objects.asXML
+                /*
+                Some("omi.xsd"),
+                Some("msg"),
+                odfMsg( 
+                  scalaxb.toXML[ObjectsType]( objects.asObjectsType, None, Some("Objects"), 
+                    omiDefaultScope))
+                */
+            )
+          )
+        )
+
       },
       None,
       None,
-      odf.map{ objs => "odf" }
+      Map(
+        ("@targetType" -> DataRecord(TargetTypeType.fromString("node", omiDefaultScope )))
+      ) ++ odf.map{
+        objects =>
+        ("@msgformat" -> DataRecord("odf"))
+
+      }
     )
   }
   override def equals( other: Any ): Boolean ={
@@ -84,11 +104,15 @@ object Results{
   def unionReduce(results: OdfTreeCollection[OmiResult]): OdfTreeCollection[OmiResult] ={
     results.groupBy( _.getClass ).map{ 
       case (a: Any, rs : Seq[OmiResult]) => 
-        rs.collect{
-          case res : UnionableResult => res
-          }.reduce{
-            (l: UnionableResult, r: UnionableResult) => l.union(r)
-          }
+        if( rs.size == 1){
+          rs.head
+        } else { 
+          rs.collect{
+            case res : UnionableResult => res
+            }.reduce{
+              (l: UnionableResult, r: UnionableResult) => l.union(r)
+            }
+        }
     }.map{ case r: OmiResult => r }.toVector
   }
 

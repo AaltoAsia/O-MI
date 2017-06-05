@@ -1,42 +1,23 @@
-
-/*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- +    Copyright (c) 2015 Aalto University.                                        +
- +                                                                                +
- +    Licensed under the 4-clause BSD (the "License");                            +
- +    you may not use this file except in compliance with the License.            +
- +    You may obtain a copy of the License at top most directory of project.      +
- +                                                                                +
- +    Unless required by applicable law or agreed to in writing, software         +
- +    distributed under the License is distributed on an "AS IS" BASIS,           +
- +    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.    +
- +    See the License for the specific language governing permissions and         +
- +    limitations under the License.                                              +
- +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
-
-package responses
+package database
 
 import java.util.Date
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-import akka.actor.ActorRef
+import akka.actor.{Actor, ActorRef, ActorSystem, ActorLogging}
 import analytics.{AddUser, AddRead, AnalyticsStore}
-import database.{DB, GetTree, DBReadWrite, SingleStores}
 
 //import scala.collection.JavaConverters._ //JavaConverters provide explicit conversion methods
 //import scala.collection.JavaConversions.asJavaIterator
-import scala.xml.NodeSeq
+import scala.xml.{NodeSeq, PrettyPrinter}
 //import akka.http.StatusCode
 
 import types.OdfTypes._
 import types.OmiTypes._
 import http.{ActorSystemContext, Storages}
 
-trait ReadHandler extends OmiRequestHandlerBase {
-  protected implicit def dbConnection: DB
-  protected implicit def singleStores: SingleStores
-  protected implicit def analyticsStore: Option[ActorRef]
+trait DBReadHandler extends DBHandlerBase{
   /** Method for handling ReadRequest.
     * @param read request
     * @return (xml response, HTTP status code)
@@ -44,7 +25,7 @@ trait ReadHandler extends OmiRequestHandlerBase {
   def handleRead(read: ReadRequest): Future[ResponseRequest] = {
      log.debug("Handling read.")
      read match{
-       case ReadRequest(_,_,begin,end,Some(newest),Some(oldest),_,_) =>
+       case ReadRequest(_,_,begin,end,Some(newest),Some(oldest),_,_,_) =>
          Future.successful(
            ResponseRequest( Vector(
              Results.InvalidRequest(
@@ -65,18 +46,29 @@ trait ReadHandler extends OmiRequestHandlerBase {
            )
          )*/
        case default: ReadRequest =>
+         log.info( 
+           s"DBHandler handling Read(" + 
+           default.begin.map{ t => s"begin: $t," }.getOrElse("") + 
+           default.end.map{ t => s"end: $t," }.getOrElse("") + 
+           default.newest.map{ t => s"newest: $t," }.getOrElse("") + 
+           default.oldest.map{ t => s"oldest: $t," }.getOrElse("") + 
+           s"ttl: ${default.ttl} )"
+          )
+
          val leafs = getLeafs(read.odf)
+
+
          // NOTE: Might go off sync with tree or values if the request is large,
          // but it shouldn't be a big problem
          val metadataTree = (singleStores.hierarchyStore execute GetTree())
 
          //Find nodes from the request that HAVE METADATA OR DESCRIPTION REQUEST
          def nodesWithoutMetadata: Option[OdfObjects] = getOdfNodes(read.odf).collect {
-           case oii@OdfInfoItem(_, _, desc, mData)
-            if desc.isDefined || mData.isDefined => 
+           case oii@OdfInfoItem(_, _, desc, mData, typeValue,attr)
+           if desc.isDefined || mData.isDefined || typeValue.nonEmpty ||attr.nonEmpty=> 
               createAncestors(oii.copy(values = OdfTreeCollection()))
-           case obj@OdfObject(pat, _, _, _, des, _)
-             if des.isDefined  => 
+           case obj@OdfObject(pat, _, _, _, des, _,attr)
+             if des.isDefined  || attr.nonEmpty => 
                createAncestors(obj.copy(infoItems = OdfTreeCollection(), objects = OdfTreeCollection()))
          }.reduceOption(_.union(_))
 
@@ -94,7 +86,10 @@ trait ReadHandler extends OmiRequestHandlerBase {
                 .union( objectsWithValues )
 
 
-             val metaCombined = objectsWithMetadata.fold(objectsWithValuesAndAttributes)(metas => objectsWithValuesAndAttributes.union(metas) )
+             val metaCombined = objectsWithMetadata
+               .fold(objectsWithValuesAndAttributes){
+                 metas => objectsWithValuesAndAttributes.union(metas) 
+               }
              val found = Results.Read(metaCombined)
              val requestsPaths = leafs.map { _.path }
              val foundOdf = getLeafs(objectsWithValuesAndAttributes)
@@ -104,7 +99,7 @@ trait ReadHandler extends OmiRequestHandlerBase {
                val reqTime: Long = new Date().getTime()
                foundOdf.foreach(n => {
                  store ! AddRead(n.path, reqTime)
-                 store ! AddUser(n.path, read.user.map(_.hashCode()), reqTime)
+                 store ! AddUser(n.path, read.user.remoteAddress.map(_.hashCode()), reqTime)
                })
              }
 

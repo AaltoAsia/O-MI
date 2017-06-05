@@ -22,6 +22,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Future, duration}
 import scala.util.Try
 import scala.concurrent.duration._
+import scala.collection.immutable.HashMap
 
 import akka.actor.{Cancellable, Actor, ActorLogging, Props}
 import database._
@@ -64,8 +65,8 @@ case class SubscriptionTimeout(id: Long)
 case class PollSubscription(id: Long)
 
 object SubscriptionManager{
-  def props()(
-    implicit settings: OmiConfigExtension,
+  def props(
+   settings: OmiConfigExtension,
    singleStores: SingleStores,
    callbackHandler: CallbackHandler
   ): Props = Props(
@@ -214,7 +215,7 @@ class SubscriptionManager(
             //lookup latest value from latestStore, if exists use that
             case Some(value) => {
               log.info(s"Found old value from latestStore for sub ${pollInterval.id}")
-              Vector(value, OdfValue(value.value, new Timestamp(pollTime), value.attributes))
+              Vector(value, OdfValue(value.value, new Timestamp(pollTime), HashMap(value.attributes.toSeq:_*)))
             }
             //no previous values v is empty
             case _ => {
