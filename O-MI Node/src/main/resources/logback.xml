@@ -43,7 +43,7 @@
     <logger name="agentSystem" level="INFO" />
     <logger name="accessControl" level="INFO" />
 
-    <root level="INFO">
+    <root level="DEBUG">
         <appender-ref ref="CONSOLE"/>
         <appender-ref ref="ASYNC"/>
     </root>

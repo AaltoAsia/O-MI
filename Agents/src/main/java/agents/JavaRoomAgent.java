@@ -30,7 +30,7 @@ import akka.actor.Cancellable;
 import com.typesafe.config.Config;
 
 import agentSystem.JavaInternalAgent; 
-import agentSystem.ResponsibilityRequest;
+import akka.actor.ActorRef;
 import agentSystem.*;
 import types.Path;
 import types.OmiTypes.*;
@@ -55,14 +55,14 @@ public class JavaRoomAgent extends JavaInternalAgent {
    *  @param _config Contains configuration for this agent, as given in application.conf.
    *  <a href="https://github.com/typesafehub/config">Typesafe config</a>.
    */
-  static public Props props(final Config _config) {
+  static public Props props(final Config _config, final ActorRef requestHandler, final ActorRef dbHandler) {
     return Props.create(new Creator<JavaRoomAgent>() {
       //Random serialVersionUID, for serialization.
       private static final long serialVersionUID = 35735155L;
 
       @Override
       public JavaRoomAgent create() throws Exception {
-        return new JavaRoomAgent(_config);
+        return new JavaRoomAgent(_config, requestHandler, dbHandler);
       }
     });
   }
@@ -78,64 +78,37 @@ public class JavaRoomAgent extends JavaInternalAgent {
   protected OdfObjects odf;
 
   // Constructor
-  public JavaRoomAgent(Config conf){
-
+  public JavaRoomAgent(Config conf, final ActorRef requestHandler, final ActorRef dbHandler){
+    super(requestHandler,dbHandler);    
     // Parse configuration for interval
     interval = new FiniteDuration(
             conf.getDuration("interval", TimeUnit.SECONDS),
             TimeUnit.SECONDS);	
 
-    odf = createOdf();
-  }
-
-
-  /**
-   * Method to be called when a Start() message is received.
-   */
-  @Override
-  public InternalAgentResponse start(){
-    try{
-      //Lets schelude a messge to us on every interval
-      //and save the reference so we can stop the agent.
-      intervalJob = context().system().scheduler().schedule(
+    //Lets schelude a messge to us on every interval
+    //and save the reference so we can stop the agent.
+    intervalJob = context().system().scheduler().schedule(
         Duration.Zero(),                //Delay start
         interval,                       //Interval between messages
         self(),                         //To 
         "Update",                       //Message, preferably immutable.
         context().system().dispatcher(),//ExecutionContext, Akka
         null                            //Sender?
-      );
+        );
 
-      return new CommandSuccessful();
-
-    } catch (Throwable t) {
-      //Normally in Akka if exception is thrown in child actor, it is 
-      //passed to its parent. That uses {@link SupervisorStrategy} to decide 
-      //what to do. With {@link StartFailed} we can tell AgentSystem that an 
-      //Exception was thrown during handling of Start() message.
-      return new StartFailed(t.getMessage(), scala.Option.apply(t) );
-    }
+    odf = createOdf();
   }
 
-
   /**
-   * Method to be called when a Stop() message is received.
+   * Method to be called when actor is stopped.
    * This should gracefully stop all activities that the agent is doing.
    */
   @Override
-  public InternalAgentResponse stop(){
+  public void postStop(){
 
     if (intervalJob != null){//is defined? 
       intervalJob.cancel();  //Cancel intervalJob
-      
-      // Check if intervalJob was cancelled
-      if( intervalJob.isCancelled() ){
-        intervalJob = null;
-      } else {
-        return new StartFailed("Failed to stop agent.", scala.Option.apply(null));
-      }
     } 
-    return new CommandSuccessful();
   }
 
   protected int writeCount = 0;
@@ -492,7 +465,7 @@ public class JavaRoomAgent extends JavaInternalAgent {
 
     // This sends debug log message to O-MI Node logs if
     // debug level is enabled (in logback.xml and application.conf)
-    log.debug(name + " pushing data...");
+    log.debug(name() + " pushing data...");
 
     // Create O-MI write request
     // interval as time to live
@@ -501,11 +474,8 @@ public class JavaRoomAgent extends JavaInternalAgent {
         odf   // O-DF
     );
     
-    // timeout for the write request, which means how long this agent waits for write results
-    Timeout timeout = new Timeout(interval);
-
     // Execute the request, execution is asynchronous (will not block)
-    Future<ResponseRequest> result = writeToNode(write, timeout);
+    Future<ResponseRequest> result = writeToDB(write);
 
     ExecutionContext ec = context().system().dispatcher();
     // Call LogResult function (below) when write was successful.
@@ -522,10 +492,10 @@ public class JavaRoomAgent extends JavaInternalAgent {
           if( result instanceof Results.Success ){
             // This sends debug log message to O-MI Node logs if
             // debug level is enabled (in logback.xml and application.conf)
-            log.debug(name + " wrote paths successfully.");
+            log.debug(name() + " wrote paths successfully.");
           } else {
             log.warning(
-                "Something went wrong when " + name + " writed, " + result.toString()
+                "Something went wrong when " + name() + " writed, " + result.toString()
                 );
           }
         }
@@ -535,7 +505,7 @@ public class JavaRoomAgent extends JavaInternalAgent {
   public final class LogFailure extends OnFailure{
       @Override public final void onFailure(Throwable t) {
           log.warning(
-            name + "'s write future failed, error: " + t.getMessage()
+            name() + "'s write future failed, error: " + t.getMessage()
           );
       }
   }
@@ -545,7 +515,7 @@ public class JavaRoomAgent extends JavaInternalAgent {
    * from other Actors.
    */
   @Override
-  public void onReceive(Object message) throws StartFailed, CommandFailed {
+  public void onReceive(Object message){
     if( message instanceof String) {
       String str = (String) message;
       if( str.equals("Update"))

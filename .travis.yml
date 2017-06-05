@@ -1,9 +1,10 @@
+dist: trusty
 sudo: false
 language: scala
-jdk: 
+jdk:
   - oraclejdk8
 scala:
-  - "2.11.8"
+  - 2.11.8
 notifications:
   flowdock:
     - 8fa39d3ba829b0083c135134658d0ac2
@@ -14,17 +15,29 @@ branches:
     - master
     - development
     - travis
-# These directories are cached to S3 at the end of the build
 cache:
   directories:
-    - $HOME/.ivy2/cache
-    - $HOME/.sbt/boot/
+    - "$HOME/.ivy2/cache"
+    - "$HOME/.sbt/boot/"
 script:
   - sbt ++$TRAVIS_SCALA_VERSION "project omiNode" clean coverage test
-  # Tricks to avoid unnecessary cache updates
   - find $HOME/.sbt -name "*.lock" | xargs rm
   - find $HOME/.ivy2 -name "ivydata-*.properties" | xargs rm
 after_success:
-  #- ln -s ../.git
   - sbt "project omiNode" coverageReport coveralls codacyCoverage
-  
+before_deploy:
+  - sbt release debian:packageBin
+deploy:
+  provider: releases
+  api_key:
+    secure: JL6HBX4DRR5jIf7x8cTFSKZRcnjCeAq3BpVfp4gfIknaYdW+Hs9wNE075hArVzeC9BqEJX3wdymguG7zznYpcRBrTXf8OInHFoOyMNvDGn4KHuAPUDp36BrkQLCys7tyVL6rI+ySx3wACWkx0Lwr30Mijtk12JlkRk/qy9h0Nj8=
+  file: 
+    - target/universal/o-mi-node*.zip
+    - target/universal/o-mi-node*.tgz
+    - target/*.deb
+  skip_cleanup: true
+  overwrite: true
+  on:
+    tags: true
+    #repo: AaltoAsia/O-MI
+

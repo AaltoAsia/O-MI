@@ -37,13 +37,19 @@ object JavaHelpers{
   /** case class that represents parsing error
    *  @param msg error message that describes the problem.
    */
-  case class ParseError(msg: String) extends Exception(msg) 
   object ParseError{
-    def combineErrors( errors: Iterable[ParseError] ) : ParseError = ParseError(
-      errors.map{ e => e.msg }.mkString("\n")
+    def combineErrors( errors: Iterable[ParseError] ) : ParseError = ParseErrorList(
+      errors.map{ e => e.getMessage }.mkString("\n")
     )
   }
-
+  class ParseError( msg: String, sourcePrefix: String) extends Exception(sourcePrefix +msg)
+  case class ScalaXMLError(val msg: String) extends ParseError( msg, "Scala XML error: " )
+  case class ScalaxbError(val msg: String) extends ParseError( msg, "Scalaxb error: " )
+  case class SchemaError(msg: String) extends ParseError( msg, "Schema error: ")
+  case class ODFParserError(msg: String) extends ParseError( msg, "O-DF Parser error: " )
+  case class OMIParserError(msg: String) extends ParseError( msg, "O-MI Parser error: " )
+  case class ParseErrorList(msg: String) extends ParseError(msg, "")
+  case class Warp10ParseError(msg: String) extends ParseError(msg, "Warp10 Parse Error: ")
   /**
    * Path is a wrapper for Seq[String] representing path to an O-DF Object
    * It abstracts path seperators ('/') from error prone actions such as joining
@@ -102,8 +108,12 @@ object JavaHelpers{
      */
     override def toString: String = this.mkString("/")
     
-    def isAncestor( child: Path) : Boolean ={
+    def isAncestorOf( child: Path) : Boolean ={
       child.length > this.length && child.startsWith(this.pathSeq)
+    }
+
+    def isDescendantOf( parent: Path) : Boolean ={
+      parent.isAncestorOf( this )
     }
     def ancestorsAndSelf: Seq[Path] = pathSeq.inits.map( Path(_)).toSeq
     def ancestors: Seq[Path] = ancestorsAndSelf.tail

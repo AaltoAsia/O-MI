@@ -14,20 +14,20 @@
 
 package http
 
+import java.net.{InetAddress, URI, URL}
 import java.nio.file.{Files, Paths}
 import java.util.Date
 
 import scala.concurrent.duration._
-import scala.concurrent.{Future, Promise, ExecutionContext, TimeoutException}
+import scala.concurrent.{ExecutionContext, Future, Promise, TimeoutException}
 import scala.util.{Failure, Success, Try}
-import scala.xml.{XML,NodeSeq}
-
-import analytics.{AddUser, AddRead, AnalyticsStore}
+import scala.xml.{NodeSeq, XML}
+import analytics.{AddRead, AddUser, AnalyticsStore}
 import org.slf4j.LoggerFactory
-
-import akka.util.ByteString
+import akka.util.{ByteString, Timeout}
 import akka.NotUsed
 import akka.actor.{ActorRef, ActorSystem}
+import akka.pattern.ask
 import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport
 import akka.http.scaladsl.marshalling.PredefinedToResponseMarshallers._
 import akka.http.scaladsl.marshalling.{Marshaller, ToResponseMarshallable}
@@ -39,23 +39,17 @@ import akka.stream.scaladsl._
 import akka.stream._
 import akka.stream.ActorMaterializer
 import akka.http.scaladsl.model.ws
-
 import accessControl.AuthAPIService
 import http.Authorization._
 import parsing.OmiParser
-import responses.{
-  RequestHandler,
-  RemoveSubscription,
-  CallbackHandler,
-  RESTHandler,
-  RESTRequest,
-  OmiRequestHandlerBase
-}
+import responses.{CallbackHandler, RESTHandler, RESTRequest, RemoveSubscription, RequestHandler}
 import responses.CallbackHandler._
 import types.OmiTypes._
 import types.OmiTypes.Callback._
 import types.{ParseError, Path}
 import database.{GetTree, SingleStores}
+
+import scala.compat.java8.OptionConverters._
 
 trait OmiServiceAuthorization
   extends ExtensibleAuthorization
@@ -76,7 +70,7 @@ class OmiServiceImpl(
   protected val subscriptionManager : ActorRef,
   val settings : OmiConfigExtension,
   val singleStores : SingleStores,
-  protected val requestHandler : OmiRequestHandlerBase,
+  protected val requestHandler : ActorRef,
   protected val callbackHandler : CallbackHandler,
   protected val analytics: Option[ActorRef]
   )
@@ -86,7 +80,12 @@ class OmiServiceImpl(
   } with OmiService {
 
   //example auth API service code in java directory of the project
-  registerApi(new AuthAPIService())
+  if(settings.enableExternalAuthorization){
+    log.info("External Authorization module enabled")
+    log.info(s"External Authorization port ${settings.externalAuthorizationPort}")
+    log.info(s"External Authorization useHttps ${settings.externalAuthUseHttps}")
+    registerApi(new AuthAPIService(settings.externalAuthUseHttps,settings.externalAuthorizationPort))
+  }
 
 
 }
@@ -103,7 +102,7 @@ trait OmiService
 
 
   protected def log: org.slf4j.Logger
-  protected def requestHandler : OmiRequestHandlerBase
+  protected def requestHandler : ActorRef
   protected def callbackHandler : CallbackHandler
   protected val system : ActorSystem
   protected val analytics: Option[ActorRef]
@@ -177,7 +176,7 @@ trait OmiService
               case path => path
             }
 
-            val asReadRequest = (singleStores.hierarchyStore execute GetTree()).get(path).map(_.createAncestors).map( p => ReadRequest(p,user = Some(user)))
+            val asReadRequest = (singleStores.hierarchyStore execute GetTree()).get(path).map(_.createAncestors).map( p => ReadRequest(p,user0 = UserInfo(remoteAddress = Some(user))))
               asReadRequest match {
                 case Some(readReq) =>
                   hasPermissionTest(readReq) match {
@@ -186,7 +185,7 @@ trait OmiService
                     analytics.foreach{ ref =>
                       val tt= new Date().getTime()
                       ref ! AddRead(path, tt)
-                      ref ! AddUser(path, readReq.user.map(_.hashCode()), tt)
+                      ref ! AddUser(path, readReq.user.remoteAddress.map(_.hashCode()), tt)
                     }
                     RESTHandler.handle(origPath)(singleStores) match {
                       case Some(Left(value)) =>
@@ -270,8 +269,9 @@ trait OmiService
 
       //val eitherOmi = OmiParser.parse(requestString)
 
-
-      val originalReq = RawRequestWrapper(requestString, Some(remote))
+      //XXX: Corrected namespaces
+      val correctedRequestString = requestString.replace("\"omi.xsd\"", "\"http://www.opengroup.org/xsd/omi/1.0/\"").replace("\"odf.xsd\"", "\"http://www.opengroup.org/xsd/odf/1.0/\"")
+      val originalReq = RawRequestWrapper(correctedRequestString, UserInfo(remoteAddress=Some(remote)))
       val ttlPromise = Promise[ResponseRequest]()
       originalReq.ttl match {
         case ttl: FiniteDuration => ttlPromise.completeWith(
@@ -353,14 +353,15 @@ trait OmiService
   }
 
   def handleRequest(request : OmiRequest ): Future[ResponseRequest ]= {
+    implicit val to = Timeout( request.handleTTL )
     request match {
       // Part of a fix to stop response request infinite loop (server and client sending OK to others' OK)
       case respRequest: ResponseRequest if respRequest.results.forall{ result => result.odf.isEmpty } =>
         Future.successful( Responses.NoResponse() ) 
-      case sub: SubscriptionRequest => requestHandler.handle(sub)
+      case sub: SubscriptionRequest => (requestHandler ? sub).mapTo[ResponseRequest]
       case other : OmiRequest => 
         request.callback match {
-          case None => requestHandler.handle(other)
+          case None => (requestHandler ? other).mapTo[ResponseRequest]
           case Some(callback: RawCallback) => 
             Future.successful(
               Responses.InvalidCallback(
@@ -369,7 +370,7 @@ trait OmiService
               )
             )
           case Some(callback: DefinedCallback) => {
-            requestHandler.handle(other)  map { response =>
+            (requestHandler ? other).mapTo[ResponseRequest]  map { response =>
               callbackHandler.sendCallback( callback, response )
             }
             Future.successful(
@@ -385,21 +386,39 @@ trait OmiService
     currentConnectionCallback: Option[Callback] 
   ): Future[OmiRequest] = request.callback match {
     case None  => Future.successful( request )
-    case Some(definedCallback : DefinedCallback ) => Future.successful( request )
+    case Some(definedCallback : DefinedCallback ) =>
+      Future.successful( request )
     case Some(RawCallback("0")) if currentConnectionCallback.nonEmpty=>
       Future.successful( request.withCallback(  currentConnectionCallback ) )
     case Some(RawCallback("0")) if currentConnectionCallback.isEmpty=>
       Future.failed( InvalidCallback(RawCallback("0"), "Callback 0 not supported with http/https try using ws(websocket) instead" ) )
-    case Some( RawCallback(address))  =>
-      val cbTry = callbackHandler.createCallbackAddress(address)
-      val result = cbTry.map{ 
-        case callback =>
-          request.withCallback( Some( callback ) )
-      }.recoverWith{ 
-        case throwable : Throwable =>
-          Try{ throw InvalidCallback(RawCallback(address), throwable.getMessage(), throwable  ) }
+    case Some( cba @ RawCallback(address))  =>
+      // Check that the RemoteAddress Is the same as the callback address if user is not Admin
+
+      lazy val userAddr = for {
+        remoteAddr    <- request.user.remoteAddress
+        hostAddr      <- remoteAddr.getAddress.asScala
+        callbackAddr  <- Try(InetAddress.getByName(new URI(address).getHost).getHostAddress()).toOption
+        userAddress = hostAddr.getHostAddress
+      } yield (userAddress, callbackAddr)
+
+      //TODO Check if admin
+      val admin = false //TODO
+      if(admin || userAddr.exists(asd => asd._1 == asd._2)) {
+
+        val cbTry = callbackHandler.createCallbackAddress(address)
+        val result = cbTry.map{
+          case callback =>
+            request.withCallback( Some( callback ) )
+        }.recoverWith{
+          case throwable : Throwable =>
+            Try{ throw InvalidCallback(RawCallback(address), throwable.getMessage(), throwable  ) }
+        }
+        Future.fromTry(result )
+      } else {
+        log.debug(s"\n\n FAILED WITH ADRESSES $userAddr \n\n")
+        Future.failed((InvalidCallback(cba, "Callback to remote addresses(different than user address) require admin privileges")))
       }
-      Future.fromTry(result ) 
   }
 
   /** 

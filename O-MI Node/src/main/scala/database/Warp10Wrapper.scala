@@ -23,8 +23,7 @@ import scala.annotation.tailrec
 import scala.collection.immutable.HashMap
 import scala.concurrent.Future
 import scala.concurrent.duration._
-import scala.util.{Success, Failure, Try}
-
+import scala.util.{Failure, Success, Try}
 import akka.actor.ActorSystem
 import akka.event.slf4j.Logger
 import akka.http.scaladsl.Http
@@ -35,12 +34,11 @@ import akka.http.scaladsl.model.ContentTypes._
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.unmarshalling._
 import akka.stream.{ActorMaterializer, Materializer}
-import parsing.xmlGen.xmlTypes.{MetaData, QlmID}
 import spray.json._
 import http.OmiConfigExtension
 import types.OdfTypes._
-import types.{ParseError, Path}
-import types.OmiTypes.{Returns, OmiReturn}
+import types.{ParseError, Path, Warp10ParseError}
+import types.OmiTypes.{OmiReturn, Returns}
 import Warp10JsonProtocol.Warp10JsonFormat
 
 //serializer and deserializer for warp10 json formats
@@ -287,7 +285,7 @@ class Warp10Wrapper( settings: OmiConfigExtension with Warp10ConfigExtension )(i
        lazy val hTree = singleStores.hierarchyStore execute GetTree()
        val objectData: Seq[Option[OdfObjects]] = requests.collect{
 
-         case obj@OdfObjects(objects, _) => {
+         case obj@OdfObjects(objects, _, _) => {
            require(objects.isEmpty,
              s"getNBetween requires leaf OdfElements from the request, given nonEmpty $obj")
 
@@ -295,7 +293,7 @@ class Warp10Wrapper( settings: OmiConfigExtension with Warp10ConfigExtension )(i
              (singleStores.latestStore execute LookupAllDatas()).toSeq))
          }
 
-         case obj @ OdfObject(_, path, items, objects, _, _) => {
+         case obj @ OdfObject(_, path, items, objects, _, _, _) => {
            require(items.isEmpty && objects.isEmpty,
              s"getNBetween requires leaf OdfElements from the request, given nonEmpty $obj")
            val resultsO = for {
@@ -326,7 +324,7 @@ class Warp10Wrapper( settings: OmiConfigExtension with Warp10ConfigExtension )(i
        objectData :+ Some(
          reqInfoItems.foldLeft(resultOdf){(result, info) =>
            info match {
-             case qry @ OdfInfoItem(path, _, _, _) if foundPaths contains path =>
+             case qry @ OdfInfoItem(path, _, _, _, _, _) if foundPaths contains path =>
                result union createAncestors(qry)
              case _ => result // else discard
            }
@@ -529,13 +527,13 @@ class Warp10Wrapper( settings: OmiConfigExtension with Warp10ConfigExtension )(i
               }
               case _ => {
                 log.warning(s"Invalid format for location: ${location}")
-                throw ParseError(s"Invalid format for location: $location")
+                throw Warp10ParseError(s"Invalid format for location: $location")
               }
             }
           }
           case none => {
             log.warning(s"Invalid format for location: ${location}")
-            throw ParseError(s"Invalid format for location: $location")
+            throw Warp10ParseError(s"Invalid format for location: $location")
           }
         }
       }

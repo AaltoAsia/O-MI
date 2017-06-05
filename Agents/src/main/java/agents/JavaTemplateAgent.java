@@ -2,6 +2,7 @@ package agents;
 
 import akka.japi.Creator;
 import akka.actor.Props;
+import akka.actor.ActorRef;
 import akka.dispatch.Mapper;
 import akka.dispatch.OnSuccess;
 import akka.dispatch.OnFailure;
@@ -26,20 +27,21 @@ public class JavaTemplateAgent extends JavaInternalAgent {
    *  @param _config Contains configuration for this agent, as given in application.conf.
    *  <a href="https://github.com/typesafehub/config">Typesafe config</a>.
    */
-  static public Props props(final Config config) {
+  static public Props props(final Config config, final ActorRef requestHandler, final ActorRef dbHandler) {
     return Props.create(new Creator<JavaTemplateAgent>() {
       //Random serialVersionUID, for serialization.
       private static final long serialVersionUID = 35735155L;
 
       @Override
       public JavaTemplateAgent create() throws Exception {
-        return new JavaTemplateAgent(config);
+        return new JavaTemplateAgent(config, requestHandler, dbHandler);
       }
     });
   }
 
   // Constructor
-  public JavaTemplateAgent(Config config){
+  public JavaTemplateAgent(Config config, final ActorRef requestHandler, final ActorRef dbHandler){
+    super(requestHandler,dbHandler);
   }
 
   // Contains function for the asynchronous handling of write result
@@ -50,10 +52,10 @@ public class JavaTemplateAgent extends JavaInternalAgent {
           if( result instanceof Results.Success ){
             // This sends debug log message to O-MI Node logs if
             // debug level is enabled (in logback.xml and application.conf)
-            log.debug(name + " wrote paths successfully.");
+            log.debug(name() + " wrote paths successfully.");
           } else {
             log.warning(
-                "Something went wrong when " + name + " writed, " + result.toString()
+                "Something went wrong when " + name() + " writed, " + result.toString()
                 );
           }
         }
@@ -63,24 +65,9 @@ public class JavaTemplateAgent extends JavaInternalAgent {
   public final class LogFailure extends OnFailure{
       @Override public final void onFailure(Throwable t) {
           log.warning(
-            name + "'s write future failed, error: " + t.getMessage()
+            name() + "'s write future failed, error: " + t.getMessage()
           );
       }
   }
 
-  /**
-   * Method to be called when a Start() message is received.
-   */
-  @Override
-  public InternalAgentResponse start(){
-      return new CommandSuccessful();
-  }
-
-  /**
-   * Method to be called when a Stop() message is received.
-   */
-  @Override
-  public InternalAgentResponse stop(){
-      return new CommandSuccessful();
-  }
 }

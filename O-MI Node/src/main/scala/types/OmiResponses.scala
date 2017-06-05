@@ -45,9 +45,16 @@ object Responses{
 
   def NoResponse() : ResponseRequest = new ResponseRequest(OdfTreeCollection.empty, 0.seconds){
     override val asXML = xml.NodeSeq.Empty
-    override val asOmiEnvelope: parsing.xmlGen.xmlTypes.OmiEnvelope =
+    override val asOmiEnvelope: parsing.xmlGen.xmlTypes.OmiEnvelopeType =
       throw new AssertionError("This request is not an omiEnvelope")
   }
+
+  def NotFound( description: String ) : ResponseRequest = NotFound( Some( description) )
+  def NotFound( description: String, ttl: Duration ) : ResponseRequest = NotFound( Some( description),ttl )
+  def NotFound( description: Option[String], ttl: Duration = 10.seconds ) : ResponseRequest = ResponseRequest(
+    OdfTreeCollection(Results.NotFound(description)),
+    ttl
+  )
 
   def NotFoundRequestIDs( requestIDs: Vector[RequestID], ttl: Duration = 10.seconds ) : ResponseRequest =ResponseRequest(
     OdfTreeCollection(Results.NotFoundRequestIDs(requestIDs)),

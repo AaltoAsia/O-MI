@@ -20,11 +20,13 @@ import java.util.GregorianCalendar
 import javax.xml.datatype.DatatypeFactory
 
 import scala.collection.immutable.HashMap
-import scala.util.Try
+import scala.util.{Try, Success, Failure}
 import scala.xml.XML
 
+import parsing.OdfParser
 import parsing.xmlGen._
-import parsing.xmlGen.scalaxb.{CanWriteXML, DataRecord}
+import parsing.xmlGen.scalaxb._
+import parsing.xmlGen.scalaxb.XMLStandardTypes._
 import parsing.xmlGen.xmlTypes._
 import types.OdfTypes.OdfTreeCollection._
 
@@ -33,7 +35,9 @@ class  OdfInfoItemImpl(
   path:                 Path,
   values:               OdfTreeCollection[OdfValue[Any]] = OdfTreeCollection(),
   description:          Option[OdfDescription] = None,
-  metaData:             Option[OdfMetaData] = None
+  metaData:             Option[OdfMetaData] = None,
+  typeValue: Option[String] = None,
+  attributes:           Map[String,String] = HashMap.empty
 ) extends Serializable {
 
 
@@ -53,7 +57,9 @@ class  OdfInfoItemImpl(
       } yield i
       if( combined.isEmpty )
         if( this.metaData.isEmpty ) another.metaData else this.metaData
-      else combined}
+      else combined},
+      another.typeValue orElse typeValue,
+      this.attributes ++ another.attributes
     )
   }
 
@@ -71,14 +77,20 @@ class  OdfInfoItemImpl(
   /** Method to convert to scalaxb generated class. */
   implicit def asInfoItemType: InfoItemType = {
     InfoItemType(
-      description = description.map( des => des.asDescription ),
-      MetaData = metaData.map(_.asMetaData),
-      name = path.lastOption.getOrElse(throw new IllegalArgumentException(s"OdfObject should have longer than one segment path: $path")),
+      description = description.map( des => des.asDescription ).toSeq,
+      MetaData = metaData.map(_.asMetaData).toSeq,
+      iname = Vector.empty,
+      //Seq(QlmIDType(path.lastOption.getOrElse(throw new IllegalArgumentException(s"OdfObject should have longer than one segment path: $path")))),
       value = values.map{ 
-        value : OdfValue[Any] =>
-        value.asValueType
+        value : OdfValue[Any] => value.asValueType
       }.toSeq,
-      attributes = Map.empty
+      attributes = HashMap{
+        "@name" -> DataRecord(
+          path.lastOption.getOrElse(throw new IllegalArgumentException(s"OdfObject should have longer than one segment path: $path"))
+        )
+      } ++ typeValue.map{ tv =>"@type" -> DataRecord(typeValue) }.toVector
+      ++ attributesToDataRecord( this.attributes )
+      // ++  typeValue.map{ n => ("@type" -> DataRecord(n))}
     )
   }
 
@@ -89,7 +101,7 @@ case class OdfMetaData(
   infoItems: OdfTreeCollection[OdfInfoItem]
 ) {
   /** Method to convert to scalaxb generated class. */
-  implicit def asMetaData : MetaData = MetaData( infoItems.map(_.asInfoItemType ):_* )
+  implicit def asMetaData : MetaDataType = MetaDataType( infoItems.map(_.asInfoItemType ) )
   
   def combine(another: OdfMetaData) : OdfMetaData ={
     OdfMetaData(
@@ -120,17 +132,19 @@ sealed trait OdfValue[+T]{
   def value:                T
   def typeValue:            String 
   def timestamp:            Timestamp
-  def attributes:           Map[String, String]
+  def attributes:           HashMap[String, String]
+  def valueAsDataRecord: DataRecord[Any] //= DataRecord(value)
   /** Method to convert to scalaxb generated class. */
   implicit def asValueType : ValueType = {
     ValueType(
-      value.toString,
-      typeValue,
-      unixTime = Option(timestamp.getTime / 1000),
-      dateTime = Option{
-        timestampToXML(timestamp)
-      },
-      attributes = attributes.mapValues(DataRecord(_))
+      Seq(
+       valueAsDataRecord 
+      ),
+    HashMap(
+      ("@type" -> DataRecord(typeValue)),
+      ("@unixTime" -> DataRecord(timestamp.getTime() / 1000)),
+      ("@dateTime" -> DataRecord(timestampToXML(timestamp)))
+    ) ++(attributes.mapValues(DataRecord(_)))
     )
   }
   def isNumeral : Boolean = typeValue match {
@@ -144,6 +158,8 @@ sealed trait OdfValue[+T]{
        true
      case "xs:long" =>
        true
+     case "odf" =>
+       false
      case _ =>
        false
    }
@@ -158,37 +174,66 @@ sealed trait OdfValue[+T]{
        false
      case "xs:long" =>
        false
+     case "odf" =>
+       false
      case _ =>
        true
    }
 }
-  final case class OdfIntValue(value: Int, timestamp: Timestamp, attributes: Map[String, String]) extends OdfValue[Int]{
+  final case class OdfObjectsValue(
+    value: OdfObjects, 
+    timestamp: Timestamp, 
+    attributes: HashMap[String, String] = HashMap.empty
+  ) extends OdfValue[OdfObjects]{
+    override def typeValue: String = "odf"
+    /*
+    lazy val objects: OdfObjects = OdfParser.parse(value) match {
+      case Right(odf: OdfObjects ) => odf
+      case Left( spe: Seq[ParseError] ) => throw spe.head
+    }*/
+    def valueAsDataRecord = DataRecord(None, Some("Objects"),value.asObjectsType)
+  } 
+  final case class OdfIntValue(value: Int, timestamp: Timestamp, attributes: HashMap[String, String]) extends OdfValue[Int]{
     def typeValue:            String = "xs:int"
+    def valueAsDataRecord = DataRecord(value)
   } 
-  final case class  OdfLongValue(value: Long, timestamp: Timestamp, attributes: Map[String, String]) extends OdfValue[Long]{
+  final case class  OdfLongValue(value: Long, timestamp: Timestamp, attributes: HashMap[String, String]) extends OdfValue[Long]{
     def typeValue:            String = "xs:long"
+    def valueAsDataRecord = DataRecord(value)
   } 
-  final case class  OdfShortValue(value: Short, timestamp: Timestamp, attributes: Map[String, String]) extends OdfValue[Short]{
+  final case class  OdfShortValue(value: Short, timestamp: Timestamp, attributes: HashMap[String, String]) extends OdfValue[Short]{
     def typeValue:            String = "xs:short"
+    def valueAsDataRecord = DataRecord(value)
   } 
-  final case class  OdfFloatValue(value: Float, timestamp: Timestamp, attributes: Map[String, String]) extends OdfValue[Float]{
+  final case class  OdfFloatValue(value: Float, timestamp: Timestamp, attributes: HashMap[String, String]) extends OdfValue[Float]{
     def typeValue:            String = "xs:float"
+    def valueAsDataRecord = DataRecord(value)
   } 
-  final case class  OdfDoubleValue(value: Double, timestamp: Timestamp, attributes: Map[String, String]) extends OdfValue[Double]{
+  final case class  OdfDoubleValue(value: Double, timestamp: Timestamp, attributes: HashMap[String, String]) extends OdfValue[Double]{
     def typeValue:            String = "xs:double"
+    def valueAsDataRecord = DataRecord(value)
   } 
-  final case class  OdfBooleanValue(value: Boolean, timestamp: Timestamp, attributes: Map[String, String]) extends OdfValue[Boolean]{
+  final case class  OdfBooleanValue(value: Boolean, timestamp: Timestamp, attributes: HashMap[String, String]) extends OdfValue[Boolean]{
     def typeValue:            String = "xs:boolean"
+    def valueAsDataRecord = DataRecord(value)
   } 
-  final case class  OdfStringPresentedValue(value: String,  timestamp: Timestamp, typeValue : String = "xs:string", attributes: Map[String, String]  ) extends OdfValue[String]
+  final case class  OdfStringPresentedValue(
+    value: String,
+    timestamp: Timestamp,
+    typeValue : String = "xs:string",
+    attributes: HashMap[String, String]  
+  ) extends OdfValue[String]{
+    def valueAsDataRecord = DataRecord(value)
+  }
 
 object OdfValue{
   def apply(
     value: Any,
     timestamp: Timestamp,
-    attributes: Map[String, String]
+    attributes: HashMap[String, String]
   ) : OdfValue[Any] = {
     value match {
+      case odf: OdfObjects => OdfObjectsValue(odf, timestamp, attributes)
       case s: Short => OdfShortValue(s, timestamp, attributes)
       case i: Int   => OdfIntValue(i, timestamp, attributes)
       case l: Long  => OdfLongValue(l, timestamp, attributes)
@@ -203,16 +248,24 @@ object OdfValue{
   def apply(
     value: Any,
     timestamp: Timestamp
-  ) : OdfValue[Any] = apply(value,timestamp,Map.empty[String,String])
+  ) : OdfValue[Any] = apply(value,timestamp,HashMap.empty[String,String])
   
   def apply(
     value: String,
     typeValue: String,
     timestamp: Timestamp,
-    attributes: Map[String, String] = Map.empty
+    attributes: HashMap[String, String] = HashMap.empty
   ) : OdfValue[Any] = {
-    Try{
+    val create = Try{
       typeValue match {
+        case "odf" =>
+          val result = OdfParser.parse(value)
+          result match {
+            case Left( pes: Seq[ParseError]) =>
+              throw pes.head
+            case Right( odf: OdfObjects) =>
+              OdfObjectsValue(odf,timestamp, attributes)
+          }
         case "xs:float" =>
           OdfFloatValue(value.toFloat, timestamp, attributes)
         case "xs:double" =>
@@ -228,8 +281,13 @@ object OdfValue{
         case str: String  =>
           OdfStringPresentedValue(value, timestamp,str, attributes)
       }
-    }.getOrElse(
-      OdfStringPresentedValue(value, timestamp, attributes = attributes)
-    )
+    }
+    create match {
+      case Success(value) => value
+      case Failure( e: Exception) =>
+        //println( s"Creating of OdfValue failed with type $typeValue, caused by: $e")
+        OdfStringPresentedValue(value, timestamp, attributes = attributes)
+    }
+      
   }
 }

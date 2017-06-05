@@ -20,6 +20,7 @@ import scala.concurrent.ExecutionContext;
 import scala.collection.JavaConversions;
 import scala.util.*;
 import akka.actor.Props;
+import akka.actor.ActorRef;
 import akka.util.Timeout;
 import static akka.pattern.Patterns.ask;
 import akka.japi.Creator;
@@ -32,7 +33,6 @@ import com.typesafe.config.Config;
 
 import parsing.OdfParser;
 import agentSystem.JavaInternalAgent; 
-import agentSystem.ResponsibilityRequest;
 import agentSystem.*;
 import types.*;
 import types.OmiTypes.*;
@@ -57,13 +57,13 @@ public class JavaFileAgent extends JavaInternalAgent {
    *  @param _config Contains configuration for this agent, as given in application.conf.
    *  <a href="https://github.com/typesafehub/config">Typesafe config</a>.
    */
-  static public Props props(final Config _config) {
+  static public Props props(final Config _config, final ActorRef requestHandler, final ActorRef dbHandler) {
     return Props.create(new Creator<JavaFileAgent>() {
       private static final long serialVersionUID = 3573L;
 
       @Override
       public JavaFileAgent create() throws Exception {
-        return new JavaFileAgent(_config);
+        return new JavaFileAgent(_config,requestHandler,dbHandler);
       }
     });
   }
@@ -85,7 +85,12 @@ public class JavaFileAgent extends JavaInternalAgent {
 
 
   // Constructor
-  public JavaFileAgent(Config conf){
+  public JavaFileAgent(
+      Config conf,
+      final ActorRef requestHandler,
+      final ActorRef dbHandler
+  ) throws InternalAgentConfigurationFailure {
+    super(requestHandler,dbHandler);
     config = conf;
 
     // Parse configuration for interval
@@ -96,72 +101,56 @@ public class JavaFileAgent extends JavaInternalAgent {
     // Parse configuration for target O-DF path
     pathToFile = config.getString("file");
     file = new File(pathToFile);
-  }
-
-
-  /**
-   * Method to be called when a Start() message is received.
-   */
-  @Override
-  public InternalAgentResponse start(){
-    try{
-      if( file.exists()  && file.isFile() && file.canRead() ){
-        //Lets schelude a messge to us on every interval
-        //and save the reference so we can stop the agent.
-        intervalJob = context().system().scheduler().schedule(
+    if( file.exists()  && file.isFile() && file.canRead() ){
+      //Lets schelude a messge to us on every interval
+      //and save the reference so we can stop the agent.
+      intervalJob = context().system().scheduler().schedule(
           Duration.Zero(),                //Delay start
           interval,                       //Interval between messages
           self(),                         //To 
           "Update",                       //Message, preferably immutable.
           context().system().dispatcher(),//ExecutionContext, Akka
           null                            //Sender?
+          );
+
+      Either<Iterable<ParseError>,OdfObjects> parseResult = OdfParser.parse(file);
+      if( parseResult.isLeft() ){
+        throw new InternalAgentConfigurationFailure( 
+          "Invalid O-DF structure",
+         scala.Option.empty()
         );
-
-        Either<Iterable<ParseError>,OdfObjects> parseResult = OdfParser.parse(file, scala.Option.empty());
-        if( parseResult.isLeft() ){
-          return new StartFailed(
-            "Invalid O-DF structure.", 
-            scala.Option.empty()
-            );
-        } else {
-          odf = parseResult.right().get();
-          writeCount = 0;
-          return new CommandSuccessful();
-        }
       } else {
-        return new StartFailed(
-            "File to be read for O-DF structure, does not exist or is not file or can not be read", 
-            scala.Option.empty()
-            );
+        odf = parseResult.right().get();
+        writeCount = 0;
       }
-    } catch (Throwable t) {
-      //Normally in Akka if exception is thrown in child actor, it is 
-      //passed to its parent. That uses {@link SupervisorStrategy} to decide 
-      //what to do. With {@link StartFailed} we can tell AgentSystem that an 
-      //Exception was thrown during handling of Start() message.
-      return new StartFailed(t.getMessage(), scala.Option.apply(t) );
-    }
+    } else if( !file.isFile()){
+        throw new InternalAgentConfigurationFailure( 
+            "File to be read for O-DF structure is not e file.",
+            scala.Option.empty()
+          );
+    } else if( file.exists()){
+        throw new InternalAgentConfigurationFailure( 
+          "File to be read for O-DF structure can not be read.",
+            scala.Option.empty()
+          );
+    } else {
+        throw new InternalAgentConfigurationFailure( 
+          "File to be read for O-DF structure, does not exist.",
+         scala.Option.empty()
+        );
+    } 
   }
-
 
   /**
    * Method to be called when a Stop() message is received.
    * This should gracefully stop all activities that the agent is doing.
    */
   @Override
-  public InternalAgentResponse stop(){
+  public void postStop(){
 
     if (intervalJob != null){//is defined? 
       intervalJob.cancel();  //Cancel intervalJob
-      
-      // Check if intervalJob was cancelled
-      if( intervalJob.isCancelled() ){
-        intervalJob = null;
-      } else {
-        return new StartFailed("Failed to stop agent.", scala.Option.apply(null));
-      }
     } 
-    return new CommandSuccessful();
   }
 
   /**
@@ -297,7 +286,7 @@ public class JavaFileAgent extends JavaInternalAgent {
 
     // This sends debug log message to O-MI Node logs if
     // debug level is enabled (in logback.xml and application.conf)
-    log.debug(name + " pushing data...");
+    log.debug(name() + " pushing data...");
 
     // Create O-MI write request
     // interval as time to live
@@ -306,11 +295,8 @@ public class JavaFileAgent extends JavaInternalAgent {
         odf   // O-DF
     );
     
-    // timeout for the write request, which means how long this agent waits for write results
-    Timeout timeout = new Timeout(interval);
-
     // Execute the request, execution is asynchronous (will not block)
-    Future<ResponseRequest> result = writeToNode(write, timeout);
+    Future<ResponseRequest> result = writeToDB(write);
 
     ExecutionContext ec = context().system().dispatcher();
     // Call LogResult function (below) when write was successful.
@@ -327,10 +313,10 @@ public class JavaFileAgent extends JavaInternalAgent {
           if( result instanceof Results.Success ){
             // This sends debug log message to O-MI Node logs if
             // debug level is enabled (in logback.xml and application.conf)
-            log.debug(name + " wrote paths successfully.");
+            log.debug(name() + " wrote paths successfully.");
           } else {
             log.warning(
-                "Something went wrong when " + name + " writed, " + result.toString()
+                "Something went wrong when " + name() + " writed, " + result.toString()
                 );
           }
         }
@@ -340,7 +326,7 @@ public class JavaFileAgent extends JavaInternalAgent {
   public final class LogFailure extends OnFailure{
       @Override public final void onFailure(Throwable t) {
           log.warning(
-            name + "'s write future failed, error: " + t.getMessage()
+            name() + "'s write future failed, error: " + t.getMessage()
           );
       }
   }
@@ -350,7 +336,7 @@ public class JavaFileAgent extends JavaInternalAgent {
    * from other Actors.
    */
   @Override
-  public void onReceive(Object message) throws StartFailed, CommandFailed {
+  public void onReceive(Object message){
     if( message instanceof String) {
       String str = (String) message;
       if( str.equals("Update"))

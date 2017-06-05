@@ -6,7 +6,7 @@ Implementation of Internet of Things standards: Open Messaging Interface and Ope
 Dependencies
 ------------
 
-java-1.7
+java-1.8
 
 
 Running
@@ -15,6 +15,7 @@ To run O-MI Node run the corresponding startup script from the bin directory for
 
 1. `o-mi-node.bat` for Windows
 2. `o-mi-node` for Unix and Mac
+3. Visit http://localhost:8080/ to see that it's working
 
 This will run O-MI Node with configuration in application.conf.
 By default it has some example and demo agents.

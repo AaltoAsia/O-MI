@@ -7,7 +7,7 @@ import akka.actor.{ActorRef, ActorSystem}
 import akka.stream.{ActorMaterializer, Materializer}
 import akka.http.scaladsl.HttpExt
 
-import responses.{CallbackHandler, OmiRequestHandlerBase}
+import responses.{CallbackHandler}
 import database.{DBReadWrite, SingleStores, DBReadOnly}
 
 trait Storages {

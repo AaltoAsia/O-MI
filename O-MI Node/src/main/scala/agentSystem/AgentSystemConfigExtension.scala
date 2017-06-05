@@ -10,6 +10,7 @@ import akka.actor.Extension
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigException._
 import types.Path
+import types.OmiTypes.OmiRequestType._
 
 
  
@@ -17,27 +18,51 @@ trait AgentSystemConfigExtension  extends Extension {
   def config: Config
   
   val internalAgentsStartTimout : FiniteDuration= config.getDuration("agent-system.starting-timeout", TimeUnit.SECONDS).seconds
-  val agentConfigurations: Array[AgentConfigEntry] = {
-    val internalAgents = config.getObject("agent-system.internal-agents") 
-    val names : Set[String] = asScalaSet(internalAgents.keySet()).toSet // mutable -> immutable
-    names.map{ 
-      name =>
-      val conf = internalAgents.toConfig()
-      val classname : String= conf.getString(s"$name.class")
-      val language : Option[Language] = Try{
-        conf.getString(s"$name.language")
-      }.toOption.map( Language(_) )
-
-      val ownedPaths : Seq[Path] = Try{
-        conf.getStringList(s"$name.owns").map{ str => Path(str)}
-      } match {
-        case Success(s) => s
-        case Failure(e: Missing) => Seq.empty
-        case Failure(e) => throw e
-      }
-      val config = conf.getObject(s"$name.config").toConfig
-      AgentConfigEntry(name, classname.toString, config, ownedPaths, language) 
-    }.toArray
+  val agentConfigurations: Seq[AgentConfigEntry] = {
+    
+    Try{
+      iterableAsScalaIterable(
+        config.getConfigList("agent-system.internal-agents")
+      ).toVector 
+    } match {
+      case Success(internalAgents) =>
+        internalAgents.flatMap{ 
+          agentConfig : Config =>
+            Try{
+              AgentConfigEntry(agentConfig)
+            }.toOption
+        }.toVector
+      case Failure(e: Missing) => Vector.empty
+      case Failure(e) => throw e
+    }
   }
 }
+//
+//agent-system {
+//  starting-timeout = 10 seconds
+//  internal-agents = [
+//    {
+//      name = "agent"
+//      language = "scala"
+//      class = "agents."
+//      ??? = {
+//        "path" = "rwp"
+//        ...
+//      }
+//    },
+//    ...
+//  ]
+//
+//  ]
+//}
+//
+//
+
+class AgentConfig (
+  val name: AgentName,
+  val className: String,
+  val language: Language,
+  val requestToResponsiblePath: Map[OmiRequestType,Set[Path]],
+  val config: Config
+)
 

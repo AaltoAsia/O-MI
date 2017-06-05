@@ -5,7 +5,6 @@ import java.sql.Timestamp
 import scala.collection.immutable.HashMap
 
 import org.specs2.Specification
-import parsing.xmlGen.xmlTypes.MetaData
 import spray.json._
 import types.OdfTypes._
 import types.Path

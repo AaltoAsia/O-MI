@@ -24,7 +24,7 @@ import com.typesafe.config.{ConfigFactory,Config}
 import akka.actor.{ActorRef,ActorSystem}
 import org.slf4j.LoggerFactory
 import org.prevayler.PrevaylerFactory
-import parsing.xmlGen.xmlTypes.MetaData
+import parsing.xmlGen.xmlTypes.MetaDataType
 import slick.backend.DatabaseConfig
 //import slick.driver.H2Driver.api._
 import slick.driver.JdbcProfile
@@ -174,7 +174,7 @@ class SingleStores(protected val settings: OmiConfigExtension) {
 
   def getMetaData(path: Path) : Option[OdfMetaData] = {
     (hierarchyStore execute GetTree()).get(path).collect{
-      case OdfInfoItem(_,_,_,Some(mData)) => mData
+      case OdfInfoItem(_,_,_,Some(mData),_,_) => mData
     }
   }
 

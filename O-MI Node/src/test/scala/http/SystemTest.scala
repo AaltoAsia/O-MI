@@ -349,10 +349,10 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
       )
       def writeMessage(value: String) = {
         s"""<?xml version="1.0" encoding="UTF-8"?>
-            <omi:omiEnvelope xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" version="1.0" ttl="0">
-              <omi:write msgformat="odf">
-                <omi:msg>
-                  <Objects xmlns="odf.xsd">
+            <omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="0">
+              <write msgformat="odf" >
+                <msg>
+                  <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/">
                     <Object>
                       <id>WebSocketTest</id>
                       <InfoItem name="WSInfoItem1">
@@ -363,9 +363,9 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
                       </InfoItem>
                     </Object>
                   </Objects>
-                </omi:msg>
-              </omi:write>
-            </omi:omiEnvelope>"""
+                </msg>
+              </write>
+            </omiEnvelope>"""
       }
       "Current Connection Subscription should " >>{
         "return correct number of responses for event subscription" >> {
@@ -375,18 +375,18 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
             val m1 = wsServer.offer(writeMessage("1"))
             val res1 = wsProbe.receiveN(1, 5 seconds) //write confirmation
             val m2 = wsServer.offer("""<?xml version="1.0" encoding="UTF-8"?>
-              <omi:omiEnvelope xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" version="1.0" ttl="20">
-              <omi:read msgformat="odf" interval="-1" callback="0">
-                <omi:msg>
-                  <Objects xmlns="odf.xsd">
+              <omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="20">
+              <read msgformat="odf" interval="-1" callback="0">
+                <msg>
+                  <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/">
                     <Object>
                       <id>WebSocketTest</id>
                       <InfoItem name="WSInfoItem1"/>
                     </Object>
                   </Objects>
-                </omi:msg>
-              </omi:read>
-            </omi:omiEnvelope>
+                </msg>
+              </read>
+            </omiEnvelope>
             """)
             val res2 = wsProbe.receiveN(1, 5 seconds) //write confirmation
             for {
@@ -406,18 +406,18 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
           val wsServer = new WsTestCallbackClient(wsProbe.ref, "ws://localhost", 8080)
             wsServer.offer(
               """<?xml version="1.0" encoding="UTF-8"?>
-              <omi:omiEnvelope xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" version="1.0" ttl="7">
-              <omi:read msgformat="odf" interval="2" callback="0">
-                <omi:msg>
-                  <Objects xmlns="odf.xsd">
+              <omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="7">
+              <read msgformat="odf" interval="2" callback="0">
+                <msg>
+                  <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/">
                     <Object>
                       <id>WebSocketTest</id>
                       <InfoItem name="WSInfoItem1"/>
                     </Object>
                   </Objects>
-                </omi:msg>
-              </omi:read>
-            </omi:omiEnvelope>""")
+                </msg>
+              </read>
+            </omiEnvelope>""")
             //val result = wsProbe.expectNoMsg(Duration.apply(5, "seconds"))
             // 3 responses + 1 confirmation
             val result = wsProbe.receiveN(4, 10 seconds)
@@ -431,32 +431,32 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
             val wsServer2 = new WsTestCallbackClient(wsProbe2.ref, "ws://localhost", 8080)
               wsServer1.offer(
                 """<?xml version="1.0" encoding="UTF-8"?>
-                <omi:omiEnvelope xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" version="1.0" ttl="10">
-                <omi:read msgformat="odf" interval="-1" callback="0">
-                  <omi:msg>
-                    <Objects xmlns="odf.xsd">
+                <omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="10">
+                <read msgformat="odf" interval="-1" callback="0">
+                  <msg>
+                    <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/">
                       <Object>
                         <id>WebSocketTest</id>
                         <InfoItem name="WSInfoItem1"/>
                       </Object>
                     </Objects>
-                  </omi:msg>
-                </omi:read>
-              </omi:omiEnvelope>""")
+                  </msg>
+                </read>
+              </omiEnvelope>""")
               wsServer2.offer(
                 """<?xml version="1.0" encoding="UTF-8"?>
-                <omi:omiEnvelope xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" version="1.0" ttl="10">
-                <omi:read msgformat="odf" interval="-1" callback="0">
-                  <omi:msg>
-                    <Objects xmlns="odf.xsd">
+                <omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="10">
+                <read msgformat="odf" interval="-1" callback="0">
+                  <msg>
+                    <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/">
                       <Object>
                         <id>WebSocketTest</id>
                         <InfoItem name="WSInfoItem2"/>
                       </Object>
                     </Objects>
-                  </omi:msg>
-                </omi:read>
-              </omi:omiEnvelope>""")
+                  </msg>
+                </read>
+              </omiEnvelope>""")
               wsProbe1.receiveN(1, 5 seconds) //responses for subscriptions
               wsProbe2.receiveN(1, 5 seconds)
               for{
@@ -481,18 +481,18 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
         Await.ready(bind1,5 seconds)
           "return correct number of responses for event subscription" >> {
             val m1= getPostRequest("""<?xml version="1.0" encoding="UTF-8"?>
-              <omi:omiEnvelope xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" version="1.0" ttl="15">
-              <omi:read msgformat="odf" interval="-1" callback="ws://localhost:8787">
-              <omi:msg>
-                <Objects xmlns="odf.xsd">
+              <omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="15">
+              <read msgformat="odf" interval="-1" callback="ws://localhost:8787">
+              <msg>
+                <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/">
                   <Object>
                     <id>WebSocketTest</id>
                     <InfoItem name="WSInfoItem1"/>
                   </Object>
                 </Objects>
-              </omi:msg>
-            </omi:read>
-          </omi:omiEnvelope>
+              </msg>
+            </read>
+          </omiEnvelope>
           """)
             val res1 = http.singleRequest(m1)
             Await.result(res1, 5 seconds)
@@ -507,18 +507,18 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
         }
           "return correct number of responses for two event subscriptions with same callback address" >> {
             val m1= getPostRequest("""<?xml version="1.0" encoding="UTF-8"?>
-              <omi:omiEnvelope xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" version="1.0" ttl="15">
-              <omi:read msgformat="odf" interval="-1" callback="ws://localhost:8787">
-              <omi:msg>
-                <Objects xmlns="odf.xsd">
+              <omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="15">
+              <read msgformat="odf" interval="-1" callback="ws://localhost:8787">
+              <msg>
+                <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/">
                   <Object>
                     <id>WebSocketTest</id>
                     <InfoItem name="WSInfoItem1"/>
                   </Object>
                 </Objects>
-              </omi:msg>
-            </omi:read>
-          </omi:omiEnvelope>
+              </msg>
+            </read>
+          </omiEnvelope>
           """)
             val res1 = http.singleRequest(m1)
             val res2 = http.singleRequest(m1)
@@ -534,18 +534,18 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
         }
         "return correct number of responses for interval subscription: ttl=7 interval=2" >> {
               val m1= getPostRequest("""<?xml version="1.0" encoding="UTF-8"?>
-              <omi:omiEnvelope xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" version="1.0" ttl="7">
-              <omi:read msgformat="odf" interval="2" callback="ws://localhost:8787">
-                <omi:msg>
-                  <Objects xmlns="odf.xsd">
+              <omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="7">
+              <read msgformat="odf" interval="2" callback="ws://localhost:8787">
+                <msg>
+                  <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/">
                     <Object>
                       <id>WebSocketTest</id>
                       <InfoItem name="WSInfoItem1"/>
                     </Object>
                   </Objects>
-                </omi:msg>
-              </omi:read>
-            </omi:omiEnvelope>""")
+                </msg>
+              </read>
+            </omiEnvelope>""")
             val res1 = http.singleRequest(m1)
             val result = wsProbe.receiveN(3, 15 seconds)
             //val result = wsProbe.expectNoMsg(Duration.apply(5, "seconds"))
@@ -554,31 +554,31 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
         }
         "return correct number of responses for multiple interval subscription: ttl=7 interval=2 and ttl=8 and interval=3 with same callback address" >> {
               val m1= getPostRequest("""<?xml version="1.0" encoding="UTF-8"?>
-              <omi:omiEnvelope xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" version="1.0" ttl="7">
-              <omi:read msgformat="odf" interval="2" callback="ws://localhost:8787">
-                <omi:msg>
-                  <Objects xmlns="odf.xsd">
+              <omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="7">
+              <read msgformat="odf" interval="2" callback="ws://localhost:8787">
+                <msg>
+                  <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/">
                     <Object>
                       <id>WebSocketTest</id>
                       <InfoItem name="WSInfoItem1"/>
                     </Object>
                   </Objects>
-                </omi:msg>
-              </omi:read>
-            </omi:omiEnvelope>""")
+                </msg>
+              </read>
+            </omiEnvelope>""")
               val m2= getPostRequest("""<?xml version="1.0" encoding="UTF-8"?>
-              <omi:omiEnvelope xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" version="1.0" ttl="8">
-              <omi:read msgformat="odf" interval="3" callback="ws://localhost:8787">
-                <omi:msg>
-                  <Objects xmlns="odf.xsd">
+              <omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="8">
+              <read msgformat="odf" interval="3" callback="ws://localhost:8787">
+                <msg>
+                  <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/">
                     <Object>
                       <id>WebSocketTest</id>
                       <InfoItem name="WSInfoItem1"/>
                     </Object>
                   </Objects>
-                </omi:msg>
-              </omi:read>
-            </omi:omiEnvelope>""")
+                </msg>
+              </read>
+            </omiEnvelope>""")
             val res1 = http.singleRequest(m1)
             val res2 = http.singleRequest(m2)
             val result = wsProbe.receiveN(5, 20 seconds)
@@ -590,31 +590,31 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
         Await.ready(bind2,5 seconds)
         "return correct number of responses for multiple interval subscription: ttl=7 interval=2 and ttl=8 and interval=3 with different callback address" >> {
               val m1= getPostRequest("""<?xml version="1.0" encoding="UTF-8"?>
-              <omi:omiEnvelope xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" version="1.0" ttl="7">
-              <omi:read msgformat="odf" interval="2" callback="ws://localhost:8787">
-                <omi:msg>
-                  <Objects xmlns="odf.xsd">
+              <omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="7">
+              <read msgformat="odf" interval="2" callback="ws://localhost:8787">
+                <msg>
+                  <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/">
                     <Object>
                       <id>WebSocketTest</id>
                       <InfoItem name="WSInfoItem1"/>
                     </Object>
                   </Objects>
-                </omi:msg>
-              </omi:read>
-            </omi:omiEnvelope>""")
+                </msg>
+              </read>
+            </omiEnvelope>""")
               val m2= getPostRequest("""<?xml version="1.0" encoding="UTF-8"?>
-              <omi:omiEnvelope xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" version="1.0" ttl="8">
-              <omi:read msgformat="odf" interval="3" callback="ws://localhost:8788">
-                <omi:msg>
-                  <Objects xmlns="odf.xsd">
+              <omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="8">
+              <read msgformat="odf" interval="3" callback="ws://localhost:8788">
+                <msg>
+                  <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/">
                     <Object>
                       <id>WebSocketTest</id>
                       <InfoItem name="WSInfoItem1"/>
                     </Object>
                   </Objects>
-                </omi:msg>
-              </omi:read>
-            </omi:omiEnvelope>""")
+                </msg>
+              </read>
+            </omiEnvelope>""")
             val res1 = http.singleRequest(m1)
             val res2 = http.singleRequest(m2)
             val result = wsProbe.receiveN(5, 20 seconds)
@@ -624,32 +624,32 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
         }
         "return correct number of responses for two event subscriptions with different callback address" >> {
             val m1= getPostRequest("""<?xml version="1.0" encoding="UTF-8"?>
-              <omi:omiEnvelope xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" version="1.0" ttl="15">
-              <omi:read msgformat="odf" interval="-1" callback="ws://localhost:8787">
-              <omi:msg>
-                <Objects xmlns="odf.xsd">
+              <omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="15">
+              <read msgformat="odf" interval="-1" callback="ws://localhost:8787">
+              <msg>
+                <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/">
                   <Object>
                     <id>WebSocketTest</id>
                     <InfoItem name="WSInfoItem1"/>
                   </Object>
                 </Objects>
-              </omi:msg>
-            </omi:read>
-          </omi:omiEnvelope>
+              </msg>
+            </read>
+          </omiEnvelope>
           """)
             val m2= getPostRequest("""<?xml version="1.0" encoding="UTF-8"?>
-              <omi:omiEnvelope xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" version="1.0" ttl="15">
-              <omi:read msgformat="odf" interval="-1" callback="ws://localhost:8788">
-              <omi:msg>
-                <Objects xmlns="odf.xsd">
+              <omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="15">
+              <read msgformat="odf" interval="-1" callback="ws://localhost:8788">
+              <msg>
+                <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/">
                   <Object>
                     <id>WebSocketTest</id>
                     <InfoItem name="WSInfoItem1"/>
                   </Object>
                 </Objects>
-              </omi:msg>
-            </omi:read>
-          </omi:omiEnvelope>
+              </msg>
+            </read>
+          </omiEnvelope>
           """)
             val res1 = http.singleRequest(m1)
             val res2 = http.singleRequest(m2)

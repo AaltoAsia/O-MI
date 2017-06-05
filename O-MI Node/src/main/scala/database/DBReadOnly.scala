@@ -225,20 +225,20 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
 
         def getFromDB(): Seq[Future[Option[OdfObjects]]] = requestsSeq map { // par
 
-          case obj @ OdfObjects(objects, _) =>
+          case obj @ OdfObjects(objects, _, _) =>
             require(objects.isEmpty,
               s"getNBetween requires leaf OdfElements from the request, given nonEmpty $obj")
 
 
             db.run(processObjectI(obj.path, attachObjectDescription = false))
 
-          case obj @ OdfObject(id, path, items, objects, description, typeVal) =>
+          case obj @ OdfObject(id, path, items, objects, description, typeVal,attr) =>
             require(items.isEmpty && objects.isEmpty,
               s"getNBetween requires leaf OdfElements from the request, given nonEmpty $obj")
 
             db.run(processObjectI(path, description.nonEmpty))
 
-          case qry @ OdfInfoItem(path, rvalues, _, _) =>
+          case qry @ OdfInfoItem(path, rvalues, _, _,typeValue,attr) =>
 
             val odfInfoItemI = getHierarchyNodeI(path) flatMap { nodeO =>
 
@@ -268,7 +268,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
           lazy val hTree = singleStores.hierarchyStore execute GetTree()
           val objectData: Seq[Option[OdfObjects]] = requestsSeq collect {
 
-            case obj@OdfObjects(objects, _) => {
+            case obj@OdfObjects(objects, _, _) => {
               require(objects.isEmpty,
                 s"getNBetween requires leaf OdfElements from the request, given nonEmpty $obj")
 
@@ -276,7 +276,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
                 singleStores.latestStore execute LookupAllDatas()))
             }
 
-            case obj @ OdfObject(_, path, items, objects, _, _) => {
+            case obj @ OdfObject(_, path, items, objects, _, _, _) => {
               require(items.isEmpty && objects.isEmpty,
                 s"getNBetween requires leaf OdfElements from the request, given nonEmpty $obj")
               val resultsO = for {
@@ -307,7 +307,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
           objectData :+ Some(
             reqInfoItems.foldLeft(resultOdf){(result, info) =>
               info match {
-                case qry @ OdfInfoItem(path, _, _, _) if foundPaths contains path =>
+                case qry @ OdfInfoItem(path, _, _, _,typeValue,attr) if foundPaths contains path =>
                   result union createAncestors(qry)
                 case _ => result // else discard
               }
@@ -332,7 +332,7 @@ trait DBReadOnly extends DBBase with OdfConversions with DBUtility with OmiNodeT
     })
 
     results.map{
-      case Some(OdfObjects(x,_)) if x.isEmpty => None
+      case Some(OdfObjects(x, _, _)) if x.isEmpty => None
       case default : Option[OdfObjects ]  => default//default.map(res => metadataTree.intersect(res)) //copy information from hierarchy tree to result
     }
     

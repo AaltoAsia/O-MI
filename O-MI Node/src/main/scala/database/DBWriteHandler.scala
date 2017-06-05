@@ -1,53 +1,53 @@
-/*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- +    Copyright (c) 2015 Aalto University.                                        +
- +                                                                                +
- +    Licensed under the 4-clause BSD (the "License");                            +
- +    you may not use this file except in compliance with the License.            +
- +    You may obtain a copy of the License at top most directory of project.      +
- +                                                                                +
- +    Unless required by applicable law or agreed to in writing, software         +
- +    distributed under the License is distributed on an "AS IS" BASIS,           +
- +    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.    +
- +    See the License for the specific language governing permissions and         +
- +    limitations under the License.                                              +
- +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
-
-package agentSystem
+package database
 
 import java.lang.{Iterable => JavaIterable}
 
+
+
 import scala.collection.immutable.IndexedSeq
-import scala.concurrent.Future
+import scala.collection.mutable.{Map => MutableMap}
+import scala.collection.immutable.Map
 import scala.concurrent.duration._
+import scala.concurrent.{Future, Promise, ExecutionContext}
 import scala.util.{Failure, Success, Try}
 import scala.xml.XML
 
-import akka.actor.{ActorRef, ActorSystem}
-import analytics.{AddWrite, AnalyticsStore}
+import akka.actor.{Actor, ActorRef, ActorSystem, ActorLogging}
+import akka.pattern.ask
+import akka.util.Timeout
 import database._
 import parsing.xmlGen
 import parsing.xmlGen._
-import parsing.xmlGen.xmlTypes.MetaData
-import responses.CallbackHandler._
+import parsing.xmlGen.xmlTypes.MetaDataType
 import responses.CallbackHandler
+import responses.CallbackHandler._
+import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 import types.OdfTypes._
 import types.OmiTypes._
 import types.Path
-import http.OmiNodeContext
+import analytics.{AddWrite, AnalyticsStore}
+import agentSystem.{AgentName}
 
-trait  InputPusher  extends BaseAgentSystem{
-  protected def writeValues(
-    infoItems: Iterable[OdfInfoItem],
-    objectMetadatas: Vector[OdfObject] = Vector()
-  )(implicit system: ActorSystem): Future[ResponseRequest] 
-}
+trait DBWriteHandler extends DBHandlerBase {
 
-trait DBPusher extends BaseAgentSystem{
-  import context.dispatcher
-  protected implicit def dbConnection: DB
-  protected implicit def singleStores: SingleStores
-  protected implicit def callbackHandler: CallbackHandler
-  protected implicit def analyticsStore: Option[ActorRef]
+
+
+  import context.{system}//, dispatcher}
+  protected def handleWrite( write: WriteRequest ) : Future[ResponseRequest] = {
+    val odfObjects = write.odf
+    val infoItems : Seq[OdfInfoItem] = odfObjects.infoItems // getInfoItems(odfObjects)
+
+    // Collect metadata 
+    val objectsWithMetadata = odfObjects.objectsWithMetadata
+    writeValues(infoItems, objectsWithMetadata).recover{
+      case t: Exception =>
+        log.error(t, "Error while handling write.")
+        Responses.InternalError(t)
+      case t: Throwable =>
+        log.error(t, "Error while handling write.")
+        Responses.InternalError(t)
+    }
+  }
 
   private def sendEventCallback(esub: EventSub, infoItems: Seq[OdfInfoItem]): Unit = {
     sendEventCallback(esub,
@@ -214,8 +214,17 @@ trait DBPusher extends BaseAgentSystem{
     val metas = infoItems filter { _.hasMetadata }
 
     val iiDescriptions = infoItems filter { _.hasDescription }
+    val iiTypes = infoItems filter { _.typeValue.nonEmpty }
+    val iiAttr = infoItems filter { _.attributes.nonEmpty }
 
-    val updatedStaticItems = metas ++ iiDescriptions ++ newItems ++ objectMetadatas
+    val updatedStaticItems ={
+      metas ++ 
+      iiDescriptions ++ 
+      iiTypes ++ 
+      iiAttr ++ 
+      newItems ++ 
+      objectMetadatas
+    }
 
 
 
@@ -234,8 +243,9 @@ trait DBPusher extends BaseAgentSystem{
       case t: Throwable => log.error(t, s"Error when writing values for paths ${infoItems.map(_.path)}")
     }
 
-    val writeFuture = dbWriteFuture.map{ n =>
-            // Update our hierarchy data structures if needed
+    val writeFuture = dbWriteFuture.map{ 
+      n =>
+        // Update our hierarchy data structures if needed
 
         if (updatedStaticItems.nonEmpty) {
           // aggregate all updates to single odf tree
@@ -244,16 +254,22 @@ trait DBPusher extends BaseAgentSystem{
 
           singleStores.hierarchyStore execute Union(updateTree)
         }
-        
-        triggeringEvents.foreach(iie =>
-          iie.infoItem.values.headOption.map(newValue=>
-            singleStores.latestStore execute SetSensorData(iie.infoItem.path, newValue)
-          )
+        triggeringEvents.foreach(
+          iie =>
+            iie.infoItem.values.headOption.map(
+              newValue=>
+                singleStores.latestStore execute SetSensorData(iie.infoItem.path, newValue)
+            )
         )
-      }
+    }
+
     writeFuture.onFailure{
+      case t: Exception => log.error(t, "Error when trying to update hierarchy.")
       case t: Throwable => log.error(t, "Error when trying to update hierarchy.")
     }
+
+
+
 
     for{
       _ <- pollFuture
@@ -262,6 +278,4 @@ trait DBPusher extends BaseAgentSystem{
     } yield res
 
   }
-
-  
 }

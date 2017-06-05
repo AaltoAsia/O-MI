@@ -51,21 +51,42 @@ class TestOmiServer( config: Config )  extends OmiNode {
 
   implicit val callbackHandler: CallbackHandler = new CallbackHandler(settings)( system, materializer)
 
-  val subscriptionManager = system.actorOf(SubscriptionManager.props(), "subscription-handler")
+  val dbHandler = system.actorOf(
+   DBHandler.props(
+     dbConnection,
+     singleStores,
+     callbackHandler,
+     None
+   ),
+   "database-handler"
+  )
+  val subscriptionManager = system.actorOf(
+    SubscriptionManager.props(
+      settings,
+      singleStores,
+      callbackHandler
+    ),
+    "subscription-handler"
+  )
+  val requestHandler : ActorRef = system.actorOf(
+    RequestHandler.props(
+      subscriptionManager,
+      dbHandler,
+      settings,
+      None
+    ),
+    "request-handler"
+  )
   val agentSystem = system.actorOf(
-    AgentSystem.props(None),
-    "agent-system"
+   AgentSystem.props(
+     None,
+     dbHandler,
+     requestHandler,
+     settings
+   ),
+   "agent-system"
   )
 
-  implicit val requestHandler : RequestHandler = new RequestHandler(
-    )(system,
-    agentSystem,
-    subscriptionManager,
-    settings,
-    dbConnection,
-    singleStores,
-    None //analytics
-    )
 
     implicit val cliListener =system.actorOf(
       Props(
@@ -79,7 +100,7 @@ class TestOmiServer( config: Config )  extends OmiNode {
     "omi-node-cli-listener"
   )
 
-    implicit val httpExt = Http() 
+    implicit val httpExt: HttpExt = Http()
     // create omi service actor
     val omiService = new OmiServiceImpl(
       system,

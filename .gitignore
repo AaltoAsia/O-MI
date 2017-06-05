@@ -38,6 +38,7 @@ Session.vim
 
 #IDEA
 .idea/
+*.iml
 
 #
 *.pydevproject

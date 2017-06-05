@@ -53,7 +53,7 @@ class TypesTest extends Specification {
       parse message type response $pResponse
     """
 
-  def e1 = !ParseError("test error").isInstanceOf[OmiRequest]
+  def e1 = !ParseErrorList("test error").isInstanceOf[OmiRequest]
 
   def e2 = ReadRequest(OdfObjects(), None, None, None, None, None, 0.seconds).isInstanceOf[OmiRequest]
 
@@ -130,7 +130,7 @@ class TypesTest extends Specification {
   def xmlCancel: NodeSeq = xmlOmi("10", <cancel xmlns="omi.xsd" msgformat="odf"> <requestID>0</requestID> </cancel>)
   def xmlResponse: NodeSeq = xmlOmi("10", <response xmlns="omi.xsd" msgformat="odf"> {testOdfMsg} </response>)
 
-  def newRawRequestWrapper(xml: NodeSeq) = RawRequestWrapper(xml.toString, None)
+  def newRawRequestWrapper(xml: NodeSeq) = RawRequestWrapper(xml.toString, UserInfo())
 
   def pFiniteTTL   = newRawRequestWrapper(xmlReadFinite).ttl mustEqual 10.seconds
   def pInfiniteTTL = newRawRequestWrapper(xmlReadInfinite).ttl mustEqual Duration.Inf

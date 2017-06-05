@@ -44,10 +44,10 @@ omiExt = (WebOmi) ->
   # XML Namespace URIs used in the client
   # (needed because of the use of default namespaces with XPaths)
   my.ns =
-    omi : "omi.xsd"
-    odf : "odf.xsd"
-    xsi : "http://www.w3.org/2001/XMLSchema-instance"
-    xs  : "http://www.w3.org/2001/XMLSchema-instance"
+    omi : "http://www.opengroup.org/xsd/omi/1.0/"
+    odf : "http://www.opengroup.org/xsd/odf/1.0/"
+  #  xsi : "http://www.w3.org/2001/XMLSchema-instance"
+  #  xs  : "http://www.w3.org/2001/XMLSchema-instance"
 
   # XML Namespace resolver, (defaults to odf)
   my.nsResolver = (name) ->
