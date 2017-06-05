@@ -517,7 +517,7 @@ trait WebSocketOMISupport { self: OmiService =>
     def queueSend(futureResponse: Future[NodeSeq]): Future[QueueOfferResult] = {
       val result = for {
         response <- futureResponse
-        if (response.nonEmpty)
+        //if (response.nonEmpty)
 
           queue <- futureQueue
 
@@ -557,14 +557,17 @@ trait WebSocketOMISupport { self: OmiService =>
 
     val stricted = Flow.fromFunction[ws.Message,Future[String]]{
       case textMessage: ws.TextMessage =>
+        log.debug("Received keep alive for websocket")
         textMessage.textStream.runFold("")(_+_)
       case msg: ws.Message => Future successful ""
     }
     val msgSink = Sink.foreach[Future[String]]{ future: Future[String]  => 
       future.flatMap{ 
+        case "" => //Keep alive 
+          queueSend( Future.successful(  NodeSeq.Empty ) )
         case requestString: String =>
-        val futureResponse: Future[NodeSeq] = handleRequest(hasPermissionTest, requestString, createZeroCallback, user)
-        queueSend(futureResponse)
+          val futureResponse: Future[NodeSeq] = handleRequest(hasPermissionTest, requestString, createZeroCallback, user)
+          queueSend(futureResponse)
       }
     }
 

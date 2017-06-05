@@ -508,9 +508,11 @@ formLogicExt = ($, WebOmi) ->
   
   my.handleWSMessage = (message) ->
     consts = WebOmi.consts
-    # TODO: Check if response to subscription and put into subscription response view
+    #Check if response to subscription and put into subscription response view
     response = message.data
-    if not my.handleSubscriptionHistory response
+    if response.length == 0
+      return
+    else if not my.handleSubscriptionHistory response
       consts.progressBar.css "width", "100%"
       my.setResponse response
       consts.progressBar.css "width", "0%"
