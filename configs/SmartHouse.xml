@@ -12,7 +12,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
-<Objects xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xmlns="odf.xsd" xs:schemaLocation="odf.xsd odf.xsd">
+<Objects xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.opengroup.org/xsd/odf/1.0/" xs:schemaLocation="odf.xsd odf.xsd">
   <Object>
     <id>SmartHouse</id>
     <InfoItem name="FrontDoor">

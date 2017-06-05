@@ -70,19 +70,4 @@ public class JavaTemplateAgent extends JavaInternalAgent {
       }
   }
 
-  /**
-   * Method to be called when a Start() message is received.
-   */
-  @Override
-  public InternalAgentResponse start(){
-      return new CommandSuccessful();
-  }
-
-  /**
-   * Method to be called when a Stop() message is received.
-   */
-  @Override
-  public InternalAgentResponse stop(){
-      return new CommandSuccessful();
-  }
 }

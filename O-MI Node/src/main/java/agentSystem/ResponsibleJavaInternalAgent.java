@@ -1,9 +1,11 @@
 package agentSystem;
 
 import java.util.ArrayList;
+import java.util.concurrent.TimeUnit;
+
 
 import akka.util.Timeout;
-import akka.dispatch.OnSuccess;
+import akka.dispatch.*;
 import akka.dispatch.OnFailure;
 import static akka.pattern.Patterns.ask;
 import akka.actor.UntypedActor;
@@ -13,11 +15,13 @@ import akka.event.LoggingAdapter;
 
 import com.typesafe.config.Config;
 
+import scala.concurrent.duration.Duration;
 import scala.concurrent.Future;
 import scala.concurrent.ExecutionContext;
 
 import types.OmiTypes.WriteRequest;
 import types.OmiTypes.ReadRequest;
+import types.OmiTypes.CallRequest;
 import types.OmiTypes.ResponseRequest;
 import types.OmiTypes.Responses;
 import types.OdfTypes.OdfTreeCollection;
@@ -30,36 +34,23 @@ public abstract class ResponsibleJavaInternalAgent extends JavaInternalAgent imp
   public Future<ResponseRequest> handleWrite(WriteRequest write){
     return writeToDB(write);
   };
-  public Future<ResponseRequest> handleRead(ReadRequest read){
-    return readFromDB(read);
+
+  public Future<ResponseRequest> handleCall(CallRequest call){
+    return Futures.successful( 
+        Responses.NotImplemented(Duration.apply(10,TimeUnit.SECONDS))
+    );
   };
+
   //public abstract void handleCall(CallRequest call);
   @Override
-  public void onReceive(Object message) throws StartFailed, CommandFailed {
-    if( message instanceof Start) {
-      // Start is received when this agent should start it's functionality
-      respond(start());
-
-    } else if( message instanceof Stop) {
-      // Stop is received when this agent should stop it's functionality
-      respond(stop());
-
-    } else if( message instanceof Restart) {
-      // Restart is received when this agent should restart
-      // default behaviour is to call stop() and then start()
-      respond(restart());
-    }  else if( message instanceof WriteRequest ){
+  public void onReceive(Object message) {
+    if( message instanceof WriteRequest ){
       WriteRequest write = (WriteRequest) message;
       respondFuture(handleWrite(write));
-    }  else if( message instanceof ReadRequest ){
-
-      ReadRequest read = (ReadRequest) message;
-      respondFuture(handleRead(read));
-
-    } /*else if( message instanceof CallRequest ){
+    } else if( message instanceof CallRequest ){
       CallRequest call = (CallRequest) message;
-      handleCall(call);
-    }*/ else unhandled(message);
+      respondFuture(handleCall(call));
+    } else unhandled(message);
   }
   
   final protected void passWrite(WriteRequest write){

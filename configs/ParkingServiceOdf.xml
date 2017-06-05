@@ -18,15 +18,15 @@
                 <InfoItem name="ArrivalTime" required="false">
                   <value type="dateTime">yyyy-mm-ddThh:mm:ss.sss+-hh:mm</value>
                 </InfoItem>
-                <InfoItem name="DistanceFromDestination" required="false">
+                <InfoItem name="DistanceFromDestination" type="schema:Distance" required="false">
                   <value>1000m</value>
                 </InfoItem>
                 <Object type="schema:GeoCoordinates" required="true">
                   <id>Destination</id>
-                  <InfoItem name="latitude">
+                  <InfoItem name="latitude" required="true">
                     <value type="xs:double">60.187556</value>
                   </InfoItem>
-                  <InfoItem name="longitude">
+                  <InfoItem name="longitude" required="true">
                     <value type="xs:double">24.8213216</value>
                   </InfoItem>
                 </Object>
@@ -60,15 +60,15 @@
                     </InfoItem>
                   </Object>
                 </Object>
-                <Object required="false" type="mv:Dimensions">
-                  <id>Dimensions</id>
-                  <InfoItem name="width" required="false">
+                <Object required="false" type="schema:Vechile">
+                  <id>Vehicle</id>
+                  <InfoItem name="width" type="schema:width" required="false">
                     <value type="xs:double">3m</value>
                   </InfoItem>
-                  <InfoItem name="height" required="false">
+                  <InfoItem name="height"  type="schema:height" required="false">
                     <value type="xs:double">2.5m</value>
                   </InfoItem>
-                  <InfoItem name="length" required="false">
+                  <InfoItem name="depth"  type="schema:depth" required="false">
                     <value type="xs:double">3m</value>
                   </InfoItem>
                 </Object>
@@ -114,9 +114,12 @@
                           <InfoItem name="TotalCapacity" type="mv:hasTotalCapacity"/>
                           <InfoItem name="NumberOfVacantParkingSpaces" type="mv:hasNumberOfVacantParkingSpaces"/>
                           <InfoItem name="HourlyPrice" type="mv:PriceParking"/><!-- Maybe rename to Pricing? -->
-                          <InfoItem name="MaxHeight" type="mv:hasVehicleHeightLimitInM"/>
-                          <InfoItem name="MaxLength" type="mv:hasVehiclLengthLimitInM"/>
-                          <InfoItem name="MaxWidth" type="mv:hasVehicleWidthLimitInM"/>
+                          <Object type="schema:Vechile">
+                            <id>Vehicle</id>
+                            <InfoItem name="width" type="schema:width" />
+                            <InfoItem name="height"  type="schema:height" />
+                            <InfoItem name="depth"  type="schema:depth" />
+                          </Object>
                           <Object type="list">
                             <id>ParkingSpaces</id>
                             <Object type="mv:ParkingSpace">
@@ -203,15 +206,18 @@
             <InfoItem name="HourlyPrice" type="mv:PriceParking"><!-- Maybe rename to Pricing? -->
               <value type="xs:int">2</value>
             </InfoItem>
-            <InfoItem name="MaxHeight" type="mv:hasVehicleHeightLimitInM">
-              <value type="xs:float">2.5</value>
-            </InfoItem>
-            <InfoItem name="MaxWidth" type="mv:hasVehicleWidthLimitInM">
-              <value type="xs:float">2.5</value>
-            </InfoItem>
-            <InfoItem name="MaxLength" type="mv:hasVehicleLengthLimitInM">
-              <value type="xs:float">2.5</value>
-            </InfoItem>
+            <Object  type="schema:Vechile">
+              <id>Vehicle</id>
+              <InfoItem name="width" type="schema:width" >
+                <value type="xs:double">3m</value>
+              </InfoItem>
+              <InfoItem name="height"  type="schema:height" >
+                <value type="xs:double">2.5m</value>
+              </InfoItem>
+              <InfoItem name="depth"  type="schema:depth" >
+                <value type="xs:double">3m</value>
+              </InfoItem>
+            </Object>
             <Object type="list">
               <id>Spaces</id>
               <description lang="English">List of parking spaces of the previous type.</description>
@@ -306,15 +312,18 @@
             <InfoItem name="HourlyPrice" type="mv:PriceParking"><!-- Maybe rename to Pricing? -->
               <value type="xs:int">2</value>
             </InfoItem>
-            <InfoItem name="MaxHeight" type="mv:hasVehicleHeightLimitInM">
-              <value type="xs:float">2.5</value>
-            </InfoItem>
-            <InfoItem name="MaxWidth" type="mv:hasVehicleWidthLimitInM">
-              <value type="xs:float">2.5</value>
-            </InfoItem>
-            <InfoItem name="MaxLength" type="mv:hasVehicleLengthLimitInM">
-              <value type="xs:float">2.5</value>
-            </InfoItem>
+            <Object  type="schema:Vechile">
+              <id>Vehicle</id>
+              <InfoItem name="width" type="schema:width" >
+                <value type="xs:double">3m</value>
+              </InfoItem>
+              <InfoItem name="height"  type="schema:height" >
+                <value type="xs:double">2.5m</value>
+              </InfoItem>
+              <InfoItem name="depth"  type="schema:depth" >
+                <value type="xs:double">3m</value>
+              </InfoItem>
+            </Object>
             <Object type="list">
               <id>Spaces</id>
               <description lang="English">List of parking spaces of the previous type.</description>
@@ -385,15 +394,18 @@
             <InfoItem name="HourlyPrice" type="mv:PriceParking"><!-- Maybe rename to Pricing? -->
               <value type="xs:int">2</value>
             </InfoItem>
-            <InfoItem name="MaxHeight" type="mv:hasVehicleHeightLimitInM">
-              <value type="xs:float">2.5</value>
-            </InfoItem>
-            <InfoItem name="MaxWidth" type="mv:hasVehicleWidthLimitInM">
-              <value type="xs:float">2.5</value>
-            </InfoItem>
-            <InfoItem name="MaxLength" type="mv:hasVehicleLengthLimitInM">
-              <value type="xs:float">2.5</value>
-            </InfoItem>
+            <Object  type="schema:Vechile">
+              <id>Vehicle</id>
+              <InfoItem name="width" type="schema:width" >
+                <value type="xs:double">3m</value>
+              </InfoItem>
+              <InfoItem name="height"  type="schema:height" >
+                <value type="xs:double">2.5m</value>
+              </InfoItem>
+              <InfoItem name="depth"  type="schema:depth" >
+                <value type="xs:double">3m</value>
+              </InfoItem>
+            </Object>
             <Object type="list">
               <id>Spaces</id>
               <description lang="English">List of parking spaces of the previous type.</description>
@@ -479,15 +491,18 @@
             <InfoItem name="HourlyPrice" type="mv:PriceParking"><!-- Maybe rename to Pricing? -->
               <value type="xs:int">2</value>
             </InfoItem>
-            <InfoItem name="MaxHeight" type="mv:hasVehicleHeightLimitInM">
-              <value type="xs:float">2.5</value>
-            </InfoItem>
-            <InfoItem name="MaxWidth" type="mv:hasVehicleWidthLimitInM">
-              <value type="xs:float">2.5</value>
-            </InfoItem>
-            <InfoItem name="MaxLength" type="mv:hasVehicleLengthLimitInM">
-              <value type="xs:float">2.5</value>
-            </InfoItem>
+            <Object  type="schema:Vechile">
+              <id>Vehicle</id>
+              <InfoItem name="width" type="schema:width" >
+                <value type="xs:double">3m</value>
+              </InfoItem>
+              <InfoItem name="height"  type="schema:height" >
+                <value type="xs:double">2.5m</value>
+              </InfoItem>
+              <InfoItem name="depth"  type="schema:depth" >
+                <value type="xs:double">3m</value>
+              </InfoItem>
+            </Object>
             <Object type="list">
               <id>Spaces</id>
               <description lang="English">List of parking spaces of the previous type.</description>
@@ -582,15 +597,18 @@
             <InfoItem name="HourlyPrice" type="mv:PriceParking"><!-- Maybe rename to Pricing? -->
               <value type="xs:int">2</value>
             </InfoItem>
-            <InfoItem name="MaxHeight" type="mv:hasVehicleHeightLimitInM">
-              <value type="xs:float">2.5</value>
-            </InfoItem>
-            <InfoItem name="MaxWidth" type="mv:hasVehicleWidthLimitInM">
-              <value type="xs:float">2.5</value>
-            </InfoItem>
-            <InfoItem name="MaxLength" type="mv:hasVehicleLengthLimitInM">
-              <value type="xs:float">2.5</value>
-            </InfoItem>
+            <Object  type="schema:Vechile">
+              <id>Vehicle</id>
+              <InfoItem name="width" type="schema:width" >
+                <value type="xs:double">3m</value>
+              </InfoItem>
+              <InfoItem name="height"  type="schema:height" >
+                <value type="xs:double">2.5m</value>
+              </InfoItem>
+              <InfoItem name="depth"  type="schema:depth" >
+                <value type="xs:double">3m</value>
+              </InfoItem>
+            </Object>
             <Object type="list">
               <id>Spaces</id>
               <description lang="English">List of parking spaces of the previous type.</description>
@@ -661,15 +679,18 @@
             <InfoItem name="HourlyPrice" type="mv:PriceParking"><!-- Maybe rename to Pricing? -->
               <value type="xs:int">2</value>
             </InfoItem>
-            <InfoItem name="MaxHeight" type="mv:hasVehicleHeightLimitInM">
-              <value type="xs:float">2.5</value>
-            </InfoItem>
-            <InfoItem name="MaxWidth" type="mv:hasVehicleWidthLimitInM">
-              <value type="xs:float">2.5</value>
-            </InfoItem>
-            <InfoItem name="MaxLength" type="mv:hasVehicleLengthLimitInM">
-              <value type="xs:float">2.5</value>
-            </InfoItem>
+            <Object  type="schema:Vechile">
+              <id>Vehicle</id>
+              <InfoItem name="width" type="schema:width" >
+                <value type="xs:double">3m</value>
+              </InfoItem>
+              <InfoItem name="height"  type="schema:height" >
+                <value type="xs:double">2.5m</value>
+              </InfoItem>
+              <InfoItem name="depth"  type="schema:depth" >
+                <value type="xs:double">3m</value>
+              </InfoItem>
+            </Object>
             <Object type="list">
               <id>Spaces</id>
               <description lang="English">List of parking spaces of the previous type.</description>
@@ -755,15 +776,18 @@
             <InfoItem name="HourlyPrice" type="mv:PriceParking"><!-- Maybe rename to Pricing? -->
               <value type="xs:int">2</value>
             </InfoItem>
-            <InfoItem name="MaxHeight" type="mv:hasVehicleHeightLimitInM">
-              <value type="xs:float">2.5</value>
-            </InfoItem>
-            <InfoItem name="MaxWidth" type="mv:hasVehicleWidthLimitInM">
-              <value type="xs:float">2.5</value>
-            </InfoItem>
-            <InfoItem name="MaxLength" type="mv:hasVehicleLengthLimitInM">
-              <value type="xs:float">2.5</value>
-            </InfoItem>
+            <Object  type="schema:Vechile">
+              <id>Vehicle</id>
+              <InfoItem name="width" type="schema:width" >
+                <value type="xs:double">3m</value>
+              </InfoItem>
+              <InfoItem name="height"  type="schema:height" >
+                <value type="xs:double">2.5m</value>
+              </InfoItem>
+              <InfoItem name="depth"  type="schema:depth" >
+                <value type="xs:double">3m</value>
+              </InfoItem>
+            </Object>
             <Object type="list">
               <id>Spaces</id>
               <description lang="English">List of parking spaces of the previous type.</description>
@@ -858,15 +882,18 @@
             <InfoItem name="HourlyPrice" type="mv:PriceParking"><!-- Maybe rename to Pricing? -->
               <value type="xs:int">2</value>
             </InfoItem>
-            <InfoItem name="MaxHeight" type="mv:hasVehicleHeightLimitInM">
-              <value type="xs:float">2.5</value>
-            </InfoItem>
-            <InfoItem name="MaxWidth" type="mv:hasVehicleWidthLimitInM">
-              <value type="xs:float">2.5</value>
-            </InfoItem>
-            <InfoItem name="MaxLength" type="mv:hasVehicleLengthLimitInM">
-              <value type="xs:float">2.5</value>
-            </InfoItem>
+            <Object  type="schema:Vechile">
+              <id>Vehicle</id>
+              <InfoItem name="width" type="schema:width" >
+                <value type="xs:double">3m</value>
+              </InfoItem>
+              <InfoItem name="height"  type="schema:height" >
+                <value type="xs:double">2.5m</value>
+              </InfoItem>
+              <InfoItem name="depth"  type="schema:depth" >
+                <value type="xs:double">3m</value>
+              </InfoItem>
+            </Object>
             <Object type="list">
               <id>Spaces</id>
               <description lang="English">List of parking spaces of the previous type.</description>
@@ -937,15 +964,18 @@
             <InfoItem name="HourlyPrice" type="mv:PriceParking"><!-- Maybe rename to Pricing? -->
               <value type="xs:int">2</value>
             </InfoItem>
-            <InfoItem name="MaxHeight" type="mv:hasVehicleHeightLimitInM">
-              <value type="xs:float">2.5</value>
-            </InfoItem>
-            <InfoItem name="MaxWidth" type="mv:hasVehicleWidthLimitInM">
-              <value type="xs:float">2.5</value>
-            </InfoItem>
-            <InfoItem name="MaxLength" type="mv:hasVehicleLengthLimitInM">
-              <value type="xs:float">2.5</value>
-            </InfoItem>
+            <Object  type="schema:Vechile">
+              <id>Vehicle</id>
+              <InfoItem name="width" type="schema:width" >
+                <value type="xs:double">3m</value>
+              </InfoItem>
+              <InfoItem name="height"  type="schema:height" >
+                <value type="xs:double">2.5m</value>
+              </InfoItem>
+              <InfoItem name="depth"  type="schema:depth" >
+                <value type="xs:double">3m</value>
+              </InfoItem>
+            </Object>
             <Object type="list">
               <id>Spaces</id>
               <description lang="English">List of parking spaces of the previous type.</description>

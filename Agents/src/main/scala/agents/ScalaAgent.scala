@@ -30,6 +30,9 @@ object ScalaAgent extends PropsCreator {
   /**
    * Method for creating Props for ScalaAgent.
    *  @param config Contains configuration for this agent, as given in application.conf.
+   * @param requestHandler ActorRef to RequestHandler Actor, that sends request
+   * for this agent to handle.
+   * @param dbHandler ActorRef to DBHandler Actor that handles all request to DB.
    */
   def props( 
     config: Config,
@@ -52,10 +55,13 @@ object ScalaAgent extends PropsCreator {
  * @param dbHandler ActorRef to DBHandler Actor that handles all request to DB.
  */
 class ScalaAgent( 
-  override val config: Config,
+  val config: Config,
   requestHandler: ActorRef, 
   dbHandler: ActorRef
 )  extends ScalaInternalAgentTemplate(requestHandler, dbHandler){
+
+  //Target O-DF path, parsed from configuration
+  val path : Path = Path(config.getString("path"))
 
   //Interval for scheluding generation of new values, parsed from configuration
   val interval : FiniteDuration= config.getDuration(
@@ -63,18 +69,8 @@ class ScalaAgent(
     TimeUnit.SECONDS
   ).seconds
 
-  //Target O-DF path, parsed from configuration
-  val path : Path = Path(config.getString("path"))
-
   //Message for updating values
   case class Update()
-
-  //Random number generator for generating new values
-  val rnd: Random = new Random()
-  def newValueStr : String = rnd.nextInt().toString 
-
-  //Helper method for getting current timestamps
-  def currentTimestamp : Timestamp = new Timestamp(  new java.util.Date().getTime() )
 
   // Schelude update and save job, for stopping
   // Will send Update() message to self every interval
@@ -85,16 +81,12 @@ class ScalaAgent(
     Update()//Message
   )
 
+  //Random number generator for generating new values
+  val rnd: Random = new Random()
 
-
-  /**
-   * Method to be called when Agent is stopped.
-   * This should gracefully stop all activities that the agent is doing.
-   */
-  override def postStop : Unit = {
-    updateSchedule.cancel()
-  }
-
+  //Helper method for getting current timestamps
+  def currentTimestamp : Timestamp = new Timestamp(  new java.util.Date().getTime() )
+  def newValueStr : String = rnd.nextInt().toString 
 
   /**
    * Method to be called when a Update() message is received.
@@ -145,7 +137,6 @@ class ScalaAgent(
     // Create O-MI write request
     // interval as time to live
     val write : WriteRequest = WriteRequest( objects, None, interval )
-    log.info(s"$name writing:\n $write")
 
     // Execute the request, execution is asynchronous (will not block)
     val result : Future[ResponseRequest] = writeToDB(write) 
@@ -176,5 +167,13 @@ class ScalaAgent(
   override  def receive : Actor.Receive = {
     //ScalaAgent specific messages
     case Update() => update
+  }
+
+  /**
+   * Method to be called when Agent is stopped.
+   * This should gracefully stop all activities that the agent is doing.
+   */
+  override def postStop : Unit = {
+    updateSchedule.cancel()
   }
 }

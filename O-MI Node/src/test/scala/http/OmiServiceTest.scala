@@ -100,7 +100,10 @@ class OmiServiceTest
   def afterAll = {
     dbConnection.destroy()
     singleStores.hierarchyStore execute TreeRemovePath(types.Path("/Objects"))
-    Await.ready(system.terminate(), 2 seconds)
+    system.terminate()
+    //XXX: DID NOT WORK
+    //Await.ready(system.terminate(), 10 seconds)
+
   }
 
   "Data discovery, GET: OmiService" >> {
