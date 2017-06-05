@@ -56,7 +56,8 @@ public class AuthAPIService implements AuthApi {
     public AuthAPIService(boolean useHTTPS, int authServicePort) {
         String authServiceURIScheme = useHTTPS ? "https://" : "http://";
         String mainURI = useHTTPS ? "localhost" : "localhost:"+authServicePort;
-        this.authServiceURI = authServiceURIScheme + mainURI + "/omi/auth0/permissions";;
+        //this.authServiceURI = authServiceURIScheme + mainURI + "/omi/auth0/permissions";
+        this.authServiceURI = authServiceURIScheme + mainURI + "/security/PermissionService";
     }
 
     static {
@@ -482,6 +483,8 @@ public class AuthAPIService implements AuthApi {
 
             if (response.toString().equals("false")) {
                 return new Unauthorized(new UserInfo(UserInfo.apply$default$1(), UserInfo.apply$default$2()));
+            } else if (response.toString().equals("true")) {
+                return new Authorized(new UserInfo(UserInfo.apply$default$1(), UserInfo.apply$default$2()));
             }
 
             JsonObject responseObject = new JsonParser().parse(response.toString()).getAsJsonObject();//response.toString(); //reuse variable
