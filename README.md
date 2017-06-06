@@ -79,25 +79,29 @@ Setup development environment
 4. Open a cmd or shell to the `O-MI` project directory
 5. Then run `sbt re-start` to compile and run the Node
 6. Visit http://localhost:8080/ to see that it's working
-7. (_optional step_) Import the project in IntelliJ IDEA
+
+You can check the [Simple Build Tool cheat sheet](#simple-build-tool-cheat-sheet) section to learn more
+
+### Setting up IDE
+
+* IntelliJ IDEA
    1. Install the IDE
       1. Download and install IntelliJ IDEA
-      2. When running for first time install Scala from the 'Featured plugins' tab (can also install Scala plugin later from Settings/plugins)
+      2. When running for the first time install Scala from the 'Featured plugins' tab (you can also install Scala plugin later from Settings/plugins)
       3. Open the IDE
    2. Import the project
       1. Select import project -> select `O-MI` directory and click OK
       2. Select import project from external model and select `SBT` and then click Next
       3. For the 'Project JDK' select 'New...' and select JDK and then locate your JDK 1.8 folder and select it and click Finish
       4. When prompted to select modules to include in the project, select: root, agents and omiNode and then click OK
-      5. Wait for the IDE to finish indexing the files (might take few minutes)
-8. (_optional step_) Create an Eclipse IDE project
+      5. Wait for the IDE to finish indexing the files (might take a few minutes)
+* Eclipse
    1. Run `sbt eclipse`
    2. Open Eclipse IDE
    3. Select File->import `Existing Projects into Workspace`
 
-You can check the next section to learn more
 
-Simple Build Tool cheat sheet 
+Simple Build Tool cheat sheet
 -----------------------------
 
 Native SBT commands
