@@ -237,6 +237,9 @@
                   <InfoItem name="Model" type="mv:Model">
                     <value>ExampleI</value>
                   </InfoItem>
+                  <InfoItem name="LidStatus">
+                    <value>Locked</value>
+                  </InfoItem>
                   <Object type="mv:Plug">
                     <id>Plug</id>
                     <InfoItem name="PlugType" type="mv:PlugType">
@@ -275,6 +278,9 @@
                   </InfoItem>
                   <InfoItem name="Model" type="mv:Model">
                     <value>ExampleI</value>
+                  </InfoItem>
+                  <InfoItem name="LidStatus">
+                    <value>Locked</value>
                   </InfoItem>
                   <Object type="mv:Plug">
                     <id>Plug</id>
@@ -522,6 +528,9 @@
                   <InfoItem name="Model" type="mv:Model">
                     <value>ExampleI</value>
                   </InfoItem>
+                  <InfoItem name="LidStatus">
+                    <value>Locked</value>
+                  </InfoItem>
                   <Object type="mv:Plug">
                     <id>Plug</id>
                     <InfoItem name="PlugType" type="mv:PlugType">
@@ -560,6 +569,9 @@
                   </InfoItem>
                   <InfoItem name="Model" type="mv:Model">
                     <value>ExampleI</value>
+                  </InfoItem>
+                  <InfoItem name="LidStatus">
+                    <value>Locked</value>
                   </InfoItem>
                   <Object type="mv:Plug">
                     <id>Plug</id>
@@ -807,6 +819,9 @@
                   <InfoItem name="Model" type="mv:Model">
                     <value>ExampleI</value>
                   </InfoItem>
+                  <InfoItem name="LidStatus">
+                    <value>Locked</value>
+                  </InfoItem>
                   <Object type="mv:Plug">
                     <id>Plug</id>
                     <InfoItem name="PlugType" type="mv:PlugType">
@@ -845,6 +860,9 @@
                   </InfoItem>
                   <InfoItem name="Model" type="mv:Model">
                     <value>ExampleI</value>
+                  </InfoItem>
+                  <InfoItem name="LidStatus">
+                    <value>Locked</value>
                   </InfoItem>
                   <Object type="mv:Plug">
                     <id>Plug</id>
