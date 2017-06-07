@@ -7,11 +7,11 @@ def update_odf(elem):
     for child in elem.getchildren():
         update_odf(child)
         tag = child.tag
-        if (tag == '{odf.xsd}InfoItem') or (tag == '{odf.xsd}Object'):
-            child.insert(1,Element('{odf.xsd}description'))
-        if (tag == '{odf.xsd}InfoItem'):
-            child.remove(child.find("./{odf.xsd}value"))
-            child.append(Element('{odf.xsd}MetaData'))
+        if (tag == '{http://www.opengroup.org/xsd/odf/1.0/}InfoItem') or (tag == '{http://www.opengroup.org/xsd/odf/1.0/}Object'):
+            child.insert(1,Element('{http://www.opengroup.org/xsd/odf/1.0/}description'))
+        if (tag == '{http://www.opengroup.org/xsd/odf/1.0/}InfoItem'):
+            child.remove(child.find("./{http://www.opengroup.org/xsd/odf/1.0/}value"))
+            child.append(Element('{http://www.opengroup.org/xsd/odf/1.0/}MetaData'))
 def main(argv):
     hostn = 'http://localhost:8080' #localhost at default port
     output = 'odfdump.xml' #default file
@@ -30,22 +30,20 @@ def main(argv):
         hostn = args[0]
 
     #request for odf hierarchy
-    hierarchyRequest = """<?xml version="1.0" encoding="UTF-8"?>
-<omi:omiEnvelope xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" version="1.0" ttl="0">
-  <omi:read msgformat="odf">
-    <omi:msg>
-      <Objects xmlns="odf.xsd"/>
-    </omi:msg>
-  </omi:read>
-</omi:omiEnvelope>"""
+    hierarchyRequest = """<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="0">
+  <read msgformat="odf">
+    <msg>
+      <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/"/>
+    </msg>
+  </read>
+</omiEnvelope>"""
     #request for 9000 newest values(should be enough for now) 
-    fullRequest = """<?xml version="1.0" encoding="UTF-8"?>
-<omi:omiEnvelope xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" version="1.0" ttl="0">
-  <omi:read msgformat="odf" newest="9000">
-    <omi:msg>
-    </omi:msg>
-  </omi:read>
-</omi:omiEnvelope>"""
+    fullRequest = """<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="0">
+  <read msgformat="odf" newest="9000">
+    <msg>
+    </msg>
+  </read>
+</omiEnvelope>"""
 
 
     #register namespaces so that we don't get wrong namespaces in the request
@@ -58,15 +56,14 @@ def main(argv):
     r = requests.post(hostn, data = hierarchyRequest, headers = headers).text
 
     root = fromstring(r)
-
-    objects = root.find(".//{odf.xsd}Objects")
-
+    
+    objects = root.find(".//{http://www.opengroup.org/xsd/odf/1.0/}Objects")
     #remove values and add metadata and description tags
     update_odf(objects)
 
     fullRoot = fromstring(fullRequest)
 
-    fullRoot.find(".//{omi.xsd}msg").append(objects)
+    fullRoot.find(".//{http://www.opengroup.org/xsd/omi/1.0/}msg").append(objects)
 
     #write result to file. note: result might be big so iterate over the result
     with open(output,'wb') as handle:
