@@ -547,7 +547,7 @@ class ParkingAgent(
     }
   }
                 case class CloseLid( pathToLidState: Path )
-  def closeLidIn( pathToLidState: Path, delay: FiniteDuration = 10.seconds ) ={
+  def closeLidIn( pathToLidState: Path, delay: FiniteDuration = 2.seconds ) ={
     context.system.scheduler.scheduleOnce( delay, self, CloseLid( pathToLidState) )
   }
   def closeLid( pathToLidState: Path ) ={
