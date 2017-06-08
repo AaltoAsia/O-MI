@@ -303,17 +303,19 @@ class ParkingAgent(
   
   }*/
 
+  
+
   override protected def handleWrite(write: WriteRequest) : Future[ResponseRequest] = {
+    val parkingSpaces =  write.odf.getNodesOfType( "mv:ParkingSpace" )
     if(write.odf.get(findParkingPath).nonEmpty ){
         Future{
           Responses.InvalidRequest(
             Some("Trying to write to path containing a service method.")
           )
         }
-    } else {
+    } else if( parkingSpaces.nonEmpty ){
       // Asynchronous execution of request 
       //TODO:Check for reservation writes
-      val parkingSpaces =  write.odf.getNodesOfType( "mv:ParkingSpace" )
       val ( parkingEvents: Seq[Try[ParkingEvent]], failures: Seq[Try[ParkingEvent]] ) = parkingSpaces.collect{
         case obj: OdfObject => 
           Try{
@@ -362,9 +364,11 @@ class ParkingAgent(
               }.getOrElse( false)
               if( openLid && ps.user == currentPS.user ) {
                 OpenLid( obj.path, ps.user.get )
+              } else if( ps.user != currentPS.user ){
+                  throw  new Exception( "Trying to open lid of charger of parking space reserved by someone else.") 
               } else {
                   throw  new Exception( "Trying to open lid of charger of parking space reserved by someone else.") 
-              } 
+              }
             } else{
                   throw  new Exception( "Trying to some odd write.") 
             }
@@ -462,6 +466,12 @@ class ParkingAgent(
             )
         }
       }
+    } else {
+        Future{
+          Responses.InvalidRequest(
+            Some("Trying to write without mv:ParkingSpace typed Object.")
+          )
+        }
     }
   }
 
