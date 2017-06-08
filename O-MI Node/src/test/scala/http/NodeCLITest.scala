@@ -110,7 +110,7 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
   }
 
   def ignoreConnectedToAgentMananger( connection: TestProbe ) : Unit ={
-    connection.ignoreMsg{ case Write(data, ack) => data.decodeString("UTF-8") == s"CLI connected to AgentManager.\n>" }
+    connection.ignoreMsg{ case Write(data, ack) => data.decodeString("UTF-8") == s"CLI connected to AgentManager.\r\n>" }
   }
   def listAgentsTest= new Actorstest(AS){
     import system.dispatcher
@@ -167,11 +167,11 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
     ))
     val listener = listenerRef.underlyingActor
    // val resF :Future[String ]=decodeWriteStr(listenerRef ? strToMsg(s"start $name"))    
-   // val correct : String =  s"Agent $name started succesfully.\n" 
+   // val correct : String =  s"Agent $name started succesfully.\r\n" 
    /// resF should beEqualTo( correct ).await( 0, timeoutDuration)
     connection.send(listenerRef,strToMsg(s"start $name"))
     ( connection.expectMsgType[Write].data.decodeString("UTF-8") must beEqualTo(s">") ) and (
-    connection.expectMsgType[Write].data.decodeString("UTF-8") must beEqualTo(s"Agent $name started.\n>") )
+    connection.expectMsgType[Write].data.decodeString("UTF-8") must beEqualTo(s"Agent $name started.\r\n>") )
   }
   def stopAgentTest= new Actorstest(AS){
     val name = "StartSuccess"
@@ -200,7 +200,7 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
 
     connection.send(listenerRef,strToMsg(s"stop $name"))
     ( connection.expectMsgType[Write].data.decodeString("UTF-8") must beEqualTo(s">") ) and (
-    connection.expectMsgType[Write].data.decodeString("UTF-8") must beEqualTo(s"Agent $name stopped.\n>") )
+    connection.expectMsgType[Write].data.decodeString("UTF-8") must beEqualTo(s"Agent $name stopped.\r\n>") )
   }
   def unknownCmdTest = new Actorstest(AS){
     import system.dispatcher
@@ -221,7 +221,7 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
       subscriptionManager
     ))
     val listener = listenerRef.underlyingActor
-    val correct: String  = "Unknown command. Use help to get information of current commands.\n>" 
+    val correct: String  = "Unknown command. Use help to get information of current commands.\r\n>" 
     connection.send(listenerRef,strToMsg(s"aueo"))
     connection.expectMsgType[Write].data.decodeString("UTF-8") must beEqualTo(correct) 
 
@@ -247,7 +247,7 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
     ))
     val listener = listenerRef.underlyingActor
     // val resF: Future[String ] =decodeWriteStr(listenerRef ? strToMsg(s"remove $path"))    
-    val correct: String  = s"Successfully removed path $path\n>" 
+    val correct: String  = s"Successfully removed path $path\r\n>" 
     connection.send(listenerRef,strToMsg(s"remove $path"))
     connection.expectMsgType[Write].data.decodeString("UTF-8") must beEqualTo(correct) 
   }
@@ -271,7 +271,7 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
       subscriptionManager
     ))
     val listener = listenerRef.underlyingActor
-    val correct: String  = s"Given path does not exist\n>" 
+    val correct: String  = s"Given path does not exist\r\n>" 
     connection.send(listenerRef,strToMsg(s"remove $path" +"ueaueo"))
     connection.expectMsgType[Write].data.decodeString("UTF-8") must beEqualTo(correct) 
   }
@@ -353,7 +353,7 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
     ))
     val listener = listenerRef.underlyingActor
     val resF: Future[String ] =decodeWriteStr(listenerRef ? strToMsg(s"remove $id"))    
-    val correct: String  =s"Removed subscription with $id successfully.\n>" 
+    val correct: String  =s"Removed subscription with $id successfully.\r\n>" 
     resF should beEqualTo(correct ).await( 0, timeoutDuration)
   }
 
@@ -382,7 +382,7 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
     ))
     val listener = listenerRef.underlyingActor
     val resF: Future[String ] =decodeWriteStr(listenerRef ? strToMsg(s"remove $id"))    
-    val correct: String  =s"Failed to remove subscription with $id. Subscription does not exist or it is already expired.\n>"
+    val correct: String  =s"Failed to remove subscription with $id. Subscription does not exist or it is already expired.\r\n>"
     resF should beEqualTo(correct ).await( 0, timeoutDuration)
   }
   def showSubTestInterval = {
@@ -404,11 +404,11 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
         interval,
         startTime
       ))
-      val correct: String  =s"Started: ${startTime}\n" +
-      s"Ends: ${endTime}\n" +
-      s"Interval: ${interval}\n" +
-      s"Callback: ${callback}\n" +
-      s"Paths:\n${paths.mkString("\n")}\n>"
+      val correct: String  =s"Started: ${startTime}\r\n" +
+      s"Ends: ${endTime}\r\n" +
+      s"Interval: ${interval}\r\n" +
+      s"Callback: ${callback}\r\n" +
+      s"Paths:\r\n${paths.mkString("\r\n")}\r\n>"
       showSubTestBase(sub,correct)
   }
 
@@ -429,9 +429,9 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
         endTime,
         callback
       ))
-      val correct: String  =s"Ends: ${endTime}\n" +
-      s"Callback: ${callback}\n" +
-      s"Paths:\n${paths.mkString("\n")}\n>"
+      val correct: String  =s"Ends: ${endTime}\r\n" +
+      s"Callback: ${callback}\r\n" +
+      s"Paths:\r\n${paths.mkString("\r\n")}\r\n>"
       showSubTestBase(sub,correct)
   }
 
@@ -454,11 +454,11 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
         startTime,
         paths
       ))
-      val correct: String  =s"Started: ${startTime}\n" +
-      s"Ends: ${endTime}\n" +
-      s"Interval: ${interval}\n" +
-      s"Last polled: ${nextRunTime}\n" +
-      s"Paths:\n${paths.mkString("\n")}\n>"
+      val correct: String  =s"Started: ${startTime}\r\n" +
+      s"Ends: ${endTime}\r\n" +
+      s"Interval: ${interval}\r\n" +
+      s"Last polled: ${nextRunTime}\r\n" +
+      s"Paths:\r\n${paths.mkString("\r\n")}\r\n>"
       showSubTestBase(sub,correct)
   }
 
@@ -480,10 +480,10 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
         startTime,
         paths
       ))
-      val correct: String  = s"Started: ${startTime}\n" +
-      s"Ends: ${endTime}\n" +
-      s"Last polled: ${nextRunTime}\n" +
-      s"Paths:\n${paths.mkString("\n")}\n>"
+      val correct: String  = s"Started: ${startTime}\r\n" +
+      s"Ends: ${endTime}\r\n" +
+      s"Last polled: ${nextRunTime}\r\n" +
+      s"Paths:\r\n${paths.mkString("\r\n")}\r\n>"
       showSubTestBase(sub,correct)
   }
 
@@ -498,7 +498,7 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
 
       val remote = new InetSocketAddress("Tester",22)
       val removeHandler = new RemoveTester( Path("objects/aue" ) )
-      val correct: String  = s"Subscription with id $id not found.\n>" 
+      val correct: String  = s"Subscription with id $id not found.\r\n>" 
       showSubTestBase(None,correct)
   }
   def showSubTestBase( sub: Option[SavedSub], correctOut: String ) = new Actorstest(AS){
