@@ -575,6 +575,100 @@ class ParkingAgent(
     case write: WriteRequest => respondFuture(handleWrite(write))
     case call: CallRequest => respondFuture(handleCall(call))
   }
+  /*
+  def handleParkingSpaces( odf: OdfObjects ) ={
+    def getStringFromPath( path: Path, oo: OdfObject ): Option[String] ={
+      oo.get(path).collect{
+        case ii: InfoItem => 
+          getStringFromInfoItem( ii) 
+      }.flatten
+    }
+    val containedParkingSpacePaths = odf.paths.filter{
+      case path: Path => pathToSpaces.contains( path )
+    }
+    val modifiedObject =containedParkingSpacePaths.map{
+      case path: Path =>
+        val objOption = odf.get( path )
+        val newObjO = objOption.map{
+          case obj: OdfObject => 
+              val parkingSpace = ParkingSpace( obj )
+            val userO = getStringFromPath(obj.path / "User", obj )
+            val availableO = getStringFromPath(obj.path / "Available", obj )
+            val lidStatusO =getStringFromPath(obj.path / "Charger" / "LidStatus", obj )
+            val currentPSO = pathToSpaces.get(obj.path)
+            val newObjO: Option[OdfObject] = currentPSO.map{
+              case currentPS: ParkingSpot =>
+              (userO, currentPS.user ) match{
+                case ( None, cUserO ) =>
+                  throw new Exception( "User is not given. Can not authorize for empty." )
+                case ( Some(user), Some(none) ) if none.equalsIgnoreCase( "none")  =>//Reservation 
+                  (availableO,lidStatusO) match {
+                    case (Some( newStatus ), None) 
+                      if newStatus.equalsIgnoreCase("false") =>
+                        obj.update( obj.path / "Available", Vector( OdfValue( "false", currentTime )))
+                    case (Some( newStatus ), Some(lidStatus)) 
+                      if newStatus.equalsIgnoreCase("false") =>
+                      chechLidStatus(lidStatus, obj)
+                          .update( obj.path / "Available", Vector( OdfValue( "false", currentTime )))
+                    case (Some( newStatus ), Some(lidStatus)) 
+                      if newStatus.equalsIgnoreCase("true") =>
+                        throw new Exception( "Only reserver may open lid. There is no reservation" )
+                    case (Some( newStatus ),None) if newStatus.equalsIgnoreCase("true") =>
+                        //Re-release
+                        obj
+                          .update( obj.path / "Available", Vector( OdfValue( "true", currentTime )))
+                          .update( obj.path / "User", Vector( OdfValue( "NONE", currentTime )))
+                    case (Some( ns ),_)=>
+                      throw new Exception( "Unknown available status. Should be either true or false." )
+                  }
+
+                case ( Some(user), Some(currentUser) ) if user != currentUser =>//Release or lidStatus
+                   throw new Exception( s"Parking space $path is already reserved." )
+
+                case ( Some(user), Some(currentUser) ) if user == currentUser =>//Release or lidStatus
+                  (availableO,lidStatusO) match {
+                    case (Some( newStatus ),None)  =>
+                        obj
+                    case (Some( newStatus ),Some(lidStatus)) 
+                      if newStatus.equalsIgnoreCase("false") =>
+                      //re reservation.
+                      chechLidStatus(lidStatus, obj)
+                    case (Some( newStatus), None) 
+                      if newStatus.equalsIgnoreCase("true") =>
+                        obj
+                          .update( obj.path / "User", Vector( OdfValue( "NONE", currentTime) ))
+                    case (Some( newStatus ),Some(lidStatus)) 
+                      if newStatus.equalsIgnoreCase("true") =>
+                      //release
+                        chechLidStatus(lidStatus, obj)
+                          .update( obj.path / "User", Vector( OdfValue( "NONE", currentTime) ))
+                    case (Some( ns ),ls)=>
+                      throw new Exception( "Unknown available status. Should be either true or false." )
+                  }
+              }
+            }.flatten
+            newObjO
+        }.flatten
+    }.flatten
+    if( modifiedObject.nonEmpty ){
+      val objs: OdfObjects = modifiedObject.fold{
+        case (l: OdfObject, r: OdfObject ) =>
+          l.createAncestors.combine( r.createAncestors )
+      }
+      val write = WriteRequest(objs)
+      writeToDB(write)
+    }
+  }
+  def checkLidStatus( lidStatus: Option[String], obj: OdfObject ): OdfObject={
+    if( lidStatus.equalsIgnoreCase("Open") ){
+      closeLidIn( obj.path / "Charger" / "LidStatus" )
+      obj
+        .update( obj.path / "Charger" / "LidStatus" , Vector( OdfValue( "Open", currentTime )))
+    } else {
+        throw new Exception( "Only open status expected for lid status from outsite." )
+    }
+  }
+  */
 }
 
 
