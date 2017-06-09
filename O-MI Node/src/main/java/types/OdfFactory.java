@@ -495,6 +495,18 @@ public class OdfFactory{
     );
   }
 
+  public static OdfObjects fromPath(
+    String pathString,
+    String valueString
+  ){
+    Path path = new Path(pathString);
+    Vector<OdfValue<Object>> values = new Vector<OdfValue<Object>>();
+    OdfValue odfValue = createOdfValue(valueString, "xs:string", new Timestamp( new java.util.Date().getTime()));
+    values.add(odfValue);
+    OdfInfoItem infoItem = createOdfInfoItem(path, values);
+    return infoItem.createAncestors();
+  }
+
   public static OdfMetaData createOdfMetaData(
     Iterable<OdfInfoItem> infoItems
   ){
