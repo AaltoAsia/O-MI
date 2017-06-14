@@ -41,7 +41,7 @@ trait DBCachedReadWrite extends DBReadWrite{
 
   override protected val log = LoggerFactory.getLogger("DBCachedReadWrite")
 
-  override  def initialize(): Unit = this.synchronized {
+  def initialize(): Unit = this.synchronized {
 
     val getHierachyIds = hierarchyNodes.filter(_.isInfoItem).map{ 
       hNode => (hNode.path, hNode.id) // NOTE: Heavy operation
@@ -92,7 +92,7 @@ trait DBCachedReadWrite extends DBReadWrite{
   /**
    * Used to set many values efficiently to the database.
    */
-  override def writeMany(infos: Seq[OdfInfoItem]): Future[OmiReturn] = {
+  def writeMany(infos: Seq[OdfInfoItem]): Future[OmiReturn] = {
     val pathToWrite: Seq[DBValue] = infos.flatMap {
       case info =>
         pathToHierarchyID.get(info.path).flatMap {
@@ -190,7 +190,7 @@ trait DBCachedReadWrite extends DBReadWrite{
     pathIdRelations
   }
 
-  override def getNBetween(
+  def getNBetween(
     requests: Iterable[OdfNode],
     beginO: Option[Timestamp],
     endO: Option[Timestamp],

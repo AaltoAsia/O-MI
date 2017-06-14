@@ -243,7 +243,6 @@ class DatabaseConnection()(
  * problems caused by overlapping test data.
  * Uses h2 named in-memory db
  * @param name name of the test database, optional. Data will be stored in memory
- */
 class UncachedTestDB(
   val name:String = "", 
   useMaintainer: Boolean = true, 
@@ -283,15 +282,14 @@ dbconf {
     settings
     ), "uncached-db-maintainer")
   } else ActorRef.noSender
-  /**
-  * Should be called after tests.
-  */
+  // Should be called after tests.
   def destroy(): Unit = {
     if(useMaintainer )system.stop(dbmaintainer)
     log.debug("Removing UncachedTestDB: " + name)
     db.close()
   }
 }
+ */
 
 
 /**
@@ -356,6 +354,7 @@ dbconf {
  * Contains a public high level read-write interface for the database tables.
  */
 trait DB {
+  def initialize(): Unit
   /**
    * Used to get result values with given constrains in parallel if possible.
    * first the two optional timestamps, if both are given

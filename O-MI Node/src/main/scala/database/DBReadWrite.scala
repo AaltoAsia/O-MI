@@ -38,37 +38,6 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
 
   protected val log = LoggerFactory.getLogger("DBReadWrite")
 
-
-  /**
-   * Initializing method, creates the file and tables.
-   * This method blocks everything else in this object.
-   *
-   * Tries to guess if tables are not yet created by checking existing tables
-   * This gives false-positive only when there is other tables present. In that case
-   * manually clean the database.
-   */
-  def initialize(): Unit = this.synchronized {
-
-    val setup = DBIO.seq(
-      allSchemas.create,
-      addRoot)
-
-    val existingTables = MTable.getTables.map{ tables => tables.map(_.name.name)}
-    val existed : Seq[String] = (Await.result(db.run(existingTables), 5 minutes)).filter( !_.startsWith("pq"))
-    if ( existed.contains("HIERARCHYNODES") && existed.contains("SENSORVALUES")) {
-      //noop
-      log.info(
-        "Found tables: " +
-          existed.mkString(", ") +
-          "\n Not creating new tables.")
-    } else {
-      //run transactionally so there are all or no tables
-
-      log.info("Creating new tables: " + allTables.map(_.baseTableRow.tableName).mkString(", "))
-      Await.result(db.run(setup.transactionally), 5 minutes)
-    }
-  }
-
   /**
    * Metohod to completely remove database. Tries to remove the actual database file.
    */
@@ -81,7 +50,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
    */
   protected[this] def addObjectsI(path: Path, lastIsInfoItem: Boolean): DBIOrw[Seq[(Path, Int)]] = {
 
-    /** Query: Increase right and left values after value */
+    // Query: Increase right and left values after value 
     def increaseAfterQ(value: Int) = {
 
       // NOTE: Slick 3.0.0 doesn't allow this query with its types, use sql instead
@@ -134,87 +103,6 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
     addingAction.transactionally
   }
 
-
-  /**
-   * NOTE: This function is not used at the moment - 2016/06.
-   * Used to write values to database. If data already exists for the path, appends until historyLength
-   * is met, otherwise creates new data and all the missing objects to the hierarchy.
-   *  Does not remove excess rows if path is set or buffer
-   */
-  def write(path: Path, timestamp: Timestamp, value: String, valueType: String = ""): Future[(Path, Int)] = {
-    val updateAction = for {
-
-      _ <- addObjectsI(path, lastIsInfoItem = true)
-
-      nodeIdSeq <- getHierarchyNodeQ(path).map(
-        node => node.id).result
-
-      updateResult <- nodeIdSeq.headOption match {
-        case None =>
-          // shouldn't happen
-          throw new RuntimeException("Didn't get nodeIds from query when they were just checked/added")
-
-        case Some(id) => for {
-          _ <- (latestValues += DBValue(id, timestamp, value, valueType))
-        } yield (path, id)
-      }
-    } yield updateResult
-
-    val returnId = db.run(updateAction.transactionally)
-
-    //val infoitem = OdfInfoItem( path, Iterable( OdfValue[Any](value, valueType, timestamp ) ) )
-
-    //Call hooks
-    returnId
-  }
-
-
-
-  /**
-   * Used to set many values efficiently to the database.
-   */
-  def writeMany(infos: Seq[OdfInfoItem]): Future[OmiReturn] = {
-    val pathsData: Map[Path, Seq[OdfValue[Any]]] = infos.map(ii => (ii.path -> ii.values.sortBy(_.timestamp.getTime))).toMap
-
-    val writeAction = for {
-      addObjectsAction <- DBIO.sequence(
-        pathsData.keys map (addObjectsI(_, lastIsInfoItem = true))) // NOTE: Heavy operation
-
-      idQry <- getHierarchyNodesQ(pathsData.keys.toSeq) map { hNode => // NOTE: Heavy operation
-        (hNode.path, hNode.id)
-      } result
-
-      idMap = idQry.toMap: Map[Path, Int]
-
-      pathsToIds = pathsData map {
-        case (path, odfValues) => (idMap(path), odfValues)
-      }
-
-      dbValues = pathsToIds flatMap {
-        case (id, odfValues) => odfValues map { odfVal =>
-          DBValue(
-            id,
-            //create new timestamp if option is None
-            odfVal.timestamp,
-            odfVal.value.toString,
-            odfVal.typeValue)
-        }
-      }
-      updateAction <- latestValues ++= dbValues
-        
-    } yield idMap.toSeq
-
-    val pathIdRelations : Future[Seq[(types.Path, Int)]] = db.run(writeAction.transactionally)
-
-    //Call hooks
-    pathIdRelations.map{ 
-      case seq : Seq[(types.Path, Int)] if seq.nonEmpty => Returns.Success()
-      case seq : Seq[(types.Path, Int)] if seq.isEmpty =>
-      Returns.InternalError(Some("Using old database. Should use Warp 10."))
-    }
-  }
-
-
   //@deprecated("For testing only.", "Since implemented.")
   private def removeQ(path: Path) = {// : Future[DBIOrw[Seq[Int]]] ?
     val resultAction = for{
@@ -247,7 +135,6 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
 
   /**
    * Remove is used to remove sensor given its path. Removes all unused objects from the hierarchcy along the path too.
-   *
    *
    * @param path path to to-be-deleted sub tree.
    * @return boolean whether something was removed
@@ -300,21 +187,6 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
     } yield res
 
     db.run(trimQuery)
-
-    //val endT = System.currentTimeMillis()
-    //log.info(s"Deleting took ${endT - startT} milliseconds")
-
-    //runQ
-    /*val historyLen = 50//database.historyLength
-   val qry = sqlu"""DELETE FROM SENSORVALUES
-                     WHERE VALUEID NOT IN (SELECT a.VALUEID FROM SENSORVALUES AS a
-                       LEFT JOIN SENSORVALUES AS a2
-                         ON a.HIERARCHYID = a2.HIERARCHYID AND a.TIME <= a2.TIME
-                     GROUP BY a.VALUEID
-                     HAVING COUNT(*) <= ${historyLen});"""
-
-    val runQ = db.run(qry)
-   runQ
-  */}
+  }
 
 }
