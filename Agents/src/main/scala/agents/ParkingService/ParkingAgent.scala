@@ -109,7 +109,7 @@ class ParkingAgent(
         obj.path -> ParkingSpot( obj )
     }:_* 
   )
-  log.debug( pathToSpaces.keys.mkString("\n") )
+  //log.debug( pathToSpaces.keys.mkString("\n") )
 
   val reservations: MutableMap[Path,Reservation] = MHashMap()
 

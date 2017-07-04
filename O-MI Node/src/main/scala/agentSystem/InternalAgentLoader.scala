@@ -223,7 +223,7 @@ trait InternalAgentLoader extends BaseAgentSystem {
       urls foreach { url => log.info("Deploying " + url) }
       new URLClassLoader(urls, Thread.currentThread.getContextClassLoader)
     }else {
-      log.warning("No deploy dir found at " + deploy)
+      log.info("No deploy dir found at " + deploy)
       new URLClassLoader(Array.empty, Thread.currentThread.getContextClassLoader)
     }
   }
