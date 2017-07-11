@@ -70,7 +70,7 @@ class AnalyticsStore(
   var writeC: Option[Cancellable] = None
   var readC: Option[Cancellable] = None
   var userC: Option[Cancellable] = None
-  override def postStop() = {
+  override def postStop(): Unit = {
     writeC.foreach(_.cancel())
     readC.foreach(_.cancel())
     userC.foreach(_.cancel())
@@ -115,9 +115,9 @@ class AnalyticsStore(
     )
   }
 
-  def updateWriteAnalyticsData() = {
+  def updateWriteAnalyticsData(): Unit = {
     context.system.log.info("updating write analytics")
-    val tt = getCurrentTime
+    val tt = currentTime
     val nw = numWritesInTimeWindow(tt).map{
       case (p, i) => createInfoWithMeta(p./(numWriteInfoName),i.toString, tt, writeNumValueDescription)}.map(_.createAncestors).reduceOption(_.union(_))
     val aw = avgIntervalWrite.map{
@@ -127,10 +127,10 @@ class AnalyticsStore(
       .foreach(data => singleStores.hierarchyStore.execute(Union(data)))
 
   }
-  def updateReadAnalyticsData() = {
+  def updateReadAnalyticsData(): Unit = {
 
     context.system.log.info("updating read analytics")
-    val tt = getCurrentTime
+    val tt = currentTime
     val nr = numAccessInTimeWindow(tt).map{
       case (p, i) => createInfoWithMeta(p./(numReadInfoName),i.toString,tt, readNumValueDescription)}.map(_.createAncestors).reduceOption(_.union(_))
 
@@ -139,16 +139,16 @@ class AnalyticsStore(
     (nr ++ ar).reduceOption(_.union(_)) //combine two Options and return Optional value
       .foreach(data => singleStores.hierarchyStore.execute(Union(data)))
   }
-  def updateUserAnalyticsData() = {
+  def updateUserAnalyticsData(): Unit = {
     context.system.log.info("updating user analytics")
-    val tt = getCurrentTime
+    val tt = currentTime
     val data = uniqueUsers(tt).map{
       case (p, i) => createInfoWithMeta(p./(numUserInfoName), i.toString, tt, uniqueUserDescription)
     }.map(_.createAncestors).reduceOption(_.union(_))
     data.foreach(data=> singleStores.hierarchyStore.execute(Union(data)))
   }
 
-  def receive = {
+  def receive: PartialFunction[Any, Unit] = {
     case AddRead(p, t) => {
       if(enableReadAnalytics) {
         //context.system.log.debug(s"r|$p || $t")
@@ -178,17 +178,17 @@ class AnalyticsStore(
   //private val writeIntervals = collection.mutable.Map.empty[Path, Vector[Long]]
 
   //private methods
-  def getReadFrequency(path: Path): Vector[Long] = {
+  def readFrequency(path: Path): Vector[Long] = {
     readSTM.get(path).toVector.flatten
   }
 
-  def getWriteFrequency(path: Path): Vector[Long] = {
+  def writeFrequency(path: Path): Vector[Long] = {
     writeSTM.get(path).toVector.flatten
   }
-  def getCurrentTime = new Date().getTime()
+  def currentTime = new Date().getTime()
 
  //public
-  def addRead(path: Path, timestamp: Long) = {
+  def addRead(path: Path, timestamp: Long): Option[Vector[Long]] = {
    val temp = readSTM.get(path).toVector.flatten
    if((temp.length+1) > MAX_ARRAY_LENGTH){
      readSTM.put(path, (temp :+ timestamp).tail)
@@ -198,7 +198,7 @@ class AnalyticsStore(
    //addReadInterval(path,timestamp)
   }
 
-  def addWrite(path: Path, timestamps: Vector[Long]) = { //requires timestamps to be in order
+  def addWrite(path: Path, timestamps: Vector[Long]): Option[Vector[Long]] = { //requires timestamps to be in order
     val temp = writeSTM.get(path).toVector.flatten
     val len = temp.length + timestamps.length
     if(len > MAX_ARRAY_LENGTH){
@@ -208,11 +208,11 @@ class AnalyticsStore(
     }
   }
 
-  def addUser(path: Path, user: Int, timestamp: Long) = {
-    val tt = getCurrentTime - userAccessIntervalWindow.toMillis
-    val temp1 = userSTM.get(path).toVector.flatten
-    val temp2= temp1.filterNot(value => (value._2 < tt )||( value._1 == user))
-    userSTM.put(path, temp2 :+ (user, timestamp))
+  def addUser(path: Path, user: Int, timestamp: Long): Option[Vector[(Int, Long)]] = {
+    val tt = currentTime - userAccessIntervalWindow.toMillis
+    val temp1: Vector[(Int, Long)] = userSTM.get(path).toVector.flatten
+    val temp2: Vector[(Int, Long)] = temp1.filterNot{case (foundUser, timestamp) => (timestamp < tt) || (foundUser == user)}//(value => (value._2 < tt )||( value._1 == user))
+    userSTM.put(path, temp2.:+((user, timestamp): (Int,Long)))
   }
 
   /*
