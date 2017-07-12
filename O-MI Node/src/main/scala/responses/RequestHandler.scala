@@ -167,6 +167,7 @@ with CancelHandler
       case subscription: SubscriptionRequest => handleSubscription(subscription)
       case poll: PollRequest => handlePoll(poll)
       case cancel: CancelRequest => handleCancel(cancel)
+      case other => Future.failed(new Exception(s"Unexpected request: $other"))
     }
   }
 

@@ -69,7 +69,7 @@ with RequiresMessageQueue[BoundedMessageQueueSemantics]
     duration
   }
 
-  protected def cleanPrevayler: Unit = {
+  protected def cleanPrevayler(): Unit = {
     // remove unnecessary files (might otherwise grow until disk is full)
     val dirs = singleStores.prevaylerDirectories
     for (dir <- dirs) {

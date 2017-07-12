@@ -260,7 +260,7 @@ object OdfValue{
         case "odf" =>
           val result = OdfParser.parse(value)
           result match {
-            case Left( pes: Seq[ParseError]) =>
+            case Left( pes: Iterable[ParseError]) =>
               throw pes.head
             case Right( odf: OdfObjects) =>
               OdfObjectsValue(odf,timestamp, attributes)
@@ -283,7 +283,7 @@ object OdfValue{
     }
     create match {
       case Success(value) => value
-      case Failure( e: Exception) =>
+      case Failure(_) =>
         //println( s"Creating of OdfValue failed with type $typeValue, caused by: $e")
         OdfStringPresentedValue(value, timestamp, attributes = attributes)
     }

@@ -20,6 +20,7 @@ import java.net.InetAddress
 import scala.collection.JavaConversions._
 import scala.concurrent.duration._
 import scala.util.Try
+import scala.language.implicitConversions
 
 import agentSystem.AgentSystemConfigExtension
 import akka.actor.{ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}

@@ -212,10 +212,10 @@ case class OdfObjects(
 
   /** Method for searching OdfNode from O-DF Structure */
   def getNodesOfType(typeValue: String): Seq[OdfNode] ={
-    getOdfNodes( this ) collect {
+    getOdfNodes( this ).collect {
       case obj: OdfObject if obj.typeValue == Some(typeValue ) => obj
       case ii: OdfInfoItem if ii.typeValue == Some(typeValue ) => ii
-    } toVector
+    }.toVector
   }
   def get(path: Path) : Option[OdfNode] = {
     if( path == this.path ) return Some(this)
@@ -306,10 +306,10 @@ case class OdfObject(
   ) extends OdfObjectImpl(id, path, infoItems, objects, description, typeValue, attributes) with OdfNode with Serializable{
 
   def getNodesOfType(typeValue: String): Seq[OdfNode] ={
-    getOdfNodes( this ) collect {
+    getOdfNodes( this ).collect {
       case obj: OdfObject if obj.typeValue == Some(typeValue ) => obj
       case ii: OdfInfoItem if ii.typeValue == Some(typeValue ) => ii
-    } toVector
+    }.toVector
   }
 
   def get(path: Path) : Option[OdfNode] = path match{

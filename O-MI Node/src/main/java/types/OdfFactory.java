@@ -501,7 +501,7 @@ public class OdfFactory{
   ){
     Path path = new Path(pathString);
     Vector<OdfValue<Object>> values = new Vector<OdfValue<Object>>();
-    OdfValue odfValue = createOdfValue(valueString, "xs:string", new Timestamp( new java.util.Date().getTime()));
+    OdfValue<Object> odfValue = createOdfValue(valueString, "xs:string", new Timestamp( new java.util.Date().getTime()));
     values.add(odfValue);
     OdfInfoItem infoItem = createOdfInfoItem(path, values);
     return infoItem.createAncestors();
