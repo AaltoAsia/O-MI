@@ -1,9 +1,9 @@
 Other Guides
 ============
 
-* [Developing agents using Scala](https://github.com/AaltoAsia/O-MI/blob/development/ScalaAgentDeveloperGuide.md).
+* [Developing agents using Scala](https://github.com/AaltoAsia/O-MI/blob/development/docs/ScalaAgentDeveloperGuide.md).
 
-* [Developing agents using Java](https://github.com/AaltoAsia/O-MI/blob/development/JavaAgentDeveloperGuide.md).
+* [Developing agents using Java](https://github.com/AaltoAsia/O-MI/blob/development/docs/JavaAgentDeveloperGuide.md).
 
 What are Agents?
 ================
@@ -41,9 +41,9 @@ to know how to work with them.
 
 Both Scala and Java have own`*InternalAgent` interfaces that need to be implemented.
 
-* [Developing agents using Scala](https://github.com/AaltoAsia/O-MI/blob/development/ScalaAgentDeveloperGuide.md).
+* [Developing agents using Scala](https://github.com/AaltoAsia/O-MI/blob/development/docs/ScalaAgentDeveloperGuide.md).
 
-* [Developing agents using Java](https://github.com/AaltoAsia/O-MI/blob/development/JavaAgentDeveloperGuide.md).
+* [Developing agents using Java](https://github.com/AaltoAsia/O-MI/blob/development/docs/JavaAgentDeveloperGuide.md).
 
 Configuration
 ------
