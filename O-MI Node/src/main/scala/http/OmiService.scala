@@ -162,13 +162,14 @@ trait OmiService
   }
 
   val getDataDiscovery =
-    path(Remaining) { uriPath =>
+    path(RemainingPath) { uriPath =>
       get {
         makePermissionTestFunction() { hasPermissionTest =>
           extractClientIP{ user =>
 
         // convert to our path type (we don't need very complicated functionality)
-            val pathStr = uriPath // pathToString(uriPath)
+            val pathStr = pathToString(uriPath)
+            log.debug( pathStr)
             val origPath = Path(pathStr)
             val path = origPath match {
               case path if path.lastOption.exists(List("value", "MetaData", "description","id", "name").contains(_)) =>
