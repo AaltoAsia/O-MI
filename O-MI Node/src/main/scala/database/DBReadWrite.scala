@@ -158,7 +158,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables {
   }
   //add root node when removed or when first started
   protected def addRoot = {
-    hierarchyNodes += DBNode(None, Path("/Objects"), 1, 2, Path("/Objects").length, "", 0, isInfoItem = false)
+    hierarchyNodes += DBNode(None, Path("Objects"), 1, 2, Path("Objects").length, "", 0, isInfoItem = false)
   }
   def addRootR: Future[Int] = {
     db.run(addRoot)

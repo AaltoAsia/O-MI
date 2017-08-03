@@ -130,7 +130,8 @@ trait DBCachedReadWrite extends DBReadWrite{
         idMap = idQry.toMap: Map[Path, Int]
 
         pathsToIds = pathsData map {
-          case (path, odfValues) => (idMap(path), odfValues)
+          case (path, odfValues) => 
+            (idMap(path), odfValues)
         }
 
         dbValues = pathsToIds flatMap {

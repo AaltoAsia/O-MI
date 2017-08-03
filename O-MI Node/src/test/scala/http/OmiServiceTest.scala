@@ -99,7 +99,7 @@ class OmiServiceTest
   }
   def afterAll = {
     dbConnection.destroy()
-    singleStores.hierarchyStore execute TreeRemovePath(types.Path("/Objects"))
+    singleStores.hierarchyStore execute TreeRemovePath(types.Path("Objects"))
     system.terminate()
     //XXX: DID NOT WORK
     //Await.ready(system.terminate(), 10 seconds)
@@ -137,9 +137,9 @@ class OmiServiceTest
         responseAs[NodeSeq].headOption must beSome.which(_.label == "error")
       }
     }
-    val settingsPath = "/" + Path(settings.settingsOdfPath).toString
+    val settingsPath = "/Objects/OMI-Service/Settings/"
     "respond successfully to GET to some value" >> {
-      Get(settingsPath + "/num-latest-values-stored/value").withHeaders(`Remote-Address`(localHost)) ~> myRoute ~> check {
+      Get(settingsPath + "num-latest-values-stored/value").withHeaders(`Remote-Address`(localHost)) ~> myRoute ~> check {
         mediaType === `text/plain`
         status === OK
         responseAs[String] === "10"

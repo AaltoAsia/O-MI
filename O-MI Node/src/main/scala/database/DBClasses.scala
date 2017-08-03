@@ -186,7 +186,7 @@ trait OmiNodeTables extends DBBase {
    * 
    */
   def clearDB(): Future[Int] = {
-    val rootPath = Path("/Objects")
+    val rootPath = Path("Objects")
     db.run(
       DBIO.seq(
         (allTables map (_.delete)): _*

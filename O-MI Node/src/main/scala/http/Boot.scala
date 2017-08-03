@@ -252,6 +252,8 @@ object Boot /*extends Starter */{// with App{
   val log = LoggerFactory.getLogger("OmiServiceTest")
 
   def main(args: Array[String]) : Unit= {
+    val p = Path("Objects\\"+"/O\\"+"/II")
+    log.info(p.toString())
     Try{
       val server: OmiServer = OmiServer()
       import server.system.dispatcher
