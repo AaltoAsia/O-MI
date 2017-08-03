@@ -14,7 +14,7 @@
 
 package http
 
-import java.net.{InetAddress, URI, URL}
+import java.net.{InetAddress, URI, URL, URLDecoder}
 import java.nio.file.{Files, Paths}
 import java.util.Date
 
@@ -162,13 +162,13 @@ trait OmiService
   }
 
   val getDataDiscovery =
-    path(RemainingPath) { uriPath =>
+    path(Remaining) { uriPath =>
       get {
         makePermissionTestFunction() { hasPermissionTest =>
           extractClientIP{ user =>
 
         // convert to our path type (we don't need very complicated functionality)
-            val pathStr = pathToString(uriPath).replace("/","\\/")
+            val pathStr = URLDecoder.decode( uriPath.replace("/","\\/"), "UTF-8" )
             val origPath = Path(pathStr)
             val path = origPath match {
               case path if path.lastOption.exists(List("value", "MetaData", "description","id", "name").contains(_)) =>
