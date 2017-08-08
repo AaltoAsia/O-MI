@@ -76,7 +76,7 @@ object JavaHelpers{
     }
 
     def this(pathStr: String) = this{
-      pathStr.split("\\\\/").toVector
+      pathStr.split("\\\\/").toVector.filterNot( _ == "")
     }
 
     /**

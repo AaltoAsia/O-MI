@@ -26,6 +26,7 @@ import org.slf4j.LoggerFactory
 import org.prevayler.PrevaylerFactory
 import parsing.xmlGen.xmlTypes.MetaDataType
 import slick.backend.DatabaseConfig
+import slick.jdbc.meta.MSchema
 //import slick.driver.H2Driver.api._
 import slick.driver.JdbcProfile
 import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
@@ -208,7 +209,10 @@ class DatabaseConnection()(
   protected val system : ActorSystem,
   protected val singleStores : SingleStores,
   protected val settings : OmiConfigExtension
-  ) extends DBCachedReadWrite with DBBase with DB {
+
+//OLD DB:
+//) extends DBCachedReadWrite with DBBase with DB {
+) extends NewSimplifiedDatabase with DB {
 
   //val dc = DatabaseConfig.forConfig[JdbcProfile](dbConfigName)
   val dc : DatabaseConfig[JdbcProfile] = DatabaseConfig.forConfig[JdbcProfile](database.dbConfigName)
@@ -319,7 +323,9 @@ dbconf {
   protected val system : ActorSystem,
   protected val singleStores : SingleStores,
   protected val settings : OmiConfigExtension
-) extends DBCachedReadWrite with DB {
+//OLD DB:
+//) extends DBCachedReadWrite with DB {
+) extends NewSimplifiedDatabase with DB {
 
   override protected val log = LoggerFactory.getLogger("TestDB")
   log.debug("Creating TestDB: " + name)
@@ -342,6 +348,7 @@ dbconf {
   def destroy(): Unit = {
     if(useMaintainer )system.stop(dbmaintainer)
     log.debug("Removing TestDB: " + name)
+    
     db.close()
   }
 }
@@ -390,4 +397,7 @@ trait DB {
    * @param path Parent path to be removed.
    */
   def remove(path: Path): Future[Seq[Int]]
+}
+trait TrimableDB{
+  def trimDB(): Future[Seq[Int]]
 }

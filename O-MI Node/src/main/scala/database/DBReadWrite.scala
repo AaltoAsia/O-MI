@@ -31,7 +31,7 @@ import types._
 /**
  * Read-write interface methods for db tables.
  */
-trait DBReadWrite extends DBReadOnly with OmiNodeTables {
+trait DBReadWrite extends DBReadOnly with OmiNodeTables with TrimableDB{
   import dc.driver.api._
   type ReadWrite = Effect with Effect.Write with Effect.Read with Effect.Transactional
   type DBIOrw[Result] = DBIOAction[Result, NoStream, ReadWrite]

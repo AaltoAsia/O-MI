@@ -27,13 +27,13 @@ import http.OmiConfigExtension
 
 object DBMaintainer{
   def props(
-    dbConnection : DBReadWrite,
+    dbConnection : TrimableDB,
     singleStores : SingleStores,
     settings : OmiConfigExtension
   ) : Props = Props( new DBMaintainer(dbConnection, singleStores, settings) )
 }
 class DBMaintainer(
-  protected val dbConnection : DBReadWrite,
+  protected val dbConnection : TrimableDB,
   override protected val singleStores : SingleStores,
   override protected val settings : OmiConfigExtension
 )
