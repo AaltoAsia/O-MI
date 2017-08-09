@@ -41,6 +41,10 @@ case class TimedValue(
 trait Tables extends DBBase{
   import dc.driver.api._
   
+  type DBIOro[Result] = DBIOAction[Result, NoStream, Effect.Read]
+  type DBIOwo[Result] = DBIOAction[Result, NoStream, Effect.Write]
+  type ReadWrite = Effect with Effect.Write with Effect.Read with Effect.Transactional
+  type DBIOrw[Result] = DBIOAction[Result, NoStream, ReadWrite]
   implicit lazy val pathColumnType = MappedColumnType.base[Path, String](
     { _.toString }, // Path to String
     { Path(_) }     // String to Path
@@ -59,23 +63,27 @@ trait Tables extends DBBase{
   }
   class StoredPath extends TableQuery[PathsTable](new PathsTable(_)){
     import dc.driver.api._
-    def insertQ( dbPaths: Seq[DBPath] ) = (this returning this.map{ dbp => dbp.id }) ++= dbPaths
-    def getByIDs( ids: Seq[Long] ) = this.filter{ row => row.id inSet( ids ) }
-    def getByPaths( paths: Seq[Path] ) = this.filter{ row => row.path inSet( paths ) }
-    def add( dbPaths: Seq[DBPath] ) = insertQ( dbPaths )
-    def removeByIDs( ids: Seq[Long] ) = getByIDs( ids ).delete
-    def removeByPaths( paths: Seq[Path] ) = getByPaths( paths ).delete
-    def getInfoItems = infoItemsCQ
+    def getByPath( path: Path): DBIOro[Seq[DBPath]]= getByPathCQ(path).result
+    def getByID( id: Long ): DBIOro[Seq[DBPath]] = getByIDCQ(id).result
+    def getByIDs( ids: Seq[Long] ): DBIOro[Seq[DBPath]]  = getByIDsQ(ids).result
+    def getByPaths( paths: Seq[Path] ): DBIOro[Seq[DBPath]] = getByPathsQ( paths ).result
+
+    def add( dbPaths: Seq[DBPath] ): DBIOwo[Seq[Long]]  = insertQ( dbPaths )
+    def removeByIDs( ids: Seq[Long] ): DBIOwo[Int]  = getByIDsQ( ids ).delete
+    def removeByPaths( paths: Seq[Path] ): DBIOwo[Int] = getByPathsQ( paths ).delete
+    def getInfoItems: DBIOro[Seq[DBPath]] = infoItemsCQ.result
+
     protected  lazy val infoItemsCQ = Compiled( infoItemsQ )
     protected  def infoItemsQ = this.filter( _.isInfoItem )
 
+    protected def getByIDsQ( ids: Seq[Long] ) = this.filter{ row => row.id inSet( ids ) }
+    protected def getByPathsQ( paths: Seq[Path] ) = this.filter{ row => row.path inSet( paths ) }
     protected lazy val getByIDCQ = Compiled( getByIDQ _ )
     protected def getByIDQ( id: Rep[Long] ) = this.filter{ row => row.id === id  }
-    def getByID( id: Long ) = getByIDCQ(id)
 
     protected lazy val getByPathCQ = Compiled( getByPathQ _ )
     protected def getByPathQ( path: Rep[Path] ) = this.filter{ row => row.path === path  }
-    def getByPath( path: Path) = getByPathCQ(path)
+    protected def insertQ( dbPaths: Seq[DBPath] ): DBIOwo[Seq[Long]] = (this returning this.map{ dbp => dbp.id }) ++= dbPaths
   }
 
   class TimedValuesTable(val path: Path, val pathID:Long, tag: Tag) extends Table[TimedValue](
@@ -95,16 +103,16 @@ trait Tables extends DBBase{
   class PathValues( val path: Path, val pathID: Long ) extends TableQuery[TimedValuesTable]({tag: Tag => new TimedValuesTable(path, pathID,tag)}){
     def name = s"PATH_${pathID.toString}"
     import dc.driver.api._
-    def removeValuesBefore( end: Timestamp) = befor(end).delete
-    def trimToNNewestValues( n: Long ) = this.sortBy( _.timestamp.desc).drop( n ).delete
-    def add( values: Seq[TimedValue] ) = DBIO.sequence(values.map{ v => this += v })
+    def removeValuesBefore( end: Timestamp): DBIOwo[Int] = befor(end).delete
+    def trimToNNewestValues( n: Long ): DBIOwo[Int] = selectAllExpectNNewestValuesCQ( n ).delete
+    def add( values: Seq[TimedValue] ): DBIOwo[Option[Int]] = this ++= values 
     def getNBetween( 
       beginO: Option[Timestamp],
       endO: Option[Timestamp],
       newestO: Option[Int],
       oldestO: Option[Int]
-    )={
-      (newestO, oldestO, beginO, endO) match{
+    ): DBIOro[Seq[TimedValue]]={
+      val compiledQuery = (newestO, oldestO, beginO, endO) match{
         case ( None, None, None, None) => newestC(1)
         case ( Some(_), Some(_), _, _ ) => throw new Exception("Can not query oldest and newest values at same time.")
         case ( Some(n), None, None, None) => newestC(n)
@@ -119,6 +127,7 @@ trait Tables extends DBBase{
         case ( None, Some(n), None, Some(end)) => oldestBeforC(n,end)
         case ( None, Some(n), Some(begin), Some(end)) => oldestBetweenC(n,begin,end)
       }
+      compiledQuery.result
     }
     protected def newest( n: ConstColumn[Long] ) = this.sortBy(_.timestamp.desc).take(n)
     protected def oldest( n: ConstColumn[Long] ) = this.sortBy(_.timestamp.asc).take(n)
@@ -146,6 +155,8 @@ trait Tables extends DBBase{
     protected lazy val newestBetweenC = Compiled( newestBetween _ )
     protected lazy val oldestBetweenC = Compiled( oldestBetween _ )
 
+    protected def selectAllExpectNNewestValuesQ( n: ConstColumn[Long] ) = this.sortBy( _.timestamp.desc).drop( n )
+    protected lazy val selectAllExpectNNewestValuesCQ = Compiled( selectAllExpectNNewestValuesQ _ )
   }
   val valueTables: MutableMap[Path, PathValues] = new MutableHashMap()
   val pathsTable = new StoredPath()
@@ -167,7 +178,7 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimableDB{
         val queries = if( tableNames.contains( "PATHSTABLE" ) ){
           log.debug(s"Foound following tables:\n${tableNames.mkString("\n")}")
           //Found needed table, check for value tables
-          val infoItemDBPaths = pathsTable.getInfoItems.result
+          val infoItemDBPaths = pathsTable.getInfoItems
 
           val valueTablesCreation = infoItemDBPaths.flatMap{
             dbPaths =>
@@ -179,7 +190,7 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimableDB{
                   if( !tableNames.contains(pathValues.name) ){
                     Some( pathValues.schema.create.map{
                       case u: Unit =>
-                        log.debug( s"Creatied values table ${pathValues.name} for $path")
+                        log.debug( s"Created values table ${pathValues.name} for $path")
                         pathValues.name
                     } )
                   } else None
@@ -235,14 +246,6 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimableDB{
       initialization.onComplete{
       case Success( path2DBPath ) => 
         log.info( s"Initialized DB successfully. ${path2DBPath.length} paths in DB." )
-        /*
-        logAllTables.flatMap{
-          case u: Unit =>
-            logPathsTable
-        }.map{
-          case u: Unit =>
-            logValueTables
-        }*/
       case Failure( t ) => 
         log.error( "DB initialization failed.", t )
         /*
@@ -297,7 +300,7 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimableDB{
     val pathAddingAction = pathsTable.add(pathsToAdd)
     val getAddedDBPaths =  pathAddingAction.flatMap{
       ids: Seq[Long] => 
-        pathsTable.getByIDs(ids).result
+        pathsTable.getByIDs(ids)
     }
     val valueTableCreations = getAddedDBPaths.flatMap{
       addedDBPaths: Seq[DBPath] => 
@@ -320,7 +323,7 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimableDB{
     //Write all values to values tables and create non-existing values tables
     val valueWritingIOs = leafs.collect{
       case ii: OdfInfoItem =>
-        pathsTable.filter{ dbPath => dbPath.path === ii.path }.result.flatMap{
+        pathsTable.getByPath(ii.path).flatMap{
           case dbPaths: Seq[DBPath] => 
             val ios = dbPaths.collect{
               case DBPath(Some(id), path, isInfoItem ) => 
@@ -348,8 +351,12 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimableDB{
                     }
                 }
                 valueInserts.map{
+                  case None => 0
+                  case Some( count ) => count
+                  /*
                   case idsOfCreatedValues: Seq[Long] =>
                     idsOfCreatedValues.length
+                    */
                 }
             }
             DBIO.sequence(ios)
@@ -365,30 +372,7 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimableDB{
             Returns.Success()
         }
     }
-    val r = db.run(actions.transactionally)
-    /*r.onSuccess{
-      case a  =>
-        logAllTables.flatMap{
-          case u: Unit =>
-            logPathsTable
-        }.map{
-          case u: Unit =>
-            logValueTables
-        }
-    }*/
-    r.recover{
-      
-      case e: Exception =>
-      /*  logAllTables.flatMap{
-          case u: Unit =>
-            logPathsTable
-        }.map{
-          case u: Unit =>
-            logValueTables
-        }
-        log.error(s"Caught $e when writing", e )*/
-        Returns.InternalError(e)
-    }
+    db.run(actions.transactionally)
   }
 
   def getNBetween(
@@ -407,7 +391,6 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimableDB{
         }
     }.collect{
       case DBPath(Some(id), path, true) =>
-        log.info( s"Getting values for $path ..." )
         val valueTable = valueTables.get(path) match{ //Is table stored?
               case Some(pathValues) => //Found table/ TableQuery
                 pathValues
@@ -419,11 +402,11 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimableDB{
         
         val getNBetweenResults = tableByNameExists(valueTable.name).flatMap{
           case true =>
-            valueTable.getNBetween(beginO,endO,newestO,oldestO).result
+            valueTable.getNBetween(beginO,endO,newestO,oldestO)
           case false =>
             valueTable.schema.create.flatMap{
               case u: Unit =>
-                valueTable.getNBetween(beginO,endO,newestO,oldestO).result
+                valueTable.getNBetween(beginO,endO,newestO,oldestO)
             }
         }
         getNBetweenResults.filter{
@@ -447,32 +430,10 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimableDB{
           case (odf: OdfObjects, obj: OdfObjects) =>
             odf.union(obj)
         }
-        log.info( r.asXML.toString )
         Some(r)
       case objs: Seq[OdfObjects] if objs.isEmpty => None
     }
     val r = db.run(finalAction.transactionally)
-    r.onComplete{
-      case Success(_)  =>
-        /*
-        logAllTables.flatMap{
-          case u: Unit =>
-            logPathsTable
-        }.map{
-          case u: Unit =>
-            logValueTables
-        }*/
-      case Failure(e) =>
-        /*
-        logAllTables.flatMap{
-          case u: Unit =>
-            logPathsTable
-        }.map{
-          case u: Unit =>
-            logValueTables
-        }*/
-        log.error(s"Caught $e when reading from DB", e)
-    }
     r
   }
 
@@ -554,7 +515,7 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimableDB{
     db.run(tables)
   }
   def dropDB(): Future[Unit] = {
-    val valueTableDrops = pathsTable.getInfoItems.result.flatMap{
+    val valueTableDrops = pathsTable.getInfoItems.flatMap{
       case dbPaths: Seq[DBPath] =>
         DBIO.sequence(dbPaths.map{
           case DBPath( Some(id), path, true ) =>
