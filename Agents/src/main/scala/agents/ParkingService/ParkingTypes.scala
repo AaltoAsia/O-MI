@@ -1,6 +1,7 @@
 package agents
 package parkingService
 
+import scala.math
 import types.OdfTypes._
 import types._
 
@@ -475,6 +476,21 @@ case class GPSCoordinates(
   longitude: Double,
   address: Option[PostalAddress] = None
 ){
+  def distance( other: GPSCoordinates ): Double ={
+    val radius: Double = 6371e3
+
+    val a1: Double = other.latitude.toRadians 
+    val a2: Double = this.latitude.toRadians 
+    val deltaLat: Double= (this.latitude - other.latitude).toRadians
+    val deltaLon: Double= (this.longitude - other.longitude).toRadians 
+
+    val t: Double = math.sin(deltaLat/2) * math.sin(deltaLat/2) +
+            math.cos(a1) * math.cos(a2) *
+            math.sin(deltaLon/2) * math.sin(deltaLon/2)
+    var c: Double = 2 * math.asin(math.min(math.sqrt(t), 1))
+    val distance: Double = radius * c;
+    distance
+  }
   def toOdf( parentPath: Path, objectName: String ) ={
     val geoPath = parentPath / objectName
     OdfObject(

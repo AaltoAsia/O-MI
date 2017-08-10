@@ -113,7 +113,7 @@
                           <id>ParkingUsageType</id>
                           <InfoItem name="TotalCapacity" type="mv:hasTotalCapacity"/>
                           <InfoItem name="NumberOfVacantParkingSpaces" type="mv:hasNumberOfVacantParkingSpaces"/>
-                          <InfoItem name="HourlyPrice" type="mv:PriceParking"/><!-- Maybe rename to Pricing? -->
+                          <InfoItem name="PriceParking" type="mv:PriceParking"/><!-- Maybe rename to Pricing? -->
                           <Object type="schema:Vechile">
                             <id>Vehicle</id>
                             <InfoItem name="width" type="schema:width" />
@@ -203,7 +203,7 @@
             <InfoItem name="NumberOfVacantParkingSpaces" type="mv:hasNumberOfVacantParkingSpaces">
               <value type="xs:int">2</value>
             </InfoItem>
-            <InfoItem name="HourlyPrice" type="mv:PriceParking"><!-- Maybe rename to Pricing? -->
+            <InfoItem name="PriceParking" type="mv:PriceParking"><!-- Maybe rename to Pricing? -->
               <value type="xs:int">2</value>
             </InfoItem>
             <Object  type="schema:Vechile">
@@ -315,7 +315,7 @@
             <InfoItem name="NumberOfVacantParkingSpaces" type="mv:hasNumberOfVacantParkingSpaces">
               <value type="xs:int">6</value>
             </InfoItem>
-            <InfoItem name="HourlyPrice" type="mv:PriceParking"><!-- Maybe rename to Pricing? -->
+            <InfoItem name="PriceParking" type="mv:PriceParking"><!-- Maybe rename to Pricing? -->
               <value type="xs:int">2</value>
             </InfoItem>
             <Object  type="schema:Vechile">
@@ -397,7 +397,7 @@
             <InfoItem name="NumberOfVacantParkingSpaces" type="mv:hasNumberOfVacantParkingSpaces">
               <value type="xs:int">2</value>
             </InfoItem>
-            <InfoItem name="HourlyPrice" type="mv:PriceParking"><!-- Maybe rename to Pricing? -->
+            <InfoItem name="PriceParking" type="mv:PriceParking"><!-- Maybe rename to Pricing? -->
               <value type="xs:int">2</value>
             </InfoItem>
             <Object  type="schema:Vechile">
@@ -494,7 +494,7 @@
             <InfoItem name="NumberOfVacantParkingSpaces" type="mv:hasNumberOfVacantParkingSpaces">
               <value type="xs:int">2</value>
             </InfoItem>
-            <InfoItem name="HourlyPrice" type="mv:PriceParking"><!-- Maybe rename to Pricing? -->
+            <InfoItem name="PriceParking" type="mv:PriceParking"><!-- Maybe rename to Pricing? -->
               <value type="xs:int">2</value>
             </InfoItem>
             <Object  type="schema:Vechile">
@@ -606,7 +606,7 @@
             <InfoItem name="NumberOfVacantParkingSpaces" type="mv:hasNumberOfVacantParkingSpaces">
               <value type="xs:int">6</value>
             </InfoItem>
-            <InfoItem name="HourlyPrice" type="mv:PriceParking"><!-- Maybe rename to Pricing? -->
+            <InfoItem name="PriceParking" type="mv:PriceParking"><!-- Maybe rename to Pricing? -->
               <value type="xs:int">2</value>
             </InfoItem>
             <Object  type="schema:Vechile">
@@ -688,7 +688,7 @@
             <InfoItem name="NumberOfVacantParkingSpaces" type="mv:hasNumberOfVacantParkingSpaces">
               <value type="xs:int">2</value>
             </InfoItem>
-            <InfoItem name="HourlyPrice" type="mv:PriceParking"><!-- Maybe rename to Pricing? -->
+            <InfoItem name="PriceParking" type="mv:PriceParking"><!-- Maybe rename to Pricing? -->
               <value type="xs:int">2</value>
             </InfoItem>
             <Object  type="schema:Vechile">
@@ -785,7 +785,7 @@
             <InfoItem name="NumberOfVacantParkingSpaces" type="mv:hasNumberOfVacantParkingSpaces">
               <value type="xs:int">2</value>
             </InfoItem>
-            <InfoItem name="HourlyPrice" type="mv:PriceParking"><!-- Maybe rename to Pricing? -->
+            <InfoItem name="PriceParking" type="mv:PriceParking"><!-- Maybe rename to Pricing? -->
               <value type="xs:int">2</value>
             </InfoItem>
             <Object  type="schema:Vechile">
@@ -897,7 +897,7 @@
             <InfoItem name="NumberOfVacantParkingSpaces" type="mv:hasNumberOfVacantParkingSpaces">
               <value type="xs:int">6</value>
             </InfoItem>
-            <InfoItem name="HourlyPrice" type="mv:PriceParking"><!-- Maybe rename to Pricing? -->
+            <InfoItem name="PriceParking" type="mv:PriceParking"><!-- Maybe rename to Pricing? -->
               <value type="xs:int">2</value>
             </InfoItem>
             <Object  type="schema:Vechile">
@@ -979,7 +979,7 @@
             <InfoItem name="NumberOfVacantParkingSpaces" type="mv:hasNumberOfVacantParkingSpaces">
               <value type="xs:int">2</value>
             </InfoItem>
-            <InfoItem name="HourlyPrice" type="mv:PriceParking"><!-- Maybe rename to Pricing? -->
+            <InfoItem name="PriceParking" type="mv:PriceParking"><!-- Maybe rename to Pricing? -->
               <value type="xs:int">2</value>
             </InfoItem>
             <Object  type="schema:Vechile">

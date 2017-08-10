@@ -475,7 +475,9 @@ class ParkingAgent(
     }
   }
 
-  def positionCheck( destination: GPSCoordinates, lotsPosition: GPSCoordinates ) : Boolean = true 
+  def positionCheck( destination: GPSCoordinates, lotsPosition: GPSCoordinates ) : Boolean ={
+    true
+  } 
   def handleParkingLotForCall( obj: OdfObject, param: ParkingParameters ): Option[OdfObject] ={
     val positionO: Option[GPSCoordinates] = obj.get( obj.path / "geo" ).collect{
       case o: OdfObject => parseGPSCoordinates(o )
