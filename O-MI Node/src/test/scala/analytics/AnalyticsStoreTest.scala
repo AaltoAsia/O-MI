@@ -51,7 +51,10 @@ class AnalyticsStoreTest extends Specification with Mockito with AfterAll {
             akka.log-dead-letters-during-shutdown = off
             akka.jvm-exit-on-fatal-error = off
     """))
-  def afterAll = Await.ready(system.terminate(), 2 seconds)
+  def afterAll = {
+    dbConnection.dropDB()
+    Await.ready(system.terminate(), 2 seconds)
+  }
   import system.dispatcher
   implicit val materializer: ActorMaterializer = ActorMaterializer()(system)
   val analyticsConf = ConfigFactory.parseString(

@@ -50,6 +50,7 @@ class OmiServiceTest
     singleStores,
     settings
   )
+  dbConnection.clearDB()
   val analytics = None
 
   val subscriptionManager = TestActorRef(SubscriptionManager.props(

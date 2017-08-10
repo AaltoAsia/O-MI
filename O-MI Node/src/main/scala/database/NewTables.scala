@@ -56,6 +56,7 @@ trait Tables extends DBBase{
     def path: Rep[Path] = column[Path]("PATH")  
     def isInfoItem: Rep[Boolean] = column[Boolean]( "ISINFOITEM" )
     def pathIndex: Index = index( "PATHINDEX",path, unique = true)
+    def infoItemIndex: Index = index( "INFOITEMINDEX",isInfoItem, unique = false)
     def * : ProvenShape[DBPath] = (id.?, path, isInfoItem) <> (
       DBPath.tupled,
       DBPath.unapply
@@ -63,18 +64,18 @@ trait Tables extends DBBase{
   }
   class StoredPath extends TableQuery[PathsTable](new PathsTable(_)){
     import dc.driver.api._
-    def getByPath( path: Path): DBIOro[Seq[DBPath]]= getByPathCQ(path).result
-    def getByID( id: Long ): DBIOro[Seq[DBPath]] = getByIDCQ(id).result
-    def getByIDs( ids: Seq[Long] ): DBIOro[Seq[DBPath]]  = getByIDsQ(ids).result
-    def getByPaths( paths: Seq[Path] ): DBIOro[Seq[DBPath]] = getByPathsQ( paths ).result
+    def getByPath( path: Path) = getByPathCQ(path).result
+    def getByID( id: Long ) = getByIDCQ(id).result
+    def getByIDs( ids: Seq[Long] ) = getByIDsQ(ids).result
+    def getByPaths( paths: Seq[Path] ) = getByPathsQ( paths ).result
 
-    def add( dbPaths: Seq[DBPath] ): DBIOwo[Seq[Long]]  = insertQ( dbPaths )
-    def removeByIDs( ids: Seq[Long] ): DBIOwo[Int]  = getByIDsQ( ids ).delete
-    def removeByPaths( paths: Seq[Path] ): DBIOwo[Int] = getByPathsQ( paths ).delete
-    def getInfoItems: DBIOro[Seq[DBPath]] = infoItemsCQ.result
+    def add( dbPaths: Seq[DBPath] ) = insertQ( dbPaths.distinct )
+    def removeByIDs( ids: Seq[Long] ) = getByIDsQ( ids ).delete
+    def removeByPaths( paths: Seq[Path] ) = getByPathsQ( paths ).delete
+    def getInfoItems = infoItemsCQ.result
 
     protected  lazy val infoItemsCQ = Compiled( infoItemsQ )
-    protected  def infoItemsQ = this.filter( _.isInfoItem )
+    protected  def infoItemsQ = this.filter{ dbp => dbp.isInfoItem }
 
     protected def getByIDsQ( ids: Seq[Long] ) = this.filter{ row => row.id inSet( ids ) }
     protected def getByPathsQ( paths: Seq[Path] ) = this.filter{ row => row.path inSet( paths ) }
@@ -83,7 +84,7 @@ trait Tables extends DBBase{
 
     protected lazy val getByPathCQ = Compiled( getByPathQ _ )
     protected def getByPathQ( path: Rep[Path] ) = this.filter{ row => row.path === path  }
-    protected def insertQ( dbPaths: Seq[DBPath] ): DBIOwo[Seq[Long]] = (this returning this.map{ dbp => dbp.id }) ++= dbPaths
+    protected def insertQ( dbPaths: Seq[DBPath] ) = (this returning this.map{ dbp => dbp.id }) ++= dbPaths.distinct
   }
 
   class TimedValuesTable(val path: Path, val pathID:Long, tag: Tag) extends Table[TimedValue](
@@ -103,15 +104,15 @@ trait Tables extends DBBase{
   class PathValues( val path: Path, val pathID: Long ) extends TableQuery[TimedValuesTable]({tag: Tag => new TimedValuesTable(path, pathID,tag)}){
     def name = s"PATH_${pathID.toString}"
     import dc.driver.api._
-    def removeValuesBefore( end: Timestamp): DBIOwo[Int] = befor(end).delete
-    def trimToNNewestValues( n: Long ): DBIOwo[Int] = selectAllExpectNNewestValuesCQ( n ).delete
-    def add( values: Seq[TimedValue] ): DBIOwo[Option[Int]] = this ++= values 
+    def removeValuesBefore( end: Timestamp) = befor(end).delete
+    def trimToNNewestValues( n: Long ) = selectAllExpectNNewestValuesCQ( n ).delete
+    def add( values: Seq[TimedValue] ) = this ++= values.distinct 
     def getNBetween( 
       beginO: Option[Timestamp],
       endO: Option[Timestamp],
       newestO: Option[Int],
       oldestO: Option[Int]
-    ): DBIOro[Seq[TimedValue]]={
+    )  ={
       val compiledQuery = (newestO, oldestO, beginO, endO) match{
         case ( None, None, None, None) => newestC(1)
         case ( Some(_), Some(_), _, _ ) => throw new Exception("Can not query oldest and newest values at same time.")
@@ -160,8 +161,16 @@ trait Tables extends DBBase{
   }
   val valueTables: MutableMap[Path, PathValues] = new MutableHashMap()
   val pathsTable = new StoredPath()
-  def namesOfCurrentTables = MTable.getTables.map{ mt => mt.map{ t => t.name.name}}
-  def tableByNameExists( name: String ) = namesOfCurrentTables.map{ names => names.contains( name )} 
+  def namesOfCurrentTables = MTable.getTables.map{ 
+    mts => 
+    mts.map{ 
+      mt => mt.name.name
+    }
+  }
+  def tableByNameExists( name: String ) = namesOfCurrentTables.map{ 
+    case names: Seq[String] => 
+    names.contains( name )
+  } 
 }
 
 trait NewSimplifiedDatabase extends Tables with DB with TrimableDB{
@@ -273,39 +282,39 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimableDB{
     val leafs =  getLeafs(odf)
 
     //Add new paths to PATHSTABLE and create new values tables for InfoItems
-    val pathsToAdd = leafs.map{
-      case node: OdfNode => 
-      (node, pathToDBPath.get(node.path))
-    }.collect{
+    val leafsWithDBPath = leafs.map{
+      case node: OdfNode => (node, pathToDBPath.get(node.path))
+    }
+    val pathsToAdd = leafsWithDBPath.collect{
       case (obj: OdfObjects, None) => 
         log.warn("No \"Objects\" path found! Adding.")
         Seq(DBPath( None, obj.path, false))
 
       case (obj: OdfObject, None) =>
         obj.path.ancestorsAndSelf.filter{
-          p: Path => !pathToDBPath.keys.contains( p )
-        }.map{
-          case ancestor: Path => DBPath( None, ancestor, false)
-        }
-
+          case p: Path => !pathToDBPath.keys.contains( p )
+          }.map{
+            case ancestor: Path => DBPath( None, ancestor, false)
+          }
       case (ii: OdfInfoItem, None) =>
-        ii.path.ancestors.filter{
-          p: Path => !pathToDBPath.keys.contains( p )
-        }.map{
-          case ancestor: Path => DBPath( None, ancestor, false)
-        } ++ Seq( DBPath( None, ii.path, isInfoItem = true ))
-
-        }.flatten.distinct.filterNot{ dbPath => pathToDBPath.contains(dbPath) }
+       ii.path.ancestors.filter{
+         case p: Path => !pathToDBPath.keys.contains( p )
+       }.map{
+         case ancestor: Path => DBPath( None, ancestor, false)
+       } ++ Seq( DBPath( None, ii.path, isInfoItem = true ))
+    }.flatten.distinct.filter{ 
+      case dbPath: DBPath => !pathToDBPath.contains(dbPath) 
+    }
     log.info( s"Adding total of  ${pathsToAdd.length} paths to DB.") 
     val pathAddingAction = pathsTable.add(pathsToAdd)
     val getAddedDBPaths =  pathAddingAction.flatMap{
-      ids: Seq[Long] => 
+      case ids: Seq[Long] => 
         pathsTable.getByIDs(ids)
     }
     val valueTableCreations = getAddedDBPaths.flatMap{
-      addedDBPaths: Seq[DBPath] => 
+      case addedDBPaths: Seq[DBPath] => 
         pathToDBPath ++= addedDBPaths.map{ 
-          dbPath => dbPath.path ->dbPath
+          case dbPath: DBPath => dbPath.path ->dbPath
         }
         namesOfCurrentTables.flatMap{
           case tableNames: Seq[String] =>
@@ -383,9 +392,9 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimableDB{
     oldestO: Option[Int]
   ): Future[Option[OdfObjects]] = {
     val iiIOAs =pathToDBPath.values.filter{
-      dbPath => 
+      case dbPath: DBPath => 
         nodes.exists{ 
-          node => 
+          case node: OdfNode => 
             dbPath.path == node.path ||
             dbPath.path.isDescendantOf(node.path) 
         }
@@ -409,10 +418,7 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimableDB{
                 valueTable.getNBetween(beginO,endO,newestO,oldestO)
             }
         }
-        getNBetweenResults.filter{
-          case tvs: Seq[TimedValue] =>
-          tvs.nonEmpty 
-        }.map{
+        getNBetweenResults.map{
           case tvs: Seq[TimedValue] =>
             val ii = OdfInfoItem(
               path,
@@ -450,8 +456,8 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimableDB{
           }
       case Some( DBPath(Some(id), originPath, false) ) =>
           val ( objs, iis ) = pathToDBPath.values.filter{
-            dbPath => dbPath == originPath || dbPath.path.isDescendantOf(originPath)
-          }.partition{ dbPath => dbPath.isInfoItem }
+            case dbPath: DBPath => dbPath == originPath || dbPath.path.isDescendantOf(originPath)
+          }.partition{ case dbPath: DBPath => dbPath.isInfoItem }
           val tableDrops = iis.map{
             case DBPath(Some(id), descendantPath, true)  =>
             valueTables.get(descendantPath) match{
