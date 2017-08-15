@@ -404,7 +404,7 @@ trait OmiService
 
       //TODO Check if admin
       val admin = false //TODO
-      if(admin || userAddr.exists(asd => asd._1 == asd._2)) {
+      if(!settings.callbackAuthorizationEnabled || admin || userAddr.exists(asd => asd._1 == asd._2)) {
 
         val cbTry = callbackHandler.createCallbackAddress(address)
         val result = cbTry.map{
