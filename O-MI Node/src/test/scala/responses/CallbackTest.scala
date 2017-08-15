@@ -6,7 +6,7 @@ import akka.actor.{ActorRef, ActorSystem}
 import akka.http.scaladsl.model.RemoteAddress
 import akka.stream.ActorMaterializer
 import database.SingleStores
-import http.{OmiConfigExtension, OmiService}
+import http.{OmiConfigExtension, OmiService, OmiConfig}
 import org.specs2.Specification
 import org.specs2.mock.Mockito
 import org.specs2.specification.ExecutionEnvironment
@@ -37,7 +37,7 @@ Request with callback
     override protected implicit def materializer: ActorMaterializer = ???
 
     override protected def subscriptionManager: ActorRef = ???
-    override val settings: OmiConfigExtension = mock[OmiConfigExtension]
+  implicit val settings : OmiConfigExtension = OmiConfig(system)
       }
 
   def ct1 = {
