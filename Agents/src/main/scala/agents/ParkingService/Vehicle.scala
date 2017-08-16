@@ -6,9 +6,23 @@ import types.OdfTypes._
 import types._
 
 object VehicleType extends Enumeration{
-  type UsageType = Value
-  val Car, Truck, Coach, RecreationalVehicle, Bicycle, Motorbike, ElectricVehicle = Value   
+  type VehicleType = Value
+  val Car, Truck, Coach, RecreationalVehicle, Bicycle, Motorbike, ElectricVehicle, Unknown = Value   
+  def apply( str: String ): VehicleType ={
+    str match {
+      case "Car" => Car
+      case "Truck" => Truck
+      case "Coach" => Coach
+      case "RecreationalVehicle" => RecreationalVehicle
+      case "Bicycle" => Bicycle
+      case "Motorbike" => Motorbike
+      case "ElectricVehicle" => ElectricVehicle
+      case s: String => Unknown
+    }
+  }
 }
+import VehicleType._
+
 trait Vehicle{
   val length: Option[Double]
   val width: Option[Double]
@@ -20,7 +34,7 @@ case class Bicycle(
   val width: Option[Double],
   val height: Option[Double]
 ) extends Vehicle{
-    final val vehicleType: VehicleType = Bicycle
+    final val vehicleType: VehicleType = VehicleType.Bicycle
 
   }
   case class Car(
@@ -28,7 +42,7 @@ case class Bicycle(
   val width: Option[Double],
   val height: Option[Double]
 ) extends Vehicle {
-    final val vehicleType: VehicleType = Car
+    final val vehicleType: VehicleType = VehicleType.Car
 
   }
 
@@ -37,7 +51,7 @@ case class Bicycle(
   val width: Option[Double],
   val height: Option[Double]
 ) extends Vehicle{
-    final val vehicleType: VehicleType = Coach
+    final val vehicleType: VehicleType = VehicleType.Coach
 
   }
 
@@ -46,7 +60,7 @@ case class Bicycle(
   val width: Option[Double],
   val height: Option[Double]
 ) extends Vehicle{
-    final val vehicleType: VehicleType = Motorbike
+    final val vehicleType: VehicleType = VehicleType.Motorbike
 
   }
 
@@ -55,7 +69,7 @@ case class Bicycle(
   val width: Option[Double],
   val height: Option[Double]
 ) extends Vehicle{
-    final val vehicleType: VehicleType = RecreationalVehicle
+    final val vehicleType: VehicleType = VehicleType.RecreationalVehicle
 
   }
 
@@ -64,7 +78,7 @@ case class Bicycle(
   val width: Option[Double],
   val height: Option[Double]
 ) extends Vehicle{
-    final val vehicleType: VehicleType = Truck
+    final val vehicleType: VehicleType = VehicleType.Truck
 
   }
 
@@ -73,6 +87,6 @@ case class ElectricVehicle(
   val width: Option[Double],
   val height: Option[Double]
 ) extends Vehicle{
-    final val vehicleType: VehicleType = ElectricVehicle
+    final val vehicleType: VehicleType = VehicleType.ElectricVehicle
 
   }

@@ -5,41 +5,124 @@ import scala.math
 import types.OdfTypes._
 import types._
 
+import VehicleType._
+import UsageType._
+
+object ParkingFocility{
+  def apply(obj: OdfObject ) ={
+    assert(obj.typeValue.contains("mv:ParkingFacility"))
+    val name = obj.id.headOption.map{ qlmid => qlmid.value }.getOrElse( throw new Exception( "ParkingFacility/Object without name/id") )
+    val owner = obj.get( obj.path / "Owner" ).collect{ case ii: OdfInfoItem => getStringFromInfoItem(ii) }.flatten
+    val maxHs = obj.get( obj.path / "maxParkingHours" ).collect{ case ii: OdfInfoItem => getStringFromInfoItem(ii) }.flatten
+    val geo = obj.get( obj.path / "geo" ).collect{ case obj: OdfObject => GPSCoordinates(obj) }
+    val ohs = obj.get( obj.path / "openingHoursSpecification" ).collect{ case obj: OdfObject => OpeningHoursSpecification(obj) }
+    val pSpaces = obj.get( obj.path / "ParkingSpaces" ).collect{ case obj: OdfObject => obj.objects.map{ case psObj: OdfObjects => ParkingSpace(psObj) } }.toVector.flatten
+    ParkingFacility(
+      name,
+      owner,
+      geo,
+      pSpaces,
+      maxHs,
+      ohs
+    )
+  }
+}
 case class ParkingFacility(
   name: String,
-  owner: String,
-  maxParkingHours: String,
-  geo: GPSCoordinates,
-  openingHours: OpeningHoursSpecification,
-  spotTypes: Seq[ParkingSpotType]
+  owner: Option[String],
+  geo: Option[GPSCoordinates],
+  parkingSpaces: Seq[ParkingSpace],
+  maxParkingHours: Option[String],
+  openingHours: Option[OpeningHoursSpecification]
 ){
-   val numberOfCarsharingSpots 
-   val numberOfBicycleSpots
-   val numberOfDisabledPersonSpots
-   val numberOfMotorbikeSpots
-   val numberOfWomensSpots
-   val parkingSpots: Seq[ParkingSpace]
-   def numberOfOccupiedSpots: Int
-   def numberOfVacantSpots: Int
-   def totalCapacity: Int
+   def numberOfCarsharingParkingSpaces: Int = parkingSpaces.count{ parkingSpot => parkingSpot.usageType.contains(Carsharing)}
+   def numberOfDisabledPersonParkingSpaces: Int= parkingSpaces.count{ parkingSpot => parkingSpot.usageType.contains(DisabledPerson)}
+   def numberOfWomensParkingSpaces: Int= parkingSpaces.count{ parkingSpot => parkingSpot.usageType.contains(Womens)}
+
+   def numberOfBicycleParkingSpaces: Int = parkingSpaces.count{ parkingSpot => parkingSpot.identedFor.contains(Bicycle)}
+   def numberOfMotorbikeParkingSpaces: Int= parkingSpaces.count{ parkingSpot => parkingSpot.identedFor.contains(Motorbike)}
+   def numberOfTruckParkingSpaces: Int = parkingSpaces.count{ parkingSpot => parkingSpot.identedFor.contains(Truck)}
+   def numberOfCoachParkingSpaces: Int= parkingSpaces.count{ parkingSpot => parkingSpot.identedFor.contains(Coach)}
+   def numberOfCarParkingSpaces: Int= parkingSpaces.count{ parkingSpot => parkingSpot.identedFor.contains(Car)}
+   def numberOfElectricVehicleParkingSpaces: Int= parkingSpaces.count{ parkingSpot => parkingSpot.identedFor.contains(ElectricVehicle)}
+
+   def numberOfOccupiedParkingSpaces: Int= parkingSpaces.count{ parkingSpot => parkingSpot.available}
+   def numberOfVacantParkingSpaces: Int= parkingSpaces.count{ parkingSpot => !parkingSpot.available}
+   def totalCapacity: Int = parkingSpaces.length
+
   def toOdf( parentPath: Path ) = {
     val facilityPath = parentPath / name
+    val iis = Vector( 
+        OdfInfoItem(
+          facilityPath / "totalCapacity",
+          Vector( OdfValue( totalCapacity, currentTime) ),
+          typeValue = Some( "mv:totalCapacity")
+        ),
+        OdfInfoItem(
+          facilityPath / "numberOfVacantParkingSpaces",
+          Vector( OdfValue( numberOfVacantParkingSpaces, currentTime) ),
+          typeValue = Some( "mv:numberOfVacantParkingSpaces")
+        ),
+        OdfInfoItem(
+          facilityPath / "numberOfOccupiedParkingSpaces",
+          Vector( OdfValue( numberOfOccupiedParkingSpaces, currentTime) ),
+          typeValue = Some( "mv:numberOfOccupiedParkingSpaces")
+        ),
+        OdfInfoItem(
+          facilityPath / "numberOfParkingSpacesForMotorbikes",
+          Vector( OdfValue( numberOfMotorbikeParkingSpaces, currentTime) ),
+          typeValue = Some( "mv:numberOfParkingSpacesForMotorbikes")
+        ),
+        OdfInfoItem(
+          facilityPath / "numberOfParkingSpacesForTrucks",
+          Vector( OdfValue( numberOfTruckParkingSpaces, currentTime) ),
+          typeValue = Some( "mv:numberOfParkingSpacesForTrucks")
+        ),
+        OdfInfoItem(
+          facilityPath / "numberOfParkingSpacesForCars",
+          Vector( OdfValue( numberOfCarParkingSpaces, currentTime) ),
+          typeValue = Some( "mv:numberOfParkingSpacesForCars")
+        ),
+        OdfInfoItem(
+          facilityPath / "numberOfParkingSpacesForElectricVehicles",
+          Vector( OdfValue( numberOfElectricVehicleParkingSpaces, currentTime) ),
+          typeValue = Some( "mv:numberOfParkingSpacesForElectricVehicles")
+        ),
+        OdfInfoItem(
+          facilityPath / "numberOfParkingSpacesForCars",
+          Vector( OdfValue( numberOfCarParkingSpaces, currentTime) ),
+          typeValue = Some( "mv:numberOfParkingSpacesForCars")
+        ),
+        OdfInfoItem(
+          facilityPath / "numberOfParkingSpacesForCoachs",
+          Vector( OdfValue( numberOfCoachParkingSpaces, currentTime) ),
+          typeValue = Some( "mv:numberOfParkingSpacesForCoachs")
+        )
+    ) ++ owner.map{ o: String =>
+        OdfInfoItem(
+          facilityPath / "Owner",
+          Vector( OdfValue( o, currentTime) ),
+          typeValue = Some( "mv:isOwnedBy")
+        )}.toVector ++ 
+        maxParkingHours.map{ mPH: String =>
+        OdfInfoItem(
+          facilityPath / "MaxParkingHours",
+          Vector( OdfValue( mPH, currentTime) )
+        )
+        }.toVector
+    val spaces = OdfObject(
+      Vector( QlmID( "ParkingSpaces" ) ),
+      facilityPath / "ParkingSpaces",
+      Vector(),
+      parkingSpaces.map( _.toOdf(facilityPath / "ParkingSpaces") ).toVector,
+      typeValue = Some( "list" )
+    )
+
     OdfObject(
       Vector( QlmID( name ) ),
       facilityPath,
-      Vector(
-        OdfInfoItem(
-          facilityPath / "Owner",
-          Vector( OdfValue( owner, currentTime) ),
-          typeValue = Some( "mv:isOwnedBy")
-        ),
-        OdfInfoItem(
-          facilityPath / "MaxParkingHours",
-          Vector( OdfValue( maxParkingHours, currentTime) )
-        )
-      ),
-      Vector( geo.toOdf(facilityPath, "geo" ), openingHours.toOdf( facilityPath) ) ++ 
-      spotTypes.map( _.toOdf( facilityPath ) ).toVector,
+      iis,
+      geo.map( _.toOdf(facilityPath, "geo" )).toVector ++ openingHours.map( _.toOdf( facilityPath)).toVector ++ Vector( spaces ),
       typeValue = Some( "schema:ParkingFacility" )
     )
   }
@@ -53,8 +136,8 @@ case class UndergroundParkingGarage extends ParkingFacility
 */
 
 case class OpeningHoursSpecification( 
-  opens: String,
-  closes: String
+  opens: Option[String],
+  closes: Option[String]
 ){
   def toOdf( parentPath: Path ) ={
     val ohsPath = parentPath / "openingHoursSpecification"
@@ -62,24 +145,43 @@ case class OpeningHoursSpecification(
       Vector( QlmID( "openingHoursSpecification"  ) ),
       ohsPath,
       Vector(
+        opens.map{ time: String  => 
         OdfInfoItem(
           ohsPath / "opens",
-          Vector( OdfValue( opens, "schema:Time", currentTime) )
-        ),
+          Vector( OdfValue( time, "schema:Time", currentTime) )
+        )},
+        closes.map{ time: String  => 
         OdfInfoItem(
           ohsPath / "closes",
-          Vector( OdfValue( closes, "schema:Time", currentTime) )
-        )
-      ),
+          Vector( OdfValue( time, "schema:Time", currentTime) )
+        )}
+      ).flatten,
       typeValue = Some( "schema:OpeningHoursSpecification" )
     )
   }
 }
+object OpeningHoursSpecification{
+
+  def apply( obj: OdfObject ): OpeningHoursSpecification ={
+    assert(obj.typeValue.contains( "schema:OpeningHoursSpecification"))
+    OpeningHoursSpecification(
+      obj.get( obj.path / "opens" ).collect{
+        case ii: OdfInfoItem =>
+          getStringFromInfoItem(ii)
+      }.flatten,
+      obj.get( obj.path / "closes" ).collect{
+        case ii: OdfInfoItem =>
+          getStringFromInfoItem(ii)
+      }.flatten
+    )
+  }
+}
 case class GPSCoordinates(
-  latitude: Double,
-  longitude: Double,
+  latitude: Option[Double],
+  longitude: Option[Double],
   address: Option[PostalAddress] = None
 ){
+  /*
   def distance( other: GPSCoordinates ): Double ={
     val radius: Double = 6371e3
 
@@ -94,65 +196,124 @@ case class GPSCoordinates(
     var c: Double = 2 * math.asin(math.min(math.sqrt(t), 1))
     val distance: Double = radius * c;
     distance
-  }
+  }*/
   def toOdf( parentPath: Path, objectName: String ) ={
     val geoPath = parentPath / objectName
     OdfObject(
       Vector( QlmID( objectName ) ),
       geoPath,
       Vector( 
-        OdfInfoItem( 
-          geoPath / "latitude",
-          Vector( OdfValue( latitude, currentTime ) )
-        ),
-      OdfInfoItem( 
-        geoPath / "longitude",
-        Vector( OdfValue( longitude, currentTime )  )
-      )
-    ),
+        latitude.map{ l: Double => 
+          OdfInfoItem( 
+            geoPath / "latitude",
+            Vector( OdfValue( l, currentTime ) )
+          )
+        },
+        longitude.map{
+          l: Double =>
+            OdfInfoItem( 
+              geoPath / "longitude",
+              Vector( OdfValue( l, currentTime )  )
+            )
+        }
+    ).flatten,
   address.map{ a => a.toOdf(geoPath ) }.toVector,
   typeValue = Some( "schema:GeoCoordinates" )
 )
   }
 }
 
+object GPSCoordinates{
+
+  def apply( obj: OdfObject ): GPSCoordinates ={
+    assert(obj.typeValue.contains( "schema:GeoCoordinates"))
+    GPSCoordinates(
+      obj.get( obj.path / "latitude" ).collect{
+        case ii: OdfInfoItem =>
+          getDoubleFromInfoItem(ii)
+      }.flatten,
+      obj.get( obj.path / "longitude" ).collect{
+        case ii: OdfInfoItem =>
+          getDoubleFromInfoItem(ii)
+      }.flatten,
+      obj.get( obj.path / "address" ).collect{
+        case pAObj: OdfObject => 
+          PostalAddress( pAObj )
+      }
+    )
+  }
+}
 case class PostalAddress(
-  country: String,
-  locality: String,
-  region: String,
-  streetAddress: String,
-  postCode: String
+  country: Option[String],
+  locality: Option[String],
+  region: Option[String],
+  streetAddress: Option[String],
+  postCode: Option[String]
 ) {
   def toOdf( parentPath: Path ) ={
     val addressPath = parentPath / "address"
-    val countryII = OdfInfoItem( 
-      addressPath / "addressCountry",
-      Vector( OdfValue( country, currentTime ))
-    )
-    val localityII = OdfInfoItem( 
-      addressPath / "addressLocality",
-      Vector( OdfValue( locality, currentTime ))
-    )
-    val regionII = OdfInfoItem( 
-      addressPath / "addressRegion",
-      Vector( OdfValue( region, currentTime ))
-    )
-    val streetII = OdfInfoItem( 
-      addressPath / "streetAddress",
-      Vector( OdfValue( streetAddress, currentTime ))
-    )
-    val postCodeII = OdfInfoItem( 
-      addressPath / "postCode",
-      Vector( OdfValue( postCode, currentTime ))
-    )
+    val countryII = country.map{ c: String => 
+      OdfInfoItem( 
+        addressPath / "addressCountry",
+        Vector( OdfValue( c, currentTime ))
+      )
+    }
+    val localityII = locality.map{ l:String =>
+      OdfInfoItem( 
+        addressPath / "addressLocality",
+        Vector( OdfValue( l, currentTime ))
+      )
+    }
+    val regionII = region.map{ r: String =>
+      OdfInfoItem( 
+        addressPath / "addressRegion",
+        Vector( OdfValue( r, currentTime ))
+      )
+    }
+    val streetII = streetAddress.map{ street: String => 
+      OdfInfoItem( 
+        addressPath / "streetAddress",
+        Vector( OdfValue( street, currentTime ))
+      )
+    }
+    val postCodeII = postCode.map{ code: String =>
+      OdfInfoItem( 
+        addressPath / "postCode",
+        Vector( OdfValue( code, currentTime ))
+      )
+    }
 
     OdfObject(
       Vector( QlmID( "address" ) ),
       addressPath,
-      Vector(countryII, localityII, regionII, streetII, postCodeII ),
+      Vector(countryII, localityII, regionII, streetII, postCodeII ).flatten,
       Vector(),
       None,
       typeValue = Some( "schema:PostalAddress" )
+    )
+  }
+
+}
+
+object PostalAddress{
+  def apply( obj: OdfObject ): PostalAddress ={
+    PostalAddress(
+      obj.get( obj.path / "addressCountry" ).collect{
+        case ii: OdfInfoItem => getStringFromInfoItem( ii)
+      }.flatten,
+      obj.get( obj.path / "addressLocality" ).collect{
+        case ii: OdfInfoItem => getStringFromInfoItem( ii)
+      }.flatten,
+      obj.get( obj.path / "addressRegion" ).collect{
+        case ii: OdfInfoItem => getStringFromInfoItem( ii)
+      }.flatten,
+      obj.get( obj.path / "streetAddress" ).collect{
+        case ii: OdfInfoItem => getStringFromInfoItem( ii)
+      }.flatten,
+      obj.get( obj.path / "postCode" ).collect{
+        case ii: OdfInfoItem => getStringFromInfoItem( ii)
+      }.flatten
+
     )
   }
 
