@@ -38,7 +38,7 @@ case class ParkingSpace(
     lazy val dimensionCheck = {
       maxHeight.forall{ limit => vehicle.height.forall( _ <= limit ) } &&
       maxLength.forall{ limit => vehicle.length.forall( _  <= limit ) } &&
-      maxWidth.forall{ limit => vehicle.width.forall( _  <= limit ) }
+      maxWidth.forall{ limit => vehicle.witdh.forall( _  <= limit ) }
     }
 
     identedFor.contains( vehicle.vehicleType ) || dimensionCheck

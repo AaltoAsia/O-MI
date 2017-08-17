@@ -35,6 +35,15 @@ case class Charger(
   lidStatus: Option[String],
   plug: Option[PowerPlug]
 ){
+  def validFor( requested: Charger ): Boolean={
+    requested.brand.forall{ str: String => 
+      brand.contains( str)
+    } && requested.model.forall{ str: String => 
+      brand.contains( str)
+    } && requested.plug.forall{ rplug: PowerPlug =>
+      this.plug.validFor(rplug)
+    }
+  }
   def toOdf( parentPath: Path ) ={
     val chargerPath = parentPath / "Charger"
     val brandII = brand.map{

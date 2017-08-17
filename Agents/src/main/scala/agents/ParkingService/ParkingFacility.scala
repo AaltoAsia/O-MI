@@ -8,8 +8,8 @@ import types._
 import VehicleType._
 import UsageType._
 
-object ParkingFocility{
-  def apply(obj: OdfObject ) ={
+object ParkingFacility{
+  def apply(obj: OdfObject ): ParkingFacility={
     assert(obj.typeValue.contains("mv:ParkingFacility"))
     val name = obj.id.headOption.map{ qlmid => qlmid.value }.getOrElse( throw new Exception( "ParkingFacility/Object without name/id") )
     val owner = obj.get( obj.path / "Owner" ).collect{ case ii: OdfInfoItem => getStringFromInfoItem(ii) }.flatten
@@ -49,6 +49,15 @@ case class ParkingFacility(
    def numberOfOccupiedParkingSpaces: Int= parkingSpaces.count{ parkingSpot => parkingSpot.available}
    def numberOfVacantParkingSpaces: Int= parkingSpaces.count{ parkingSpot => !parkingSpot.available}
    def totalCapacity: Int = parkingSpaces.length
+   def containsSpacesFor( vehicle: Vehicle ): Boolean ={
+     parkingSpaces.exists{
+       parkingSpace: ParkingSpace => 
+         parkingSpace.identedFor.forall{
+           vt: VehicleType =>
+             vt == vehicle.vehicleType
+         }
+     }
+   }
 
   def toOdf( parentPath: Path ) = {
     val facilityPath = parentPath / name
@@ -181,22 +190,26 @@ case class GPSCoordinates(
   longitude: Option[Double],
   address: Option[PostalAddress] = None
 ){
-  /*
-  def distance( other: GPSCoordinates ): Double ={
+  def distanceFrom( other: GPSCoordinates ): Option[Double] ={
     val radius: Double = 6371e3
+    val dO: Option[Double] = for{
+      latitude1 <- latitude
+      latitude2 <- other.latitude
+      longitude1 <- longitude
+      longitude2 <- other.longitude
 
-    val a1: Double = other.latitude.toRadians 
-    val a2: Double = this.latitude.toRadians 
-    val deltaLat: Double= (this.latitude - other.latitude).toRadians
-    val deltaLon: Double= (this.longitude - other.longitude).toRadians 
+      a1 <- latitude2.toRadians 
+      a2 <- latitude1.toRadians 
+      deltaLat <- (latitude1 - latitude2).toRadians
+      deltaLon <- (longitude1 - longitude2).toRadians 
 
-    val t: Double = math.sin(deltaLat/2) * math.sin(deltaLat/2) +
-            math.cos(a1) * math.cos(a2) *
-            math.sin(deltaLon/2) * math.sin(deltaLon/2)
-    var c: Double = 2 * math.asin(math.min(math.sqrt(t), 1))
-    val distance: Double = radius * c;
-    distance
-  }*/
+      t <- math.sin(deltaLat/2) * math.sin(deltaLat/2) + math.cos(a1) * math.cos(a2) * math.sin(deltaLon/2) * math.sin(deltaLon/2)
+      c <- 2 * math.asin(math.min(math.sqrt(t), 1))
+      distance <- radius * c;
+    } yield (distance)
+    dO
+  }
+
   def toOdf( parentPath: Path, objectName: String ) ={
     val geoPath = parentPath / objectName
     OdfObject(

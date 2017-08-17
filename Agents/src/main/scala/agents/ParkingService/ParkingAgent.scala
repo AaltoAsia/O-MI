@@ -33,12 +33,11 @@ import scala.xml.XML
  *  <a href="http://doc.akka.io/docs/akka/2.4/scala/actors.html#Recommended_Practices">Akka recommends to</a>.
  *
  *  @param _config Contains configuration for this agent, as given in application.conf.
- */
 object ParkingAgent extends PropsCreator{
+ */
   /**
    * Method for creating Props for ResponsibleScalaAgent.
    *  @param config Contains configuration for this agent, as given in application.conf.
-   */
   def props(
     config: Config,
     requestHandler: ActorRef, 
@@ -51,7 +50,9 @@ class ParkingAgent(
   val requestHandler: ActorRef, 
   val dbHandler: ActorRef
 ) extends ResponsibleScalaInternalAgent{
+   */
   //Execution context
+  /*
   import context.dispatcher
 
   //Base path for service, contains at least all method
@@ -80,8 +81,8 @@ class ParkingAgent(
 
   val pfs = initialOdf.get( parkingLotsPath ).collect{
     case obj: OdfObject =>
-      obj.objects.filter{
-        val pfs = pfObj: OdfObject =>
+     val pfs =  obj.objects.filter{
+        pfObj: OdfObject =>
           pfObj.typeValue.contains( "mv:ParkingFacility") ||
           pfObj.typeValue.contains( "mv:ParkingLot") ||
           pfObj.typeValue.contains( "mv:ParkingGarage") ||
@@ -92,8 +93,8 @@ class ParkingAgent(
         pfObj: OdfObject =>
           ParkingFacility( pfObj )
       }
-  }.getOrElse( throw new Exception("No parking facilities found in O-DF or configured path is wrong"))
-  val initialWrite = writeToDB( WriteRequest(initialODF) )
+  }.getOrElse( throw new Exception("No parking facilities found in O-DF or configured path is wrong")).toVector
+  val initialWrite = writeToDB( WriteRequest(pfs.toOdf(parkingLotsPath)) )
   val initialisationWriteTO = 10.seconds
   val initializationResponse = Await.ready(initialWrite, initialisationWriteTO)
   initializationResponse.value match{
@@ -293,6 +294,7 @@ class ParkingAgent(
         Responses.InternalError(e)
     }
   }
+  */
   /*
   def isReservation( path: Path, parkingSpot: ParkingSpot ) ={
     val notReserved = pathToSpaces.get( path ).map{
@@ -319,7 +321,7 @@ class ParkingAgent(
   }*/
 
   
-
+/*
   override protected def handleWrite(write: WriteRequest) : Future[ResponseRequest] = {
     val parkingSpaces =  write.odf.getNodesOfType( "mv:ParkingSpace" )
     if(write.odf.get(findParkingPath).nonEmpty ){
@@ -592,7 +594,8 @@ class ParkingAgent(
     case write: WriteRequest => respondFuture(handleWrite(write))
     case call: CallRequest => respondFuture(handleCall(call))
   }
-  /*
+ */ 
+/*
   def handleParkingSpaces( odf: OdfObjects ) ={
     def getStringFromPath( path: Path, oo: OdfObject ): Option[String] ={
       oo.get(path).collect{
@@ -686,6 +689,6 @@ class ParkingAgent(
     }
   }
   */
-}
+//}
 
 

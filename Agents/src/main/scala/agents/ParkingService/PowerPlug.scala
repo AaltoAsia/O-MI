@@ -53,6 +53,21 @@ case class PowerPlug(
   lockerAvailable: Option[String],
   chargingSpeed: Option[String]
 ){
+  def validFor( requested: PowerPlug ): Boolean={
+    requested.plugType.forall{ str: String => 
+      plugType.contains( str)
+    } && requested.power.forall{ str: String => 
+      power.contains( str)
+    } && requested.voltage.forall{ str: String => 
+      voltage.contains( str)
+    } && requested.cableAvailable.forall{ str: String => 
+      cableAvailable.contains( str)
+    } && requested.lockerAvailable.forall{ str: String => 
+      lockerAvailable.contains( str)
+    } && requested.chargingSpeed.forall{ str: String => 
+      chargingSpeed.contains( str)
+    }  
+  }
   def toOdf( parentPath: Path ) ={
     val plugPath = parentPath / "Plug"
     val pTII = plugType.map{ pT =>
