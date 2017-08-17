@@ -78,6 +78,21 @@ class ParkingAgent(
     throw  AgentConfigurationException(s"Could not get initial state for $name. Could not read file $startStateFile.")
   }
 
+  val pfs = initialOdf.get( parkingLotsPath ).collect{
+    case obj: OdfObject =>
+      obj.objects.filter{
+        val pfs = pfObj: OdfObject =>
+          pfObj.typeValue.contains( "mv:ParkingFacility") ||
+          pfObj.typeValue.contains( "mv:ParkingLot") ||
+          pfObj.typeValue.contains( "mv:ParkingGarage") ||
+          pfObj.typeValue.contains( "mv:UndergroundParkingGarage") ||
+          pfObj.typeValue.contains( "mv:AutomatedParkingGarage") ||
+          pfObj.typeValue.contains( "mv:BicycleParkingStation") 
+      }.map{
+        pfObj: OdfObject =>
+          ParkingFacility( pfObj )
+      }
+  }.getOrElse( throw new Exception("No parking facilities found in O-DF or configured path is wrong"))
   val initialWrite = writeToDB( WriteRequest(initialODF) )
   val initialisationWriteTO = 10.seconds
   val initializationResponse = Await.ready(initialWrite, initialisationWriteTO)
