@@ -41,7 +41,7 @@ case class Charger(
     } && requested.model.forall{ str: String => 
       brand.contains( str)
     } && requested.plug.forall{ rplug: PowerPlug =>
-      this.plug.validFor(rplug)
+      this.plug.forall(_.validFor(rplug))
     }
   }
   def toOdf( parentPath: Path ) ={

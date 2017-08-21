@@ -27,7 +27,7 @@ case class ParkingSpace(
   val name: String,
   val usageType: Option[UsageType],
   val identedFor: Option[VehicleType],
-  val available: Boolean,
+  val available: Option[Boolean],
   val user: Option[String],
   val charger: Option[Charger],
   val maxHeight: Option[Double],
@@ -45,12 +45,13 @@ case class ParkingSpace(
   }
   def toOdf( parentPath: Path ) ={
     val spotPath = parentPath / name
-    val availableII = Vector(
+    val availableII = available.map{
+      b: Boolean =>
       OdfInfoItem(
         spotPath / "Available",
-        Vector( OdfValue( available, currentTime ) )
+        Vector( OdfValue( b, currentTime ) )
       ) 
-    )
+    }.toVector
     val userII = user.map{ str =>
       OdfInfoItem(
         spotPath / "User",
@@ -71,10 +72,10 @@ object ParkingSpace {
   def apply( obj: OdfObject ) : ParkingSpace ={
     assert(obj.typeValue.contains( "mv:ParkingSpace"))
      val nameO = obj.id.headOption
-     val available = obj.get( obj.path / "Available" ).collect{
+     val available: Option[Boolean] = obj.get( obj.path / "Available" ).collect{
        case ii: OdfInfoItem =>
-         getStringFromInfoItem( ii ).map{ str => Try{ str.toBoolean }.getOrElse( false ) }
-     }.flatten.getOrElse( false )
+         getStringFromInfoItem( ii ).flatMap{ str => Try{Some( str.toBoolean) }.getOrElse( None) }
+     }.flatten
      val user = obj.get( obj.path / "User" ).collect{
        case ii: OdfInfoItem =>
         getStringFromInfoItem( ii )

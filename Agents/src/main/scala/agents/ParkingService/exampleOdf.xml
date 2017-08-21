@@ -8,34 +8,34 @@
       <InfoItem name="Owner" type="mv:isOwnedBy"><!-- Maybe use something from www.schema.org -->
         <value>Aalto University</value>
       </InfoItem>
-      <InfoItem name="totalCapacity" type="mv:totalCapacity">
+      <InfoItem name="totalCapacity" type="mv:totalCapacity"><!-- Counted by agent. -->
         <value type="xs:int">2</value>
       </InfoItem>
-      <InfoItem name="numberOfVacantParkingSpaces" type="mv:numberOfVacantParkingSpaces">
+      <InfoItem name="numberOfVacantParkingSpaces" type="mv:numberOfVacantParkingSpaces"><!-- Counted by agent. -->
         <value type="xs:int">2</value>
       </InfoItem>
-      <InfoItem name="numberOfOccupiedParkingSpaces" type="mv:numberOfOccupiedParkingSpaces">
+      <InfoItem name="numberOfOccupiedParkingSpaces" type="mv:numberOfOccupiedParkingSpaces"><!-- Counted by agent. -->
         <value type="xs:int">2</value>
       </InfoItem>
-      <InfoItem name="numberOfParkingSpacesForElectricVehicles" type="mv:numberOfParkingSpacesForElectricVehicles">
+      <InfoItem name="numberOfParkingSpacesForElectricVehicles" type="mv:numberOfParkingSpacesForElectricVehicles"><!-- Counted by agent. -->
         <value type="xs:int">2</value>
       </InfoItem>
-      <InfoItem name="numberOfParkingSpacesForBicycles" type="mv:numberOfParkingSpacesForBicycles">
+      <InfoItem name="numberOfParkingSpacesForBicycles" type="mv:numberOfParkingSpacesForBicycles"><!-- Counted by agent. -->
         <value type="xs:int">2</value>
       </InfoItem>
-      <InfoItem name="numberOfParkingSpacesForMotorbikes" type="mv:numberOfParkingSpacesForMotorbikes">
+      <InfoItem name="numberOfParkingSpacesForMotorbikes" type="mv:numberOfParkingSpacesForMotorbikes"><!-- Counted by agent. -->
         <value type="xs:int">2</value>
       </InfoItem>
-      <InfoItem name="numberOfParkingSpacesForTrucks" type="mv:numberOfParkingSpacesForTrucks">
+      <InfoItem name="numberOfParkingSpacesForTrucks" type="mv:numberOfParkingSpacesForTrucks"><!-- Counted by agent. -->
         <value type="xs:int">2</value>
       </InfoItem>
-      <InfoItem name="numberOfWomen'sParkingSpaces" type="mv:numberOfWomen'sParkingSpaces">
+      <InfoItem name="numberOfWomen'sParkingSpaces" type="mv:numberOfWomen'sParkingSpaces"><!-- Counted by agent. -->
         <value type="xs:int">2</value>
       </InfoItem>
-      <InfoItem name="numberOfCarShairngSpaces" type="mv:numberOfCarSharingSpaces">
+      <InfoItem name="numberOfCarShairngSpaces" type="mv:numberOfCarSharingSpaces"><!-- Counted by agent. -->
         <value type="xs:int">2</value>
       </InfoItem>
-      <InfoItem name="numberOfParkingSpacesForDisabledPersons" type="mv:numberOfParkingSpacesForDisabledPersons">
+      <InfoItem name="numberOfParkingSpacesForDisabledPersons" type="mv:numberOfParkingSpacesForDisabledPersons"><!-- Counted by agent. -->
         <value type="xs:int">2</value>
       </InfoItem>
       <InfoItem name="MaxParkingHours">
@@ -102,7 +102,7 @@
           <InfoItem name="vehicleWitdhLimit" type="mv:vehicleWitdhLimit">
             <value>2.5</value>
           </InfoItem>
-          <Object type="schema:PriceSpecification">
+          <Object type="schema:PriceSpecification"><!-- Not sure how this should be structured. -->
             <id>PricesSpecification</id>
             <InfoItem name="price" type="schema:price">
               <value type="ws:double">2.00</value>

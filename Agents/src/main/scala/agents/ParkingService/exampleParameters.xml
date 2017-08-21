@@ -8,10 +8,10 @@
               <Object type="FindParkingRequest">
                 <id>Parameters</id>
                 <description lang="English">List of possible parameters to request.</description>
-                <InfoItem name="DistanceFromDestination" type="schema:Distance" required="false">
+                <InfoItem name="DistanceFromDestination" type="schema:Distance" required="true">
                   <value>1000</value>
                 </InfoItem>
-                <InfoItem name="ParkingUsageType" required="false">
+                <InfoItem name="ParkingUsageType" type="mv:ParkingUsageType" required="false">
                   <value>One of mv:CarParkingSpace, mv:MotorbikeParkingSpace or mv:ElectricVehicleParkingSpace.</value>
                 </InfoItem>
                 <Object type="schema:GeoCoordinates" required="true">
@@ -23,16 +23,16 @@
                     <value type="xs:double">24.8213216</value>
                   </InfoItem>
                 </Object>
-                <Object required="false" type="schema:Vehicle"><!-- This can be any type of vehicle Car,Motorbike-->
+                <Object required="true" type="schema:Vehicle"><!-- This can be any type of vehicle Car,Motorbike-->
                   <id>Vehicle</id>
                   <InfoItem name="width" type="schema:width" required="false">
-                    <value type="xs:double">3m</value>
+                    <value type="xs:double">3</value>
                   </InfoItem>
                   <InfoItem name="height"  type="schema:height" required="false">
-                    <value type="xs:double">2.5m</value>
+                    <value type="xs:double">2.5</value>
                   </InfoItem>
                   <InfoItem name="depth"  type="schema:depth" required="false">
-                    <value type="xs:double">3m</value>
+                    <value type="xs:double">3</value>
                   </InfoItem>
                 </Object>
                 <Object type="mv:Charger" required="false">
@@ -71,7 +71,7 @@
         </InfoItem>
         <InfoItem name="odf:ReturnType">
           <value type="odf:Objects">
-            <Objects>
+            <Objects><!-- mv:ParkingSpace s with correct mv:ParkingSpace s -->
             </Objects>
           </value>
         </InfoItem>

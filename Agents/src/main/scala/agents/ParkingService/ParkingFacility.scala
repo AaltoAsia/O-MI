@@ -46,8 +46,8 @@ case class ParkingFacility(
    def numberOfCarParkingSpaces: Int= parkingSpaces.count{ parkingSpot => parkingSpot.identedFor.contains(Car)}
    def numberOfElectricVehicleParkingSpaces: Int= parkingSpaces.count{ parkingSpot => parkingSpot.identedFor.contains(ElectricVehicle)}
 
-   def numberOfOccupiedParkingSpaces: Int= parkingSpaces.count{ parkingSpot => parkingSpot.available}
-   def numberOfVacantParkingSpaces: Int= parkingSpaces.count{ parkingSpot => !parkingSpot.available}
+   def numberOfOccupiedParkingSpaces: Int= parkingSpaces.count{ parkingSpot => parkingSpot.available.contains(false)}
+   def numberOfVacantParkingSpaces: Int= parkingSpaces.count{ parkingSpot => !parkingSpot.available.contains(false)}
    def totalCapacity: Int = parkingSpaces.length
    def containsSpacesFor( vehicle: Vehicle ): Boolean ={
      parkingSpaces.exists{
@@ -192,22 +192,28 @@ case class GPSCoordinates(
 ){
   def distanceFrom( other: GPSCoordinates ): Option[Double] ={
     val radius: Double = 6371e3
-    val dO: Option[Double] = for{
-      latitude1 <- latitude
-      latitude2 <- other.latitude
-      longitude1 <- longitude
-      longitude2 <- other.longitude
+    latitude.flatMap{
+      latitude1: Double  =>
+        other.latitude.flatMap{
+          latitude2: Double  =>
+            longitude.flatMap{
+              longitude1: Double  =>
+                other.longitude.map{
+                  longitude2: Double  =>
 
-      a1 <- latitude2.toRadians 
-      a2 <- latitude1.toRadians 
-      deltaLat <- (latitude1 - latitude2).toRadians
-      deltaLon <- (longitude1 - longitude2).toRadians 
+                    val a1 = latitude2.toRadians 
+                    val a2 = latitude1.toRadians 
+                    val deltaLat = (latitude1 - latitude2).toRadians
+                    val deltaLon = (longitude1 - longitude2).toRadians 
 
-      t <- math.sin(deltaLat/2) * math.sin(deltaLat/2) + math.cos(a1) * math.cos(a2) * math.sin(deltaLon/2) * math.sin(deltaLon/2)
-      c <- 2 * math.asin(math.min(math.sqrt(t), 1))
-      distance <- radius * c;
-    } yield (distance)
-    dO
+                    val t = math.sin(deltaLat/2) * math.sin(deltaLat/2) + math.cos(a1) * math.cos(a2) * math.sin(deltaLon/2) * math.sin(deltaLon/2)
+                    val c = 2 * math.asin(math.min(math.sqrt(t), 1))
+                    val distance = radius * c;
+                    distance 
+                }
+            }
+        }
+    }
   }
 
   def toOdf( parentPath: Path, objectName: String ) ={

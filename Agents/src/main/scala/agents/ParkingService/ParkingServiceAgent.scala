@@ -28,6 +28,7 @@ import types.Path
 import parsing.OdfParser
 import scala.xml.XML
 import UsageType._
+import VehicleType._
 
 /**
  * Companion object for ResponsibleScalaAgent. Extends PropsCreator to enforce recommended practice in Props creation.
@@ -117,6 +118,10 @@ class ParkingAgent(
       }
   }
   val findParkingPath = servicePath / "FindParking"
+  
+  case class ParkingSpaceStatus( path: Path, user: Option[String], free: Boolean)
+  //TODO: Populate!!!
+  val parkingSpaceStatuses: MutableMap[Path,ParkingSpaceStatus] =  ???
 
 
   override protected def handleCall(call: CallRequest) : Future[ResponseRequest] = {
@@ -232,10 +237,10 @@ class ParkingAgent(
       destination <- destinationO
       distanceFromDestination <- distanceFromDestinationO.orElse( Some( 1000.0) )
       vehicle <- vehicleO
-    } yield ParkingParameters( destination, distanceFromeDestination, vehicle, usageTypeO, chargerO, arrivalTimeO) 
+    } yield ParkingParameters( destination, distanceFromDestination, vehicle, usageTypeO, chargerO, arrivalTimeO) 
   }
 
-  def findParking( parameters: ParkingParameters ):Future[ResponseRequest]={
+  def findParking( parameters: ParkingParameters ):Future[ResponseRequest]=Future{
     //TODO: Get current parking facilities
     val parkingFacilities: Vector[ParkingFacility] = Vector()
     val nearbyParkingFacilities = parkingFacilities.filter{
@@ -248,7 +253,7 @@ class ParkingAgent(
             }
         } && pf.containsSpacesFor( parameters.vehicle )
     }
-    val parkingFacilitiesWithMatchingSpots = nearbyParkingFacilities.map{
+    val parkingFacilitiesWithMatchingSpots: Vector[ParkingFacility]= nearbyParkingFacilities.map{
       pf: ParkingFacility =>
         pf.copy(
           parkingSpaces = pf.parkingSpaces.filter{
@@ -265,11 +270,11 @@ class ParkingAgent(
                 }
               }
               val sizeCheck = pS.validForVehicle( parameters.vehicle )
-              val chargerCheck = parameters.forall{
+              val chargerCheck = parameters.charger.forall{
                 case charger: Charger =>
                   pS.charger.exists{
                     case pSCharger: Charger =>
-                      pSHCharger.validFor( charger )
+                      pSCharger.validFor( charger )
                   }
               }
               vehicleCheck && usageCheck && sizeCheck && chargerCheck
@@ -277,25 +282,135 @@ class ParkingAgent(
         )
     }
 
-    
-    if( parkingFacilitiesWithMatchingSpots.nonEmpty() ){
-      Future{
-        Responses.Success(
-        parkingFacilitiesWithMatchingSpots.fold(OdfObjects()){
+    if( parkingFacilitiesWithMatchingSpots.nonEmpty ){
+        val odf:OdfObjects = parkingFacilitiesWithMatchingSpots.foldLeft(OdfObjects()){
           case (odf: OdfObjects, pf: ParkingFacility) =>
-            odf union( pf.toOdf(parkingLotsPath).createAncestors )
+            val add: OdfObjects = pf.toOdf(parkingLotsPath).createAncestors 
+            odf.union( add)
         
-        })
-      }
+        }
+        Responses.Success(Some(odf), 10 seconds)
     } else{
-      Future{
         Responses.NotFound("Could not find parking facility with matching parking spaces." )
+    }
+  }
+  override protected def handleWrite(write: WriteRequest) : Future[ResponseRequest] = Future{
+    val writingPfs:Vector[ParkingFacility] = write.odf.get(parkingLotsPath).collect{
+      case obj: OdfObject =>
+        obj.objects.map{
+          pfObj: OdfObject =>
+            ParkingFacility( pfObj)
+        }
+    }.toVector.flatten
+
+    val events = writingPfs.flatMap{
+      pf: ParkingFacility =>
+        pf.parkingSpaces.collect{
+          case ParkingSpace(name,_,_,Some(false),Some(user),chargerO,_,_,_) if isParkingSpaceFree( parkingLotsPath / pf.name /name)  =>
+            val path = parkingLotsPath / pf.name / name
+            val openLid: Boolean= chargerO.map{ 
+              case charger: Charger => lidOpen(charger)
+            }.getOrElse(false)
+            Reservation(path, user, openLid)
+          case ParkingSpace(name,_,_,Some(true),Some(user),chargerO,_,_,_) if isUserCurrentReserver(parkingLotsPath / pf.name / name, user)  =>
+            val path = parkingLotsPath / pf.name / name
+            val openLid: Boolean = chargerO.map{ 
+              case charger: Charger => lidOpen(charger)
+            }.getOrElse(false)
+            FreeReservation(path, user, openLid)
+          case ParkingSpace(name,_,_,_,Some(user),Some(charger),_,_,_) if lidOpen(charger) && isUserCurrentReserver( parkingLotsPath / pf.name / name, user ) =>
+            val path = parkingLotsPath / pf.name / name
+            OpenLid( path, user)
+        }
+    }
+    events
+  }.flatMap{
+    events: Seq[ParkingEvent] =>
+
+    if( events.length == 1 ){
+      events.headOption.map{
+        case reservation: Reservation => 
+          val response = writeToDB( WriteRequest( reservation.toOdf.createAncestors ) )
+          if( reservation.openLid ){
+            response.onSuccess{
+              case response: ResponseRequest =>
+                closeLidIn( reservation.path / "Charger" / "LidStatus" )
+                parkingSpaceStatuses.get(reservation.path).foreach{
+                  case ParkingSpaceStatus( path, user, available ) =>
+                    parkingSpaceStatuses.update( path, ParkingSpaceStatus( path, Some(reservation.user), false ) )
+                }
+            }
+          }
+          response
+        case freeing: FreeReservation => 
+          val response = writeToDB( WriteRequest( freeing.toOdf.createAncestors ) )
+          if( freeing.openLid ){
+            response.onSuccess{
+              case response: ResponseRequest =>
+                closeLidIn( freeing.path / "Charger" / "LidStatus" )
+                parkingSpaceStatuses.get(freeing.path).foreach{
+                  case ParkingSpaceStatus( path, user, available ) =>
+                    parkingSpaceStatuses.update( path, ParkingSpaceStatus( path, None, true ) )
+                }
+            }
+          }
+          response
+        case oL: OpenLid =>
+          val response = writeToDB( WriteRequest( oL.toOdf.createAncestors ) )
+          response.onSuccess{
+            case response: ResponseRequest =>
+              closeLidIn( oL.path / "Charger" / "LidStatus" )
+          }
+          response
+      }.getOrElse{
+        Future{
+          Responses.InvalidRequest(Some("No reservations, freeing or lid opening events found from write."))
+        }
+      }
+    } else if(events.isEmpty) {
+      Future{
+        Responses.InvalidRequest(Some("No reservations, freeing or lid opening events found from write."))
+      }
+    } else  {
+      Future{
+        Responses.InvalidRequest(Some("Multipre reservations, freeing or lid opening events found from write. Should contain only one."))
       }
     }
   }
-  override protected def handleWrite(write: WriteRequest) : Future[ResponseRequest] = {
-    val response = Responses.NotImplemented()
-    Future.successful( response )
+
+  def lidOpen( charger: Charger ): Boolean ={
+    charger.lidStatus.exists{
+      str: String =>
+        str.toLowerCase.contains("open")
+    }
+  }
+
+  def isUserCurrentReserver( path: Path, user: String ): Boolean = parkingSpaceStatuses.get( path).exists{
+    pSS: ParkingSpaceStatus => pSS.user.contains( user )
+  }
+
+  def isParkingSpaceFree( path: Path): Boolean = parkingSpaceStatuses.get( path).exists{
+    pSS: ParkingSpaceStatus => pSS.free
+  }
+
+  case class CloseLid( pathToLidState: Path )
+  def closeLidIn( pathToLidState: Path, delay: FiniteDuration = 2.seconds ) ={
+    context.system.scheduler.scheduleOnce( delay, self, CloseLid( pathToLidState) )
+  }
+  def closeLid( pathToLidState: Path ) ={
+   val write = WriteRequest( OdfInfoItem(
+     pathToLidState,
+     values = Vector( OdfValue( "Locked", currentTime ))
+   ).createAncestors)
+     
+   writeToDB( write)
+    
+  }
+  override  def receive : Actor.Receive = {
+    case CloseLid( path ) => closeLid( path)
+    //Following are inherited from ResponsibleScalaInternalActor.
+    case write: WriteRequest => respondFuture(handleWrite(write))
+    case call: CallRequest => respondFuture(handleCall(call))
   }
 }
 
