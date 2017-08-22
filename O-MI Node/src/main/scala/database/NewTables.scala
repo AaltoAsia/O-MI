@@ -105,7 +105,11 @@ trait Tables extends DBBase{
     def name = s"PATH_${pathID.toString}"
     import dc.driver.api._
     def removeValuesBefore( end: Timestamp) = befor(end).delete
-    def trimToNNewestValues( n: Long ) = selectAllExpectNNewestValuesCQ( n ).delete
+    def trimToNNewestValues( n: Long ) = selectAllExpectNNewestValuesCQ( n ).result.flatMap{
+      values: Seq[TimedValue] =>
+        val ids = values.map(_.id).flatten
+        this.filter(_.id inSet(ids)).delete
+    }
     def add( values: Seq[TimedValue] ) = this ++= values.distinct 
     def getNBetween( 
       beginO: Option[Timestamp],

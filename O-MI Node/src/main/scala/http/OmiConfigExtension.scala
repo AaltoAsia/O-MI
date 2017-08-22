@@ -34,6 +34,7 @@ import types.Path
 class OmiConfigExtension( val config: Config) extends Extension 
   with AgentSystemConfigExtension {
 
+  val callbackAuthorizationEnabled: Boolean = config.getBoolean("omi-service.callback-authorization-enabled")
   /**
    * Implicit conversion from java.time.Duration to scala.concurrent.FiniteDuration
    * @param dur duration as java.time.Duration
