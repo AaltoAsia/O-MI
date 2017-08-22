@@ -23,7 +23,6 @@ trait DBReadHandler extends DBHandlerBase{
     * @return (xml response, HTTP status code)
     */
   def handleRead(read: ReadRequest): Future[ResponseRequest] = {
-     log.debug("Handling read.")
      read match{
        case ReadRequest(_,_,begin,end,Some(newest),Some(oldest),_,_,_) =>
          Future.successful(
@@ -46,7 +45,7 @@ trait DBReadHandler extends DBHandlerBase{
            )
          )*/
        case default: ReadRequest =>
-         log.info( 
+         log.debug(
            s"DBHandler handling Read(" + 
            default.begin.map{ t => s"begin: $t," }.getOrElse("") + 
            default.end.map{ t => s"end: $t," }.getOrElse("") + 

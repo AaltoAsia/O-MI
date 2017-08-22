@@ -53,7 +53,7 @@ class OmiServer extends OmiNode{
   // we need an ActorSystem to host our application in
   implicit val system : ActorSystem = ActorSystem("on-core") 
   implicit val materializer: ActorMaterializer = ActorMaterializer()(system)
-  import system.dispatcher // execution context for futures
+  import system.dispatcher // execution context for future
 
   /**
    * Settings loaded by akka (typesafe config) and our [[OmiConfigExtension]]

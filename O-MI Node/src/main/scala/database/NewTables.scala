@@ -189,7 +189,7 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimableDB{
     val createMissingTables = findTables.flatMap{ 
       case tableNames: Seq[String]  =>
         val queries = if( tableNames.contains( "PATHSTABLE" ) ){
-          log.debug(s"Foound following tables:\n${tableNames.mkString("\n")}")
+          log.debug(s"Found following tables:\n${tableNames.mkString("\n")}")
           //Found needed table, check for value tables
           val infoItemDBPaths = pathsTable.getInfoItems
 
@@ -377,7 +377,7 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimableDB{
     }
     val actions = valueTableCreations.flatMap{
       case createdTables: Seq[String] =>
-        if( createdTables.nonEmpty) log.info(s"Created following tables:\n${createdTables.mkString(", ")}")
+        if( createdTables.nonEmpty) log.debug(s"Created following tables:\n${createdTables.mkString(", ")}")
         DBIO.sequence( valueWritingIOs ).map{
           case countsOfCreatedValuesPerPath: Seq[Seq[Int]] =>  
             val sum = countsOfCreatedValuesPerPath.map( _.sum).sum
