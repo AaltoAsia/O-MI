@@ -9,7 +9,7 @@ import scala.util.{Success, Failure, Try}
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, Future}
 import scala.concurrent.Future._
-import scala.collection.mutable.{ Map => MutableMap, HashMap => MHashMap}
+import scala.collection.mutable.{ Map => MutableMap, HashMap => MutableHashMap}
 import scala.xml.PrettyPrinter
 
 import com.typesafe.config.Config
@@ -80,7 +80,7 @@ class ParkingAgent(
     throw  AgentConfigurationException(s"Could not get initial state for $name. Could not read file $startStateFile.")
   }
 
-  val pfs = initialODF.get( parkingLotsPath ).collect{
+  val initialPFs = initialODF.get( parkingLotsPath ).collect{
     case obj: OdfObject =>
      val pfs =  obj.objects.filter{
         pfObj: OdfObject =>
@@ -96,7 +96,7 @@ class ParkingAgent(
       }
       pfs.toVector
   }.getOrElse( throw new Exception("No parking facilities found in O-DF or configured path is wrong"))
-  val odfToWrite = pfs.map{ pf => pf.toOdf(parkingLotsPath).createAncestors }.fold(OdfObjects())( _ union _)
+  val odfToWrite =initialPFs.map{ pf => pf.toOdf(parkingLotsPath).createAncestors }.fold(OdfObjects())( _ union _)
   val initialWrite = writeToDB( WriteRequest(odfToWrite) )
   val initialisationWriteTO = 10.seconds
   val initializationResponse = Await.ready(initialWrite, initialisationWriteTO)
@@ -121,7 +121,14 @@ class ParkingAgent(
   
   case class ParkingSpaceStatus( path: Path, user: Option[String], free: Boolean)
   //TODO: Populate!!!
-  val parkingSpaceStatuses: MutableMap[Path,ParkingSpaceStatus] =  ???
+  val parkingSpaceStatuses: MutableMap[Path,ParkingSpaceStatus] = MutableHashMap(initialPFs.flatMap{
+    pf: ParkingFacility =>
+      pf.parkingSpaces.map{
+        ps: ParkingSpace =>
+          val path =  parkingLotsPath / pf.name / ps.name
+          path -> ParkingSpaceStatus(path, ps.user, ps.available.getOrElse(false) )
+      }
+  }:_*)
 
 
   override protected def handleCall(call: CallRequest) : Future[ResponseRequest] = {
@@ -240,9 +247,8 @@ class ParkingAgent(
     } yield ParkingParameters( destination, distanceFromDestination, vehicle, usageTypeO, chargerO, arrivalTimeO) 
   }
 
-  def findParking( parameters: ParkingParameters ):Future[ResponseRequest]=Future{
-    //TODO: Get current parking facilities
-    val parkingFacilities: Vector[ParkingFacility] = Vector()
+  def findParking( parameters: ParkingParameters ):Future[ResponseRequest]= getCurrentParkingFacilities.map{
+   case parkingFacilities: Vector[ParkingFacility] =>
     val nearbyParkingFacilities = parkingFacilities.filter{
       pf: ParkingFacility =>
         pf.geo.forall{
@@ -411,6 +417,28 @@ class ParkingAgent(
     //Following are inherited from ResponsibleScalaInternalActor.
     case write: WriteRequest => respondFuture(handleWrite(write))
     case call: CallRequest => respondFuture(handleCall(call))
+  }
+  def getCurrentParkingFacilities: Future[Vector[ParkingFacility]]={
+    val request = ReadRequest(
+      OdfObject( Vector(QlmID(parkingLotsPath.last)),parkingLotsPath).createAncestors
+    )
+
+    val result = readFromDB(request)
+    result.map{
+      case response: ResponseRequest => 
+        response.results.find{
+          result : OmiResult =>
+            result.returnValue.returnCode == ReturnCode.Success  && result.odf.nonEmpty
+        }.flatMap{
+          result : OmiResult => result.odf
+        }.flatMap{
+          odf: OdfObjects =>
+            odf.get( parkingLotsPath ).map{
+              case pfsObj: OdfObject =>
+                pfsObj.objects.map( ParkingFacility( _))
+            }
+        }.toVector.flatten
+    }
   }
 }
 
