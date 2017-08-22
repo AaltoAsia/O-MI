@@ -160,14 +160,14 @@ with CancelHandler
   }
 
   def handleResponse( response: ResponseRequest ): Future[ResponseRequest] ={
-    handleNonOdfRequest(response.odfResultsToSingleWrite)
+    handleWriteRequest(response.odfResultsToSingleWrite)
   }
   def handleNonOdfRequest( omiRequest: OmiRequest): Future[ResponseRequest] = {
     omiRequest match {
       case subscription: SubscriptionRequest => handleSubscription(subscription)
       case poll: PollRequest => handlePoll(poll)
       case cancel: CancelRequest => handleCancel(cancel)
-      case other => Future.failed(new Exception(s"Unexpected request: $other"))
+      case other => Future.failed(new Exception(s"Unexpected non-O-DF request: $other"))
     }
   }
 
