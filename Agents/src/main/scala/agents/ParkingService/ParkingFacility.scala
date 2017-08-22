@@ -10,13 +10,18 @@ import UsageType._
 
 object ParkingFacility{
   def apply(obj: OdfObject ): ParkingFacility={
-    assert(obj.typeValue.contains("mv:ParkingFacility"))
     val name = obj.id.headOption.map{ qlmid => qlmid.value }.getOrElse( throw new Exception( "ParkingFacility/Object without name/id") )
     val owner = obj.get( obj.path / "Owner" ).collect{ case ii: OdfInfoItem => getStringFromInfoItem(ii) }.flatten
     val maxHs = obj.get( obj.path / "maxParkingHours" ).collect{ case ii: OdfInfoItem => getStringFromInfoItem(ii) }.flatten
     val geo = obj.get( obj.path / "geo" ).collect{ case obj: OdfObject => GPSCoordinates(obj) }
     val ohs = obj.get( obj.path / "openingHoursSpecification" ).collect{ case obj: OdfObject => OpeningHoursSpecification(obj) }
-    val pSpaces = obj.get( obj.path / "ParkingSpaces" ).collect{ case obj: OdfObject => obj.objects.map{ case psObj: OdfObjects => ParkingSpace(psObj) } }.toVector.flatten
+    val pSpaces = obj.get( obj.path / "ParkingSpaces" ).collect{ 
+      case obj: OdfObject => 
+      obj.objects.map{ 
+        psObj: OdfObject => 
+          ParkingSpace(psObj) 
+      } 
+    }.toVector.flatten
     ParkingFacility(
       name,
       owner,
@@ -35,19 +40,19 @@ case class ParkingFacility(
   maxParkingHours: Option[String],
   openingHours: Option[OpeningHoursSpecification]
 ){
-   def numberOfCarsharingParkingSpaces: Int = parkingSpaces.count{ parkingSpot => parkingSpot.usageType.contains(Carsharing)}
-   def numberOfDisabledPersonParkingSpaces: Int= parkingSpaces.count{ parkingSpot => parkingSpot.usageType.contains(DisabledPerson)}
-   def numberOfWomensParkingSpaces: Int= parkingSpaces.count{ parkingSpot => parkingSpot.usageType.contains(Womens)}
+   def numberOfCarsharingParkingSpaces: Int = parkingSpaces.count{ parkingSpot => parkingSpot.usageType.contains(UsageType.Carsharing)}
+   def numberOfDisabledPersonParkingSpaces: Int= parkingSpaces.count{ parkingSpot => parkingSpot.usageType.contains(UsageType.DisabledPerson)}
+   def numberOfWomensParkingSpaces: Int= parkingSpaces.count{ parkingSpot => parkingSpot.usageType.contains(UsageType.Womens)}
 
-   def numberOfBicycleParkingSpaces: Int = parkingSpaces.count{ parkingSpot => parkingSpot.identedFor.contains(Bicycle)}
-   def numberOfMotorbikeParkingSpaces: Int= parkingSpaces.count{ parkingSpot => parkingSpot.identedFor.contains(Motorbike)}
-   def numberOfTruckParkingSpaces: Int = parkingSpaces.count{ parkingSpot => parkingSpot.identedFor.contains(Truck)}
-   def numberOfCoachParkingSpaces: Int= parkingSpaces.count{ parkingSpot => parkingSpot.identedFor.contains(Coach)}
-   def numberOfCarParkingSpaces: Int= parkingSpaces.count{ parkingSpot => parkingSpot.identedFor.contains(Car)}
-   def numberOfElectricVehicleParkingSpaces: Int= parkingSpaces.count{ parkingSpot => parkingSpot.identedFor.contains(ElectricVehicle)}
+   def numberOfBicycleParkingSpaces: Int = parkingSpaces.count{ parkingSpot => parkingSpot.identedFor.contains(VehicleType.Bicycle)}
+   def numberOfMotorbikeParkingSpaces: Int= parkingSpaces.count{ parkingSpot => parkingSpot.identedFor.contains(VehicleType.Motorbike)}
+   def numberOfTruckParkingSpaces: Int = parkingSpaces.count{ parkingSpot => parkingSpot.identedFor.contains(VehicleType.Truck)}
+   def numberOfCoachParkingSpaces: Int= parkingSpaces.count{ parkingSpot => parkingSpot.identedFor.contains(VehicleType.Coach)}
+   def numberOfCarParkingSpaces: Int= parkingSpaces.count{ parkingSpot => parkingSpot.identedFor.contains(VehicleType.Car)}
+   def numberOfElectricVehicleParkingSpaces: Int= parkingSpaces.count{ parkingSpot => parkingSpot.identedFor.contains(VehicleType.ElectricVehicle)}
 
-   def numberOfOccupiedParkingSpaces: Int= parkingSpaces.count{ parkingSpot => parkingSpot.available.contains(false)}
-   def numberOfVacantParkingSpaces: Int= parkingSpaces.count{ parkingSpot => !parkingSpot.available.contains(false)}
+   def numberOfOccupiedParkingSpaces: Int= parkingSpaces.count{ parkingSpace => parkingSpace.available.contains(false)}
+   def numberOfVacantParkingSpaces: Int= parkingSpaces.count{ parkingSpace => parkingSpace.available.contains(true)}
    def totalCapacity: Int = parkingSpaces.length
    def containsSpacesFor( vehicle: Vehicle ): Boolean ={
      parkingSpaces.exists{
@@ -59,9 +64,10 @@ case class ParkingFacility(
      }
    }
 
-  def toOdf( parentPath: Path ) = {
+  def toOdf( parentPath: Path, calculatedPaths: Boolean = false ) = {
     val facilityPath = parentPath / name
-    val iis = Vector( 
+    val calculatedIIs = if(calculatedPaths) {
+      Vector( 
         OdfInfoItem(
           facilityPath / "totalCapacity",
           Vector( OdfValue( totalCapacity, currentTime) ),
@@ -107,7 +113,8 @@ case class ParkingFacility(
           Vector( OdfValue( numberOfCoachParkingSpaces, currentTime) ),
           typeValue = Some( "mv:numberOfParkingSpacesForCoachs")
         )
-    ) ++ owner.map{ o: String =>
+    ) } else Vector()
+    val iis = owner.map{ o: String =>
         OdfInfoItem(
           facilityPath / "Owner",
           Vector( OdfValue( o, currentTime) ),
@@ -130,7 +137,7 @@ case class ParkingFacility(
     OdfObject(
       Vector( QlmID( name ) ),
       facilityPath,
-      iis,
+      iis ++ calculatedIIs,
       geo.map( _.toOdf(facilityPath, "geo" )).toVector ++ openingHours.map( _.toOdf( facilityPath)).toVector ++ Vector( spaces ),
       typeValue = Some( "schema:ParkingFacility" )
     )

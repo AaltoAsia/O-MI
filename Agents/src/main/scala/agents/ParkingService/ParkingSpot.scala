@@ -70,49 +70,54 @@ case class ParkingSpace(
 object ParkingSpace {
 
   def apply( obj: OdfObject ) : ParkingSpace ={
-    assert(obj.typeValue.contains( "mv:ParkingSpace"))
-     val nameO = obj.id.headOption
-     val available: Option[Boolean] = obj.get( obj.path / "Available" ).collect{
-       case ii: OdfInfoItem =>
-         getStringFromInfoItem( ii ).flatMap{ str => Try{Some( str.toBoolean) }.getOrElse( None) }
-     }.flatten
-     val user = obj.get( obj.path / "User" ).collect{
-       case ii: OdfInfoItem =>
+    val nameO = obj.id.headOption
+    val available: Option[Boolean] = obj.get( obj.path / "Available" ).collect{
+      case ii: OdfInfoItem =>
+        getStringFromInfoItem( ii ).map{ 
+          str: String =>  
+            str.toLowerCase match{
+              case "true" => true
+              case "false" => false
+            }
+        }
+    }.flatten
+    val user = obj.get( obj.path / "User" ).collect{
+      case ii: OdfInfoItem =>
         getStringFromInfoItem( ii )
-     }.flatten
-     val iFV = obj.get( obj.path / "indentedForVehicle" ).collect{
-       case ii: OdfInfoItem =>
+    }.flatten
+    val iFV = obj.get( obj.path / "intendedForVehicle" ).collect{
+      case ii: OdfInfoItem =>
         getStringFromInfoItem( ii ).map{
           case str: String  =>  VehicleType(str)
         }
-     }.flatten
-     val ut = obj.get( obj.path / "parkingUsageType" ).collect{
-       case ii: OdfInfoItem =>
+    }.flatten
+    val ut = obj.get( obj.path / "parkingUsageType" ).collect{
+      case ii: OdfInfoItem =>
         getStringFromInfoItem( ii ).map{
           case str: String  =>  UsageType(str)
         }
-     }.flatten
-     val charger = obj.get( obj.path / "Charger" ).collect{
-       case cobj: OdfObject =>
-         Charger( cobj )
-     }
-     val hL = obj.get( obj.path / "vehicleHeightLimit" ).collect{
-       case ii: OdfInfoItem =>
+    }.flatten
+    val charger = obj.get( obj.path / "Charger" ).collect{
+      case cobj: OdfObject =>
+        Charger( cobj )
+    }
+    val hL = obj.get( obj.path / "vehicleHeightLimit" ).collect{
+      case ii: OdfInfoItem =>
         getDoubleFromInfoItem( ii )
-     }.flatten
-     val lL = obj.get( obj.path / "vehicleLengthLimit" ).collect{
-       case ii: OdfInfoItem =>
+    }.flatten
+    val lL = obj.get( obj.path / "vehicleLengthLimit" ).collect{
+      case ii: OdfInfoItem =>
         getDoubleFromInfoItem( ii )
-     }.flatten
-     val wL = obj.get( obj.path / "vehicleWitdhLimit" ).collect{
-       case ii: OdfInfoItem =>
+    }.flatten
+    val wL = obj.get( obj.path / "vehicleWitdhLimit" ).collect{
+      case ii: OdfInfoItem =>
         getDoubleFromInfoItem( ii )
-     }.flatten
+    }.flatten
 
     nameO.map{ name =>
       ParkingSpace( name.value, ut, iFV, available, user, charger, hL, lL, wL)
-    }.getOrElse{
-      throw new Exception( s"No name found for parking space in ${obj.path}" )
-    }
+      }.getOrElse{
+        throw new Exception( s"No name found for parking space in ${obj.path}" )
+      }
   }
 }

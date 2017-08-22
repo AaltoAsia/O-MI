@@ -4,6 +4,7 @@ package parkingService
 import java.io.File
 import java.sql.Timestamp
 import java.util.Date
+import java.net.URLDecoder
 
 import scala.util.{Success, Failure, Try}
 import scala.concurrent.duration._
@@ -56,11 +57,14 @@ class ParkingAgent(
   //Execution context
   import context.dispatcher
 
+  def configStringToPath( name: String ): Path ={
+    Path(URLDecoder.decode(config.getString(name).replace("/","\\/"), "UTF-8"))
+  }
   //Base path for service, contains at least all method
-  val servicePath = Path( config.getString("servicePath"))
+  val servicePath = configStringToPath("servicePath")
 
   //Path to object containing all parking lots.
-  val parkingLotsPath = Path( config.getString("parkingFacilitiesPath"))
+  val parkingLotsPath = configStringToPath("parkingFacilitiesPath")
 
   //File used to populate node with initial state
   val startStateFile =  new File(config.getString("initialStateFile"))
@@ -84,6 +88,7 @@ class ParkingAgent(
     case obj: OdfObject =>
      val pfs =  obj.objects.filter{
         pfObj: OdfObject =>
+          log.debug( s"${pfObj.typeValue.toString}" )
           pfObj.typeValue.contains( "mv:ParkingFacility") ||
           pfObj.typeValue.contains( "mv:ParkingLot") ||
           pfObj.typeValue.contains( "mv:ParkingGarage") ||
@@ -96,8 +101,8 @@ class ParkingAgent(
       }
       pfs.toVector
   }.getOrElse( throw new Exception("No parking facilities found in O-DF or configured path is wrong"))
-  val odfToWrite =initialPFs.map{ pf => pf.toOdf(parkingLotsPath).createAncestors }.fold(OdfObjects())( _ union _)
-  val initialWrite = writeToDB( WriteRequest(odfToWrite) )
+  val odfToWrite =initialPFs.map{ pf => pf.toOdf(parkingLotsPath, true).createAncestors }.fold(OdfObjects())( _ union _)
+  val initialWrite = writeToDB( WriteRequest(initialODF) )
   val initialisationWriteTO = 10.seconds
   val initializationResponse = Await.ready(initialWrite, initialisationWriteTO)
   initializationResponse.value match{
@@ -313,19 +318,19 @@ class ParkingAgent(
       pf: ParkingFacility =>
         pf.parkingSpaces.collect{
           case ParkingSpace(name,_,_,Some(false),Some(user),chargerO,_,_,_) if isParkingSpaceFree( parkingLotsPath / pf.name /name)  =>
-            val path = parkingLotsPath / pf.name / name
+            val path = parkingLotsPath / pf.name / "ParkingSpaces" / name
             val openLid: Boolean= chargerO.map{ 
               case charger: Charger => lidOpen(charger)
             }.getOrElse(false)
             Reservation(path, user, openLid)
           case ParkingSpace(name,_,_,Some(true),Some(user),chargerO,_,_,_) if isUserCurrentReserver(parkingLotsPath / pf.name / name, user)  =>
-            val path = parkingLotsPath / pf.name / name
+            val path = parkingLotsPath / pf.name / "ParkingSpaces" / name
             val openLid: Boolean = chargerO.map{ 
               case charger: Charger => lidOpen(charger)
             }.getOrElse(false)
             FreeReservation(path, user, openLid)
           case ParkingSpace(name,_,_,_,Some(user),Some(charger),_,_,_) if lidOpen(charger) && isUserCurrentReserver( parkingLotsPath / pf.name / name, user ) =>
-            val path = parkingLotsPath / pf.name / name
+            val path = parkingLotsPath / pf.name / "ParkingSpaces" / name
             OpenLid( path, user)
         }
     }
@@ -336,38 +341,41 @@ class ParkingAgent(
     if( events.length == 1 ){
       events.headOption.map{
         case reservation: Reservation => 
-          val response = writeToDB( WriteRequest( reservation.toOdf.createAncestors ) )
-          if( reservation.openLid ){
-            response.onSuccess{
+          val responseF = writeToDB( WriteRequest( reservation.toOdf.createAncestors ) )
+            responseF.onSuccess{
               case response: ResponseRequest =>
-                closeLidIn( reservation.path / "Charger" / "LidStatus" )
+                if( reservation.openLid ){
+                  closeLidIn( reservation.path / "Charger" / "LidStatus" )
+                }
+                updateCalculatedIIsToDB
                 parkingSpaceStatuses.get(reservation.path).foreach{
                   case ParkingSpaceStatus( path, user, available ) =>
                     parkingSpaceStatuses.update( path, ParkingSpaceStatus( path, Some(reservation.user), false ) )
                 }
             }
-          }
-          response
+          responseF
         case freeing: FreeReservation => 
-          val response = writeToDB( WriteRequest( freeing.toOdf.createAncestors ) )
-          if( freeing.openLid ){
-            response.onSuccess{
-              case response: ResponseRequest =>
+          val responseF = writeToDB( WriteRequest( freeing.toOdf.createAncestors ) )
+          responseF.onSuccess{
+            case response: ResponseRequest =>
+              if( freeing.openLid ){
                 closeLidIn( freeing.path / "Charger" / "LidStatus" )
-                parkingSpaceStatuses.get(freeing.path).foreach{
-                  case ParkingSpaceStatus( path, user, available ) =>
-                    parkingSpaceStatuses.update( path, ParkingSpaceStatus( path, None, true ) )
-                }
-            }
+              }
+              updateCalculatedIIsToDB
+              parkingSpaceStatuses.get(freeing.path).foreach{
+                case ParkingSpaceStatus( path, user, available ) =>
+                  parkingSpaceStatuses.update( path, ParkingSpaceStatus( path, None, true ) )
+              }
           }
-          response
+          responseF
         case oL: OpenLid =>
-          val response = writeToDB( WriteRequest( oL.toOdf.createAncestors ) )
-          response.onSuccess{
+          val responseF = writeToDB( WriteRequest( oL.toOdf.createAncestors ) )
+          responseF.onSuccess{
             case response: ResponseRequest =>
               closeLidIn( oL.path / "Charger" / "LidStatus" )
+              updateCalculatedIIsToDB
           }
-          response
+          responseF
       }.getOrElse{
         Future{
           Responses.InvalidRequest(Some("No reservations, freeing or lid opening events found from write."))
@@ -438,6 +446,41 @@ class ParkingAgent(
                 pfsObj.objects.map( ParkingFacility( _))
             }
         }.toVector.flatten
+    }
+  }
+  def updateCalculatedIIsToDB ={
+    getCurrentParkingFacilities.flatMap{
+      parkingFacilities: Vector[ParkingFacility] =>
+        val newPFs= parkingFacilities.map{
+          pf: ParkingFacility =>
+            val npf = ParkingFacility( 
+              pf.name, 
+              None,
+              None,
+              pf.parkingSpaces.map{
+                ps: ParkingSpace =>
+                  ParkingSpace( 
+                    ps.name,
+                    ps.usageType,
+                    ps.identedFor,
+                    ps.available,
+                    None,
+                    None,
+                    None,
+                    None,
+                    None
+                  )
+              },
+              None,
+              None
+            )
+            npf.toOdf(parkingLotsPath,true).createAncestors
+        }
+        val writeOdf = newPFs.fold(OdfObjects()){
+          case ( odf: OdfObjects, l: OdfObjects) => odf.union(l)
+        }
+        val request = WriteRequest( writeOdf )
+        writeToDB( request )
     }
   }
 }
