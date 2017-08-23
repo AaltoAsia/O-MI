@@ -88,7 +88,7 @@ class  OdfInfoItemImpl(
         "@name" -> DataRecord(
           path.lastOption.getOrElse(throw new IllegalArgumentException(s"OdfObject should have longer than one segment path: $path"))
         )
-      } ++ typeValue.map{ tv =>"@type" -> DataRecord(typeValue) }.toVector
+      } ++ typeValue.map{ tv =>"@type" -> DataRecord(tv) }.toVector
       ++ attributesToDataRecord( this.attributes )
       // ++  typeValue.map{ n => ("@type" -> DataRecord(n))}
     )

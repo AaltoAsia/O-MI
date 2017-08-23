@@ -68,6 +68,7 @@ trait InternalAgentLoader extends BaseAgentSystem {
           log.warning("Agent already running: " + configEntry.name)
       }
     }
+    log.info(s"All ${classnames.length} agent configurations processed.")
   }
 
   protected[agentSystem] def loadAndStart(

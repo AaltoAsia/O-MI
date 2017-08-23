@@ -14,6 +14,7 @@
 
 package agentSystem
 
+import java.net.{URLDecoder}
 import scala.collection.JavaConversions._
 import scala.util.{Try, Failure, Success}
 import scala.collection.mutable.{Map => MutableMap }
@@ -128,7 +129,7 @@ class AgentSystem()(
           case pathStr: String  => 
             AgentResponsibility(
               name,
-              Path(pathStr),
+              Path(URLDecoder.decode( pathStr.replace("/","\\/"), "UTF-8" )),
               RequestFilter(responsibilityConfig.getString(pathStr))
             )
         }.toVector

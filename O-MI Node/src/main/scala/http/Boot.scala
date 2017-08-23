@@ -212,7 +212,7 @@ object OmiServer {
 
       val objects = createAncestors(
         OdfInfoItem(
-          Path(settings.settingsOdfPath + "num-latest-values-stored"), 
+          settings.settingsOdfPath / "num-latest-values-stored", 
           Iterable(OdfValue(settings.numLatestValues.toString, "xs:integer", currentTime)),
           Some(OdfDescription(numDescription))
         ))

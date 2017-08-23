@@ -30,9 +30,16 @@ trait AgentSystemConfigExtension  extends Extension {
           agentConfig : Config =>
             Try{
               AgentConfigEntry(agentConfig)
-            }.toOption
+            } match{
+              case Success(ace: AgentConfigEntry) => Some(ace)
+              case Failure(e) => 
+                println( e.getMessage)
+                None
+            }
         }.toVector
-      case Failure(e: Missing) => Vector.empty
+      case Failure(e: Missing) => 
+        println("Received missing from agent-system.internal-agnets configuration")
+        Vector.empty
       case Failure(e) => throw e
     }
   }
