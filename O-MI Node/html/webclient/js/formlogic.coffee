@@ -295,7 +295,7 @@ formLogicExt = ($, WebOmi) ->
         .addClass "respRet"
         .append($ "<th/>"
           .text count)
-        .append($ "<th>returnCodes</th>")
+        .append($ "<th>Received callback</th>")
         .append($ "<th/>"
           .text returnCodes.join(','))
       row.tooltip
@@ -472,9 +472,9 @@ formLogicExt = ($, WebOmi) ->
         WebOmi.debug "Sending keepalive via WebSocket."
       else
         WebOmi.debug "Sending request via WebSocket."
+        # Next message should be rendered to main response area
+        my.waitingForResponse = true
 
-      # Next message should be rendered to main response area
-      my.waitingForResponse = true
 
       # Note: assume that the next response is for this request
       if callback?

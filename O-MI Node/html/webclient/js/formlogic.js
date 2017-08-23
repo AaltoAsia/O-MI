@@ -273,7 +273,7 @@
             default:
               return "warning";
           }
-        })()).addClass("respRet").append($("<th/>").text(count)).append($("<th>returnCodes</th>")).append($("<th/>").text(returnCodes.join(',')));
+        })()).addClass("respRet").append($("<th/>").text(count)).append($("<th>Received callback</th>")).append($("<th/>").text(returnCodes.join(',')));
         row.tooltip({
           title: "click to show the XML"
         }).on('click', (function(row) {
@@ -436,8 +436,8 @@
           WebOmi.debug("Sending keepalive via WebSocket.");
         } else {
           WebOmi.debug("Sending request via WebSocket.");
+          my.waitingForResponse = true;
         }
-        my.waitingForResponse = true;
         if (callback != null) {
           my.wsCallbacks.push(callback);
         }
