@@ -235,7 +235,7 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
         (testDescription.trim + "\n") in {
 
           val t1 = request aka "Read request message" must beSuccessfulTry
-          val t2 = correctResponse aka "Correct read response message" must beSuccessfulTry
+          val t2 = correctResponse aka "Correct response message" must beSuccessfulTry
 
           val responseFuture = http.singleRequest(getPostRequest(request.get)).flatMap{
             case n => 

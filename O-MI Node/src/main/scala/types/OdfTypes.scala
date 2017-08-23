@@ -172,18 +172,15 @@ case class QlmID(
               endDate =>
                 ("@endDate" -> DataRecord(timestampToXML(endDate)))
         }.toSeq
+
     QlmIDType(
       value,
-      HashMap(
-        (
         (
           idTypeAttr ++ 
           tagTypeAttr ++ 
           startDateAttr ++
           endDateAttr
-        ).toMap ++ attributes.mapValues(DataRecord(_))
-        ).toSeq:_*
-      )
+        ).toMap ++ attributesToDataRecord(attributes)
       
     )
   }
