@@ -282,19 +282,22 @@ formLogicExt = ($, WebOmi) ->
       newList
 
     # return: jquery elem
-    returnStatus = ( count, returnCode ) ->
+    returnStatus = ( count, returnCodes ) ->
+      returnCodes = [200] if !returnCodes[0]?
+
       #count = $ "<th/>" .text count
       row = $ "<tr/>"
-        .addClass switch Math.floor(returnCode/100)
+        .addClass switch Math.floor(Math.max.apply(null, returnCodes)/100)
           when 2 then "success" # 2xx
           when 3 then "warning" # 3xx
           when 4 then "danger"  # 4xx
+          else "warning"
         .addClass "respRet"
         .append($ "<th/>"
           .text count)
-        .append($ "<th>returnCode</th>")
+        .append($ "<th>returnCodes</th>")
         .append($ "<th/>"
-          .text returnCode)
+          .text returnCodes.join(','))
       row.tooltip
           #container: consts.callbackResponseHistoryModal
           title: "click to show the XML"
@@ -361,7 +364,7 @@ formLogicExt = ($, WebOmi) ->
         row
 
 
-    addHistory = (requestID, pathValues) ->
+    addHistory = (requestID, pathValues, returnCodes) ->
       # Note: existence of this is handled somewhere above
       callbackRecord = my.callbackSubscriptions[requestID]
       
@@ -376,7 +379,7 @@ formLogicExt = ($, WebOmi) ->
 
       dataTable = responseList.find ".dataTable"
 
-      returnS = returnStatus callbackRecord.receivedCount, 200
+      returnS = returnStatus callbackRecord.receivedCount, returnCodes
       
       pathVals = [].concat returnS, htmlformat pathValues
       pathVals = $ $(pathVals).map -> this.toArray()
@@ -396,7 +399,12 @@ formLogicExt = ($, WebOmi) ->
     infoItemPathValues = ( getPathValues info for info in infoitems )
     pathValues = [].concat infoItemPathValues...
 
-    addHistory requestID, pathValues
+    maybeReturnCodes = omi.evaluateXPath(response, "//omi:return/@returnCode")
+    trimmedCodes = (codeNode.textContent.trim() for codeNode in maybeReturnCodes)
+    returnCodes = (parseInt(textCode) for textCode in trimmedCodes when textCode.length > 0)
+        
+
+    addHistory requestID, pathValues, returnCodes
 
     # return true if request is not needed for the main area
     not my.waitingForResponse
