@@ -80,7 +80,7 @@ class OmiNodeCLI(
   list agents 
   list subs 
   showSub <id>
-  remove <subsription id>
+  remove <subscription id>
   remove <path>
   """
   val ip = sourceAddress.toString

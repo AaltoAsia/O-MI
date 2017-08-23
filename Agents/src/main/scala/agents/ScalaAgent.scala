@@ -63,7 +63,7 @@ class ScalaAgent(
   //Target O-DF path, parsed from configuration
   val path : Path = Path(config.getString("path"))
 
-  //Interval for scheluding generation of new values, parsed from configuration
+  //Interval for scheduling generation of new values, parsed from configuration
   val interval : FiniteDuration= config.getDuration(
     "interval",
     TimeUnit.SECONDS
@@ -72,7 +72,7 @@ class ScalaAgent(
   //Message for updating values
   case class Update()
 
-  // Schelude update and save job, for stopping
+  // Schedule update and save job, for stopping
   // Will send Update() message to self every interval
   private val updateSchedule: Cancellable= context.system.scheduler.schedule(
     Duration.Zero,//Delay start
@@ -151,7 +151,7 @@ class ScalaAgent(
             // debug level is enabled (in logback.xml and application.conf)
             log.info(s"$name wrote paths successfully.")
           case ie: OmiResult => 
-            log.warning(s"Something went wrong when $name writed, $ie")
+            log.warning(s"Something went wrong when $name wrote, $ie")
         }
       case Failure( t: Throwable) => 
         // This sends debug log message to O-MI Node logs if

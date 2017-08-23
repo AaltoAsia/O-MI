@@ -24,12 +24,12 @@ import testHelpers.Actorstest
    /*
  "InternalAgentManager should" >>{
    "return message when trying to" >> {
-     "start allready running agent" >> startingRunningTest
-     "stop allready stopped agent" >> stopingStoppedTest
+     "start already running agent" >> startingRunningTest
+     "stop already stopped agent" >> stoppingStoppedTest
      "command nonexistent agent" >> cmdToNonExistent
    }
    "successfully " >> {
-     "stop running agent" >> stopingRunningTest
+     "stop running agent" >> stoppingRunningTest
      "start stopped agent" >> startingStoppedTest
    }
    "return error message if agent fails to" >> {
@@ -75,7 +75,7 @@ import testHelpers.Actorstest
    val correct = managerActor.wasAlreadyStartedMsg(name)
    resF should beEqualTo(correct).await( 0, timeoutDuration)
  }
- def stopingStoppedTest = new Actorstest(AS){
+ def stoppingStoppedTest = new Actorstest(AS){
    import system.dispatcher
    val name = "Stopped"
    val ref = ActorRef.noSender
@@ -110,7 +110,7 @@ import testHelpers.Actorstest
    resF should beEqualTo( correct ).await( 0, timeoutDuration)
  }
 
- def stopingRunningTest = new Actorstest(AS){
+ def stoppingRunningTest = new Actorstest(AS){
    import system.dispatcher
    val name = "StopSuccess"
    val ref = system.actorOf( SSAgent.props( emptyConfig, requestHandler, dbHandler), name)

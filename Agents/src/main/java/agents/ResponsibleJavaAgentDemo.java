@@ -45,7 +45,7 @@ public class ResponsibleJavaAgentDemo extends ResponsibleJavaInternalAgent {
       OdfInfoItem ii = (OdfInfoItem)node;
       OdfValue<Object> value = ii.values().head();
       OdfValue<Object> newValue = OdfFactory.createOdfValue(
-          "Hello " + value.value().toString() + ", welcone to the Internet of Things.",
+          "Hello " + value.value().toString() + ", welcome to the Internet of Things.",
           new Timestamp(new java.util.Date().getTime())
       );  
       Vector<OdfValue<Object>> values = new Vector<OdfValue<Object>>();

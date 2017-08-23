@@ -48,7 +48,7 @@ case class SubscriptionRequest(
 
  */
 class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with BeforeAfterAll {
-  implicit val system = ActorSystem("SubscribtionTest-core", ConfigFactory.parseString(
+  implicit val system = ActorSystem("SubscriptionTest-core", ConfigFactory.parseString(
     """
             akka.loggers = ["akka.testkit.TestEventListener"]
             akka.stdout-loglevel = INFO
@@ -293,7 +293,7 @@ class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with Bef
 
   def initDB() = {
     //pathPrefix
-    val pp = Path("Objectsi\\/SubscriptionTest\\/")
+    val pp = Path("Objects\\/SubscriptionTest\\/")
     val pathAndvalues: Iterable[(String, Vector[OdfValue[Any]])] = Seq(
       ("p/1", nv("1")),
       ("p/2", nv("2")),

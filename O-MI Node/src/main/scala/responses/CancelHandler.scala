@@ -54,7 +54,7 @@ trait CancelHandler {
         }
       ).recoverWith{
         case e : Throwable => {
-          val error = "Error when trying to cancel subcription: "
+          val error = "Error when trying to cancel subscription: "
           Future.successful(Results.InternalError(Some(error + e.toString)))
         }
       }

@@ -30,7 +30,7 @@ import parsing.xmlGen.xmlTypes._
 import parsing.xmlGen._
 import types.OdfTypes._
 /**
- * Package containing classes presenting O-MI request interanlly. 
+ * Package containing classes presenting O-MI request internally.
  *
  */
 package object OmiTypes  {

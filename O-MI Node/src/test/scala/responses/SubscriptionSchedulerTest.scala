@@ -9,7 +9,7 @@ import testHelpers.Actors
 class SubscriptionSchedulerTest extends Specification {
   val scheduler = new SubscriptionScheduler
 
-  "Subcscription scheduler" should {
+  "Subscription scheduler" should {
 
     "Answer to correct actor" in new Actors{
       val probe1 = TestProbe()

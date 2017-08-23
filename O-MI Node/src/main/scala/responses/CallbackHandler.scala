@@ -103,7 +103,7 @@ class CallbackHandler(
 
     val check : HttpResponse => Future[Unit] = { response =>
         if (response.status.isSuccess){
-          //TODO: Handle content of response, possible piggypacking
+          //TODO: Handle content of response, possible piggybacking
           log.info(
             s"Successful send POST request to $address with ${response.status}"
           )

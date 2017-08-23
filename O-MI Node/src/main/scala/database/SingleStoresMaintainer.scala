@@ -56,7 +56,7 @@ with RequiresMessageQueue[BoundedMessageQueueSemantics]
       }.recover{case a : Throwable => log.error(a,s"Failed to take Snapshot of $errorName")}
     }
 
-    log.info("Taking prevyaler snapshot")
+    log.info("Taking prevayler snapshot")
     val start: FiniteDuration  = Duration(System.currentTimeMillis(),MILLISECONDS)
 
     trySnapshot(singleStores.latestStore, "latestStore")

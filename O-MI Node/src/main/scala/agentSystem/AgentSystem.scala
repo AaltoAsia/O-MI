@@ -121,15 +121,15 @@ class AgentSystem()(
       }.toOption.map( Language(_) )
 
       val responsibilities : Seq[AgentResponsibility] = Try{
-        val resposiblityObj = agentConfig.getObject(s"responsible")
-        val pathStrings : Iterable[String] = resposiblityObj.keys
-        val resposiblityConfig = resposiblityObj.toConfig()
+        val responsibilityObj = agentConfig.getObject(s"responsible")
+        val pathStrings : Iterable[String] = responsibilityObj.keys
+        val responsibilityConfig = responsibilityObj.toConfig()
         pathStrings.map{
           case pathStr: String  => 
             AgentResponsibility(
               name,
               Path(pathStr),
-              RequestFilter(resposiblityConfig.getString(pathStr))
+              RequestFilter(responsibilityConfig.getString(pathStr))
             )
         }.toVector
       } match {

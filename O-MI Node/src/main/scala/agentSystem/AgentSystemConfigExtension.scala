@@ -17,7 +17,7 @@ import types.OmiTypes.OmiRequestType._
 trait AgentSystemConfigExtension  extends Extension {
   def config: Config
   
-  val internalAgentsStartTimout : FiniteDuration= config.getDuration("agent-system.starting-timeout", TimeUnit.SECONDS).seconds
+  val internalAgentsStartTimeout : FiniteDuration= config.getDuration("agent-system.starting-timeout", TimeUnit.SECONDS).seconds
   val agentConfigurations: Seq[AgentConfigEntry] = {
     
     Try{

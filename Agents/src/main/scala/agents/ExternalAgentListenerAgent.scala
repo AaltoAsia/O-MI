@@ -126,7 +126,7 @@ object ExternalAgentHandler{
 }
 
 /** A handler for data received from a agent.
-  * @param sourceAddress Agent's adress 
+  * @param sourceAddress Agent's address
   */
 class ExternalAgentHandler(
     sourceAddress: InetSocketAddress,
@@ -178,7 +178,7 @@ class ExternalAgentHandler(
                     // debug level is enabled (in logback.xml and application.conf)
                     log.debug(s"$sourceAddress pushed data successfully.")
                   case ie: OmiResult => 
-                    log.warning(s"Something went wrong when $sourceAddress writed, $ie")
+                    log.warning(s"Something went wrong when $sourceAddress wrote, $ie")
                 }
                   case Failure( t: Throwable) => 
                     // This sends debug log message to O-MI Node logs if

@@ -353,14 +353,14 @@ case class Dimensions(
 }
 
 case class ParkingSpotType(
-  spotType: String,
-  totalCapacity: Int,
-  spotsAvailable: Int,
-  hourlyPrice: String,
-  maxHeight: String,
-  maxLength: String,
-  maxWitdh: String,
-  spots: Seq[ParkingSpot]
+                            spotType: String,
+                            totalCapacity: Int,
+                            spotsAvailable: Int,
+                            hourlyPrice: String,
+                            maxHeight: String,
+                            maxLength: String,
+                            maxWidth: String,
+                            spots: Seq[ParkingSpot]
 ){
   def toOdf( parentPath: Path ) ={
     val id = { if(spotType.startsWith("mv:") ) spotType.drop(3) else spotType }

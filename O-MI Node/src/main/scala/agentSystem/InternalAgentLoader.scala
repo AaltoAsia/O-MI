@@ -129,8 +129,8 @@ trait InternalAgentLoader extends BaseAgentSystem {
             case objectClass if objectInterface.isAssignableFrom(objectClass) =>
               //Static field MODULE$ contains Object it self
               //Method get is used to get value of field for a Object.
-              //Because field MODULE$ is static, it return  the companion object recardles of argument
-              //To see the proof, decompile byte code to java and look for exampe in SubscribtionManager$.java
+              //Because field MODULE$ is static, it return  the companion object regardless of argument
+              //To see the proof, decompile byte code to java and look for example in SubscriptionManager$.java
               val propsCreator : PropsCreator = objectClass.getField("MODULE$").get(null).asInstanceOf[PropsCreator] 
               //Get props and create agent
               val props = propsCreator.props(agentConfigEntry.config, requestHandler, dbHandler)

@@ -38,7 +38,7 @@ import types.Path
 //trait ResponsibleAgentManager extends BaseAgentSystem with InputPusher{
 //  import context.{system}//, dispatcher}
   /*
-   * TODO: Use database and Authetication for responsible agents
+   * TODO: Use database and Authentication for responsible agents
   protected[this] def pathOwners: scala.collection.mutable.Map[Path,AgentName] =
     getConfigsOwnerships()
   protected def getOwners( paths: Path*) : Map[AgentName,Seq[Path]] = {

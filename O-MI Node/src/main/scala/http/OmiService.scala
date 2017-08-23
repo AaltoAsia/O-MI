@@ -416,7 +416,7 @@ trait OmiService
         }
         Future.fromTry(result )
       } else {
-        log.debug(s"\n\n FAILED WITH ADRESSES $userAddr \n\n")
+        log.debug(s"\n\n FAILED WITH ADDRESSESS $userAddr \n\n")
         Future.failed((InvalidCallback(cba, "Callback to remote addresses(different than user address) require admin privileges")))
       }
   }

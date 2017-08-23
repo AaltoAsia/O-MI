@@ -250,7 +250,7 @@ class InternalAgentLoaderTest(implicit ee: ExecutionEnv) extends Specification {
    }
    """
    val config =new AgentSystemSettings( ConfigFactory.parseString(configStr) )
-   val timeout = config.internalAgentsStartTimout
+   val timeout = config.internalAgentsStartTimeout
     val requestHandler = TestActorRef( new TestDummyRequestHandler() )
     val dbHandler =  TestActorRef( new TestDummyDBHandler() )
    val loader = system.actorOf(TestLoader.props(config,requestHandler,dbHandler), "agent-loader") 

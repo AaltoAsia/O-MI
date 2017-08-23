@@ -117,14 +117,14 @@ class OmiServiceTest
       }
     }
 
-    "respond succesfully to GET to /Objects" >> {
+    "respond successfully to GET to /Objects" >> {
       Get("/Objects").withHeaders(`Remote-Address`(localHost)) ~> myRoute ~> check {
         mediaType === `text/xml`
         status === OK
         responseAs[NodeSeq].headOption must beSome.which(_.label == "Objects") // => ??? }((_: Node).label == "Objects")//.head.label === "Objects"
       }
     }
-    "respond succesfully to GET to /Objects/" >> {
+    "respond successfully to GET to /Objects/" >> {
       Get("/Objects/").withHeaders(`Remote-Address`(localHost)) ~> myRoute ~> check {
         mediaType === `text/xml`
         status === OK
