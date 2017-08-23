@@ -61,6 +61,7 @@
 	</article>
 	</div>
 	<div>
+
 	<h1> Write request </h1>
 	<article class="write test"> 
 	    <h2> Normal </h2>
@@ -147,6 +148,7 @@
 		</textarea>
 	    </div>
 	</article>
+
 	<h1> Read request </h1>
 	<article class="request-response single test"> 
 	    <h2> Normal </h2>
@@ -1950,5 +1952,113 @@
 		</div>
 	</div>
 	</article>
+
+
+	<h1> Proprietary/unknown attributes </h1>
+	<article class="request-response single test"> 
+	    <h2> Write proprietary/unknown attributes with O-MI response </h2>
+	    <div><p class="description">
+    Use response as write request with O-MI and O-DF proprietary attributes
+    that are allowed by the standards. O-MI attributes should be ignored
+		</p>
+	    </div>
+	    <div>
+		<h3>Request:</h3>
+		    <textarea class="request" rows=20 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="10" version="1.0">
+  <response>
+    <result msgformat="odf" >
+      <return returnCode="200" unknownAttribute="hello" proprietaryReturnAttr="returnExample" />
+      <msg>
+        <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" proprietaryObjectsAttr="objectsExample">
+          <Object proprietaryObject="object2Attribute">
+            <id proprietaryIdAttr="id2Example">Object2</id>
+            <InfoItem name="Sensor1" proprietaryIItemAttr="infoItemExample">
+              <value unixTime="9" proprietaryValueAttr="valueExample">9</value>
+            </InfoItem>
+            <Object proprietaryObject="subObject2Attribute">
+              <id proprietaryIdAttr="id2Example">SubObject2</id>
+              <InfoItem name="Sensor1" proprietaryIItemAttr="sub2infoItemExample">
+                <value unixTime="9" proprietaryValueAttr="value2Example">9</value>
+              </InfoItem>
+            </Object>
+          </Object>
+        </Objects>
+      </msg>
+    </result>
+  </response>
+</omiEnvelope>
+		</textarea>
+	    </div>
+	    <div>
+		<h3>Response:</h3>
+		    <textarea  class="response" rows=30 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="10" version="1.0">
+  <response>
+    <result>
+      <return returnCode="200"/>
+    </result>
+  </response>
+</omiEnvelope>
+		</textarea>
+	    </div>
+	</article>
+
+	<article class="request-response single test"> 
+	    <h2> Read proprietary O-DF attributes </h2>
+	    <div><p class="description">
+        Should return currently saved proprietary attributes.
+        As of writing, value attributes are ignored by the default DB implementation.
+		</p>
+	    </div>
+	    <div>
+		<h3>Request:</h3>
+		    <textarea  class="request" rows=20 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="0">
+  <read msgformat="odf" >
+    <msg >
+      <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
+        <Object>
+          <id>Object2</id>
+        </Object>
+      </Objects>
+    </msg>
+  </read>
+</omiEnvelope>
+		</textarea>
+	    </div>
+	    <div>
+		<h3>Response:</h3>
+		    <textarea class="response" rows=30 cols=100 style="border: none;" readonly>
+<omiEnvelope ttl="10" version="1.0" xmlns="http://www.opengroup.org/xsd/omi/1.0/">
+  <response>
+    <result msgformat="odf">
+      <return returnCode="200">
+      </return>
+      <msg>
+        <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:odf="http://www.opengroup.org/xsd/odf/1.0/">
+          <Object proprietaryObject="object2Attribute">
+            <id proprietaryIdAttr="id2Example">Object2</id>
+            <InfoItem name="Sensor1" proprietaryIItemAttr="infoItemExample">
+              <value unixTime="9" dateTime="1970-01-01T02:00:09.000+02:00">9</value>
+            </InfoItem>
+            <Object proprietaryObject="subObject2Attribute">
+              <id proprietaryIdAttr="id2Example">SubObject2</id>
+              <InfoItem name="Sensor1" proprietaryIItemAttr="sub2infoItemExample">
+                <value unixTime="9" dateTime="1970-01-01T02:00:09.000+02:00">9</value>
+              </InfoItem>
+            </Object>
+          </Object>
+        </Objects>
+      </msg>
+    </result>
+  </response>
+</omiEnvelope>
+      </textarea>
+    </div>
+  </article>
     </body>
 </html>

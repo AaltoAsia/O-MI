@@ -309,7 +309,7 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimableDB{
     }.flatten.distinct.filter{ 
       case dbPath: DBPath => !pathToDBPath.contains(dbPath) 
     }
-    log.info( s"Adding total of  ${pathsToAdd.length} paths to DB.") 
+    log.debug( s"Adding total of  ${pathsToAdd.length} paths to DB.")
     val pathAddingAction = pathsTable.add(pathsToAdd)
     val getAddedDBPaths =  pathAddingAction.flatMap{
       case ids: Seq[Long] => 
@@ -377,7 +377,7 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimableDB{
     }
     val actions = valueTableCreations.flatMap{
       case createdTables: Seq[String] =>
-        if( createdTables.nonEmpty) log.info(s"Created following tables:\n${createdTables.mkString(", ")}")
+        if( createdTables.nonEmpty) log.debug(s"Created following tables:\n${createdTables.mkString(", ")}")
         DBIO.sequence( valueWritingIOs ).map{
           case countsOfCreatedValuesPerPath: Seq[Seq[Int]] =>  
             val sum = countsOfCreatedValuesPerPath.map( _.sum).sum

@@ -107,7 +107,7 @@ class ParkingAgent(
         case result: OmiResult =>
           result.returnValue match {
             case succ: Returns.ReturnTypes.Successful =>
-              log.info( s"Successfully initialized state for $name" )
+              log.debug( s"Successfully initialized state for $name" )
             case other =>
               log.warning( s"Could not set initial state for $name. Got result:$result.")
               throw new Exception( s"Could not set initial state for $name. Got following result from DB: $result.")

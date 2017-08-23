@@ -68,7 +68,7 @@ trait DBWriteHandler extends DBHandlerBase {
 
     log.debug(s"Sending data to event sub: $id.")
     val responseRequest = Responses.Poll(id, odf, responseTTL)
-    log.info(s"Sending in progress; Subscription subId:$id addr:$callbackAddr interval:-1")
+    log.debug(s"Sending in progress; Subscription subId:$id addr:$callbackAddr interval:-1")
     //log.debug("Send msg:\n" + xmlMsg)
 
     def failed(reason: String) =
@@ -80,7 +80,7 @@ trait DBWriteHandler extends DBHandlerBase {
 
     callbackF.onSuccess {
       case () =>
-        log.info(s"Callback sent; subscription id:$id addr:$callbackAddr interval:-1")
+        log.debug(s"Callback sent; subscription id:$id addr:$callbackAddr interval:-1")
     }
     callbackF.onFailure{
       case fail @ MissingConnection(callback) =>

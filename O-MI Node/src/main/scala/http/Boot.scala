@@ -53,7 +53,7 @@ class OmiServer extends OmiNode{
   // we need an ActorSystem to host our application in
   implicit val system : ActorSystem = ActorSystem("on-core") 
   implicit val materializer: ActorMaterializer = ActorMaterializer()(system)
-  import system.dispatcher // execution context for futures
+  import system.dispatcher // execution context for future
 
   /**
    * Settings loaded by akka (typesafe config) and our [[OmiConfigExtension]]
@@ -225,7 +225,7 @@ object OmiServer {
         Results.unionReduce(response.results).forall{
           case result : OmiResult => result.returnValue match {
             case s: Successful => 
-              system.log.info("O-MI InputPusher system working.")
+              system.log.debug("O-MI InputPusher system working.")
               true
             case f: OmiReturn => 
               system.log.error( s"O-MI InputPusher system not working; $response")

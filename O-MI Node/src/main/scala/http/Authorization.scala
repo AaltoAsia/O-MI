@@ -232,11 +232,11 @@ trait LogPermissiveRequestBeginning extends AuthorizationExtension {
     provide{(wrap: RequestWrapper) =>
       wrap.unwrapped flatMap {
         case r: PermissiveRequest with OdfRequest =>
-          log.info(s"Permissive request received: ${r.getClass.getSimpleName}: " +
+          log.debug(s"Permissive request received: ${r.getClass.getSimpleName}: " +
             r.odf.paths.take(3).mkString(", ") + "...")
           Failure(UnauthorizedEx())
         case r: PermissiveRequest =>
-          log.info(s"Permissive request received: ${r.toString.take(80)}...")
+          log.debug(s"Permissive request received: ${r.toString.take(80)}...")
           Failure(UnauthorizedEx())
         case _ => Failure(UnauthorizedEx())
       }
