@@ -399,23 +399,44 @@
       }
     };
     my.wsCallbacks = [];
+    my.keepAliveScheduler = null;
+    my.startKeepAlive = function() {
+      if (my.keepAliveScheduler == null) {
+        return my.keepAliveScheduler = window.setInterval((function() {
+          return my.wsSend("");
+        }), 30000);
+      }
+    };
+    my.stopKeepAlive = function() {
+      if (my.keepAliveScheduler != null) {
+        window.clearInterval(my.keepAliveScheduler);
+        return my.keepAliveScheduler = null;
+      }
+    };
     my.wsSend = function(request, callback) {
       var maybeParsedXml, maybeVerbXml, omi, onclose, onerror, onmessage, onopen;
       if (!my.socket || my.socket.readyState !== WebSocket.OPEN) {
         onopen = function() {
           WebOmi.debug("WebSocket connected.");
+          my.startKeepAlive();
           return my.wsSend(request, callback);
         };
         onclose = function() {
-          return WebOmi.debug("WebSocket disconnected.");
+          WebOmi.debug("WebSocket disconnected.");
+          return my.stopKeepAlive();
         };
         onerror = function(error) {
-          return WebOmi.debug("WebSocket error: ", error);
+          WebOmi.debug("WebSocket error: ", error);
+          return my.stopKeepAlive();
         };
         onmessage = my.handleWSMessage;
         return my.createWebSocket(onopen, onclose, onmessage, onerror);
       } else {
-        WebOmi.debug("Sending request via WebSocket.");
+        if (request === "") {
+          WebOmi.debug("Sending keepalive via WebSocket.");
+        } else {
+          WebOmi.debug("Sending request via WebSocket.");
+        }
         my.waitingForResponse = true;
         if (callback != null) {
           my.wsCallbacks.push(callback);
@@ -448,7 +469,7 @@
       consts = WebOmi.consts;
       server = consts.serverUrl.val();
       request = consts.requestCodeMirror.getValue();
-      consts.progressBar.css("width", "95%");
+      consts.progressBar.css("width", "50%");
       return $.ajax({
         type: "POST",
         url: server,
@@ -473,7 +494,7 @@
           window.setTimeout((function() {
             return consts.progressBar.show();
           }), 2000);
-          if ((callback != null)) {
+          if (callback != null) {
             return callback(response);
           }
         }

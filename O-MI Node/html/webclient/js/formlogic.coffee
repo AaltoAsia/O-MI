@@ -437,17 +437,42 @@ formLogicExt = ($, WebOmi) ->
   # String -> void
   my.wsCallbacks = []
 
+  # id for canceling the keepalive scheduler
+  my.keepAliveScheduler = null
+
+  my.startKeepAlive = ->
+    if !my.keepAliveScheduler?
+      my.keepAliveScheduler = window.setInterval (() -> my.wsSend ""), 30000
+
+  my.stopKeepAlive = ->
+    if my.keepAliveScheduler?
+      window.clearInterval my.keepAliveScheduler
+      my.keepAliveScheduler = null
+
   my.wsSend = (request,callback) ->
-    if( !my.socket || my.socket.readyState != WebSocket.OPEN)
+    if !my.socket || my.socket.readyState != WebSocket.OPEN
       onopen = () ->
         WebOmi.debug "WebSocket connected."
+        my.startKeepAlive()
         my.wsSend request,callback
-      onclose = () -> WebOmi.debug "WebSocket disconnected."
-      onerror = (error) -> WebOmi.debug "WebSocket error: ",error
+
+      onclose = () ->
+        WebOmi.debug "WebSocket disconnected."
+        my.stopKeepAlive()
+
+      onerror = (error) ->
+        WebOmi.debug "WebSocket error: ",error
+        my.stopKeepAlive()
+
       onmessage = my.handleWSMessage
+
       my.createWebSocket onopen, onclose, onmessage, onerror
     else
-      WebOmi.debug "Sending request via WebSocket."
+      if request == ""
+        WebOmi.debug "Sending keepalive via WebSocket."
+      else
+        WebOmi.debug "Sending request via WebSocket."
+
       # Next message should be rendered to main response area
       my.waitingForResponse = true
 
@@ -489,7 +514,7 @@ formLogicExt = ($, WebOmi) ->
     consts = WebOmi.consts
     server  = consts.serverUrl.val()
     request = consts.requestCodeMirror.getValue()
-    consts.progressBar.css "width", "95%"
+    consts.progressBar.css "width", "50%"
     $.ajax
       type: "POST"
       url: server
@@ -512,7 +537,7 @@ formLogicExt = ($, WebOmi) ->
         consts.progressBar.css "width", "0%"
         consts.progressBar.hide()
         window.setTimeout (-> consts.progressBar.show()), 2000
-        callback(response) if (callback?)
+        callback response if callback?
   
   my.handleWSMessage = (message) ->
     consts = WebOmi.consts
