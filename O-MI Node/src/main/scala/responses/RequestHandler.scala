@@ -91,7 +91,7 @@ with CancelHandler
   }
 
   def handleWriteRequest( write: WriteRequest) : Future[ResponseRequest] = {
-    log.info(s"RequestHandler handling OdfRequest...")
+    log.debug(s"RequestHandler handling write OdfRequest...")
     val responsibleToRequest = agentResponsibilities.splitRequestToResponsible( write )
     val fSeq = Future.sequence(
       responsibleToRequest.map{
@@ -123,7 +123,7 @@ with CancelHandler
 
   }
   def handleCallRequest( call: CallRequest) : Future[ResponseRequest] = {
-    log.info(s"RequestHandler handling OdfRequest...")
+    log.debug(s"RequestHandler handling calli OdfRequest...")
     val responsibleToRequest = agentResponsibilities.splitRequestToResponsible( call )
     val fSeq = Future.sequence(
       responsibleToRequest.map{

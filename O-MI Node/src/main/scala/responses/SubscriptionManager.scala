@@ -400,7 +400,7 @@ class SubscriptionManager(
                 callback
               )
             )
-            log.debug(s"Successfully added event subscription with id: $newId and callback: $callback")
+            log.info(s"Successfully added event subscription with id: $newId and callback: $callback")
             newId
           }
           case dur@Duration(-2, duration.SECONDS) => throw new NotImplementedError("Interval -2 not supported") //subscription for new node
@@ -444,7 +444,7 @@ class SubscriptionManager(
                 )
               )
 
-              log.debug(s"Successfully added polled event subscription with id: $newId")
+              log.info(s"Successfully added polled event subscription with id: $newId")
               newId
             }
             case dur: FiniteDuration if dur.gteq(minIntervalDuration) => {
