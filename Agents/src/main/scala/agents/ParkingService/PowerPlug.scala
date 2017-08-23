@@ -13,13 +13,17 @@ object PowerPlug{
        case ii: OdfInfoItem =>
         getStringFromInfoItem( ii )
      }.flatten
+     val current = obj.get( obj.path / "currentInmA" ).collect{
+       case ii: OdfInfoItem =>
+        getDoubleFromInfoItem( ii )
+     }.flatten
      val power = obj.get( obj.path / "Power" ).collect{
        case ii: OdfInfoItem =>
-        getStringFromInfoItem( ii )
+        getDoubleFromInfoItem( ii )
      }.flatten
      val voltage = obj.get( obj.path / "Voltage" ).collect{
        case ii: OdfInfoItem =>
-        getStringFromInfoItem( ii )
+        getDoubleFromInfoItem( ii )
      }.flatten
      val cableAvailable = obj.get( obj.path / "CableAvailable" ).collect{
        case ii: OdfInfoItem =>
@@ -35,6 +39,7 @@ object PowerPlug{
      }.flatten
      PowerPlug(
        pt,
+       current,
        power,
        voltage,
        cableAvailable,
@@ -47,8 +52,9 @@ object PowerPlug{
 
 case class PowerPlug(
   plugType: Option[String],
-  power: Option[String],
-  voltage: Option[String],
+  current: Option[Double],
+  power: Option[Double],
+  voltage: Option[Double],
   cableAvailable: Option[String],
   lockerAvailable: Option[String],
   chargingSpeed: Option[String]
@@ -56,10 +62,6 @@ case class PowerPlug(
   def validFor( requested: PowerPlug ): Boolean={
     requested.plugType.forall{ str: String => 
       plugType.contains( str)
-    } && requested.power.forall{ str: String => 
-      power.contains( str)
-    } && requested.voltage.forall{ str: String => 
-      voltage.contains( str)
     } && requested.cableAvailable.forall{ str: String => 
       cableAvailable.contains( str)
     } && requested.lockerAvailable.forall{ str: String => 
@@ -82,6 +84,13 @@ case class PowerPlug(
         plugPath / "Power",
         Vector( OdfValue( pT, currentTime ) ),
         typeValue = Some( "mv:Power" )
+      )
+    }.toVector
+    val currentII = plugType.map{ pT =>
+      OdfInfoItem(
+        plugPath / "currentInmA",
+        Vector( OdfValue( pT, currentTime ) ),
+        typeValue = Some( "mv:currentInmA" )
       )
     }.toVector
     val voltageII = plugType.map{ pT =>

@@ -314,6 +314,7 @@ class ParkingAgent(
         }
     }.toVector.flatten
 
+    def plugMeasureUpdate( plug: PowerPlug): Boolean =  plug.current.nonEmpty || plug.power.nonEmpty || plug.voltage.nonEmpty
     val events = writingPfs.flatMap{
       pf: ParkingFacility =>
         pf.parkingSpaces.collect{
@@ -332,6 +333,9 @@ class ParkingAgent(
           case ParkingSpace(name,_,_,_,Some(user),Some(charger),_,_,_) if lidOpen(charger) && isUserCurrentReserver( parkingLotsPath / pf.name / name, user ) =>
             val path = parkingLotsPath / pf.name / "ParkingSpaces" / name
             OpenLid( path, user)
+          case ParkingSpace(name,_,_,_,_,Some(Charger(_,_,_,Some(plug))),_,_,_) if plugMeasureUpdate(plug) =>
+            val path = parkingLotsPath / pf.name / "ParkingSpaces" / name
+            UpdatePlugMeasurements( path, plug.current, plug.power, plug.voltage) 
         }
     }
     events
@@ -375,6 +379,9 @@ class ParkingAgent(
               closeLidIn( oL.path / "Charger" / "LidStatus" )
               updateCalculatedIIsToDB
           }
+          responseF
+        case upl: UpdatePlugMeasurements  =>
+          val responseF = writeToDB( WriteRequest( upl.toOdf.createAncestors ) )
           responseF
       }.getOrElse{
         Future{

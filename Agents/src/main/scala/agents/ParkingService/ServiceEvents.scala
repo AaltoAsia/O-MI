@@ -95,3 +95,52 @@ case class OpenLid( path: Path, user: String ) extends ParkingEvent{
     )
   }
 }
+
+case class UpdatePlugMeasurements( path: Path, currentInmA: Option[Double], powerInW: Option[Double], voltageInV: Option[Double]) extends ParkingEvent{
+
+  val chargerPath = path / "Charger" 
+  val plugPath = chargerPath / "Plug"
+  def toOdf: OdfObject ={
+    val voltageII = voltageInV.map{
+      voltage: Double =>
+      OdfInfoItem( 
+        plugPath / "Voltage", 
+        values = Vector( OdfValue( voltage, currentTime)),
+        typeValue = Some( "mv:Voltage")
+      )
+    }.toVector
+    val powerII = powerInW.map{
+      power: Double =>
+      OdfInfoItem( 
+        plugPath / "Power", 
+        values = Vector( OdfValue( power, currentTime)),
+        typeValue = Some( "mv:Power")
+      )
+    }.toVector
+    val currentII = currentInmA.map{
+      currentmA: Double =>
+      OdfInfoItem( 
+        plugPath / "currentInmA", 
+        values = Vector( OdfValue( currentmA, currentTime)),
+        typeValue = Some( "mv:currentInmA")
+      )
+    }.toVector
+    OdfObject(
+      Vector( QlmID( path.last )),
+      path,
+      objects = Vector(
+        OdfObject(
+          Vector( QlmID( chargerPath.last )),
+          chargerPath,
+          objects = Vector(
+            OdfObject(
+              Vector( QlmID( plugPath.last )),
+              plugPath,
+              infoItems = currentII ++ powerII ++ voltageII
+            )
+          )
+        )
+      )
+    )
+  }
+}

@@ -189,7 +189,7 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimableDB{
     val createMissingTables = findTables.flatMap{ 
       case tableNames: Seq[String]  =>
         val queries = if( tableNames.contains( "PATHSTABLE" ) ){
-          log.debug(s"Foound following tables:\n${tableNames.mkString("\n")}")
+          //log.debug(s"Foound following tables:\n${tableNames.mkString("\n")}")
           //Found needed table, check for value tables
           val infoItemDBPaths = pathsTable.getInfoItems
 
@@ -222,7 +222,7 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimableDB{
           log.info( s"No tables found. Creating PATHSTABLE.")
           val queries = pathsTable.schema.create.map{ 
             case u: Unit => 
-              log.debug("Created PATHSTABLE.")
+            log.debug("Created PATHSTABLE.")
             Seq("PATHSTABLE")
           }
           queries
@@ -231,25 +231,25 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimableDB{
     }
     val populateMap = createMissingTables.flatMap{
       case tablesCreated: Seq[String] =>
-        log.debug( s"Created following tables:\n${tablesCreated.mkString("\n")}")
+        //log.debug( s"Created following tables:\n${tablesCreated.mkString("\n")}")
         val actions = if( tablesCreated.contains("PATHSTABLE")){
-          log.debug(s"Adding Objects to PATHSTABLE")
+          //log.debug(s"Adding Objects to PATHSTABLE")
           val pRoot = Path("Objects")
           val dbP = DBPath(None, pRoot,false)
           pathsTable.add( Seq(dbP) ).map{
             case ids: Seq[Long] =>
-              log.debug(s"Adding Objects to pathTODBPath Map.")
+              //log.debug(s"Adding Objects to pathTODBPath Map.")
               pathToDBPath ++= ids.map{
                 case id: Long => 
-                  log.debug(s"Objects id is $id")
+                  //log.debug(s"Objects id is $id")
                   pRoot -> dbP.copy(id= Some(id))
               }
           }
         } else {
-          log.debug(s"Getting current paths from PATHSTABLE for pathToDBPath.")
+          //log.debug(s"Getting current paths from PATHSTABLE for pathToDBPath.")
           pathsTable.result.map{ 
             dbPaths => 
-              log.debug(s"Found following from PATHSTABLE:\n${dbPaths.mkString("\n")}")
+              //log.debug(s"Found following from PATHSTABLE:\n${dbPaths.mkString("\n")}")
               pathToDBPath ++= dbPaths.map{ dbPath => dbPath.path -> dbPath }
           }
         }

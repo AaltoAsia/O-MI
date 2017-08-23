@@ -47,16 +47,10 @@
                   <InfoItem name="Model" type="mv:Model" required="false">
                     <value>ExampleI</value>
                   </InfoItem>
-                  <Object type="mv:Plug" required="true">
+                  <Object type="mv:Plug" required="false">
                     <id>Plug</id>
                     <InfoItem name="PlugType" type="mv:PlugType" required="false">
                       <value>Schuko Plug</value>
-                    </InfoItem>
-                    <InfoItem name="Power" type="mv:Power" required="false">
-                      <value>2400W</value>
-                    </InfoItem>
-                    <InfoItem name="Voltage" type="mv:Voltage" required="false">
-                      <value>240V</value>
                     </InfoItem>
                     <InfoItem name="CableAvailable" type="mv:CableAvailable" required="false">
                       <value>false</value>
@@ -140,7 +134,7 @@
                             <id>Plug</id>
                             <InfoItem name="PlugType" type="mv:PlugType"/>
                             <InfoItem name="Power" type="mv:Power"/>
-                            <InfoItem name="currentInA" type="mv:currentInA"/>
+                            <InfoItem name="currentInmA" type="mv:currentInmA"/>
                             <InfoItem name="Voltage" type="mv:Voltage"/>
                             <InfoItem name="CableAvailable" type="mv:CableAvailable"/>
                             <InfoItem name="LockerAvailable" type="mv:LockerAvailable"/>
@@ -494,11 +488,11 @@
                   <InfoItem name="Power" type="mv:Power">
                     <value type="ws:double">2400</value>
                   </InfoItem>
-                  <InfoItem name="currentInA" type="mv:currentInA">
+                  <InfoItem name="currentInmA" type="mv:currentInmA">
                     <value type="ws:double">1</value>
                   </InfoItem>
                   <InfoItem name="Voltage" type="mv:Voltage">
-                    <value type="ws:double">240</value>
+                    <value type="ws:double">230</value>
                   </InfoItem>
                   <InfoItem name="CableAvailable" type="mv:CableAvailable">
                     <value type="ws:boolean">false</value>
@@ -566,11 +560,11 @@
                   <InfoItem name="Power" type="mv:Power">
                     <value type="ws:double">2400</value>
                   </InfoItem>
-                  <InfoItem name="currentInA" type="mv:currentInA">
+                  <InfoItem name="currentInmA" type="mv:currentInmA">
                     <value type="ws:double">1</value>
                   </InfoItem>
                   <InfoItem name="Voltage" type="mv:Voltage">
-                    <value type="ws:double">240</value>
+                    <value type="ws:double">230</value>
                   </InfoItem>
                   <InfoItem name="CableAvailable" type="mv:CableAvailable">
                     <value type="ws:boolean">false</value>
