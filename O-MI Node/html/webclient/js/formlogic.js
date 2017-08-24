@@ -370,7 +370,7 @@
         return results;
       })();
       addHistory(requestID, pathValues, returnCodes);
-      return !my.waitingForResponse;
+      return !my.waitingForResponse || (my.callbackSubscriptions[requestID] != null);
     };
     my.createWebSocket = function(onopen, onclose, onmessage, onerror) {
       var server, socket;

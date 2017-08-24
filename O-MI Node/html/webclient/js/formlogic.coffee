@@ -406,8 +406,8 @@ formLogicExt = ($, WebOmi) ->
 
     addHistory requestID, pathValues, returnCodes
 
-    # return true if request is not needed for the main area
-    not my.waitingForResponse
+    # return true if request is not needed for the main area or was found on existing
+    not my.waitingForResponse or my.callbackSubscriptions[requestID]?
 
   
 
