@@ -206,6 +206,14 @@ object ODFParser extends parsing.Parser[OdfParseResult] {
       item.typeValue,
       item.iname.map{
         qlmIdType => parseQlmID( qlmIdType)
+      }.filterNot{
+        id =>
+          id.id == item.name &&
+          id.idType.isEmpty &&
+          id.tagType.isEmpty &&
+          id.startDate.isEmpty &&
+          id.endDate.isEmpty &&
+          id.attributes.isEmpty 
       }.toVector,
       item.description.map{ des =>
         Description( des.value, des.lang ) 

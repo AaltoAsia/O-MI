@@ -56,7 +56,7 @@ case class InfoItem(
       nameAttribute,
       path,
       that.typeAttribute.orElse( typeAttribute ),
-      QlmID.unionReduce( that.names ++ names).toVector.filter{ case id => id.id.nonEmpty},
+      QlmID.unionReduce( that.names ++ names).toVector.filter{ id => id.id.nonEmpty},
       Description.unionReduce(that.descriptions ++ descriptions).toVector.filter{ case desc => desc.text.nonEmpty},
       if( that.values.nonEmpty ) that.values else values,
       that.metaData.flatMap{
@@ -84,7 +84,7 @@ case class InfoItem(
       path,
       that.typeAttribute.orElse( typeAttribute),
       if( that.names.nonEmpty ){
-        QlmID.unionReduce( that.names ++ names).toVector.filter{ case id => id.id.nonEmpty}
+        QlmID.unionReduce( that.names ++ names).toVector.filter{ id => id.id.nonEmpty}
       } else Vector.empty,
       if( that.descriptions.nonEmpty ){
         Description.unionReduce(that.descriptions ++ descriptions).toVector.filter{ case desc => desc.text.nonEmpty}
@@ -156,9 +156,24 @@ case class InfoItem(
   }
 
   def asInfoItemType: InfoItemType = {
+    val nameTags = if(this.names.exists( id => id.id == nameAttribute) && this.names.length == 1){
+        this.names.filter{
+        qlmid =>
+            qlmid.idType.nonEmpty ||
+            qlmid.tagType.nonEmpty ||
+            qlmid.startDate.nonEmpty ||
+            qlmid.endDate.nonEmpty ||
+            qlmid.attributes.nonEmpty 
+        }
+    } else if(!this.names.exists( id => id.id == nameAttribute) && this.names.nonEmpty){
+      this.names ++ Vector( QlmID(nameAttribute))
+    } else {
+      this.names
+    }
+      
     InfoItemType(
-      this.names.map{
-        qlmid => qlmid.asQlmIDType
+      nameTags.map{
+          qlmid => qlmid.asQlmIDType
       },
       this.descriptions.map{ 
         case des: Description => 
@@ -170,13 +185,10 @@ case class InfoItem(
         value : Value[Any] => value.asValueType
       }.toSeq,
       HashMap(
-        "@names" -> DataRecord(
+        "@name" -> DataRecord(
           nameAttribute
-        ),
-        "@type" -> DataRecord(
-          typeAttribute
-        )
-      ) ++ attributesToDataRecord( this.attributes )
+        )        
+      ) ++ attributesToDataRecord( this.attributes ) ++ typeAttribute.map{ ta => "@type" -> DataRecord(ta)}.toVector
     )
   }
 

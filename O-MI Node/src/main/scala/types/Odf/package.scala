@@ -25,6 +25,16 @@ package object odf {
    DatatypeFactory.newInstance().newXMLGregorianCalendar(cal)
  }
 
+  def attributesToDataRecord( attributes: scala.collection.Map[String,String] ) : Map[String,DataRecord[String]] ={
+    attributes.map{
+      case (key: String, value: String) =>
+        if (key.startsWith("@"))
+          key -> DataRecord(None, Some(key.tail), value)
+        else
+          "@" + key -> DataRecord(None, Some(key), value)
+    }.toMap
+  }
+  /*
  def attributesToDataRecord( 
   attributes: scala.collection.Map[String,String] ): Map[String,DataRecord[String]] ={
    attributes.map{
@@ -33,7 +43,7 @@ package object odf {
           key -> DataRecord(None,Some(key),value)
         }else{  key -> DataRecord(None,Some(s"$key"),value) }
    }.toMap
- }
+ }*/
   def optionUnion[A]( left: Option[A], right: Option[A] ): Option[A]  ={
     right.orElse( left )
   }
