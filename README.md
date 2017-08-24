@@ -34,7 +34,7 @@ Resources
 Dependencies
 ------------
 * Java 1.8
-* For building: sbt http://www.scala-sbt.org/ or sbt enabled IDE
+* For building: sbt(simple build tool) http://www.scala-sbt.org/ or sbt enabled IDE
 
 Running
 -------
