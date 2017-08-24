@@ -29,7 +29,7 @@ trait InternalAgentManager extends BaseAgentSystem with InternalAgentLoader{
   protected def dbHandler: ActorRef
   protected def requestHandler: ActorRef
   def notTerminatedYet( name : AgentName ) : String = s"Agent $name is not terminated yet. Can not be started"
-  def successfulCmdMsg( name : AgentName, cmd: String ) : String = s"Agent $name $cmd succesfully."
+  def successfulCmdMsg( name : AgentName, cmd: String ) : String = s"Agent $name $cmd successfully."
   def successfulStartMsg( name : AgentName) : String = successfulCmdMsg( name, "started" )
   def successfulStopMsg( name : AgentName ) : String = successfulCmdMsg( name, "stopped" )
   def wasAlreadyCmdMsg( name : AgentName, cmd: String ) : String = s"Agent $name was already $cmd."

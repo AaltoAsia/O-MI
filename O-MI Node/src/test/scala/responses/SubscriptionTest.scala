@@ -48,7 +48,7 @@ case class SubscriptionRequest(
 
  */
 class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with BeforeAfterAll {
-  implicit val system = ActorSystem("SubscribtionTest-core", ConfigFactory.parseString(
+  implicit val system = ActorSystem("SubscriptionTest-core", ConfigFactory.parseString(
     """
             akka.loggers = ["akka.testkit.TestEventListener"]
             akka.stdout-loglevel = INFO
@@ -136,7 +136,7 @@ class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with Bef
   def afterAll = {
     //system.eventStream.publish(UnMute(EventFilter.debug(),EventFilter.info(), EventFilter.warning()))
     cleanAndShutdown
-    singleStores.hierarchyStore execute TreeRemovePath(types.Path("/Objects"))
+    singleStores.hierarchyStore execute TreeRemovePath(types.Path("Objects"))
   }
 
   /////////////////////////////////////////////////////////////////////////////
@@ -293,7 +293,7 @@ class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with Bef
 
   def initDB() = {
     //pathPrefix
-    val pp = Path("Objects/SubscriptionTest/")
+    val pp = Path("Objects\\/SubscriptionTest\\/")
     val pathAndvalues: Iterable[(String, Vector[OdfValue[Any]])] = Seq(
       ("p/1", nv("1")),
       ("p/2", nv("2")),
@@ -309,7 +309,7 @@ class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with Bef
 
   def addSub(ttl: Long, interval: Long, paths: Seq[String], callback: String = "") = {
     val hTree = singleStores.hierarchyStore execute GetTree()
-    val p = paths.flatMap(p => hTree.get(Path("Objects/SubscriptionTest/" + p)))
+    val p = paths.flatMap(p => hTree.get(Path("Objects\\/SubscriptionTest\\/" + p)))
               .map(types.OdfTypes.createAncestors(_))
               .reduceOption(_.union(_))
               .getOrElse(throw new Exception("subscription path did not exist"))
@@ -331,7 +331,7 @@ class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with Bef
 
   //add new value easily
   def addValue(path: String, nv: Vector[OdfValue[Any]]): Unit = {
-    val pp = Path("Objects/SubscriptionTest/")
+    val pp = Path("Objects\\/SubscriptionTest\\/")
     val odf = OdfTypes.createAncestors(OdfInfoItem(pp / path, nv))
     val writeReq = WriteRequest( odf)
     implicit val timeout = Timeout( 10 seconds )

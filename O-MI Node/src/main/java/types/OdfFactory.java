@@ -438,7 +438,7 @@ public class OdfFactory{
    * @param language Language of description.
    * @return OdfDescription
    */
-  public static OdfDescription createOdfDescprition(
+  public static OdfDescription createOdfDescription(
     String value,
     String language
   ) {
@@ -464,7 +464,7 @@ public class OdfFactory{
   /**
    *
    * @param objects Child O-DF Objects of O-DF Objects.
-   * @param version Version of O-DF standart used.
+   * @param version Version of O-DF standard used.
    * @return OdfObjects
    */
   public static OdfObjects createOdfObjects(
@@ -493,6 +493,18 @@ public class OdfFactory{
         scala.Option.empty(),
         attr
     );
+  }
+
+  public static OdfObjects fromPath(
+    String pathString,
+    String valueString
+  ){
+    Path path = new Path(pathString);
+    Vector<OdfValue<Object>> values = new Vector<OdfValue<Object>>();
+    OdfValue<Object> odfValue = createOdfValue(valueString, "xs:string", new Timestamp( new java.util.Date().getTime()));
+    values.add(odfValue);
+    OdfInfoItem infoItem = createOdfInfoItem(path, values);
+    return infoItem.createAncestors();
   }
 
   public static OdfMetaData createOdfMetaData(

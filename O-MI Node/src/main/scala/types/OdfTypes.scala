@@ -172,18 +172,15 @@ case class OdfQlmID(
               endDate =>
                 ("@endDate" -> DataRecord(timestampToXML(endDate)))
         }.toSeq
+
     QlmIDType(
       value,
-      HashMap(
-        (
         (
           idTypeAttr ++ 
           tagTypeAttr ++ 
           startDateAttr ++
           endDateAttr
-        ).toMap ++ attributes.mapValues(DataRecord(_))
-        ).toSeq:_*
-      )
+        ).toMap ++ attributesToDataRecord(attributes)
       
     )
   }
@@ -199,6 +196,7 @@ sealed trait OdfNode {
   def description: Option[OdfDescription]
   /** Method for searching OdfNode from O-DF Structure */
   def get(path: Path): Option[OdfNode]
+  def getNodesOfType(typeValue: String): Seq[OdfNode]
   def createAncestors : OdfObjects = OdfTypes.createAncestors(this)
 }
 
@@ -210,6 +208,12 @@ case class OdfObjects(
 ) extends OdfObjectsImpl(objects, version, attributes) with OdfNode {
 
   /** Method for searching OdfNode from O-DF Structure */
+  def getNodesOfType(typeValue: String): Seq[OdfNode] ={
+    getOdfNodes( this ).collect {
+      case obj: OdfObject if obj.typeValue == Some(typeValue ) => obj
+      case ii: OdfInfoItem if ii.typeValue == Some(typeValue ) => ii
+    }.toVector
+  }
   def get(path: Path) : Option[OdfNode] = {
     if( path == this.path ) return Some(this)
     //HeadOption is because of values being OdfTreeCollection of OdfObject
@@ -298,6 +302,12 @@ case class OdfObject(
   attributes:           Map[String,String] = HashMap.empty
   ) extends OdfObjectImpl(id, path, infoItems, objects, description, typeValue, attributes) with OdfNode with Serializable{
 
+  def getNodesOfType(typeValue: String): Seq[OdfNode] ={
+    getOdfNodes( this ).collect {
+      case obj: OdfObject if obj.typeValue == Some(typeValue ) => obj
+      case ii: OdfInfoItem if ii.typeValue == Some(typeValue ) => ii
+    }.toVector
+  }
 
   def get(path: Path) : Option[OdfNode] = path match{
       case this.path => Some(this)
@@ -401,6 +411,11 @@ case class OdfInfoItem(
   require(path.length > 2,
     s"OdfInfoItem should have longer than two segment path (use OdfObjects for <Objects>): Path($path)")
   def get(path: Path): Option[OdfNode] = if (path == this.path) Some(this) else None
+  def getNodesOfType(typeValue: String): Seq[OdfNode] ={
+    if( this.typeValue == Some(typeValue))
+      Vector( this )
+    else Vector.empty
+  }
   def valuesRemoved: OdfInfoItem = if (values.nonEmpty) this.copy(values = OdfTreeCollection()) else this
   def descriptionsRemoved: OdfInfoItem = if (description.nonEmpty) this.copy(description = None) else this
   def metaDatasRemoved: OdfInfoItem = if (metaData.nonEmpty) this.copy(metaData = None) else this

@@ -68,18 +68,18 @@ class TypesTest extends Specification {
   def e6 = CancelRequest(Seq(), 10.seconds).isInstanceOf[OmiRequest]
   
   def e10 = {
-    !  OdfInfoItem(Path("Objects/obj1/sensor")).isInstanceOf[OmiRequest]
+    !  OdfInfoItem(Path("Objects\\/obj1\\/sensor")).isInstanceOf[OmiRequest]
   }
 
-  def e11 = !OdfObject(Seq(),Path("Objects/TypesTest"), Seq(), Seq()).isInstanceOf[OmiRequest]
+  def e11 = !OdfObject(Seq(),Path("Objects\\/TypesTest"), Seq(), Seq()).isInstanceOf[OmiRequest]
   
   def e100 = {
-      OdfInfoItem(Path("Objects/obj1/sensor")).isInstanceOf[OdfNode]
+      OdfInfoItem(Path("Objects\\/obj1\\/sensor")).isInstanceOf[OdfNode]
   }
 
-  def e101 = OdfObject(Seq(),Path("Objects/TypesTest"), Seq(), Seq()).isInstanceOf[OdfNode]
+  def e101 = OdfObject(Seq(),Path("Objects\\/TypesTest"), Seq(), Seq()).isInstanceOf[OdfNode]
   
-  def e200 = Path("test/test2").toSeq should be equalTo (Path(Seq("test", "test2")))
+  def e200 = Path("test\\/test2").toSeq should be equalTo (Path(Seq("test", "test2")))
   
   def e201 = {
     val seq = Seq("test", "test2")
@@ -96,20 +96,20 @@ class TypesTest extends Specification {
     val path1 = Path("Objects")
     val path2 = Path(Seq("Objects"))
     path1 should be equalTo path2
-    path1.hashCode() should be equalTo path2.hashCode()
+    path1.hashCode should be equalTo path2.hashCode
   }
   
   def e300 = {
-    val path1 =   Path("test1/test2")
-    val path2 =   Path("test3/test4/test5")
+    val path1 =   Path("test1\\/test2")
+    val path2 =   Path("test3\\/test4\\/test5")
     
-    (path1 / path2).toSeq should be equalTo (  Path("test1/test2/test3/test4/test5").toSeq)
+    (path1 / path2).toSeq should be equalTo (  Path("test1\\/test2\\/test3\\/test4\\/test5").toSeq)
   }
   
   def e301 = {
-    val path1 =   Path("test1/test2")
+    val path1 =   Path("test1\\/test2")
     
-    (path1 / "test3/test4/test5").toSeq should be equalTo (  Path("test1/test2/test3/test4/test5").toSeq)
+    (path1 / "test3\\/test4\\/test5").toSeq should be equalTo (  Path("test1\\/test2\\/test3\\/test4\\/test5").toSeq)
   }
 
   val testOdfMsg: NodeSeq ={

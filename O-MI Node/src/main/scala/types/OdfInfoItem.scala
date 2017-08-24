@@ -88,7 +88,7 @@ class  OdfInfoItemImpl(
         "@name" -> DataRecord(
           path.lastOption.getOrElse(throw new IllegalArgumentException(s"OdfObject should have longer than one segment path: $path"))
         )
-      } ++ typeValue.map{ tv =>"@type" -> DataRecord(typeValue) }.toVector
+      } ++ typeValue.map{ tv =>"@type" -> DataRecord(tv) }.toVector
       ++ attributesToDataRecord( this.attributes )
       // ++  typeValue.map{ n => ("@type" -> DataRecord(n))}
     )
@@ -118,7 +118,7 @@ case class OdfMetaData(
             } yield infoI.withNewest
           }
       }.map{
-        info: OdfInfoItem => //Is this what is really wanted? May need all history values, not only neewst
+        info: OdfInfoItem => //Is this what is really wanted? May need all history values, not only newest
           info.copy( values = info.values.sortBy{ v: OdfValue[Any] => v.timestamp.getTime }.lastOption.toVector )
       }
     )
@@ -260,7 +260,7 @@ object OdfValue{
         case "odf" =>
           val result = OdfParser.parse(value)
           result match {
-            case Left( pes: Seq[ParseError]) =>
+            case Left( pes: Iterable[ParseError]) =>
               throw pes.head
             case Right( odf: OdfObjects) =>
               OdfObjectsValue(odf,timestamp, attributes)
@@ -283,7 +283,7 @@ object OdfValue{
     }
     create match {
       case Success(value) => value
-      case Failure( e: Exception) =>
+      case Failure(_) =>
         //println( s"Creating of OdfValue failed with type $typeValue, caused by: $e")
         OdfStringPresentedValue(value, timestamp, attributes = attributes)
     }

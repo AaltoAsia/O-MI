@@ -68,7 +68,7 @@ trait DBWriteHandler extends DBHandlerBase {
 
     log.debug(s"Sending data to event sub: $id.")
     val responseRequest = Responses.Poll(id, odf, responseTTL)
-    log.info(s"Sending in progress; Subscription subId:$id addr:$callbackAddr interval:-1")
+    log.debug(s"Sending in progress; Subscription subId:$id addr:$callbackAddr interval:-1")
     //log.debug("Send msg:\n" + xmlMsg)
 
     def failed(reason: String) =
@@ -80,12 +80,12 @@ trait DBWriteHandler extends DBHandlerBase {
 
     callbackF.onSuccess {
       case () =>
-        log.info(s"Callback sent; subscription id:$id addr:$callbackAddr interval:-1")
+        log.debug(s"Callback sent; subscription id:$id addr:$callbackAddr interval:-1")
     }
     callbackF.onFailure{
       case fail @ MissingConnection(callback) =>
         log.warning(
-          s"Callback failed; subscription id:${esub.id}, reason: ${fail.toString}, subscription is remowed.")
+          s"Callback failed; subscription id:${esub.id}, reason: ${fail.toString}, subscription is removed.")
         singleStores.subStore execute RemoveEventSub(esub.id)
       case fail: CallbackFailure =>
         failed(fail.toString)
@@ -102,7 +102,7 @@ trait DBWriteHandler extends DBHandlerBase {
         .foreach(pv => store ! AddWrite(pv._1, pv._2))
     }
     val esubLists: Seq[(EventSub, OdfInfoItem)] = events.collect{
-      case ChangeEvent(infoItem) =>  // note: AttachEvent extends Changeevent
+      case ChangeEvent(infoItem) =>  // note: AttachEvent extends ChangeEvent
 
         val esubs = singleStores.subStore execute LookupEventSubs(infoItem.path)
         esubs map { (_, infoItem) }  // make tuples

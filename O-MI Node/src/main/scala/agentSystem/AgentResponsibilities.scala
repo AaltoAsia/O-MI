@@ -37,9 +37,9 @@ class AgentResponsibilities(){
         )
     }
           
-    val leafPathes = getLeafs(odf).map(_.path)
-    //println( s"InfoItems:\n$leafPathes")
-    val pathToResponsible: Seq[(Path,Option[AgentName])]= leafPathes.map{
+    val leafPaths = getLeafs(odf).map(_.path)
+    //println( s"InfoItems:\n$leafPaths")
+    val pathToResponsible: Seq[(Path,Option[AgentName])]= leafPaths.map{
       case path: Path =>
         val allPaths : Seq[Path] = path.getParentsAndSelf.sortBy(_.length).reverse
         val responsibility : Option[AgentResponsibility] = allPaths.find{
@@ -105,9 +105,9 @@ class AgentResponsibilities(){
           objects = OdfTreeCollection.empty
         )
     }
-    val leafPathes = getLeafs(odf).map(_.path)
-    //println( s"InfoItems:\n$leafPathes")
-    val pathToResponsible: Seq[(Path,Option[AgentName])]= leafPathes.map{
+    val leafPaths = getLeafs(odf).map(_.path)
+    //println( s"InfoItems:\n$leafPaths")
+    val pathToResponsible: Seq[(Path,Option[AgentName])]= leafPaths.map{
       case path: Path =>
         val allPaths : Seq[Path] = path.getParentsAndSelf.sortBy(_.length).reverse
         val responsibility : Option[AgentResponsibility] = allPaths.find{
@@ -204,9 +204,9 @@ class AgentResponsibilities(){
   }
   def checkResponsibilityFor(optionAgentName: Option[AgentName], request:OdfRequest): Boolean ={
     val odf = request.odf
-    val leafPathes = getLeafs(odf).map(_.path)
-    //println( s"Pathes of leaf nodes:\n$leafPathes")
-    val pathToResponsible: Seq[(Path,Option[AgentName])]= leafPathes.map{
+    val leafPaths = getLeafs(odf).map(_.path)
+    //println( s"Paths of leaf nodes:\n$leafPaths")
+    val pathToResponsible: Seq[(Path,Option[AgentName])]= leafPaths.map{
       case path: Path =>
         val allPaths : Seq[Path] = path.getParentsAndSelf.sortBy(_.length).reverse
         val responsibility : Option[AgentResponsibility] = allPaths.find{
@@ -216,7 +216,7 @@ class AgentResponsibilities(){
         val responsible = responsibility.map(_.agentName)
         (path, responsible)
     }
-    //println( s"Pathes to responsible Agent's name:\n$leafPathes")
+    //println( s"Paths to responsible Agent's name:\n$leafPaths")
 
     val responsibleToPairSeq: ImmutableMap[Option[AgentName], Seq[(Path, Option[AgentName])]]= pathToResponsible.groupBy{
       case ( path: Path, responsible: Option[AgentName]) =>
@@ -239,7 +239,7 @@ class AgentResponsibilities(){
     val result = responsibleToPaths.keys.flatten.filter{
       case keyname: AgentName => optionAgentName.forall{ name => name != keyname }
     }.isEmpty
-    //println( s"Permissien check:$result")
+    //println( s"Permission check:$result")
     result
   }
 

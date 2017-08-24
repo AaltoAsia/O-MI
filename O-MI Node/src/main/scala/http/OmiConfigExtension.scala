@@ -15,11 +15,12 @@
 package http
 
 import java.util.concurrent.TimeUnit
-import java.net.InetAddress
+import java.net.{InetAddress, URLDecoder}
 
 import scala.collection.JavaConversions._
 import scala.concurrent.duration._
 import scala.util.Try
+import scala.language.implicitConversions
 
 import agentSystem.AgentSystemConfigExtension
 import akka.actor.{ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
@@ -56,7 +57,9 @@ class OmiConfigExtension( val config: Config) extends Extension
   val minSubscriptionInterval : FiniteDuration= config.getDuration("omi-service.min-subscription-interval", TimeUnit.SECONDS).seconds
 
   /** Save some interesting setting values to this path */
-  val settingsOdfPath: String = config.getString("omi-service.settings-read-odfpath")
+
+  val settingsOdfPath: Path =  Path(URLDecoder.decode( config.getString("omi-service.settings-read-odfpath").replace("/","\\/"), "UTF-8" ))
+    
 
   val trimInterval : FiniteDuration = config.getDuration("omi-service.trim-interval")
 

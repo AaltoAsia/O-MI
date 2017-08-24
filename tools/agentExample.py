@@ -1,20 +1,19 @@
-#!/bin/env python3
-
-from socket import create_connection
-
-connection = create_connection(("localhost", 8181))
+#!/usr/bin/python3
+import requests
 
 while True:
-    data = input()
-    odf_message = \
-    b'''<Objects xmlns="odf.xsd">
-            <Object>
-                <id>ExampleAgent</id>
-                <InfoItem name="ExampleAgentSensor">
-                    <value>''' +\
-                    bytes(data, "utf-8") +\
-                b'''</value>
-                </InfoItem>
-            </Object>
-        </Objects>'''
-    connection.sendall(odf_message)
+    requests.post("http://localhost:8080", data = 
+"""<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="0">
+  <write msgformat="odf">
+    <msg>
+      <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/">
+        <Object>
+          <id>Example</id>
+          <InfoItem name="userInput">
+            <value>""" + input() + """</value>
+          </InfoItem>
+        </Object>
+      </Objects>
+    </msg>
+  </write>
+</omiEnvelope>""")

@@ -190,7 +190,7 @@ public class JavaAgent extends JavaInternalAgent {
             log.info(name() + " wrote paths successfully.");
           } else {
             log.warning(
-                "Something went wrong when " + name() + " writed, " + result.toString()
+                "Something went wrong when " + name() + " wrote, " + result.toString()
                 );
           }
         }

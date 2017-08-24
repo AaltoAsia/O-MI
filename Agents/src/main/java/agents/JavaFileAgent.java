@@ -279,7 +279,7 @@ public class JavaFileAgent extends JavaInternalAgent {
    */
   public void update() {
     updateOdf();
-    //MetaData and description should be writen only once
+    //MetaData and description should be written only once
     if( writeCount == 2 ){
       odf = odf.allMetaDatasRemoved();
     } else writeCount += 1;
@@ -316,7 +316,7 @@ public class JavaFileAgent extends JavaInternalAgent {
             log.debug(name() + " wrote paths successfully.");
           } else {
             log.warning(
-                "Something went wrong when " + name() + " writed, " + result.toString()
+                "Something went wrong when " + name() + " wrote, " + result.toString()
                 );
           }
         }

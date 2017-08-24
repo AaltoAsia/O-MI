@@ -33,7 +33,7 @@ import parsing.xmlGen._
 import types.OdfTypes._
 import OmiTypes.ResponseRequest
 /**
- * Package containing classes presenting O-MI request interanlly. 
+ * Package containing classes presenting O-MI request internally.
  *
  */
 package object OmiTypes  {
@@ -201,10 +201,10 @@ package object OdfTypes {
   def attributesToDataRecord( attributes: Map[String,String] ) : Map[String,DataRecord[Any]] ={
     attributes.map{
       case (key: String, value: String) =>
-        val dr = DataRecord(None, Some(key), value)
-        if( key.startsWith("@") )
-          key -> dr
-        else s"@$key" -> dr
+        if (key.startsWith("@"))
+          key -> DataRecord(None, Some(key.tail), value)
+        else
+          "@" + key -> DataRecord(None, Some(key), value)
     }
   }
 }

@@ -7,6 +7,17 @@ import OmiTypes._
 
 object Responses{
   def Success(
+    objects : Option[OdfObjects], 
+    ttl: Duration
+    ) : ResponseRequest =ResponseRequest(
+      OdfTreeCollection(
+        Results.Success(
+          odf = objects
+        )
+      ),
+      ttl
+    )
+  def Success(
     requestIDs: OdfTreeCollection[RequestID] = OdfTreeCollection.empty[RequestID], 
     objects : Option[OdfObjects] = None, 
     description: Option[String] = None,

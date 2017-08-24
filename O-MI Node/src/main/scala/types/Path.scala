@@ -30,7 +30,7 @@ import OmiTypes.ResponseRequest
     }
 
     def this(pathStr: String) = this{
-      pathStr.split("/").toVector
+      pathStr.split("\\\\/").toVector.filterNot( _ == "")
     }
 
     /**
@@ -57,17 +57,17 @@ import OmiTypes.ResponseRequest
     override lazy val hashCode: Int = this.toSeq.hashCode
 
     /**
-     * Creates a path string which represents this path with '/' seperators.
+     * Creates a path string which represents this path with '/' separators.
      * Representation doesn't start nor end with a '/'.
      */
-    override def toString: String = this.mkString("/")
+    override def toString: String = this.mkString("\\/")
     
   def isAncestorOf( that: Path): Boolean ={
     if( length < that.length ){
       that.pathSeq.startsWith(pathSeq) 
     } else false
   }
-  def isDescendant( that: Path): Boolean ={
+  def isDescendantOf( that: Path): Boolean ={
     if( length > that.length ){
       pathSeq.startsWith(that.pathSeq) 
     } else false

@@ -26,6 +26,7 @@ import org.slf4j.LoggerFactory
 import org.prevayler.PrevaylerFactory
 import parsing.xmlGen.xmlTypes.MetaDataType
 import slick.backend.DatabaseConfig
+import slick.jdbc.meta.MSchema
 //import slick.driver.H2Driver.api._
 import slick.driver.JdbcProfile
 import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
@@ -39,7 +40,7 @@ package object database {
 
   private[this] var histLength = 15 //http.Boot.settings.numLatestValues
   /**
-   * Sets the historylength to desired length
+   * Sets the historyLength to desired length
    * default is 10
    * @param newLength new length to be used
    */
@@ -94,7 +95,7 @@ class SingleStores(protected val settings: OmiConfigExtension) {
       prevaylerDirectories += directory
 
       // Configure factory settings
-      // Change size thereshold so we can remove the old journal files as we take snapshots.
+      // Change size threshold so we can remove the old journal files as we take snapshots.
       // Otherwise it will continue to fill disk space
       factory.configureJournalFileSizeThreshold(journalFileSizeLimit) // about 100M
       factory.configurePrevalenceDirectory(directory.getAbsolutePath)
@@ -208,7 +209,10 @@ class DatabaseConnection()(
   protected val system : ActorSystem,
   protected val singleStores : SingleStores,
   protected val settings : OmiConfigExtension
-  ) extends DBCachedReadWrite with DBBase with DB {
+
+//OLD DB:
+//) extends DBCachedReadWrite with DBBase with DB {
+) extends NewSimplifiedDatabase with DB {
 
   //val dc = DatabaseConfig.forConfig[JdbcProfile](dbConfigName)
   val dc : DatabaseConfig[JdbcProfile] = DatabaseConfig.forConfig[JdbcProfile](database.dbConfigName)
@@ -243,7 +247,6 @@ class DatabaseConnection()(
  * problems caused by overlapping test data.
  * Uses h2 named in-memory db
  * @param name name of the test database, optional. Data will be stored in memory
- */
 class UncachedTestDB(
   val name:String = "", 
   useMaintainer: Boolean = true, 
@@ -283,15 +286,14 @@ dbconf {
     settings
     ), "uncached-db-maintainer")
   } else ActorRef.noSender
-  /**
-  * Should be called after tests.
-  */
+  // Should be called after tests.
   def destroy(): Unit = {
     if(useMaintainer )system.stop(dbmaintainer)
     log.debug("Removing UncachedTestDB: " + name)
     db.close()
   }
 }
+ */
 
 
 /**
@@ -321,7 +323,9 @@ dbconf {
   protected val system : ActorSystem,
   protected val singleStores : SingleStores,
   protected val settings : OmiConfigExtension
-) extends DBCachedReadWrite with DB {
+//OLD DB:
+//) extends DBCachedReadWrite with DB {
+) extends NewSimplifiedDatabase with DB {
 
   override protected val log = LoggerFactory.getLogger("TestDB")
   log.debug("Creating TestDB: " + name)
@@ -344,6 +348,7 @@ dbconf {
   def destroy(): Unit = {
     if(useMaintainer )system.stop(dbmaintainer)
     log.debug("Removing TestDB: " + name)
+    
     db.close()
   }
 }
@@ -356,13 +361,14 @@ dbconf {
  * Contains a public high level read-write interface for the database tables.
  */
 trait DB {
+  def initialize(): Unit
   /**
    * Used to get result values with given constrains in parallel if possible.
    * first the two optional timestamps, if both are given
    * search is targeted between these two times. If only start is given,all values from start time onwards are
-   * targeted. Similiarly if only end is given, values before end time are targeted.
+   * targeted. Similarly if only end is given, values before end time are targeted.
    *    Then the two Int values. Only one of these can be present. fromStart is used to select fromStart number
-   * of values from the begining of the targeted area. Similiarly from ends selects fromEnd number of values from
+   * of values from the beginning of the targeted area. Similarly from ends selects fromEnd number of values from
    * the end.
    * All parameters except the first are optional, given only the first returns all requested data
    *
@@ -387,8 +393,11 @@ trait DB {
   def writeMany(data: Seq[OdfInfoItem]): Future[OmiReturn]
 
   /**
-   * Used to remove given path and all its descendants from the databas.
+   * Used to remove given path and all its descendants from the database.
    * @param path Parent path to be removed.
    */
   def remove(path: Path): Future[Seq[Int]]
+}
+trait TrimmableDB{
+  def trimDB(): Future[Seq[Int]]
 }

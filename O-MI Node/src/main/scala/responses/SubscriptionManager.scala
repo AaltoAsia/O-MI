@@ -168,7 +168,7 @@ class SubscriptionManager(
           buffer += previousValue
           nextTick += interval
         } else {
-          //if timestmap.getTime < startime + interval
+          //if timestamp.getTime < starttime + interval
           previousValue = values(i)
           i += 1
         }
@@ -239,7 +239,7 @@ class SubscriptionManager(
   }
 
   /**
-   * Get pollsubscriptions data drom database
+   * Get pollsubscriptions data from database
    *
    * This method is used to both 'event' and 'interval' based subscriptions.
    *
@@ -258,7 +258,7 @@ class SubscriptionManager(
     val sub: Option[PolledSub] = singleStores.subStore execute PollSub(id)
     sub match {
       case Some(pollSub) => {
-        log.debug(s"Polling subcription with id: ${pollSub.id}")
+        log.debug(s"Polling subscription with id: ${pollSub.id}")
         val odfTree = singleStores.hierarchyStore execute GetTree()
         val emptyTree = odfTree.intersect(pollSub
           .paths  //get subscriptions paths
@@ -325,7 +325,7 @@ class SubscriptionManager(
       callbackF.onFailure {
         case fail@MissingConnection(callback) =>
           log.warning(
-            s"Callback failed; subscription id:${iSub.id} interval:${iSub.interval}  reason: ${fail.toString}, subscription is remowed.")
+            s"Callback failed; subscription id:${iSub.id} interval:${iSub.interval}  reason: ${fail.toString}, subscription is removed.")
           removeSubscription(iSub.id)
         case fail: CallbackFailure =>
           log.warning(
@@ -373,7 +373,7 @@ class SubscriptionManager(
   }
 
   /**
-   * Method used to add subcriptions to Prevayler database
+   * Method used to add subscriptions to Prevayler database
    * @param subscription SubscriptionRequest of the subscription to add
    * @return Subscription Id within Try monad if adding fails this is a Failure, otherwise Success(id)
    */
@@ -400,7 +400,7 @@ class SubscriptionManager(
                 callback
               )
             )
-            log.debug(s"Successfully added event subscription with id: $newId and callback: $callback")
+            log.info(s"Successfully added event subscription with id: $newId and callback: $callback")
             newId
           }
           case dur@Duration(-2, duration.SECONDS) => throw new NotImplementedError("Interval -2 not supported") //subscription for new node
@@ -444,7 +444,7 @@ class SubscriptionManager(
                 )
               )
 
-              log.debug(s"Successfully added polled event subscription with id: $newId")
+              log.info(s"Successfully added polled event subscription with id: $newId")
               newId
             }
             case dur: FiniteDuration if dur.gteq(minIntervalDuration) => {

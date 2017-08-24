@@ -51,7 +51,10 @@ class AnalyticsStoreTest extends Specification with Mockito with AfterAll {
             akka.log-dead-letters-during-shutdown = off
             akka.jvm-exit-on-fatal-error = off
     """))
-  def afterAll = Await.ready(system.terminate(), 2 seconds)
+  def afterAll = {
+    dbConnection.dropDB()
+    Await.ready(system.terminate(), 2 seconds)
+  }
   import system.dispatcher
   implicit val materializer: ActorMaterializer = ActorMaterializer()(system)
   val analyticsConf = ConfigFactory.parseString(
@@ -144,7 +147,7 @@ class AnalyticsStoreTest extends Specification with Mockito with AfterAll {
   val testtime = new java.sql.Timestamp(date.getTime)
   def sendRR(user: Int, metadata: Boolean) = {
     val readReq = {
-      val p: Path = Path("Objects/AnalyticsStoreTest/first")
+      val p: Path = Path("Objects\\/AnalyticsStoreTest\\/first")
       val _odf =
         if(!metadata)OdfTypes.createAncestors(OdfInfoItem(p))
         else OdfTypes.createAncestors(OdfInfoItem(p, metaData = Some(OdfMetaData(OdfTreeCollection.empty))))
@@ -172,7 +175,7 @@ class AnalyticsStoreTest extends Specification with Mockito with AfterAll {
   Thread.sleep(400)
   Await.ready(sendRR(3, metadata = false), 2 seconds)
   def addValue(path: String, nv: Vector[OdfValue[Any]]): Unit = {
-    val pp = Path("Objects/AnalyticsStoreTest/")
+    val pp = Path("Objects\\/AnalyticsStoreTest\\/")
     val odf = OdfTypes.createAncestors(OdfInfoItem(pp / path, nv))
     val writeReq = WriteRequest( odf)
     implicit val timeout = Timeout( 10 seconds )
