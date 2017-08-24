@@ -89,12 +89,11 @@ class OdfTypesTest extends mutable.Specification{
     val iODF = newTypeWithoutNamesForIIs
     val oldType = NewTypeConverter.convertODF( iODF )
     val backToNew = OldTypeConverter.convertOdfObjects( oldType )
-    val o = backToNew
-    lazy val parsedOdfPaths = o.getPaths.toSet 
+    lazy val parsedOdfPaths = backToNew.getPaths.toSet 
     lazy val correctOdfPaths = iODF.getPaths.toSet
     lazy val pathCheck = (parsedOdfPaths must contain( correctOdfPaths ) ) and
     ( (parsedOdfPaths -- correctOdfPaths) must beEmpty ) and ( (correctOdfPaths -- parsedOdfPaths) must beEmpty )
-    lazy val parsedII = o.getInfoItems.toSet 
+    lazy val parsedII = backToNew.getInfoItems.toSet 
     lazy val correctII = iODF.getInfoItems.toSet
     lazy val iICheck ={
       (parsedII -- correctII ) must beEmpty } and {
@@ -102,7 +101,7 @@ class OdfTypesTest extends mutable.Specification{
       parsedII must contain(correctII)
     } 
 
-    lazy val parsedObj = o.getObjects.toSet 
+    lazy val parsedObj = backToNew.getObjects.toSet 
     lazy val correctObj = iODF.getObjects.toSet
     lazy val objCheck ={
       (parsedObj -- correctObj ) must beEmpty } and {
@@ -110,11 +109,15 @@ class OdfTypesTest extends mutable.Specification{
       parsedObj must contain(correctObj)
     } 
 
-    lazy val parsedMap = o.getNodesMap
+    lazy val parsedMap = backToNew.getNodesMap
     lazy val correctMap = iODF.getNodesMap
     lazy val mapCheck = parsedMap.toSet must contain(correctMap.toSet)
   
-    pathCheck and iICheck and objCheck and mapCheck and (backToNew must be(iODF)) 
+        println(  s"Convert hashCode: ${backToNew.hashCode}, correct HashCode: ${iODF.hashCode }")
+        println(  s"Convert equals correct: ${backToNew equals iODF}")
+        println(  s"Convert paths equals correct: ${backToNew.paths equals iODF.paths}")
+        println(  s"Convert nodes equals correct: ${backToNew.nodes equals iODF.nodes}")
+    pathCheck and iICheck and objCheck and mapCheck and (backToNew must beEqualTo(iODF)) 
   }
 
 
