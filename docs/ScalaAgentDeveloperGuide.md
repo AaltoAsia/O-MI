@@ -144,7 +144,7 @@ To write new generated values to O-MI Node's database we create method `update`.
           case wr: Results.Success =>
             log.info(s"$name wrote paths successfully.")
           case ie: OmiResult => 
-            log.warning(s"Something went wrong when $name writed, $ie")
+            log.warning(s"Something went wrong when $name wrote, $ie")
         }
       case Failure( t: Throwable) => 
         log.warning(s"$name's write future failed, error: $t")
@@ -247,7 +247,7 @@ Let's create class `ResponsibleScalaAgent` that extends `ScalaAgent` with
             // debug level is enabled (in logback.xml and application.conf)
             log.debug(s"$name wrote paths successfully.")
           case ie: OmiResult => 
-            log.warning(s"Something went wrong when $name writed, $ie")
+            log.warning(s"Something went wrong when $name wrote, $ie")
         }
       case Failure( t: Throwable) => 
         // This sends debug log message to O-MI Node logs if

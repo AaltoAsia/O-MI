@@ -31,7 +31,7 @@ import types._
 /**
  * Read-write interface methods for db tables.
  */
-trait DBReadWrite extends DBReadOnly with OmiNodeTables with TrimableDB{
+trait DBReadWrite extends DBReadOnly with OmiNodeTables with TrimmableDB{
   import dc.driver.api._
   type ReadWrite = Effect with Effect.Write with Effect.Read with Effect.Transactional
   type DBIOrw[Result] = DBIOAction[Result, NoStream, ReadWrite]
@@ -39,7 +39,7 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables with TrimableDB{
   protected val log = LoggerFactory.getLogger("DBReadWrite")
 
   /**
-   * Metohod to completely remove database. Tries to remove the actual database file.
+   * Method to completely remove database. Tries to remove the actual database file.
    */
   def destroy(): Unit
 

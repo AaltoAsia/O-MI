@@ -107,10 +107,10 @@ public class JavaTemplateAgent extends JavaInternalAgent {
             log.debug(name() + " wrote paths successfully.");
           } else {
             log.warning(
-                "Something went wrong when " + name() + " writed, " + result.toString()
+                "Something went wrong when " + name() + " wrote, " + result.toString()
                 );
           }
-        }
+        }ge
       }
   }
   // Contains function for the asynchronous handling of write failure
@@ -274,7 +274,7 @@ results asynchronously too. To get to know haw to handle `Future`s refer to
             log.info(name() + " wrote paths successfully.");
           } else {
             log.warning(
-                "Something went wrong when " + name() + " writed, " + result.toString()
+                "Something went wrong when " + name() + " wrote, " + result.toString()
                 );
           }
         }

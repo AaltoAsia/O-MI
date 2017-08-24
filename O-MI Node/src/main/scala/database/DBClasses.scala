@@ -164,7 +164,7 @@ trait OmiNodeTables extends DBBase {
     def value: Rep[String] = column[String]("VALUE")
     def valueType: Rep[String] = column[String]("VALUETYPE")
     def idx1: Index = index("VALUEiDX", hierarchyId, unique = false) //index on hierarchyIDs
-    def idx2: Index = index("TIMESTAMP", timestamp, unique = false)  //index on timestmaps
+    def idx2: Index = index("TIMESTAMP", timestamp, unique = false)  //index on timestamps
     /** Primary Key: (hierarchyId, timestamp) */
 
     def * : ProvenShape[DBValue] = (hierarchyId, timestamp, value, valueType, id.?) <> (DBValue.tupled, DBValue.unapply)

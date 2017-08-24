@@ -52,7 +52,7 @@ object JavaHelpers{
 
   /**
    * Path is a wrapper for Seq[String] representing path to an O-DF Object
-   * It abstracts path seperators ('/') from error prone actions such as joining
+   * It abstracts path separators ('/') from error prone actions such as joining
    * two paths or creating new Paths from user input.
    * Path can be used as a sequence via an implicit conversion or _.toSeq
    */
@@ -103,7 +103,7 @@ object JavaHelpers{
     override def hashCode(): Int = this.toSeq.hashCode
 
     /**
-     * Creates a path string which represents this path with '/' seperators.
+     * Creates a path string which represents this path with '/' separators.
      * Representation doesn't start nor end with a '/'.
      */
     override def toString: String = this.mkString("\\/")

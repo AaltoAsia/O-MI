@@ -438,7 +438,7 @@ public class OdfFactory{
    * @param language Language of description.
    * @return OdfDescription
    */
-  public static OdfDescription createOdfDescprition(
+  public static OdfDescription createOdfDescription(
     String value,
     String language
   ) {
@@ -464,7 +464,7 @@ public class OdfFactory{
   /**
    *
    * @param objects Child O-DF Objects of O-DF Objects.
-   * @param version Version of O-DF standart used.
+   * @param version Version of O-DF standard used.
    * @return OdfObjects
    */
   public static OdfObjects createOdfObjects(

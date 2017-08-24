@@ -33,12 +33,11 @@ import scala.xml.XML
  *  <a href="http://doc.akka.io/docs/akka/2.4/scala/actors.html#Recommended_Practices">Akka recommends to</a>.
  *
  *  @param _config Contains configuration for this agent, as given in application.conf.
- */
 object ParkingAgent extends PropsCreator{
+ */
   /**
    * Method for creating Props for ResponsibleScalaAgent.
    *  @param config Contains configuration for this agent, as given in application.conf.
-   */
   def props(
     config: Config,
     requestHandler: ActorRef, 
@@ -51,7 +50,9 @@ class ParkingAgent(
   val requestHandler: ActorRef, 
   val dbHandler: ActorRef
 ) extends ResponsibleScalaInternalAgent{
+   */
   //Execution context
+  /*
   import context.dispatcher
 
   //Base path for service, contains at least all method
@@ -78,7 +79,22 @@ class ParkingAgent(
     throw  AgentConfigurationException(s"Could not get initial state for $name. Could not read file $startStateFile.")
   }
 
-  val initialWrite = writeToDB( WriteRequest(initialODF) )
+  val pfs = initialOdf.get( parkingLotsPath ).collect{
+    case obj: OdfObject =>
+     val pfs =  obj.objects.filter{
+        pfObj: OdfObject =>
+          pfObj.typeValue.contains( "mv:ParkingFacility") ||
+          pfObj.typeValue.contains( "mv:ParkingLot") ||
+          pfObj.typeValue.contains( "mv:ParkingGarage") ||
+          pfObj.typeValue.contains( "mv:UndergroundParkingGarage") ||
+          pfObj.typeValue.contains( "mv:AutomatedParkingGarage") ||
+          pfObj.typeValue.contains( "mv:BicycleParkingStation") 
+      }.map{
+        pfObj: OdfObject =>
+          ParkingFacility( pfObj )
+      }
+  }.getOrElse( throw new Exception("No parking facilities found in O-DF or configured path is wrong")).toVector
+  val initialWrite = writeToDB( WriteRequest(pfs.toOdf(parkingLotsPath)) )
   val initialisationWriteTO = 10.seconds
   val initializationResponse = Await.ready(initialWrite, initialisationWriteTO)
   initializationResponse.value match{
@@ -91,7 +107,7 @@ class ParkingAgent(
         case result: OmiResult =>
           result.returnValue match {
             case succ: Returns.ReturnTypes.Successful =>
-              log.info( s"Successfully initialized state for $name" )
+              log.debug( s"Successfully initialized state for $name" )
             case other =>
               log.warning( s"Could not set initial state for $name. Got result:$result.")
               throw new Exception( s"Could not set initial state for $name. Got following result from DB: $result.")
@@ -278,6 +294,7 @@ class ParkingAgent(
         Responses.InternalError(e)
     }
   }
+  */
   /*
   def isReservation( path: Path, parkingSpot: ParkingSpot ) ={
     val notReserved = pathToSpaces.get( path ).map{
@@ -304,7 +321,7 @@ class ParkingAgent(
   }*/
 
   
-
+/*
   override protected def handleWrite(write: WriteRequest) : Future[ResponseRequest] = {
     val parkingSpaces =  write.odf.getNodesOfType( "mv:ParkingSpace" )
     if(write.odf.get(findParkingPath).nonEmpty ){
@@ -344,7 +361,7 @@ class ParkingAgent(
                 ps.available == Some( "true" )
               ){
                 if( currentPS.user != ps.user ){
-                  log.debug( s"Trying releasa spot that some one else reserved" )
+                  log.debug( s"Trying release spot that some one else reserved" )
                   throw  new Exception( "Trying to free parking space reserved by someone else.") 
                 } else {
                   log.debug( s"Releasing spot" )
@@ -577,7 +594,8 @@ class ParkingAgent(
     case write: WriteRequest => respondFuture(handleWrite(write))
     case call: CallRequest => respondFuture(handleCall(call))
   }
-  /*
+ */ 
+/*
   def handleParkingSpaces( odf: OdfObjects ) ={
     def getStringFromPath( path: Path, oo: OdfObject ): Option[String] ={
       oo.get(path).collect{
@@ -610,7 +628,7 @@ class ParkingAgent(
                         obj.update( obj.path / "Available", Vector( OdfValue( "false", currentTime )))
                     case (Some( newStatus ), Some(lidStatus)) 
                       if newStatus.equalsIgnoreCase("false") =>
-                      chechLidStatus(lidStatus, obj)
+                      checkLidStatus(lidStatus, obj)
                           .update( obj.path / "Available", Vector( OdfValue( "false", currentTime )))
                     case (Some( newStatus ), Some(lidStatus)) 
                       if newStatus.equalsIgnoreCase("true") =>
@@ -634,7 +652,7 @@ class ParkingAgent(
                     case (Some( newStatus ),Some(lidStatus)) 
                       if newStatus.equalsIgnoreCase("false") =>
                       //re reservation.
-                      chechLidStatus(lidStatus, obj)
+                      checkLidStatus(lidStatus, obj)
                     case (Some( newStatus), None) 
                       if newStatus.equalsIgnoreCase("true") =>
                         obj
@@ -642,7 +660,7 @@ class ParkingAgent(
                     case (Some( newStatus ),Some(lidStatus)) 
                       if newStatus.equalsIgnoreCase("true") =>
                       //release
-                        chechLidStatus(lidStatus, obj)
+                        checkLidStatus(lidStatus, obj)
                           .update( obj.path / "User", Vector( OdfValue( "NONE", currentTime) ))
                     case (Some( ns ),ls)=>
                       throw new Exception( "Unknown available status. Should be either true or false." )
@@ -667,10 +685,10 @@ class ParkingAgent(
       obj
         .update( obj.path / "Charger" / "LidStatus" , Vector( OdfValue( "Open", currentTime )))
     } else {
-        throw new Exception( "Only open status expected for lid status from outsite." )
+        throw new Exception( "Only open status expected for lid status from outside." )
     }
   }
   */
-}
+//}
 
 

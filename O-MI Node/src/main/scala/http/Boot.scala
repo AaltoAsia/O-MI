@@ -212,7 +212,7 @@ object OmiServer {
 
       val objects = createAncestors(
         OdfInfoItem(
-          Path(settings.settingsOdfPath + "num-latest-values-stored"), 
+          settings.settingsOdfPath / "num-latest-values-stored", 
           Iterable(OdfValue(settings.numLatestValues.toString, "xs:integer", currentTime)),
           Some(OdfDescription(numDescription))
         ))
@@ -225,7 +225,7 @@ object OmiServer {
         Results.unionReduce(response.results).forall{
           case result : OmiResult => result.returnValue match {
             case s: Successful => 
-              system.log.info("O-MI InputPusher system working.")
+              system.log.debug("O-MI InputPusher system working.")
               true
             case f: OmiReturn => 
               system.log.error( s"O-MI InputPusher system not working; $response")

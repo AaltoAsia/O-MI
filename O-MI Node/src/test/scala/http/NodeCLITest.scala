@@ -109,7 +109,7 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
     resF should beEqualTo(correct ).await( 0, timeoutDuration)
   }
 
-  def ignoreConnectedToAgentMananger( connection: TestProbe ) : Unit ={
+  def ignoreConnectedToAgentManager(connection: TestProbe ) : Unit ={
     connection.ignoreMsg{ case Write(data, ack) => data.decodeString("UTF-8") == s"CLI connected to AgentManager.\r\n>" }
   }
   def listAgentsTest= new Actorstest(AS){
@@ -123,7 +123,7 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
     val agentsMap : MutableMap[AgentName,AgentInfo] = MutableMap(agents.map{ info => info.name -> info }:_*)
     val requestHandler = TestActorRef( new TestDummyRequestHandler() )
     val dbHandler =  TestActorRef( new TestDummyDBHandler() )
-    val agentSystemRef = TestActorRef( new TestManager(agentsMap,dbHandler,requestHandler)) 
+    val agentSystemRef = TestActorRef( new TestManager(agentsMap,dbHandler,requestHandler))
     val agentSystem = agentSystemRef.underlyingActor
     val subscriptionManager = ActorRef.noSender
     val removeHandler = new RemoveTester( Path("Objects/aue" ) )
@@ -137,8 +137,8 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
       subscriptionManager
     ))
     val listener = listenerRef.underlyingActor
-    val resF :Future[String ]=decodeWriteStr(listenerRef ? strToMsg("list agents"))    
-    val correct : String =  listener.agentsStrChart( agents) 
+    val resF :Future[String ]=decodeWriteStr(listenerRef ? strToMsg("list agents"))
+    val correct : String =  listener.agentsStrChart( agents)
     resF should beEqualTo( correct ).await( 0, timeoutDuration)
   }
 
@@ -151,13 +151,13 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
     val testAgents = MutableMap( name -> agentInfo)
     val requestHandler = TestActorRef( new TestDummyRequestHandler() )
     val dbHandler =  TestActorRef( new TestDummyDBHandler() )
-    val managerRef = TestActorRef( new TestManager(testAgents,dbHandler,requestHandler)) 
+    val managerRef = TestActorRef( new TestManager(testAgents,dbHandler,requestHandler))
     val managerActor = managerRef.underlyingActor
     val subscriptionManager = ActorRef.noSender
     val removeHandler = new RemoveTester( Path("Objects/aue" ) )
     val remote = new InetSocketAddress("Tester",22)
     val connection = TestProbe()//ActorRef( new DummyRemote(remote.toString()))
-    ignoreConnectedToAgentMananger(connection)
+    ignoreConnectedToAgentManager(connection)
     val listenerRef = TestActorRef(new OmiNodeCLI(
       connection.ref,
       remote,
@@ -166,8 +166,8 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
       subscriptionManager
     ))
     val listener = listenerRef.underlyingActor
-   // val resF :Future[String ]=decodeWriteStr(listenerRef ? strToMsg(s"start $name"))    
-   // val correct : String =  s"Agent $name started succesfully.\r\n" 
+   // val resF :Future[String ]=decodeWriteStr(listenerRef ? strToMsg(s"start $name"))
+   // val correct : String =  s"Agent $name started succesfully.\r\n"
    /// resF should beEqualTo( correct ).await( 0, timeoutDuration)
     connection.send(listenerRef,strToMsg(s"start $name"))
     ( connection.expectMsgType[Write].data.decodeString("UTF-8") must beEqualTo(s">") ) and (
@@ -181,13 +181,13 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
     val testAgents = MutableMap( name -> agentInfo)
     val requestHandler = TestActorRef( new TestDummyRequestHandler() )
     val dbHandler =  TestActorRef( new TestDummyDBHandler() )
-    val managerRef = TestActorRef( new TestManager(testAgents,dbHandler,requestHandler)) 
+    val managerRef = TestActorRef( new TestManager(testAgents,dbHandler,requestHandler))
     val managerActor = managerRef.underlyingActor
     val subscriptionManager = ActorRef.noSender
     val removeHandler = new RemoveTester( Path("Objects/aue" ) )
     val remote = new InetSocketAddress("Tester",22)
     val connection = TestProbe()
-    ignoreConnectedToAgentMananger(connection)
+    ignoreConnectedToAgentManager(connection)
     val listenerRef = TestActorRef(new OmiNodeCLI(
       connection.testActor,
       remote,
@@ -196,7 +196,7 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
       subscriptionManager
     ))
     val listener = listenerRef.underlyingActor
-    //val resF :Future[String ]= decodeWriteStr(listenerRef ? strToMsg(s"stop $name"))    
+    //val resF :Future[String ]= decodeWriteStr(listenerRef ? strToMsg(s"stop $name"))
 
     connection.send(listenerRef,strToMsg(s"stop $name"))
     ( connection.expectMsgType[Write].data.decodeString("UTF-8") must beEqualTo(s">") ) and (
@@ -207,12 +207,12 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
     val agentsMap: MutableMap[AgentName, AgentInfo] = MutableMap.empty
     val requestHandler = TestActorRef( new TestDummyRequestHandler() )
     val dbHandler =  TestActorRef( new TestDummyDBHandler() )
-    val agentSystem = TestActorRef( new TestManager(agentsMap,dbHandler,requestHandler)) 
+    val agentSystem = TestActorRef( new TestManager(agentsMap,dbHandler,requestHandler))
     val subscriptionManager = ActorRef.noSender
     val removeHandler = new RemoveTester( Path("Objects/aue" ) )
     val remote = new InetSocketAddress("Tester",22)
     val connection = TestProbe() //ActorRef( new DummyRemote(remote.toString()))
-    ignoreConnectedToAgentMananger(connection)
+    ignoreConnectedToAgentManager(connection)
     val listenerRef = TestActorRef(new OmiNodeCLI(
       connection.ref,
       remote,
@@ -221,9 +221,9 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
       subscriptionManager
     ))
     val listener = listenerRef.underlyingActor
-    val correct: String  = "Unknown command. Use help to get information of current commands.\r\n>" 
+    val correct: String  = "Unknown command. Use help to get information of current commands.\r\n>"
     connection.send(listenerRef,strToMsg(s"aueo"))
-    connection.expectMsgType[Write].data.decodeString("UTF-8") must beEqualTo(correct) 
+    connection.expectMsgType[Write].data.decodeString("UTF-8") must beEqualTo(correct)
 
   }
   def removePathTest= new Actorstest(AS){
@@ -231,13 +231,13 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
     val agentsMap: MutableMap[AgentName, AgentInfo] = MutableMap.empty
     val requestHandler = TestActorRef( new TestDummyRequestHandler() )
     val dbHandler =  TestActorRef( new TestDummyDBHandler() )
-    val agentSystem = TestActorRef( new TestManager(agentsMap,dbHandler,requestHandler)) 
+    val agentSystem = TestActorRef( new TestManager(agentsMap,dbHandler,requestHandler))
     val subscriptionManager = ActorRef.noSender
     val path = "Objects/object/sensor"
     val removeHandler = new RemoveTester( Path(path) )
     val remote = new InetSocketAddress("Tester",22)
     val connection = TestProbe()//ActorRef( new DummyRemote(remote.toString()))
-    ignoreConnectedToAgentMananger(connection)
+    ignoreConnectedToAgentManager(connection)
     val listenerRef = TestActorRef(new OmiNodeCLI(
       connection.ref,
       remote,
@@ -246,23 +246,23 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
       subscriptionManager
     ))
     val listener = listenerRef.underlyingActor
-    // val resF: Future[String ] =decodeWriteStr(listenerRef ? strToMsg(s"remove $path"))    
-    val correct: String  = s"Successfully removed path $path\r\n>" 
+    // val resF: Future[String ] =decodeWriteStr(listenerRef ? strToMsg(s"remove $path"))
+    val correct: String  = s"Successfully removed path $path\r\n>"
     connection.send(listenerRef,strToMsg(s"remove $path"))
-    connection.expectMsgType[Write].data.decodeString("UTF-8") must beEqualTo(correct) 
+    connection.expectMsgType[Write].data.decodeString("UTF-8") must beEqualTo(correct)
   }
   def removeUnexistingPathTest= new Actorstest(AS){
     import system.dispatcher
     val agentsMap: MutableMap[AgentName, AgentInfo] = MutableMap.empty
     val requestHandler = TestActorRef( new TestDummyRequestHandler() )
     val dbHandler =  TestActorRef( new TestDummyDBHandler() )
-    val agentSystem = TestActorRef( new TestManager(agentsMap,dbHandler,requestHandler)) 
+    val agentSystem = TestActorRef( new TestManager(agentsMap,dbHandler,requestHandler))
     val subscriptionManager = ActorRef.noSender
     val path = "Objects/object/sensor"
     val removeHandler = new RemoveTester( Path(path) )
     val remote = new InetSocketAddress("Tester",22)
     val connection = TestProbe()//ActorRef( new DummyRemote(remote.toString()))
-    ignoreConnectedToAgentMananger(connection)
+    ignoreConnectedToAgentManager(connection)
     val listenerRef = TestActorRef(new OmiNodeCLI(
       connection.ref,
       remote,

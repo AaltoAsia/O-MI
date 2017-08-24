@@ -48,7 +48,7 @@ import types.OmiTypes._
   /** Tests if user specified by UserData has permission for request OmiRequest.
    * Function is in curried format.
    *
-   * return Boolean, true if connection is permited to do input.
+   * return Boolean, true if connection is permitted to do input.
    */
   //private def hasPermission: UserData => OmiRequest => Boolean
 
@@ -141,13 +141,13 @@ object Authorization {
      *
      * The function can be used many times for the same user.
      *
-     * One could make the Authorization implementations splitted in two parts:
+     * One could make the Authorization implementations split in two parts:
      * // This directive gets the user identification data from the request.
      * private def extractUserData: Directive1[UserData]
      *
      * // Tests if user specified by UserData has permission for request OmiRequest.
      * // Function is in curried format.
-     * // @return Boolean, true if connection is permited to do input.
+     * // @return Boolean, true if connection is permitted to do input.
      * private def hasPermission: UserData => OmiRequest => Boolean
      *
      * def makePermissionTestFunction =
@@ -232,11 +232,11 @@ trait LogPermissiveRequestBeginning extends AuthorizationExtension {
     provide{(wrap: RequestWrapper) =>
       wrap.unwrapped flatMap {
         case r: PermissiveRequest with OdfRequest =>
-          log.info(s"Permissive request received: ${r.getClass.getSimpleName}: " +
+          log.debug(s"Permissive request received: ${r.getClass.getSimpleName}: " +
             r.odf.paths.take(3).mkString(", ") + "...")
           Failure(UnauthorizedEx())
         case r: PermissiveRequest =>
-          log.info(s"Permissive request received: ${r.toString.take(80)}...")
+          log.debug(s"Permissive request received: ${r.toString.take(80)}...")
           Failure(UnauthorizedEx())
         case _ => Failure(UnauthorizedEx())
       }

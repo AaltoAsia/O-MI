@@ -104,14 +104,14 @@ trait Tables extends DBBase{
   class PathValues( val path: Path, val pathID: Long ) extends TableQuery[TimedValuesTable]({tag: Tag => new TimedValuesTable(path, pathID,tag)}){
     def name = s"PATH_${pathID.toString}"
     import dc.driver.api._
-    def removeValuesBefore( end: Timestamp) = befor(end).delete
+    def removeValuesBefore( end: Timestamp) = before(end).delete
     def trimToNNewestValues( n: Long ) = selectAllExpectNNewestValuesCQ( n ).result.flatMap{
       values: Seq[TimedValue] =>
         val ids = values.map(_.id).flatten
         this.filter(_.id inSet(ids)).delete
     }
-    def add( values: Seq[TimedValue] ) = this ++= values.distinct 
-    def getNBetween( 
+    def add( values: Seq[TimedValue] ) = this ++= values.distinct
+    def getNBetween(
       beginO: Option[Timestamp],
       endO: Option[Timestamp],
       newestO: Option[Int],
@@ -123,13 +123,13 @@ trait Tables extends DBBase{
         case ( Some(n), None, None, None) => newestC(n)
         case ( None, Some(n), None, None) => oldestC(n)
         case ( None, None, Some(begin), None) => afterC(begin)
-        case ( None, None, None, Some(end)) => beforC(end)
+        case ( None, None, None, Some(end)) => beforeC(end)
         case ( None, None, Some(begin), Some(end)) => betweenC(begin,end)
         case ( Some(n), None, Some(begin), None) => newestAfterC(n,begin)
-        case ( Some(n), None, None, Some(end)) => newestBeforC(n,end)
+        case ( Some(n), None, None, Some(end)) => newestBeforeC(n,end)
         case ( Some(n), None, Some(begin), Some(end)) => newestBetweenC(n,begin,end)
         case ( None, Some(n), Some(begin), None) => oldestAfterC(n,begin)
-        case ( None, Some(n), None, Some(end)) => oldestBeforC(n,end)
+        case ( None, Some(n), None, Some(end)) => oldestBeforeC(n,end)
         case ( None, Some(n), Some(begin), Some(end)) => oldestBetweenC(n,begin,end)
       }
       compiledQuery.result
@@ -139,18 +139,18 @@ trait Tables extends DBBase{
     protected lazy val newestC = Compiled( newest _ )
     protected lazy val oldestC = Compiled( oldest _ )
     protected def after( begin: Rep[Timestamp] ) = this.filter( _.timestamp >= begin)
-    protected def befor( end: Rep[Timestamp] ) = this.filter( _.timestamp <= end)
+    protected def before(end: Rep[Timestamp] ) = this.filter( _.timestamp <= end)
     protected lazy val afterC = Compiled( after _ )
-    protected lazy val beforC = Compiled( befor _ )
-    protected def newestAfter( n: ConstColumn[Long], begin: Rep[Timestamp] ) = after(begin).sortBy(_.timestamp.desc).take(n) 
-    protected def newestBefor( n: ConstColumn[Long], end: Rep[Timestamp] ) = befor(end).sortBy(_.timestamp.desc).take(n) 
+    protected lazy val beforeC = Compiled( before _ )
+    protected def newestAfter( n: ConstColumn[Long], begin: Rep[Timestamp] ) = after(begin).sortBy(_.timestamp.desc).take(n)
+    protected def newestBefore(n: ConstColumn[Long], end: Rep[Timestamp] ) = before(end).sortBy(_.timestamp.desc).take(n)
     protected lazy val newestAfterC = Compiled( newestAfter _ )
-    protected lazy val newestBeforC = Compiled( newestBefor _ )
-    
-    protected def oldestAfter( n: ConstColumn[Long], begin: Rep[Timestamp] ) = after(begin).sortBy(_.timestamp.asc).take(n) 
-    protected def oldestBefor( n: ConstColumn[Long], end: Rep[Timestamp] ) = befor(end).sortBy(_.timestamp.asc).take(n) 
+    protected lazy val newestBeforeC = Compiled( newestBefore _ )
+
+    protected def oldestAfter( n: ConstColumn[Long], begin: Rep[Timestamp] ) = after(begin).sortBy(_.timestamp.asc).take(n)
+    protected def oldestBefore(n: ConstColumn[Long], end: Rep[Timestamp] ) = before(end).sortBy(_.timestamp.asc).take(n)
     protected lazy val oldestAfterC = Compiled( oldestAfter _ )
-    protected lazy val oldestBeforC = Compiled( oldestBefor _ )
+    protected lazy val oldestBeforeC = Compiled( oldestBefore _ )
 
     protected def between( begin: Rep[Timestamp], end: Rep[Timestamp] ) = this.filter{ tv => tv.timestamp >= begin && tv.timestamp <= end}
     protected lazy val betweenC = Compiled( between _ )
@@ -177,7 +177,7 @@ trait Tables extends DBBase{
   } 
 }
 
-trait NewSimplifiedDatabase extends Tables with DB with TrimableDB{
+trait NewSimplifiedDatabase extends Tables with DB with TrimmableDB{
   import dc.driver.api._
 
   protected val settings : OmiConfigExtension
@@ -189,7 +189,7 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimableDB{
     val createMissingTables = findTables.flatMap{ 
       case tableNames: Seq[String]  =>
         val queries = if( tableNames.contains( "PATHSTABLE" ) ){
-          log.debug(s"Found following tables:\n${tableNames.mkString("\n")}")
+          //log.debug(s"Foound following tables:\n${tableNames.mkString("\n")}")
           //Found needed table, check for value tables
           val infoItemDBPaths = pathsTable.getInfoItems
 
@@ -222,7 +222,7 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimableDB{
           log.info( s"No tables found. Creating PATHSTABLE.")
           val queries = pathsTable.schema.create.map{ 
             case u: Unit => 
-              log.debug("Created PATHSTABLE.")
+            log.debug("Created PATHSTABLE.")
             Seq("PATHSTABLE")
           }
           queries
@@ -231,25 +231,25 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimableDB{
     }
     val populateMap = createMissingTables.flatMap{
       case tablesCreated: Seq[String] =>
-        log.debug( s"Created following tables:\n${tablesCreated.mkString("\n")}")
+        //log.debug( s"Created following tables:\n${tablesCreated.mkString("\n")}")
         val actions = if( tablesCreated.contains("PATHSTABLE")){
-          log.debug(s"Adding Objects to PATHSTABLE")
+          //log.debug(s"Adding Objects to PATHSTABLE")
           val pRoot = Path("Objects")
           val dbP = DBPath(None, pRoot,false)
           pathsTable.add( Seq(dbP) ).map{
             case ids: Seq[Long] =>
-              log.debug(s"Adding Objects to pathTODBPath Map.")
+              //log.debug(s"Adding Objects to pathTODBPath Map.")
               pathToDBPath ++= ids.map{
                 case id: Long => 
-                  log.debug(s"Objects id is $id")
+                  //log.debug(s"Objects id is $id")
                   pRoot -> dbP.copy(id= Some(id))
               }
           }
         } else {
-          log.debug(s"Getting current paths from PATHSTABLE for pathToDBPath.")
+          //log.debug(s"Getting current paths from PATHSTABLE for pathToDBPath.")
           pathsTable.result.map{ 
             dbPaths => 
-              log.debug(s"Found following from PATHSTABLE:\n${dbPaths.mkString("\n")}")
+              //log.debug(s"Found following from PATHSTABLE:\n${dbPaths.mkString("\n")}")
               pathToDBPath ++= dbPaths.map{ dbPath => dbPath.path -> dbPath }
           }
         }
@@ -309,7 +309,7 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimableDB{
     }.flatten.distinct.filter{ 
       case dbPath: DBPath => !pathToDBPath.contains(dbPath) 
     }
-    log.info( s"Adding total of  ${pathsToAdd.length} paths to DB.") 
+    log.debug( s"Adding total of  ${pathsToAdd.length} paths to DB.")
     val pathAddingAction = pathsTable.add(pathsToAdd)
     val getAddedDBPaths =  pathAddingAction.flatMap{
       case ids: Seq[Long] => 
@@ -381,7 +381,7 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimableDB{
         DBIO.sequence( valueWritingIOs ).map{
           case countsOfCreatedValuesPerPath: Seq[Seq[Int]] =>  
             val sum = countsOfCreatedValuesPerPath.map( _.sum).sum
-            log.info( s"Writed total of $sum values to ${countsOfCreatedValuesPerPath.length} paths." ) 
+            log.info( s"Wrote total of $sum values to ${countsOfCreatedValuesPerPath.length} paths." )
             Returns.Success()
         }
     }
@@ -550,7 +550,7 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimableDB{
             log.error( msg )
             throw new Exception( msg )
           } else {
-            log.warn( s"All tables dropped successfullly, no tables found afterwards.")
+            log.warn( s"All tables dropped successfully, no tables found afterwards.")
           }
       }
     }
