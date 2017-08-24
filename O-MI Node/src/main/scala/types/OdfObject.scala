@@ -26,7 +26,7 @@ import types.OdfTypes.OdfTreeCollection._
 
 /** Class implementing OdfObject. */
 class  OdfObjectImpl(
-  id:                   OdfTreeCollection[QlmID],
+  id:                   OdfTreeCollection[OdfQlmID],
   path:                 Path,
   infoItems:            OdfTreeCollection[OdfInfoItem],
   objects:              OdfTreeCollection[OdfObject],
@@ -45,17 +45,17 @@ class  OdfObjectImpl(
     val thatInfo: HashMap[Path, OdfInfoItem] = HashMap(another.infoItems.map(ii => (ii.path, ii)): _*)
     val thisObj: HashMap[Path, OdfObject] = HashMap(objects.map(o => (o.path, o)): _*)
     val thatObj: HashMap[Path, OdfObject] = HashMap(another.objects.map(o => (o.path, o)): _*)
-    val tmp: OdfTreeCollection[QlmID] = id
-    val tmp2: OdfTreeCollection[QlmID] = another.id
-    val idsWithDuplicate: Vector[QlmID] = (this.id.toVector ++ another.id.toVector)
-    val ids: Seq[QlmID]  = idsWithDuplicate.groupBy{ 
-      case qlmId: QlmID => qlmId.value 
+    val tmp: OdfTreeCollection[OdfQlmID] = id
+    val tmp2: OdfTreeCollection[OdfQlmID] = another.id
+    val idsWithDuplicate: Vector[OdfQlmID] = (this.id.toVector ++ another.id.toVector)
+    val ids: Seq[OdfQlmID]  = idsWithDuplicate.groupBy{ 
+      case qlmId: OdfQlmID => qlmId.value 
     }.values.collect{
-        case Seq(single: QlmID) => Seq(single)
-        case Seq( id: QlmID, otherId: QlmID) => 
+        case Seq(single: OdfQlmID) => Seq(single)
+        case Seq( id: OdfQlmID, otherId: OdfQlmID) => 
           if( id.unionable(otherId) ){
             Seq(id.union(otherId))
-          } else Seq[QlmID](id, otherId )
+          } else Seq[OdfQlmID](id, otherId )
     }.toSeq.flatten
 
     OdfObject(
@@ -244,7 +244,7 @@ class  OdfObjectImpl(
   implicit def asObjectType : ObjectType = {
     require(path.length > 1, s"OdfObject should have longer than one segment path: $path")
     ObjectType(
-      /*Seq( QlmID(
+      /*Seq( OdfQlmID(
         path.last, // require checks (also in OdfObject)
         attributes = Map.empty
       )),*/
