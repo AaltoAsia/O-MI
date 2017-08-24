@@ -110,7 +110,7 @@ public class JavaTemplateAgent extends JavaInternalAgent {
                 "Something went wrong when " + name() + " wrote, " + result.toString()
                 );
           }
-        }ge
+        }
       }
   }
   // Contains function for the asynchronous handling of write failure
