@@ -149,10 +149,10 @@ for the defaults and configuration documentation.
 Library Config
 --------------
 
-`application.conf` can also have a lot of Akka (threading framework), Spray (HTTP server) and Slick (database) specific settings:
+`application.conf` can also have a lot of Akka (threading framework and HTTP server) and Slick (database) specific settings:
 
 - [Akka Actors](http://doc.akka.io/docs/akka/2.3.9/general/configuration.html)
-- [Spray-can http server](http://spray.io/documentation/1.2.2/spray-can/configuration/)
+- [Akka HTTP](http://doc.akka.io/docs/akka-http/10.0.9/scala/http/configuration.html)
 - [Slick forConfig docs](http://slick.typesafe.com/doc/3.0.0-RC2/api/index.html#slick.jdbc.JdbcBackend$DatabaseFactoryDef@forConfig\(String,Config,Driver\):Database)
 
 O-MI Extensions
