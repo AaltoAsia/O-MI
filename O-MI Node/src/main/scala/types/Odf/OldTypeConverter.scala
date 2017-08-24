@@ -28,7 +28,8 @@ object OldTypeConverter{
       odfObject.typeValue,
       odfObject.description.map{
         des => convertOdfDescription(des)
-      }.toVector
+      }.toVector,
+      odfObject.attributes
     )
 
     val iIs: Seq[InfoItem] = odfObject.infoItems.map{ iI => convertOdfInfoItem( iI )}
@@ -70,7 +71,8 @@ object OldTypeConverter{
       },
       odfII.metaData.map{
         md => convertOdfMetaData( md )
-      }
+      },
+      odfII.attributes
     )
   }
   def convertOdfValue( odfValue: OdfValue[Any] ) : Value[Any] ={

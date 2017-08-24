@@ -61,7 +61,8 @@ object NewTypeConverter{
       infoItems.toVector,
       objects.toVector,
       obj.descriptions.map( convertDescription ).headOption,
-      obj.typeAttribute
+      obj.typeAttribute,
+      obj.attributes
     )
   } 
 
@@ -83,13 +84,17 @@ object NewTypeConverter{
       Path( ii.path.toSeq ),
       ii.values.map( convertValue ).toVector,
       ii.descriptions.map( convertDescription ).headOption,
-      ii.metaData.map( convertMetaData )
+      ii.metaData.map( convertMetaData ),
+      ii.typeAttribute,
+      ii.attributes
     )
   }
   def convertValue( value: Value[Any] ): OdfValue[Any] = {
     value.value match {
       case o: ODF => //[scala.collection.Map[Path,Node],scala.collection.SortedSet[Path] ] =>
-        OdfValue( convertODF(o), value.timestamp, HashMap( value.attributes.toSeq:_*) )
+        OdfValue( convertODF(o),  value.timestamp, HashMap( value.attributes.toSeq:_*) )
+      case str: String =>
+        OdfValue(str, value.typeAttribute, value.timestamp, HashMap( value.attributes.toSeq:_*) )
       case o: Any =>
         OdfValue(o, value.timestamp, HashMap( value.attributes.toSeq:_*) )
     }

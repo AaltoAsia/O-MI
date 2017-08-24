@@ -41,7 +41,7 @@ case class ODFValue(
   val timestamp: Timestamp,
   val attributes: Map[String,String]
 ) extends Value[ODF] {
-  final val typeAttribute: String = "odf:Objects"
+  final val typeAttribute: String = "odf"
   def valueAsDataRecord = DataRecord(None, Some("Objects"),value.asObjectsType)
 }
 
