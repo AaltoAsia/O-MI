@@ -96,15 +96,19 @@ trait DBWriteHandler extends DBHandlerBase {
 
   private def processEvents(events: Seq[InfoItemEvent]) = {
     //Add write data to analytics if wanted
-    analyticsStore.foreach{store =>
+    analyticsStore.foreach{ store =>
       events
         .map(event => (event.infoItem.path, event.infoItem.values.map(_.timestamp.getTime())))
         .foreach(pv => store ! AddWrite(pv._1, pv._2))
     }
     val esubLists: Seq[(EventSub, OdfInfoItem)] = events.collect{
+      case AttachEvent(infoItem) =>
+        val nesubs: Seq[NewEventSub] = singleStores.subStore execute LookupNewEventSubs(infoItem.path)
+        val esubs: Seq[NormalEventSub] = singleStores.subStore execute LookupEventSubs(infoItem.path)
+        (esubs ++ nesubs) map { (_, infoItem) }  // make tuples
       case ChangeEvent(infoItem) =>  // note: AttachEvent extends ChangeEvent
 
-        val esubs = singleStores.subStore execute LookupEventSubs(infoItem.path)
+        val esubs: Seq[NormalEventSub] = singleStores.subStore execute LookupEventSubs(infoItem.path)
         esubs map { (_, infoItem) }  // make tuples
     }.flatten
     // Aggregate events under same subscriptions (for optimized callbacks)

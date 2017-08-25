@@ -236,7 +236,7 @@ trait SubLike {
   def ttlToMillis: Long = ttl.toMillis
   def intervalToMillis: Long = interval.toMillis
   def isImmortal: Boolean  = ! ttl.isFinite
-  require(interval == -1.seconds || interval >= 0.seconds, s"Invalid interval: $interval")
+  require(interval == -1.seconds || interval == -2.seconds || interval >= 0.seconds, s"Invalid interval: $interval")
   require(ttl >= 0.seconds, s"Invalid ttl, should be positive (or +infinite): $interval")
 }
 

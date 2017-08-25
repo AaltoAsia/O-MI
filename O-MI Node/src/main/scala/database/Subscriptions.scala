@@ -49,6 +49,14 @@ case class PollEventSub(
   paths: Vector[Path]
   ) extends PolledSub
 
+case class PollNewEventSub(
+                          id: Long,
+                          endTime: Timestamp,
+                          lastPolled: Timestamp,
+                          startTime:Timestamp,
+                          paths: Vector[Path]
+                          ) extends PolledSub
+
 case class PollIntervalSub(
   id: Long,
   endTime: Timestamp,
@@ -67,18 +75,32 @@ case class IntervalSub(
   startTime: Timestamp
   ) extends SavedSub
 
-case class EventSub(
+case class NormalEventSub(
   id: Long,
   paths: Vector[Path],
   endTime: Timestamp,
   callback: DefinedCallback
-  ) extends SavedSub//startTime: Duration) extends SavedSub
+  ) extends SavedSub with EventSub//startTime: Duration) extends SavedSub
+
+case class NewEventSub(
+                      id: Long,
+                      paths: Vector[Path],
+                      endTime: Timestamp,
+                      callback: DefinedCallback
+                      ) extends EventSub
+
+sealed trait EventSub extends SavedSub {
+  val paths: Vector[Path]
+  val endTime: Timestamp
+  val callback: DefinedCallback
+
+}
 
 /** from Path string to event subs for that path */
 
 case class Subs(
                var eventSubs: HashMap[Path, Vector[EventSub]],
-               var idToSub: HashMap[Long, PolledSub], 
+               var idToSub: HashMap[Long, PolledSub],
                var pathToSubs: HashMap[Path, Set[Long]],
                var intervalSubs: HashMap[Long, IntervalSub])
 object Subs {
@@ -177,9 +199,15 @@ case class RemovePollSubData(subId: Long) extends Transaction[PollSubData] {
 }
 
 
-case class LookupEventSubs(path: Path) extends Query[Subs, Vector[EventSub]] {
-  def query(es: Subs, d: Date): Vector[EventSub] =
-    (path.getParentsAndSelf flatMap (p => es.eventSubs.get(p))).flatten.toVector // get for Map returns Option (safe)
+case class LookupEventSubs(path: Path) extends Query[Subs, Vector[NormalEventSub]] {
+  def query(es: Subs, d: Date): Vector[NormalEventSub] =
+    (path.getParentsAndSelf flatMap (p => es.eventSubs.get(p))).flatten.collect{case ns: NormalEventSub => ns}.toVector // get for Map returns Option (safe)
+}
+
+
+case class LookupNewEventSubs(path: Path) extends Query[Subs, Vector[NewEventSub]] {
+  def query(es: Subs, d: Date): Vector[NewEventSub] =
+    (path.getParentsAndSelf flatMap (p => es.eventSubs.get(p))).flatten.collect{case ns: NewEventSub => ns}.toVector // get for Map returns Option (safe)
 }
 
 case class RemoveWebsocketSubs() extends TransactionWithQuery[Subs, Unit] {
@@ -193,7 +221,8 @@ case class RemoveWebsocketSubs() extends TransactionWithQuery[Subs, Unit] {
     store.eventSubs = HashMap[Path,Vector[EventSub]](store.eventSubs.mapValues{
       subs =>
         subs.filter{
-          case EventSub(_,_,_,callback: CurrentConnectionCallback) => false
+          case NormalEventSub(_,_,_,callback: CurrentConnectionCallback) => false
+          case NewEventSub(_,_,_,callback: CurrentConnectionCallback) => false
           case sub: EventSub => true
           }
           }.toSeq:_*)

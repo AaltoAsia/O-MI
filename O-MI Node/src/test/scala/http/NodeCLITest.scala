@@ -2,39 +2,31 @@ package http
 
 import java.util.Date
 import java.sql.Timestamp
-import java.net.InetSocketAddress//(String hostname, int port)
-import scala.collection.mutable.{ Map => MutableMap }
+import java.net.InetSocketAddress
+
+import scala.collection.mutable.{Map => MutableMap}
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import akka.util.{ByteString, Timeout}
-import akka.actor.{Actor, ActorSystem, ActorLogging, ActorRef, Props}
+import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, Props}
 import akka.pattern.ask
 import akka.testkit._
-import com.typesafe.config.{ConfigFactory, Config}
+import com.typesafe.config.{Config, ConfigFactory}
 import org.specs2.concurrent.ExecutionEnv
 import org.specs2.specification.create.InterpolatedFragment
 import org.specs2.mutable._
 import org.specs2.matcher._
 import org.specs2.matcher.FutureMatchers._
-import com.typesafe.config.{ConfigFactory, Config}
+import com.typesafe.config.{Config, ConfigFactory}
 import testHelpers.Actorstest
 import types.Path
 import types.OmiTypes._
-import responses.{RemoveHandlerT,RemoveSubscription}
-import agentSystem.{
-  AgentName,
-  AgentInfo,
-  TestManager,
-  SSAgent,
-  TestDummyDBHandler,
-  TestDummyRequestHandler,
-  Scala,
-  Java
-}
+import responses.{RemoveHandlerT, RemoveSubscription}
+import agentSystem._
 import akka.util.{ByteString, Timeout}
 import akka.http.scaladsl.model.Uri
-import akka.io.Tcp.{Write, Received}
-import database.{EventSub, IntervalSub, PolledSub, PollEventSub, PollIntervalSub, SavedSub}
+import akka.io.Tcp.{Received, Write}
+import database._
 import http.CLICmds._
 
 
@@ -292,9 +284,9 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
         IntervalSub( 55, paths, endTime, callback, interval, startTime )
       )
       val eventSubs : Set[EventSub] =Set( 
-        EventSub( 40, paths, endTime, callback),
-        EventSub( 430, paths, endTime, callback),
-        EventSub( 32, paths, endTime, callback)
+        NormalEventSub( 40, paths, endTime, callback),
+        NormalEventSub( 430, paths, endTime, callback),
+        NormalEventSub( 32, paths, endTime, callback)
       )
       val pollSubs : Set[PolledSub] = Set( 
         PollEventSub(59, endTime, nextRunTime, startTime, paths),
@@ -423,7 +415,7 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
 
       val remote = new InetSocketAddress("Tester",22)
       val removeHandler = new RemoveTester( Path("objects/aue" ) )
-      val sub = Some(EventSub(
+      val sub = Some(NormalEventSub(
         id,
         paths,
         endTime,
