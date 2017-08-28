@@ -174,7 +174,7 @@ case class QlmID(
         }.toSeq
 
     QlmIDType(
-      value,
+      value.replace("\\/","/"),
         (
           idTypeAttr ++ 
           tagTypeAttr ++ 

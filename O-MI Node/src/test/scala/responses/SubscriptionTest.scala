@@ -149,10 +149,10 @@ class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with Bef
     }*/
 
     "return incrementing id for new subscription" >> {
-      val ns1 = addSub(1,5, Seq("p/1")) 
-      val ns2 = addSub(1,5, Seq("p/1"))
-      val ns3 = addSub(1,5, Seq("p/1"))
-      val ns4 = addSub(1,5, Seq("p/1"))
+      val ns1 = addSub(1,5, Seq(Path("p/1")))
+      val ns2 = addSub(1,5, Seq(Path("p/1")))
+      val ns3 = addSub(1,5, Seq(Path("p/1")))
+      val ns4 = addSub(1,5, Seq(Path("p/1")))
       val rIDs = Vector( ns1, ns2, ns3, ns4).flatMap{ n => n.results.headOption }.flatMap{ result => result.requestIDs.headOption }
       val (check, last) = rIDs.foldLeft(( 0l must be_<(1l),0l)){ case ( l, r) => (l._1 and( l._2 must be_<( r )) , r) }
       rIDs must be size(4) and check
@@ -162,7 +162,7 @@ class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with Bef
       //val actor = system.actorOf(Props(new SubscriptionHandler))
 
       val dur = -5
-      val res = Try(addSub(1, dur, Seq("p/1")))
+      val res = Try(addSub(1, dur, Seq(Path("p/1"))))
 
       //this failure actually comes from the construction of SubscriptionRequest class
       //invalid intervals are handled already in the parsing procedure
@@ -172,15 +172,15 @@ class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with Bef
     //remove when support for interval -2 added
     "fail when trying to use unsupported interval" >> {
       val dur = -2
-      val res = Try(addSub(1, dur, Seq("p/1")))
+      val res = Try(addSub(1, dur, Seq(Path("p/1"))))
       //this failure actually comes from the construction of SubscriptionRequest class
       res must beFailedTry.withThrowable[java.lang.IllegalArgumentException](s"requirement failed: Invalid interval: $dur seconds")
     }
 
     "be able to handle multiple event subscriptions on the same path" >> {
-      val sub1Id = addSub(5,-1, Seq("p/2"))
-      val sub2Id = addSub(5,-1, Seq("p/2"))
-      val sub3Id = addSub(5,-1, Seq("p/1"))
+      val sub1Id = addSub(5,-1, Seq(Path("p/2")))
+      val sub2Id = addSub(5,-1, Seq(Path("p/2")))
+      val sub3Id = addSub(5,-1, Seq(Path("p/1")))
       def pollIds: Vector[Vector[OdfValue[Any]]] = for {
         response <- Vector( sub1Id, sub2Id, sub3Id)
         
@@ -200,9 +200,9 @@ class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with Bef
       val pollsBefore = pollIds
       val emptyCheck = pollsBefore.foldLeft( Vector.empty must have size(0) ){ case (l, r) => l and (r must be empty)}
 
-      addValue("p/2", nv("1", 10000))
-      addValue("p/2", nv("2", 20000))
-      addValue("p/2", nv("3", 30000))
+      addValue(Path("p/2"), nv("1", 10000))
+      addValue(Path("p/2"), nv("2", 20000))
+      addValue(Path("p/2"), nv("3", 30000))
       val pollsAfter = pollIds
       val sizes = pollsAfter.map{ values => values.size }
       val sizeCheck = sizes must contain(3,3,0)
@@ -210,7 +210,7 @@ class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with Bef
     }
 
     "return no values for interval subscriptions if the interval has not passed" >> {
-      val subIdO: Option[Long] = addSub(5, 4, Seq("p/1")).results.headOption.flatMap{ result => result.requestIDs.headOption }
+      val subIdO: Option[Long] = addSub(5, 4, Seq(Path("p/1"))).results.headOption.flatMap{ result => result.requestIDs.headOption }
 
       Thread.sleep(2000)
       val values: Vector[OdfValue[Any]] = pollValues(subIdO)
@@ -218,7 +218,7 @@ class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with Bef
     }
 
     "be able to 'remember' last poll time to correctly return values for intervalsubs" >> {
-      val subIdO: Option[Long] = addSub(5, 4, Seq("p/1")).results.headOption.flatMap{ result => result.requestIDs.headOption }
+      val subIdO: Option[Long] = addSub(5, 4, Seq(Path("p/1"))).results.headOption.flatMap{ result => result.requestIDs.headOption }
 
       Thread.sleep(2000)
       val valuesEmpty: Vector[OdfValue[Any]] = pollValues(subIdO)
@@ -230,9 +230,9 @@ class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with Bef
     }
 
     "return copy of previous value for interval subs if previous value exists" >> {
-      addValue("p/3", nv("4"))
+      addValue(Path("p/3"), nv("4"))
 
-      val subIdO: Option[Long] = addSub(5, 1, Seq("p/3")).results.headOption.flatMap{ result => result.requestIDs.headOption }
+      val subIdO: Option[Long] = addSub(5, 1, Seq(Path("p/3"))).results.headOption.flatMap{ result => result.requestIDs.headOption }
 
       Thread.sleep(2000)
       val values1: Vector[OdfValue[Any]] = pollValues(subIdO) 
@@ -256,35 +256,35 @@ class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with Bef
     }
 
     "return no new values for event subscription if there are no new events" >> skipped{
-      val subIdO: Option[Long] = addSub(5, -1, Seq("r/1")).results.headOption.flatMap{ result => result.requestIDs.headOption }
+      val subIdO: Option[Long] = addSub(5, -1, Seq(Path("r/1"))).results.headOption.flatMap{ result => result.requestIDs.headOption }
       pollValues(subIdO) must be empty
     }
 
     "return value for event sub when the value changes and return no values after polling" >> {
-      val subIdO: Option[Long] = addSub(5, -1, Seq("r/1")).results.headOption.flatMap{ result => result.requestIDs.headOption }
-      addValue("r/1", nv("2", 10000))
+      val subIdO: Option[Long] = addSub(5, -1, Seq(Path("r/1"))).results.headOption.flatMap{ result => result.requestIDs.headOption }
+      addValue(Path("r/1"), nv("2", 10000))
       val c1 = pollValues(subIdO) must have size(1)
-      addValue("r/1", nv("3",20000))
+      addValue(Path("r/1"), nv("3",20000))
       val c2 = pollValues(subIdO) must have size(1)
       val c3 = pollValues(subIdO) must have size(0)
       c1 and c2 and c3
     }
 
     "return no new value for event sub if the value is same as the old one" >> {
-      val subIdO: Option[Long] = addSub(5, -1, Seq("r/2")).results.headOption.flatMap{ result => result.requestIDs.headOption }
+      val subIdO: Option[Long] = addSub(5, -1, Seq(Path("r/2"))).results.headOption.flatMap{ result => result.requestIDs.headOption }
 
-      addValue("r/2", nv("0", 20000))
+      addValue(Path("r/2"), nv("0", 20000))
       val c1 = pollValues(subIdO) must have size(1)
 
-      addValue("r/2", nv("0", 22000))
-      addValue("r/2", nv("0", 23000))
+      addValue(Path("r/2"), nv("0", 22000))
+      addValue(Path("r/2"), nv("0", 23000))
       val c2 = pollValues(subIdO) must have size(0)
       val c3 = pollValues(subIdO) must have size(0)
       c1 and c2 and c3
     }
 
     "subscription should be removed when the ttl expired" >> {
-      val subId = addSub(1, 5, Seq("p/1")).asXML.\\("requestID").text.toInt
+      val subId = addSub(1, 5, Seq(Path("p/1"))).asXML.\\("requestID").text.toInt
       pollSub(subId).asXML must \("response") \ ("result") \ ("return", "returnCode" -> "200")
       Thread.sleep(2000)
       pollSub(subId).asXML must \("response") \ ("result") \ ("return", "returnCode" -> "404")
@@ -293,23 +293,24 @@ class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with Bef
 
   def initDB() = {
     //pathPrefix
-    val pp = Path("Objects\\/SubscriptionTest\\/")
-    val pathAndvalues: Iterable[(String, Vector[OdfValue[Any]])] = Seq(
-      ("p/1", nv("1")),
-      ("p/2", nv("2")),
-      ("p/3", nv("3")),
-      ("r/1", nv("0")),
-      ("r/2", nv("0")),
-      ("r/3", nv("0")),
-      ("u/7", nv("0"))
+    val pp = Path("Objects/SubscriptionTest/")
+    val pathAndvalues: Iterable[(Path, Vector[OdfValue[Any]])] = Seq(
+      (Path("p/1"), nv("1")),
+      (Path("p/2"), nv("2")),
+      (Path("p/3"), nv("3")),
+      (Path("r/1"), nv("0")),
+      (Path("r/2"), nv("0")),
+      (Path("r/3"), nv("0")),
+      (Path("u/7"), nv("0"))
     )
 
     pathAndvalues.foreach{case (path, values) => addValue(path,values)}//InputPusher.handlePathValuePairs(pathAndvalues)
   }
 
-  def addSub(ttl: Long, interval: Long, paths: Seq[String], callback: String = "") = {
+  def addSub(ttl: Long, interval: Long, paths: Seq[Path], callback: String = "") = {
     val hTree = singleStores.hierarchyStore execute GetTree()
-    val p = paths.flatMap(p => hTree.get(Path("Objects\\/SubscriptionTest\\/" + p)))
+    val basePath = Path("Objects/SubscriptionTest/")
+    val p = paths.flatMap(p => hTree.get( basePath / p))
               .map(types.OdfTypes.createAncestors(_))
               .reduceOption(_.union(_))
               .getOrElse(throw new Exception("subscription path did not exist"))
@@ -330,8 +331,8 @@ class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with Bef
   }
 
   //add new value easily
-  def addValue(path: String, nv: Vector[OdfValue[Any]]): Unit = {
-    val pp = Path("Objects\\/SubscriptionTest\\/")
+  def addValue(path: Path, nv: Vector[OdfValue[Any]]): Unit = {
+    val pp = Path("Objects/SubscriptionTest/")
     val odf = OdfTypes.createAncestors(OdfInfoItem(pp / path, nv))
     val writeReq = WriteRequest( odf)
     implicit val timeout = Timeout( 10 seconds )

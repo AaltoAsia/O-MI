@@ -58,7 +58,7 @@ class OmiConfigExtension( val config: Config) extends Extension
 
   /** Save some interesting setting values to this path */
 
-  val settingsOdfPath: Path =  Path(URLDecoder.decode( config.getString("omi-service.settings-read-odfpath").replace("/","\\/"), "UTF-8" ))
+  val settingsOdfPath: Path =  Path(config.getString("omi-service.settings-read-odfpath").split("/").map{ id => URLDecoder.decode( id, "UTF-8"  ).replace("/","\\/")}.mkString("/"))
     
 
   val trimInterval : FiniteDuration = config.getDuration("omi-service.trim-interval")
