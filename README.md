@@ -9,7 +9,15 @@ O-MI Node Server
 Internet of Things data server.
 Implementation of O-MI Node as specified in [Open Messaging Interface](http://www.opengroup.org/iot/omi/index.htm) ([pdf](https://www2.opengroup.org/ogsys/catalog/C14B)) v1.0 standard with [Open Data Format](http://www.opengroup.org/iot/odf/index.htm) ([pdf](https://www2.opengroup.org/ogsys/catalog/C14A)) standard. It is intended to be as reference implementation that shows how these standards work in more detail. Missing features and differences to the standard are collected to [this](https://docs.google.com/spreadsheets/d/1duj-cX7dL9QR0igVMLNq9cBytSA196Ogiby-MWMetGw/edit?pref=2&pli=1#gid=1927687927) (work in progress) document. Questions or problems with the server or the standards can be posted to [Issues](https://github.com/AaltoAsia/O-MI/issues), email or [gitter chat](https://gitter.im/AaltoAsia/O-MI?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge).
 
+Supported communication protocols:
+
+* HTTP (`http://`)
+* HTTPS (`https://`)
+* [WebSocket](#o-mi-extensions) (`ws://`)
+* WebSocket Secure (`wss://`)
+
 This project also includes:
+
 * a developer webapp for building and sending O-MI/O-DF messages.
 * some experimental extensions for the server which can be found in other branches:
   - `omisec-omi-interface` has O-MI/O-DF interface for authorization of O-MI messages in external service.
