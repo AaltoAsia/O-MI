@@ -130,15 +130,14 @@ trait DBWriteHandler extends DBHandlerBase {
   )(implicit system: ActorSystem): Future[ResponseRequest] ={
     if( infoItems.nonEmpty || objectMetadatas.nonEmpty ) {
       val future = handleInfoItems(infoItems, objectMetadatas)
-      future.onSuccess{
-         case u : Iterable[Path] =>
-          log.debug("Successfully saved Odfs to DB")
-      }
       future.map{ 
-          paths => Responses.Success()
+          paths => 
+            log.debug("Successfully saved Odfs to DB")
+            Responses.Success()
       }
     } else {
-      Future.successful{
+      Future{
+        log.debug("No infoitems or metadata to write. Successful write.")
         Responses.Success()
       }  
     }
