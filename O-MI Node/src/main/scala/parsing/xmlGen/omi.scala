@@ -121,7 +121,8 @@ case class DeleteRequestType(nodeList: Option[xmlTypes.NodesType] = None,
 
 /** Result of a request.
 */
-case class RequestResultType(returnValue: xmlTypes.ReturnType,
+case class RequestResultType(
+  returnValue: xmlTypes.ReturnType,
   requestID: Seq[xmlTypes.IdType] = Vector.empty,
   msg: Option[xmlTypes.MsgType] = None,
   nodeList: Option[xmlTypes.NodesType] = None,
