@@ -289,8 +289,8 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
         NormalEventSub( 32, paths, endTime, callback)
       )
       val pollSubs : Set[PolledSub] = Set( 
-        PollEventSub(59, endTime, nextRunTime, startTime, paths),
-        PollEventSub(173, endTime, nextRunTime, startTime, paths),
+        PollNormalEventSub(59, endTime, nextRunTime, startTime, paths),
+        PollNormalEventSub(173, endTime, nextRunTime, startTime, paths),
         PollIntervalSub(37,endTime,interval,nextRunTime,startTime,paths),
         PollIntervalSub(3047,endTime,interval,nextRunTime,startTime,paths)
       )
@@ -465,7 +465,7 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
 
       val remote = new InetSocketAddress("Tester",22)
       val removeHandler = new RemoveTester( Path("objects/aue" ) )
-      val sub = Some(PollEventSub(
+      val sub = Some(PollNormalEventSub(
         id,
         endTime,
         nextRunTime,
@@ -474,6 +474,7 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
       ))
       val correct: String  = s"Started: ${startTime}\r\n" +
       s"Ends: ${endTime}\r\n" +
+      s"Interval: -1\r\n" +
       s"Last polled: ${nextRunTime}\r\n" +
       s"Paths:\r\n${paths.mkString("\r\n")}\r\n>"
       showSubTestBase(sub,correct)

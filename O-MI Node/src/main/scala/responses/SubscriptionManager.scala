@@ -141,7 +141,7 @@ class SubscriptionManager(
     case SubInfoCmd(id) => sender() ! getSub(id)
   }
 
-  private def handlePollEvent(pollEvent: PollEventSub) = {
+  private def handlePollEvent(pollEvent: PolledEventSub) = {
     log.debug(s"Creating response message for Polled Event Subscription")
     val eventData = (singleStores.pollDataPrevayler execute PollEventSubscription(pollEvent.id))
       .map { case (_path, _values) =>
@@ -270,7 +270,7 @@ class SubscriptionManager(
         //pollSubscription method removes the data from database and returns the requested data
         val subValues: Iterable[OdfObjects] = pollSub match {
 
-          case pollEvent: PollEventSub => handlePollEvent(pollEvent)
+          case pollEvent: PolledEventSub => handlePollEvent(pollEvent)
 
           case pollInterval: PollIntervalSub => handlePollInterval(pollInterval, pollTime, odfTree)
         }
@@ -446,7 +446,7 @@ class SubscriptionManager(
             case Duration(-1, duration.SECONDS) => {
               //event poll sub
               singleStores.subStore execute AddPollSub(
-                PollEventSub(
+                PollNormalEventSub(
                   newId,
                   endTime,
                   currentTimestamp,

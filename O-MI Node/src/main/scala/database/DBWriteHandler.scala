@@ -103,6 +103,16 @@ trait DBWriteHandler extends DBHandlerBase {
     }
     val esubLists: Seq[(EventSub, OdfInfoItem)] = events.collect{
       case AttachEvent(infoItem) =>
+
+        println()
+        println()
+        println()
+        println(infoItem)
+        println()
+        println()
+        println()
+        val pollNewSubs = singleStores.subStore execute GetNewEventSubsForPath(infoItem.path)
+        infoItem.values.headOption.foreach(value => pollNewSubs.foreach(pnes => singleStores.pollDataPrevayler execute AddPollData(pnes.id, infoItem.path, value)))
         val nesubs: Seq[NewEventSub] = singleStores.subStore execute LookupNewEventSubs(infoItem.path)
         val esubs: Seq[NormalEventSub] = singleStores.subStore execute LookupEventSubs(infoItem.path)
         (esubs ++ nesubs) map { (_, infoItem) }  // make tuples
@@ -198,7 +208,7 @@ trait DBWriteHandler extends DBHandlerBase {
 
     val callbackDataOptions = pathValueOldValueTuples.map{
       case (path,value, oldValueO) => singleStores.processData(path,value,oldValueO)}
-    val triggeringEvents = callbackDataOptions.flatten
+    val triggeringEvents: Seq[InfoItemEvent] = callbackDataOptions.flatten
     
     if (triggeringEvents.nonEmpty) {  // (unnecessary if?)
       // TODO: implement responsible agent check here or processEvents method

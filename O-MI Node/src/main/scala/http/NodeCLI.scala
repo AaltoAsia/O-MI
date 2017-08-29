@@ -199,9 +199,10 @@ class OmiNodeCLI(
           s"Interval: ${pollSub.interval}\r\n" +
           s"Last polled: ${pollSub.lastPolled}\r\n" +
           s"Paths:\r\n${pollSub.paths.mkString("\r\n")}\r\n>"
-        case Some(pollSub: PollEventSub) =>
+        case Some(pollSub: PolledEventSub) =>
           s"Started: ${pollSub.startTime}\r\n" +
           s"Ends: ${pollSub.endTime}\r\n" +
+          s"Interval: ${if(pollSub.isInstanceOf[PollNewEventSub]) -2 else -1}\r\n" +
           s"Last polled: ${pollSub.lastPolled}\r\n" +
           s"Paths:\r\n${pollSub.paths.mkString("\r\n")}\r\n>"
         case None => 

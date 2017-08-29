@@ -39,15 +39,21 @@ sealed trait PolledSub extends SavedSub {
   val startTime: Timestamp  //Used for preventing from saving duplicate values in database and debugging
 }
 
-
+sealed trait PolledEventSub extends PolledSub{
+  val id: Long
+  val endTime: Timestamp
+  val lastPolled: Timestamp
+  val startTime: Timestamp
+  val paths: Vector[Path]
+}
 case class SubIds(var id: Long)
-case class PollEventSub(
+case class PollNormalEventSub(
   id: Long,
   endTime: Timestamp,
   lastPolled: Timestamp,
   startTime: Timestamp,
   paths: Vector[Path]
-  ) extends PolledSub
+  ) extends PolledEventSub
 
 case class PollNewEventSub(
                           id: Long,
@@ -55,7 +61,7 @@ case class PollNewEventSub(
                           lastPolled: Timestamp,
                           startTime:Timestamp,
                           paths: Vector[Path]
-                          ) extends PolledSub
+                          ) extends PolledEventSub
 
 case class PollIntervalSub(
   id: Long,
@@ -95,6 +101,7 @@ sealed trait EventSub extends SavedSub {
   val callback: DefinedCallback
 
 }
+
 
 /** from Path string to event subs for that path */
 
