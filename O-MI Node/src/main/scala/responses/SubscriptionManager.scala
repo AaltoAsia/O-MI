@@ -141,7 +141,7 @@ class SubscriptionManager(
     case SubInfoCmd(id) => sender() ! getSub(id)
   }
 
-  private def handlePollEvent(pollEvent: PollEventSub) = {
+  private def handlePollEvent(pollEvent: PolledEventSub) = {
     log.debug(s"Creating response message for Polled Event Subscription")
     val eventData = (singleStores.pollDataPrevayler execute PollEventSubscription(pollEvent.id))
       .map { case (_path, _values) =>
@@ -270,7 +270,7 @@ class SubscriptionManager(
         //pollSubscription method removes the data from database and returns the requested data
         val subValues: Iterable[OdfObjects] = pollSub match {
 
-          case pollEvent: PollEventSub => handlePollEvent(pollEvent)
+          case pollEvent: PolledEventSub => handlePollEvent(pollEvent)
 
           case pollInterval: PollIntervalSub => handlePollInterval(pollInterval, pollTime, odfTree)
         }
@@ -393,7 +393,7 @@ class SubscriptionManager(
 
 
             singleStores.subStore execute AddEventSub(
-              EventSub(
+              NormalEventSub(
                 newId,
                 OdfTypes.getLeafs(subscription.odf).iterator.map(_.path).toSeq,
                 endTime,
@@ -403,7 +403,18 @@ class SubscriptionManager(
             log.info(s"Successfully added event subscription with id: $newId and callback: $callback")
             newId
           }
-          case dur@Duration(-2, duration.SECONDS) => throw new NotImplementedError("Interval -2 not supported") //subscription for new node
+          case dur@Duration(-2, duration.SECONDS) => {
+            singleStores.subStore execute AddEventSub(
+              NewEventSub(
+                newId,
+                OdfTypes.getLeafs(subscription.odf).iterator.map(_.path).toSeq,
+                endTime,
+                callback
+              )
+            )
+            log.info(s"Successfully added event subscription for new events with id: $newId and callback: $callback")
+            newId
+          } //subscription for new node
           case dur: FiniteDuration if dur.gteq(minIntervalDuration) => {
             val iSub = IntervalSub(newId,
               OdfTypes.getLeafs(subscription.odf).iterator.map(_.path).toSeq,
@@ -435,7 +446,7 @@ class SubscriptionManager(
             case Duration(-1, duration.SECONDS) => {
               //event poll sub
               singleStores.subStore execute AddPollSub(
-                PollEventSub(
+                PollNormalEventSub(
                   newId,
                   endTime,
                   currentTimestamp,
@@ -447,6 +458,23 @@ class SubscriptionManager(
               log.info(s"Successfully added polled event subscription with id: $newId")
               newId
             }
+
+            case Duration(-2, duration.SECONDS) => {
+              singleStores.subStore execute AddPollSub(
+                PollNewEventSub(
+                  newId,
+                  endTime,
+                  currentTimestamp,
+                  currentTimestamp,
+                  paths
+                )
+              )
+
+              log.info(s"Successfully added polled new data event subscription with id: $newId")
+              newId
+            }
+
+
             case dur: FiniteDuration if dur.gteq(minIntervalDuration) => {
               //interval poll
               singleStores.subStore execute AddPollSub(

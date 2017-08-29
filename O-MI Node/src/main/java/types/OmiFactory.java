@@ -487,7 +487,8 @@ final public class OmiFactory{
       ){
     return OmiReturn$.MODULE$.apply(
         returnCode,
-        scala.Option.apply(description)
+        scala.Option.apply(description),
+        new HashMap<String,String>()
     );
   }
 
@@ -501,7 +502,8 @@ final public class OmiFactory{
       ){
     return OmiReturn$.MODULE$.apply(
         returnCode,
-        scala.Option.empty()
+        scala.Option.empty(),
+        new HashMap<String,String>()
     );
   }
 
