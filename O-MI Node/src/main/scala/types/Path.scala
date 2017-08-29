@@ -30,7 +30,7 @@ import OmiTypes.ResponseRequest
     }
 
     def this(pathStr: String) = this{
-      pathStr.split("\\\\/").toVector.filterNot( _ == "")
+      pathStr.split("/").toVector.filterNot( _ == "")
     }
 
     /**
@@ -38,10 +38,25 @@ import OmiTypes.ResponseRequest
      * @param otherPath other path to join at the end of this one
      * @return new path with other joined to this path
      */
-    def /(otherPath: Path): Path = Path(this ++ otherPath)
+    def /(otherPath: Path): Path = Path(this.pathSeq ++ otherPath.pathSeq)
 
-    def /(otherPathStr: String): Path = {
-      this / Path(otherPathStr)
+    /**
+     * Add new id/name to end of paths
+     * @param idStr String of id or name to be added to end of Path.
+     * @return new path with added string at end.
+     */
+    @deprecated("Use case is ambiguos. Joining with another string or adding new element. Use with other Path or odf.QlmID instead.", "0.9.2") 
+    def /(idStr: String): Path = {
+      Path(this.pathSeq ++ Seq(idStr.replace("/","\\/")))
+    }
+
+    /**
+     * Add new id/name to end of paths
+     * @param id QlmID to be added to end of Path.
+     * @return new path with added id at end.
+     */
+    def /( id: types.odf.QlmID): Path = {
+      Path(this.pathSeq ++ Seq(id.id.replace("/","\\/")))
     }
 
     /**
@@ -60,7 +75,7 @@ import OmiTypes.ResponseRequest
      * Creates a path string which represents this path with '/' separators.
      * Representation doesn't start nor end with a '/'.
      */
-    override def toString: String = this.mkString("\\/")
+    override def toString: String = this.mkString("/")
     
   def isAncestorOf( that: Path): Boolean ={
     if( length < that.length ){

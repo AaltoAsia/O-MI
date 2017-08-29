@@ -15,7 +15,7 @@ case class Object(
   val attributes: IMap[String,String] = HashMap.empty
 ) extends Node with Unionable[Object] {
   assert( ids.nonEmpty )
-  assert( path.length >= 2 )
+  assert( path.length > 1 )
   assert( ids.map(_.id).toSet.contains(path.last) )
   def update( that: Object ): Object ={
     val pathsMatches = path == that.path 

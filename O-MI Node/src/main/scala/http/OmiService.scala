@@ -168,7 +168,8 @@ trait OmiService
           extractClientIP{ user =>
 
         // convert to our path type (we don't need very complicated functionality)
-            val pathStr = URLDecoder.decode( uriPath.replace("/","\\/"), "UTF-8" )
+        val pathStr = uriPath.split("/").map{ id => URLDecoder.decode( id, "UTF-8" ).replace("/","\\/") }.mkString("/")
+          
             val origPath = Path(pathStr)
             val path = origPath match {
               case path if path.lastOption.exists(List("value", "MetaData", "description","id", "name").contains(_)) =>

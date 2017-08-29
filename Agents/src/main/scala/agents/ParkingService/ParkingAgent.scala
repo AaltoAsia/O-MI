@@ -4,12 +4,13 @@ package parkingService
 import java.io.File
 import java.sql.Timestamp
 import java.util.Date
+import java.net.URLDecoder
 
 import scala.util.{Success, Failure, Try}
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, Future}
 import scala.concurrent.Future._
-import scala.collection.mutable.{ Map => MutableMap, HashMap => MHashMap}
+import scala.collection.mutable.{ Map => MutableMap, HashMap => MutableHashMap}
 import scala.xml.PrettyPrinter
 
 import com.typesafe.config.Config
@@ -27,17 +28,20 @@ import types.Path._
 import types.Path
 import parsing.OdfParser
 import scala.xml.XML
+import UsageType._
+import VehicleType._
 
 /**
  * Companion object for ResponsibleScalaAgent. Extends PropsCreator to enforce recommended practice in Props creation.
  *  <a href="http://doc.akka.io/docs/akka/2.4/scala/actors.html#Recommended_Practices">Akka recommends to</a>.
  *
  *  @param _config Contains configuration for this agent, as given in application.conf.
-object ParkingAgent extends PropsCreator{
  */
+object ParkingAgent extends PropsCreator{
   /**
    * Method for creating Props for ResponsibleScalaAgent.
    *  @param config Contains configuration for this agent, as given in application.conf.
+   */
   def props(
     config: Config,
     requestHandler: ActorRef, 
@@ -50,16 +54,17 @@ class ParkingAgent(
   val requestHandler: ActorRef, 
   val dbHandler: ActorRef
 ) extends ResponsibleScalaInternalAgent{
-   */
   //Execution context
-  /*
   import context.dispatcher
 
+  def configStringToPath( name: String ): Path ={
+    Path(config.getString(name))
+  }
   //Base path for service, contains at least all method
-  val servicePath = Path( config.getString("servicePath"))
+  val servicePath = configStringToPath("servicePath")
 
   //Path to object containing all parking lots.
-  val parkingLotsPath = Path( config.getString("parkingFacilitiesPath"))
+  val parkingLotsPath = configStringToPath("parkingFacilitiesPath")
 
   //File used to populate node with initial state
   val startStateFile =  new File(config.getString("initialStateFile"))
@@ -79,10 +84,11 @@ class ParkingAgent(
     throw  AgentConfigurationException(s"Could not get initial state for $name. Could not read file $startStateFile.")
   }
 
-  val pfs = initialOdf.get( parkingLotsPath ).collect{
+  val initialPFs = initialODF.get( parkingLotsPath ).collect{
     case obj: OdfObject =>
      val pfs =  obj.objects.filter{
         pfObj: OdfObject =>
+          log.debug( s"${pfObj.typeValue.toString}" )
           pfObj.typeValue.contains( "mv:ParkingFacility") ||
           pfObj.typeValue.contains( "mv:ParkingLot") ||
           pfObj.typeValue.contains( "mv:ParkingGarage") ||
@@ -93,8 +99,10 @@ class ParkingAgent(
         pfObj: OdfObject =>
           ParkingFacility( pfObj )
       }
-  }.getOrElse( throw new Exception("No parking facilities found in O-DF or configured path is wrong")).toVector
-  val initialWrite = writeToDB( WriteRequest(pfs.toOdf(parkingLotsPath)) )
+      pfs.toVector
+  }.getOrElse( throw new Exception("No parking facilities found in O-DF or configured path is wrong"))
+  val odfToWrite =initialPFs.map{ pf => pf.toOdf(parkingLotsPath, true).createAncestors }.fold(OdfObjects())( _ union _)
+  val initialWrite = writeToDB( WriteRequest(initialODF) )
   val initialisationWriteTO = 10.seconds
   val initializationResponse = Await.ready(initialWrite, initialisationWriteTO)
   initializationResponse.value match{
@@ -107,7 +115,7 @@ class ParkingAgent(
         case result: OmiResult =>
           result.returnValue match {
             case succ: Returns.ReturnTypes.Successful =>
-              log.debug( s"Successfully initialized state for $name" )
+              log.info( s"Successfully initialized state for $name" )
             case other =>
               log.warning( s"Could not set initial state for $name. Got result:$result.")
               throw new Exception( s"Could not set initial state for $name. Got following result from DB: $result.")
@@ -115,22 +123,21 @@ class ParkingAgent(
       }
   }
   val findParkingPath = servicePath / "FindParking"
-  val positionParameterPath     = Path("Objects/Parameters/Destination")
-  val arrivalTimeParameterPath  = Path("Objects/Parameters/ArrivalTime")
-  val spotTypeParameterPath     = Path("Objects/Parameters/ParkingUsageType")
-  val chargerParameterPath     = Path("Objects/Parameters/Charger")
-  val pathToSpaces: MutableMap[Path,ParkingSpot] = MHashMap( 
-    initialODF.getNodesOfType( "mv:ParkingSpace" ).collect{
-      case obj: OdfObject => 
-        obj.path -> ParkingSpot( obj )
-    }:_* 
-  )
-  //log.debug( pathToSpaces.keys.mkString("\n") )
+  
+  case class ParkingSpaceStatus( path: Path, user: Option[String], free: Boolean)
+  //TODO: Populate!!!
+  val parkingSpaceStatuses: MutableMap[Path,ParkingSpaceStatus] = MutableHashMap(initialPFs.flatMap{
+    pf: ParkingFacility =>
+      pf.parkingSpaces.map{
+        ps: ParkingSpace =>
+          val path =  parkingLotsPath / pf.name / ps.name
+          path -> ParkingSpaceStatus(path, ps.user, ps.available.getOrElse(false) )
+      }
+  }:_*)
 
-  val reservations: MutableMap[Path,Reservation] = MHashMap()
 
   override protected def handleCall(call: CallRequest) : Future[ResponseRequest] = {
-      val methodInfoItemO = call.odf.get(findParkingPath)
+     val methodInfoItemO = call.odf.get(findParkingPath)
       methodInfoItemO match {
         case None =>    
           Future{
@@ -150,13 +157,16 @@ class ParkingAgent(
                   //  val result = OdfParser.parse(value.value)
                   //  val f = result match{
                   //    case Right(odf) =>
-                          val ppO : Option[ParkingParameters]= getfindParkingParams(value.value)
-                          ppO match{
-                            case Some( pp ) =>
+                          Try{getfindParkingParams(value.value)} match{
+                            case Success( Some(pp:ParkingParameters) ) =>
                               findParking( pp)
-                            case None =>
+                            case Success( None ) =>
                               Future{
-                                Responses.InvalidRequest(Some(s"Invalid parameters for find parking."))
+                                Responses.InvalidRequest(Some(s"Invalid parameters for find parking: Either Destination or Vehicle missing."))
+                              }
+                            case Failure(t) =>
+                              Future{
+                                Responses.InvalidRequest(Some(s"Invalid parameters for find parking: $t"))
                               }
                           }
                   //    case Left( spe: Seq[ParseError] ) =>
@@ -196,386 +206,215 @@ class ParkingAgent(
           }
       }
   }
-
-  def parseGPSCoordinates( obj: OdfObject ) : Option[GPSCoordinates] ={
-        val map = obj.infoItems.map{
-          case ii: OdfInfoItem => ii.path.last -> ii
-        }.toMap
-
-        val latitudeO: Option[Double] = map.get("latitude").collect{
-          case iI: OdfInfoItem => getDoubleFromInfoItem(iI)
-        }.flatten 
-        val longitudeO: Option[Double] = map.get("longitude").collect{
-          case iI: OdfInfoItem => getDoubleFromInfoItem(iI)
-        }.flatten
-        val gpsO: Option[GPSCoordinates] = for{
-          latitude <- latitudeO
-          longitude <- longitudeO
-        } yield GPSCoordinates( latitude, longitude )
-        gpsO
-  }
   case class ParkingParameters(
     destination: GPSCoordinates,
-    spotType: String,
-    arrivalTime: Option[String],
-    charger: Option[Charger]
+    distanceFromDestination: Double,
+    vehicle: Vehicle,
+    usageType: Option[UsageType],
+    charger: Option[Charger],
+    arrivalTime: Option[String]
   )
+  val parameterPath =  Path("Objects\\/Parameters")
+  val destinationParameterPath     = parameterPath / "Destination"
+  val vehicleParameterPath     = parameterPath / "Vehicle"
+  val arrivalTimeParameterPath  = parameterPath / "ArrivalTime"
+  val usageTypeParameterPath     = parameterPath / "ParkingUsageType"
+  val chargerParameterPath     = parameterPath / "Charger"
   def getfindParkingParams(objects: OdfObjects): Option[ParkingParameters] ={
-      val positionParamO: Option[GPSCoordinates] = objects.get(positionParameterPath).collect{
-        case obj: OdfObject => parseGPSCoordinates( obj )
-      }.flatten
-    val arrivalTimeParamO: Option[String]  = 
-      objects.get(arrivalTimeParameterPath).collect{
-        case iI: OdfInfoItem => getStringFromInfoItem(iI)
-      }.flatten
-    val spotTypeParamO: Option[String] =
-      objects.get(spotTypeParameterPath ).collect{
-        case iI: OdfInfoItem => getStringFromInfoItem(iI)
-      }.flatten.map{
-        case typeStr: String => if( typeStr.startsWith("mv:") ) typeStr.drop(3) else typeStr
-      }
-    val chargerO = objects.get( chargerParameterPath ).collect{
+    val destinationO = objects.get(destinationParameterPath).collect{
       case obj: OdfObject =>
-        Charger( obj )
-    } 
+        GPSCoordinates(obj)
+    }
+    val vehicleO = objects.get(vehicleParameterPath ).collect{
+      case obj: OdfObject =>
+        Vehicle(obj)
+    }
+    val usageTypeO = objects.get(usageTypeParameterPath).collect{
+      case ii: OdfInfoItem =>
+        getStringFromInfoItem(ii).map( UsageType(_))
+    }.flatten
+    val arrivalTimeO = objects.get(arrivalTimeParameterPath).collect{
+      case ii: OdfInfoItem =>
+        getStringFromInfoItem(ii)
+    }.flatten
+    val chargerO = objects.get(chargerParameterPath ).collect{
+      case obj: OdfObject =>
+        Charger(obj)
+    }
+    val distanceFromDestinationO = objects.get(arrivalTimeParameterPath).collect{
+      case ii: OdfInfoItem =>
+        getDoubleFromInfoItem(ii)
+    }.flatten
     for{
-      destination <- positionParamO
-      spotType <- spotTypeParamO
-      
-    } yield ParkingParameters(destination, spotType, arrivalTimeParamO, chargerO)
+      destination <- destinationO
+      distanceFromDestination <- distanceFromDestinationO.orElse( Some( 1000.0) )
+      vehicle <- vehicleO
+    } yield ParkingParameters( destination, distanceFromDestination, vehicle, usageTypeO, chargerO, arrivalTimeO) 
   }
 
-  def findParking( params: ParkingParameters ):Future[ResponseRequest]={
-    log.debug("FindParking called")
-    val request = ReadRequest(
-        OdfObject(
-          Vector(QlmID(parkingLotsPath.last)),
-          parkingLotsPath
-       ).createAncestors
-      )
-    //log.debug( "Request:\n " + request.toString)
-    val results = readFromDB(
-      request
-    )
-    results.map{
-      case response: ResponseRequest =>
-        log.debug( "Result from DB:" )//+ response.asXML.toString)
-        val modifiedResponse = ResponseRequest(
-          response.results.map{
-            case result: OmiResult =>
-              result.odf match{
-                case Some( objects: OdfObjects ) => 
-                  log.debug( "Result with ODF found:" )
-                  result.copy(
-                    odf = objects.get(parkingLotsPath).map{
-                      case obj: OdfObject => 
-                        log.debug( s"found $parkingLotsPath" )
-                        val modifiedParkingLots = obj.objects.flatMap{
-                              case o: OdfObject => 
-                                log.debug( s"found parking lot" )
-                                handleParkingLotForCall(o,params)
-                            }
-                        log.debug( s"Found ${modifiedParkingLots.size} parking lots near the destination" )
-                        obj.copy(
-                          objects = modifiedParkingLots 
-                        ).createAncestors
-                    } 
-                  )
-                case None => result
+  def findParking( parameters: ParkingParameters ):Future[ResponseRequest]= getCurrentParkingFacilities.map{
+   case parkingFacilities: Vector[ParkingFacility] =>
+    val nearbyParkingFacilities = parkingFacilities.filter{
+      pf: ParkingFacility =>
+        pf.geo.forall{
+          case gps: GPSCoordinates => 
+            gps.distanceFrom( parameters.destination).forall{ 
+              dist: Double => 
+                dist <= parameters.distanceFromDestination
+            }
+        } && pf.containsSpacesFor( parameters.vehicle )
+    }
+    val parkingFacilitiesWithMatchingSpots: Vector[ParkingFacility]= nearbyParkingFacilities.map{
+      pf: ParkingFacility =>
+        pf.copy(
+          parkingSpaces = pf.parkingSpaces.filter{
+            pS: ParkingSpace => 
+              val vehicleCheck = pS.intendedFor.forall{
+                vT: VehicleType => 
+                  vT == parameters.vehicle.vehicleType
+              } 
+              val usageCheck = parameters.usageType.forall{
+                check: UsageType =>
+                pS.usageType.forall{
+                  uT: UsageType => 
+                    uT == check
+                }
               }
+              val sizeCheck = pS.validForVehicle( parameters.vehicle )
+              val chargerCheck = parameters.charger.forall{
+                case charger: Charger =>
+                  pS.charger.exists{
+                    case pSCharger: Charger =>
+                      pSCharger.validFor( charger )
+                  }
+              }
+              vehicleCheck && usageCheck && sizeCheck && chargerCheck
           }
         )
-       // val pp = new PrettyPrinter(100, 4)
-        //log.debug( "Modified result:\n " + pp.format(modifiedResponse.asXML.head))
-        modifiedResponse
-    }.recover{
-      case e: Exception => 
-        log.error(e, s"findParking caught: ")
-        Responses.InternalError(e)
+    }
+
+    if( parkingFacilitiesWithMatchingSpots.nonEmpty ){
+        val odf:OdfObjects = parkingFacilitiesWithMatchingSpots.foldLeft(OdfObjects()){
+          case (odf: OdfObjects, pf: ParkingFacility) =>
+            val add: OdfObjects = pf.toOdf(parkingLotsPath).createAncestors 
+            odf.union( add)
+        
+        }
+        Responses.Success(Some(odf), 10 seconds)
+    } else{
+        Responses.NotFound("Could not find parking facility with matching parking spaces." )
     }
   }
-  */
-  /*
-  def isReservation( path: Path, parkingSpot: ParkingSpot ) ={
-    val notReserved = pathToSpaces.get( path ).map{
-      case current: ParkingSpot => current.user == Some( "NONE" )
-    }.getOrElse(false)
-
-    parkingSpot.available == Some( "false" )  && 
-    notReserved
-  }
-  def isFreeing( path: Path, parkingSpot: ParkingSpot ) ={
-    val currentUsing = pathToSpaces.get( path ).map{
-      case current: ParkingSpot => current.user == parkingSpot.user
-    }.getOrElse(fals  e)
-
-    parkingSpot.available == Some( "true" )  && 
-    notReserved
-  }
-  def openlid( path: Path, parkingSpot: ParkingSpot ) = {
-    parkingSpot.charger.map{
-      case charger: Charger =>
-        charger.lidStatus == Some("Open")
-    }.getOrElse( false )
-  
-  }*/
-
-  
-/*
-  override protected def handleWrite(write: WriteRequest) : Future[ResponseRequest] = {
-    val parkingSpaces =  write.odf.getNodesOfType( "mv:ParkingSpace" )
-    if(write.odf.get(findParkingPath).nonEmpty ){
-        Future{
-          Responses.InvalidRequest(
-            Some("Trying to write to path containing a service method.")
-          )
+  override protected def handleWrite(write: WriteRequest) : Future[ResponseRequest] = Future{
+    val writingPfs:Vector[ParkingFacility] = write.odf.get(parkingLotsPath).collect{
+      case obj: OdfObject =>
+        obj.objects.map{
+          pfObj: OdfObject =>
+            ParkingFacility( pfObj)
         }
-    } else if( parkingSpaces.nonEmpty ){
-      // Asynchronous execution of request 
-      //TODO:Check for reservation writes
-      val ( parkingEvents: Seq[Try[ParkingEvent]], failures: Seq[Try[ParkingEvent]] ) = parkingSpaces.collect{
-        case obj: OdfObject => 
-          Try{
-            val ps = ParkingSpot( obj )
-            log.debug( s"Got ParkingSpace in ${obj.path}" )
-            val currentPS = pathToSpaces.get( obj.path ).getOrElse{ throw  new Exception( "Write to unknow parking space.") }
-            if( ps.user.nonEmpty && ps.available.nonEmpty ){ //Reservation or freeing
-              log.debug( s"Has user and available. Either reservation or release" )
-              if( 
-                ps.available == Some( "false")
-               ){ //Reservation
-                if( currentPS.user != Some( "NONE" ) ){ 
-                  log.debug( s"Reservation unavailable spot" )
-                  throw  new Exception( "Trying to reserve already reserved parking space.") 
-                } else {
-                  log.debug( s"Reservation" )
-                  val openLid = ps.charger.map{
-                    case charger: Charger => 
-                      log.debug( s"Lid Status found" )
-                      charger.lidStatus == Some( "Open" )
-                  }.getOrElse( false)
-                  val reserve =Reservation( obj.path, ps.user.get, openLid )
-                  reserve
+    }.toVector.flatten
+
+    def plugMeasureUpdate( plug: PowerPlug): Boolean =  plug.current.nonEmpty || plug.power.nonEmpty || plug.voltage.nonEmpty
+    val events = writingPfs.flatMap{
+      pf: ParkingFacility =>
+        pf.parkingSpaces.collect{
+          case ParkingSpace(name,_,_,Some(false),Some(user),chargerO,_,_,_) if isParkingSpaceFree( parkingLotsPath / pf.name /name)  =>
+            val path = parkingLotsPath / pf.name / "ParkingSpaces" / name
+            val openLid: Boolean= chargerO.map{ 
+              case charger: Charger => lidOpen(charger)
+            }.getOrElse(false)
+            Reservation(path, user, openLid)
+          case ParkingSpace(name,_,_,Some(true),Some(user),chargerO,_,_,_) if isUserCurrentReserver(parkingLotsPath / pf.name / name, user)  =>
+            val path = parkingLotsPath / pf.name / "ParkingSpaces" / name
+            val openLid: Boolean = chargerO.map{ 
+              case charger: Charger => lidOpen(charger)
+            }.getOrElse(false)
+            FreeReservation(path, user, openLid)
+          case ParkingSpace(name,_,_,_,Some(user),Some(charger),_,_,_) if lidOpen(charger) && isUserCurrentReserver( parkingLotsPath / pf.name / name, user ) =>
+            val path = parkingLotsPath / pf.name / "ParkingSpaces" / name
+            OpenLid( path, user)
+          case ParkingSpace(name,_,_,_,_,Some(Charger(_,_,_,Some(plug))),_,_,_) if plugMeasureUpdate(plug) =>
+            val path = parkingLotsPath / pf.name / "ParkingSpaces" / name
+            UpdatePlugMeasurements( path, plug.current, plug.power, plug.voltage) 
+        }
+    }
+    events
+  }.flatMap{
+    events: Seq[ParkingEvent] =>
+
+    if( events.length == 1 ){
+      events.headOption.map{
+        case reservation: Reservation => 
+          val responseF = writeToDB( WriteRequest( reservation.toOdf.createAncestors ) )
+            responseF.onSuccess{
+              case response: ResponseRequest =>
+                if( reservation.openLid ){
+                  closeLidIn( reservation.path / "Charger" / "LidStatus" )
                 }
-              } else if( 
-                ps.available == Some( "true" )
-              ){
-                if( currentPS.user != ps.user ){
-                  log.debug( s"Trying release spot that some one else reserved" )
-                  throw  new Exception( "Trying to free parking space reserved by someone else.") 
-                } else {
-                  log.debug( s"Releasing spot" )
-                  val openLid = ps.charger.map{
-                    case charger: Charger => 
-                      log.debug( s"Lid Status found" )
-                      charger.lidStatus == Some( "Open" )
-                  }.getOrElse( false)
-                  FreeReservation( obj.path, ps.user.get, openLid )
+                updateCalculatedIIsToDB
+                parkingSpaceStatuses.get(reservation.path).foreach{
+                  case ParkingSpaceStatus( path, user, available ) =>
+                    parkingSpaceStatuses.update( path, ParkingSpaceStatus( path, Some(reservation.user), false ) )
                 }
-              }
-            } else if( ps.user.nonEmpty ){
-              val openLid = ps.charger.map{
-                case charger: Charger => 
-                  log.debug( s"Lid Status found" )
-                  charger.lidStatus == Some( "Open" )
-              }.getOrElse( false)
-              if( openLid && ps.user == currentPS.user ) {
-                OpenLid( obj.path, ps.user.get )
-              } else if( ps.user != currentPS.user ){
-                  throw  new Exception( "Trying to open lid of charger of parking space reserved by someone else.") 
-              } else {
-                  throw  new Exception( "Trying to open lid of charger of parking space reserved by someone else.") 
-              }
-            } else{
-                  throw  new Exception( "Trying to some odd write.") 
             }
+          responseF
+        case freeing: FreeReservation => 
+          val responseF = writeToDB( WriteRequest( freeing.toOdf.createAncestors ) )
+          responseF.onSuccess{
+            case response: ResponseRequest =>
+              if( freeing.openLid ){
+                closeLidIn( freeing.path / "Charger" / "LidStatus" )
+              }
+              updateCalculatedIIsToDB
+              parkingSpaceStatuses.get(freeing.path).foreach{
+                case ParkingSpaceStatus( path, user, available ) =>
+                  parkingSpaceStatuses.update( path, ParkingSpaceStatus( path, None, true ) )
+              }
           }
-      }.partition{
-        case Success(event: ParkingEvent ) => true
-        case Failure(e ) => false
-        case Success(_) => false
-      }
-
-      if( failures.collect{
-          case a @ Failure( e: Exception ) =>a
-        }.nonEmpty ){
-         failures.collect{
-          case a @ Failure( e: Exception ) =>a
-        }.head match {
-          case Failure( e: Exception ) =>
-            Future{
-              Responses.InvalidRequest(Some( e.getMessage) ) 
-            }
-        }
-      } else {
-        val events =parkingEvents.map{
-          case Success( event: ParkingEvent ) => event
-        }
-        log.debug(s"Got ${events.length} events")
-        val results = events.map{
-          case reservation : Reservation=>
-            val write = WriteRequest(reservation.toOdf.createAncestors)
-            log.debug(write.asXML.toString ) 
-            val result = writeToDB( write )
-            result.onSuccess{
-              case response: ResponseRequest =>
-                response.results.foreach{
-                  case sc: Results.Success =>
-                    reservations += reservation.path -> reservation
-                    pathToSpaces.get( reservation.path).map{
-                      case parkingSpace : ParkingSpot => 
-                        parkingSpace.copy( 
-                          user = Some( reservation.user),
-                          available = Some( "false" )
-                        )
-                    }.foreach{
-                      case updated: ParkingSpot =>
-                        pathToSpaces.update( reservation.path, updated )
-                    }
-                    if( reservation.openLid ){
-                      closeLidIn( reservation.path / "Charger" / "LidStatus" )
-                    }
-                }
-            }
-            result
-          case freeing : FreeReservation=>
-            val write = WriteRequest(freeing.toOdf.createAncestors)
-            log.debug(write.asXML.toString ) 
-            val result = writeToDB( write )
-            result.onSuccess{
-              case response: ResponseRequest =>
-                response.results.foreach{
-                  case sc: Results.Success =>
-                    reservations -= freeing.path
-                    pathToSpaces.get( freeing.path).map{
-                      case parkingSpace : ParkingSpot => 
-                        parkingSpace.copy( 
-                          user = Some( "NONE" ),
-                          available = Some( "true" )
-                        )
-                    }.foreach{
-                      case updated: ParkingSpot =>
-                        pathToSpaces.update( freeing.path, updated )
-                    }
-                    if( freeing.openLid ){
-                      closeLidIn( freeing.path / "Charger" / "LidStatus" )
-                    }
-                }
-            }
-            result
-          case openLid : OpenLid =>
-            val write = WriteRequest(openLid.toOdf.createAncestors)
-            log.debug(write.asXML.toString ) 
-            val result = writeToDB( write )
-            result.onSuccess{
-              case response: ResponseRequest =>
-                response.results.foreach{
-                  case sc: Results.Success =>
-                    closeLidIn( openLid.lidStatusPath )
-                }
-            }
-            result
-        }
-        Future.sequence(results).map{
-          case responses =>
-            ResponseRequest(
-              Results.unionReduce(responses.flatMap( _.results ).toVector).toVector
-            )
+          responseF
+        case oL: OpenLid =>
+          val responseF = writeToDB( WriteRequest( oL.toOdf.createAncestors ) )
+          responseF.onSuccess{
+            case response: ResponseRequest =>
+              closeLidIn( oL.path / "Charger" / "LidStatus" )
+              updateCalculatedIIsToDB
+          }
+          responseF
+        case upl: UpdatePlugMeasurements  =>
+          val responseF = writeToDB( WriteRequest( upl.toOdf.createAncestors ) )
+          responseF
+      }.getOrElse{
+        Future{
+          Responses.InvalidRequest(Some("No reservations, freeing or lid opening events found from write."))
         }
       }
-    } else {
-        Future{
-          Responses.InvalidRequest(
-            Some("Trying to write without mv:ParkingSpace typed Object.")
-          )
-        }
+    } else if(events.isEmpty) {
+      Future{
+        Responses.InvalidRequest(Some("No reservations, freeing or lid opening events found from write."))
+      }
+    } else  {
+      Future{
+        Responses.InvalidRequest(Some("Multipre reservations, freeing or lid opening events found from write. Should contain only one."))
+      }
     }
   }
 
-  def positionCheck( destination: GPSCoordinates, lotsPosition: GPSCoordinates ) : Boolean ={
-    true
-  } 
-  def handleParkingLotForCall( obj: OdfObject, param: ParkingParameters ): Option[OdfObject] ={
-    val positionO: Option[GPSCoordinates] = obj.get( obj.path / "geo" ).collect{
-      case o: OdfObject => parseGPSCoordinates(o )
-    }.flatten
-    positionO.flatMap{
-      case position: GPSCoordinates => 
-        log.debug( s"Got location of parking lot" )
-        if( positionCheck( param.destination, position) ){
-          log.debug( s"Parking lot is near" )
-          val newSTs: Option[OdfObject] = obj.get(obj.path / "ParkingSpaceTypes" ).flatMap{
-            case spotTypesList : OdfObject =>
-              log.debug( s"Got ParkingSpaceTypes. Finding ${param.spotType}..." )
-              val rightTypes = spotTypesList.get( spotTypesList.path / param.spotType ).collect{
-                case spotTypeObj: OdfObject => 
-                  log.debug( s"Got ${param.spotType}" )
-                  if( param.spotType == "ElectricVehicleParkingSpace" && param.charger.nonEmpty ){
-                   val filteredSpaces = spotTypeObj.get( spotTypesList.path / param.spotType / "Spaces" ).collect{
-                      case spacesO: OdfObject => 
-                        spacesO.copy(
-                          objects = spacesO.objects.filter{//Filter parking spaces with correct charger
-                            case obj: OdfObject => 
-                              val ps = ParkingSpot( obj )
-
-                              def plugMatches( matchPlugO: Option[PowerPlug], plugO: Option[PowerPlug] ): Boolean= ( matchPlugO, plugO ) match {
-                                case (None,None) => true
-                                case (Some(matchPlug),None) => false
-                                case (None, Some(plug)) => true
-                                case (Some(matchPlug),Some(plug)) =>
-                                  ( matchPlug.plugType.isEmpty || matchPlug.plugType == plug.plugType ) &&
-                                  ( matchPlug.power.isEmpty || matchPlug.power == plug.power ) &&
-                                  ( matchPlug.voltage.isEmpty || matchPlug.voltage == plug.voltage ) &&
-                                  ( matchPlug.cableAvailable.isEmpty || matchPlug.cableAvailable == plug.cableAvailable ) &&
-                                  ( matchPlug.lockerAvailable.isEmpty || matchPlug.lockerAvailable == plug.lockerAvailable ) &&
-                                  ( matchPlug.chargingSpeed.isEmpty || matchPlug.chargingSpeed == plug.chargingSpeed ) 
-                              }
-                              val chargerMatches = ( ps.charger, param.charger ) match {
-                                case (None,None) => true
-                                case (Some(charger),None) => false
-                                case (None, Some(matchCharger)) => true
-                                case (Some(charger),Some(matcherCharger)) =>
-                                  ( matcherCharger.brand.isEmpty || charger.brand == matcherCharger.brand ) &&
-                                  ( matcherCharger.model.isEmpty || charger.model == matcherCharger.model ) &&
-                                  plugMatches( matcherCharger.plug, charger.plug)
-                              }
-                          
-                              chargerMatches
-                          }
-                        )
-                    }
-                   spotTypeObj.copy(
-                      objects = spotTypeObj.objects.filter{
-                        case obj: OdfObject => 
-                          obj.path.last != "Spaces"
-                      } ++ filteredSpaces
-                    )
-                  } else {
-                    spotTypeObj
-                  }
-              }.toVector
-              if( rightTypes.nonEmpty ){
-                log.debug( s"Modifying ParkingSpaceTypes to contain only ${param.spotType}" )
-                Some(
-                  spotTypesList.copy(
-                    objects = rightTypes
-                  )
-                )
-              } else None
-          }
-          newSTs.map{
-            case nSTs: OdfObject =>
-            log.debug( s"Modifying parking lot to contain new ParkingSpaceTypes" )
-            obj.copy(
-              objects = obj.objects.filter{
-                case o: OdfObject => o.path.last != "ParkingSpaceTypes"
-              } ++ Vector(nSTs)
-            )
-          }
-        } else None
+  def lidOpen( charger: Charger ): Boolean ={
+    charger.lidStatus.exists{
+      str: String =>
+        str.toLowerCase.contains("open")
     }
   }
-                case class CloseLid( pathToLidState: Path )
+
+  def isUserCurrentReserver( path: Path, user: String ): Boolean = parkingSpaceStatuses.get( path).exists{
+    pSS: ParkingSpaceStatus => pSS.user.contains( user )
+  }
+
+  def isParkingSpaceFree( path: Path): Boolean = parkingSpaceStatuses.get( path).exists{
+    pSS: ParkingSpaceStatus => pSS.free
+  }
+
+  case class CloseLid( pathToLidState: Path )
   def closeLidIn( pathToLidState: Path, delay: FiniteDuration = 2.seconds ) ={
     context.system.scheduler.scheduleOnce( delay, self, CloseLid( pathToLidState) )
   }
@@ -594,101 +433,63 @@ class ParkingAgent(
     case write: WriteRequest => respondFuture(handleWrite(write))
     case call: CallRequest => respondFuture(handleCall(call))
   }
- */ 
-/*
-  def handleParkingSpaces( odf: OdfObjects ) ={
-    def getStringFromPath( path: Path, oo: OdfObject ): Option[String] ={
-      oo.get(path).collect{
-        case ii: InfoItem => 
-          getStringFromInfoItem( ii) 
-      }.flatten
-    }
-    val containedParkingSpacePaths = odf.paths.filter{
-      case path: Path => pathToSpaces.contains( path )
-    }
-    val modifiedObject =containedParkingSpacePaths.map{
-      case path: Path =>
-        val objOption = odf.get( path )
-        val newObjO = objOption.map{
-          case obj: OdfObject => 
-              val parkingSpace = ParkingSpace( obj )
-            val userO = getStringFromPath(obj.path / "User", obj )
-            val availableO = getStringFromPath(obj.path / "Available", obj )
-            val lidStatusO =getStringFromPath(obj.path / "Charger" / "LidStatus", obj )
-            val currentPSO = pathToSpaces.get(obj.path)
-            val newObjO: Option[OdfObject] = currentPSO.map{
-              case currentPS: ParkingSpot =>
-              (userO, currentPS.user ) match{
-                case ( None, cUserO ) =>
-                  throw new Exception( "User is not given. Can not authorize for empty." )
-                case ( Some(user), Some(none) ) if none.equalsIgnoreCase( "none")  =>//Reservation 
-                  (availableO,lidStatusO) match {
-                    case (Some( newStatus ), None) 
-                      if newStatus.equalsIgnoreCase("false") =>
-                        obj.update( obj.path / "Available", Vector( OdfValue( "false", currentTime )))
-                    case (Some( newStatus ), Some(lidStatus)) 
-                      if newStatus.equalsIgnoreCase("false") =>
-                      checkLidStatus(lidStatus, obj)
-                          .update( obj.path / "Available", Vector( OdfValue( "false", currentTime )))
-                    case (Some( newStatus ), Some(lidStatus)) 
-                      if newStatus.equalsIgnoreCase("true") =>
-                        throw new Exception( "Only reserver may open lid. There is no reservation" )
-                    case (Some( newStatus ),None) if newStatus.equalsIgnoreCase("true") =>
-                        //Re-release
-                        obj
-                          .update( obj.path / "Available", Vector( OdfValue( "true", currentTime )))
-                          .update( obj.path / "User", Vector( OdfValue( "NONE", currentTime )))
-                    case (Some( ns ),_)=>
-                      throw new Exception( "Unknown available status. Should be either true or false." )
-                  }
+  def getCurrentParkingFacilities: Future[Vector[ParkingFacility]]={
+    val request = ReadRequest(
+      OdfObject( Vector(OdfQlmID(parkingLotsPath.last)),parkingLotsPath).createAncestors
+    )
 
-                case ( Some(user), Some(currentUser) ) if user != currentUser =>//Release or lidStatus
-                   throw new Exception( s"Parking space $path is already reserved." )
-
-                case ( Some(user), Some(currentUser) ) if user == currentUser =>//Release or lidStatus
-                  (availableO,lidStatusO) match {
-                    case (Some( newStatus ),None)  =>
-                        obj
-                    case (Some( newStatus ),Some(lidStatus)) 
-                      if newStatus.equalsIgnoreCase("false") =>
-                      //re reservation.
-                      checkLidStatus(lidStatus, obj)
-                    case (Some( newStatus), None) 
-                      if newStatus.equalsIgnoreCase("true") =>
-                        obj
-                          .update( obj.path / "User", Vector( OdfValue( "NONE", currentTime) ))
-                    case (Some( newStatus ),Some(lidStatus)) 
-                      if newStatus.equalsIgnoreCase("true") =>
-                      //release
-                        checkLidStatus(lidStatus, obj)
-                          .update( obj.path / "User", Vector( OdfValue( "NONE", currentTime) ))
-                    case (Some( ns ),ls)=>
-                      throw new Exception( "Unknown available status. Should be either true or false." )
-                  }
-              }
-            }.flatten
-            newObjO
-        }.flatten
-    }.flatten
-    if( modifiedObject.nonEmpty ){
-      val objs: OdfObjects = modifiedObject.fold{
-        case (l: OdfObject, r: OdfObject ) =>
-          l.createAncestors.combine( r.createAncestors )
-      }
-      val write = WriteRequest(objs)
-      writeToDB(write)
+    val result = readFromDB(request)
+    result.map{
+      case response: ResponseRequest => 
+        response.results.find{
+          result : OmiResult =>
+            result.returnValue.returnCode == ReturnCode.Success  && result.odf.nonEmpty
+        }.flatMap{
+          result : OmiResult => result.odf
+        }.flatMap{
+          odf: OdfObjects =>
+            odf.get( parkingLotsPath ).map{
+              case pfsObj: OdfObject =>
+                pfsObj.objects.map( ParkingFacility( _))
+            }
+        }.toVector.flatten
     }
   }
-  def checkLidStatus( lidStatus: Option[String], obj: OdfObject ): OdfObject={
-    if( lidStatus.equalsIgnoreCase("Open") ){
-      closeLidIn( obj.path / "Charger" / "LidStatus" )
-      obj
-        .update( obj.path / "Charger" / "LidStatus" , Vector( OdfValue( "Open", currentTime )))
-    } else {
-        throw new Exception( "Only open status expected for lid status from outside." )
+  def updateCalculatedIIsToDB ={
+    getCurrentParkingFacilities.flatMap{
+      parkingFacilities: Vector[ParkingFacility] =>
+        val newPFs= parkingFacilities.map{
+          pf: ParkingFacility =>
+            val npf = ParkingFacility( 
+              pf.name, 
+              None,
+              None,
+              pf.parkingSpaces.map{
+                ps: ParkingSpace =>
+                  ParkingSpace( 
+                    ps.name,
+                    ps.usageType,
+                    ps.intendedFor,
+                    ps.available,
+                    None,
+                    None,
+                    None,
+                    None,
+                    None
+                  )
+              },
+              None,
+              None
+            )
+            npf.toOdf(parkingLotsPath,true).createAncestors
+        }
+        val writeOdf = newPFs.fold(OdfObjects()){
+          case ( odf: OdfObjects, l: OdfObjects) => odf.union(l)
+        }
+        val request = WriteRequest( writeOdf )
+        writeToDB( request )
     }
   }
-  */
-//}
+}
 
 
