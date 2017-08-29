@@ -103,14 +103,6 @@ trait DBWriteHandler extends DBHandlerBase {
     }
     val esubLists: Seq[(EventSub, OdfInfoItem)] = events.collect{
       case AttachEvent(infoItem) =>
-
-        println()
-        println()
-        println()
-        println(infoItem)
-        println()
-        println()
-        println()
         val pollNewSubs = singleStores.subStore execute GetNewEventSubsForPath(infoItem.path)
         infoItem.values.headOption.foreach(value => pollNewSubs.foreach(pnes => singleStores.pollDataPrevayler execute AddPollData(pnes.id, infoItem.path, value)))
         val nesubs: Seq[NewEventSub] = singleStores.subStore execute LookupNewEventSubs(infoItem.path)

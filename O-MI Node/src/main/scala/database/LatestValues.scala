@@ -246,17 +246,19 @@ case class RemoveIntervalSub(id: Long) extends TransactionWithQuery[Subs, Boolea
     }
   }
 
-  case class GetIntervalSub(id: Long) extends Query[Subs, Option[IntervalSub]] {
-    def  query(store: Subs, d: Date): Option[IntervalSub] = {
-      store.intervalSubs.get(id)
-    }
-  }
 
   case class GetAllPollSubs() extends Query[Subs, Set[PolledSub]] {
     def query(store: Subs, d: Date): Set[PolledSub] = {
       store.idToSub.values.toSet
     }
   }
+
+  case class GetIntervalSub(id: Long) extends Query[Subs, Option[IntervalSub]] {
+    def  query(store: Subs, d: Date): Option[IntervalSub] = {
+      store.intervalSubs.get(id)
+    }
+  }
+
 
   //case class RemovePathFromIntervalSubs(path: Path) extends Transaction[Subs] {
   //  def executeOn(store:Subs, d: Date): Unit = {

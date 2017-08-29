@@ -76,7 +76,7 @@ object JavaHelpers{
     }
 
     def this(pathStr: String) = this{
-      pathStr.split("\\\\/").toVector.filterNot( _ == "")
+      pathStr.split("/").toVector.filterNot( _ == "")
     }
 
     /**
@@ -87,7 +87,7 @@ object JavaHelpers{
     def /(otherPath: Path): Path = Path(this ++ otherPath)
 
     def /(otherPathStr: String): Path = {
-      this / Path(otherPathStr)
+      this / Path(otherPathStr.replace("/","\\/"))
     }
 
     /**
@@ -106,7 +106,7 @@ object JavaHelpers{
      * Creates a path string which represents this path with '/' separators.
      * Representation doesn't start nor end with a '/'.
      */
-    override def toString: String = this.mkString("\\/")
+    override def toString: String = this.mkString("/")
     
     def isAncestorOf( child: Path) : Boolean ={
       child.length > this.length && child.startsWith(this.pathSeq)
