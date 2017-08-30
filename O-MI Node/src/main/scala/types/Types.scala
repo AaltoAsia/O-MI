@@ -84,10 +84,13 @@ object JavaHelpers{
      * @param otherPath other path to join at the end of this one
      * @return new path with other joined to this path
      */
-    def /(otherPath: Path): Path = Path(this ++ otherPath)
+    def /(otherPath: Path): Path = Path(this.pathSeq ++ otherPath.toSeq)
 
-    def /(otherPathStr: String): Path = {
-      this / Path(otherPathStr.replace("/","\\/"))
+    def /(idStr: String): Path = {
+      Path(this.pathSeq ++ Seq(idStr.replace("/","\\/")))
+    }
+    def /(id: OdfTypes.QlmID): Path = {
+      Path(this.pathSeq ++ Seq(id.value.replace("/","\\/")))
     }
 
     /**
