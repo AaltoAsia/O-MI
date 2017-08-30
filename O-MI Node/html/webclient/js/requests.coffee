@@ -356,6 +356,10 @@ requestsExt = (WebOmi) ->
           if reqName == "write"
             my.params.odf.update currentParams.odf
             #addValueToAll doc
+
+            # disable callback as it's often left after sub and not needed anymore
+            #my.ui.callback.set("") 
+
           else if oldReqName == "write" # change from write
             #removeValueFromAll doc
             my.params.odf.update currentParams.odf
