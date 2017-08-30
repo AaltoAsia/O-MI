@@ -65,7 +65,8 @@ class OmiResult(
       idTypes,
       msg,
       None,
-      None
+      None,
+      attributeRecords
     )
   }
   override def equals( other: Any ): Boolean ={
