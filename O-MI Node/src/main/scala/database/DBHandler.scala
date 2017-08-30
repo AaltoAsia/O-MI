@@ -86,7 +86,7 @@ class DBHandler(
     val senderRef = sender()
     futureResponse.onComplete{
       case Failure(t) =>
-        log.debug(s"RBHandler failed to process read/write: $t")
+        log.debug(s"DBHandler failed to process read/write: $t")
       case Success(response) =>
     }
     futureResponse.recover{

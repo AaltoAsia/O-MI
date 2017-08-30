@@ -15,6 +15,8 @@ import scala.xml.{NodeSeq, PrettyPrinter}
 
 import types.OdfTypes._
 import types.OmiTypes._
+import types.Path
+import types.Path._
 import http.{ActorSystemContext, Storages}
 
 trait DBReadHandler extends DBHandlerBase{
@@ -32,6 +34,23 @@ trait DBReadHandler extends DBHandlerBase{
              )
            ))
        )
+        //Read all
+       case ReadRequest(objs,_,None,None,None,None,_,_,_) if objs.objects.isEmpty=>
+         log.info( "Received read all.")
+         Future{
+         val metadataTree = (singleStores.hierarchyStore execute GetTree())
+         val pathToValue = singleStores.latestStore execute LookupSensorDatas( metadataTree.infoItems.map(_.path)) 
+         val valueObjects = pathToValue.map{
+           case ( path: Path, value: OdfValue[Any]) => 
+             OdfInfoItem( path, values = Vector( value)).createAncestors
+         }.fold(OdfObjects()){
+           case ( odf: OdfObjects, iiObjs: OdfObjects) => 
+             odf.union( iiObjs)
+         }
+
+         ResponseRequest( Vector(
+           Results.Read( metadataTree.allMetaDatasRemoved.union( valueObjects ) )
+         ) )}
          
          /*
        case ReadRequest(_,_,begin,end,newest,Some(oldest),_) =>
