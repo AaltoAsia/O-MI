@@ -12,14 +12,19 @@
  +    limitations under the License.                                              +
  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 
-/** Package containing internal types used between different modules.
-  *
-  **/
 package types
-
 import scala.collection.JavaConversions
 import scala.concurrent.{Future, ExecutionContext}
-import scala.util.{Failure, Success, Try}
 import OmiTypes.ResponseRequest
 
+object JavaHelpers{
 
+ def mutableMapToImmutable[K,V]( mutable: scala.collection.mutable.Map[K,V] ) : scala.collection.immutable.Map[K,V] = mutable.toMap[K,V] 
+ def requestIDsFromJava( requestIDs : java.lang.Iterable[java.lang.Long] ) : Vector[Long ]= {
+   JavaConversions.iterableAsScalaIterable(requestIDs).map(Long2long).toVector
+ }
+ 
+ def formatWriteFuture( writeFuture: Future[java.lang.Object] ) : Future[ResponseRequest] ={
+   writeFuture.mapTo[ResponseRequest]
+ }
+}

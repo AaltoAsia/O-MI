@@ -96,7 +96,7 @@ class TypesTest extends Specification {
     val path1 = Path("Objects")
     val path2 = Path(Seq("Objects"))
     path1 should be equalTo path2
-    path1.hashCode() should be equalTo path2.hashCode()
+    path1.hashCode should be equalTo path2.hashCode
   }
   
   def e300 = {
