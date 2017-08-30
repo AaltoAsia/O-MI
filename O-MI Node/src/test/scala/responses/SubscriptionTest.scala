@@ -113,18 +113,19 @@ class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with Bef
   calendar.setTimeZone(timeZone)
   val date = calendar.getTime
   val testtime = new java.sql.Timestamp(date.getTime)
-      def pollValues(subIdO: Option[Long]): Vector[OdfValue[Any]] = subIdO.flatMap{ 
-        subId => 
-          pollSub(subId).results.headOption.flatMap{ 
-            result => 
-              result.odf.headOption.map{ 
-                objects => 
-                  getInfoItems(objects).flatMap{ 
-                    info => info.values
-                  } 
+
+  def pollValues(subIdO: Option[Long]): Vector[OdfValue[Any]] = subIdO.flatMap{
+    subId =>
+      pollSub(subId).results.headOption.flatMap{
+        result =>
+          result.odf.headOption.map{
+            objects =>
+              getInfoItems(objects).flatMap{
+                info => info.values
               }
           }
-      }.toVector.flatten
+      }
+  }.toVector.flatten
 
   def beforeAll = {
     //comment line below for detailed debug information
@@ -169,14 +170,6 @@ class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with Bef
       res must beFailedTry.withThrowable[java.lang.IllegalArgumentException](s"requirement failed: Invalid interval: $dur seconds")
     }
 
-    //remove when support for interval -2 added
-    "fail when trying to use unsupported interval" >> {
-      val dur = -2
-      val res = Try(addSub(1, dur, Seq(Path("p/1"))))
-      //this failure actually comes from the construction of SubscriptionRequest class
-      res must beFailedTry.withThrowable[java.lang.IllegalArgumentException](s"requirement failed: Invalid interval: $dur seconds")
-    }
-
     "be able to handle multiple event subscriptions on the same path" >> {
       val sub1Id = addSub(5,-1, Seq(Path("p/2")))
       val sub2Id = addSub(5,-1, Seq(Path("p/2")))
@@ -216,6 +209,7 @@ class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with Bef
       val values: Vector[OdfValue[Any]] = pollValues(subIdO)
       values must have size(0)
     }
+
 
     "be able to 'remember' last poll time to correctly return values for intervalsubs" >> {
       val subIdO: Option[Long] = addSub(5, 4, Seq(Path("p/1"))).results.headOption.flatMap{ result => result.requestIDs.headOption }
@@ -283,6 +277,20 @@ class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with Bef
       c1 and c2 and c3
     }
 
+    "return only events for new infoitems and objects for interval -2 subscriptions" >> {
+      val subId0: Option[Long] = addSubForObject(5, -2, "p").results.headOption.flatMap{ result => result.requestIDs.headOption}
+      addValue(Path("p/1"), nv("5",40000)) //existing paths
+      addValue(Path("p/2"), nv("5",40000))//existing paths
+      addValue(Path("p/3"), nv("5",40000))//existing paths
+      val c1 = pollValues(subId0) must have size(0)
+      addValue(Path("p/4"), nv("5",40000))//correct path 1
+      addValue(Path("p/s/5"), nv("5",40000))//correct path 2
+      addValue(Path("r/5"), nv("5",40000))//wrong path
+      addValue(Path("r/2"), nv("5",40000))//wrong path
+      val c2 = pollValues(subId0) must have size(2)
+      c1 and c2
+    }
+
     "subscription should be removed when the ttl expired" >> {
       val subId = addSub(1, 5, Seq(Path("p/1"))).asXML.\\("requestID").text.toInt
       pollSub(subId).asXML must \("response") \ ("result") \ ("return", "returnCode" -> "200")
@@ -319,6 +327,17 @@ class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with Bef
     implicit val timeout : Timeout = req.handleTTL
     Await.result((requestHandler ? req).mapTo[ResponseRequest], Duration.Inf)
   }
+
+
+  def addSubForObject(ttl: Long, interval: Long, path: String, callback: String = "") = {
+    val hTree = singleStores.hierarchyStore execute GetTree()
+    val pp = Path("Objects/SubscriptionTest/")
+    val odf = OdfTypes.createAncestors(OdfObject(OdfTreeCollection(OdfQlmID(path)),pp / path))
+    val req = SubscriptionRequest( interval seconds, odf, None, None, None, ttl seconds)
+    implicit val timeout : Timeout = req.handleTTL
+    Await.result((requestHandler ? req).mapTo[ResponseRequest], Duration.Inf)
+  }
+
   def pollSub(id: Long) = {
     val req = PollRequest( None, Vector(id))
     implicit val timeout : Timeout = req.handleTTL

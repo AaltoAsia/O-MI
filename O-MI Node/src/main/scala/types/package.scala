@@ -19,19 +19,18 @@ import java.lang.{Iterable => JavaIterable}
 import java.util.GregorianCalendar
 import javax.xml.datatype.DatatypeFactory
 import java.sql.Timestamp
+import javax.xml.datatype.XMLGregorianCalendar
 
 import scala.language.existentials
 import scala.util.{Failure, Success, Try}
 import scala.xml.NodeSeq
 import scala.collection.JavaConversions
-import scala.concurrent.{Future, ExecutionContext}
-import javax.xml.datatype.XMLGregorianCalendar
 
 import parsing.xmlGen.scalaxb.DataRecord
 import parsing.xmlGen.xmlTypes._
 import parsing.xmlGen._
 import types.OdfTypes._
-import OmiTypes.ResponseRequest
+
 /**
  * Package containing classes presenting O-MI request internally.
  *
@@ -77,6 +76,8 @@ package object OmiTypes  {
   }
 
 }
+
+
 /**
  * Package containing classes presenting O-DF format internally and helper methods for them
  *
@@ -208,32 +209,3 @@ package object OdfTypes {
     }
   }
 }
-
-object JavaHelpers{
-
- def mutableMapToImmutable[K,V]( mutable: scala.collection.mutable.Map[K,V] ) : scala.collection.immutable.Map[K,V] = mutable.toMap[K,V] 
- def requestIDsFromJava( requestIDs : java.lang.Iterable[java.lang.Long] ) : Vector[Long ]= {
-   JavaConversions.iterableAsScalaIterable(requestIDs).map(Long2long).toVector
- }
- 
- def formatWriteFuture( writeFuture: Future[java.lang.Object] ) : Future[ResponseRequest] ={
-   writeFuture.mapTo[ResponseRequest]
- }
-}
-
-  /** case class that represents parsing error
-   *  @param msg error message that describes the problem.
-   */
-  object ParseError{
-    def combineErrors( errors: Iterable[ParseError] ) : ParseError = ParseErrorList(
-      errors.map{ e => e.getMessage }.mkString("\n")
-    )
-  }
-  class ParseError( msg: String, sourcePrefix: String) extends Exception(sourcePrefix +msg)
-  case class ScalaXMLError(val msg: String) extends ParseError( msg, "Scala XML error: " )
-  case class ScalaxbError(val msg: String) extends ParseError( msg, "Scalaxb error: " )
-  case class SchemaError(msg: String) extends ParseError( msg, "Schema error: ")
-  case class ODFParserError(msg: String) extends ParseError( msg, "O-DF Parser error: " )
-  case class OMIParserError(msg: String) extends ParseError( msg, "O-MI Parser error: " )
-  case class ParseErrorList(msg: String) extends ParseError(msg, "")
-
