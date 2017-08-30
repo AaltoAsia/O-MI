@@ -35,24 +35,48 @@ trait DBReadHandler extends DBHandlerBase{
            ))
        )
         //Read all
+         /*
        case ReadRequest(objs,_,None,None,None,None,_,_,_) if objs.objects.isEmpty=>
          log.info( "Received read all.")
          Future{
-         val metadataTree = (singleStores.hierarchyStore execute GetTree())
-         val pathToValue = singleStores.latestStore execute LookupSensorDatas( metadataTree.infoItems.map(_.path)) 
-         val valueObjects = pathToValue.map{
-           case ( path: Path, value: OdfValue[Any]) => 
-             OdfInfoItem( path, values = Vector( value)).createAncestors
-         }.fold(OdfObjects()){
-           case ( odf: OdfObjects, iiObjs: OdfObjects) => 
-             odf.union( iiObjs)
-         }
+           // NOTE: Might go off sync with tree or values if the request is large,
+           // but it shouldn't be a big problem
+           val metadataTree = (singleStores.hierarchyStore execute GetTree())
 
-         ResponseRequest( Vector(
-           Results.Read( metadataTree.allMetaDatasRemoved.union( valueObjects ) )
-         ) )}
+           val pathToValue = singleStores.latestStore execute LookupSensorDatas( metadataTree.intersect( objects ).infoItems.map(_.path)) 
+           val objectsWithValues = pathToValue.map{
+             case ( path: Path, value: OdfValue[Any]) => OdfInfoItem( path, values = Vector( value)).createAncestors
+             }.fold(OdfObjects()){
+               case ( odf: OdfObjects, iiObjs: OdfObjects) => odf.union( iiObjs)
+             }
+
+             //Find nodes from the request that HAVE METADATA OR DESCRIPTION REQUEST
+             val nodesWithoutMetadata: Option[OdfObjects] = getOdfNodes(objects).collect {
+               case oii@OdfInfoItem(_, _, desc, mData, typeValue,attr)
+               if desc.isDefined || mData.isDefined || typeValue.nonEmpty ||attr.nonEmpty=> 
+                 createAncestors(oii.copy(values = OdfTreeCollection()))
+               case obj@OdfObject(pat, _, _, _, des, _,attr)
+               if des.isDefined  || attr.nonEmpty => 
+                 createAncestors(obj.copy(infoItems = OdfTreeCollection(), objects = OdfTreeCollection()))
+             }.reduceOption(_.union(_))
+
+             def objectsWithMetadata = nodesWithoutMetadata.map( objs => metadataTree.intersect( objs ) )
+
+             //Select requested O-DF from metadataTree and remove MetaDatas and descriptions
+             val objectsWithValuesAndAttributes = metadataTree
+               .allMetaDatasRemoved
+               .intersect( objectsWithValues.valuesRemoved )
+               .union( objectsWithValues )
+
+               val metaCombined = objectsWithMetadata.fold(objectsWithValuesAndAttributes){
+                 metas => objectsWithValuesAndAttributes.union(metas) 
+               }
+
+               ResponseRequest( Vector(
+                 Results.Read( metaCombined) )
+               ) 
+         }
          
-         /*
        case ReadRequest(_,_,begin,end,newest,Some(oldest),_) =>
          Future.successful(
            xmlFromResults(
