@@ -15,21 +15,27 @@
 
 package http
 
-import java.net.InetSocketAddress
+import java.io.{BufferedWriter, File, FileWriter, PrintWriter}
+import java.net.{InetAddress, InetSocketAddress}
+import java.sql.Timestamp
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
-
 import agentSystem.{AgentInfo, AgentName, NewCLI}
-import akka.actor.{Actor, ActorLogging, ActorRef, Props, ActorSystem}
+import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, Props}
+import akka.http.scaladsl.model.Uri
 import akka.io.Tcp
 import akka.io.Tcp._
 import akka.pattern.ask
 import akka.util.{ByteString, Timeout}
 import database._
-import responses.{RemoveSubscription, RemoveHandler, RemoveHandlerT }
+import responses._
+import types.OmiTypes.{DefinedCallback, HTTPCallback, WSCallback}
 import types.Path
+
+import scala.io.Source
+import scala.util.{Failure, Success, Try}
 
 /** Object that contains all commands of InternalAgentCLI.
  */
@@ -139,9 +145,9 @@ class OmiNodeCLI(
   }
 
   def subsStrChart (
-    intervals: Set[IntervalSub @unchecked],
-    events: Set[EventSub] @unchecked,
-    polls: Set[PolledSub] @unchecked) : String = {
+    intervals: Set[IntervalSub],
+    events: Set[EventSub],
+    polls: Set[PolledSub]) : String = {
 
       val (idS, intervalS, startTimeS, endTimeS, callbackS, lastPolledS) =
         ("ID", "INTERVAL", "START TIME", "END TIME", "CALLBACK", "LAST POLLED")
@@ -165,10 +171,10 @@ class OmiNodeCLI(
   private def listSubs(): String = {
     log.info(s"Got list subs command from $ip")
     val result = (subscriptionManager ? ListSubsCmd())
-      .map{
-        case (intervals: Set[IntervalSub @unchecked],
-          events: Set[EventSub] @unchecked,
-          polls: Set[PolledSub] @unchecked) => // type arguments cannot be checked
+        .map{
+        case AllSubscriptions(intervals: Set[IntervalSub],
+          events: Set[EventSub],
+          polls: Set[PolledSub]) => // type arguments cannot be checked
           log.info("Received list of Subscriptions. Sending ...")
 
           subsStrChart( intervals, events, polls)
@@ -233,6 +239,63 @@ class OmiNodeCLI(
     */
     agentSystem ! StartAgentCmd(agent)
     ">"
+  }
+
+  private def backUpAllData() = {
+  }
+  private def backUpSubscriptions() = {
+    val allSubs: Future[AllSubscriptions] = (subscriptionManager ? ListSubsCmd()).mapTo[AllSubscriptions]
+    allSubs.map{case AllSubscriptions(interv, event, poll) =>{
+      val writer = new PrintWriter(new File("subscriptions")) //TODO -2 event sub!!
+      interv.foreach(i => writer.write(s"${i.id} | ${i.endTime.getTime} | ${i.interval.toSeconds} | ${i.startTime.getTime} | | ${i.callback} | ${i.paths.mkString(" | ")}\n"))
+      event.foreach(i => writer.write(s"${i.id} | ${i.endTime.getTime} | -1 |  |  | ${i.callback} | ${i.paths.mkString(" | ")}\n"))
+      poll.foreach(i => writer.write(s"${i.id} | ${i.endTime.getTime} | -1 | ${i.startTime.getTime} | ${i.lastPolled.getTime} |  | ${i.paths.mkString(" | ")}\n"))
+      writer.close()
+    }
+    }
+
+  }
+
+  private def createCB(address: String): DefinedCallback = {
+      val uri = Uri(address)
+      val hostAddress = uri.authority.host.address()
+      val ipAddress = InetAddress.getByName(hostAddress)
+      val scheme = uri.scheme
+      scheme match{
+        case "http" => HTTPCallback(uri)
+        case "https" => HTTPCallback(uri)
+        case _ => ??? //TODO is it possible to create ws callback here?
+      }
+
+  }
+
+  private def loadSubscriptions() = {
+    for(line <- Source.fromFile("subscriptions").getLines()){
+      val sub: Try[SavedSub] = line.split(" \\| ").toList match {
+        case id::endTime::"-2"::startTime::lastPolled::callback::paths  if callback.isEmpty => { // Polled -2 Event subscription
+          Try(PollNewEventSub(id.toLong,new Timestamp(endTime.toLong),new Timestamp(lastPolled.toLong),new Timestamp(startTime.toLong),paths.toVector.map(Path(_))))
+        }
+        case id::endTime::"-2"::startTime::lastPolled::callback::paths => { // -2 Event subscription
+          Try(NewEventSub(id.toLong,paths.toVector.map(Path(_)),new Timestamp(endTime.toLong), createCB(callback)))
+        }
+        case id::endTime::"-1"::startTime::lastPolled::callback::paths if callback.isEmpty => { // Polled Event subscription
+          Try(PollNormalEventSub(id.toLong, new Timestamp(endTime.toLong),new Timestamp(lastPolled.toLong),new Timestamp(startTime.toLong), paths.toVector.map(Path(_))))
+        }
+        case id::endTime::"-1"::startTime::lastPolled::callback::paths => { //Event subscription
+          Try(NormalEventSub(id.toLong,paths.toVector.map(Path(_)),new Timestamp(endTime.toLong),createCB(callback)))
+        }
+        case id::endTime::interval::startTime::lastPolled::callback::paths if callback.isEmpty=> { // Polled interval subscription
+          Try(PollIntervalSub(id.toLong, new Timestamp(endTime.toLong), interval.toLong seconds, new Timestamp(lastPolled.toLong), new Timestamp(startTime.toLong),paths.toVector.map(Path(_))))
+        }
+        case id::endTime::interval::startTime::lastPolled::callback::paths => { // Interval subscription
+          Try(IntervalSub(id.toLong, paths.toVector.map(Path(_)), new Timestamp(endTime.toLong),createCB(callback),interval.toLong seconds,new Timestamp(startTime.toLong)))
+        }
+      }
+      sub match {
+        case Success(s) => subscriptionManager ! LoadSubscription(s)
+        case Failure(ex) => log.error("failed to create subscription:\n" + ex)
+      }
+    }
   }
 
   private def stopAgent(agent: AgentName): String = {
@@ -300,6 +363,8 @@ class OmiNodeCLI(
         case Vector("start", agent) => send(sender)(startAgent(agent))
         case Vector("stop", agent)  => send(sender)(stopAgent(agent))
         case Vector("remove", pathOrId) => send(sender)(remove(pathOrId))
+        case Vector("backup") => backUpSubscriptions()
+        case Vector("load") => loadSubscriptions()
         case Vector(cmd @ _*) => 
           log.warning(s"Unknown command from $ip: "+ cmd.mkString(" "))
           send(sender)("Unknown command. Use help to get information of current commands.\r\n>") 

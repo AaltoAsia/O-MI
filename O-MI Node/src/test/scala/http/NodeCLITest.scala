@@ -21,7 +21,7 @@ import com.typesafe.config.{Config, ConfigFactory}
 import testHelpers.Actorstest
 import types.Path
 import types.OmiTypes._
-import responses.{RemoveHandlerT, RemoveSubscription}
+import responses.{AllSubscriptions, RemoveHandlerT, RemoveSubscription}
 import agentSystem._
 import akka.util.{ByteString, Timeout}
 import akka.http.scaladsl.model.Uri
@@ -300,7 +300,7 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
       val agentSystem = TestActorRef( new TestManager(agentsMap,dbHandler,requestHandler)) 
       val subscriptionManager = TestActorRef( new Actor{
         def receive = {
-          case ListSubsCmd() => sender() ! (intervalSubs, eventSubs, pollSubs) 
+          case ListSubsCmd() => {sender() ! AllSubscriptions(intervalSubs, eventSubs, pollSubs) }
         }
 
       })

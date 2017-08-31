@@ -39,6 +39,8 @@ import types._
  */
 case class HandleIntervals(id: Long)
 
+case class AllSubscriptions(intervalSubs: Set[IntervalSub], eventSubs: Set[EventSub], pollSubs: Set[PolledSub])
+case class LoadSubscription(sub: SavedSub)
 /**
  * New subscription event
  * @param subscription Subscription to be added
@@ -139,6 +141,7 @@ class SubscriptionManager(
     case PollSubscription(id) => sender() ! pollSubscription(id)
     case ListSubsCmd() => sender() ! getAllSubs()
     case SubInfoCmd(id) => sender() ! getSub(id)
+    case LoadSubscription(sub)  => loadSub(sub)
   }
 
   private def handlePollEvent(pollEvent: PolledEventSub) = {
@@ -356,12 +359,12 @@ class SubscriptionManager(
     }
   }
 
-  private def getAllSubs() = {
+  private def getAllSubs(): AllSubscriptions = {
     log.info("getting list of all subscriptions")
-    val intervalSubs = singleStores.subStore execute GetAllIntervalSubs()
-    val eventSubs = singleStores.subStore execute GetAllEventSubs()
-    val pollSubs = singleStores.subStore execute GetAllPollSubs()
-    (intervalSubs, eventSubs, pollSubs)
+    val intervalSubs: Set[IntervalSub] = singleStores.subStore execute GetAllIntervalSubs()
+    val eventSubs: Set[EventSub] = singleStores.subStore execute GetAllEventSubs()
+    val pollSubs: Set[PolledSub] = singleStores.subStore execute GetAllPollSubs()
+    AllSubscriptions(intervalSubs, eventSubs, pollSubs)
   }
 
   private def getSub(id: Long) = {
@@ -371,7 +374,36 @@ class SubscriptionManager(
     val allSubs = intervalSubs ++ eventSubs ++ pollSubs
     allSubs.find { sub => sub.id == id }
   }
-
+  private def loadSub(subscription: SavedSub): Boolean = { // used for loading subscriptions from backup
+    subscription match {
+      case sub: PollNormalEventSub => {
+        singleStores.subStore execute AddPollSub(sub)
+        log.debug(s"loaded $sub")
+      }
+      case sub: PollNewEventSub => {
+        singleStores.subStore execute AddPollSub(sub)
+        log.debug(s"loaded $sub")
+      }
+      case sub: PollIntervalSub => {
+        singleStores.subStore execute AddPollSub(sub)
+        log.debug(s"loaded $sub")
+      }
+      case sub: IntervalSub => {
+        singleStores.subStore execute AddIntervalSub(sub)
+        intervalMap.put(sub.id, intervalScheduler.schedule(sub.interval,sub.interval,self,HandleIntervals(sub.id)))
+        log.debug(s"loaded $sub")
+      }
+      case sub: NormalEventSub => {
+        singleStores.subStore execute AddEventSub(sub)
+        log.debug(s"loaded $sub")
+      }
+      case sub: NewEventSub => {
+        singleStores.subStore execute AddEventSub(sub)
+        log.debug(s"loaded $sub")
+      }
+    }
+    true
+  }
   /**
    * Method used to add subscriptions to Prevayler database
    * @param subscription SubscriptionRequest of the subscription to add
