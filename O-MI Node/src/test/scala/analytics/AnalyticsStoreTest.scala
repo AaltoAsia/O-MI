@@ -147,7 +147,7 @@ class AnalyticsStoreTest extends Specification with Mockito with AfterAll {
   val testtime = new java.sql.Timestamp(date.getTime)
   def sendRR(user: Int, metadata: Boolean) = {
     val readReq = {
-      val p: Path = Path("Objects\\/AnalyticsStoreTest\\/first")
+      val p: Path = Path("Objects/AnalyticsStoreTest/first")
       val _odf =
         if(!metadata)OdfTypes.createAncestors(OdfInfoItem(p))
         else OdfTypes.createAncestors(OdfInfoItem(p, metaData = Some(OdfMetaData(OdfTreeCollection.empty))))
@@ -160,11 +160,11 @@ class AnalyticsStoreTest extends Specification with Mockito with AfterAll {
   (requestHandler ? readReq).mapTo[ResponseRequest]
 
   }
-  addValue("first", Vector(OdfValue("1", new Timestamp(testtime.getTime-4000))))
-  addValue("first", Vector(OdfValue("2", new Timestamp(testtime.getTime-3000))))
-  addValue("first", Vector(OdfValue("3", new Timestamp(testtime.getTime-2000))))
-  addValue("first", Vector(OdfValue("4", new Timestamp(testtime.getTime-1000))))
-  addValue("first", Vector(OdfValue("5", new Timestamp(testtime.getTime))))
+  addValue(Path("first"), Vector(OdfValue("1", new Timestamp(testtime.getTime-4000))))
+  addValue(Path("first"), Vector(OdfValue("2", new Timestamp(testtime.getTime-3000))))
+  addValue(Path("first"), Vector(OdfValue("3", new Timestamp(testtime.getTime-2000))))
+  addValue(Path("first"), Vector(OdfValue("4", new Timestamp(testtime.getTime-1000))))
+  addValue(Path("first"), Vector(OdfValue("5", new Timestamp(testtime.getTime))))
   Await.ready(sendRR(1, metadata = false), 2 seconds)
   Thread.sleep(100)
   Await.ready(sendRR(1, metadata = false), 2 seconds)
@@ -174,8 +174,8 @@ class AnalyticsStoreTest extends Specification with Mockito with AfterAll {
   Await.ready(sendRR(2, metadata = false), 2 seconds)
   Thread.sleep(400)
   Await.ready(sendRR(3, metadata = false), 2 seconds)
-  def addValue(path: String, nv: Vector[OdfValue[Any]]): Unit = {
-    val pp = Path("Objects\\/AnalyticsStoreTest\\/")
+  def addValue(path: Path, nv: Vector[OdfValue[Any]]): Unit = {
+    val pp = Path("Objects/AnalyticsStoreTest/")
     val odf = OdfTypes.createAncestors(OdfInfoItem(pp / path, nv))
     val writeReq = WriteRequest( odf)
     implicit val timeout = Timeout( 10 seconds )

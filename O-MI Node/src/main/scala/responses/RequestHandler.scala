@@ -93,26 +93,29 @@ with CancelHandler
   def handleWriteRequest( write: WriteRequest) : Future[ResponseRequest] = {
     log.debug(s"RequestHandler handling write OdfRequest...")
     val responsibleToRequest = agentResponsibilities.splitRequestToResponsible( write )
+    val responsesFromResponsible = responsibleToRequest.map{
+      case (None, subrequest) =>  
+        implicit val to = Timeout(subrequest.handleTTL)
+        log.debug(s"Asking DBHandler to handle request parts that are not owned by an Agent.")
+        (dbHandler ? subrequest).mapTo[ResponseRequest]
+      case (Some(agentName), subrequest) => 
+        log.debug(s"Asking responsible Agent $agentName to handle part of request.")
+        askAgent(agentName,subrequest)
+    }
     val fSeq = Future.sequence(
-      responsibleToRequest.map{
-        case (None, subrequest) =>  
-          implicit val to = Timeout(subrequest.handleTTL)
-          log.debug(s"Asking DBHandler to handle request parts that are not owned by an Agent.")
-          (dbHandler ? subrequest).mapTo[ResponseRequest]
-        case (Some(agentName), subrequest) => 
-          log.debug(s"Asking responsible Agent $agentName to handle part of request.")
-          askAgent(agentName,subrequest)
-          }.map{
-            case future: Future[ResponseRequest] =>
-              future.recover{
-                case e: Exception =>
-                  log.error( e,"DBHandler returned exception")
-                  Responses.InternalError(e)
-              }
+      responsesFromResponsible.map{
+        case future: Future[ResponseRequest] =>
+          
+          val recovered = future.recover{
+            case e: Exception =>
+              log.error( e,"DBHandler returned exception")
+              Responses.InternalError(e)
           }
-          )
+          recovered 
+      }
+    )
     fSeq.map{
-      case responses =>
+      responses: Iterable[ResponseRequest] =>
         val results = responses.flatMap{
           case response => response.results
         }
