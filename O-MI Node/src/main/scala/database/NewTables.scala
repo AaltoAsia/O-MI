@@ -290,7 +290,7 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimmableDB{
       }
     }
     if (ret.isInfoItem != isInfoItem) 
-      throw new IllegalArgument(
+      throw new IllegalArgumentException(
         s"$path has Object/InfoItem conflict; Request has ${if (isInfoItem) "InfoItem" else "Object"} "+
         s"while DB has ${if (ret.isInfoItem) "InfoItem" else "Object"}")
     else ret
@@ -302,20 +302,20 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimmableDB{
         (dbpath match {
           case DBPath(None, _, _) =>
             obj.path.ancestors.map{
-              case ancestor: Path => reserveNewPaths(ancestor, false)
+              case ancestor: Path => returnOrReserve(ancestor, false)
             }
-          case _ => // noop
-        }).toSet ++ dbpath
+          case _ => Seq() // noop
+        }).toSet + dbpath
 
-      case (ii: OdfInfoItem, None) =>
-        val dbpath = returnOrReserve(obj.path, true)
+      case ii: OdfInfoItem =>
+        val dbpath = returnOrReserve(ii.path, true)
         (dbpath match {
           case DBPath(None, _, _) =>
             ii.path.ancestors.map{
               case ancestor: Path => returnOrReserve(ancestor, false)
             }
-          case _ => // noop
-        }).toSet ++ dbpath
+          case _ => Seq() // noop
+        }).toSet + dbpath
     }
   }
 
@@ -326,8 +326,7 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimmableDB{
 
     //Add new paths to PATHSTABLE and create new values tables for InfoItems
 
-    val allPaths = fromLeafs(leafs) 
-    val pathsToAdd = reserveNewPaths(allPaths)
+    val pathsToAdd = reserveNewPaths(leafs.toSet)
 
     //log.debug( s"Adding total of  ${pathsToAdd.length} paths to DB.")
     val pathAddingAction = pathsTable.add(pathsToAdd.toSeq)
@@ -337,10 +336,12 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimmableDB{
     }
 
     val valueTableCreations = getAddedDBPaths.flatMap{
-      case addedDBPaths: Seq[DBPath] => 
-        pathToDBPath.merged(addedDBPaths.map{ 
-          case dbPath: DBPath => dbPath.path ->dbPath
-        })
+      case addedDBPaths: Seq[DBPath] =>
+        atomic { implicit txn =>
+          addedDBPaths.map {
+            case dbPath: DBPath => pathToDBPath += dbPath.path -> dbPath
+          }
+        }
         namesOfCurrentTables.flatMap{
           case tableNames: Seq[String] =>
           val creations = addedDBPaths.collect{
@@ -416,7 +417,7 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimmableDB{
     newestO: Option[Int],
     oldestO: Option[Int]
   ): Future[Option[OdfObjects]] = {
-    val iiIOAs =pathToDBPath.values.filter{
+    val iiIOAs = pathToDBPath.single.values.filter{
       case dbPath: DBPath => 
         nodes.exists{ 
           case node: OdfNode => 
@@ -428,7 +429,7 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimmableDB{
         val valueTable = valueTables.get(path) match{ //Is table stored?
               case Some(pathValues) => //Found table/ TableQuery
                 pathValues
-              case None =>//No TableQuery found for table. Create one for it
+              case None => //No TableQuery found for table. Create one for it
                 val pathValues = new PathValues(path, id)
                 valueTables += path -> pathValues
                 pathValues
@@ -469,18 +470,20 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimmableDB{
   }
 
   def remove(path: Path): Future[Seq[Int]] ={
-    val actions = pathToDBPath.get(path) match{
+    val actions = pathToDBPath.single.get(path) match{
       case Some( DBPath(Some(id), p, true) ) =>
           valueTables.get(path) match{
             case Some( pathValues ) =>
               pathValues.schema.drop.flatMap{
                 case u: Unit =>
-                  pathToDBPath -= path
+                  atomic { implicit txn =>
+                    pathToDBPath -= path
+                  }
                   pathsTable.removeByIDs( Vector(id) )
               }
           }
       case Some( DBPath(Some(id), originPath, false) ) =>
-          val ( objs, iis ) = pathToDBPath.values.filter{
+          val ( objs, iis ) = pathToDBPath.single.values.filter{
             case dbPath: DBPath => dbPath == originPath || dbPath.path.isDescendantOf(originPath)
           }.partition{ case dbPath: DBPath => dbPath.isInfoItem }
           val tableDrops = iis.map{
@@ -495,10 +498,12 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimmableDB{
           val removedPaths = objs.map( _.path ) ++ iiPaths 
           val removedPathIDs = (objs ++ iis).map( _.id ).flatten 
           val pathRemoves = pathsTable.removeByIDs(removedPathIDs.toSeq)
-          pathToDBPath --= removedPaths
+          atomic { implicit txn =>
+            pathToDBPath --= removedPaths
+          }
           valueTables --= iiPaths
           tableDropsAction.flatMap{
-            u: Unit =>
+            _ =>
               pathRemoves
           }
     }
