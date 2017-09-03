@@ -182,6 +182,7 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimmableDB{
   import dc.driver.api._
 
   protected val settings : OmiConfigExtension
+  protected val singleStores : SingleStores
   protected val log = LoggerFactory.getLogger("SimplifiedDB")//FIXME: Better name
   val pathToDBPath: TMap[Path, DBPath] = TMap()
 
@@ -238,13 +239,13 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimmableDB{
             pathsTable.add( Seq(dbP) ).map{
               case ids: Seq[Long] => atomic { implicit txn =>
                 pathToDBPath ++= ids.map{
-                  case id: Long => 
+                  case id: Long =>
                     pRoot -> dbP.copy(id= Some(id))
                 }
               }
             }
           } else {
-            pathsTable.result.map{ 
+            pathsTable.result.map{
               dbPaths => atomic { implicit txn =>
                 pathToDBPath ++= dbPaths.map{ dbPath => dbPath.path -> dbPath }
               }
@@ -289,7 +290,7 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimmableDB{
           newDbPath
       }
     }
-    if (ret.isInfoItem != isInfoItem) 
+    if (ret.isInfoItem != isInfoItem)
       throw new IllegalArgumentException(
         s"$path has Object/InfoItem conflict; Request has ${if (isInfoItem) "InfoItem" else "Object"} "+
         s"while DB has ${if (ret.isInfoItem) "InfoItem" else "Object"}")
@@ -417,56 +418,68 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimmableDB{
     newestO: Option[Int],
     oldestO: Option[Int]
   ): Future[Option[OdfObjects]] = {
-    val iiIOAs = pathToDBPath.single.values.filter{
-      case dbPath: DBPath => 
-        nodes.exists{ 
-          case node: OdfNode => 
-            dbPath.path == node.path ||
-            dbPath.path.isDescendantOf(node.path) 
-        }
-    }.collect{
-      case DBPath(Some(id), path, true) =>
-        val valueTable = valueTables.get(path) match{ //Is table stored?
-              case Some(pathValues) => //Found table/ TableQuery
-                pathValues
-              case None => //No TableQuery found for table. Create one for it
-                val pathValues = new PathValues(path, id)
-                valueTables += path -> pathValues
-                pathValues
-            }
-        
-        val getNBetweenResults = tableByNameExists(valueTable.name).flatMap{
-          case true =>
-            valueTable.getNBetween(beginO,endO,newestO,oldestO)
-          case false =>
-            valueTable.schema.create.flatMap{
-              case u: Unit =>
-                valueTable.getNBetween(beginO,endO,newestO,oldestO)
-            }
-        }
-        getNBetweenResults.map{
-          case tvs: Seq[TimedValue] =>
-            val ii = OdfInfoItem(
-              path,
-              values = tvs.map{
-                tv => OdfValue( tv.value, tv.valueType, tv.timestamp)
+    if( beginO.isEmpty && endO.isEmpty &&  newestO.isEmpty && oldestO.isEmpty ){
+        val odf = nodes.map{
+          node: OdfNode =>
+            node.createAncestors
+        }.fold(OdfObjects()){
+          case ( odf:OdfObjects, objects: OdfObjects) =>
+            odf.union( objects)
+      }
+      readLatestFromCache( odf )
+
+    } else{
+      val iiIOAs =pathToDBPath.single.values.filter{
+        case dbPath: DBPath =>
+          nodes.exists{
+            case node: OdfNode =>
+              dbPath.path == node.path ||
+              dbPath.path.isDescendantOf(node.path)
+          }
+      }.collect{
+        case DBPath(Some(id), path, true) =>
+          val valueTable = valueTables.get(path) match{ //Is table stored?
+                case Some(pathValues) => //Found table/ TableQuery
+                  pathValues
+                case None => //No TableQuery found for table. Create one for it
+                  val pathValues = new PathValues(path, id)
+                  valueTables += path -> pathValues
+                  pathValues
               }
-              )
-          ii.createAncestors 
+
+          val getNBetweenResults = tableByNameExists(valueTable.name).flatMap{
+            case true =>
+              valueTable.getNBetween(beginO,endO,newestO,oldestO)
+            case false =>
+              valueTable.schema.create.flatMap{
+                case u: Unit =>
+                  valueTable.getNBetween(beginO,endO,newestO,oldestO)
+              }
+          }
+          getNBetweenResults.map{
+            case tvs: Seq[TimedValue] =>
+              val ii = OdfInfoItem(
+                path,
+                values = tvs.map{
+                  tv => OdfValue( tv.value, tv.valueType, tv.timestamp)
+                }
+                )
+            ii.createAncestors
+          }
         }
-      } 
-    //Create OdfObjects from InfoItems and union them to one with parameter ODF
-    val finalAction = DBIO.sequence(iiIOAs).map{
-      case objs: Seq[OdfObjects] if objs.nonEmpty =>
-        val r = objs.fold(OdfObjects()){
-          case (odf: OdfObjects, obj: OdfObjects) =>
-            odf.union(obj)
-        }
-        Some(r)
-      case objs: Seq[OdfObjects] if objs.isEmpty => None
+      //Create OdfObjects from InfoItems and union them to one with parameter ODF
+      val finalAction = DBIO.sequence(iiIOAs).map{
+        case objs: Seq[OdfObjects] if objs.nonEmpty =>
+          val r = objs.fold(OdfObjects()){
+            case (odf: OdfObjects, obj: OdfObjects) =>
+              odf.union(obj)
+          }
+          Some(r)
+        case objs: Seq[OdfObjects] if objs.isEmpty => None
+      }
+      val r = db.run(finalAction.transactionally)
+      r
     }
-    val r = db.run(finalAction.transactionally)
-    r
   }
 
   def remove(path: Path): Future[Seq[Int]] ={
@@ -581,4 +594,24 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimmableDB{
       }
     }
   }
+
+  def readLatestFromCache( objects: OdfObjects ): Future[Option[OdfObjects]] = Future{
+    // NOTE: Might go off sync with tree or values if the request is large,
+    // but it shouldn't be a big problem
+    val requestedPaths = getLeafs(objects).map( _.path)
+    val iiPaths = (singleStores.hierarchyStore execute GetTree()).infoItems.collect{
+      case ii: OdfInfoItem if requestedPaths.exists{ path: Path => path.isAncestorOf( ii.path) || path == ii.path} =>
+        ii.path
+    }
+
+    val pathToValue = singleStores.latestStore execute LookupSensorDatas( iiPaths)
+    val objectsWithValues = pathToValue.map{
+      case ( path: Path, value: OdfValue[Any]) => OdfInfoItem( path, values = Vector( value)).createAncestors
+    }.fold(OdfObjects()){
+      case ( odf: OdfObjects, iiObjs: OdfObjects) => odf.union( iiObjs)
+    }
+
+    Some(objectsWithValues)
+  }
+
 }
