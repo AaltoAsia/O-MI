@@ -34,6 +34,70 @@ import types.Path._
 object InfluxDBJsonProtocol extends DefaultJsonProtocol {
 
     class InfluxDBJsonFormat(implicit singleStores: SingleStores) extends RootJsonFormat[ImmutableODF] {
+      // Members declared in spray.json.JsonReader
+      def read(json: spray.json.JsValue): types.odf.ImmutableODF ={
+        json match{
+          case obj: JSObject =>
+            obj.getFields("results").getHeadOption match{
+              case Some( results: JsArray ) =>
+                results.elements.collect{
+                  case statementobj: JSObject =>
+                    statementObj.getFields("statement_id").getHeadOption match{
+                      case Some( id: JsNumber ) =>
+                        log.debug( s"Parsing JSON result for statement $id" )
+                    }
+                    statementObj.getFields("series").getHeadOption match{
+                      case Some( series: JsArray ) =>
+                        series.elements.collect{
+                          case serie @ JsObject( "name" -> JsString( measurementName), "columns" -> JsArray(columns), "values" -> JsArray( values )) =>
+                            serieToOdf( serie ) 
+                        
+                        }
+                    }
+                
+                }
+            
+            }
+        
+        }
+      }
+
+      def serieToOdf( serie: JsObject ): Seq[Node] ={
+        serie match{
+          case JsObject( "name" -> JsString( measurementName), "columns" -> JsArray(columns), "values" -> JsArray( values )) =>
+            val path = measurementNameToPath(measurementName)
+            columns.collect{
+              case JsString(iiName) if iiName != "time" =>
+                val name = measurementNameToPath( iiName)
+                InfoItem(name, path / name)
+            }
+            values.collect{
+              case value: JsArray =>
+                value.getHeadOPtion.flatMap{
+                  case timeStr: JsString =>
+                    val timestamp: Timestamp = ??? 
+                    value.tail.collect{
+                      case va @ JsBoolean( bool ) if value.tail.indexOf( va ) != -1 =>
+                        val index = value.tail.indexOf( va )
+                        iis.updated( index, iis(index).addValue( Value( bool, timestamp ) )
+                      case va @ JsNumber( number ) if value.tail.indexOf( va ) != -1 =>
+                        val index = value.tail.indexOf( va )
+                        iis.updated( index, iis(index).addValue( Value( number, timestamp ) )
+                      case va @ JsString( str ) if value.tail.indexOf( va ) != -1 =>
+                        val index = value.tail.indexOf( va )
+                        iis.updated( index, iis(index).addValue( Value( str, timestamp )))
+                    }
+
+                }
+            
+            }
+
+        }
+      
+      }
+
+      // Members declared in spray.json.JsonWriter
+      def write(obj: types.odf.ImmutableODF): spray.json.JsValue = ???
 
 
     }
