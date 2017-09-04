@@ -296,27 +296,26 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimmableDB{
         s"while DB has ${if (ret.isInfoItem) "InfoItem" else "Object"}")
     else ret
   }
-  private def reserveNewPaths(paths: Set[OdfNode]): Set[DBPath] = {
-    paths flatMap {
-      case obj: OdfObject => // TODO single pass
-        val dbpath = returnOrReserve(obj.path, false)
-        (dbpath match {
-          case DBPath(None, _, _) =>
-            obj.path.ancestors.map{
-              case ancestor: Path => returnOrReserve(ancestor, false)
-            }
-          case _ => Seq() // noop
-        }).toSet + dbpath
+  private def reserveNewPaths(paths: Set[OdfNode]): Map[Path,DBPath] = {
 
-      case ii: OdfInfoItem =>
-        val dbpath = returnOrReserve(ii.path, true)
-        (dbpath match {
-          case DBPath(None, _, _) =>
-            ii.path.ancestors.map{
-              case ancestor: Path => returnOrReserve(ancestor, false)
-            }
-          case _ => Seq() // noop
-        }).toSet + dbpath
+    def handleNode(o: OdfNode, isInfo: Boolean, reserved: Map[Path,DBPath]): Map[Path, DBPath] = {
+      val path = o.path
+      val dbpath = returnOrReserve(path, isInfo)
+      reserved ++ (dbpath match {
+        case DBPath(None, _, _) =>
+          Map(path -> dbpath) ++ (path.ancestors.collect{
+            case ancestor: Path if (!(reserved contains ancestor)) =>
+              ancestor -> returnOrReserve(ancestor, false)
+          }.toMap)
+        case _ => Map() // noop
+      })
+    }
+
+    paths.foldLeft(Map[Path,DBPath]()){ case (reserved, node) =>
+      node match {
+        case obj: OdfObject => handleNode(obj, false, reserved)
+        case ii: OdfInfoItem => handleNode(ii, true, reserved)
+      }
     }
   }
 
@@ -330,7 +329,7 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimmableDB{
     val pathsToAdd = reserveNewPaths(leafs.toSet)
 
     //log.debug( s"Adding total of  ${pathsToAdd.length} paths to DB.")
-    val pathAddingAction = pathsTable.add(pathsToAdd.toSeq)
+    val pathAddingAction = pathsTable.add(pathsToAdd.values)
     val getAddedDBPaths =  pathAddingAction.flatMap{
       case ids: Seq[Long] => 
         pathsTable.getByIDs(ids)
@@ -429,7 +428,7 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimmableDB{
       readLatestFromCache( odf )
 
     } else{
-      val iiIOAs =pathToDBPath.single.values.filter{
+      val iiIOAs = pathToDBPath.single.values.filter{ // FIXME: filter is not how you use a Map?
         case dbPath: DBPath =>
           nodes.exists{
             case node: OdfNode =>
@@ -496,7 +495,7 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimmableDB{
               }
           }
       case Some( DBPath(Some(id), originPath, false) ) =>
-          val ( objs, iis ) = pathToDBPath.single.values.filter{
+          val ( objs, iis ) = pathToDBPath.single.values.filter{ // FIXME: filter on a Map
             case dbPath: DBPath => dbPath == originPath || dbPath.path.isDescendantOf(originPath)
           }.partition{ case dbPath: DBPath => dbPath.isInfoItem }
           val tableDrops = iis.map{
@@ -576,12 +575,13 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimmableDB{
         })
     }
     db.run( 
-      valueTableDrops.flatMap{
-        case u: Seq[Unit] => 
+      valueTableDrops.flatMap{ _ => 
+          atomic {implicit txn =>
+            pathToDBPath.clear()
+          }
           pathsTable.schema.drop
       }.transactionally 
-    ).flatMap{
-      case u: Unit =>
+    ).flatMap{ _ =>
       db.run(namesOfCurrentTables).map{
         case tableNames: Seq[String] =>
           if( tableNames.nonEmpty ){
