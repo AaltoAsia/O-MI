@@ -303,10 +303,16 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimmableDB{
       val dbpath = returnOrReserve(path, isInfo)
       reserved ++ (dbpath match {
         case DBPath(None, _, _) =>
-          Map(path -> dbpath) ++ (path.ancestors.collect{
-            case ancestor: Path if (!(reserved contains ancestor)) =>
-              ancestor -> returnOrReserve(ancestor, false)
-          }.toMap)
+          Map(path -> dbpath) ++ (
+            path.ancestors
+              .filterNot(reserved contains _)
+              .map(returnOrReserve(_, false))
+              .collect{
+                case dbpath @ DBPath(None, path, false) =>
+                  path -> dbpath
+              }
+              .toMap
+          )
         case _ => Map() // noop
       })
     }
@@ -328,7 +334,8 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimmableDB{
 
     val pathsToAdd = reserveNewPaths(leafs.toSet)
 
-    //log.debug( s"Adding total of  ${pathsToAdd.length} paths to DB.")
+    log.debug( s"Adding total of  ${pathsToAdd.length} paths to DB: $pathsToAdd")
+
     val pathAddingAction = pathsTable.add(pathsToAdd.values)
     val getAddedDBPaths =  pathAddingAction.flatMap{
       case ids: Seq[Long] => 
