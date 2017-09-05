@@ -28,6 +28,7 @@ import database._
 
 import types.odf._
 import types.OmiTypes._
+import types.OdfTypes._
 import types.Path
 import types.Path._
 
@@ -36,70 +37,55 @@ object InfluxDBJsonProtocol extends DefaultJsonProtocol {
     class InfluxDBJsonFormat(implicit singleStores: SingleStores) extends RootJsonFormat[ImmutableODF] {
       // Members declared in spray.json.JsonReader
       def read(json: spray.json.JsValue): types.odf.ImmutableODF ={
-        json match{
-          case obj: JSObject =>
-            obj.getFields("results").getHeadOption match{
-              case Some( results: JsArray ) =>
+        val iis: Seq[InfoItem] = json match{
+          case obj: JsObject =>
+            obj.getFields("results").collect{
+              case results: JsArray  =>
                 results.elements.collect{
-                  case statementobj: JSObject =>
-                    statementObj.getFields("statement_id").getHeadOption match{
+                  case statementObj: JsObject =>
+                    statementObj.getFields("statement_id").headOption match{
                       case Some( id: JsNumber ) =>
-                        log.debug( s"Parsing JSON result for statement $id" )
+                        //log.debug( s"Parsing JSON result for statement $id" )
                     }
-                    statementObj.getFields("series").getHeadOption match{
-                      case Some( series: JsArray ) =>
+                    statementObj.getFields("series").collect{ 
+                      case series: JsArray =>
                         series.elements.collect{
-                          case serie @ JsObject( "name" -> JsString( measurementName), "columns" -> JsArray(columns), "values" -> JsArray( values )) =>
-                            serieToOdf( serie ) 
-                        
-                        }
-                    }
-                
-                }
-            
-            }
-        
+                          case serie: JsObject =>
+                            serie.getFields( "name", "columns", "values") match{
+                              case Seq(JsString( measurementName), JsArray(columns), JsArray( values )) =>
+                                Some(serieToInfoItem( serie )) 
+                              case seq: Seq[JsValue] =>
+                                None
+                            }
+                      }.flatten
+                    }.flatten
+                }.flatten
+            }.flatten
         }
+        ImmutableODF(iis.toVector)
       }
 
-      def serieToOdf( serie: JsObject ): Seq[Node] ={
-        serie match{
-          case JsObject( "name" -> JsString( measurementName), "columns" -> JsArray(columns), "values" -> JsArray( values )) =>
+      def serieToInfoItem( serie: JsObject ): InfoItem ={
+        serie.getFields( "name", "columns", "values") match{
+          case Seq( JsString( measurementName), JsArray(Vector(JsString("time"),JsString("value"))), JsArray( values )) =>
             val path = measurementNameToPath(measurementName)
-            columns.collect{
-              case JsString(iiName) if iiName != "time" =>
-                val name = measurementNameToPath( iiName)
-                InfoItem(name, path / name)
-            }
-            values.collect{
-              case value: JsArray =>
-                value.getHeadOPtion.flatMap{
-                  case timeStr: JsString =>
-                    val timestamp: Timestamp = ??? 
-                    value.tail.collect{
-                      case va @ JsBoolean( bool ) if value.tail.indexOf( va ) != -1 =>
-                        val index = value.tail.indexOf( va )
-                        iis.updated( index, iis(index).addValue( Value( bool, timestamp ) )
-                      case va @ JsNumber( number ) if value.tail.indexOf( va ) != -1 =>
-                        val index = value.tail.indexOf( va )
-                        iis.updated( index, iis(index).addValue( Value( number, timestamp ) )
-                      case va @ JsString( str ) if value.tail.indexOf( va ) != -1 =>
-                        val index = value.tail.indexOf( va )
-                        iis.updated( index, iis(index).addValue( Value( str, timestamp )))
-                    }
-
-                }
-            
-            }
-
+            InfoItem( path.last, path, values = values.collect{
+              case JsArray( Seq(JsString(timestampStr), JsNumber( number )) ) =>
+                val timestamp: Timestamp = Timestamp.valueOf(timestampStr)
+                Value( number, timestamp)
+              case JsArray( Seq(JsString(timestampStr), JsBoolean( bool ))) =>
+                val timestamp: Timestamp = Timestamp.valueOf(timestampStr)
+                Value( bool, timestamp)
+              case JsArray( Seq(JsString(timestampStr), JsString( str ))) =>
+                val timestamp: Timestamp = Timestamp.valueOf(timestampStr)
+                Value( str, timestamp)
+            })
         }
-      
       }
 
       // Members declared in spray.json.JsonWriter
       def write(obj: types.odf.ImmutableODF): spray.json.JsValue = ???
-
-
+      def measurementNameToPath( measurementName: String ): Path = ???
     }
 }
 
@@ -131,10 +117,8 @@ trait OdfInfluxDBImplementation extends DB {
  val httpExt = Http(system)
  implicit val mat: Materializer = ActorMaterializer()
  def log = system.log
-
   def infoItemToWriteFormat( ii: InfoItem ): Seq[String] = {
-        val measurement: String = pathToMeasurementName( ii.path.getParent)
-        val field: String = pathToMeasurementName( Path(ii.nameAttribute))
+        val measurement: String = pathToMeasurementName( ii.path)
         ii.values.map{
           value: Value[Any] => 
             val valueStr: String= value.value match {
@@ -142,12 +126,20 @@ trait OdfInfluxDBImplementation extends DB {
               case num: Numeric[Any] => s"$num" //XXX: may cause issues...
               case any: Any => s""""${any.toString}""""
             }
-            s"$measurement $field=$valueStr ${value.timestamp.getTime}"
+            s"$measurement value=$valueStr ${value.timestamp.getTime}"
         }
   }
+
   def initialize(): Unit = {
   }
-  def writeMany(data: Seq[InfoItem]): Future[OmiReturn] = {
+  def writeMany(data: Seq[OdfInfoItem]): Future[OmiReturn] ={
+    val iis = data.map{ 
+      oii: OdfInfoItem => 
+      OldTypeConverter.convertOdfInfoItem(oii)
+    }
+    writeManyNewTypes(iis)
+  }
+  def writeManyNewTypes(data: Seq[InfoItem]): Future[OmiReturn] = {
     val valuesAsString = data.flatMap{ case ii: InfoItem => infoItemToWriteFormat(ii) }.mkString("\n")
     val request = RequestBuilding.Post(writeAddress, valuesAsString)//.withHeaders()
     val response = httpExt.singleRequest(request)
@@ -169,13 +161,27 @@ trait OdfInfluxDBImplementation extends DB {
     }
 
   }
-
+  def getNBetween(
+    requests: Iterable[OdfNode],
+    begin: Option[Timestamp],
+    end: Option[Timestamp],
+    newest: Option[Int],
+    oldest: Option[Int]): Future[Option[OdfObjects]]={
+      val iODF = OldTypeConverter.convertOdfObjects(requests.map( _.createAncestors ).fold(OdfObjects())( _ union _ ))
+      getNBetweenNewTypes( iODF, begin, end, newest, oldest).map{
+        case result: Option[ImmutableODF] =>
+          result.map{
+            resultODF: ImmutableODF  => 
+              NewTypeConverter.convertODF( resultODF )
+          }
+      }
+  }
 
 /* GetNBetween
  * SELECT * FROM PATH WHERE time < end AND time > begin ORDER BY time DESC LIMIt newest
  *
  */
-  def getNBetween(
+  def getNBetweenNewTypes(
     requestODF: ImmutableODF,
     beginO: Option[Timestamp],
     endO: Option[Timestamp],
@@ -196,20 +202,10 @@ trait OdfInfluxDBImplementation extends DB {
         whereClause + "ORDER BY time DESC" + limitClause
       }
       val cachedODF = OldTypeConverter.convertOdfObjects(singleStores.hierarchyStore execute GetTree())
-      val requestLeafs = requestODF.getLeafs
-      val requestedIIs = requestLeafs.collect{
-        case ii: InfoItem  => ii
-      }
-      val requestedObjects = requestLeafs.collect{
-        case obj: Object =>
-          cachedODF.getSubTree(obj.path).collect{
-            case subObj: Object => subObj
-          } ++ Seq(obj)
-      }.flatten
+      val requestedIIs = cachedODF.intersection(requestODF).getInfoItems
       //XXX: What about Objects/ read all?
       val iiQueries = getNBetweenInfoItemsQueryString(requestedIIs, filteringClause)
-      val objQueries = getNBetweenObjectsQueryString(requestedObjects, filteringClause)
-      read( iiQueries + ";\n" + objQueries )
+      read( "q=" + iiQueries )
 
     }
   }
@@ -240,29 +236,15 @@ trait OdfInfluxDBImplementation extends DB {
      formatedResponse
    }
 
-   def getNBetweenObjectsQueryString(
-     objs: Iterable[Object],
-     filteringClause: String 
-   ): String = {
-     val queries = objs.map{
-       obj =>
-         val measurementName = pathToMeasurementName( obj.path )
-         val select = s"SELECT * FROM $measurementName " 
-         select + filteringClause
-     }
-     queries.mkString(";\n")
-   }
-
    def getNBetweenInfoItemsQueryString(
      iis: Iterable[InfoItem],
      filteringClause: String 
    ): String= {
      val iisGroupedByParents = iis.groupBy{ ii => ii.path.getParent } 
-     val queries = iisGroupedByParents.map{
-       case (getParentPath: Path, childIIs: Seq[InfoItem]) =>
-         val measurementName = pathToMeasurementName( getParentPath )
-         val fields = childIIs.map( _.nameAttribute ).mkString(",")
-         val select = s"SELECT $fields FROM $measurementName " 
+     val queries = iis.map{
+       case ii: InfoItem =>
+         val measurementName = pathToMeasurementName( ii.path )
+         val select = s"SELECT value FROM $measurementName " 
          select + filteringClause
      }
      queries.mkString(";\n")
