@@ -296,7 +296,7 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimmableDB{
         s"while DB has ${if (ret.isInfoItem) "InfoItem" else "Object"}")
     else ret
   }
-  private def reserveNewPaths(paths: Set[OdfNode]): Map[Path,DBPath] = {
+  private def reserveNewPaths(nodes: Set[OdfNode]): Map[Path,DBPath] = {
 
     def handleNode(o: OdfNode, isInfo: Boolean, reserved: Map[Path,DBPath]): Map[Path, DBPath] = {
       val path = o.path
@@ -317,8 +317,9 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimmableDB{
       })
     }
 
-    paths.foldLeft(Map[Path,DBPath]()){ case (reserved, node) =>
+    nodes.foldLeft(Map[Path,DBPath]()){ case (reserved: Map[Path,DBPath], node: OdfNode) =>
       node match {
+        case obj: OdfObjects => handleNode(obj, false, reserved)
         case obj: OdfObject => handleNode(obj, false, reserved)
         case ii: OdfInfoItem => handleNode(ii, true, reserved)
       }
