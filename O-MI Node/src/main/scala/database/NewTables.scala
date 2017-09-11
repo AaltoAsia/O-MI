@@ -6,6 +6,7 @@ import scala.util.{Try, Success, Failure}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
+import scala.concurrent.stm._
 import scala.collection.mutable.{ Map => MutableMap, HashMap => MutableHashMap}
 import scala.language.postfixOps
 
@@ -183,14 +184,13 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimmableDB{
   protected val settings : OmiConfigExtension
   protected val singleStores : SingleStores
   protected val log = LoggerFactory.getLogger("SimplifiedDB")//FIXME: Better name
-  val pathToDBPath: MutableMap[Path, DBPath] = new MutableHashMap()
+  val pathToDBPath: TMap[Path, DBPath] = TMap()
 
   def initialize(): Unit = {
     val findTables = db.run(namesOfCurrentTables)
     val createMissingTables = findTables.flatMap{ 
       case tableNames: Seq[String]  =>
         val queries = if( tableNames.contains( "PATHSTABLE" ) ){
-          //log.debug(s"Foound following tables:\n${tableNames.mkString("\n")}")
           //Found needed table, check for value tables
           val infoItemDBPaths = pathsTable.getInfoItems
 
@@ -209,9 +209,9 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimmableDB{
                     } )
                   } else None
               }.flatten
-              //Action for creating missig Paths
+              //Action for creating missing Paths
               val countOfTables = actions.length
-              log.info( s"Found total of ${dbPaths.length} InfoItems. Creating missing tables for $countOfTables." )
+              log.info( s"Found total of ${dbPaths.length} InfoItems. Creating missing tables for $countOfTables tables." )
               DBIO.sequence( actions )
           }
           valueTablesCreation
@@ -232,34 +232,31 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimmableDB{
     }
     val populateMap = createMissingTables.flatMap{
       case tablesCreated: Seq[String] =>
-        //log.debug( s"Created following tables:\n${tablesCreated.mkString("\n")}")
-        val actions = if( tablesCreated.contains("PATHSTABLE")){
-          //log.debug(s"Adding Objects to PATHSTABLE")
-          val pRoot = Path("Objects")
-          val dbP = DBPath(None, pRoot,false)
-          pathsTable.add( Seq(dbP) ).map{
-            case ids: Seq[Long] =>
-              //log.debug(s"Adding Objects to pathTODBPath Map.")
-              pathToDBPath ++= ids.map{
-                case id: Long => 
-                  //log.debug(s"Objects id is $id")
-                  pRoot -> dbP.copy(id= Some(id))
+        val actions =
+          if (tablesCreated.contains("PATHSTABLE")){
+            val pRoot = Path("Objects")
+            val dbP = DBPath(None, pRoot,false)
+            pathsTable.add( Seq(dbP) ).map{
+              case ids: Seq[Long] => atomic { implicit txn =>
+                pathToDBPath ++= ids.map{
+                  case id: Long =>
+                    pRoot -> dbP.copy(id= Some(id))
+                }
               }
+            }
+          } else {
+            pathsTable.result.map{
+              dbPaths => atomic { implicit txn =>
+                pathToDBPath ++= dbPaths.map{ dbPath => dbPath.path -> dbPath }
+              }
+            }
           }
-        } else {
-          //log.debug(s"Getting current paths from PATHSTABLE for pathToDBPath.")
-          pathsTable.result.map{ 
-            dbPaths => 
-              //log.debug(s"Found following from PATHSTABLE:\n${dbPaths.mkString("\n")}")
-              pathToDBPath ++= dbPaths.map{ dbPath => dbPath.path -> dbPath }
-          }
-        }
         db.run(actions.transactionally)
     }
     val initialization = populateMap
       initialization.onComplete{
       case Success( path2DBPath ) => 
-        log.info( s"Initialized DB successfully. ${path2DBPath.length} paths in DB." )
+        log.info( s"Initialized DB successfully. ${path2DBPath.single.length} paths in DB." )
       case Failure( t ) => 
         log.error( "DB initialization failed.", t )
         /*
@@ -275,51 +272,82 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimmableDB{
   }
 
   def writeMany(data: Seq[OdfInfoItem]): Future[OmiReturn] = {
-    val odf : OdfObjects= data.foldLeft(OdfObjects()){
+    val odf : OdfObjects = data.foldLeft(OdfObjects()){
       case (objs: OdfObjects, ii: OdfInfoItem) =>
         objs.union(ii.createAncestors)
     }
     writeWithDBIOs(odf)
   }
 
+  private def returnOrReserve(path: Path, isInfoItem: Boolean): DBPath = {
+    val ret = atomic { implicit txn =>
+      pathToDBPath.get(path) match {
+        case Some(dbpath @ DBPath(Some(_),_,_)) => dbpath // Exists
+        case Some(         DBPath(None   ,_,_)) => retry  // Reserved
+        case None => // Not found -> reserve
+          val newDbPath = DBPath(None, path, isInfoItem)
+          pathToDBPath += path -> newDbPath
+          newDbPath
+      }
+    }
+    if (ret.isInfoItem != isInfoItem)
+      throw new IllegalArgumentException(
+        s"$path has Object/InfoItem conflict; Request has ${if (isInfoItem) "InfoItem" else "Object"} "+
+        s"while DB has ${if (ret.isInfoItem) "InfoItem" else "Object"}")
+    else ret
+  }
+  private def reserveNewPaths(paths: Set[OdfNode]): Map[Path,DBPath] = {
+
+    def handleNode(o: OdfNode, isInfo: Boolean, reserved: Map[Path,DBPath]): Map[Path, DBPath] = {
+      val path = o.path
+      val dbpath = returnOrReserve(path, isInfo)
+      reserved ++ (dbpath match {
+        case DBPath(None, _, _) =>
+          Map(path -> dbpath) ++ (
+            path.ancestors
+              .filterNot(reserved contains _)
+              .map(returnOrReserve(_, false))
+              .collect{
+                case dbpath @ DBPath(None, path, false) =>
+                  path -> dbpath
+              }
+              .toMap
+          )
+        case _ => Map() // noop
+      })
+    }
+
+    paths.foldLeft(Map[Path,DBPath]()){ case (reserved, node) =>
+      node match {
+        case obj: OdfObject => handleNode(obj, false, reserved)
+        case ii: OdfInfoItem => handleNode(ii, true, reserved)
+      }
+    }
+  }
+
+
   def writeWithDBIOs( odf: OdfObjects ): Future[OmiReturn] = {
   
-    val leafs =  getLeafs(odf)
+    val leafs = getLeafs(odf)
 
     //Add new paths to PATHSTABLE and create new values tables for InfoItems
-    val leafsWithDBPath = leafs.map{
-      case node: OdfNode => (node, pathToDBPath.get(node.path))
-    }
-    val pathsToAdd = leafsWithDBPath.collect{
-      case (obj: OdfObjects, None) => 
-        log.warn("No \"Objects\" path found! Adding.")
-        Seq(DBPath( None, obj.path, false))
 
-      case (obj: OdfObject, None) =>
-        obj.path.ancestorsAndSelf.filter{
-          case p: Path => !pathToDBPath.keys.contains( p )
-          }.map{
-            case ancestor: Path => DBPath( None, ancestor, false)
-          }
-      case (ii: OdfInfoItem, None) =>
-       ii.path.ancestors.filter{
-         case p: Path => !pathToDBPath.keys.contains( p )
-       }.map{
-         case ancestor: Path => DBPath( None, ancestor, false)
-       } ++ Seq( DBPath( None, ii.path, isInfoItem = true ))
-    }.flatten.distinct.filter{ 
-      case dbPath: DBPath => !pathToDBPath.contains(dbPath) 
-    }
-    log.debug( s"Adding total of  ${pathsToAdd.length} paths to DB.")
-    val pathAddingAction = pathsTable.add(pathsToAdd)
+    val pathsToAdd = reserveNewPaths(leafs.toSet)
+
+    log.debug( s"Adding total of  ${pathsToAdd.length} paths to DB: $pathsToAdd")
+
+    val pathAddingAction = pathsTable.add(pathsToAdd.values)
     val getAddedDBPaths =  pathAddingAction.flatMap{
       case ids: Seq[Long] => 
         pathsTable.getByIDs(ids)
     }
+
     val valueTableCreations = getAddedDBPaths.flatMap{
-      case addedDBPaths: Seq[DBPath] => 
-        pathToDBPath ++= addedDBPaths.map{ 
-          case dbPath: DBPath => dbPath.path ->dbPath
+      case addedDBPaths: Seq[DBPath] =>
+        atomic { implicit txn =>
+          addedDBPaths.map {
+            case dbPath: DBPath => pathToDBPath += dbPath.path -> dbPath
+          }
         }
         namesOfCurrentTables.flatMap{
           case tableNames: Seq[String] =>
@@ -327,7 +355,7 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimmableDB{
             case DBPath(Some(id), path, true) => 
               val pathValues = new PathValues(path, id)
               valueTables += path -> pathValues
-              if( tableNames.contains(pathValues.name) ) None
+              if( tableNames.contains(pathValues.name) ) None // TODO: CHECKME
               else Some(pathValues.schema.create.map{ u: Unit => pathValues.name} ) 
           }.flatten
           DBIO.sequence(creations)
@@ -398,33 +426,33 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimmableDB{
   ): Future[Option[OdfObjects]] = {
     if( beginO.isEmpty && endO.isEmpty &&  newestO.isEmpty && oldestO.isEmpty ){
         val odf = nodes.map{
-          node: OdfNode => 
-            node.createAncestors 
+          node: OdfNode =>
+            node.createAncestors
         }.fold(OdfObjects()){
-          case ( odf:OdfObjects, objects: OdfObjects) => 
+          case ( odf:OdfObjects, objects: OdfObjects) =>
             odf.union( objects)
       }
       readLatestFromCache( odf )
-    
+
     } else{
-      val iiIOAs =pathToDBPath.values.filter{
-        case dbPath: DBPath => 
-          nodes.exists{ 
-            case node: OdfNode => 
+      val iiIOAs = pathToDBPath.single.values.filter{ // FIXME: filter is not how you use a Map?
+        case dbPath: DBPath =>
+          nodes.exists{
+            case node: OdfNode =>
               dbPath.path == node.path ||
-              dbPath.path.isDescendantOf(node.path) 
+              dbPath.path.isDescendantOf(node.path)
           }
       }.collect{
         case DBPath(Some(id), path, true) =>
           val valueTable = valueTables.get(path) match{ //Is table stored?
                 case Some(pathValues) => //Found table/ TableQuery
                   pathValues
-                case None =>//No TableQuery found for table. Create one for it
+                case None => //No TableQuery found for table. Create one for it
                   val pathValues = new PathValues(path, id)
                   valueTables += path -> pathValues
                   pathValues
               }
-          
+
           val getNBetweenResults = tableByNameExists(valueTable.name).flatMap{
             case true =>
               valueTable.getNBetween(beginO,endO,newestO,oldestO)
@@ -442,9 +470,9 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimmableDB{
                   tv => OdfValue( tv.value, tv.valueType, tv.timestamp)
                 }
                 )
-            ii.createAncestors 
+            ii.createAncestors
           }
-        } 
+        }
       //Create OdfObjects from InfoItems and union them to one with parameter ODF
       val finalAction = DBIO.sequence(iiIOAs).map{
         case objs: Seq[OdfObjects] if objs.nonEmpty =>
@@ -461,18 +489,20 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimmableDB{
   }
 
   def remove(path: Path): Future[Seq[Int]] ={
-    val actions = pathToDBPath.get(path) match{
+    val actions = pathToDBPath.single.get(path) match{
       case Some( DBPath(Some(id), p, true) ) =>
           valueTables.get(path) match{
             case Some( pathValues ) =>
               pathValues.schema.drop.flatMap{
                 case u: Unit =>
-                  pathToDBPath -= path
+                  atomic { implicit txn =>
+                    pathToDBPath -= path
+                  }
                   pathsTable.removeByIDs( Vector(id) )
               }
           }
       case Some( DBPath(Some(id), originPath, false) ) =>
-          val ( objs, iis ) = pathToDBPath.values.filter{
+          val ( objs, iis ) = pathToDBPath.single.values.filter{ // FIXME: filter on a Map
             case dbPath: DBPath => dbPath == originPath || dbPath.path.isDescendantOf(originPath)
           }.partition{ case dbPath: DBPath => dbPath.isInfoItem }
           val tableDrops = iis.map{
@@ -487,10 +517,12 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimmableDB{
           val removedPaths = objs.map( _.path ) ++ iiPaths 
           val removedPathIDs = (objs ++ iis).map( _.id ).flatten 
           val pathRemoves = pathsTable.removeByIDs(removedPathIDs.toSeq)
-          pathToDBPath --= removedPaths
+          atomic { implicit txn =>
+            pathToDBPath --= removedPaths
+          }
           valueTables --= iiPaths
           tableDropsAction.flatMap{
-            u: Unit =>
+            _ =>
               pathRemoves
           }
     }
@@ -550,12 +582,13 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimmableDB{
         })
     }
     db.run( 
-      valueTableDrops.flatMap{
-        case u: Seq[Unit] => 
+      valueTableDrops.flatMap{ _ => 
+          atomic {implicit txn =>
+            pathToDBPath.clear()
+          }
           pathsTable.schema.drop
       }.transactionally 
-    ).flatMap{
-      case u: Unit =>
+    ).flatMap{ _ =>
       db.run(namesOfCurrentTables).map{
         case tableNames: Seq[String] =>
           if( tableNames.nonEmpty ){
@@ -578,7 +611,7 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimmableDB{
         ii.path
     }
 
-    val pathToValue = singleStores.latestStore execute LookupSensorDatas( iiPaths) 
+    val pathToValue = singleStores.latestStore execute LookupSensorDatas( iiPaths)
     val objectsWithValues = pathToValue.map{
       case ( path: Path, value: OdfValue[Any]) => OdfInfoItem( path, values = Vector( value)).createAncestors
     }.fold(OdfObjects()){
