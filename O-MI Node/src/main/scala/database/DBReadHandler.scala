@@ -160,10 +160,6 @@ trait DBReadHandler extends DBHandlerBase{
            case None =>
              ResponseRequest( Vector(Results.NotFoundPaths(read.odf) ) )
          }
-         resultF.onSuccess{
-           case response: ResponseRequest =>
-             log.info( response.asXML.toString)
-         }
          resultF
      }
    }
