@@ -15,20 +15,21 @@
 
 package http
 
+import java.io.{BufferedWriter, File, FileWriter}
 import java.net.InetSocketAddress
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
-
 import agentSystem.{AgentInfo, AgentName, NewCLI}
-import akka.actor.{Actor, ActorLogging, ActorRef, Props, ActorSystem}
+import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, Props}
 import akka.io.Tcp
 import akka.io.Tcp._
 import akka.pattern.ask
 import akka.util.{ByteString, Timeout}
 import database._
-import responses.{RemoveSubscription, RemoveHandler, RemoveHandlerT }
+import responses.{AllSubscriptions, RemoveHandler, RemoveHandlerT, RemoveSubscription}
+import spray.json.JsArray
 import types.Path
 
 /** Object that contains all commands of InternalAgentCLI.
@@ -40,6 +41,7 @@ object CLICmds
   case class StopAgentCmd(agent: String)
   case class ListAgentsCmd()
   case class ListSubsCmd()
+  case class GetSubsWithPollData()
   case class SubInfoCmd(id: Long)
   case class RemovePath(path: String)
 }
@@ -82,6 +84,8 @@ class OmiNodeCLI(
   showSub <id>
   remove <subsription id>
   remove <path>
+  backup
+  restore
   """
   val ip = sourceAddress.toString
   implicit val timeout : Timeout = 1.minute
@@ -139,9 +143,9 @@ class OmiNodeCLI(
   }
 
   def subsStrChart (
-    intervals: Set[IntervalSub @unchecked],
-    events: Set[EventSub] @unchecked,
-    polls: Set[PolledSub] @unchecked) : String = {
+    intervals: Set[IntervalSub],
+    events: Set[EventSub],
+    polls: Set[PolledSub]): String = {
 
       val (idS, intervalS, startTimeS, endTimeS, callbackS, lastPolledS) =
         ("ID", "INTERVAL", "START TIME", "END TIME", "CALLBACK", "LAST POLLED")
@@ -166,9 +170,9 @@ class OmiNodeCLI(
     log.info(s"Got list subs command from $ip")
     val result = (subscriptionManager ? ListSubsCmd())
       .map{
-        case (intervals: Set[IntervalSub @unchecked],
-          events: Set[EventSub] @unchecked,
-          polls: Set[PolledSub] @unchecked) => // type arguments cannot be checked
+        case AllSubscriptions(intervals: Set[IntervalSub],
+          events: Set[EventSub],
+          polls: Set[PolledSub]) =>
           log.info("Received list of Subscriptions. Sending ...")
 
           subsStrChart( intervals, events, polls)
@@ -271,6 +275,25 @@ class OmiNodeCLI(
 
   }
 
+  private def backupSubsAndDatabase = {
+
+  }
+
+  private def backupSubscriptions = {
+    val allSubscriptions: Future[List[(SavedSub, Option[SubData])]] = (subscriptionManager ? GetSubsWithPollData).mapTo[List[(SavedSub, Option[SubData])]]
+    allSubscriptions.map(allSubs => {
+      val file = new File("subscriptions")
+      val bw = new BufferedWriter(new FileWriter(file))
+      //val res = JsArray(allSubs.map(_.toJson))
+      bw.close()
+    })
+
+
+  }
+  private def backupDatabase = {
+
+  }
+
   private def send(receiver: ActorRef)(msg: String): Unit =
     receiver ! Write(ByteString(msg)) 
 
@@ -299,6 +322,8 @@ class OmiNodeCLI(
         case Vector("start", agent) => send(sender)(startAgent(agent))
         case Vector("stop", agent)  => send(sender)(stopAgent(agent))
         case Vector("remove", pathOrId) => send(sender)(remove(pathOrId))
+        case Vector("backup") => backupSubsAndDatabase
+        case Vector("restore") =>
         case Vector(cmd @ _*) => 
           log.warning(s"Unknown command from $ip: "+ cmd.mkString(" "))
           send(sender)("Unknown command. Use help to get information of current commands.\n>") 
