@@ -28,10 +28,10 @@ import com.typesafe.config.Config
 import com.typesafe.config.ConfigException._
 import types.Path
 
-
-
+import database.InfluxDBConfigExtension
  
 class OmiConfigExtension( val config: Config) extends Extension 
+  with InfluxDBConfigExtension
   with AgentSystemConfigExtension {
 
   val callbackAuthorizationEnabled: Boolean = config.getBoolean("omi-service.callback-authorization-enabled")

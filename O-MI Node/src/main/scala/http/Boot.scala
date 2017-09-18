@@ -61,10 +61,17 @@ class OmiServer extends OmiNode{
   val settings : OmiConfigExtension = OmiConfig(system)
 
   val singleStores = new SingleStores(settings)
-  val dbConnection: DB = new DatabaseConnection()(
+  /*val dbConnection: DB = new DatabaseConnection()(
     system,
     singleStores,
     settings
+  )*/
+
+  val dbConnection: DB = new influxdb.InfluxDBImplementation(
+    settings
+    )(
+    system,
+    singleStores
   )
 
   val callbackHandler: CallbackHandler = new CallbackHandler(settings)( system, materializer)

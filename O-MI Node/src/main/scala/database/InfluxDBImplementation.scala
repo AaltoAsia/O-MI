@@ -26,6 +26,7 @@ import spray.json._
 
 import database._
 
+import http.OmiConfigExtension
 import types.odf._
 import types.OmiTypes._
 import types.OdfTypes._
@@ -34,34 +35,73 @@ import types.Path._
 
 object InfluxDBJsonProtocol extends DefaultJsonProtocol {
 
-    class InfluxDBJsonFormat(implicit singleStores: SingleStores) extends RootJsonFormat[ImmutableODF] {
-      // Members declared in spray.json.JsonReader
-      def read(json: spray.json.JsValue): types.odf.ImmutableODF ={
-        val iis: Seq[InfoItem] = json match{
-          case obj: JsObject =>
-            obj.getFields("results").collect{
-              case results: JsArray  =>
-                results.elements.collect{
-                  case statementObj: JsObject =>
-                    statementObj.getFields("statement_id").headOption match{
-                      case Some( id: JsNumber ) =>
-                        //log.debug( s"Parsing JSON result for statement $id" )
-                    }
-                    statementObj.getFields("series").collect{ 
-                      case series: JsArray =>
-                        series.elements.collect{
-                          case serie: JsObject =>
-                            serie.getFields( "name", "columns", "values") match{
-                              case Seq(JsString( measurementName), JsArray(columns), JsArray( values )) =>
-                                Some(serieToInfoItem( serie )) 
-                              case seq: Seq[JsValue] =>
-                                None
-                            }
-                      }.flatten
-                    }.flatten
+    def getSeries(json: spray.json.JsValue)= json match{
+      case obj: JsObject =>
+        obj.getFields("results").collect{
+          case results: JsArray  =>
+            results.elements.collect{
+              case statementObj: JsObject =>
+                statementObj.getFields("statement_id").headOption match{
+                  case Some( id: JsNumber ) =>
+                    //log.warning( s"Parsing JSON result for statement $id" )
+                }
+                statementObj.getFields("series").collect{ 
+                  case series: JsArray =>
+                    series.elements                      
                 }.flatten
             }.flatten
-        }
+        }.flatten
+    }
+
+    def measurementNameToPath( measurementName: String ): Path = Path( measurementName.replace("\\=","=").replace("\\ "," ").replace("\\,",",") )
+    class InfluxDBJsonShowDatabasesFormat() extends RootJsonFormat[Seq[String]] {
+      def read(json: spray.json.JsValue): Seq[String] ={
+        val names: Seq[String] = getSeries(json).collect{
+          case serie: JsObject =>
+            serie.getFields( "name", "columns", "values") match{
+              case Seq(JsString("measurements"), JsArray(Seq(JsString("name"))), JsArray( values )) =>
+                values.collect{
+                  case JsArray(Seq(JsString(dbName))) => dbName
+                }.toVector
+
+                  case seq: Seq[JsValue] => Vector.empty
+            }
+        }.flatten
+        names
+      }
+      def write(obj: Seq[String]): spray.json.JsValue = ???
+    }
+    class InfluxDBJsonShowMeasurementsFormat() extends RootJsonFormat[Seq[Path]] {
+      def read(json: spray.json.JsValue): Seq[Path]={
+        val names: Seq[Path] = getSeries(json).collect{
+          case serie: JsObject =>
+            serie.getFields( "name", "columns", "values") match{
+              case Seq(JsString("measurements"), JsArray(Seq(JsString("name"))), JsArray( values )) =>
+                values.collect{
+                  case JsArray(Seq(JsString(strPath))) =>
+                    val path = measurementNameToPath(strPath)
+                    path
+                }.toVector
+
+                  case seq: Seq[JsValue] => Vector.empty
+            }
+        }.flatten
+        names
+      }
+      def write(obj: Seq[Path]): spray.json.JsValue = ???
+    }
+    class InfluxDBJsonODFFormat() extends RootJsonFormat[ImmutableODF] {
+      // Members declared in spray.json.JsonReader
+      def read(json: spray.json.JsValue): types.odf.ImmutableODF ={
+        val iis: Seq[InfoItem] = getSeries(json).collect{
+          case serie: JsObject =>
+            serie.getFields( "name", "columns", "values") match{
+              case Seq(JsString( measurementName), JsArray(columns), JsArray( values )) =>
+                Some(serieToInfoItem( serie )) 
+              case seq: Seq[JsValue] =>
+                None
+            }
+        }.flatten
         ImmutableODF(iis.toVector)
       }
 
@@ -78,22 +118,22 @@ object InfluxDBJsonProtocol extends DefaultJsonProtocol {
                 Value( bool, timestamp)
               case JsArray( Seq(JsString(timestampStr), JsString( str ))) =>
                 val timestamp: Timestamp = Timestamp.valueOf(timestampStr)
-                Value( str, timestamp)
+                Value( str.replace("\\\"","\""), timestamp)
             })
         }
       }
 
       // Members declared in spray.json.JsonWriter
       def write(obj: types.odf.ImmutableODF): spray.json.JsValue = ???
-      def measurementNameToPath( measurementName: String ): Path = ???
     }
 }
 
-/* GetNBetween
- * SELECT * FROM PATH WHERE time < end AND time > begin ORDER BY time DESC LIMIt newest
- *
- */
-trait OdfInfluxDBImplementation extends DB {
+class InfluxDBImplementation(
+  protected val config: OmiConfigExtension with InfluxDBConfigExtension 
+)(
+  implicit val system: ActorSystem,
+  protected val singleStores: SingleStores
+) extends DB {
   final class AcceptHeader(format: String) extends ModeledCustomHeader[AcceptHeader] {
     override def renderInRequests = true
     override def renderInResponses = false
@@ -105,14 +145,12 @@ trait OdfInfluxDBImplementation extends DB {
     override def parse(value: String) = Try(new AcceptHeader(value))
   }
 
-  protected val singleStores: SingleStores   
-  protected val databaseName: String = ??? //Get from config
-  protected val userName: String = ??? //Get from config
-  protected val userPassword: String = ??? //Get from config
-  protected val writeAddress: Uri = ??? //Get from config
-  protected val readAddress: Uri = ??? //Get from config
 
-  implicit val system: ActorSystem
+  protected val writeAddress: Uri = config.influxDBWriteAddress //Get from config
+  log.info(s"Write address of InfluxDB instance $writeAddress")
+  protected val readAddress: Uri = config.influxDBQueryAddress //Get from config
+  log.info(s"Read address of InfluxDB instance $readAddress")
+
  import system.dispatcher // execution context for futures
  val httpExt = Http(system)
  implicit val mat: Materializer = ActorMaterializer()
@@ -122,16 +160,21 @@ trait OdfInfluxDBImplementation extends DB {
         ii.values.map{
           value: Value[Any] => 
             val valueStr: String= value.value match {
-              case str: String => s""""$str""""
+              case odf: ImmutableODF => throw new Exception("Having O-DF inside value with InfluxDB is not supported.") 
+              case str: String => s""""${str.replace("\"","\\\"")}""""
               case num: Numeric[Any] => s"$num" //XXX: may cause issues...
-              case any: Any => s""""${any.toString}""""
+              case bool: Boolean => bool.toString
+              case any: Any => s""""${any.toString.replace("\"","\\\"")}""""
             }
             s"$measurement value=$valueStr ${value.timestamp.getTime}"
         }
   }
 
   def initialize(): Unit = {
+    
+
   }
+
   def writeMany(data: Seq[OdfInfoItem]): Future[OmiReturn] ={
     val iis = data.map{ 
       oii: OdfInfoItem => 
@@ -146,7 +189,7 @@ trait OdfInfluxDBImplementation extends DB {
 
     response.onFailure{
       case t : Throwable =>
-        log.debug(request.toString)
+        log.warning(request.toString)
         log.error(t, "Failed to communicate to InfluxDB")
     }
     response.flatMap{
@@ -155,7 +198,7 @@ trait OdfInfluxDBImplementation extends DB {
       case HttpResponse( status, headers, entity, protocol ) if status.isFailure =>
         Unmarshal(entity).to[String].map{
           str =>
-            log.debug(s"$status with:\n $str")
+            log.warning(s"Write returned $status with:\n $str")
             OmiReturn( status.value, Some(str))
         }
     }
@@ -177,6 +220,7 @@ trait OdfInfluxDBImplementation extends DB {
       }
   }
 
+  implicit val odfJsonFormatter = new InfluxDBJsonProtocol.InfluxDBJsonODFFormat()
 /* GetNBetween
  * SELECT * FROM PATH WHERE time < end AND time > begin ORDER BY time DESC LIMIt newest
  *
@@ -202,15 +246,19 @@ trait OdfInfluxDBImplementation extends DB {
         whereClause + "ORDER BY time DESC" + limitClause
       }
       val cachedODF = OldTypeConverter.convertOdfObjects(singleStores.hierarchyStore execute GetTree())
+      log.info( "Requested ODF:\n" + requestODF.toString)
+      log.info( "Cached ODF:\n" + cachedODF.toString)
       val requestedIIs = cachedODF.intersection(requestODF).getInfoItems
+      log.info( "Intersecting ODF:\n" + cachedODF.intersection(requestODF).toString)
       //XXX: What about Objects/ read all?
       val iiQueries = getNBetweenInfoItemsQueryString(requestedIIs, filteringClause)
-      read( "q=" + iiQueries )
+      read( iiQueries )
 
     }
   }
    private def read(content : String) = {
-     val request = RequestBuilding.Post(readAddress, content).withHeaders(AcceptHeader("application/json"))
+     val request = RequestBuilding.Post(readAddress,"q=" + content).withHeaders(AcceptHeader("application/json"))
+     log.info( s"Sending following request\n$content")
      val responseF : Future[HttpResponse] = httpExt.singleRequest(request)//httpHandler(request)
      val formatedResponse = responseF.flatMap{
        case response @ HttpResponse( status, headers, entity, protocol ) if status.isSuccess =>
@@ -218,20 +266,26 @@ trait OdfInfluxDBImplementation extends DB {
        case response @ HttpResponse( status, headers, entity, protocol ) if status.isFailure =>
          entity.toStrict(10.seconds).flatMap{ stricted => Unmarshal(stricted).to[String].map{
            str =>
-             log.debug(s"$status with:\n $str")
+             log.warning(s"Read returned $status with:\n $str")
              throw new Exception( str)
          }}
      }.flatMap{
        case entity : HttpEntity.Strict =>
          val ent = entity.copy(contentType =`application/json`)
          //TODO: Parse JSON to ImmutableODF
-         ???
+
+         Unmarshal(ent).to[ImmutableODF].map{
+           case odf: ImmutableODF =>
+             if( odf.getPaths.length < 2) None
+             else Some( odf )
+         }
+
      }
      formatedResponse.onFailure{
        case t: Throwable =>
          log.error(t,
            "Failed to communicate to InfluxDB.")
-         log.debug(t.getStackTrace().mkString("\n"))
+         log.warning(t.getStackTrace().mkString("\n"))
      }
      formatedResponse
    }
@@ -244,12 +298,39 @@ trait OdfInfluxDBImplementation extends DB {
      val queries = iis.map{
        case ii: InfoItem =>
          val measurementName = pathToMeasurementName( ii.path )
-         val select = s"SELECT value FROM $measurementName " 
+         val select = s"""SELECT "value" FROM "$measurementName"""" 
          select + filteringClause
      }
-     queries.mkString(";\n")
+     queries.mkString(";")
    }
    //TODO: Escape all odd parts
-   def pathToMeasurementName(path: Path ): String
+   def pathToMeasurementName(path: Path ): String = path.toString.replace("=","\\=").replace(" ","\\ ").replace(",","\\,")
+   def remove( path: Path ): Future[Seq[Int]] ={
+      val cachedODF = OldTypeConverter.convertOdfObjects(singleStores.hierarchyStore execute GetTree())
+      val removedIIs = cachedODF.getSubTreeAsODF(path).getInfoItems
+      val query = "q=" + removedIIs.map{
+        case ii: InfoItem =>
+         val mName = pathToMeasurementName(ii.path)
+         s"""DROP MEASUREMENT "$mName""""
+      }.mkString(";")
+
+     val request = RequestBuilding.Post(readAddress, query).withHeaders(AcceptHeader("application/json"))
+     val responseF : Future[HttpResponse] = httpExt.singleRequest(request)//httpHandler(request)
+     responseF.flatMap{
+       case HttpResponse( status, headers, entity, protocol ) if status.isSuccess =>
+         Future{
+           singleStores.hierarchyStore execute TreeRemovePath( path)
+           removedIIs.map{
+              case ii: InfoItem =>1
+           }
+         }
+       case HttpResponse( status, headers, entity, protocol ) if status.isFailure =>
+         Unmarshal(entity).to[String].map{
+           str =>
+             log.warning(s"Remove returned $status with:\n $str")
+             throw new Exception( str)
+         }
+     }
+   }
 
 }
