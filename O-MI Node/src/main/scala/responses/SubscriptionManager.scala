@@ -59,6 +59,13 @@ case class SubscriptionTimeout(id: Long)
 
 case class AllSubscriptions(intervals: Set[IntervalSub], events: Set[EventSub], polls: Set[PolledSub])
 
+/**
+  * Used for loading subscriptions during runtime
+  *
+  * @param subs list of subscriptions to be added along with optional poll subscription data
+  */
+case class LoadSubs(subs: Seq[(SavedSub, Option[SubData])])
+
 
 /**
  * Event for polling pollable subscriptions
@@ -132,7 +139,6 @@ class SubscriptionManager(
 
   //TODO FIX handleIntervals() //when server restarts
 
-
   def receive: PartialFunction[Any, Unit] = {
     case NewSubscription(subscription) => sender() ! subscribe(subscription)
     case HandleIntervals(id) => handleIntervals(id)
@@ -142,7 +148,53 @@ class SubscriptionManager(
     case ListSubsCmd() => sender() ! getAllSubs()
     case GetSubsWithPollData() => sender() ! getSubsWithPollData()
     case SubInfoCmd(id) => sender() ! getSub(id)
+    case LoadSubs(subs: Seq[(SavedSub, Option[SubData])]) => sender() ! loadSub(subs)
   }
+
+  /**
+    * Used to load subscriptions during runtime using cli
+    *
+    * @param subs list of subs and optional poll subscription data
+    */
+  private def loadSub(subs: Seq[(SavedSub, Option[SubData])]): Unit = {
+    subs.foreach{
+      case (sub: PollEventSub, data) =>{
+        singleStores.subStore execute AddPollSub(sub)
+
+        data.foreach(sData => {
+          for {
+            (path, data) <- sData.pathData
+            value <- data
+            res = singleStores.pollDataPrevayler execute AddPollData(sub.id, path, value)
+          } yield res
+        })
+      }
+      case (sub: PollIntervalSub, data) => {
+        singleStores.subStore execute AddPollSub(sub)
+
+        data.foreach(sData => {
+          for {
+            (path, data) <- sData.pathData
+            value <- data
+            res = singleStores.pollDataPrevayler execute AddPollData(sub.id, path, value)
+          } yield res
+        })
+      }
+      case (sub:EventSub,_) => {
+        singleStores.subStore execute AddEventSub(sub)
+      }
+      case (sub: IntervalSub, _) => {
+        singleStores.subStore execute AddIntervalSub(sub)
+
+        intervalMap.put(sub.id, intervalScheduler.schedule(sub.interval,sub.interval,self,HandleIntervals(sub.id)))
+
+
+      }
+      case sub => log.error("Unknown subscription:" + sub)
+      }
+    }
+
+
 
   private def handlePollEvent(pollEvent: PollEventSub) = {
     log.debug(s"Creating response message for Polled Event Subscription")
@@ -369,7 +421,6 @@ class SubscriptionManager(
 
   private def getSubsWithPollData(): List[(SavedSub, Option[SubData])] = {
     val allSubs = getAllSubs()
-
     (allSubs.events ++ allSubs.intervals ++ allSubs.polls).collect{
         case e: EventSub => (e, None)
         case i: IntervalSub => (i, None)

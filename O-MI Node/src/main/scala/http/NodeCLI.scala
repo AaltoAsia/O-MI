@@ -28,9 +28,12 @@ import akka.io.Tcp._
 import akka.pattern.ask
 import akka.util.{ByteString, Timeout}
 import database._
-import responses.{AllSubscriptions, RemoveHandler, RemoveHandlerT, RemoveSubscription}
+import responses._
 import spray.json.JsArray
 import types.Path
+
+import scala.io.Source
+import scala.util.{Failure, Success}
 
 /** Object that contains all commands of InternalAgentCLI.
  */
@@ -276,22 +279,46 @@ class OmiNodeCLI(
   }
 
   private def backupSubsAndDatabase = {
-
+    backupSubscriptions
+    "Done\n"
   }
 
-  private def backupSubscriptions = {
-    val allSubscriptions: Future[List[(SavedSub, Option[SubData])]] = (subscriptionManager ? GetSubsWithPollData).mapTo[List[(SavedSub, Option[SubData])]]
+import CustomJsonProtocol._
+import spray.json._
+
+
+  private def backupSubscriptions: Future[Unit] = {
+    val allSubscriptions: Future[List[(SavedSub, Option[SubData])]] = (subscriptionManager ? GetSubsWithPollData()).mapTo[List[(SavedSub, Option[SubData])]]
+
     allSubscriptions.map(allSubs => {
       val file = new File("subscriptions")
+      println(file.getAbsolutePath)
       val bw = new BufferedWriter(new FileWriter(file))
-      //val res = JsArray(allSubs.map(_.toJson))
+      val res = JsArray(allSubs.map(_.toJson).toVector)
+      bw.write(res.prettyPrint)
       bw.close()
     })
-
-
   }
   private def backupDatabase = {
 
+  }
+
+  private def restoreSubsAndDatabase() = {
+    restoreDatabase()
+    restoreSubs()
+  }
+
+  private def restoreDatabase() = {
+
+  }
+
+  private def restoreSubs() = {
+    val json: JsValue = Source.fromFile("subscriptions").getLines().mkString.parseJson
+    val subs: Seq[(SavedSub, Option[SubData])] = json match {
+      case JsArray(subscriptions: Vector[JsObject]) => subscriptions.map(_.convertTo[(SavedSub, Option[SubData])])
+    }
+    subscriptionManager ! LoadSubs(subs)
+    "Done\n"
   }
 
   private def send(receiver: ActorRef)(msg: String): Unit =
@@ -322,8 +349,8 @@ class OmiNodeCLI(
         case Vector("start", agent) => send(sender)(startAgent(agent))
         case Vector("stop", agent)  => send(sender)(stopAgent(agent))
         case Vector("remove", pathOrId) => send(sender)(remove(pathOrId))
-        case Vector("backup") => backupSubsAndDatabase
-        case Vector("restore") =>
+        case Vector("backup") => send(sender)(backupSubsAndDatabase)
+        case Vector("restore") => send(sender)(restoreSubsAndDatabase)
         case Vector(cmd @ _*) => 
           log.warning(s"Unknown command from $ip: "+ cmd.mkString(" "))
           send(sender)("Unknown command. Use help to get information of current commands.\n>") 

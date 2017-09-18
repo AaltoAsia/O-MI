@@ -103,7 +103,8 @@ case class SubData(
 object PollSubData {
   def empty: PollSubData = PollSubData(collection.mutable.HashMap.empty)
 }
-  class CustomJsonProtocol(implicit singleStores: SingleStores) extends DefaultJsonProtocol{
+
+object CustomJsonProtocol extends DefaultJsonProtocol{
   implicit object SubscriptionJsonFormat extends RootJsonFormat[(SavedSub, Option[SubData])] {
     private def createCB(address: String): DefinedCallback = {
       val uri = Uri(address)
