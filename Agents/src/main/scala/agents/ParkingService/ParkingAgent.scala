@@ -214,7 +214,7 @@ class ParkingAgent(
     charger: Option[Charger],
     arrivalTime: Option[String]
   )
-  val parameterPath =  Path("Objects\\/Parameters")
+  val parameterPath =  Path("Objects/Parameters")
   val destinationParameterPath     = parameterPath / "Destination"
   val vehicleParameterPath     = parameterPath / "Vehicle"
   val arrivalTimeParameterPath  = parameterPath / "ArrivalTime"
@@ -305,7 +305,7 @@ class ParkingAgent(
         Responses.NotFound("Could not find parking facility with matching parking spaces." )
     }
   }
-  override protected def handleWrite(write: WriteRequest) : Future[ResponseRequest] = Future{
+  override protected def handleWrite(write: WriteRequest) : Future[ResponseRequest] = {
     val writingPfs:Vector[ParkingFacility] = write.odf.get(parkingLotsPath).collect{
       case obj: OdfObject =>
         obj.objects.map{
@@ -313,9 +313,8 @@ class ParkingAgent(
             ParkingFacility( pfObj)
         }
     }.toVector.flatten
-
-    def plugMeasureUpdate( plug: PowerPlug): Boolean =  plug.current.nonEmpty || plug.power.nonEmpty || plug.voltage.nonEmpty
-    val events = writingPfs.flatMap{
+    val currentPFsF = getCurrentParkingFacilities
+    def getEvent(pfs: Seq[ParkingFacility]) = pfs.flatMap{
       pf: ParkingFacility =>
         pf.parkingSpaces.collect{
           case ParkingSpace(name,_,_,Some(false),Some(user),chargerO,_,_,_) if isParkingSpaceFree( parkingLotsPath / pf.name /name)  =>
@@ -338,10 +337,25 @@ class ParkingAgent(
             UpdatePlugMeasurements( path, plug.current, plug.power, plug.voltage) 
         }
     }
-    events
-  }.flatMap{
-    events: Seq[ParkingEvent] =>
+    def plugMeasureUpdate( plug: PowerPlug): Boolean =  plug.current.nonEmpty || plug.power.nonEmpty || plug.voltage.nonEmpty
+    currentPFsF.map{
+      currettPFs: Vector[ParkingFacility] =>
+        val (existingWithEvents,newPFs) = writingPfs.partition{
+          pf: ParkingFacility => 
+            currentPFs.exists{
+              existingPF: ParkingFacility => 
+                existingPF.name == pf.name 
+            }
+        }
+        val responseF = writeToDB( WriteRequest( newPFs.toODF(parkingLotsPath,true) ) )
+        //TODO: Populate parking space statuses with new parking spaces and handle events
 
+
+    }
+    
+  }
+  
+  def handleEvents( events: Seq[ParkingEvent] ) ={
     if( events.length == 1 ){
       events.headOption.map{
         case reservation: Reservation => 
