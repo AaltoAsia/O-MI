@@ -30,10 +30,11 @@ import akka.util.{ByteString, Timeout}
 import database._
 import responses._
 import spray.json.JsArray
+import types.OdfTypes.OdfObjects
 import types.Path
 
 import scala.io.Source
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 /** Object that contains all commands of InternalAgentCLI.
  */
@@ -279,7 +280,10 @@ class OmiNodeCLI(
   }
 
   private def backupSubsAndDatabase = {
-    backupSubscriptions
+    val temp = for{
+      subs <- Try(backupSubscriptions)
+      data <- Try(backupDatabase)
+    } yield data
     "Done\n"
   }
 
@@ -287,12 +291,11 @@ import CustomJsonProtocol._
 import spray.json._
 
 
-  private def backupSubscriptions: Future[Unit] = {
+  private def backupSubscriptions = {
     val allSubscriptions: Future[List[(SavedSub, Option[SubData])]] = (subscriptionManager ? GetSubsWithPollData()).mapTo[List[(SavedSub, Option[SubData])]]
 
     allSubscriptions.map(allSubs => {
       val file = new File("subscriptions")
-      println(file.getAbsolutePath)
       val bw = new BufferedWriter(new FileWriter(file))
       val res = JsArray(allSubs.map(_.toJson).toVector)
       bw.write(res.prettyPrint)
@@ -300,16 +303,30 @@ import spray.json._
     })
   }
   private def backupDatabase = {
-
+    val allData: Future[Option[OdfObjects]] = removeHandler.getAllData()
+    allData.map(allData => {
+      allData.map(odf => {
+        val file = new File("backupODF")
+        val bw = new BufferedWriter(new FileWriter(file))
+        val res = odf.asXML
+        val printer = new scala.xml.PrettyPrinter(200, 2)
+        bw.write(printer.format(res.head))
+        bw.close()
+      })
+    })
   }
 
   private def restoreSubsAndDatabase() = {
-    restoreDatabase()
-    restoreSubs()
+    val temp = for{
+      _   <- Try(restoreDatabase())
+      res <- Try(restoreSubs())
+    } yield res
+    "Done\n"
   }
 
   private def restoreDatabase() = {
-
+    parsing.OdfParser.parse(new File("backupODF"))
+    
   }
 
   private def restoreSubs() = {

@@ -15,21 +15,19 @@
  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 
 package responses
-
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
-
 import akka.event.{LogSource, Logging, LoggingAdapter}
 import akka.actor.ActorSystem
-
 import database._
 import types.OdfTypes._
 import types._
-import http.{ActorSystemContext, Storages}
+import http.{ActorSystemContext, OmiServer, Storages}
 
 trait RemoveHandlerT{
-  def handlePathRemove(parentPath: Path): Boolean 
+  def handlePathRemove(parentPath: Path): Boolean
+  def getAllData(): Future[Option[OdfObjects]]
   }
 class RemoveHandler(val singleStores: SingleStores, dbConnection: DB )(implicit system: ActorSystem) extends RemoveHandlerT{
 
@@ -65,6 +63,18 @@ class RemoveHandler(val singleStores: SingleStores, dbConnection: DB )(implicit 
       }
       case None => false
     }
+  }
+
+  /**
+    * method of getting all the data available from hierarchystore and dagabase, includes all metadata and descriptions
+    *
+    * method in this class because it has viisbility to singleStores and Database
+    * @return
+    */
+  def getAllData(): Future[Option[OdfObjects]] = {
+    val odf: OdfObjects = singleStores.hierarchyStore execute GetTree()
+    val leafs = getLeafs(odf)
+    dbConnection.getNBetween(leafs,None,None,Some(100),None).map(objs => objs.map(_.union(odf)))
   }
 }
 
