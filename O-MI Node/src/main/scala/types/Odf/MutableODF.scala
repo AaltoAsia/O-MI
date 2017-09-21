@@ -30,6 +30,21 @@ class MutableODF private[odf](
     }
    this
   }
+
+  def select( that: ODF ): ODF ={
+    MutableODF(
+    paths.filter{
+      path: Path => 
+        that.paths.contains( path ) || that.getLeafPaths.exists{
+          ancestorPath: Path => 
+            ancestorPath.isAncestorOf( path) 
+        } 
+    }.flatMap{
+      path: Path => 
+        this.nodes.get( path )
+    }.toVector )
+  } 
+
   def cutOut( cutPaths: Set[Path] ): ODF ={
   
     //Remove intersecting paths.

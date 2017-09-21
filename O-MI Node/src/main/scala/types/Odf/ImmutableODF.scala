@@ -16,6 +16,19 @@ case class ImmutableODF private[odf] (
   type M = ImmutableHashMap[Path,Node]
   type S = ImmutableTreeSet[Path]
 
+  def select( that: ODF ): ODF ={
+    ImmutableODF(
+    paths.filter{
+      path: Path => 
+        that.paths.contains( path ) || that.getLeafPaths.exists{
+          ancestorPath: Path => 
+            ancestorPath.isAncestorOf( path) 
+        } 
+    }.flatMap{
+      path: Path => 
+        this.nodes.get( path )
+    }.toVector )
+  } 
   protected[odf] val paths: ImmutableTreeSet[Path] = ImmutableTreeSet( nodes.keys.toSeq:_* )(PathOrdering)
   def isEmpty:Boolean = paths.size == 1 && paths.contains(Path("Objects"))
   def nonEmpty:Boolean = paths.size > 1 

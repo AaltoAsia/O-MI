@@ -26,6 +26,8 @@ trait ODF//[M <: Map[Path,Node], S<: SortedSet[Path] ]
   protected[odf] def paths : SortedSet[Path] //= TreeSet( nodes.keys.toSeq:_* )(PathOrdering)
   //def copy( nodes : scala.collection.Map[Path,Node] ): ODF
 
+  def select( that: ODF ): ODF 
+
   def isEmpty:Boolean
   def nonEmpty:Boolean
   def isRootOnly: Boolean = isEmpty

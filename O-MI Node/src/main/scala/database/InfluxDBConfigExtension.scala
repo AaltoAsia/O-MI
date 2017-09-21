@@ -22,7 +22,7 @@ trait InfluxDBConfigExtension extends Extension {
   val influxDBdatabaseName: String = config.getString("influxDB.database-name")
   val influxDBAddress : Uri = Uri( config.getString("influxDB.address") )
 
-  val query= Query((s"db",s"$influxDBdatabaseName"),(s"precission","ms"))
+  val query= Query((s"db",s"$influxDBdatabaseName"),(s"precision","ms"))
   val influxDBQueryAddress : Uri = influxDBAddress.withPath( Path("/query")).withQuery(query)
   val influxDBWriteAddress : Uri = influxDBAddress.withPath(Path("/write")).withQuery(query)
 }

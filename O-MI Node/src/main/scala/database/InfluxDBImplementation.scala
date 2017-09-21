@@ -93,7 +93,10 @@ object InfluxDBJsonProtocol extends DefaultJsonProtocol {
     class InfluxDBJsonODFFormat() extends RootJsonFormat[ImmutableODF] {
       // Members declared in spray.json.JsonReader
       def read(json: spray.json.JsValue): types.odf.ImmutableODF ={
-        val iis: Seq[InfoItem] = getSeries(json).collect{
+        println( s"Got following json: $json")
+        val series = getSeries(json)
+        println( s"Found ${series.length} series")
+        val iis: Seq[InfoItem] = series.collect{
           case serie: JsObject =>
             serie.getFields( "name", "columns", "values") match{
               case Seq(JsString( measurementName), JsArray(columns), JsArray( values )) =>
@@ -102,6 +105,7 @@ object InfluxDBJsonProtocol extends DefaultJsonProtocol {
                 None
             }
         }.flatten
+        println( s"Found ${iis.length} series")
         ImmutableODF(iis.toVector)
       }
 
@@ -111,13 +115,13 @@ object InfluxDBJsonProtocol extends DefaultJsonProtocol {
             val path = measurementNameToPath(measurementName)
             InfoItem( path.last, path, values = values.collect{
               case JsArray( Seq(JsString(timestampStr), JsNumber( number )) ) =>
-                val timestamp: Timestamp = Timestamp.valueOf(timestampStr)
+                val timestamp: Timestamp = Timestamp.valueOf(timestampStr.replace("T"," ").replace("Z"," "))
                 Value( number, timestamp)
               case JsArray( Seq(JsString(timestampStr), JsBoolean( bool ))) =>
-                val timestamp: Timestamp = Timestamp.valueOf(timestampStr)
+                val timestamp: Timestamp = Timestamp.valueOf(timestampStr.replace("T"," ").replace("Z"," "))
                 Value( bool, timestamp)
               case JsArray( Seq(JsString(timestampStr), JsString( str ))) =>
-                val timestamp: Timestamp = Timestamp.valueOf(timestampStr)
+                val timestamp: Timestamp = Timestamp.valueOf(timestampStr.replace("T"," ").replace("Z"," "))
                 Value( str.replace("\\\"","\""), timestamp)
             })
         }
@@ -237,28 +241,39 @@ class InfluxDBImplementation(
     } else {
       lazy val filteringClause ={
         val whereClause = ( beginO, endO ) match{
-          case (Some( begin), Some(end)) => s" WHERE time >= $begin AND time <= $end "
-          case (None, Some(end)) => s"WHERE time <= $end "
-          case (Some( begin), None) => s"WHERE time >= $begin "
+          case (Some( begin), Some(end)) => s" WHERE time >= '${begin.toString}' AND time <= '${end.toString}' "
+          case (None, Some(end)) => s" WHERE time <= '${end.toString}' "
+          case (Some( begin), None) => s" WHERE time >= '${begin.toString}' "
           case (None, None) => ""
         }
-        val limitClause = s" LIMIT ${newestO.getOrElse(1)} "
-        whereClause + "ORDER BY time DESC" + limitClause
+        val limitClause = newestO.map{
+          n: Int =>
+            s" LIMIT $n "
+        }.getOrElse{
+          if( beginO.isEmpty && endO.isEmpty ) " LIMIT 1 " else ""
+        }
+        whereClause + " ORDER BY time DESC " + limitClause
       }
       val cachedODF = OldTypeConverter.convertOdfObjects(singleStores.hierarchyStore execute GetTree())
       log.info( "Requested ODF:\n" + requestODF.toString)
       log.info( "Cached ODF:\n" + cachedODF.toString)
-      val requestedIIs = cachedODF.intersection(requestODF).getInfoItems
-      log.info( "Intersecting ODF:\n" + cachedODF.intersection(requestODF).toString)
+      val requestedIIs = cachedODF.select(requestODF).getInfoItems
+      log.info( "Intersecting ODF:\n" + cachedODF.select(requestODF).toString)
       //XXX: What about Objects/ read all?
-      val iiQueries = getNBetweenInfoItemsQueryString(requestedIIs, filteringClause)
-      read( iiQueries )
+      if( requestedIIs.nonEmpty ){
+        val iiQueries = getNBetweenInfoItemsQueryString(requestedIIs, filteringClause)
+        read( iiQueries )
+      } else Future{
+        Some( cachedODF.select(requestODF).immutable )
+      }
+
 
     }
   }
    private def read(content : String) = {
-     val request = RequestBuilding.Post(readAddress,"q=" + content).withHeaders(AcceptHeader("application/json"))
-     log.info( s"Sending following request\n$content")
+    val httpEntity = FormData( ("q", content)).toEntity( HttpCharsets.`UTF-8` )
+     val request = RequestBuilding.Post(readAddress, httpEntity).withHeaders(AcceptHeader("application/json"))
+     log.info( s"Sending following request\n${content.toString}")
      val responseF : Future[HttpResponse] = httpExt.singleRequest(request)//httpHandler(request)
      val formatedResponse = responseF.flatMap{
        case response @ HttpResponse( status, headers, entity, protocol ) if status.isSuccess =>
@@ -276,6 +291,7 @@ class InfluxDBImplementation(
 
          Unmarshal(ent).to[ImmutableODF].map{
            case odf: ImmutableODF =>
+             log.info( s"Influx O-DF:\n$odf" )
              if( odf.getPaths.length < 2) None
              else Some( odf )
          }
