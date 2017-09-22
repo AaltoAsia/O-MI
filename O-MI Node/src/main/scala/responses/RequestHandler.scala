@@ -81,40 +81,41 @@ with CancelHandler
 
   def handleReadRequest( read: ReadRequest) : Future[ResponseRequest] = {
     implicit val to = Timeout(read.handleTTL)
-    log.debug("ReqeustHandler sending read to DBHandler.")
-    val responseFuture = (dbHandler ? read).mapTo[ResponseRequest] 
+    val responseFuture = (dbHandler ? read).mapTo[ResponseRequest]
     responseFuture.onComplete{
       case Failure(t) =>
-        log.debug(s"ReqeustHandler failed to receive response from DBHandler: $t")
+        log.debug(s"RequestHandler failed to receive response from DBHandler: $t")
       case Success(response) =>
-        log.debug(s"ReqeustHandler received successfully response from DBHandler.")
     }
     responseFuture
   }
 
   def handleWriteRequest( write: WriteRequest) : Future[ResponseRequest] = {
-    log.info(s"ReqeustHandler handling OdfRequest...")
+    log.debug(s"RequestHandler handling write OdfRequest...")
     val responsibleToRequest = agentResponsibilities.splitRequestToResponsible( write )
+    val responsesFromResponsible = responsibleToRequest.map{
+      case (None, subrequest) =>  
+        implicit val to = Timeout(subrequest.handleTTL)
+        log.debug(s"Asking DBHandler to handle request parts that are not owned by an Agent.")
+        (dbHandler ? subrequest).mapTo[ResponseRequest]
+      case (Some(agentName), subrequest) => 
+        log.debug(s"Asking responsible Agent $agentName to handle part of request.")
+        askAgent(agentName,subrequest)
+    }
     val fSeq = Future.sequence(
-      responsibleToRequest.map{
-        case (None, subrequest) =>  
-          implicit val to = Timeout(subrequest.handleTTL)
-          log.info(s"Asking DBHandler to handle request parts that are not owned by an Agent.")
-          (dbHandler ? subrequest).mapTo[ResponseRequest]
-        case (Some(agentName), subrequest) => 
-          log.info(s"Asking responsible Agent $agentName to handle part of request.")
-          askAgent(agentName,subrequest)
-          }.map{
-            case future: Future[ResponseRequest] =>
-              future.recover{
-                case e: Exception =>
-                  log.error( e,"DBHandler returned exception")
-                  Responses.InternalError(e)
-              }
+      responsesFromResponsible.map{
+        case future: Future[ResponseRequest] =>
+          
+          val recovered = future.recover{
+            case e: Exception =>
+              log.error( e,"DBHandler returned exception")
+              Responses.InternalError(e)
           }
-          )
+          recovered 
+      }
+    )
     fSeq.map{
-      case responses =>
+      responses: Iterable[ResponseRequest] =>
         val results = responses.flatMap{
           case response => response.results
         }
@@ -125,7 +126,7 @@ with CancelHandler
 
   }
   def handleCallRequest( call: CallRequest) : Future[ResponseRequest] = {
-    log.info(s"ReqeustHandler handling OdfRequest...")
+    log.debug(s"RequestHandler handling calli OdfRequest...")
     val responsibleToRequest = agentResponsibilities.splitRequestToResponsible( call )
     val fSeq = Future.sequence(
       responsibleToRequest.map{
@@ -137,7 +138,7 @@ with CancelHandler
 
           }
         case (Some(agentName), subrequest) => 
-          log.info(s"Asking responsible Agent $agentName to handle part of request.")
+          log.debug(s"Asking responsible Agent $agentName to handle part of request.")
           askAgent(agentName,subrequest)
           }.map{
             case future: Future[ResponseRequest] =>
@@ -160,13 +161,14 @@ with CancelHandler
   }
 
   def handleResponse( response: ResponseRequest ): Future[ResponseRequest] ={
-    handleNonOdfRequest(response.odfResultsToSingleWrite)
+    handleWriteRequest(response.odfResultsToSingleWrite)
   }
   def handleNonOdfRequest( omiRequest: OmiRequest): Future[ResponseRequest] = {
     omiRequest match {
       case subscription: SubscriptionRequest => handleSubscription(subscription)
       case poll: PollRequest => handlePoll(poll)
       case cancel: CancelRequest => handleCancel(cancel)
+      case other => Future.failed(new Exception(s"Unexpected non-O-DF request: $other"))
     }
   }
 

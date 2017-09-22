@@ -60,7 +60,7 @@ object Callback {
     }  
   }
   /*
-  def toDefined( rcb: RawCallback, connection: ConnectionIdintifier): DefinedCallback = {
+  def toDefined( rcb: RawCallback, connection: ConnectionIdentifier): DefinedCallback = {
     val httpSchemas = Vector("http", "https")
     rcb.address match{
       case "0" => CurrentConnectionCallback(connection) 

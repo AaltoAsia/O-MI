@@ -19,18 +19,20 @@ import java.lang.{Iterable => JavaIterable}
 import java.util.GregorianCalendar
 import javax.xml.datatype.DatatypeFactory
 import java.sql.Timestamp
+import javax.xml.datatype.XMLGregorianCalendar
 
 import scala.language.existentials
 import scala.xml.NodeSeq
 import scala.collection.JavaConversions
-import javax.xml.datatype.XMLGregorianCalendar
+
 
 import parsing.xmlGen.scalaxb.DataRecord
 import parsing.xmlGen.xmlTypes._
 import parsing.xmlGen._
 import types.OdfTypes._
+
 /**
- * Package containing classes presenting O-MI request interanlly. 
+ * Package containing classes presenting O-MI request internally.
  *
  */
 package object OmiTypes  {
@@ -74,6 +76,8 @@ package object OmiTypes  {
   }
 
 }
+
+
 /**
  * Package containing classes presenting O-DF format internally and helper methods for them
  *
@@ -198,10 +202,10 @@ package object OdfTypes {
   def attributesToDataRecord( attributes: Map[String,String] ) : Map[String,DataRecord[Any]] ={
     attributes.map{
       case (key: String, value: String) =>
-        val dr = DataRecord(None, Some(key), value)
-        if( key.startsWith("@") )
-          key -> dr
-        else s"@$key" -> dr
+        if (key.startsWith("@"))
+          key -> DataRecord(None, Some(key.tail), value)
+        else
+          "@" + key -> DataRecord(None, Some(key), value)
     }
   }
 }

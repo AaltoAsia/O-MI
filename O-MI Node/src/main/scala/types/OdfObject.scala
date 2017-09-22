@@ -87,7 +87,7 @@ class  OdfObjectImpl(
 
   /**
    * Does something similar to intersection. Note that this method should be called first on hierarchytree and then
-   * on the tree that should be added the data. another should be subset of this odfTree. Used to Collect metadatas and
+   * on the tree that should add the data. Another should be subset of this odfTree. Used to collect metadatas and
    * descriptions from a read request.
    * @param another another Object to merge with
    * @return
@@ -258,7 +258,9 @@ class  OdfObjectImpl(
         subobj: OdfObject =>
         subobj.asObjectType
       }.toSeq,
-      attributes = Map.empty[String, DataRecord[Any]] ++  typeValue.map{ n => ("@type" -> DataRecord(n))} ++ attributesToDataRecord( this.attributes )
+      attributes = Map.empty[String, DataRecord[Any]] ++
+        typeValue.map{ n => ("@type" -> DataRecord(n))} ++
+        attributesToDataRecord( this.attributes )
     )
   }
 }

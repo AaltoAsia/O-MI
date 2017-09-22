@@ -233,6 +233,7 @@ object Warp10JsonProtocol extends DefaultJsonProtocol {
 }
 
 class Warp10Wrapper( settings: OmiConfigExtension with Warp10ConfigExtension )(implicit val system: ActorSystem, val singleStores: SingleStores) extends DB {
+  def initialize(): Unit = Unit
 
  val singleStoresMaintainer = system.actorOf(SingleStoresMaintainer.props(singleStores, settings), "SingleStoreMaintainer")
   type Warp10Token = String

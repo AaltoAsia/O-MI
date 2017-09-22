@@ -50,6 +50,7 @@ class OmiServiceTest
     singleStores,
     settings
   )
+  dbConnection.clearDB()
   val analytics = None
 
   val subscriptionManager = TestActorRef(SubscriptionManager.props(
@@ -99,7 +100,7 @@ class OmiServiceTest
   }
   def afterAll = {
     dbConnection.destroy()
-    singleStores.hierarchyStore execute TreeRemovePath(types.Path("/Objects"))
+    singleStores.hierarchyStore execute TreeRemovePath(types.Path("Objects"))
     system.terminate()
     //XXX: DID NOT WORK
     //Await.ready(system.terminate(), 10 seconds)
@@ -116,14 +117,14 @@ class OmiServiceTest
       }
     }
 
-    "respond succesfully to GET to /Objects" >> {
+    "respond successfully to GET to /Objects" >> {
       Get("/Objects").withHeaders(`Remote-Address`(localHost)) ~> myRoute ~> check {
         mediaType === `text/xml`
         status === OK
         responseAs[NodeSeq].headOption must beSome.which(_.label == "Objects") // => ??? }((_: Node).label == "Objects")//.head.label === "Objects"
       }
     }
-    "respond succesfully to GET to /Objects/" >> {
+    "respond successfully to GET to /Objects/" >> {
       Get("/Objects/").withHeaders(`Remote-Address`(localHost)) ~> myRoute ~> check {
         mediaType === `text/xml`
         status === OK
@@ -137,9 +138,9 @@ class OmiServiceTest
         responseAs[NodeSeq].headOption must beSome.which(_.label == "error")
       }
     }
-    val settingsPath = "/" + Path(settings.settingsOdfPath).toString
+    val settingsPath = "/Objects/OMI-Service/Settings/"
     "respond successfully to GET to some value" >> {
-      Get(settingsPath + "/num-latest-values-stored/value").withHeaders(`Remote-Address`(localHost)) ~> myRoute ~> check {
+      Get(settingsPath + "num-latest-values-stored/value").withHeaders(`Remote-Address`(localHost)) ~> myRoute ~> check {
         mediaType === `text/plain`
         status === OK
         responseAs[String] === "10"

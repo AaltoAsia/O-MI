@@ -17,5 +17,5 @@ trait CachedDBTest extends DBTest {
   implicit val system = ActorSystem(name + "System")
   implicit val settings = OmiConfig(system)
   implicit val singleStores = new SingleStores(settings)
-  val db: DBReadWrite = new TestDB(name,false)(system, singleStores, settings)
+  val db: DB = new TestDB(name,false)(system, singleStores, settings)
 }

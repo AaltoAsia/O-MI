@@ -1,23 +1,40 @@
 O-MI Node Server
-==============
-
-[![Join the chat at https://gitter.im/AaltoAsia/O-MI](https://badges.gitter.im/AaltoAsia/O-MI.svg)](https://gitter.im/AaltoAsia/O-MI?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-
+[![Latest release](https://img.shields.io/github/release/AaltoAsia/O-MI.svg)](https://github.com/AaltoAsia/O-MI/releases/latest)
 [![Build Status](https://travis-ci.org/AaltoAsia/O-MI.svg?branch=master)](https://travis-ci.org/AaltoAsia/O-MI)
 [![Coverage Status](https://coveralls.io/repos/AaltoAsia/O-MI/badge.svg?branch=master&service=github)](https://coveralls.io/github/AaltoAsia/O-MI?branch=master)
 [![Codacy Badge](https://www.codacy.com/project/badge/9f49209c70e24c67bbc1826fde507518)](https://www.codacy.com/app/tkinnunen/O-MI)
+[![Join the chat at https://gitter.im/AaltoAsia/O-MI](https://badges.gitter.im/AaltoAsia/O-MI.svg)](https://gitter.im/AaltoAsia/O-MI?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+==============
+
+
+<!-- Not resizable at the moment:
+![O-MI Logo](https://cdn.rawgit.com/AaltoAsia/O-MI/3a3b3192/O-MI%20Node/html/0-MI.svg)
+![O-DF Logo](https://cdn.rawgit.com/AaltoAsia/O-MI/3a3b3192/O-MI%20Node/html/0-DF.svg)
+-->
+<img src="https://cdn.rawgit.com/AaltoAsia/O-MI/3a3b3192/O-MI%20Node/html/0-MI.svg" height=100 /><img src="https://cdn.rawgit.com/AaltoAsia/O-MI/3a3b3192/O-MI%20Node/html/0-DF.svg" height=100 />
 
 
 Internet of Things data server.
-Implementation of O-MI Node as specified in [Open Messaging Interface](http://www.opengroup.org/iot/omi/index.htm) ([pdf](https://www2.opengroup.org/ogsys/catalog/C14B)) v1.0 standard with [Open Data Format](http://www.opengroup.org/iot/odf/index.htm) ([pdf](https://www2.opengroup.org/ogsys/catalog/C14A)) standard. It is intended to be as reference implementation that shows how these standards work in more detail. Missing features and differences to the standard are collected to [this](https://docs.google.com/spreadsheets/d/1duj-cX7dL9QR0igVMLNq9cBytSA196Ogiby-MWMetGw/edit?pref=2&pli=1#gid=1927687927) (work in progress) document. Questions or problems with the server or the standards can be posted to Issues, email or slack.
+Implementation of O-MI Node as specified in [Open Messaging Interface](http://www.opengroup.org/iot/omi/index.htm) ([pdf](https://www2.opengroup.org/ogsys/catalog/C14B)) v1.0 standard with [Open Data Format](http://www.opengroup.org/iot/odf/index.htm) ([pdf](https://www2.opengroup.org/ogsys/catalog/C14A)) standard. It is intended to be as reference implementation that shows how these standards work in more detail. Missing features and differences to the standard are collected to [this](https://docs.google.com/spreadsheets/d/1duj-cX7dL9QR0igVMLNq9cBytSA196Ogiby-MWMetGw/edit?pref=2&pli=1#gid=1927687927) (work in progress) document. Questions or problems with the server or the standards can be posted to [Issues](https://github.com/AaltoAsia/O-MI/issues), email or [gitter chat](https://gitter.im/AaltoAsia/O-MI?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge).
+
+Supported communication protocols:
+
+* HTTP (`http://`)
+* HTTPS (`https://`)
+* [WebSocket](#o-mi-extensions) (`ws://`)
+* WebSocket Secure (`wss://`)
 
 This project also includes:
+
 * a developer webapp for building and sending O-MI/O-DF messages.
 * some experimental extensions for the server which can be found in other branches:
   - `omisec-omi-interface` has O-MI/O-DF interface for authorization of O-MI messages in external service.
   - `warp10integration` has integration to [Warp10](http://www.warp10.io/) as the DB backend.
 
 See `development` branch for latest progress.
+
+Chat with dev team: [![Join the chat at https://gitter.im/AaltoAsia/O-MI](https://badges.gitter.im/AaltoAsia/O-MI.svg)](https://gitter.im/AaltoAsia/O-MI?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 
 Resources
 ---------
@@ -34,11 +51,11 @@ Resources
 Dependencies
 ------------
 * Java 1.8
-* For building: sbt http://www.scala-sbt.org/ or sbt enabled IDE
+* For building: SBT (Simple Build Tool) http://www.scala-sbt.org/ or SBT enabled IDE
 
 Running
 -------
-[Download the pre-compiled zip, tgz or debian package from latest git releases here](https://github.com/AaltoAsia/O-MI/releases/latest).
+[Download the pre-compiled zip, tgz or debian package from latest git releases here](https://github.com/AaltoAsia/O-MI/releases/latest). [![Latest release](https://img.shields.io/github/release/AaltoAsia/O-MI.svg)](https://github.com/AaltoAsia/O-MI/releases/latest)
 
 Extract the zip file and navigate to the /bin directory
 To run O-MI Node run the corresponding startup script from the bin directory for your OS:
@@ -53,7 +70,7 @@ More Information in the [Configuration](#Configuration) section.
 Compiling and packaging
 -----------------------
 1. Follow the instructions 1-4 in [Setup development environment](#setup-development-environment) below
-2. `sbt release`
+2. run `sbt release`
 3. Result can be found in `./target/universal/o-mi-Node-version.zip`
 
 
@@ -79,14 +96,29 @@ Setup development environment
 4. Open a cmd or shell to the `O-MI` project directory
 5. Then run `sbt re-start` to compile and run the Node
 6. Visit http://localhost:8080/ to see that it's working
-7. (_optional step_) Create an Eclipse IDE project
-  a. Run `sbt eclipse`
-  b. Open Eclipse IDE
-  c. Select File->import `Existing Projects into Workspace`.
 
-You can check the next section to learn more
+You can check the [Simple Build Tool cheat sheet](#simple-build-tool-cheat-sheet) section to learn more
 
-Simple Build Tool cheat sheet 
+### Setting up IDE
+
+* IntelliJ IDEA
+   1. Install the IDE
+      1. Download and install IntelliJ IDEA
+      2. When running for the first time install Scala from the 'Featured plugins' tab (you can also install Scala plugin later from Settings/plugins)
+      3. Open the IDE
+   2. Import the project
+      1. Select import project -> select `O-MI` directory and click OK
+      2. Select import project from external model and select `SBT` and then click Next
+      3. For the 'Project JDK' select 'New...' and select JDK and then locate your JDK 1.8 folder and select it and click Finish
+      4. When prompted to select modules to include in the project, select: root, agents and omiNode and then click OK
+      5. Wait for the IDE to finish indexing the files (might take a few minutes)
+* Eclipse
+   1. Run `sbt eclipse`
+   2. Open Eclipse IDE
+   3. Select File->import `Existing Projects into Workspace`
+
+
+Simple Build Tool cheat sheet
 -----------------------------
 
 Native SBT commands
@@ -134,10 +166,10 @@ for the defaults and configuration documentation.
 Library Config
 --------------
 
-`application.conf` can also have a lot of Akka (threading framework), Spray (HTTP server) and Slick (database) specific settings:
+`application.conf` can also have a lot of Akka (threading framework and HTTP server) and Slick (database) specific settings:
 
 - [Akka Actors](http://doc.akka.io/docs/akka/2.3.9/general/configuration.html)
-- [Spray-can http server](http://spray.io/documentation/1.2.2/spray-can/configuration/)
+- [Akka HTTP](http://doc.akka.io/docs/akka-http/10.0.9/scala/http/configuration.html)
 - [Slick forConfig docs](http://slick.typesafe.com/doc/3.0.0-RC2/api/index.html#slick.jdbc.JdbcBackend$DatabaseFactoryDef@forConfig\(String,Config,Driver\):Database)
 
 O-MI Extensions

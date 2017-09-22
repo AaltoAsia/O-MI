@@ -103,7 +103,7 @@ class CallbackHandler(
 
     val check : HttpResponse => Future[Unit] = { response =>
         if (response.status.isSuccess){
-          //TODO: Handle content of response, possible piggypacking
+          //TODO: Handle content of response, possible piggybacking
           log.info(
             s"Successful send POST request to $address with ${response.status}"
           )
@@ -158,6 +158,8 @@ class CallbackHandler(
         sendCurrentConnection(cb, omiResponse, omiResponse.ttl)
       case cb : WSCallback =>
         sendWS(cb, omiResponse, omiResponse.ttl)
+      case _ => Future.failed(new CallbackFailure("Unknown callback type", callback))
+
   }
   private[this] def sendWS( callback: WSCallback, request: ResponseRequest, ttl: Duration): Future[Unit] = {
     webSocketConnections.get(callback.address).map{
@@ -300,6 +302,7 @@ class CallbackHandler(
       Sink.foreach[Message] {
         case message: TextMessage.Strict =>
           log.warning(s"Received WS message from $uri. Message is ignored. ${message.text}")
+        case _ =>
       }
     def sendHandler = (response: ResponseRequest ) => queueSend(Future(response.asXML)) map {_ => ()}
     val wsFlow = httpExtension.webSocketClientFlow(WebSocketRequest(uri))

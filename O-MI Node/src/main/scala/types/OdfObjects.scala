@@ -109,9 +109,9 @@ class OdfObjectsImpl(
 
   def odfDefaultScope = scalaxb.toScope(
     (Set(
-      None -> "http://www.opengroup.org/xsd/odf/1.0/",
-      Some("xs") -> "http://www.w3.org/2001/XMLSchema",
-      Some("odf") -> "http://www.opengroup.org/xsd/odf/1.0/"
+      None -> "http://www.opengroup.org/xsd/odf/1.0/"//,
+      //Some("xs") -> "http://www.w3.org/2001/XMLSchema",
+      //Some("odf") -> "http://www.opengroup.org/xsd/odf/1.0/"
       
       )).toSet:_*
   )

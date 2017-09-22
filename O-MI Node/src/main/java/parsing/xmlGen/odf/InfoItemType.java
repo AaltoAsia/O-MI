@@ -174,7 +174,7 @@ public class InfoItemType {
      * Objects of the following type(s) are allowed in the list
      * {@link ValueType }
      * 
-     * @return  list of ValueTypse
+     * @return  list of ValueTypes
      * 
      */
     public List<ValueType> getValue() {

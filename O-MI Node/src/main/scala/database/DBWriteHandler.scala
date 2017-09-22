@@ -68,7 +68,7 @@ trait DBWriteHandler extends DBHandlerBase {
 
     log.debug(s"Sending data to event sub: $id.")
     val responseRequest = Responses.Poll(id, odf, responseTTL)
-    log.info(s"Sending in progress; Subscription subId:$id addr:$callbackAddr interval:-1")
+    log.debug(s"Sending in progress; Subscription subId:$id addr:$callbackAddr interval:-1")
     //log.debug("Send msg:\n" + xmlMsg)
 
     def failed(reason: String) =
@@ -80,12 +80,12 @@ trait DBWriteHandler extends DBHandlerBase {
 
     callbackF.onSuccess {
       case () =>
-        log.info(s"Callback sent; subscription id:$id addr:$callbackAddr interval:-1")
+        log.debug(s"Callback sent; subscription id:$id addr:$callbackAddr interval:-1")
     }
     callbackF.onFailure{
       case fail @ MissingConnection(callback) =>
         log.warning(
-          s"Callback failed; subscription id:${esub.id}, reason: ${fail.toString}, subscription is remowed.")
+          s"Callback failed; subscription id:${esub.id}, reason: ${fail.toString}, subscription is removed.")
         singleStores.subStore execute RemoveEventSub(esub.id)
       case fail: CallbackFailure =>
         failed(fail.toString)
@@ -96,15 +96,21 @@ trait DBWriteHandler extends DBHandlerBase {
 
   private def processEvents(events: Seq[InfoItemEvent]) = {
     //Add write data to analytics if wanted
-    analyticsStore.foreach{store =>
+    analyticsStore.foreach{ store =>
       events
         .map(event => (event.infoItem.path, event.infoItem.values.map(_.timestamp.getTime())))
         .foreach(pv => store ! AddWrite(pv._1, pv._2))
     }
     val esubLists: Seq[(EventSub, OdfInfoItem)] = events.collect{
-      case ChangeEvent(infoItem) =>  // note: AttachEvent extends Changeevent
+      case AttachEvent(infoItem) =>
+        val pollNewSubs = singleStores.subStore execute GetNewEventSubsForPath(infoItem.path)
+        infoItem.values.headOption.foreach(value => pollNewSubs.foreach(pnes => singleStores.pollDataPrevayler execute AddPollData(pnes.id, infoItem.path, value)))
+        val nesubs: Seq[NewEventSub] = singleStores.subStore execute LookupNewEventSubs(infoItem.path)
+        val esubs: Seq[NormalEventSub] = singleStores.subStore execute LookupEventSubs(infoItem.path)
+        (esubs ++ nesubs) map { (_, infoItem) }  // make tuples
+      case ChangeEvent(infoItem) =>  // note: AttachEvent extends ChangeEvent
 
-        val esubs = singleStores.subStore execute LookupEventSubs(infoItem.path)
+        val esubs: Seq[NormalEventSub] = singleStores.subStore execute LookupEventSubs(infoItem.path)
         esubs map { (_, infoItem) }  // make tuples
     }.flatten
     // Aggregate events under same subscriptions (for optimized callbacks)
@@ -130,15 +136,14 @@ trait DBWriteHandler extends DBHandlerBase {
   )(implicit system: ActorSystem): Future[ResponseRequest] ={
     if( infoItems.nonEmpty || objectMetadatas.nonEmpty ) {
       val future = handleInfoItems(infoItems, objectMetadatas)
-      future.onSuccess{
-         case u : Iterable[Path] =>
-          log.debug("Successfully saved Odfs to DB")
-      }
       future.map{ 
-          paths => Responses.Success()
+          paths => 
+            log.debug("Successfully saved Odfs to DB")
+            Responses.Success()
       }
     } else {
-      Future.successful{
+      Future{
+        log.debug("No infoitems or metadata to write. Successful write.")
         Responses.Success()
       }  
     }
@@ -195,7 +200,7 @@ trait DBWriteHandler extends DBHandlerBase {
 
     val callbackDataOptions = pathValueOldValueTuples.map{
       case (path,value, oldValueO) => singleStores.processData(path,value,oldValueO)}
-    val triggeringEvents = callbackDataOptions.flatten
+    val triggeringEvents: Seq[InfoItemEvent] = callbackDataOptions.flatten
     
     if (triggeringEvents.nonEmpty) {  // (unnecessary if?)
       // TODO: implement responsible agent check here or processEvents method

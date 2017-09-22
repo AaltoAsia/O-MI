@@ -90,7 +90,7 @@ public class ResponsibleJavaAgent extends JavaAgent implements ResponsibleIntern
             log.debug(name() + " wrote paths successfully.");
           } else {
             log.warning(
-                "Something went wrong when " + name() + " writed, " + result.toString()
+                "Something went wrong when " + name() + " wrote, " + result.toString()
                 );
           }
         }

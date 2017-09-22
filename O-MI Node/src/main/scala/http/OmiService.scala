@@ -14,7 +14,7 @@
 
 package http
 
-import java.net.{InetAddress, URI, URL}
+import java.net.{InetAddress, URI, URL, URLDecoder}
 import java.nio.file.{Files, Paths}
 import java.util.Date
 
@@ -168,7 +168,8 @@ trait OmiService
           extractClientIP{ user =>
 
         // convert to our path type (we don't need very complicated functionality)
-            val pathStr = uriPath // pathToString(uriPath)
+        val pathStr = uriPath.split("/").map{ id => URLDecoder.decode( id, "UTF-8" ).replace("/","\\/") }.mkString("/")
+          
             val origPath = Path(pathStr)
             val path = origPath match {
               case path if path.lastOption.exists(List("value", "MetaData", "description","id", "name").contains(_)) =>
@@ -404,7 +405,7 @@ trait OmiService
 
       //TODO Check if admin
       val admin = false //TODO
-      if(admin || userAddr.exists(asd => asd._1 == asd._2)) {
+      if(!settings.callbackAuthorizationEnabled || admin || userAddr.exists(asd => asd._1 == asd._2)) {
 
         val cbTry = callbackHandler.createCallbackAddress(address)
         val result = cbTry.map{
@@ -416,7 +417,7 @@ trait OmiService
         }
         Future.fromTry(result )
       } else {
-        log.debug(s"\n\n FAILED WITH ADRESSES $userAddr \n\n")
+        log.debug(s"\n\n FAILED WITH ADDRESSESS $userAddr \n\n")
         Future.failed((InvalidCallback(cba, "Callback to remote addresses(different than user address) require admin privileges")))
       }
   }
@@ -517,7 +518,7 @@ trait WebSocketOMISupport { self: OmiService =>
     def queueSend(futureResponse: Future[NodeSeq]): Future[QueueOfferResult] = {
       val result = for {
         response <- futureResponse
-        if (response.nonEmpty)
+        //if (response.nonEmpty)
 
           queue <- futureQueue
 
@@ -557,14 +558,17 @@ trait WebSocketOMISupport { self: OmiService =>
 
     val stricted = Flow.fromFunction[ws.Message,Future[String]]{
       case textMessage: ws.TextMessage =>
+        log.debug("Received keep alive for websocket")
         textMessage.textStream.runFold("")(_+_)
       case msg: ws.Message => Future successful ""
     }
     val msgSink = Sink.foreach[Future[String]]{ future: Future[String]  => 
       future.flatMap{ 
+        case "" => //Keep alive 
+          queueSend( Future.successful(  NodeSeq.Empty ) )
         case requestString: String =>
-        val futureResponse: Future[NodeSeq] = handleRequest(hasPermissionTest, requestString, createZeroCallback, user)
-        queueSend(futureResponse)
+          val futureResponse: Future[NodeSeq] = handleRequest(hasPermissionTest, requestString, createZeroCallback, user)
+          queueSend(futureResponse)
       }
     }
 

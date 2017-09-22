@@ -20,7 +20,7 @@ trait UnCachedDBTest extends DBTest {
   implicit val system = ActorSystem(name + "System")
   implicit val settings = OmiConfig(system)
   implicit val singleStores = new SingleStores(settings)
-  val db: DBReadWrite = new UncachedTestDB(name,false)(system, singleStores, settings)
+  val db: DB = new  TestDB(name,false)(system, singleStores, settings)
 }
 trait OldAndNewDBTest extends DBTest {
   val psqlconfig = ConfigFactory.load(

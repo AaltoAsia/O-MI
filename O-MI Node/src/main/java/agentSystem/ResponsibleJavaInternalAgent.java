@@ -1,6 +1,5 @@
 package agentSystem;
 
-import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 
 
@@ -8,23 +7,17 @@ import akka.util.Timeout;
 import akka.dispatch.*;
 import akka.dispatch.OnFailure;
 import static akka.pattern.Patterns.ask;
-import akka.actor.UntypedActor;
-import akka.actor.ActorRef;
-import akka.event.Logging;
-import akka.event.LoggingAdapter;
 
-import com.typesafe.config.Config;
+import akka.actor.ActorRef;
 
 import scala.concurrent.duration.Duration;
 import scala.concurrent.Future;
 import scala.concurrent.ExecutionContext;
 
 import types.OmiTypes.WriteRequest;
-import types.OmiTypes.ReadRequest;
 import types.OmiTypes.CallRequest;
 import types.OmiTypes.ResponseRequest;
 import types.OmiTypes.Responses;
-import types.OdfTypes.OdfTreeCollection;
 
 public abstract class ResponsibleJavaInternalAgent extends JavaInternalAgent implements ResponsibleInternalAgent {
 
@@ -65,31 +58,31 @@ public abstract class ResponsibleJavaInternalAgent extends JavaInternalAgent imp
 
   // Contains function for the asynchronous handling of write result
   protected final class ForwardResult extends OnSuccess<ResponseRequest> {
-    private ActorRef orginalSender;
+    private ActorRef originalSender;
     private ActorRef self;
-    public ForwardResult(ActorRef _self, ActorRef _orginalSender){
-      orginalSender = _orginalSender;
+    public ForwardResult(ActorRef _self, ActorRef _originalSender){
+      originalSender = _originalSender;
       self = _self;
     } 
     @Override 
     public final void onSuccess(ResponseRequest response) {
-      orginalSender.tell(response, self);
+      originalSender.tell(response, self);
     }
   }
 
   protected final class FailureWrite extends OnFailure{
-    private ActorRef orginalSender;
+    private ActorRef originalSender;
     private ActorRef self;
     private WriteRequest write;
-    public FailureWrite(ActorRef _self, ActorRef _orginalSender, WriteRequest _write){
-      orginalSender = _orginalSender;
+    public FailureWrite(ActorRef _self, ActorRef _originalSender, WriteRequest _write){
+      originalSender = _originalSender;
       self = _self;
       write = _write;
     } 
     @Override 
     public final void onFailure(Throwable t) {
       ResponseRequest fw = Responses.InternalError(t);
-      orginalSender.tell(fw, self);
+      originalSender.tell(fw, self);
     }
   }
 

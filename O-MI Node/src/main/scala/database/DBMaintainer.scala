@@ -27,22 +27,22 @@ import http.OmiConfigExtension
 
 object DBMaintainer{
   def props(
-    dbConnection : DBReadWrite,
-    singleStores : SingleStores,
-    settings : OmiConfigExtension
+             dbConnection : TrimmableDB,
+             singleStores : SingleStores,
+             settings : OmiConfigExtension
   ) : Props = Props( new DBMaintainer(dbConnection, singleStores, settings) )
 }
 class DBMaintainer(
-  protected val dbConnection : DBReadWrite,
-  override protected val singleStores : SingleStores,
-  override protected val settings : OmiConfigExtension
+                    protected val dbConnection : TrimmableDB,
+                    override protected val singleStores : SingleStores,
+                    override protected val settings : OmiConfigExtension
 )
 extends SingleStoresMaintainer(singleStores, settings)
 {
 
   case object TrimDB
   private val trimInterval: FiniteDuration = settings.trimInterval
-  log.info(s"scheduling databse trimming every $trimInterval")
+  log.info(s"scheduling database trimming every $trimInterval")
   scheduler.schedule(trimInterval, trimInterval, self, TrimDB)
   /**
    * Function for handling InputPusherCmds.

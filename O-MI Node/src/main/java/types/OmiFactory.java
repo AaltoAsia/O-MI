@@ -339,9 +339,9 @@ final public class OmiFactory{
   /**
    * Creates interval subscription with callback address.
    * @param ttl Time to live of subscription.
-   * @param interval Interval of sending of subscriped data.
-   * @param odf O-DF structure to be subscriped.
-   * @param callback Callback address were subscriped data is to be sent.
+   * @param interval Interval of sending of subscribed data.
+   * @param odf O-DF structure to be subscribed.
+   * @param callback Callback address were subscribed data is to be sent.
    * @return SubscriptionRequest
    */
   public static SubscriptionRequest createSubscriptionRequest(
@@ -487,7 +487,8 @@ final public class OmiFactory{
       ){
     return OmiReturn$.MODULE$.apply(
         returnCode,
-        scala.Option.apply(description)
+        scala.Option.apply(description),
+        new HashMap<String,String>()
     );
   }
 
@@ -501,7 +502,8 @@ final public class OmiFactory{
       ){
     return OmiReturn$.MODULE$.apply(
         returnCode,
-        scala.Option.empty()
+        scala.Option.empty(),
+        new HashMap<String,String>()
     );
   }
 

@@ -57,8 +57,8 @@ trait IpAuthorization extends AuthorizationExtension {
         val result = if (user.toOption.exists( addr =>
             whiteIPs.contains( inetAddrToBytes( addr ) ) ||
             whiteMasks.exists{
-              case (subnet : InetAddress, subNetMaskLenght : Int) =>
-                isInSubnet(subnet, subNetMaskLenght, addr)
+              case (subnet : InetAddress, subNetMaskLength : Int) =>
+                isInSubnet(subnet, subNetMaskLength, addr)
             }
             )) Success(r)
         else Failure(UnauthorizedEx())
@@ -86,12 +86,12 @@ trait IpAuthorization extends AuthorizationExtension {
       addr.getAddress().toList
     }
 
-    /** Helper method for checkking if connection is in allowed subnets.
+    /** Helper method for checking if connection is in allowed subnets.
      *
      * @param ip addr is InetAddress of connector.
      * @return Boolean, true if connection is in allowed suybnet.
      **/
-    private[this] def isInSubnet(subnet: InetAddress, subNetMaskLenght: Int, ip: InetAddress) : Boolean = {
+    private[this] def isInSubnet(subnet: InetAddress, subNetMaskLength: Int, ip: InetAddress) : Boolean = {
       // TODO: bytes should be printed as unsigned
       def compareLog() = log.debug("Whitelist check for IP address: " + ip.getHostAddress +
         " against " + subnet.getHostAddress
@@ -105,7 +105,7 @@ trait IpAuthorization extends AuthorizationExtension {
           compareLog()
           val maxBits: Int = 32
           val allOnes: Int = -1
-          val shiftBy: Int = (maxBits - subNetMaskLenght) 
+          val shiftBy: Int = (maxBits - subNetMaskLength)
           //Without  if-clause, shifting by 32 or more is undefined behaviour
           //OracleJDK: Shifts correctly, OpenJDK: DOES NOT SHIFT AT ALL
           val mask: Int = if( shiftBy >= 32 ) 0 else allOnes << shiftBy  
@@ -121,17 +121,17 @@ trait IpAuthorization extends AuthorizationExtension {
           val (firstMask: Long, secondMask: Long) ={
             val allOnes: Long = -1
             val maxBits: Int = 64
-            if( subNetMaskLenght <= 64 ){
+            if( subNetMaskLength <= 64 ){
               //Subnet is shorter than or exactly 64 bits. Only first Long is needs
               //mask.
-              val shiftBy: Int = (maxBits - subNetMaskLenght) 
+              val shiftBy: Int = (maxBits - subNetMaskLength)
               //Without  if-clause, shifting by 64 or more is undefined behaviour
               //OracleJDK: Shifts correctly, OpenJDK: DOES NOT SHIFT AT ALL
               (if(shiftBy >= 64 ){0} else {allOnes << shiftBy}, 0l)
-            } else if ( subNetMaskLenght > 64){
+            } else if ( subNetMaskLength > 64){
               //Subnet is longer than 64 bits. Only second Long is needs
               //shift. First one is taken as whole.
-              val shiftBy: Int = (subNetMaskLenght - maxBits) 
+              val shiftBy: Int = (subNetMaskLength - maxBits)
               (allOnes, allOnes << shiftBy)
             } 
           }
