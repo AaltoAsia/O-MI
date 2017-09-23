@@ -10,7 +10,7 @@ separator := println("########################################################\n
 addCommandAlias("release", ";doc;universal:packageBin;universal:packageZipTarball")
 addCommandAlias("systemTest", "omiNode/testOnly http.SystemTest")
 
-val warp10URL = "https://bintray.com/cityzendata/generic/download_file?file_path=io%2Fwarp10%2Fwarp10%2F1.1.0%2Fwarp10-1.1.0.tar.gz"
+val warp10URL = "https://bintray.com/cityzendata/generic/download_file?file_path=io%%2Fwarp10%%2Fwarp10%%2F1.1.0%%2Fwarp10-1.1.0.tar.gz"
 
 def commonSettings(moduleName: String) = Seq(
   name := s"O-MI-$moduleName",
