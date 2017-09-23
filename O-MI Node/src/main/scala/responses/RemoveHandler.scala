@@ -28,6 +28,7 @@ import http.{ActorSystemContext, OmiServer, Storages}
 trait RemoveHandlerT{
   def handlePathRemove(parentPath: Path): Boolean
   def getAllData(): Future[Option[OdfObjects]]
+  def writeOdf(odf: OdfObjects): Unit
   }
 class RemoveHandler(val singleStores: SingleStores, dbConnection: DB )(implicit system: ActorSystem) extends RemoveHandlerT{
 
@@ -76,5 +77,15 @@ class RemoveHandler(val singleStores: SingleStores, dbConnection: DB )(implicit 
     val leafs = getLeafs(odf)
     dbConnection.getNBetween(leafs,None,None,Some(100),None).map(objs => objs.map(_.union(odf)))
   }
+
+  def writeOdf(odf: OdfObjects): Unit = {
+    val infoItems = odf.infoItems
+    dbConnection.writeMany(infoItems)
+    singleStores.hierarchyStore execute Union(odf)
+    val latestValues = infoItems.map(ii =>(ii.path, ii.values.maxBy(_.timestamp.getTime)))
+    latestValues.foreach(pv => singleStores.latestStore execute SetSensorData(pv._1,pv._2))
+
+  }
+
 }
 

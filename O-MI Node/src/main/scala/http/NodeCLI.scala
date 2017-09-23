@@ -30,7 +30,7 @@ import akka.util.{ByteString, Timeout}
 import database._
 import responses._
 import spray.json.JsArray
-import types.OdfTypes.OdfObjects
+import types.OdfTypes.{OdfObjects, OdfParseResult}
 import types.Path
 
 import scala.io.Source
@@ -88,8 +88,8 @@ class OmiNodeCLI(
   showSub <id>
   remove <subsription id>
   remove <path>
-  backup
-  restore
+  backup <filename for subs> <filename for odf>
+  restore <filename for subs> <filename for odf>
   """
   val ip = sourceAddress.toString
   implicit val timeout : Timeout = 1.minute
@@ -279,10 +279,10 @@ class OmiNodeCLI(
 
   }
 
-  private def backupSubsAndDatabase = {
+  private def backupSubsAndDatabase(subPath: String, odfPath: String) = {
     val temp = for{
-      subs <- Try(backupSubscriptions)
-      data <- Try(backupDatabase)
+      subs <- Try(backupSubscriptions(subPath))
+      data <- Try(backupDatabase(odfPath))
     } yield data
     "Done\n"
   }
@@ -291,7 +291,7 @@ import CustomJsonProtocol._
 import spray.json._
 
 
-  private def backupSubscriptions = {
+  private def backupSubscriptions(filePath: String) = {
     val allSubscriptions: Future[List[(SavedSub, Option[SubData])]] = (subscriptionManager ? GetSubsWithPollData()).mapTo[List[(SavedSub, Option[SubData])]]
 
     allSubscriptions.map(allSubs => {
@@ -302,7 +302,7 @@ import spray.json._
       bw.close()
     })
   }
-  private def backupDatabase = {
+  private def backupDatabase(filePath: String) = {
     val allData: Future[Option[OdfObjects]] = removeHandler.getAllData()
     allData.map(allData => {
       allData.map(odf => {
@@ -316,20 +316,20 @@ import spray.json._
     })
   }
 
-  private def restoreSubsAndDatabase() = {
+  private def restoreSubsAndDatabase(subFilePath: String, odfFilePath: String) = {
     val temp = for{
-      _   <- Try(restoreDatabase())
-      res <- Try(restoreSubs())
+      _   <- Try(restoreDatabase(odfFilePath))
+      res <- Try(restoreSubs(subFilePath))
     } yield res
     "Done\n"
   }
 
-  private def restoreDatabase() = {
-    parsing.OdfParser.parse(new File("backupODF"))
-    
+  private def restoreDatabase(filePath: String) = {
+    val parsed: OdfParseResult = parsing.OdfParser.parse(new File("backupODF"))
+    parsed.right.map(removeHandler.writeOdf(_))
   }
 
-  private def restoreSubs() = {
+  private def restoreSubs(filePath: String) = {
     val json: JsValue = Source.fromFile("subscriptions").getLines().mkString.parseJson
     val subs: Seq[(SavedSub, Option[SubData])] = json match {
       case JsArray(subscriptions: Vector[JsObject]) => subscriptions.map(_.convertTo[(SavedSub, Option[SubData])])
@@ -366,8 +366,8 @@ import spray.json._
         case Vector("start", agent) => send(sender)(startAgent(agent))
         case Vector("stop", agent)  => send(sender)(stopAgent(agent))
         case Vector("remove", pathOrId) => send(sender)(remove(pathOrId))
-        case Vector("backup") => send(sender)(backupSubsAndDatabase)
-        case Vector("restore") => send(sender)(restoreSubsAndDatabase)
+        case Vector("backup", subFilePath, odfFilePath) => send(sender)(backupSubsAndDatabase(subFilePath, odfFilePath))
+        case Vector("restore", subFilePath, odfFilePath) => send(sender)(restoreSubsAndDatabase(subFilePath, odfFilePath))
         case Vector(cmd @ _*) => 
           log.warning(s"Unknown command from $ip: "+ cmd.mkString(" "))
           send(sender)("Unknown command. Use help to get information of current commands.\n>") 
