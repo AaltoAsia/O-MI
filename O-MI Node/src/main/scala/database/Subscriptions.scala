@@ -229,7 +229,8 @@ object CustomJsonProtocol extends DefaultJsonProtocol{
             "startTime" -> JsNull,
             "lastPolled" -> JsNull,
             "callback" -> JsString(callback.toString),
-            "paths" -> JsArray(paths.map(p => JsString(p.toString)))
+            "paths" -> JsArray(paths.map(p => JsString(p.toString))),
+            "data" -> JsNull
           )
         }
     }
