@@ -1,5 +1,5 @@
 package database
-package influxdb
+package influxDB
 
 import java.net.URLEncoder
 import java.sql.Timestamp
@@ -9,7 +9,7 @@ import java.util.Date
 import scala.math.Numeric
 import scala.annotation.tailrec
 import scala.collection.immutable.HashMap
-import scala.concurrent.Future
+import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
 import akka.actor.ActorSystem
@@ -56,15 +56,18 @@ object InfluxDBJsonProtocol extends DefaultJsonProtocol {
     def measurementNameToPath( measurementName: String ): Path = Path( measurementName.replace("\\=","=").replace("\\ "," ").replace("\\,",",") )
     class InfluxDBJsonShowDatabasesFormat() extends RootJsonFormat[Seq[String]] {
       def read(json: spray.json.JsValue): Seq[String] ={
-        val names: Seq[String] = getSeries(json).collect{
+        val series: Seq[JsValue] = getSeries(json)
+        //println( s"Got ${series.lenght} from show databases" ) 
+        val names : Seq[String]= series.collect{
           case serie: JsObject =>
+
             serie.getFields( "name", "columns", "values") match{
-              case Seq(JsString("measurements"), JsArray(Seq(JsString("name"))), JsArray( values )) =>
+              case Seq(JsString("databases"), JsArray(Seq(JsString("name"))), JsArray( values )) =>
                 values.collect{
                   case JsArray(Seq(JsString(dbName))) => dbName
                 }.toVector
 
-                  case seq: Seq[JsValue] => Vector.empty
+              case seq: Seq[JsValue] => Vector.empty
             }
         }.flatten
         names
@@ -133,7 +136,7 @@ object InfluxDBJsonProtocol extends DefaultJsonProtocol {
 }
 
 class InfluxDBImplementation(
-  protected val config: OmiConfigExtension with InfluxDBConfigExtension 
+  protected val config: InfluxDBConfigExtension 
 )(
   implicit val system: ActorSystem,
   protected val singleStores: SingleStores
@@ -150,9 +153,9 @@ class InfluxDBImplementation(
   }
 
 
-  protected val writeAddress: Uri = config.influxDBWriteAddress //Get from config
+  protected val writeAddress: Uri = config.writeAddress //Get from config
   log.info(s"Write address of InfluxDB instance $writeAddress")
-  protected val readAddress: Uri = config.influxDBQueryAddress //Get from config
+  protected val readAddress: Uri = config.queryAddress //Get from config
   log.info(s"Read address of InfluxDB instance $readAddress")
 
  import system.dispatcher // execution context for futures
@@ -175,8 +178,59 @@ class InfluxDBImplementation(
   }
 
   def initialize(): Unit = {
-    
+    val initialisation = httpResponseToStrict(sendQuery("show databases")).flatMap{
+       case entity : HttpEntity.Strict =>
+         val ent = entity.copy(contentType =`application/json`)
 
+         implicit val showDatabaseFormat = new InfluxDBJsonProtocol.InfluxDBJsonShowDatabasesFormat()
+         Unmarshal(ent).to[Seq[String]].map{
+           case databases: Seq[String] =>
+             log.debug( s" Found following databases: ${databases.mkString(", ")}")
+             if( databases.contains( config.databaseName ) ){
+               //Everything okay
+               log.info( s"Database ${config.databaseName} found from InfluxDB at address ${config.address}")
+                   Future.successful()
+             } else {
+               //Create or error
+               log.warning( s"Database ${config.databaseName} not found from InfluxDB at address ${config.address}")
+               log.warning( s"Creating database ${config.databaseName} to InfluxDB in address ${config.address}")
+               sendQuery(s"create database ${config.databaseName} ").flatMap{
+                 case response @ HttpResponse( status, headers, entity, protocol ) if status.isSuccess =>
+                    log.info( s"Database ${config.databaseName} created seccessfully to InfluxDB at address ${config.address}")
+                   Future.successful()
+                 case response @ HttpResponse( status, headers, entity, protocol ) if status.isFailure =>
+                   entity.toStrict(10.seconds).flatMap{ stricted => Unmarshal(stricted).to[String].map{
+                     str =>
+                       log.error( s"Database ${config.databaseName} could not be created to InfluxDB at address ${config.address}")
+                       log.warning(s""" Query returned $status with:\n $str""")
+                       throw new Exception( str)
+                   }}
+               }
+
+             }
+         }
+     }
+    
+    Await.result( initialisation, 1 minutes)
+  }
+  initialize()
+  def sendQuery( query: String ) : Future[HttpResponse] ={
+    val httpEntity = FormData( ("q", query)).toEntity( HttpCharsets.`UTF-8` )
+    val request = RequestBuilding.Post(readAddress, httpEntity).withHeaders(AcceptHeader("application/json"))
+    val responseF : Future[HttpResponse] = httpExt.singleRequest(request)//httpHandler(request)
+    responseF
+  }
+  def httpResponseToStrict( futureResponse: Future[HttpResponse] ) ={
+    futureResponse.flatMap{
+       case response @ HttpResponse( status, headers, entity, protocol ) if status.isSuccess =>
+         entity.toStrict(10.seconds)
+       case response @ HttpResponse( status, headers, entity, protocol ) if status.isFailure =>
+         entity.toStrict(10.seconds).flatMap{ stricted => Unmarshal(stricted).to[String].map{
+           str =>
+             log.warning(s""" Query returned $status with:\n $str""")
+             throw new Exception( str)
+         }}
+     }
   }
 
   def writeMany(data: Seq[OdfInfoItem]): Future[OmiReturn] ={
@@ -279,7 +333,7 @@ class InfluxDBImplementation(
    private def read(content : String, requestedODF: ODF) = {
     val httpEntity = FormData( ("q", content)).toEntity( HttpCharsets.`UTF-8` )
      val request = RequestBuilding.Post(readAddress, httpEntity).withHeaders(AcceptHeader("application/json"))
-     log.info( s"Sending following request\n${content.toString}")
+     log.debug( s"Sending following request\n${content.toString}")
      val responseF : Future[HttpResponse] = httpExt.singleRequest(request)//httpHandler(request)
      val formatedResponse = responseF.flatMap{
        case response @ HttpResponse( status, headers, entity, protocol ) if status.isSuccess =>
