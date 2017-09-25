@@ -127,7 +127,7 @@ case class ParkingFacility(
         )
         }.toVector
     val spaces = OdfObject(
-      Vector( QlmID( "ParkingSpaces" ) ),
+      Vector( OdfQlmID( "ParkingSpaces" ) ),
       facilityPath / "ParkingSpaces",
       Vector(),
       parkingSpaces.map( _.toOdf(facilityPath / "ParkingSpaces") ).toVector,
@@ -135,7 +135,7 @@ case class ParkingFacility(
     )
 
     OdfObject(
-      Vector( QlmID( name ) ),
+      Vector( OdfQlmID( name ) ),
       facilityPath,
       iis ++ calculatedIIs,
       geo.map( _.toOdf(facilityPath, "geo" )).toVector ++ openingHours.map( _.toOdf( facilityPath)).toVector ++ Vector( spaces ),
@@ -158,7 +158,7 @@ case class OpeningHoursSpecification(
   def toOdf( parentPath: Path ) ={
     val ohsPath = parentPath / "openingHoursSpecification"
     OdfObject( 
-      Vector( QlmID( "openingHoursSpecification"  ) ),
+      Vector( OdfQlmID( "openingHoursSpecification"  ) ),
       ohsPath,
       Vector(
         opens.map{ time: String  => 
@@ -226,7 +226,7 @@ case class GPSCoordinates(
   def toOdf( parentPath: Path, objectName: String ) ={
     val geoPath = parentPath / objectName
     OdfObject(
-      Vector( QlmID( objectName ) ),
+      Vector( OdfQlmID( objectName ) ),
       geoPath,
       Vector( 
         latitude.map{ l: Double => 
@@ -310,7 +310,7 @@ case class PostalAddress(
     }
 
     OdfObject(
-      Vector( QlmID( "address" ) ),
+      Vector( OdfQlmID( "address" ) ),
       addressPath,
       Vector(countryII, localityII, regionII, streetII, postCodeII ).flatten,
       Vector(),

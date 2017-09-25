@@ -332,7 +332,7 @@ class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with Bef
   def addSubForObject(ttl: Long, interval: Long, path: String, callback: String = "") = {
     val hTree = singleStores.hierarchyStore execute GetTree()
     val pp = Path("Objects/SubscriptionTest/")
-    val odf = OdfTypes.createAncestors(OdfObject(OdfTreeCollection(QlmID(path)),pp / path))
+    val odf = OdfTypes.createAncestors(OdfObject(OdfTreeCollection(OdfQlmID(path)),pp / path))
     val req = SubscriptionRequest( interval seconds, odf, None, None, None, ttl seconds)
     implicit val timeout : Timeout = req.handleTTL
     Await.result((requestHandler ? req).mapTo[ResponseRequest], Duration.Inf)

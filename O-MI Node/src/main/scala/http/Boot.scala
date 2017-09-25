@@ -33,6 +33,7 @@ import akka.util.Timeout
 import akka.http.scaladsl.{HttpExt, Http}
 import akka.http.scaladsl.Http.ServerBinding
 import akka.http.scaladsl.server.RouteResult // implicit route2HandlerFlow
+import akka.stream.{ActorMaterializer, Materializer}
 //import akka.http.WebBoot
 //import akka.http.javadsl.ServerBinding
 
@@ -45,7 +46,7 @@ import types.OmiTypes.{OmiReturn,OmiResult,Results,WriteRequest,ResponseRequest}
 import types.OmiTypes.Returns.ReturnTypes._
 import types.Path
 import OmiServer._
-import akka.stream.{ActorMaterializer, Materializer}
+import influxDB._
 
 class OmiServer extends OmiNode{
 
@@ -61,11 +62,24 @@ class OmiServer extends OmiNode{
   val settings : OmiConfigExtension = OmiConfig(system)
 
   val singleStores = new SingleStores(settings)
-  val dbConnection: DB = new DatabaseConnection()(
+  val dbConnection: DB  = settings.databaseImplementation match {
+    case "slick" => new DatabaseConnection()(
+      system,
+      singleStores,
+      settings
+    )
+    case "influxDB" => new InfluxDBImplementation( 
+       InfluxDBConfig( system )
+      )( system, singleStores )
+    case "warp10" => ???
+  }
+/*
+  val dbConnection: DB = new influxdb.InfluxDBImplementation(
+    InfluxDB(system)
+    )(
     system,
-    singleStores,
-    settings
-  )
+    singleStores
+  )*/
 
   val callbackHandler: CallbackHandler = new CallbackHandler(settings)( system, materializer)
   val analytics: Option[ActorRef] =

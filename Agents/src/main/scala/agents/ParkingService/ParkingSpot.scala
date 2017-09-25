@@ -59,7 +59,7 @@ case class ParkingSpace(
       ) 
     }.toVector
     OdfObject( 
-      Vector( QlmID( name ) ),
+      Vector( OdfQlmID( name ) ),
       spotPath,
       availableII ++ userII,
       charger.map{ ch => ch.toOdf( spotPath ) }.toVector,

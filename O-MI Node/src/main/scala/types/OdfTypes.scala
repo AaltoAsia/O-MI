@@ -35,7 +35,7 @@ object OdfTreeCollection {
   import scala.language.implicitConversions
   implicit def seqToOdfTreeCollection[E](s: Iterable[E]): OdfTreeCollection[E] = OdfTreeCollection.fromIterable(s)
 }
-object QlmID{
+object OdfQlmID{
 
   case class TimeWindow(
     val start: Option[Timestamp] = None, 
@@ -90,7 +90,7 @@ object QlmID{
     }
   }
 }
-case class QlmID(
+case class OdfQlmID(
   val value:String,
   val idType: Option[String] = None,
   val tagType: Option[String] = None,
@@ -98,13 +98,13 @@ case class QlmID(
   val endDate: Option[Timestamp] = None,
   val attributes: HashMap[String, String] = HashMap()
 ){
-  import QlmID._
+  import OdfQlmID._
   lazy val validityTimeWindow: Option[TimeWindow] ={
   if( startDate.nonEmpty || endDate.nonEmpty ) Some(TimeWindow( startDate, endDate))
     else None
   }
 
-  def unionableIdType( that: QlmID ) ={
+  def unionableIdType( that: OdfQlmID ) ={
       (idType, that.idType) match {
         case (Some(id), Some(otherId)) =>  
           id == otherId
@@ -113,7 +113,7 @@ case class QlmID(
         case (None, None) => true
       }
   }
-  def unionableTagType( that: QlmID ) ={
+  def unionableTagType( that: OdfQlmID ) ={
       (tagType, that.tagType) match {
         case (Some(tag), Some(otherTag)) =>  
           tag == otherTag
@@ -122,7 +122,7 @@ case class QlmID(
         case (None, None) => true
       }
   }
-  def unionableValidityTimeWindow( that: QlmID ) ={
+  def unionableValidityTimeWindow( that: OdfQlmID ) ={
       (validityTimeWindow, that.validityTimeWindow) match {
         case (Some(tw), Some(ovtw)) =>  
           tw.intersect(ovtw)
@@ -131,13 +131,13 @@ case class QlmID(
         case (None, None) => true
       }
   }
-  def unionable( that: QlmID ) = {
+  def unionable( that: OdfQlmID ) = {
     value == that.value && 
     unionableIdType(that) && 
     unionableTagType(that) && 
     unionableValidityTimeWindow(that)
   }
-  def union( that: QlmID ): QlmID ={
+  def union( that: OdfQlmID ): OdfQlmID ={
     assert( unionable( that) )
     val tw: Option[TimeWindow] = (validityTimeWindow, that.validityTimeWindow) match {
       case (Some(tw), Some(ovtw)) => Some(tw.union(ovtw))
@@ -145,7 +145,7 @@ case class QlmID(
       case (Some(tw), None ) => Some(tw)
       case (None, None) => None
     }
-    QlmID(
+    OdfQlmID(
       value,
       idType.orElse(that.idType),
       tagType.orElse(that.tagType),
@@ -293,7 +293,7 @@ case class OdfObjects(
 
 /** Class presenting O-DF Object structure*/
 case class OdfObject(
-  id: OdfTreeCollection[QlmID],
+  id: OdfTreeCollection[OdfQlmID],
   path: Path,
   infoItems: OdfTreeCollection[OdfInfoItem] = OdfTreeCollection(),
   objects: OdfTreeCollection[OdfObject] = OdfTreeCollection(),

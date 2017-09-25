@@ -23,12 +23,11 @@ import scala.concurrent.{Future, duration}
 import scala.util.Try
 import scala.concurrent.duration._
 import scala.collection.immutable.HashMap
-
-import akka.actor.{Cancellable, Actor, ActorLogging, Props}
+import akka.actor.{Actor, ActorLogging, Cancellable, Props}
 import database._
-import http.CLICmds.{ ListSubsCmd, SubInfoCmd}
-import http.{OmiConfigExtension}
-import responses.CallbackHandler.{ MissingConnection, CallbackFailure}
+import http.CLICmds.{GetSubsWithPollData, ListSubsCmd, SubInfoCmd}
+import http.OmiConfigExtension
+import responses.CallbackHandler.{CallbackFailure, MissingConnection}
 import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 import types.OdfTypes._
 import types.OmiTypes._
@@ -57,6 +56,16 @@ case class RemoveSubscription(id: Long)
  * @param id
  */
 case class SubscriptionTimeout(id: Long)
+
+case class AllSubscriptions(intervals: Set[IntervalSub], events: Set[EventSub], polls: Set[PolledSub])
+
+/**
+  * Used for loading subscriptions during runtime
+  *
+  * @param subs list of subscriptions to be added along with optional poll subscription data
+  */
+case class LoadSubs(subs: Seq[(SavedSub, Option[SubData])])
+
 
 /**
  * Event for polling pollable subscriptions
@@ -130,7 +139,6 @@ class SubscriptionManager(
 
   //TODO FIX handleIntervals() //when server restarts
 
-
   def receive: PartialFunction[Any, Unit] = {
     case NewSubscription(subscription) => sender() ! subscribe(subscription)
     case HandleIntervals(id) => handleIntervals(id)
@@ -138,8 +146,55 @@ class SubscriptionManager(
     case SubscriptionTimeout(id) => removeSubscription(id)
     case PollSubscription(id) => sender() ! pollSubscription(id)
     case ListSubsCmd() => sender() ! getAllSubs()
+    case GetSubsWithPollData() => sender() ! getSubsWithPollData()
     case SubInfoCmd(id) => sender() ! getSub(id)
+    case LoadSubs(subs: Seq[(SavedSub, Option[SubData])]) => sender() ! loadSub(subs)
   }
+
+  /**
+    * Used to load subscriptions during runtime using cli
+    *
+    * @param subs list of subs and optional poll subscription data
+    */
+  private def loadSub(subs: Seq[(SavedSub, Option[SubData])]): Unit = {
+    subs.foreach{
+      case (sub: PolledEventSub, data) =>{
+        singleStores.subStore execute AddPollSub(sub)
+
+        data.foreach(sData => {
+          for {
+            (path, data) <- sData.pathData
+            value <- data
+            res = singleStores.pollDataPrevayler execute AddPollData(sub.id, path, value)
+          } yield res
+        })
+      }
+      case (sub: PollIntervalSub, data) => {
+        singleStores.subStore execute AddPollSub(sub)
+
+        data.foreach(sData => {
+          for {
+            (path, data) <- sData.pathData
+            value <- data
+            res = singleStores.pollDataPrevayler execute AddPollData(sub.id, path, value)
+          } yield res
+        })
+      }
+      case (sub:EventSub,_) => {
+        singleStores.subStore execute AddEventSub(sub)
+      }
+      case (sub: IntervalSub, _) => {
+        singleStores.subStore execute AddIntervalSub(sub)
+
+        intervalMap.put(sub.id, intervalScheduler.schedule(sub.interval,sub.interval,self,HandleIntervals(sub.id)))
+
+
+      }
+      case sub => log.error("Unknown subscription:" + sub)
+      }
+    }
+
+
 
   private def handlePollEvent(pollEvent: PolledEventSub) = {
     log.debug(s"Creating response message for Polled Event Subscription")
@@ -361,7 +416,23 @@ class SubscriptionManager(
     val intervalSubs = singleStores.subStore execute GetAllIntervalSubs()
     val eventSubs = singleStores.subStore execute GetAllEventSubs()
     val pollSubs = singleStores.subStore execute GetAllPollSubs()
-    (intervalSubs, eventSubs, pollSubs)
+    AllSubscriptions(intervalSubs, eventSubs, pollSubs)
+  }
+
+  private def getSubsWithPollData(): List[(SavedSub, Option[SubData])] = {
+    val allSubs = getAllSubs()
+    (allSubs.events ++ allSubs.intervals ++ allSubs.polls).collect{
+        case e: EventSub => (e, None)
+        case i: IntervalSub => (i, None)
+        case pe: PolledEventSub => {
+          (pe,
+            Some(SubData((singleStores.pollDataPrevayler execute CheckSubscriptionData(pe.id)).map(identity)(collection.breakOut))))
+        }
+        case pi: PollIntervalSub =>{
+          (pi,
+            Some(SubData((singleStores.pollDataPrevayler execute CheckSubscriptionData(pi.id)).map(identity)(collection.breakOut))))
+        }
+      }.toList
   }
 
   private def getSub(id: Long) = {
