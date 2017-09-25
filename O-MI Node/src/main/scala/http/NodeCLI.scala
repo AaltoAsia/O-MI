@@ -280,33 +280,39 @@ class OmiNodeCLI(
   }
 
   private def backupSubsAndDatabase(subPath: String, odfPath: String) = {
-    val temp = for{
-      subs <- Try(backupSubscriptions(subPath))
-      data <- Try(backupDatabase(odfPath))
-    } yield data
-    "Done\n"
+    val res = Try(for{
+      subs <- backupSubscriptions(subPath)
+      data <- backupDatabase(odfPath)
+    } yield data)
+    res match {
+      case Success(s) => {"Success\n"}
+      case Failure(ex) => {
+        log.error(ex, "failure during backup")
+        "Failure\n"
+      }
+    }
   }
 
 import CustomJsonProtocol._
 import spray.json._
 
 
-  private def backupSubscriptions(filePath: String) = {
+  private def backupSubscriptions(filePath: String): Future[Unit] = {
     val allSubscriptions: Future[List[(SavedSub, Option[SubData])]] = (subscriptionManager ? GetSubsWithPollData()).mapTo[List[(SavedSub, Option[SubData])]]
 
     allSubscriptions.map(allSubs => {
-      val file = new File("subscriptions")
+      val file = new File(filePath)
       val bw = new BufferedWriter(new FileWriter(file))
       val res = JsArray(allSubs.map(_.toJson).toVector)
       bw.write(res.prettyPrint)
       bw.close()
     })
   }
-  private def backupDatabase(filePath: String) = {
+  private def backupDatabase(filePath: String): Future[Option[Unit]] = {
     val allData: Future[Option[OdfObjects]] = removeHandler.getAllData()
-    allData.map(allData => {
-      allData.map(odf => {
-        val file = new File("backupODF")
+    allData.map(aData => {
+      aData.map(odf => {
+        val file = new File(filePath)
         val bw = new BufferedWriter(new FileWriter(file))
         val res = odf.asXML
         val printer = new scala.xml.PrettyPrinter(200, 2)
@@ -317,20 +323,29 @@ import spray.json._
   }
 
   private def restoreSubsAndDatabase(subFilePath: String, odfFilePath: String) = {
-    val temp = for{
+    val temp: Try[String] = for{
       _   <- Try(restoreDatabase(odfFilePath))
       res <- Try(restoreSubs(subFilePath))
     } yield res
-    "Done\n"
+    temp match {
+      case Success(s) => {
+        "Success\n"
+      }
+      case Failure(ex) => {
+        log.error(ex, "Failure when restoring subs and Database")
+        "Failure\n"
+      }
+    }
   }
 
   private def restoreDatabase(filePath: String) = {
-    val parsed: OdfParseResult = parsing.OdfParser.parse(new File("backupODF"))
+    val parsed: OdfParseResult = parsing.OdfParser.parse(new File(filePath))
     parsed.right.map(removeHandler.writeOdf(_))
+    "Done\n"
   }
 
   private def restoreSubs(filePath: String) = {
-    val json: JsValue = Source.fromFile("subscriptions").getLines().mkString.parseJson
+    val json: JsValue = Source.fromFile(filePath).getLines().mkString.parseJson
     val subs: Seq[(SavedSub, Option[SubData])] = json match {
       case JsArray(subscriptions: Vector[JsObject]) => subscriptions.map(_.convertTo[(SavedSub, Option[SubData])])
     }
