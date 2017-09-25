@@ -1,8 +1,9 @@
 package types 
 package odf
 
-import java.util.Date
 import java.sql.Timestamp
+import java.util.{Date, GregorianCalendar}
+import javax.xml.datatype.{DatatypeFactory, XMLGregorianCalendar}
 
 import scala.xml.Utility.trim
 import scala.collection.immutable.HashMap
@@ -348,9 +349,9 @@ class OdfTypesTest extends mutable.Specification{
                     <InfoItem name="A"/>
                     <InfoItem name="B"/>
                 </MetaData>
-                <value unixTime="1494506695" type="xs:int" dateTime="2017-05-11T15:44:55.000+03:00">93</value>
-                <value unixTime="1494506695" type="xs:float" dateTime="2017-05-11T15:44:55.000+03:00">51.9</value>
-                <value unixTime="1494506695" dateTime="2017-05-11T15:44:55.000+03:00">81.5</value>
+                <value unixTime={(testTime.getTime / 1000).toString} type="xs:int" dateTime={timestampToXML(testTime).toString} >93</value>
+                <value unixTime={(testTime.getTime / 1000).toString} type="xs:float" dateTime={timestampToXML(testTime).toString} >51.9</value>
+                <value unixTime={(testTime.getTime / 1000).toString} dateTime={timestampToXML(testTime).toString} >81.5</value>
             </InfoItem>
         </Object>
         <Object>
@@ -460,11 +461,11 @@ class OdfTypesTest extends mutable.Specification{
               OdfPath("Objects/SmartHouse/PowerConsumption"), Vector(
                 OdfValue(
                   "180", "xs:string",
-                    Timestamp.valueOf("2014-12-18 15:34:52"))), None, None), OdfInfoItem(
+                    testTime)), None, None), OdfInfoItem(
               OdfPath("Objects/SmartHouse/Moisture"), Vector(
                 OdfValue(
                   "0.20", "xs:string",
-                    new Timestamp(1418916892L * 1000))), None, None)), Vector(
+                    testTime)), None, None)), Vector(
             OdfObject(
             Vector(),
               OdfPath("Objects/SmartHouse/SmartFridge"), Vector(
@@ -472,14 +473,14 @@ class OdfTypesTest extends mutable.Specification{
                   OdfPath("Objects/SmartHouse/SmartFridge/PowerConsumption"), Vector(
                     OdfValue(
                       "56", "xs:string",
-                        Timestamp.valueOf("2014-12-18 15:34:52"))), None, None)), Vector(), None, None), OdfObject(
+                        testTime)), None, None)), Vector(), None, None), OdfObject(
             Vector(),
               OdfPath("Objects/SmartHouse/SmartOven"), Vector(
                 OdfInfoItem(
                   OdfPath("Objects/SmartHouse/SmartOven/PowerOn"), Vector(
                     OdfValue(
                       "1", "xs:string",
-                        Timestamp.valueOf("2014-12-18 15:34:52"))), None, None)), Vector(), None, None)), None, None), OdfObject(
+                        testTime)), None, None)), Vector(), None, None)), None, None), OdfObject(
         Vector(),
           OdfPath("Objects/SmartCar"), Vector(
             OdfInfoItem(
@@ -487,7 +488,7 @@ class OdfTypesTest extends mutable.Specification{
               Vector(OdfValue(
                   "30",
                   "xs:string",
-                  Timestamp.valueOf("2014-12-18 15:34:52")
+                  testTime
               )), 
               None, 
               Some(OdfMetaData(
@@ -496,7 +497,7 @@ class OdfTypesTest extends mutable.Specification{
                   Vector(OdfValue(
                     "Litre",
                     "xs:string",
-                    Timestamp.valueOf("2014-12-18 15:34:52")
+                    testTime
                   ))
                 ))
               ))
@@ -512,4 +513,9 @@ class OdfTypesTest extends mutable.Specification{
             Vector(),
               OdfPath("Objects/SmartCottage/Weather"), Vector(), Vector(), None, None)), None, None)), None)
   }
+ def timestampToXML(timestamp: Timestamp) : XMLGregorianCalendar ={
+   val cal = new GregorianCalendar()
+   cal.setTime(timestamp)
+   DatatypeFactory.newInstance().newXMLGregorianCalendar(cal)
+ }
 }
