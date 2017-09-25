@@ -53,11 +53,11 @@ object CLICmds
 import http.CLICmds._
 object OmiNodeCLI{
   def props(
-    connection: ActorRef,
-    sourceAddress: InetSocketAddress,   
-    removeHandler: RemoveHandlerT,
-    agentSystem: ActorRef,
-    subscriptionManager: ActorRef
+             connection: ActorRef,
+             sourceAddress: InetSocketAddress,
+             removeHandler: CLIHelperT,
+             agentSystem: ActorRef,
+             subscriptionManager: ActorRef
     )(
       ) : Props = Props(
         new OmiNodeCLI(
@@ -73,11 +73,11 @@ object OmiNodeCLI{
  *
  */
 class OmiNodeCLI(
-  protected val connection: ActorRef,
-  protected val sourceAddress: InetSocketAddress,   
-  protected val removeHandler: RemoveHandlerT,
-  protected val agentSystem: ActorRef,
-  protected val subscriptionManager: ActorRef
+                  protected val connection: ActorRef,
+                  protected val sourceAddress: InetSocketAddress,
+                  protected val removeHandler: CLIHelperT,
+                  protected val agentSystem: ActorRef,
+                  protected val subscriptionManager: ActorRef
 ) extends Actor with ActorLogging {
 
   val commands = """Current commands:
@@ -421,7 +421,7 @@ class OmiNodeCLIListener(
     case Connected(remote, local) =>
       val connection = sender()
       log.info(s"CLI connected from $remote to $local")
-      val remover = new RemoveHandler(singleStores, dbConnection )(system)
+      val remover = new CLIHelper(singleStores, dbConnection )(system)
 
       val cli = context.system.actorOf(
         OmiNodeCLI.props(connection, remote,remover,agentSystem, subscriptionManager),

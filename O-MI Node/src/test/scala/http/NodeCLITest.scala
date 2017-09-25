@@ -21,13 +21,14 @@ import com.typesafe.config.{Config, ConfigFactory}
 import testHelpers.Actorstest
 import types.Path
 import types.OmiTypes._
-import responses.{AllSubscriptions, RemoveHandlerT, RemoveSubscription}
+import responses.{AllSubscriptions, CLIHelperT, RemoveSubscription}
 import agentSystem.{AgentInfo, AgentName, Java, SSAgent, Scala, TestDummyDBHandler, TestDummyRequestHandler, TestManager}
 import akka.util.{ByteString, Timeout}
 import akka.http.scaladsl.model.Uri
 import akka.io.Tcp.{Received, Write}
 import database.{EventSub, IntervalSub, PollEventSub, PollIntervalSub, PolledSub, SavedSub}
 import http.CLICmds._
+import types.OdfTypes.OdfObjects
 
 
 
@@ -72,8 +73,9 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
     }
   }
 
-  class RemoveTester( path: Path)extends RemoveHandlerT{
-
+  class RemoveTester( path: Path)extends CLIHelperT{
+    val getAllData: Future[Option[OdfObjects]] = Future.failed((new Exception("not implemented")))
+    def writeOdf(odf:OdfObjects) = Unit
     override def handlePathRemove(parentPath: Path): Boolean = { 
       path == parentPath || path.isAncestorOf(parentPath)
     }

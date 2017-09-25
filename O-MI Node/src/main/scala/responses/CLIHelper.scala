@@ -25,15 +25,15 @@ import types.OdfTypes._
 import types._
 import http.{ActorSystemContext, OmiServer, Storages}
 
-trait RemoveHandlerT{
+trait CLIHelperT{
   def handlePathRemove(parentPath: Path): Boolean
   def getAllData(): Future[Option[OdfObjects]]
   def writeOdf(odf: OdfObjects): Unit
   }
-class RemoveHandler(val singleStores: SingleStores, dbConnection: DB )(implicit system: ActorSystem) extends RemoveHandlerT{
+class CLIHelper(val singleStores: SingleStores, dbConnection: DB )(implicit system: ActorSystem) extends CLIHelperT{
 
-  implicit val logSource: LogSource[RemoveHandler]= new LogSource[RemoveHandler] {
-      def genString( handler:  RemoveHandler) = handler.toString
+  implicit val logSource: LogSource[CLIHelper]= new LogSource[CLIHelper] {
+      def genString( handler:  CLIHelper) = handler.toString
     }
   protected val log: LoggingAdapter = Logging( system, this)
 
