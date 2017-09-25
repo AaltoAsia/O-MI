@@ -28,9 +28,6 @@ import com.typesafe.config.Config
 import com.typesafe.config.ConfigException._
 import types.Path
 
-
-
- 
 class OmiConfigExtension( val config: Config) extends Extension 
   with AgentSystemConfigExtension {
 
@@ -136,6 +133,7 @@ class OmiConfigExtension( val config: Config) extends Extension
   //connection fails
   val websocketQueueSize : Int = config.getInt("omi-service.websocket-queue-size")
 
+  val databaseImplementation : String = config.getString( "omi-service.database" )
 }
 
 

@@ -531,7 +531,7 @@ temp should be equalTo Right(Iterable(ReadRequest(OdfObjects())))
       ))
 
   val object1 = createAncestors(OdfObject(
-    Vector( new QlmID("Heater")),
+    Vector( new OdfQlmID("Heater")),
     Path("Objects/SmartCottage/Heater")
   ))
     item1.union( item2 ).union( item3 ).union( object1 ) 
@@ -634,7 +634,7 @@ None
     ))
 
 val object1 = createAncestors(OdfObject(
-  Vector( new QlmID("Heater")),
+  Vector( new OdfQlmID("Heater")),
   Path("Objects/SmartCottage/Heater")
 ))
     item1.union( item2 ).union( item3 ).union( object1 ) 

@@ -22,9 +22,9 @@ import java.sql.Timestamp
 import javax.xml.datatype.XMLGregorianCalendar
 
 import scala.language.existentials
+import scala.util.{Failure, Success, Try}
 import scala.xml.NodeSeq
 import scala.collection.JavaConversions
-
 
 import parsing.xmlGen.scalaxb.DataRecord
 import parsing.xmlGen.xmlTypes._
@@ -154,14 +154,14 @@ package object OdfTypes {
 
     last match {
       case info: OdfInfoItem =>
-        val parent = OdfObject(OdfTreeCollection(QlmID(parentPath.last)), parentPath, OdfTreeCollection(info), OdfTreeCollection())
+        val parent = OdfObject(OdfTreeCollection(OdfQlmID(parentPath.last)), parentPath, OdfTreeCollection(info), OdfTreeCollection())
         createAncestors(parent)
 
       case obj: OdfObject =>
         if (parentPath.length == 1)
           OdfObjects(OdfTreeCollection(obj))
         else {
-          val parent = OdfObject(OdfTreeCollection(QlmID(parentPath.last)),parentPath, OdfTreeCollection(), OdfTreeCollection(obj))
+          val parent = OdfObject(OdfTreeCollection(OdfQlmID(parentPath.last)),parentPath, OdfTreeCollection(), OdfTreeCollection(obj))
           createAncestors(parent)
         }
 

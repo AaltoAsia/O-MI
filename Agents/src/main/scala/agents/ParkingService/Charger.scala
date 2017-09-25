@@ -70,7 +70,7 @@ case class Charger(
         )
     }
     OdfObject(
-      Vector( QlmID( "Charger" )),
+      Vector( OdfQlmID( "Charger" )),
       chargerPath,
       brandII ++ modelII,
       plug.map( _.toOdf( chargerPath ) ).toVector ,

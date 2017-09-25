@@ -449,7 +449,7 @@ class ParkingAgent(
   }
   def getCurrentParkingFacilities: Future[Vector[ParkingFacility]]={
     val request = ReadRequest(
-      OdfObject( Vector(QlmID(parkingLotsPath.last)),parkingLotsPath).createAncestors
+      OdfObject( Vector(OdfQlmID(parkingLotsPath.last)),parkingLotsPath).createAncestors
     )
 
     val result = readFromDB(request)
