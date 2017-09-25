@@ -239,38 +239,44 @@ class InfluxDBImplementation(
     if( oldestO.nonEmpty ){
       Future.failed( new Exception("Oldest attribute is not allowed with InfluxDB."))
     } else {
-      lazy val filteringClause ={
-        val whereClause = ( beginO, endO ) match{
-          case (Some( begin), Some(end)) => s" WHERE time >= '${begin.toString}' AND time <= '${end.toString}' "
-          case (None, Some(end)) => s" WHERE time <= '${end.toString}' "
-          case (Some( begin), None) => s" WHERE time >= '${begin.toString}' "
-          case (None, None) => ""
-        }
-        val limitClause = newestO.map{
-          n: Int =>
-            s" LIMIT $n "
-        }.getOrElse{
-          if( beginO.isEmpty && endO.isEmpty ) " LIMIT 1 " else ""
-        }
-        whereClause + " ORDER BY time DESC " + limitClause
-      }
       val cachedODF = OldTypeConverter.convertOdfObjects(singleStores.hierarchyStore execute GetTree())
-      log.info( "Requested ODF:\n" + requestODF.toString)
-      log.info( "Cached ODF:\n" + cachedODF.toString)
-      val requestedIIs = cachedODF.select(requestODF).getInfoItems
-      log.info( "Intersecting ODF:\n" + cachedODF.select(requestODF).toString)
-      //XXX: What about Objects/ read all?
-      if( requestedIIs.nonEmpty ){
-        val iiQueries = getNBetweenInfoItemsQueryString(requestedIIs, filteringClause)
-        read( iiQueries )
-      } else Future{
-        Some( cachedODF.select(requestODF).immutable )
-      }
+      val requestedODF = cachedODF.select(requestODF)
+      val requestedIIs = requestedODF.getInfoItems
+      if( beginO.isEmpty && endO.isEmpty && newestO.isEmpty ){
+        val pathToValue = singleStores.latestStore execute LookupSensorDatas( requestedIIs.map( _.path ).toVector) 
+        val odfWithValues = ImmutableODF(pathToValue.map{
+          case ( path: Path, value: OdfValue[Any]) => InfoItem( path.last, path, values = Vector( OldTypeConverter.convertOdfValue(value)))
+        })
+        Future{ Some(requestedODF.union(odfWithValues).immutable) }
+      } else {
+        lazy val filteringClause ={
+          val whereClause = ( beginO, endO ) match{
+            case (Some( begin), Some(end)) => s" WHERE time >= '${begin.toString}' AND time <= '${end.toString}' "
+            case (None, Some(end)) => s" WHERE time <= '${end.toString}' "
+            case (Some( begin), None) => s" WHERE time >= '${begin.toString}' "
+            case (None, None) => ""
+          }
+          val limitClause = newestO.map{
+            n: Int =>
+              s" LIMIT $n "
+          }.getOrElse{
+            if( beginO.isEmpty && endO.isEmpty ) " LIMIT 1 " else ""
+          }
+          whereClause + " ORDER BY time DESC " + limitClause
+        }
 
+        //XXX: What about Objects/ read all?
+        if( requestedIIs.nonEmpty ){
+          val iiQueries = getNBetweenInfoItemsQueryString(requestedIIs, filteringClause)
+          read( iiQueries, requestedODF )
+        } else Future{
+          Some( requestedODF.immutable )
+        }
+      }
 
     }
   }
-   private def read(content : String) = {
+   private def read(content : String, requestedODF: ODF) = {
     val httpEntity = FormData( ("q", content)).toEntity( HttpCharsets.`UTF-8` )
      val request = RequestBuilding.Post(readAddress, httpEntity).withHeaders(AcceptHeader("application/json"))
      log.info( s"Sending following request\n${content.toString}")
@@ -292,8 +298,8 @@ class InfluxDBImplementation(
          Unmarshal(ent).to[ImmutableODF].map{
            case odf: ImmutableODF =>
              log.info( s"Influx O-DF:\n$odf" )
-             if( odf.getPaths.length < 2) None
-             else Some( odf )
+             if( odf.getPaths.length < 2 && requestedODF.getPaths.length < 2) None
+             else Some( requestedODF.union(odf).immutable )
          }
 
      }
