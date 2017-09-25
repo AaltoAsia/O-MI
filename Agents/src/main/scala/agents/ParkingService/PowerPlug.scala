@@ -123,7 +123,7 @@ case class PowerPlug(
     }.toVector
 
     OdfObject(
-      Vector( QlmID("Plug")),
+      Vector( OdfQlmID("Plug")),
       plugPath,
       pTII ++ 
       powerII ++ 

@@ -68,7 +68,16 @@ import OmiTypes.ResponseRequest
      * @param id QlmID to be added to end of Path.
      * @return new path with added id at end.
      */
-    def /(id: OdfTypes.QlmID): Path = {
+    def /(id: odf.QlmID): Path = {
+      Path(this.pathSeq ++ Seq(id.id.replace("/","\\/")))
+    }
+
+    /**
+     * Add new id/name to end of paths
+     * @param id QlmID to be added to end of Path.
+     * @return new path with added id at end.
+     */
+    def /(id: OdfTypes.OdfQlmID): Path = {
       Path(this.pathSeq ++ Seq(id.value.replace("/","\\/")))
     }
 
