@@ -659,6 +659,18 @@ window.WebOmi = formLogicExt($, window.WebOmi || {})
         formLogic.clearResponse()
         $('.clearHistory').trigger 'click'
 
+    consts.sortOdfTreeCheckbox
+      .on 'change', ->
+        tree = consts.odfTreeDom.jstree()
+        if this.checked
+          tree.settings.sort = (a,b) ->
+            if this.get_text(a) > this.get_text(b) then 1 else -1
+          root = tree.get_node $ "#Objects"
+          tree.sort root, true
+          tree.redraw_node root, true
+        else
+          tree.settings.sort = (a,b) -> -1
+
 
     # TODO: maybe move these to centralized place consts.ui._.something
     # These widgets have a special functionality, others are in consts.ui._
