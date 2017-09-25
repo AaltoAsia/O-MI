@@ -1,5 +1,5 @@
 
-###########################################################################
+######################################################################
 #  Copyright (c) 2015 Aalto University.
 #
 #  Licensed under the 4-clause BSD (the "License");
@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-##########################################################################
+######################################################################
 
 # import WebOmi, add submodule
 omiExt = (WebOmi) ->
@@ -47,7 +47,7 @@ omiExt = (WebOmi) ->
     omi : "http://www.opengroup.org/xsd/omi/1.0/"
     odf : "http://www.opengroup.org/xsd/odf/1.0/"
   #  xsi : "http://www.w3.org/2001/XMLSchema-instance"
-  #  xs  : "http://www.w3.org/2001/XMLSchema-instance"
+  #  xs  : "http://www.w3.org/......."
 
   # XML Namespace resolver, (defaults to odf)
   my.nsResolver = (name) ->
@@ -139,7 +139,7 @@ omiExt = (WebOmi) ->
   # Checks if odfNode has odf element child with id or name of odfId
   # odfId: String, object name or infoitem name
   # odfNode: XmlNode, parent of whose children are checked
-  # return Maybe XmlNode
+  # return: Maybe XmlNode
   my.getOdfChild = (odfId, odfNode) ->
     for child in odfNode.childNodes
       if my.getOdfId(child) == odfId
@@ -153,6 +153,12 @@ omiExt = (WebOmi) ->
       if maybeId? && maybeId != ""
         return true
     return false
+
+  # Return direct Object and InfoItem children of Objects or Object
+  # xmlNode: XmlNode
+  # return: List XmlNode
+  my.getObjectChildren = (xmlNode) ->
+      my.evaluateXPath xmlNode, './odf:InfoItem | ./odf:Object'
 
 
   WebOmi # export module

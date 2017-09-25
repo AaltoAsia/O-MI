@@ -120,7 +120,7 @@ trait DBReadHandler extends DBHandlerBase{
          //Get values from database
          val objectsWithValuesO: Future[Option[OdfObjects]] = dbConnection.getNBetween(leafs, read.begin, read.end, read.newest, read.oldest)
 
-         objectsWithValuesO.map {
+         val resultF = objectsWithValuesO.map {
            case Some(objectsWithValues) =>
              //Select requested O-DF from metadataTree and remove MetaDatas and descriptions
              val objectsWithValuesAndAttributes = 
@@ -132,7 +132,6 @@ trait DBReadHandler extends DBHandlerBase{
                .fold(objectsWithValuesAndAttributes){
                  metas => objectsWithValuesAndAttributes.union(metas) 
                }
-             val found = Results.Read(metaCombined)
              val requestsPaths = leafs.map { _.path }
              val foundOdf = getLeafs(objectsWithValuesAndAttributes)
              val foundOdfAsPaths = foundOdf.flatMap { _.path.getParentsAndSelf }.toSet
@@ -152,16 +151,16 @@ trait DBReadHandler extends DBHandlerBase{
               case (result, nf) => 
                 result.union(nf)
             }
-             val omiResults = Vector(found) ++ {
-               if (notFound.nonEmpty)
-                 Vector(Results.NotFoundPaths(notFoundOdf))
-               else Vector.empty
-             }
+             val found = if( metaCombined.objects.nonEmpty ) Some( Results.Read(metaCombined) ) else None
+             val nfResults = if (notFound.nonEmpty) Vector(Results.NotFoundPaths(notFoundOdf)) 
+             else Vector.empty
+             val omiResults = nfResults ++ found.toVector
 
              ResponseRequest( omiResults )
            case None =>
              ResponseRequest( Vector(Results.NotFoundPaths(read.odf) ) )
          }
+         resultF
      }
    }
 }

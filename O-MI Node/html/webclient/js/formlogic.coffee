@@ -558,7 +558,51 @@ formLogicExt = ($, WebOmi) ->
     cb(response) for cb in my.wsCallbacks
     my.wsCallbacks = []
 
+    
+  objChildren = WebOmi.omi.getObjectChildren
 
+  # generate jstree data
+  my.OdfToJstree = genData = (xmlNode, parentPath) ->
+    switch xmlNode.nodeName
+      when "Objects"
+        name = xmlNode.nodeName
+        id   : idesc name
+        text : name
+        state : {opened : true}
+        type : "objects"
+        children :
+          genData(child, name) for child in objChildren(xmlNode)
+      when "Object"
+        name = WebOmi.omi.getOdfId(xmlNode) # FIXME: get
+        path = "#{parentPath}/#{name}"
+        id   : idesc path
+        text : name
+        type : "object"
+        children :
+          [genData {nodeName:"description"}, path].concat (genData(child, path) for child in objChildren(xmlNode))
+      when "InfoItem"
+        name = WebOmi.omi.getOdfId(xmlNode) # FIXME: get
+        path = "#{parentPath}/#{name}"
+        id   : idesc path
+        text : name
+        type : "infoitem"
+        children :
+          [
+            (genData {nodeName:"description"}, path),
+            (genData {nodeName:"MetaData"}, path)
+          ]
+      when "MetaData"
+        path = "#{parentPath}/MetaData"
+        id   : idesc path
+        text : "MetaData"
+        type : "metadata"
+        children : []
+      when "description"
+        path = "#{parentPath}/description"
+        id   : idesc path
+        text : "description"
+        type : "description"
+        children : []
 
 
 
@@ -566,54 +610,7 @@ formLogicExt = ($, WebOmi) ->
   my.buildOdfTree = (objectsNode) ->
     # imports
     tree = WebOmi.consts.odfTree
-    evaluateXPath = WebOmi.omi.evaluateXPath
-
-    objChildren = (xmlNode) ->
-      evaluateXPath xmlNode, './odf:InfoItem | ./odf:Object'
-
-    # generate jstree data
-    genData = (xmlNode, parentPath) ->
-      switch xmlNode.nodeName
-        when "Objects"
-          name = xmlNode.nodeName
-          id   : idesc name
-          text : name
-          state : {opened : true}
-          type : "objects"
-          children :
-            genData(child, name) for child in objChildren(xmlNode)
-        when "Object"
-          name = WebOmi.omi.getOdfId(xmlNode) # FIXME: get
-          path = "#{parentPath}/#{name}"
-          id   : idesc path
-          text : name
-          type : "object"
-          children :
-            [genData {nodeName:"description"}, path].concat (genData(child, path) for child in objChildren(xmlNode))
-        when "InfoItem"
-          name = WebOmi.omi.getOdfId(xmlNode) # FIXME: get
-          path = "#{parentPath}/#{name}"
-          id   : idesc path
-          text : name
-          type : "infoitem"
-          children :
-            [
-              (genData {nodeName:"description"}, path),
-              (genData {nodeName:"MetaData"}, path)
-            ]
-        when "MetaData"
-          path = "#{parentPath}/MetaData"
-          id   : idesc path
-          text : "MetaData"
-          type : "metadata"
-          children : []
-        when "description"
-          path = "#{parentPath}/description"
-          id   : idesc path
-          text : "description"
-          type : "description"
-          children : []
-
+    	  
     treeData = genData objectsNode
     tree.settings.core.data = [treeData]
     tree.refresh()
@@ -673,6 +670,7 @@ window.WebOmi = formLogicExt($, window.WebOmi || {})
           when "select_node"
             odfTreePath = data.node.id
             formLogic.modifyRequest -> requests.params.odf.add odfTreePath
+            true
           when "deselect_node"
             odfTreePath = data.node.id
             formLogic.modifyRequest -> requests.params.odf.remove odfTreePath
@@ -681,7 +679,7 @@ window.WebOmi = formLogicExt($, window.WebOmi || {})
               .find ".jstree-node"
               .each (_, node) ->
                 consts.odfTree.deselect_node node, true
-
+          else true
 
     # Request select tree
     consts.ui.request.ref

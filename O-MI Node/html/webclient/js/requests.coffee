@@ -1,4 +1,4 @@
-###########################################################################
+#######################################################################
 #  Copyright (c) 2015 Aalto University.
 #
 #  Licensed under the 4-clause BSD (the "License");
@@ -10,7 +10,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-##########################################################################
+######################################################################
 
 # import WebOmi, add submodule
 requestsExt = (WebOmi) ->
@@ -356,6 +356,10 @@ requestsExt = (WebOmi) ->
           if reqName == "write"
             my.params.odf.update currentParams.odf
             #addValueToAll doc
+
+            # disable callback as it's often left after sub and not needed anymore
+            #my.ui.callback.set("") 
+
           else if oldReqName == "write" # change from write
             #removeValueFromAll doc
             my.params.odf.update currentParams.odf
