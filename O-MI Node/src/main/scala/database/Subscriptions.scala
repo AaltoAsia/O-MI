@@ -114,7 +114,7 @@ object CustomJsonProtocol extends DefaultJsonProtocol{
       scheme match{
         case "http" => HTTPCallback(uri)
         case "https" => HTTPCallback(uri)
-        case _ => ??? //TODO is it possible to create ws callback here?
+        case _ => throw new Exception("Callback 0 subscription cannot be preserved, subscriptions with 0 callback will be skipped")
       }
 
   }
@@ -212,7 +212,9 @@ object CustomJsonProtocol extends DefaultJsonProtocol{
             "paths" -> JsArray(paths.map(p => JsString(p.toString))),
             "data" -> data
           )
-          case IntervalSub(id, paths, endTime, callback, interval, startTime) => JsObject(
+          case IntervalSub(id, paths, endTime, callback, interval, startTime) =>
+            if(callback.toString == "0") throw new Exception("Callback 0 subscriptions will be skipped")
+            JsObject(
             "id" -> JsNumber(id),
             "endTime" -> JsNumber(endTime.getTime),
             "interval" -> JsNumber(interval.toSeconds),
@@ -222,7 +224,9 @@ object CustomJsonProtocol extends DefaultJsonProtocol{
             "paths" -> JsArray(paths.map(p => JsString(p.toString))),
             "data" -> JsNull
           )
-          case EventSub(id, paths, endTime, callback) => JsObject(
+          case EventSub(id, paths, endTime, callback) =>
+            if(callback.toString == "0") throw new Exception("Callback 0 subscriptions will be skipped")
+            JsObject(
             "id" -> JsNumber(id),
             "endTime" -> JsNumber(endTime.getTime),
             "interval" -> JsNumber(-1),

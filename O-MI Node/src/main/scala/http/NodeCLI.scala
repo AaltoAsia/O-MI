@@ -303,7 +303,8 @@ import spray.json._
     allSubscriptions.map(allSubs => {
       val file = new File(filePath)
       val bw = new BufferedWriter(new FileWriter(file))
-      val res = JsArray(allSubs.map(_.toJson).toVector)
+      val res = JsArray(allSubs.map{sub =>
+        Try(sub.toJson)}.map{case Success(s) => Some(s);case Failure(ex) => {log.warning(ex.getMessage);None}}.flatten.toVector)
       bw.write(res.prettyPrint)
       bw.close()
     })
@@ -347,7 +348,7 @@ import spray.json._
   private def restoreSubs(filePath: String) = {
     val json: JsValue = Source.fromFile(filePath).getLines().mkString.parseJson
     val subs: Seq[(SavedSub, Option[SubData])] = json match {
-      case JsArray(subscriptions: Vector[JsObject]) => subscriptions.map(_.convertTo[(SavedSub, Option[SubData])])
+      case JsArray(subscriptions: Vector[JsObject]) => subscriptions.map(sub => Try(sub.convertTo[(SavedSub, Option[SubData])])).flatMap{case Success(s) => Some(s);case Failure(ex)=> {log.warning(ex.getMessage);None}}
     }
     subscriptionManager ! LoadSubs(subs)
     "Done\n"
