@@ -2,7 +2,7 @@ dist: trusty
 sudo: false
 git:
   depth: 4
-addon:
+addons:
   apt:
     packages:
       - fakeroot
