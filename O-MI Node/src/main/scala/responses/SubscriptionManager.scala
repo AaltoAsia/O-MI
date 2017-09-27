@@ -157,8 +157,10 @@ class SubscriptionManager(
     * @param subs list of subs and optional poll subscription data
     */
   private def loadSub(subs: Seq[(SavedSub, Option[SubData])]): Unit = {
+    val allSubs = getAllSubs()
+    val existingIds: Set[Long] = (allSubs.polls ++ allSubs.intervals ++ allSubs.events).map(_.id)
     subs.foreach{
-      case (sub: PollEventSub, data) =>{
+      case (sub: PollEventSub, data) if !existingIds.contains(sub.id) =>{
         singleStores.subStore execute AddPollSub(sub)
 
         data.foreach(sData => {
@@ -169,7 +171,7 @@ class SubscriptionManager(
           } yield res
         })
       }
-      case (sub: PollIntervalSub, data) => {
+      case (sub: PollIntervalSub, data)if !existingIds.contains(sub.id) => {
         singleStores.subStore execute AddPollSub(sub)
 
         data.foreach(sData => {
@@ -180,16 +182,17 @@ class SubscriptionManager(
           } yield res
         })
       }
-      case (sub:EventSub,_) => {
+      case (sub:EventSub,_)if !existingIds.contains(sub.id) => {
         singleStores.subStore execute AddEventSub(sub)
       }
-      case (sub: IntervalSub, _) => {
+      case (sub: IntervalSub, _)if !existingIds.contains(sub.id) => {
         singleStores.subStore execute AddIntervalSub(sub)
 
         intervalMap.put(sub.id, intervalScheduler.schedule(sub.interval,sub.interval,self,HandleIntervals(sub.id)))
 
 
       }
+      case (sub,_) if existingIds.contains(sub.id)=> log.error(s"subscription with id ${sub.id} already exists")
       case sub => log.error("Unknown subscription:" + sub)
       }
     }
