@@ -10,7 +10,9 @@ separator := println("########################################################\n
 addCommandAlias("release", ";doc;universal:packageBin;universal:packageZipTarball")
 addCommandAlias("systemTest", "omiNode/testOnly http.SystemTest")
 
-val warp10URL = "https://bintray.com/cityzendata/generic/download_file?file_path=io%%2Fwarp10%%2Fwarp10%%2F1.1.0%%2Fwarp10-1.1.0.tar.gz"
+//update Both when updating (windows has two %% for url escaping)
+val unixWarp10URL = "https://bintray.com/cityzendata/generic/download_file?file_path=io%2Fwarp10%2Fwarp10%%2F1.1.0%2Fwarp10-1.1.0.tar.gz"
+val windowsWarp10URL = "https://bintray.com/cityzendata/generic/download_file?file_path=io%%2Fwarp10%%2Fwarp10%%2F1.1.0%%2Fwarp10-1.1.0.tar.gz"
 
 def commonSettings(moduleName: String) = Seq(
   name := s"O-MI-$moduleName",
@@ -121,7 +123,7 @@ lazy val root = (project in file(".")).
     //additional lines to be added to start script to generate tokens for database and//
     //start the warp10 database before starting O-MI node.//////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////
-      bashScriptExtraDefines += s"""WARP10_URL="$warp10URL"""",
+      bashScriptExtraDefines += s"""WARP10_URL="$unixWarp10URL"""",
       bashScriptExtraDefines += """
 declare java_cmd=$(get_java_cmd)
 WARP10_HOME="${app_home}/../database/warp10"
@@ -158,7 +160,7 @@ else
   echo "A Warp 10 instance is already running"
 fi
 """,
-      batScriptExtraDefines += s"""set "WARP10_URL=$warp10URL"""",
+      batScriptExtraDefines += s"""set "WARP10_URL=$windowsWarp10URL"""",
       batScriptExtraDefines += """set "WARP10_HOME=%O_MI_NODE_HOME%\database\warp10"""",
       batScriptExtraDefines += """set "WARP10_CONFIG=%WARP10_HOME%\etc\conf-standalone.conf"""",
       batScriptExtraDefines += """set "WARP10_JAR=%WARP10_HOME%\bin\warp10.jar"""",
