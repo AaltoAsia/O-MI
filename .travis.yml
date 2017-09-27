@@ -2,6 +2,10 @@ dist: trusty
 sudo: false
 git:
   depth: 4
+addon:
+  apt:
+    packages:
+      - fakeroot
 language: scala
 jdk:
   - oraclejdk8
@@ -43,4 +47,3 @@ deploy:
   on:
     tags: true
     all_branches: true
-
