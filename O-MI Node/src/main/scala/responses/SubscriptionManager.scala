@@ -453,7 +453,14 @@ class SubscriptionManager(
    */
   private def subscribe(subscription: SubscriptionRequest): Try[Long] = {
     Try {
-      val newId = singleStores.idPrevayler execute GetAndUpdateId
+      val allSubs = getAllSubs()
+      val maxIds = (allSubs.events ++ allSubs.intervals ++ allSubs.polls).map(_.id).foldLeft(0L)(math.max(_,_))
+      def getNewId: Long = {
+        val newId = singleStores.idPrevayler execute GetAndUpdateId
+        if (newId > maxIds) newId
+        else getNewId
+      }
+      lazy val newId = getNewId
       val endTime = subEndTimestamp(subscription.ttl)
       val currentTime = System.currentTimeMillis()
       val currentTimestamp = new Timestamp(currentTime)

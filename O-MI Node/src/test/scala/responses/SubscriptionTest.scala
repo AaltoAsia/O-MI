@@ -153,7 +153,7 @@ class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with Bef
       val ns2 = addSub(1,5, Seq("p/1"))
       val ns3 = addSub(1,5, Seq("p/1"))
       val ns4 = addSub(1,5, Seq("p/1"))
-      val rIDs = Vector( ns1, ns2, ns3, ns4).flatMap{ n => n.results.headOption }.flatMap{ result => result.requestIDs.headOption }
+      val rIDs = Vector( ns1, ns2, ns3, ns4).flatMap{ n => println(n);n.results.headOption }.flatMap{ result => result.requestIDs.headOption }
       val (check, last) = rIDs.foldLeft(( 0l must be_<(1l),0l)){ case ( l, r) => (l._1 and( l._2 must be_<( r )) , r) }
       rIDs must be size(4) and check
     }
