@@ -7,13 +7,14 @@ import com.typesafe.sbt.packager.archetypes.ServerLoader.{Systemd,SystemV,Upstar
 lazy val separator = taskKey[Unit]("Prints seperating string")
 separator := println("########################################################\n\n\n\n")
 
-addCommandAlias("release", ";doc;universal:packageBin;universal:packageZipTarball")
+addCommandAlias("release", ";doc ;universal:packageBin ;universal:packageZipTarball ;debian:packageBin ;rpm:packageBin")
 addCommandAlias("systemTest", "omiNode/testOnly http.SystemTest")
 
 
 def commonSettings(moduleName: String) = Seq(
   name := s"O-MI-$moduleName",
-  version := "0.9.3-Dev",
+  version := "0.9.3-Dev", // WARN: Release ver must be "x.y.z" (no dashes, '-')
+  //version := "0.9.3", 
   scalaVersion := "2.11.8",
   scalacOptions := Seq("-unchecked", "-feature", "-deprecation", "-encoding", "utf8", "-Xlint"),
   scalacOptions in (Compile,doc) ++= Seq("-groups", "-deprecation", "-implicits", "-diagrams", "-diagrams-debug", "-encoding", "utf8"),
@@ -73,6 +74,7 @@ lazy val root = (project in file(".")).
   enablePlugins(DockerPlugin).
   //enablePlugins(SystemdPlugin).
   //enablePlugins(CodacyCoveragePlugin).
+  enablePlugins(RpmPlugin).
   settings(commonSettings("Node")).
   settings(
     Seq(
@@ -84,7 +86,7 @@ lazy val root = (project in file(".")).
     ///////////////////////
     //Package information//
     ///////////////////////
-      maintainer := "Andrea Buda <andrea.buda@aalto.fi>",
+      maintainer := "Tuomas Kinnunen <tuomas.kinnunen@aalto.fi>; Andrea Buda <andrea.buda@aalto.fi>",
       packageDescription := "Internet of Things data server",
       packageSummary := """Internet of Things data server implementing Open Messaging Interface and Open Data Format""",
 
@@ -146,6 +148,12 @@ lazy val root = (project in file(".")).
       mappings in Universal ++= {
         val base = baseDirectory.value
         directory(base / "docs").map(n => (n._1, n._2))},
+
+      rpmVendor in Rpm  := "Aalto University",
+      // Must be in format x.y.z (no dashes)
+      // version in Rpm   := 
+      rpmLicense in Rpm := Some("BSD-3-Clause"),
+      rpmRelease in Rpm := "1",
 
     /////////////////////////////////////////////////////////////
     //Prevent aggregation of following commands to sub projects//
