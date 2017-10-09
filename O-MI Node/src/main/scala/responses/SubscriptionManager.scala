@@ -20,7 +20,7 @@ import java.util.concurrent.TimeUnit._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Future, duration}
-import scala.util.Try
+import scala.util.{Random, Try}
 import scala.concurrent.duration._
 import scala.collection.immutable.HashMap
 import akka.actor.{Actor, ActorLogging, Cancellable, Props}
@@ -32,6 +32,8 @@ import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 import types.OdfTypes._
 import types.OmiTypes._
 import types._
+
+import scala.annotation.tailrec
 
 /**
  * Message for triggering handling of intervalsubscriptions
@@ -446,6 +448,7 @@ class SubscriptionManager(
     allSubs.find { sub => sub.id == id }
   }
 
+  private val rand = new Random()
   /**
    * Method used to add subscriptions to Prevayler database
    * @param subscription SubscriptionRequest of the subscription to add
@@ -453,14 +456,17 @@ class SubscriptionManager(
    */
   private def subscribe(subscription: SubscriptionRequest): Try[Long] = {
     Try {
-      val allSubs = getAllSubs()
-      val maxIds = (allSubs.events ++ allSubs.intervals ++ allSubs.polls).map(_.id).foldLeft(0L)(math.max(_,_))
-      def getNewId: Long = {
-        val newId = singleStores.idPrevayler execute GetAndUpdateId
-        if (newId > maxIds) newId
-        else getNewId
+
+      lazy val allSubs = getAllSubs()
+      lazy val allIds: Set[RequestID] = (allSubs.events ++ allSubs.intervals ++ allSubs.polls).map(_.id)
+      @tailrec def getNewId(): Long = {
+        val nId: Long = rand.nextInt(Int.MaxValue)
+        if(allIds.contains(nId))
+          getNewId()
+        else
+          nId
       }
-      lazy val newId = getNewId
+      lazy val newId = getNewId() //positive random integer
       val endTime = subEndTimestamp(subscription.ttl)
       val currentTime = System.currentTimeMillis()
       val currentTimestamp = new Timestamp(currentTime)

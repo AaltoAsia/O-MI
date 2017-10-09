@@ -131,7 +131,13 @@ class SystemTestCallbackServer(destination: ActorRef, interface: String, port: I
   implicit val system = ActorSystem()
   implicit val materializer = ActorMaterializer()
 
+  val prettyPrint = new PrettyPrinter(80,2)
   val route = formFields("msg".as[String]) {msg =>
+
+    val pretty = prettyPrint.format( XML.loadString(msg))
+    println("\n\n")
+    println(msg)
+    println("\n\n")
     destination ! Option(XML.loadString(msg))
     //entity(as[NodeSeq]) { data =>
     //destination ! Option(data)
@@ -150,8 +156,7 @@ class SystemTestCallbackServer(destination: ActorRef, interface: String, port: I
     //send messages received from ws connection to the given actor
   implicit val materializer = ActorMaterializer()
   import system.dispatcher
-
-  val prettyPrint = new PrettyPrinter(80,2)
+    //val prettyPrint = new PrettyPrinter(80,2)
   val incoming: Sink[Message, Future[Done]] = {
    Sink.foreach[Message]{
      case message: TextMessage.Strict => {
