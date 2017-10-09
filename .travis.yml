@@ -2,6 +2,10 @@ dist: trusty
 sudo: false
 git:
   depth: 4
+addon:
+  apt:
+    packages:
+      - fakeroot
 language: scala
 jdk:
   - oraclejdk8
@@ -38,9 +42,9 @@ deploy:
     - target/universal/o-mi-node-${TRAVIS_TAG}.zip
     - target/universal/o-mi-node-${TRAVIS_TAG}.tgz
     - target/O-MI-Node_${TRAVIS_TAG}_all.deb
+  draft: true
   skip_cleanup: true
   overwrite: true
   on:
     tags: true
     all_branches: true
-

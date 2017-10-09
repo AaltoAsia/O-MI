@@ -237,7 +237,7 @@ constsExt = ($, parent, util) ->
       createNode "a", "description", "description", null
 
   my.odfTreeSettings =
-    plugins : ["checkbox", "types", "contextmenu"]
+    plugins : ["checkbox", "types", "contextmenu", "sort"]
     core :
       error : (msg) -> WebOmi.debug msg
       force_text : true
@@ -359,6 +359,7 @@ constsExt = ($, parent, util) ->
     my.sendBtn      = $ '#send'
     my.resetAllBtn  = $ '#resetall'
     my.progressBar  = $ '.response .progress-bar'
+    my.sortOdfTreeCheckbox = $ '#sortOdfTree'
 
     loc = window.location
     proto = if loc.protocol == "https:" then "wss:" else "ws:"

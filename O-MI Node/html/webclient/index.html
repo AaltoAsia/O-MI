@@ -350,10 +350,16 @@
           </h4>
         </div>
         <div class="panel-body">
-          <button id="readall" class="btn btn-sm btn-warning" type="button">
-            <span class="glyphicon glyphicon-download-alt" aria-hidden="true"></span>
-            <b>Read All</b>
-          </button>
+          <form class="form-inline">
+            <button id="readall" class="btn btn-xs btn-warning" type="button">
+              <span class="glyphicon glyphicon-download-alt" aria-hidden="true"></span>
+              <b>Read All</b>
+            </button>
+            <label class="checkbox" style="float:right;margin-right:1em;">
+              <input id="sortOdfTree" type="checkbox"  checked />
+              Sort
+            </label>
+          </form>
           <div id="nodetree">
 <!--             <ul>
               <li id="Objects">Objects </li>

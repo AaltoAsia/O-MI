@@ -215,12 +215,13 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimmableDB{
               DBIO.sequence( actions )
           }
           valueTablesCreation
-        } else if( tableNames.nonEmpty ){
-          val msg = s"Database contains unknown tables while PATHSTABLE could not be found."
-          log.error( msg)
-          throw new Exception( msg ) 
-        } else{
-          log.info( s"No tables found. Creating PATHSTABLE.")
+        } else {
+          if( tableNames.nonEmpty ){
+            val msg = s"Database contains unknown tables while PATHSTABLE could not be found.\n Found following tables:\n${tableNames.mkString(", ")}"
+            log.warn( msg)
+          } else{
+            log.info( s"No tables found. Creating PATHSTABLE.")
+          }
           val queries = pathsTable.schema.create.map{ 
             case u: Unit => 
             log.debug("Created PATHSTABLE.")
