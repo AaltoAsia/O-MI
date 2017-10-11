@@ -51,7 +51,7 @@ extends SingleStoresMaintainer(singleStores, settings)
   override def receive: Actor.Receive = {
     case TrimDB                         => {
       val numDel = dbConnection.trimDB()
-    numDel.map(n=>log.info(s"DELETE returned ${n.sum}"))}
+    numDel.map(n=>log.debug(s"DELETE returned ${n.sum}"))}
     case TakeSnapshot                   => 
       val snapshotDur: FiniteDuration = takeSnapshot
       log.info(s"Taking Snapshot took $snapshotDur")
