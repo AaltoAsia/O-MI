@@ -67,8 +67,33 @@ Warp10 details
 * Tokens should be pasted to `application.conf` configuration file of O-MI Node but it is done automatically by the startup script if using warp10 release version.
 * `<value type="">`: type is saved to warp10 db as *label*
 
+
+Implementation details
+======================
+
+The Warp10Wrapper class extends the DB Trait(interface) so must implement methods: GetNBetween, writeMany, initialize and remove(initialize method is a stub implementation and remove not implemented in warp10 version). the Warp10Wrapper class also needs cofiguration file (OmiConfigExtension) and reference to the SingleStores that has the hierarchy information and cached latest values for fast reads. 
+Received request are converted to a format that is supported by warp10 database inside the class. Json data coming from warp10 is also converted to O-DF format using Warp10JsonFormat defined in the Warp10Wrapper.scala file.
+Warp10-version also defines extendsion to the configuration file called Warp10ConfigExtension. It extends the existing config file with parameters related to the warp10 database connection (write token, read token, warp10 address)
+
+The relase version downloads the warp10 binaries at startup and configures the database tokens and settings for connection with the O-MI node, for this the build.sbt contains some additional lines to do this all in the start script.
+During the startup the warp10 start script does the following:
+
+1. Download, and extract the warp10 binaries
+2. Generate read and write tokens
+3. Configure configuration files to use generated tokens 
+4. Start warp10
+5. start O-MI node
+
+steps 1 through 3 are skipped if warp10 is already installed, step 4 is skipped if warp10 is already running
+
+
 Documentation Change log
 ========================
+
+2017-10-11
+----------
+
+*  Added Implementation details to the documentation
 
 2017-05-17
 ----------
