@@ -134,7 +134,18 @@ class ParkingAgent(
           path -> ParkingSpaceStatus(path, ps.user, ps.available.getOrElse(false) )
       }
   }:_*)
-
+  getCurrentParkingFacilities.onSuccess{
+    case currentPFs: Seq[ParkingFacility] =>
+      val entries = currentPFs.flatMap{
+        pf: ParkingFacility =>
+          pf.parkingSpaces.map{
+            space: ParkingSpace =>
+              val path = parkingLotsPath / pf.name / space.name
+              path -> ParkingSpaceStatus( path, space.user, space.user.isEmpty ) 
+          }
+      }
+      parkingSpaceStatuses ++= entries
+  }
 
   override protected def handleCall(call: CallRequest) : Future[ResponseRequest] = {
      val methodInfoItemO = call.odf.get(findParkingPath)
@@ -338,8 +349,8 @@ class ParkingAgent(
         }
     }
     def plugMeasureUpdate( plug: PowerPlug): Boolean =  plug.current.nonEmpty || plug.power.nonEmpty || plug.voltage.nonEmpty
-    currentPFsF.map{
-      currettPFs: Vector[ParkingFacility] =>
+    currentPFsF.flatMap{
+      currentPFs: Vector[ParkingFacility] =>
         val (existingWithEvents,newPFs) = writingPfs.partition{
           pf: ParkingFacility => 
             currentPFs.exists{
@@ -347,12 +358,39 @@ class ParkingAgent(
                 existingPF.name == pf.name 
             }
         }
-        val responseF = writeToDB( WriteRequest( newPFs.toODF(parkingLotsPath,true) ) )
-        //TODO: Populate parking space statuses with new parking spaces and handle events
+        val events = getEvent(existingWithEvents)
+        if( events.isEmpty ){
+          val responseF = writeToDB( WriteRequest( newPFs.map( _.toOdf(parkingLotsPath,true).createAncestors).fold(OdfObjects())( _.union(_) )) )
+          responseF.map{
+            case response: ResponseRequest =>
+              val succResult = response.results.collect{
+                case success: Results.Success =>
+                  success
+              }
+              if( succResult.nonEmpty ){
+                val entries = newPFs.flatMap{ 
+                  pf: ParkingFacility =>
+                  pf.parkingSpaces.map{
+                    space: ParkingSpace =>
+                      val path = parkingLotsPath / pf.name / space.name
+                      path -> ParkingSpaceStatus( path, space.user, space.user.isEmpty ) 
+                  }
+                }
+                parkingSpaceStatuses ++= entries
+              }
 
+          //TODO: Populate parking space statuses with new parking spaces and handle events
 
+              response
+          }
+        } else if( newPFs.isEmpty){
+          handleEvents( events )
+        } else {
+          Future{
+            Responses.InvalidRequest( Some("O-DFcontains both new Parking Facilities and events for allready known ParkingFacilities"))
+          }
+        }
     }
-    
   }
   
   def handleEvents( events: Seq[ParkingEvent] ) ={
