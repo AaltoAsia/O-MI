@@ -62,7 +62,7 @@ with RequiresMessageQueue[BoundedMessageQueueSemantics]
     trySnapshot(singleStores.latestStore, "latestStore")
     trySnapshot(singleStores.hierarchyStore, "hierarchyStore")
     trySnapshot(singleStores.subStore, "subStore")
-    trySnapshot(singleStores.idPrevayler, "idPrevayler")
+    trySnapshot(singleStores.pollDataPrevayler, "pollData")
 
     val end : FiniteDuration = Duration(System.currentTimeMillis(),MILLISECONDS)
     val duration : FiniteDuration = end - start

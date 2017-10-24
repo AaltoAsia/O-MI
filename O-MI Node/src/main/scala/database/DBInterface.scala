@@ -113,7 +113,6 @@ class SingleStores(protected val settings: OmiConfigExtension) {
   val hierarchyStore    = createPrevayler(OdfTree.empty, "hierarchyStore")
   val subStore          = createPrevayler(Subs.empty,"subscriptionStore")
   val pollDataPrevayler = createPrevayler(PollSubData.empty, "pollDataPrevayler")
-  val idPrevayler       = createPrevayler(SubIds(0), "idPrevayler")
   subStore execute RemoveWebsocketSubs()
 
   def buildOdfFromValues(items: Seq[(Path,OdfValue[Any])]): OdfObjects = {

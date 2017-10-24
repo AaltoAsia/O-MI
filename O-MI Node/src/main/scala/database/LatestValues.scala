@@ -179,13 +179,6 @@ case class RemoveIntervalSub(id: Long) extends TransactionWithQuery[Subs, Boolea
     }
   }
 
-  case object GetAndUpdateId extends TransactionWithQuery[SubIds, Long] {
-    override def executeAndQuery(p: SubIds, date: Date): Long = {
-      p.id = p.id + 1
-      p.id
-    }
-  }
-
 
 //TODO EventSub
   case class AddEventSub(eventSub: EventSub) extends Transaction[Subs] {

@@ -119,8 +119,10 @@ lazy val root = (project in file(".")).
     //Configure program to read application.conf from the right direction//
     ///////////////////////////////////////////////////////////////////////
       bashScriptExtraDefines += """addJava "-Dconfig.file=${app_home}/../configs/application.conf"""",
+      bashScriptExtraDefines += """addJava "-Dlogback.configurationFile=${app_home}/../configs/logback.xml"""",
       bashScriptExtraDefines += """cd  ${app_home}/..""",
       batScriptExtraDefines += """set _JAVA_OPTS=%_JAVA_OPTS% -Dconfig.file=%O_MI_NODE_HOME%\\configs\\application.conf""", 
+      batScriptExtraDefines += """set _JAVA_OPTS=%_JAVA_OPTS% -Dlogback.configurationFile=%O_MI_NODE_HOME%\\configs\\logback.xml""", 
       batScriptExtraDefines += """cd "%~dp0\.."""",
 
     ////////////////////////////
@@ -130,11 +132,13 @@ lazy val root = (project in file(".")).
     //Mappings tells the plugin which files to include in package and in what directory
       mappings in Universal ++= { directory((baseDirectory in omiNode).value / "html")},
       mappings in Universal ++= {directory(baseDirectory.value / "configs")},
-      mappings in Universal += { 
+      mappings in Universal ++= { 
         println((packageBin in Compile).value)
         val src = (sourceDirectory in omiNode).value
-        val conf = src / "main" / "resources" / "application.conf"
-        conf -> "configs/application.conf"},
+        val conf = src / "main" / "resources" 
+        Seq(
+          conf / "application.conf" -> "configs/application.conf",
+          conf / "logback.xml" -> "configs/logback.xml")},
       mappings in Universal ++= {
         println((doc in Compile in omiNode).value)
         val base = (baseDirectory in omiNode).value

@@ -50,7 +50,6 @@ sealed trait PolledEventSub extends PolledSub{
   val startTime: Timestamp
   val paths: Vector[Path]
 }
-case class SubIds(var id: Long)
 case class PollNormalEventSub(
   id: Long,
   endTime: Timestamp,
