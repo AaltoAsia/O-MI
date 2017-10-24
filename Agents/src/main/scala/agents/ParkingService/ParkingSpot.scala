@@ -133,7 +133,10 @@ object ParkingSpace {
     }.flatten
     val user = obj.get( obj.path / "User" ).collect{
       case ii: OdfInfoItem =>
-        getStringFromInfoItem( ii )
+        getStringFromInfoItem( ii ).flatMap{
+          str: String  =>
+          if( str.toLowerCase == "none" ) None  else Some( str )
+        }
     }.flatten
     val iFV = obj.get( obj.path / "intendedForVehicle" ).collect{
       case ii: OdfInfoItem =>
