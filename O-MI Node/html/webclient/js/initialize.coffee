@@ -270,6 +270,7 @@ constsExt = ($, parent, util) ->
         xhr = $.get
           url : serverUrl + path
           dataType : "xml"
+          cache : false
           success : ((parentPath) -> (xml) ->
             data = WebOmi.formLogic.OdfToJstree xml.documentElement, path
             children = for child in data.children

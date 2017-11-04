@@ -245,6 +245,7 @@
           xhr = $.get({
             url: serverUrl + path,
             dataType: "xml",
+            cache: false,
             success: (function(parentPath) {
               return function(xml) {
                 var child, children, data;
