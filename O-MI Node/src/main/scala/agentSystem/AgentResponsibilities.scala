@@ -29,33 +29,52 @@ class AgentResponsibilities(){
     def filter: RequestFilter => Boolean = createFilter(request)
     val odf = OldTypeConverter.convertOdfObjects(request.odf)
       
-    val agentToResponsibilities = pathsToResponsible.values.collect{
-      case AgentResponsibility(
-        agentName: AgentName,
-        path: Path,
-        requestFilter: RequestFilter
-      ) if  filter(requestFilter) =>
-        odf.get(path).map{
-          case node: Node =>
-            agentName -> odf.getSubTreeAsODF( node.path)
+    odf.getLeafPaths.groupBy{
+      path: Path => 
+        val ancestorKeyPaths: Iterable[Path] = pathsToResponsible.keys.filter{
+          keyPath: Path =>
+            keyPath.isAncestorOf( path) || keyPath == path
         }
-    }.flatten.groupBy( _._1 ).mapValues{
-      case tupleSeq =>
-        tupleSeq.map( _._2 ).reduceOption( _ union _ )
-    }.collect{
-      case (agent, Some(odf) ) =>agent -> odf
-    }
-
-    val pathsInResponsibilities = agentToResponsibilities.values.flatMap{
-      case odf =>  odf.getPaths
-    }.toSet
-    val agentOptionToODF: Map[ Option[AgentName], ImmutableODF ] = ImmutableMap(
-      (agentToResponsibilities.map{
-        case ( agent, odf ) => 
-          Some(agent) -> odf.immutable
-      }.toVector ++ Vector(Option.empty[String] -> odf.cutOut(pathsInResponsibilities).immutable)):_*
-    )
-    agentOptionToODF.mapValues{
+        val keyPathsToAgentName: Iterable[Option[Tuple2[Path,AgentName]]] = ancestorKeyPaths.map{
+          keyPath: Path =>
+            pathsToResponsible.get(keyPath).collect{
+              case AgentResponsibility(
+                agentName: AgentName,
+                path: Path,
+                requestFilter: RequestFilter
+              ) if filter(requestFilter) => 
+                keyPath -> agentName
+            }
+        }.filter{ tuple => tuple.nonEmpty }
+        val responsiblesTuple: Option[Tuple2[Path,AgentName]] = keyPathsToAgentName.fold( Option.empty[Tuple2[Path,AgentName]]){
+          case (Some( currentTuple:Tuple2[Path,AgentName]), Some(tuple:Tuple2[Path,AgentName])) =>
+            currentTuple match {
+              case (longestPath: Path, currentAgent: AgentName) =>
+                tuple match {
+                    case (keyPath: Path, agentName: AgentName) =>
+                      if( longestPath.isAncestorOf( keyPath) ){
+                        Some( (keyPath,agentName))
+                      } else {
+                        Some( (longestPath,currentAgent))
+                      }
+                }
+            }
+          case ( Some(tuple: Tuple2[Path,AgentName]), None) =>
+            Some( tuple)
+          case ( None, Some(tuple: Tuple2[Path,AgentName])) =>
+            Some( tuple)
+          case ( None, None) => None
+        }
+        responsiblesTuple.map{
+          case (path: Path, agentName: AgentName ) =>
+            agentName
+        }
+    }.map{
+      case (Some(agentName),paths:Set[Path]) =>
+        Some(agentName) -> odf.getUpTreeAsODF(paths.toVector)
+      case ( None, paths:Set[Path] ) =>
+        None -> odf.getUpTreeAsODF(paths.toVector)
+    }.mapValues{
       case odf => 
         request.replaceOdf( NewTypeConverter.convertODF(odf))
     }

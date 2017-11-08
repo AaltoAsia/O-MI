@@ -336,7 +336,7 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimmableDB{
 
     val pathsToAdd = reserveNewPaths(leafs.toSet)
 
-    log.debug( s"Adding total of  ${pathsToAdd.length} paths to DB: $pathsToAdd")
+    log.debug( s"Adding total of  ${pathsToAdd.length} paths to DB")//: $pathsToAdd")
 
     val pathAddingAction = pathsTable.add(pathsToAdd.values)
     val getAddedDBPaths =  pathAddingAction.flatMap{

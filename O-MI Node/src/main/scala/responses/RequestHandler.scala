@@ -126,7 +126,8 @@ with CancelHandler
 
   }
   def handleCallRequest( call: CallRequest) : Future[ResponseRequest] = {
-    log.debug(s"RequestHandler handling calli OdfRequest...")
+    log.debug(s"RequestHandler handling call OdfRequest...")
+    
     val responsibleToRequest = agentResponsibilities.splitRequestToResponsible( call )
     val fSeq = Future.sequence(
       responsibleToRequest.map{
@@ -137,7 +138,7 @@ with CancelHandler
               "Call request for path that do not have responsible agent for service.")
 
           }
-        case (Some(agentName), subrequest) => 
+        case (Some(agentName), subrequest: CallRequest) => 
           log.debug(s"Asking responsible Agent $agentName to handle part of request.")
           askAgent(agentName,subrequest)
           }.map{

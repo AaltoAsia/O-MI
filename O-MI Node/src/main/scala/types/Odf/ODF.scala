@@ -54,11 +54,29 @@ trait ODF//[M <: Map[Path,Node], S<: SortedSet[Path] ]
         }
     }.toVector
   }
+  def getUpTreePaths( pathsToGet: Seq[Path]): Seq[Path] = {
+    paths.filter{
+      case path: Path => 
+        pathsToGet.exists{
+          case filter: Path =>
+            filter.isDescendantOf( path ) || filter == path
+        }
+    }.toVector
+  }
   def getSubTreePaths( path: Path): Seq[Path] = {
       paths
         .iteratorFrom(path)
         .takeWhile{ case p: Path => path.isAncestorOf(p) || p == path}
         .toVector
+  }
+  def getUpTree( pathsToGet: Seq[Path]): Seq[Node] = {
+    nodes.values.filter{
+      case node: Node => 
+        pathsToGet.exists{
+          case filter: Path =>
+            filter.isDescendantOf( node.path ) || filter == node.path
+        }
+    }.toVector
   }
   def getSubTree( pathsToGet: Seq[Path]): Seq[Node] = {
     nodes.values.filter{
@@ -70,6 +88,7 @@ trait ODF//[M <: Map[Path,Node], S<: SortedSet[Path] ]
     }.toVector
   }
   def getSubTreeAsODF( pathsToGet: Seq[Path]): ODF
+  def getUpTreeAsODF( pathsToGet: Seq[Path]): ODF
   
   def getPaths: Seq[Path] = paths.toVector
   def getNodes: Seq[Node] = nodes.values.toVector
