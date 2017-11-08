@@ -62,6 +62,11 @@ class MutableODF private[odf](
     cutOut( that.paths.toSet )
   }
 
+  def getUpTreeAsODF( pathsToGet: Seq[Path]): ODF = {
+    MutableODF(
+      getUpTree( pathsToGet )
+    )
+  }
   def getTree( selectingPaths: Seq[Path] ) : ODF ={
     val ancestorsPaths = selectingPaths.flatMap{ p => p.getAncestors }.toSet
     val subTreePaths = getSubTreePaths( selectingPaths ).toSet

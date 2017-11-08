@@ -140,6 +140,11 @@ case class ImmutableODF private[odf] (
     this.copy( newNodes )
   }
 
+  def getUpTreeAsODF( pathsToGet: Seq[Path]): ODF = {
+    ImmutableODF(
+      getUpTree( pathsToGet )
+    )
+  }
   def getSubTreeAsODF( pathsToGet: Seq[Path]): ODF = {
     ImmutableODF(
       nodes.values.filter{

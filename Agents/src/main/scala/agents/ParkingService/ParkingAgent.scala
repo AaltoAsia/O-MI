@@ -164,35 +164,33 @@ class ParkingAgent(
         case Some(ii: OdfInfoItem) =>
           //log.debug("Service parameters:\n "+ ii.values.mkString("\n"))
           Future.sequence{
-            val requests = ii.values.collect{
+            val odfValues = ii.values.collect{
               case value: OdfObjectsValue =>
                 value.typeValue match {
-                  case "odf" =>
-                  //  val result = OdfParser.parse(value.value)
-                  //  val f = result match{
-                  //    case Right(odf) =>
-                          Try{getfindParkingParams(value.value)} match{
-                            case Success( Some(pp:ParkingParameters) ) =>
-                              findParking( pp)
-                            case Success( None ) =>
-                              Future{
-                                Responses.InvalidRequest(Some(s"Invalid parameters for find parking: Either Destination or Vehicle missing."))
-                              }
-                            case Failure(t) =>
-                              Future{
-                                Responses.InvalidRequest(Some(s"Invalid parameters for find parking: $t"))
-                              }
-                          }
-                  //    case Left( spe: Seq[ParseError] ) =>
-                  //      Future{
-                   //       Responses.ParseErrors(spe.toVector)
-                   //     }
-                   // }
-                   // f                  
-                  case other =>
+                  case "odf" => Some(value.value)
+                  case other: String => 
                     log.debug(s"Unknown type: $other for parameters")
+                    None
+                }
+            }
+            log.debug( s"Found ${odfValues.length} O-DFs that should contain parameters for method." )
+
+            val requests = odfValues.map{
+              case None =>
                     Future{
-                      ResponseRequest(Vector())
+                      Responses.InvalidRequest(Some(s"Unknown type for parameter value."))
+                    }
+              case Some(odf: OdfObjects) =>
+                Try{getfindParkingParams(odf)} match{
+                  case Success( Some(pp:ParkingParameters) ) =>
+                    findParking( pp)
+                  case Success( None ) =>
+                    Future{
+                      Responses.InvalidRequest(Some(s"Invalid parameters for find parking: Either Destination or Vehicle missing."))
+                    }
+                  case Failure(t) =>
+                    Future{
+                      Responses.InvalidRequest(Some(s"Invalid parameters for find parking: $t"))
                     }
                 }
             }
@@ -540,7 +538,7 @@ class ParkingAgent(
     result.map{
       case response: ResponseRequest => 
         log.debug( s"getCurrentParkingFacilities got ${response.results.length}")
-        response.results.find{
+        val pfs = response.results.find{
           result : OmiResult =>
             result.returnValue.returnCode == ReturnCode.Success  && result.odf.nonEmpty
         }.flatMap{
@@ -552,6 +550,8 @@ class ParkingAgent(
                 pfsObj.objects.map( ParkingFacility( _))
             }
         }.toVector.flatten
+        log.debug( s"Found current ${pfs.length} parking facilities")
+        pfs
     }
   }
   def updateCalculatedIIsToDB ={
