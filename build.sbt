@@ -13,7 +13,7 @@ addCommandAlias("systemTest", "omiNode/testOnly http.SystemTest")
 
 def commonSettings(moduleName: String) = Seq(
   name := s"O-MI-$moduleName",
-  version := "0.9.3-Dev", // WARN: Release ver must be "x.y.z" (no dashes, '-')
+  version := "0.10.0-Dev", // WARN: Release ver must be "x.y.z" (no dashes, '-')
   //version := "0.9.3", 
   scalaVersion := "2.11.8",
   scalacOptions := Seq("-unchecked", "-feature", "-deprecation", "-encoding", "utf8", "-Xlint"),
