@@ -16,7 +16,7 @@ import types.OmiTypes.OmiRequestType._
  
 trait AgentSystemConfigExtension  extends Extension {
   def config: Config
-  
+
   val internalAgentsStartTimeout : FiniteDuration= config.getDuration("agent-system.starting-timeout", TimeUnit.SECONDS).seconds
   val agentConfigurations: Seq[AgentConfigEntry] = {
     
@@ -33,12 +33,12 @@ trait AgentSystemConfigExtension  extends Extension {
             } match{
               case Success(ace: AgentConfigEntry) => Some(ace)
               case Failure(e) => 
-                println( e.getMessage)
+                //println( e.getMessage)
                 None
             }
         }.toVector
       case Failure(e: Missing) => 
-        println("Received missing from agent-system.internal-agnets configuration")
+        //println("Received missing from agent-system.internal-agents configuration")
         Vector.empty
       case Failure(e) => throw e
     }

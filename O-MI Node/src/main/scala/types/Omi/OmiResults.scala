@@ -82,7 +82,7 @@ class OmiResult(
 trait UnionableResult{ this: OmiResult =>
   def union(t: UnionableResult): UnionableResult
   def unionableWith(a: UnionableResult) : Boolean = {
-    println( s"Checking equality for ${this.getClass} and ${a.getClass}" )
+    //println( s"Checking equality for ${this.getClass} and ${a.getClass}" )
     a.getClass == this.getClass
   }
   def tryUnion(o: UnionableResult) = Try{

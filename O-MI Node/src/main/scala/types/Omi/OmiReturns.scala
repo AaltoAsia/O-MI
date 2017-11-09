@@ -35,7 +35,7 @@ class OmiReturn(
   }
   def descriptionAsJava: String = description.map{ str => s"Success: $str"}.getOrElse("Success.")
   def unionableWith(other: OmiReturn) : Boolean = {
-    println( s"Checking equality for ${this.getClass} and ${other.getClass}" )
+    //println( s"Checking equality for ${this.getClass} and ${other.getClass}" )
     this.getClass == other.getClass
   }
   def toReturnType: xmlTypes.ReturnType ={

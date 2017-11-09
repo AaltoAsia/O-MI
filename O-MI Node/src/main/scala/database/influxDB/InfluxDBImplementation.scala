@@ -96,9 +96,9 @@ object InfluxDBJsonProtocol extends DefaultJsonProtocol {
     class InfluxDBJsonODFFormat() extends RootJsonFormat[ImmutableODF] {
       // Members declared in spray.json.JsonReader
       def read(json: spray.json.JsValue): types.odf.ImmutableODF ={
-        println( s"Got following json: $json")
+        //println( s"Got following json: $json")
         val series = getSeries(json)
-        println( s"Found ${series.length} series")
+        //println( s"Found ${series.length} series")
         val iis: Seq[InfoItem] = series.collect{
           case serie: JsObject =>
             serie.getFields( "name", "columns", "values") match{
@@ -108,7 +108,7 @@ object InfluxDBJsonProtocol extends DefaultJsonProtocol {
                 None
             }
         }.flatten
-        println( s"Found ${iis.length} series")
+        //println( s"Found ${iis.length} series")
         ImmutableODF(iis.toVector)
       }
 

@@ -85,7 +85,7 @@ object OdfParser extends Parser[OdfParseResult] {
   def parse(root: xml.Node): OdfParseResult = { 
     schemaValidation(root) match {
       case errors : Seq[ParseError] if errors.nonEmpty => 
-        println( root.toString )
+        //println( root.toString )
 
         Left(errors) 
       case empty : Seq[ParseError] if empty.isEmpty =>
@@ -96,7 +96,7 @@ object OdfParser extends Parser[OdfParseResult] {
         xmlGen.scalaxb.fromXML[ObjectsType](root)
       } match {
         case Failure(e) => 
-            println( s"Exception: $e\nStackTrace:\n")
+            //println( s"Exception: $e\nStackTrace:\n")
             e.printStackTrace
             Left( Iterable( ScalaxbError( e.getMessage ) ) )
       
@@ -106,7 +106,7 @@ object OdfParser extends Parser[OdfParseResult] {
           } match {
             case Success(odf) => Right(odf)
             case Failure(e) => 
-            println( s"Exception: $e\nStackTrace:\n")
+            //println( s"Exception: $e\nStackTrace:\n")
             e.printStackTrace
               Left( Iterable( ODFParserError( e.getMessage ) ) )
           }
