@@ -93,7 +93,7 @@ object OmiParser extends Parser[OmiParseResult] {
         xmlGen.scalaxb.fromXML[xmlTypes.OmiEnvelopeType](root)
       } match {
         case Failure(e) => 
-            println( s"Exception: $e\nStackTrace:\n")
+            //println( s"Exception: $e\nStackTrace:\n")
             e.printStackTrace
             Left( Iterable( ScalaxbError( e.getMessage ) ) )
       
@@ -125,7 +125,7 @@ object OmiParser extends Parser[OmiParseResult] {
             case Failure(e: ParseError) => 
               Left( Iterable( e ) )
             case Failure(e) => 
-              println( s"Exception: $e\nStackTrace:\n")
+              //println( s"Exception: $e\nStackTrace:\n")
               e.printStackTrace
               Left( Iterable( OMIParserError(e.getMessage) ) )
           }
@@ -135,8 +135,9 @@ object OmiParser extends Parser[OmiParseResult] {
   def parseInterval(v: Double): Duration =
     v match{
       case -1.0 =>  -1.seconds
+      case -2.0 =>  -2.seconds
       case w if w >= 0 => w.seconds
-      case _ => throw new IllegalArgumentException("Illegal interval, only positive or -1 are allowed.")
+      case _ => throw new IllegalArgumentException("Illegal interval, only positive or -1 and -2  are allowed.")
     }// fixes problem with duration: -1.0.seconds == -999999999 nanoseconds
 
   def parseInterval(v: String): Duration =

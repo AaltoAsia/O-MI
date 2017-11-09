@@ -57,7 +57,7 @@ abstract trait Parser[Result] {
   protected[this] def schemaPath : Array[javax.xml.transform.Source]
   
   /**
-   * Method for checking does given xml confort schema of parser.
+   * Method for checking does given xml conform schema of parser.
    * @param xml xml structure to check
    * @return ParseErrors found while checking, if empty, successful
    */

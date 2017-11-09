@@ -27,7 +27,6 @@ object Dependencies {
   val slick        = "com.typesafe.slick" %% "slick" % slickV //common
   val slickCodegen = "com.typesafe.slick" %% "slick-codegen"  % slickV //common
   val hikariCP     = "com.typesafe.slick" %% "slick-hikaricp" % slickV
-  val slf4jNop     = "org.slf4j"           % "slf4j-nop"      % "1.7.21" //common
   //val sqliteJdbc   = "org.xerial"          % "sqlite-jdbc"    % "3.7.2" //common
   //"com.zaxxer"          % "HikariCP-java6" % "2.3.3" // XXX: manually updated dependency, slick had 2.0.1
   val h2           = "com.h2database"      % "h2"             % "1.4.192" //common
@@ -66,7 +65,6 @@ object Dependencies {
     httpXml,
     slick,
     slickCodegen,
-    slf4jNop,
     //sqliteJdbc,
     hikariCP,
     h2,

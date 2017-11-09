@@ -162,7 +162,7 @@
         '$.fn.datetimepicker': ['jQuery'],
         Initialize: ['jQuery', 'CodeMirror', '$.fn.modal', 'jQuery.jstree'],
         FormLogic: ['jQuery', 'Initialize'],
-        newInfoItemForm: ['Initialize']
+        newInfoItemForm: ['Initialize']
       },
     }, function(success, failed){
         if(Object.keys(failed).length > 0) console.log('Failed to load libraries ',failed);
@@ -350,15 +350,21 @@
           </h4>
         </div>
         <div class="panel-body">
-          <button id="readall" class="btn btn-sm btn-warning" type="button">
-            <span class="glyphicon glyphicon-download-alt" aria-hidden="true"></span>
-            <b>Read All</b>
-          </button>
+          <form class="form-inline">
+            <button id="readall" class="btn btn-xs btn-warning" type="button">
+              <span class="glyphicon glyphicon-download-alt" aria-hidden="true"></span>
+              <b>Read All</b>
+            </button>
+            <label class="checkbox" style="float:right;margin-right:1em;">
+              <input id="sortOdfTree" type="checkbox"  checked />
+              Sort
+            </label>
+          </form>
           <div id="nodetree">
-            <ul>
+<!--             <ul>
               <li id="Objects">Objects </li>
             </ul>
-          </div>
+ -->          </div>
         </div>
       </div>
       <div class="panel panel-default">
@@ -791,7 +797,7 @@
                   <h3 class="panel-title"><b>RequestID </b><b class="requestID">X</b></h3>
                 </div>
                 <table class="table table-hover table-condensed">
-                  <thead><tr><th>#</th><th>InfoItem</th><th>value</th></tr></thead>
+                  <thead><tr><th>#</th><th>InfoItem</th><th>returnCode/value</th></tr></thead>
                   <tbody class="dataTable">
                   </tbody>
                 </table>

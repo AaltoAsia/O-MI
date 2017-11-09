@@ -15,11 +15,12 @@
 package http
 
 import java.util.concurrent.TimeUnit
-import java.net.InetAddress
+import java.net.{InetAddress, URLDecoder}
 
 import scala.collection.JavaConversions._
 import scala.concurrent.duration._
 import scala.util.Try
+import scala.language.implicitConversions
 
 import agentSystem.AgentSystemConfigExtension
 import akka.actor.{ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
@@ -27,9 +28,6 @@ import com.typesafe.config.Config
 import com.typesafe.config.ConfigException._
 import types.Path
 
-
-
- 
 class OmiConfigExtension( val config: Config) extends Extension 
   with AgentSystemConfigExtension {
 
@@ -56,7 +54,9 @@ class OmiConfigExtension( val config: Config) extends Extension
   val minSubscriptionInterval : FiniteDuration= config.getDuration("omi-service.min-subscription-interval", TimeUnit.SECONDS).seconds
 
   /** Save some interesting setting values to this path */
-  val settingsOdfPath: String = config.getString("omi-service.settings-read-odfpath")
+
+  val settingsOdfPath: Path =  Path(config.getString("omi-service.settings-read-odfpath").split("/").map{ id => URLDecoder.decode( id, "UTF-8"  ).replace("/","\\/")}.mkString("/"))
+    
 
   val trimInterval : FiniteDuration = config.getDuration("omi-service.trim-interval")
 
@@ -133,6 +133,7 @@ class OmiConfigExtension( val config: Config) extends Extension
   //connection fails
   val websocketQueueSize : Int = config.getInt("omi-service.websocket-queue-size")
 
+  val databaseImplementation : String = config.getString( "omi-service.database" )
 }
 
 

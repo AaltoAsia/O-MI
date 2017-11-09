@@ -300,7 +300,7 @@ public class JavaRoomAgent extends JavaInternalAgent {
     );
     values.add(value);
 
-    //Create type meta data about loceation.
+    //Create type meta data about location.
     Vector<OdfValue<Object>> metaValues = new Vector<OdfValue<Object>>();
     OdfValue<Object> metaValue = OdfFactory.createOdfValue(
         "ISO 6709", timestamp
@@ -459,7 +459,7 @@ public class JavaRoomAgent extends JavaInternalAgent {
    */
   public void update() {
     updateOdf();
-    //MetaData and description should be writen only once
+    //MetaData and description should be written only once
     if( writeCount == 2 ){
       odf = odf.allMetaDatasRemoved();
     } else writeCount += 1;
@@ -496,7 +496,7 @@ public class JavaRoomAgent extends JavaInternalAgent {
             log.debug(name() + " wrote paths successfully.");
           } else {
             log.warning(
-                "Something went wrong when " + name() + " writed, " + result.toString()
+                "Something went wrong when " + name() + " wrote, " + result.toString()
                 );
           }
         }

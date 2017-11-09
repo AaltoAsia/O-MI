@@ -297,7 +297,7 @@ class DatabaseTest extends Specification with AfterAll {
 //      temp2 must beSome.which(_ must have size (21))
 //    }
 
-//    "be able to stop buffering and revert to using historyLenght" in {
+//    "be able to stop buffering and revert to using historyLength" in {
 //      db.removeSub(testSub2)
 //      val temp1 = db.get(Path("/Objects/path/to/sensor3/temp")).map(createAncestors(_))
 //      val temp2 = temp1.map(OdfObjectsToValues(_))
@@ -324,7 +324,7 @@ class DatabaseTest extends Specification with AfterAll {
 //    }
 
 // TODO: sub tests for new prevayler system
-//    "return correct callback adress for subscriptions" in {
+//    "return correct callback address for subscriptions" in {
 //      id1
 //      id2
 //      id3
@@ -457,7 +457,7 @@ class DatabaseTest extends Specification with AfterAll {
 //    }
     
 // TODO: implement tests for new poll system
-//    "polling should remove data from database when length > historyLenght and nobody is interested in it" in {
+//    "polling should remove data from database when length > historyLength and nobody is interested in it" in {
 //      val startTime = new java.util.Date().getTime - 30000
 //      val testPath = Path("/Objects/DatabaseTest/EventSubTest")
 //      
@@ -498,7 +498,7 @@ class DatabaseTest extends Specification with AfterAll {
     //      true shouldEqual true
     //    }
     
-    "setHistoryLenght method should change the historylenght value and increase maximum number of values stored" in {
+    "setHistoryLength method should change the historyLength value and increase maximum number of values stored" in {
       val testPath = Path("/Objects/DatabaseTest/EventSubTest2")
       val startTime = new java.util.Date().getTime - 30000
       

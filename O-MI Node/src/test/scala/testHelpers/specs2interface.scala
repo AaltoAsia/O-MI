@@ -1,6 +1,6 @@
 //from https://gist.github.com/gmalouf/51a8722b50f6a9d30404
 /*
- spray testkit is compiled against older version of specs2 need to manyally define specs2Interface
+ spray testkit is compiled against older version of specs2 need to manually define specs2Interface
   */
 package spray.testkit
 

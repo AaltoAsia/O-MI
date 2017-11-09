@@ -51,7 +51,10 @@ class AnalyticsStoreTest extends Specification with Mockito with AfterAll {
             akka.log-dead-letters-during-shutdown = off
             akka.jvm-exit-on-fatal-error = off
     """))
-  def afterAll = Await.ready(system.terminate(), 2 seconds)
+  def afterAll = {
+    dbConnection.dropDB()
+    Await.ready(system.terminate(), 2 seconds)
+  }
   import system.dispatcher
   implicit val materializer: ActorMaterializer = ActorMaterializer()(system)
   val analyticsConf = ConfigFactory.parseString(
@@ -157,11 +160,11 @@ class AnalyticsStoreTest extends Specification with Mockito with AfterAll {
   (requestHandler ? readReq).mapTo[ResponseRequest]
 
   }
-  addValue("first", Vector(OdfValue("1", new Timestamp(testtime.getTime-4000))))
-  addValue("first", Vector(OdfValue("2", new Timestamp(testtime.getTime-3000))))
-  addValue("first", Vector(OdfValue("3", new Timestamp(testtime.getTime-2000))))
-  addValue("first", Vector(OdfValue("4", new Timestamp(testtime.getTime-1000))))
-  addValue("first", Vector(OdfValue("5", new Timestamp(testtime.getTime))))
+  addValue(Path("first"), Vector(OdfValue("1", new Timestamp(testtime.getTime-4000))))
+  addValue(Path("first"), Vector(OdfValue("2", new Timestamp(testtime.getTime-3000))))
+  addValue(Path("first"), Vector(OdfValue("3", new Timestamp(testtime.getTime-2000))))
+  addValue(Path("first"), Vector(OdfValue("4", new Timestamp(testtime.getTime-1000))))
+  addValue(Path("first"), Vector(OdfValue("5", new Timestamp(testtime.getTime))))
   Await.ready(sendRR(1, metadata = false), 2 seconds)
   Thread.sleep(100)
   Await.ready(sendRR(1, metadata = false), 2 seconds)
@@ -171,7 +174,7 @@ class AnalyticsStoreTest extends Specification with Mockito with AfterAll {
   Await.ready(sendRR(2, metadata = false), 2 seconds)
   Thread.sleep(400)
   Await.ready(sendRR(3, metadata = false), 2 seconds)
-  def addValue(path: String, nv: Vector[OdfValue[Any]]): Unit = {
+  def addValue(path: Path, nv: Vector[OdfValue[Any]]): Unit = {
     val pp = Path("Objects/AnalyticsStoreTest/")
     val odf = OdfTypes.createAncestors(OdfInfoItem(pp / path, nv))
     val writeReq = WriteRequest( odf)

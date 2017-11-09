@@ -20,7 +20,7 @@ import java.util.concurrent.TimeUnit._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Future, duration}
-import scala.util.Try
+import scala.util.{Random, Try}
 import scala.concurrent.duration._
 import scala.collection.immutable.HashMap
 import akka.actor.{Actor, ActorLogging, Cancellable, Props}
@@ -32,6 +32,8 @@ import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 import types.OdfTypes._
 import types.OmiTypes._
 import types._
+
+import scala.annotation.tailrec
 
 /**
  * Message for triggering handling of intervalsubscriptions
@@ -160,7 +162,7 @@ class SubscriptionManager(
     val allSubs = getAllSubs()
     val existingIds: Set[Long] = (allSubs.polls ++ allSubs.intervals ++ allSubs.events).map(_.id)
     subs.foreach{
-      case (sub: PollEventSub, data) if !existingIds.contains(sub.id) =>{
+      case (sub: PolledEventSub, data) if !existingIds.contains(sub.id) =>{
         singleStores.subStore execute AddPollSub(sub)
 
         data.foreach(sData => {
@@ -199,7 +201,7 @@ class SubscriptionManager(
 
 
 
-  private def handlePollEvent(pollEvent: PollEventSub) = {
+  private def handlePollEvent(pollEvent: PolledEventSub) = {
     log.debug(s"Creating response message for Polled Event Subscription")
     val eventData = (singleStores.pollDataPrevayler execute PollEventSubscription(pollEvent.id))
       .map { case (_path, _values) =>
@@ -226,7 +228,7 @@ class SubscriptionManager(
           buffer += previousValue
           nextTick += interval
         } else {
-          //if timestmap.getTime < startime + interval
+          //if timestamp.getTime < starttime + interval
           previousValue = values(i)
           i += 1
         }
@@ -297,7 +299,7 @@ class SubscriptionManager(
   }
 
   /**
-   * Get pollsubscriptions data drom database
+   * Get pollsubscriptions data from database
    *
    * This method is used to both 'event' and 'interval' based subscriptions.
    *
@@ -316,7 +318,7 @@ class SubscriptionManager(
     val sub: Option[PolledSub] = singleStores.subStore execute PollSub(id)
     sub match {
       case Some(pollSub) => {
-        log.debug(s"Polling subcription with id: ${pollSub.id}")
+        log.debug(s"Polling subscription with id: ${pollSub.id}")
         val odfTree = singleStores.hierarchyStore execute GetTree()
         val emptyTree = odfTree.intersect(pollSub
           .paths  //get subscriptions paths
@@ -328,7 +330,7 @@ class SubscriptionManager(
         //pollSubscription method removes the data from database and returns the requested data
         val subValues: Iterable[OdfObjects] = pollSub match {
 
-          case pollEvent: PollEventSub => handlePollEvent(pollEvent)
+          case pollEvent: PolledEventSub => handlePollEvent(pollEvent)
 
           case pollInterval: PollIntervalSub => handlePollInterval(pollInterval, pollTime, odfTree)
         }
@@ -383,7 +385,7 @@ class SubscriptionManager(
       callbackF.onFailure {
         case fail@MissingConnection(callback) =>
           log.warning(
-            s"Callback failed; subscription id:${iSub.id} interval:${iSub.interval}  reason: ${fail.toString}, subscription is remowed.")
+            s"Callback failed; subscription id:${iSub.id} interval:${iSub.interval}  reason: ${fail.toString}, subscription is removed.")
           removeSubscription(iSub.id)
         case fail: CallbackFailure =>
           log.warning(
@@ -427,7 +429,7 @@ class SubscriptionManager(
     (allSubs.events ++ allSubs.intervals ++ allSubs.polls).collect{
         case e: EventSub => (e, None)
         case i: IntervalSub => (i, None)
-        case pe: PollEventSub => {
+        case pe: PolledEventSub => {
           (pe,
             Some(SubData((singleStores.pollDataPrevayler execute CheckSubscriptionData(pe.id)).map(identity)(collection.breakOut))))
         }
@@ -446,21 +448,25 @@ class SubscriptionManager(
     allSubs.find { sub => sub.id == id }
   }
 
+  private val rand = new Random()
   /**
-   * Method used to add subcriptions to Prevayler database
+   * Method used to add subscriptions to Prevayler database
    * @param subscription SubscriptionRequest of the subscription to add
    * @return Subscription Id within Try monad if adding fails this is a Failure, otherwise Success(id)
    */
   private def subscribe(subscription: SubscriptionRequest): Try[Long] = {
     Try {
-      val allSubs = getAllSubs()
-      val maxIds = (allSubs.events ++ allSubs.intervals ++ allSubs.polls).map(_.id).foldLeft(0L)(math.max(_,_))
-      def getNewId: Long = {
-        val newId = singleStores.idPrevayler execute GetAndUpdateId
-        if (newId > maxIds) newId
-        else getNewId
+
+      lazy val allSubs = getAllSubs()
+      lazy val allIds: Set[RequestID] = (allSubs.events ++ allSubs.intervals ++ allSubs.polls).map(_.id)
+      @tailrec def getNewId(): Long = {
+        val nId: Long = rand.nextInt(Int.MaxValue)
+        if(allIds.contains(nId))
+          getNewId()
+        else
+          nId
       }
-      lazy val newId = getNewId
+      lazy val newId = getNewId() //positive random integer
       val endTime = subEndTimestamp(subscription.ttl)
       val currentTime = System.currentTimeMillis()
       val currentTimestamp = new Timestamp(currentTime)
@@ -474,17 +480,28 @@ class SubscriptionManager(
 
 
             singleStores.subStore execute AddEventSub(
-              EventSub(
+              NormalEventSub(
                 newId,
                 OdfTypes.getLeafs(subscription.odf).iterator.map(_.path).toSeq,
                 endTime,
                 callback
               )
             )
-            log.debug(s"Successfully added event subscription with id: $newId and callback: $callback")
+            log.info(s"Successfully added event subscription with id: $newId and callback: $callback")
             newId
           }
-          case dur@Duration(-2, duration.SECONDS) => throw new NotImplementedError("Interval -2 not supported") //subscription for new node
+          case dur@Duration(-2, duration.SECONDS) => {
+            singleStores.subStore execute AddEventSub(
+              NewEventSub(
+                newId,
+                OdfTypes.getLeafs(subscription.odf).iterator.map(_.path).toSeq,
+                endTime,
+                callback
+              )
+            )
+            log.info(s"Successfully added event subscription for new events with id: $newId and callback: $callback")
+            newId
+          } //subscription for new node
           case dur: FiniteDuration if dur.gteq(minIntervalDuration) => {
             val iSub = IntervalSub(newId,
               OdfTypes.getLeafs(subscription.odf).iterator.map(_.path).toSeq,
@@ -516,7 +533,7 @@ class SubscriptionManager(
             case Duration(-1, duration.SECONDS) => {
               //event poll sub
               singleStores.subStore execute AddPollSub(
-                PollEventSub(
+                PollNormalEventSub(
                   newId,
                   endTime,
                   currentTimestamp,
@@ -525,9 +542,26 @@ class SubscriptionManager(
                 )
               )
 
-              log.debug(s"Successfully added polled event subscription with id: $newId")
+              log.info(s"Successfully added polled event subscription with id: $newId")
               newId
             }
+
+            case Duration(-2, duration.SECONDS) => {
+              singleStores.subStore execute AddPollSub(
+                PollNewEventSub(
+                  newId,
+                  endTime,
+                  currentTimestamp,
+                  currentTimestamp,
+                  paths
+                )
+              )
+
+              log.info(s"Successfully added polled new data event subscription with id: $newId")
+              newId
+            }
+
+
             case dur: FiniteDuration if dur.gteq(minIntervalDuration) => {
               //interval poll
               singleStores.subStore execute AddPollSub(

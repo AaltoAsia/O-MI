@@ -27,22 +27,22 @@ import http.OmiConfigExtension
 
 object DBMaintainer{
   def props(
-    dbConnection : DBReadWrite,
-    singleStores : SingleStores,
-    settings : OmiConfigExtension
+             dbConnection : TrimmableDB,
+             singleStores : SingleStores,
+             settings : OmiConfigExtension
   ) : Props = Props( new DBMaintainer(dbConnection, singleStores, settings) )
 }
 class DBMaintainer(
-  protected val dbConnection : DBReadWrite,
-  override protected val singleStores : SingleStores,
-  override protected val settings : OmiConfigExtension
+                    protected val dbConnection : TrimmableDB,
+                    override protected val singleStores : SingleStores,
+                    override protected val settings : OmiConfigExtension
 )
 extends SingleStoresMaintainer(singleStores, settings)
 {
 
   case object TrimDB
   private val trimInterval: FiniteDuration = settings.trimInterval
-  log.info(s"scheduling databse trimming every $trimInterval")
+  log.info(s"scheduling database trimming every $trimInterval")
   scheduler.schedule(trimInterval, trimInterval, self, TrimDB)
   /**
    * Function for handling InputPusherCmds.
@@ -51,7 +51,7 @@ extends SingleStoresMaintainer(singleStores, settings)
   override def receive: Actor.Receive = {
     case TrimDB                         => {
       val numDel = dbConnection.trimDB()
-    numDel.map(n=>log.info(s"DELETE returned ${n.sum}"))}
+    numDel.map(n=>log.debug(s"DELETE returned ${n.sum}"))}
     case TakeSnapshot                   => 
       val snapshotDur: FiniteDuration = takeSnapshot
       log.info(s"Taking Snapshot took $snapshotDur")

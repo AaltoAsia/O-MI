@@ -40,7 +40,7 @@ class ResponsibleScalaAgent(
 
   override protected def handleWrite(write: WriteRequest) : Future[ResponseRequest] = {
     //All paths in write.odf is owned by this agent.
-    //There is nothing to check or do for data so it is just writen. 
+    //There is nothing to check or do for data so it is just written.
 
     // This sends debug log message to O-MI Node logs if
     // debug level is enabled (in logback.xml and application.conf)
@@ -58,7 +58,7 @@ class ResponsibleScalaAgent(
             // debug level is enabled (in logback.xml and application.conf)
             log.debug(s"$name wrote paths successfully.")
           case ie: OmiResult => 
-            log.warning(s"Something went wrong when $name writed, $ie")
+            log.warning(s"Something went wrong when $name wrote, $ie")
         }
       case Failure( t: Throwable) => 
         // This sends debug log message to O-MI Node logs if

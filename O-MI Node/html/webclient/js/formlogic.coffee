@@ -282,19 +282,22 @@ formLogicExt = ($, WebOmi) ->
       newList
 
     # return: jquery elem
-    returnStatus = ( count, returnCode ) ->
+    returnStatus = ( count, returnCodes ) ->
+      returnCodes = [200] if !returnCodes[0]?
+
       #count = $ "<th/>" .text count
       row = $ "<tr/>"
-        .addClass switch Math.floor(returnCode/100)
+        .addClass switch Math.floor(Math.max.apply(null, returnCodes)/100)
           when 2 then "success" # 2xx
           when 3 then "warning" # 3xx
           when 4 then "danger"  # 4xx
+          else "warning"
         .addClass "respRet"
         .append($ "<th/>"
           .text count)
-        .append($ "<th>returnCode</th>")
+        .append($ "<th>Received callback</th>")
         .append($ "<th/>"
-          .text returnCode)
+          .text returnCodes.join(','))
       row.tooltip
           #container: consts.callbackResponseHistoryModal
           title: "click to show the XML"
@@ -361,7 +364,7 @@ formLogicExt = ($, WebOmi) ->
         row
 
 
-    addHistory = (requestID, pathValues) ->
+    addHistory = (requestID, pathValues, returnCodes) ->
       # Note: existence of this is handled somewhere above
       callbackRecord = my.callbackSubscriptions[requestID]
       
@@ -376,7 +379,7 @@ formLogicExt = ($, WebOmi) ->
 
       dataTable = responseList.find ".dataTable"
 
-      returnS = returnStatus callbackRecord.receivedCount, 200
+      returnS = returnStatus callbackRecord.receivedCount, returnCodes
       
       pathVals = [].concat returnS, htmlformat pathValues
       pathVals = $ $(pathVals).map -> this.toArray()
@@ -396,10 +399,15 @@ formLogicExt = ($, WebOmi) ->
     infoItemPathValues = ( getPathValues info for info in infoitems )
     pathValues = [].concat infoItemPathValues...
 
-    addHistory requestID, pathValues
+    maybeReturnCodes = omi.evaluateXPath(response, "//omi:return/@returnCode")
+    trimmedCodes = (codeNode.textContent.trim() for codeNode in maybeReturnCodes)
+    returnCodes = (parseInt(textCode) for textCode in trimmedCodes when textCode.length > 0)
+        
 
-    # return true if request is not needed for the main area
-    not my.waitingForResponse
+    addHistory requestID, pathValues, returnCodes
+
+    # return true if request is not needed for the main area or was found on existing
+    not my.waitingForResponse or my.callbackSubscriptions[requestID]?
 
   
 
@@ -429,19 +437,44 @@ formLogicExt = ($, WebOmi) ->
   # String -> void
   my.wsCallbacks = []
 
+  # id for canceling the keepalive scheduler
+  my.keepAliveScheduler = null
+
+  my.startKeepAlive = ->
+    if !my.keepAliveScheduler?
+      my.keepAliveScheduler = window.setInterval (() -> my.wsSend ""), 30000
+
+  my.stopKeepAlive = ->
+    if my.keepAliveScheduler?
+      window.clearInterval my.keepAliveScheduler
+      my.keepAliveScheduler = null
+
   my.wsSend = (request,callback) ->
-    if( !my.socket || my.socket.readyState != WebSocket.OPEN)
+    if !my.socket || my.socket.readyState != WebSocket.OPEN
       onopen = () ->
         WebOmi.debug "WebSocket connected."
+        my.startKeepAlive()
         my.wsSend request,callback
-      onclose = () -> WebOmi.debug "WebSocket disconnected."
-      onerror = (error) -> WebOmi.debug "WebSocket error: ",error
+
+      onclose = () ->
+        WebOmi.debug "WebSocket disconnected."
+        my.stopKeepAlive()
+
+      onerror = (error) ->
+        WebOmi.debug "WebSocket error: ",error
+        my.stopKeepAlive()
+
       onmessage = my.handleWSMessage
+
       my.createWebSocket onopen, onclose, onmessage, onerror
     else
-      WebOmi.debug "Sending request via WebSocket."
-      # Next message should be rendered to main response area
-      my.waitingForResponse = true
+      if request == ""
+        WebOmi.debug "Sending keepalive via WebSocket."
+      else
+        WebOmi.debug "Sending request via WebSocket."
+        # Next message should be rendered to main response area
+        my.waitingForResponse = true
+
 
       # Note: assume that the next response is for this request
       if callback?
@@ -481,7 +514,7 @@ formLogicExt = ($, WebOmi) ->
     consts = WebOmi.consts
     server  = consts.serverUrl.val()
     request = consts.requestCodeMirror.getValue()
-    consts.progressBar.css "width", "95%"
+    consts.progressBar.css "width", "50%"
     $.ajax
       type: "POST"
       url: server
@@ -504,13 +537,15 @@ formLogicExt = ($, WebOmi) ->
         consts.progressBar.css "width", "0%"
         consts.progressBar.hide()
         window.setTimeout (-> consts.progressBar.show()), 2000
-        callback(response) if (callback?)
+        callback response if callback?
   
   my.handleWSMessage = (message) ->
     consts = WebOmi.consts
-    # TODO: Check if response to subscription and put into subscription response view
+    #Check if response to subscription and put into subscription response view
     response = message.data
-    if not my.handleSubscriptionHistory response
+    if response.length == 0
+      return
+    else if not my.handleSubscriptionHistory response
       consts.progressBar.css "width", "100%"
       my.setResponse response
       consts.progressBar.css "width", "0%"
@@ -523,7 +558,51 @@ formLogicExt = ($, WebOmi) ->
     cb(response) for cb in my.wsCallbacks
     my.wsCallbacks = []
 
+    
+  objChildren = WebOmi.omi.getObjectChildren
 
+  # generate jstree data
+  my.OdfToJstree = genData = (xmlNode, parentPath) ->
+    switch xmlNode.nodeName
+      when "Objects"
+        name = xmlNode.nodeName
+        id   : idesc name
+        text : name
+        state : {opened : true}
+        type : "objects"
+        children :
+          genData(child, name) for child in objChildren(xmlNode)
+      when "Object"
+        name = WebOmi.omi.getOdfId(xmlNode) # FIXME: get
+        path = "#{parentPath}/#{name}"
+        id   : idesc path
+        text : name
+        type : "object"
+        children :
+          [genData {nodeName:"description"}, path].concat (genData(child, path) for child in objChildren(xmlNode))
+      when "InfoItem"
+        name = WebOmi.omi.getOdfId(xmlNode) # FIXME: get
+        path = "#{parentPath}/#{name}"
+        id   : idesc path
+        text : name
+        type : "infoitem"
+        children :
+          [
+            (genData {nodeName:"description"}, path),
+            (genData {nodeName:"MetaData"}, path)
+          ]
+      when "MetaData"
+        path = "#{parentPath}/MetaData"
+        id   : idesc path
+        text : "MetaData"
+        type : "metadata"
+        children : []
+      when "description"
+        path = "#{parentPath}/description"
+        id   : idesc path
+        text : "description"
+        type : "description"
+        children : []
 
 
 
@@ -531,54 +610,7 @@ formLogicExt = ($, WebOmi) ->
   my.buildOdfTree = (objectsNode) ->
     # imports
     tree = WebOmi.consts.odfTree
-    evaluateXPath = WebOmi.omi.evaluateXPath
-
-    objChildren = (xmlNode) ->
-      evaluateXPath xmlNode, './odf:InfoItem | ./odf:Object'
-
-    # generate jstree data
-    genData = (xmlNode, parentPath) ->
-      switch xmlNode.nodeName
-        when "Objects"
-          name = xmlNode.nodeName
-          id   : idesc name
-          text : name
-          state : {opened : true}
-          type : "objects"
-          children :
-            genData(child, name) for child in objChildren(xmlNode)
-        when "Object"
-          name = WebOmi.omi.getOdfId(xmlNode) # FIXME: get
-          path = "#{parentPath}/#{name}"
-          id   : idesc path
-          text : name
-          type : "object"
-          children :
-            [genData {nodeName:"description"}, path].concat (genData(child, path) for child in objChildren(xmlNode))
-        when "InfoItem"
-          name = WebOmi.omi.getOdfId(xmlNode) # FIXME: get
-          path = "#{parentPath}/#{name}"
-          id   : idesc path
-          text : name
-          type : "infoitem"
-          children :
-            [
-              (genData {nodeName:"description"}, path),
-              (genData {nodeName:"MetaData"}, path)
-            ]
-        when "MetaData"
-          path = "#{parentPath}/MetaData"
-          id   : idesc path
-          text : "MetaData"
-          type : "metadata"
-          children : []
-        when "description"
-          path = "#{parentPath}/description"
-          id   : idesc path
-          text : "description"
-          type : "description"
-          children : []
-
+    	  
     treeData = genData objectsNode
     tree.settings.core.data = [treeData]
     tree.refresh()
@@ -627,6 +659,18 @@ window.WebOmi = formLogicExt($, window.WebOmi || {})
         formLogic.clearResponse()
         $('.clearHistory').trigger 'click'
 
+    consts.sortOdfTreeCheckbox
+      .on 'change', ->
+        tree = consts.odfTreeDom.jstree()
+        if this.checked
+          tree.settings.sort = (a,b) ->
+            if this.get_text(a) > this.get_text(b) then 1 else -1
+          root = tree.get_node $ "#Objects"
+          tree.sort root, true
+          tree.redraw_node root, true
+        else
+          tree.settings.sort = (a,b) -> -1
+
 
     # TODO: maybe move these to centralized place consts.ui._.something
     # These widgets have a special functionality, others are in consts.ui._
@@ -638,6 +682,7 @@ window.WebOmi = formLogicExt($, window.WebOmi || {})
           when "select_node"
             odfTreePath = data.node.id
             formLogic.modifyRequest -> requests.params.odf.add odfTreePath
+            true
           when "deselect_node"
             odfTreePath = data.node.id
             formLogic.modifyRequest -> requests.params.odf.remove odfTreePath
@@ -646,7 +691,7 @@ window.WebOmi = formLogicExt($, window.WebOmi || {})
               .find ".jstree-node"
               .each (_, node) ->
                 consts.odfTree.deselect_node node, true
-
+          else true
 
     # Request select tree
     consts.ui.request.ref

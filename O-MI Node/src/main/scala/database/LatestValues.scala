@@ -168,19 +168,14 @@ case class RemoveIntervalSub(id: Long) extends TransactionWithQuery[Subs, Boolea
       val sub = store.idToSub.get(id)
       sub.foreach {
         //Update the lastPolled timestamp
-        case polledEvent: PollEventSub =>
+        case polledEvent: PollNormalEventSub =>
           store.idToSub = store.idToSub + (id -> polledEvent.copy(lastPolled = new Timestamp(d.getTime())))
+        case polledNewEvent: PollNewEventSub =>
+          store.idToSub = store.idToSub + (id -> polledNewEvent.copy(lastPolled = new Timestamp(d.getTime())))
         case pollInterval: PollIntervalSub =>
           store.idToSub = store.idToSub + (id -> pollInterval.copy(lastPolled = new Timestamp(d.getTime())))
       }
       sub
-    }
-  }
-
-  case object GetAndUpdateId extends TransactionWithQuery[SubIds, Long] {
-    override def executeAndQuery(p: SubIds, date: Date): Long = {
-      p.id = p.id + 1
-      p.id
     }
   }
 
@@ -244,11 +239,6 @@ case class RemoveIntervalSub(id: Long) extends TransactionWithQuery[Subs, Boolea
     }
   }
 
-  case class GetIntervalSub(id: Long) extends Query[Subs, Option[IntervalSub]] {
-    def  query(store: Subs, d: Date): Option[IntervalSub] = {
-      store.intervalSubs.get(id)
-    }
-  }
 
   case class GetAllPollSubs() extends Query[Subs, Set[PolledSub]] {
     def query(store: Subs, d: Date): Set[PolledSub] = {
@@ -256,16 +246,33 @@ case class RemoveIntervalSub(id: Long) extends TransactionWithQuery[Subs, Boolea
     }
   }
 
+  case class GetIntervalSub(id: Long) extends Query[Subs, Option[IntervalSub]] {
+    def  query(store: Subs, d: Date): Option[IntervalSub] = {
+      store.intervalSubs.get(id)
+    }
+  }
+
+
   //case class RemovePathFromIntervalSubs(path: Path) extends Transaction[Subs] {
   //  def executeOn(store:Subs, d: Date): Unit = {
   //    store.intervalSubs = store.intervalSubs.
   //  }
   //}
 
-  case class GetSubsForPath(path: Path) extends Query[Subs, Set[PolledSub]] {
-    def query(store: Subs, d: Date): Set[PolledSub] = {
+  case class GetSubsForPath(path: Path) extends Query[Subs, Set[NotNewEventSub]] {
+    def query(store: Subs, d: Date): Set[NotNewEventSub] = {
       val ids = path.inits.flatMap(path => store.pathToSubs.get(path)).toSet.flatten
       //val ids = store.pathToSubs.get(path).toSet.flatten
-      ids.map(store.idToSub(_))
+      ids.map(store.idToSub(_)).collect{
+        case events: PollNormalEventSub => events
+        case intervals: PollIntervalSub => intervals
+      }
+    }
+  }
+
+  case class GetNewEventSubsForPath(path: Path) extends Query[Subs, Set[PollNewEventSub]] {
+    def query(store: Subs, d: Date): Set[PollNewEventSub] = {
+      val ids = path.inits.flatMap(path => store.pathToSubs.get(path)).toSet.flatten
+      ids.map(store.idToSub(_)).collect{case news: PollNewEventSub => news}
     }
   }

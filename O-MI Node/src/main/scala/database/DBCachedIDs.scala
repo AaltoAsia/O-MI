@@ -41,9 +41,9 @@ trait DBCachedReadWrite extends DBReadWrite{
 
   override protected val log = LoggerFactory.getLogger("DBCachedReadWrite")
 
-  override  def initialize(): Unit = this.synchronized {
+  def initialize(): Unit = this.synchronized {
 
-    val getHierachyIds = hierarchyNodes.filter(_.isInfoItem).map{ 
+    val getHierarchyIds = hierarchyNodes.filter(_.isInfoItem).map{
       hNode => (hNode.path, hNode.id) // NOTE: Heavy operation
     }.result.map{ 
       case pathToIds => 
@@ -68,7 +68,7 @@ trait DBCachedReadWrite extends DBReadWrite{
     val setup = DBIO.seq(
       allSchemas.create,
       addRoot,
-      getHierachyIds
+      getHierarchyIds
     )
 
     val existingTables = MTable.getTables.map{ tables => tables.map(_.name.name)}
@@ -79,7 +79,7 @@ trait DBCachedReadWrite extends DBReadWrite{
         "Found tables: " +
           existed.mkString(", ") +
           "\n Not creating new tables.")
-      Await.result(db.run(getHierachyIds), 5 minutes)
+      Await.result(db.run(getHierarchyIds), 5 minutes)
     } else {
       //run transactionally so there are all or no tables
 
@@ -92,7 +92,7 @@ trait DBCachedReadWrite extends DBReadWrite{
   /**
    * Used to set many values efficiently to the database.
    */
-  override def writeMany(infos: Seq[OdfInfoItem]): Future[OmiReturn] = {
+  def writeMany(infos: Seq[OdfInfoItem]): Future[OmiReturn] = {
     val pathToWrite: Seq[DBValue] = infos.flatMap {
       case info =>
         pathToHierarchyID.get(info.path).flatMap {
@@ -130,7 +130,8 @@ trait DBCachedReadWrite extends DBReadWrite{
         idMap = idQry.toMap: Map[Path, Int]
 
         pathsToIds = pathsData map {
-          case (path, odfValues) => (idMap(path), odfValues)
+          case (path, odfValues) => 
+            (idMap(path), odfValues)
         }
 
         dbValues = pathsToIds flatMap {
@@ -147,7 +148,7 @@ trait DBCachedReadWrite extends DBReadWrite{
           
       } yield idMap.toSeq
       writeExisting.flatMap{
-        case writen => 
+        case written =>
           writeNewAction.map{
             case p2IDs : Seq[(types.Path, Int)] if p2IDs.nonEmpty => 
               val p2set: Map[Path,Set[Int]] = p2IDs.flatMap{
@@ -190,7 +191,7 @@ trait DBCachedReadWrite extends DBReadWrite{
     pathIdRelations
   }
 
-  override def getNBetween(
+  def getNBetween(
     requests: Iterable[OdfNode],
     beginO: Option[Timestamp],
     endO: Option[Timestamp],

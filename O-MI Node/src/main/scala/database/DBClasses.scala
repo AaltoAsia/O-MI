@@ -103,7 +103,7 @@ trait OmiNodeTables extends DBBase {
 
     def toOdfObject: OdfObject = toOdfObject()
     def toOdfObject(infoitems: Iterable[OdfInfoItem] = Iterable(), objects: Iterable[OdfObject] = Iterable()): OdfObject =
-      OdfObject(Seq(QlmID(path.last)),path, infoitems, objects, descriptionOdfOption, None)
+      OdfObject(Seq(OdfQlmID(path.last)),path, infoitems, objects, descriptionOdfOption, None)
 
     def toOdfObjects: OdfObjects = OdfObjects()
 
@@ -164,7 +164,7 @@ trait OmiNodeTables extends DBBase {
     def value: Rep[String] = column[String]("VALUE")
     def valueType: Rep[String] = column[String]("VALUETYPE")
     def idx1: Index = index("VALUEiDX", hierarchyId, unique = false) //index on hierarchyIDs
-    def idx2: Index = index("TIMESTAMP", timestamp, unique = false)  //index on timestmaps
+    def idx2: Index = index("TIMESTAMP", timestamp, unique = false)  //index on timestamps
     /** Primary Key: (hierarchyId, timestamp) */
 
     def * : ProvenShape[DBValue] = (hierarchyId, timestamp, value, valueType, id.?) <> (DBValue.tupled, DBValue.unapply)
@@ -186,7 +186,7 @@ trait OmiNodeTables extends DBBase {
    * 
    */
   def clearDB(): Future[Int] = {
-    val rootPath = Path("/Objects")
+    val rootPath = Path("Objects")
     db.run(
       DBIO.seq(
         (allTables map (_.delete)): _*

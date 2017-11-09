@@ -25,15 +25,25 @@ trait JavaOmiReturn{
 
 class OmiReturn(
   val returnCode: ReturnCode,
-  val description: Option[String] = None
+  val description: Option[String] = None,
+  val extraAttributes: Map[String, String] = Map()
 ) extends JavaOmiReturn{
   override def equals(other: Any): Boolean ={
     other match{
-      case ret: OmiReturn => ret.returnCode == returnCode && ret.description == description
+      case ret: OmiReturn =>
+        ret.returnCode == returnCode &&
+        ret.description == description &&
+        ret.extraAttributes == extraAttributes
       case any: Any => any == this
     }
   }
-  def descriptionAsJava: String = description.map{ str => s"Success: $str"}.getOrElse("Success.")
+  def copy(
+    returnCode: ReturnCode = this.returnCode,
+    description: Option[String] = this.description,
+    extraAttributes: Map[String, String] = this.extraAttributes
+  ) = new OmiReturn(returnCode, description, extraAttributes)
+
+  def descriptionAsJava: String = description.getOrElse("") // what? description.map{ str => s"Success: $str"}.getOrElse("Success.")
   def unionableWith(other: OmiReturn) : Boolean = {
     println( s"Checking equality for ${this.getClass} and ${other.getClass}" )
     this.getClass == other.getClass
@@ -41,14 +51,16 @@ class OmiReturn(
   def toReturnType: xmlTypes.ReturnType ={
     xmlTypes.ReturnType(
       "",
-      Map(("@returnCode" -> DataRecord(returnCode)),("@description" -> DataRecord(description)))
+      Map(("@returnCode" -> DataRecord(returnCode)),
+        ("@description" -> DataRecord(description))
+        ) ++ types.OdfTypes.attributesToDataRecord(extraAttributes)
     )
   }
 }
 
 object OmiReturn{
-  def apply(returnCode: ReturnCode, description: Option[String] = None) : OmiReturn ={
-    new OmiReturn(returnCode,description)
+  def apply(returnCode: ReturnCode, description: Option[String] = None, extraAttributes: Map[String, String] = Map()) : OmiReturn ={
+    new OmiReturn(returnCode, description, extraAttributes)
   }
 }
 

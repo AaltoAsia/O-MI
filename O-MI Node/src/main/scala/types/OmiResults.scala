@@ -33,12 +33,10 @@ class OmiResult(
   ): OmiResult = OmiResult(returnValue, requestIDs, odf)
 
   implicit def asRequestResultType : xmlTypes.RequestResultType ={
-    xmlTypes.RequestResultType(
-      returnValue.toReturnType,
-      requestIDs.map{
+    val idTypes = requestIDs.map{
         id => xmlTypes.IdType(id.toString)
-      },
-      odf.map{ 
+      }
+    val msg = odf.map{ 
         objects =>
           MsgType(
             Seq(
@@ -54,16 +52,21 @@ class OmiResult(
           )
         )
 
-      },
-      None,
-      None,
-      Map(
+      }
+    val attributeRecords = Map(
         ("@targetType" -> DataRecord(TargetTypeType.fromString("node", omiDefaultScope )))
       ) ++ odf.map{
         objects =>
         ("@msgformat" -> DataRecord("odf"))
-
       }
+
+    xmlTypes.RequestResultType(
+      returnValue.toReturnType,
+      idTypes,
+      msg,
+      None,
+      None,
+      attributeRecords
     )
   }
   override def equals( other: Any ): Boolean ={
@@ -71,7 +74,7 @@ class OmiResult(
       case result: OmiResult => 
         result.returnValue == returnValue && 
         result.requestIDs.toSet == requestIDs.toSet && 
-        result.odf == odf 
+        result.odf == odf
       case any: Any => any == this
     }
   
@@ -82,7 +85,7 @@ class OmiResult(
 trait UnionableResult{ this: OmiResult =>
   def union(t: UnionableResult): UnionableResult
   def unionableWith(a: UnionableResult) : Boolean = {
-    println( s"Checking equality for ${this.getClass} and ${a.getClass}" )
+    //println( s"Checking equality for ${this.getClass} and ${a.getClass}" )
     a.getClass == this.getClass
   }
   def tryUnion(o: UnionableResult) = Try{
@@ -166,7 +169,9 @@ object Results{
       }
     }
 
-  case class NotImplemented(description: Option[String] = None) 
+  case class NotImplemented(
+    description: Option[String] = None
+    ) 
   extends OmiResult(
     Returns.NotImplemented(description)
   ) with UnionableResult{
@@ -187,7 +192,9 @@ object Results{
     }
   }
 
-  case class NotFound(description: Option[String] = None) 
+  case class NotFound(
+    description: Option[String] = None
+    )
   extends OmiResult(
     Returns.NotFound(description)
   ) with UnionableResult{
@@ -230,7 +237,8 @@ object Results{
       }
     }
 
-  case class InvalidRequest(msg: Option[String] = None) 
+  case class InvalidRequest(msg: Option[String] = None
+    ) 
   extends OmiResult(
     Returns.InvalidRequest(msg) 
   ) with UnionableResult{

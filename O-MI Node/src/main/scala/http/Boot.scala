@@ -33,6 +33,7 @@ import akka.util.Timeout
 import akka.http.scaladsl.{HttpExt, Http}
 import akka.http.scaladsl.Http.ServerBinding
 import akka.http.scaladsl.server.RouteResult // implicit route2HandlerFlow
+import akka.stream.{ActorMaterializer, Materializer}
 //import akka.http.WebBoot
 //import akka.http.javadsl.ServerBinding
 
@@ -45,7 +46,7 @@ import types.OmiTypes.{OmiReturn,OmiResult,Results,WriteRequest,ResponseRequest}
 import types.OmiTypes.Returns.ReturnTypes._
 import types.Path
 import OmiServer._
-import akka.stream.{ActorMaterializer, Materializer}
+import influxDB._
 
 class OmiServer extends OmiNode{
 
@@ -53,7 +54,7 @@ class OmiServer extends OmiNode{
   // we need an ActorSystem to host our application in
   implicit val system : ActorSystem = ActorSystem("on-core") 
   implicit val materializer: ActorMaterializer = ActorMaterializer()(system)
-  import system.dispatcher // execution context for futures
+  import system.dispatcher // execution context for future
 
   /**
    * Settings loaded by akka (typesafe config) and our [[OmiConfigExtension]]
@@ -61,11 +62,24 @@ class OmiServer extends OmiNode{
   val settings : OmiConfigExtension = OmiConfig(system)
 
   val singleStores = new SingleStores(settings)
-  val dbConnection: DB = new DatabaseConnection()(
+  val dbConnection: DB  = settings.databaseImplementation match {
+    case "slick" => new DatabaseConnection()(
+      system,
+      singleStores,
+      settings
+    )
+    case "influxDB" => new InfluxDBImplementation( 
+       InfluxDBConfig( system )
+      )( system, singleStores )
+    case "warp10" => ???
+  }
+/*
+  val dbConnection: DB = new influxdb.InfluxDBImplementation(
+    InfluxDB(system)
+    )(
     system,
-    singleStores,
-    settings
-  )
+    singleStores
+  )*/
 
   val callbackHandler: CallbackHandler = new CallbackHandler(settings)( system, materializer)
   val analytics: Option[ActorRef] =
@@ -212,7 +226,7 @@ object OmiServer {
 
       val objects = createAncestors(
         OdfInfoItem(
-          Path(settings.settingsOdfPath + "num-latest-values-stored"), 
+          settings.settingsOdfPath / "num-latest-values-stored", 
           Iterable(OdfValue(settings.numLatestValues.toString, "xs:integer", currentTime)),
           Some(OdfDescription(numDescription))
         ))
@@ -225,7 +239,7 @@ object OmiServer {
         Results.unionReduce(response.results).forall{
           case result : OmiResult => result.returnValue match {
             case s: Successful => 
-              system.log.info("O-MI InputPusher system working.")
+              system.log.debug("O-MI InputPusher system working.")
               true
             case f: OmiReturn => 
               system.log.error( s"O-MI InputPusher system not working; $response")
@@ -252,6 +266,8 @@ object Boot /*extends Starter */{// with App{
   val log = LoggerFactory.getLogger("OmiServiceTest")
 
   def main(args: Array[String]) : Unit= {
+    val p = Path("Objects\\"+"/O\\"+"/II")
+    log.info(p.toString())
     Try{
       val server: OmiServer = OmiServer()
       import server.system.dispatcher

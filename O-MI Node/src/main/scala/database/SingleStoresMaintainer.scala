@@ -56,20 +56,20 @@ with RequiresMessageQueue[BoundedMessageQueueSemantics]
       }.recover{case a : Throwable => log.error(a,s"Failed to take Snapshot of $errorName")}
     }
 
-    log.info("Taking prevyaler snapshot")
+    log.info("Taking prevayler snapshot")
     val start: FiniteDuration  = Duration(System.currentTimeMillis(),MILLISECONDS)
 
     trySnapshot(singleStores.latestStore, "latestStore")
     trySnapshot(singleStores.hierarchyStore, "hierarchyStore")
     trySnapshot(singleStores.subStore, "subStore")
-    trySnapshot(singleStores.idPrevayler, "idPrevayler")
+    trySnapshot(singleStores.pollDataPrevayler, "pollData")
 
     val end : FiniteDuration = Duration(System.currentTimeMillis(),MILLISECONDS)
     val duration : FiniteDuration = end - start
     duration
   }
 
-  protected def cleanPrevayler: Unit = {
+  protected def cleanPrevayler(): Unit = {
     // remove unnecessary files (might otherwise grow until disk is full)
     val dirs = singleStores.prevaylerDirectories
     for (dir <- dirs) {
