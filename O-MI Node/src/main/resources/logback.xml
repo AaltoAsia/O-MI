@@ -35,7 +35,6 @@
 
 
 <!-- Possible to edit levels of different loggers INFO level is currently set using filter
--->
     <logger name="akka" level="INFO" />
     <logger name="slick" level="INFO" />
     <logger name="com.zaxxer.hikari" level="INFO" />
@@ -46,7 +45,8 @@
 
     <logger name="agentSystem" level="DEBUG" />
     <logger name="accessControl" level="INFO" />
-    <root level="DEBUG">
+-->
+    <root level="INFO">
         <appender-ref ref="CONSOLE"/>
         <appender-ref ref="ASYNC"/>
     </root>
