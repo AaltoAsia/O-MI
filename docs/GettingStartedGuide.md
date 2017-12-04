@@ -4,7 +4,7 @@ Download .zip or .tar file from [releases](https://github.com/AaltoAsia/O-MI/rel
 Exract the package. Now you should have something like this in the directory:
 * `bin/` -- contains startup scripts.
 * `conf/` -- contains application.conf
-* `configs/` -- contains config for InternalAgents.
+* `conf/` -- contains config for InternalAgents.
 * `html/` -- contains webclient.
 * `lib/` -- contains libraries used in project
 * `callbackTestServer.py`
