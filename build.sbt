@@ -16,7 +16,7 @@ mapGenericFilesToWindows
 
 def commonSettings(moduleName: String) = Seq(
   name := s"O-MI-$moduleName",
-  version := "0.10.0-Dev", // WARN: Release ver must be "x.y.z" (no dashes, '-')
+  version := "0.10.0.Dev", // WARN: Release ver must be "x.y.z" (no dashes, '-')
   //version := "0.9.3", 
   scalaVersion := "2.11.8",
   scalacOptions := Seq("-unchecked", "-feature", "-deprecation", "-encoding", "utf8", "-Xlint"),
@@ -155,11 +155,12 @@ lazy val root = (project in file(".")).
         val base = baseDirectory.value
         directory(base / "doc").map(n => (n._1, n._2))},
 
-      rpmVendor in Rpm  := "Aalto University",
+      rpmVendor := "Aalto University",
       // Must be in format x.y.z (no dashes)
       // version in Rpm   := 
-      rpmLicense in Rpm := Some("BSD-3-Clause"),
-      rpmRelease in Rpm := "1",
+      rpmLicense := Some("BSD-3-Clause"),
+      rpmRelease := "1",
+      linuxPackageMappings in Rpm := configWithNoReplace((linuxPackageMappings in Rpm).value),
 
     /////////////////////////////////////////////////////////////
     //Prevent aggregation of following commands to sub projects//
