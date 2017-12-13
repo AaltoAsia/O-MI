@@ -161,6 +161,7 @@ lazy val root = (project in file(".")).
       rpmLicense := Some("BSD-3-Clause"),
       rpmRelease := "1",
       linuxPackageMappings in Rpm := configWithNoReplace((linuxPackageMappings in Rpm).value),
+      debianPackageDependencies in Debian ++= Seq("java8-runtime", "bash (>= 2.05a-11)"),
 
     /////////////////////////////////////////////////////////////
     //Prevent aggregation of following commands to sub projects//
