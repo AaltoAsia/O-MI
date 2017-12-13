@@ -160,6 +160,8 @@ lazy val root = (project in file(".")).
       // version in Rpm   := 
       rpmLicense := Some("BSD-3-Clause"),
       rpmRelease := "1",
+      mappings in Universal := (mappings in Universal).value.distinct,
+      //linuxPackageMappings := linuxPackageMappings.value.map{mapping => val filtered = mapping.mappings.toList.distinct;mapping.copy(mappings=filtered)},
       linuxPackageMappings in Rpm := configWithNoReplace((linuxPackageMappings in Rpm).value),
       debianPackageDependencies in Debian ++= Seq("java8-runtime", "bash (>= 2.05a-11)"),
 
