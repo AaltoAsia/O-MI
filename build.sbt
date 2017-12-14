@@ -155,13 +155,15 @@ lazy val root = (project in file(".")).
         val base = baseDirectory.value
         directory(base / "doc").map(n => (n._1, n._2))},
 
-      rpmVendor := "Aalto University",
+      rpmVendor := "AaltoASIA",
+      rpmUrl := Some("https://github.com/AaltoAsia/O-MI"),
       // Must be in format x.y.z (no dashes)
       // version in Rpm   := 
       rpmLicense := Some("BSD-3-Clause"),
       rpmRelease := "1",
       mappings in Universal := (mappings in Universal).value.distinct,
       //linuxPackageMappings := linuxPackageMappings.value.map{mapping => val filtered = mapping.mappings.toList.distinct;mapping.copy(mappings=filtered)},
+      //linuxPackageMappings in Rpm := (linuxPackageMappings in Rpm).value.map{mapping => val filtered = mapping.mappings.toList.distinct;mapping.copy(mappings=filtered)},
       linuxPackageMappings in Rpm := configWithNoReplace((linuxPackageMappings in Rpm).value),
       debianPackageDependencies in Debian ++= Seq("java8-runtime", "bash (>= 2.05a-11)"),
 
