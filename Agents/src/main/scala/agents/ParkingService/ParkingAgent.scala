@@ -101,16 +101,19 @@ class ParkingAgent(
       }
       pfs.toVector
   }.getOrElse( throw new Exception("No parking facilities found in O-DF or configured path is wrong"))
-  val odfToWrite =initialPFs.map{ pf => pf.toOdf(parkingLotsPath, true).createAncestors }.fold(OdfObjects())( _ union _)
+  val findParkingPath = servicePath / "FindParking"
+  
+  case class ParkingSpaceStatus( path: Path, user: Option[String], free: Boolean)
+  //TODO: Populate!!!
+  val parkingSpaceStatuses: MutableMap[Path,ParkingSpaceStatus] = MutableHashMap()
   val initialWrite = writeToDB( WriteRequest(initialODF) )
-  val initialisationWriteTO = 10.seconds
-  val initializationResponse = Await.ready(initialWrite, initialisationWriteTO)
-  initializationResponse.value match{
-    case None => 
-      throw new Exception(s"Could not set initial state for $name. Initial write to DB timedout after $initialisationWriteTO.")
-    case Some( Failure( e )) => 
+
+  initialWrite.recover{
+    case e: Exception => 
       throw new Exception(s"Could not set initial state for $name. Initial write to DB failed.", e)
-    case Some( Success( response )) => 
+    
+  }.flatMap{
+    case response: ResponseRequest => 
       response.results.foreach{
         case result: OmiResult =>
           result.returnValue match {
@@ -121,39 +124,36 @@ class ParkingAgent(
               throw new Exception( s"Could not set initial state for $name. Got following result from DB: $result.")
           }
       }
-  }
-  val findParkingPath = servicePath / "FindParking"
-  
-  case class ParkingSpaceStatus( path: Path, user: Option[String], free: Boolean)
-  //TODO: Populate!!!
-  val parkingSpaceStatuses: MutableMap[Path,ParkingSpaceStatus] = MutableHashMap(initialPFs.flatMap{
-    pf: ParkingFacility =>
-      pf.parkingSpaces.map{
-        ps: ParkingSpace =>
-          val path =  parkingLotsPath / pf.name / ps.name
-          path -> ParkingSpaceStatus(path, ps.user, ps.available.getOrElse(false) )
+      val initialisationStatus: Future[Unit] = updateParkingSpaceStatuses 
+      initialisationStatus.recover{
+        case e: Exception =>
+          log.error(e.getMessage)
+          context.stop(self)
       }
-  }:_*)
-  getCurrentParkingFacilities.onSuccess{
-    case currentPFs: Seq[ParkingFacility] =>
-      if( currentPFs.nonEmpty ){
-        val entries = currentPFs.flatMap{
-          pf: ParkingFacility =>
-            pf.parkingSpaces.map{
-              space: ParkingSpace =>
-                val path = parkingLotsPath / pf.name / "ParkingSpaces" / space.name
-                path -> ParkingSpaceStatus( path, space.user, space.user.isEmpty ) 
-            }
-        }
-        parkingSpaceStatuses ++= entries
-        //log.debug( parkingSpaceStatuses.mkString("\n") ) 
-      } else {throw new Exception( "No parking facilities found from db.")}
   }
 
+  private def updateParkingSpaceStatuses: Future[Unit] ={
+    getCurrentParkingFacilities.map{
+      case currentPFs: Seq[ParkingFacility] =>
+        if( currentPFs.nonEmpty ){
+          val entries = currentPFs.flatMap{
+            pf: ParkingFacility =>
+              pf.parkingSpaces.map{
+                space: ParkingSpace =>
+                  val path = parkingLotsPath / pf.name / "ParkingSpaces" / space.name
+                  path -> ParkingSpaceStatus( path, space.user, space.user.isEmpty ) 
+              }
+          }
+          parkingSpaceStatuses ++= entries
+          //log.debug( parkingSpaceStatuses.mkString("\n") ) 
+        } else {throw new Exception( "No parking facilities found from db.")}
+    }
+  }
   override protected def handleCall(call: CallRequest) : Future[ResponseRequest] = {
      val methodInfoItemO = call.odf.get(findParkingPath)
       methodInfoItemO match {
         case None =>    
+          log.warning(s"Not found $findParkingPath path for service.")
           Future{
             Responses.InvalidRequest(Some(s"Not found $findParkingPath path for service."))
           }
