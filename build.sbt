@@ -2,7 +2,8 @@ import com.github.retronym.SbtOneJar
 import Dependencies._
 import NativePackagerHelper._
 import Path.relativeTo
-import com.typesafe.sbt.packager.archetypes.ServerLoader.{Systemd,SystemV,Upstart}
+import LinuxPlugin._
+import WindowsPlugin._//import com.typesafe.sbt.packager.archetypes.systemloader.ServerLoader.{Systemd,SystemV,Upstart}
 
 lazy val separator = taskKey[Unit]("Prints seperating string")
 separator := println("########################################################\n\n\n\n")
@@ -10,10 +11,12 @@ separator := println("########################################################\n
 addCommandAlias("release", ";doc ;universal:packageBin ;universal:packageZipTarball ;debian:packageBin ;rpm:packageBin")
 addCommandAlias("systemTest", "omiNode/testOnly http.SystemTest")
 
+mapGenericFilesToLinux
+mapGenericFilesToWindows
 
 def commonSettings(moduleName: String) = Seq(
   name := s"O-MI-$moduleName",
-  version := "0.10.0-Dev", // WARN: Release ver must be "x.y.z" (no dashes, '-')
+  version := "0.10.0.Dev", // WARN: Release ver must be "x.y.z" (no dashes, '-')
   //version := "0.9.3", 
   scalaVersion := "2.11.8",
   scalacOptions := Seq("-unchecked", "-feature", "-deprecation", "-encoding", "utf8", "-Xlint"),
@@ -48,7 +51,7 @@ lazy val javadocSettings = inConfig(JavaDoc)(Defaults.configSettings) ++ Seq(
 )
 
 lazy val omiNode = (project in file("O-MI Node")).
-  //configs(JavaDoc).
+  //conf(JavaDoc).
   settings(
     (commonSettings("Backend") ++ 
      javadocSettings ++ Seq(
@@ -70,7 +73,7 @@ lazy val agents = (project in file("Agents")).
     dependsOn(omiNode)
 
 lazy val root = (project in file(".")).
-  enablePlugins(JavaServerAppPackaging).
+  enablePlugins(JavaServerAppPackaging, SystemdPlugin).
   enablePlugins(DockerPlugin).
   //enablePlugins(SystemdPlugin).
   //enablePlugins(CodacyCoveragePlugin).
@@ -118,27 +121,26 @@ lazy val root = (project in file(".")).
     ///////////////////////////////////////////////////////////////////////
     //Configure program to read application.conf from the right direction//
     ///////////////////////////////////////////////////////////////////////
-      bashScriptExtraDefines += """addJava "-Dconfig.file=${app_home}/../configs/application.conf"""",
-      bashScriptExtraDefines += """addJava "-Dlogback.configurationFile=${app_home}/../configs/logback.xml"""",
+      bashScriptExtraDefines += """addJava "-Dconfig.file=${app_home}/../conf/application.conf"""",
+      bashScriptExtraDefines += """addJava "-Dlogback.configurationFile=${app_home}/../conf/logback.xml"""",
       bashScriptExtraDefines += """cd  ${app_home}/..""",
-      batScriptExtraDefines += """set _JAVA_OPTS=%_JAVA_OPTS% -Dconfig.file=%O_MI_NODE_HOME%\\configs\\application.conf""", 
-      batScriptExtraDefines += """set _JAVA_OPTS=%_JAVA_OPTS% -Dlogback.configurationFile=%O_MI_NODE_HOME%\\configs\\logback.xml""", 
+      batScriptExtraDefines += """set _JAVA_OPTS=%_JAVA_OPTS% -Dconfig.file=%O_MI_NODE_HOME%\\conf\\application.conf""", 
+      batScriptExtraDefines += """set _JAVA_OPTS=%_JAVA_OPTS% -Dlogback.configurationFile=%O_MI_NODE_HOME%\\conf\\logback.xml""", 
       batScriptExtraDefines += """cd "%~dp0\.."""",
 
     ////////////////////////////
     //Native packager settings//
     ////////////////////////////
-      serverLoading in Debian := Systemd,
     //Mappings tells the plugin which files to include in package and in what directory
       mappings in Universal ++= { directory((baseDirectory in omiNode).value / "html")},
-      mappings in Universal ++= {directory(baseDirectory.value / "configs")},
+      mappings in Universal ++= {directory(baseDirectory.value / "conf")},
       mappings in Universal ++= { 
         println((packageBin in Compile).value)
         val src = (sourceDirectory in omiNode).value
         val conf = src / "main" / "resources" 
         Seq(
-          conf / "application.conf" -> "configs/application.conf",
-          conf / "logback.xml" -> "configs/logback.xml")},
+          conf / "application.conf" -> "conf/application.conf",
+          conf / "logback.xml" -> "conf/logback.xml")},
       mappings in Universal ++= {
         println((doc in Compile in omiNode).value)
         val base = (baseDirectory in omiNode).value
@@ -151,13 +153,19 @@ lazy val root = (project in file(".")).
           base / "LICENSE.txt" -> "LICENSE.txt")},
       mappings in Universal ++= {
         val base = baseDirectory.value
-        directory(base / "docs").map(n => (n._1, n._2))},
+        directory(base / "doc").map(n => (n._1, n._2))},
 
-      rpmVendor in Rpm  := "Aalto University",
+      rpmVendor := "AaltoASIA",
+      rpmUrl := Some("https://github.com/AaltoAsia/O-MI"),
       // Must be in format x.y.z (no dashes)
       // version in Rpm   := 
-      rpmLicense in Rpm := Some("BSD-3-Clause"),
-      rpmRelease in Rpm := "1",
+      rpmLicense := Some("BSD-3-Clause"),
+      rpmRelease := "1",
+      mappings in Universal := (mappings in Universal).value.distinct,
+      //linuxPackageMappings := linuxPackageMappings.value.map{mapping => val filtered = mapping.mappings.toList.distinct;mapping.copy(mappings=filtered)},
+      //linuxPackageMappings in Rpm := (linuxPackageMappings in Rpm).value.map{mapping => val filtered = mapping.mappings.toList.distinct;mapping.copy(mappings=filtered)},
+      linuxPackageMappings in Rpm := configWithNoReplace((linuxPackageMappings in Rpm).value),
+      debianPackageDependencies in Debian ++= Seq("java8-runtime", "bash (>= 2.05a-11)"),
 
     /////////////////////////////////////////////////////////////
     //Prevent aggregation of following commands to sub projects//
