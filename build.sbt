@@ -135,7 +135,6 @@ lazy val root = (project in file(".")).
       mappings in Universal ++= { directory((baseDirectory in omiNode).value / "html")},
       mappings in Universal ++= {directory(baseDirectory.value / "conf")},
       mappings in Universal ++= { 
-        println((packageBin in Compile).value)
         val src = (sourceDirectory in omiNode).value
         val conf = src / "main" / "resources" 
         Seq(
