@@ -14,6 +14,17 @@ addCommandAlias("systemTest", "omiNode/testOnly http.SystemTest")
 mapGenericFilesToLinux
 mapGenericFilesToWindows
 
+// Debugging taskkey 
+//val showMappings = taskKey[Unit]("showMappings") 
+//
+//showMappings := {
+//  (mappings in Universal).value
+//  .filter(_._2 contains "spray")
+//  .foreach {
+//    case (file, path) => println(file + " -> " + path)
+//  }
+//}
+
 def commonSettings(moduleName: String) = Seq(
   name := s"O-MI-$moduleName",
   version := "0.10.0.Dev", // WARN: Release ver must be "x.y.z" (no dashes, '-')
@@ -27,6 +38,7 @@ def commonSettings(moduleName: String) = Seq(
   EclipseKeys.withSource := true,
   // coverage 1.3.x:
   coverageExcludedPackages := "parsing.xmlGen.*;",
+
   // coverage 1.0.x:
   //ScoverageSbtPlugin.ScoverageKeys.coverageExcludedPackages := "parsing.xmlGen.*;"
   testFrameworks += new TestFramework("org.scalameter.ScalaMeterFramework"),
