@@ -79,10 +79,13 @@ class CLIHelper(val singleStores: SingleStores, dbConnection: DB )(implicit syst
   }
 
   def writeOdf(odf: OdfObjects): Unit = {
-    val infoItems = odf.infoItems
+    val infoItems: Seq[OdfInfoItem] = odf.infoItems
     dbConnection.writeMany(infoItems)
     singleStores.hierarchyStore execute Union(odf)
-    val latestValues = infoItems.map(ii =>(ii.path, ii.values.maxBy(_.timestamp.getTime)))
+    val latestValues: Seq[(Path, OdfValue[Any])] =
+      infoItems.collect{
+        case OdfInfoItem(path,values,_,_,_,_) if values.nonEmpty => (path, values.maxBy(_.timestamp.getTime()))
+      }
     latestValues.foreach(pv => singleStores.latestStore execute SetSensorData(pv._1,pv._2))
 
   }
