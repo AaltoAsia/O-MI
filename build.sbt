@@ -11,18 +11,20 @@ separator := println("########################################################\n
 addCommandAlias("release", ";doc ;universal:packageBin ;universal:packageZipTarball ;debian:packageBin ;rpm:packageBin")
 addCommandAlias("systemTest", "omiNode/testOnly http.SystemTest")
 
-mapGenericFilesToLinux
-mapGenericFilesToWindows
+//mapGenericFilesToLinux
+//mapGenericFilesToWindows
 
 // Debugging taskkey 
 //val showMappings = taskKey[Unit]("showMappings") 
-//
+
 //showMappings := {
-//  (mappings in Universal).value
-//  .filter(_._2 contains "spray")
+//  (linuxPackageMappings in Rpm).value.foreach{mapping =>
+//  println("____________________")
+//  mapping.mappings.filter(_._2 contains "conf")
 //  .foreach {
 //    case (file, path) => println(file + " -> " + path)
 //  }
+//}
 //}
 
 def commonSettings(moduleName: String) = Seq(
