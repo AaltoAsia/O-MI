@@ -23,8 +23,8 @@ package types
     )
   }
   class ParseError( msg: String, sourcePrefix: String) extends Exception(sourcePrefix +msg)
-  case class ScalaXMLError(val msg: String) extends ParseError( msg, "Scala XML error: " )
-  case class ScalaxbError(val msg: String) extends ParseError( msg, "Scalaxb error: " )
+  case class ScalaXMLError(msg: String) extends ParseError( msg, "Scala XML error: " )
+  case class ScalaxbError(msg: String) extends ParseError( msg, "Scalaxb error: " )
   case class SchemaError(msg: String) extends ParseError( msg, "Schema error: ")
   case class ODFParserError(msg: String) extends ParseError( msg, "O-DF Parser error: " )
   case class OMIParserError(msg: String) extends ParseError( msg, "O-MI Parser error: " )

@@ -56,7 +56,7 @@ public class AuthAPIService implements AuthApi {
     public AuthAPIService(boolean useHTTPS, int authServicePort) {
         String authServiceURIScheme = useHTTPS ? "https://" : "http://";
         String mainURI = useHTTPS ? "localhost" : "localhost:"+authServicePort;
-        this.authServiceURI = authServiceURIScheme + mainURI + "/omi/auth0/permissions";;
+        this.authServiceURI = authServiceURIScheme + mainURI + "/omi/auth0/permissions";
     }
 
     static {

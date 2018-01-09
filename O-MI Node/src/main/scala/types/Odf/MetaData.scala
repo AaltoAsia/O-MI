@@ -5,7 +5,7 @@ import scala.collection.immutable.{ Set, HashSet }
 import parsing.xmlGen.xmlTypes.MetaDataType
 
 case class MetaData(
-  val infoItems: Vector[InfoItem] = Vector.empty 
+                     infoItems: Vector[InfoItem] = Vector.empty
 ) extends Unionable[MetaData] {
   lazy val nameToII: Map[String, InfoItem] = infoItems.map{ ii => ii.nameAttribute ->ii }.toMap
   lazy val names: Set[String] = infoItems.map{ ii => ii.nameAttribute }.toSet

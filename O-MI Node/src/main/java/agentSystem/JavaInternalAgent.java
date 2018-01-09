@@ -50,7 +50,7 @@ public abstract class JavaInternalAgent extends UntypedActor implements Internal
    */
   protected String name(){ 
     return self().path().name();
-  };
+  }
 
 
   /**
@@ -61,8 +61,7 @@ public abstract class JavaInternalAgent extends UntypedActor implements Internal
     ActorSenderInformation asi = new ActorSenderInformation( name(), self());
     OmiRequest requestWithSenderInformation = request.withSenderInformation( asi );
     Future<Object> future = ask( dbHandler, requestWithSenderInformation, timeout);
-    Future<ResponseRequest> responseFuture = types.JavaHelpers.formatWriteFuture(future);
-    return responseFuture;
+    return types.JavaHelpers.formatWriteFuture(future);
   }
 
   final public Future<ResponseRequest> readFromDB( ReadRequest read){ return requestFromDB(read);}
@@ -73,8 +72,7 @@ public abstract class JavaInternalAgent extends UntypedActor implements Internal
     ActorSenderInformation asi = new ActorSenderInformation( name(), self());
     OmiRequest requestWithSenderInformation = request.withSenderInformation( asi );
     Future<Object> future = ask( requestHandler, requestWithSenderInformation, timeout);
-    Future<ResponseRequest> responseFuture = types.JavaHelpers.formatWriteFuture(future);
-    return responseFuture;
+    return types.JavaHelpers.formatWriteFuture(future);
   }
   /**
    * Wrapper for easier request execution.

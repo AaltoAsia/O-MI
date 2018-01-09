@@ -106,7 +106,7 @@ class AgentSystem()(
         classname,
         config,
         Some(agentRef),
-        true,
+        running = true,
         responsibilities,
         language.get
       )

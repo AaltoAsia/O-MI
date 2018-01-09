@@ -85,8 +85,8 @@ object SenderInformation{
 sealed trait SenderInformation 
 
 case class ActorSenderInformation(
-  val actorName: String,
-  val actorRef: ActorRef
+                                   actorName: String,
+  actorRef: ActorRef
   ) extends SenderInformation{
 }
 import OmiRequestType._

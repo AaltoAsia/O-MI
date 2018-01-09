@@ -114,7 +114,7 @@ object Returns{
   ) extends OmiReturn(ReturnCode.Success) with ReturnTypes.Successful{}
   
   case class NotImplemented(
-    val feature: Option[String] = None
+                             feature: Option[String] = None
   ) extends OmiReturn(ReturnCode.NotImplemented) with ReturnTypes.NotImplemented {
     override val description: Option[String] = feature.map{ 
       str => s"Not implemented: $str "
@@ -122,7 +122,7 @@ object Returns{
   }
   
   case class Unauthorized(
-    val feature: Option[String] = None
+                           feature: Option[String] = None
   ) extends OmiReturn(ReturnCode.Unauthorized) with ReturnTypes.Unauthorized {
     override val description: Option[String] = feature.map{ 
       str => s"Unauthorized: $str"
@@ -130,7 +130,7 @@ object Returns{
   }
 
   case class InvalidRequest(
-    val message: Option[String] = None
+                             message: Option[String] = None
   ) extends OmiReturn(ReturnCode.Invalid) with ReturnTypes.Invalid {
     override val description: Option[String] = message.map{ 
       str => s"Invalid request: $str"
@@ -138,8 +138,8 @@ object Returns{
   }
 
   case class InvalidCallback(
-    val callback: Callback, 
-    val reason: Option[String] = None 
+                              callback: Callback,
+    reason: Option[String] = None
   ) extends OmiReturn(ReturnCode.Invalid)  with ReturnTypes.Invalid { 
     override val description: Option[String] = Some(
       "Invalid callback address: " + callback + reason.map{ str => ", reason: " + str}.getOrElse("")
@@ -147,7 +147,7 @@ object Returns{
   }
 
   case class ParseErrors(
-    val errors: Vector[ParseError]
+                          errors: Vector[ParseError]
   ) extends OmiReturn(ReturnCode.Invalid) with ReturnTypes.Invalid {
     override val description: Option[String] = Some(
       errors.map{
@@ -156,7 +156,7 @@ object Returns{
   }
 
   case class InternalError(
-    val message: Option[String] = None
+                            message: Option[String] = None
   ) extends OmiReturn(ReturnCode.InternalError) with ReturnTypes.InternalError {
     override val description: Option[String] = message.map{ 
       msg => s"Internal error: $msg"
@@ -169,7 +169,7 @@ object Returns{
 
 
   case class TTLTimeout(
-    val message: Option[String] = None
+                         message: Option[String] = None
   ) extends OmiReturn(ReturnCode.Timeout) with ReturnTypes.Timeout {
     override val description: Option[String] = message.map{ msg =>
       s"TTL timeout, consider increasing TTL or is the server overloaded? $msg"
@@ -177,7 +177,7 @@ object Returns{
   }
 
   case class Timeout(
-    val message: Option[String] = None
+                      message: Option[String] = None
   ) extends OmiReturn(ReturnCode.Timeout) with ReturnTypes.Timeout {
     override val description: Option[String] = message.map{ msg =>
       s"Timeout: $msg"

@@ -43,7 +43,7 @@ trait InternalAgentSuccess     extends InternalAgentResponse
 case class CommandSuccessful() extends InternalAgentSuccess 
 
 
-class InternalAgentFailure(msg : String, exp : Option[Throwable] )  extends  Exception(msg, exp.getOrElse(null)) with InternalAgentResponse
+class InternalAgentFailure(msg : String, exp : Option[Throwable] )  extends  Exception(msg, exp.orNull) with InternalAgentResponse
 class InternalAgentConfigurationFailure( msg: String, exp: Option[Throwable] ) extends InternalAgentFailure( msg, exp )
 
 class CommandFailed(msg : String, exp : Option[Throwable] ) extends InternalAgentFailure(msg, exp) 
@@ -54,7 +54,7 @@ sealed trait ResponsibleAgentMsg
 case class ResponsibleWrite( promise: Promise[ResponseRequest], write: WriteRequest)
 
 case class AgentConfigurationException( msg: String, exp: Option[Throwable] = None) 
-  extends Exception( msg, exp.getOrElse(null) )
+  extends Exception( msg, exp.orNull )
 
 abstract class  ScalaInternalAgentTemplate(
   protected val requestHandler: ActorRef,
@@ -66,8 +66,8 @@ trait ScalaInternalAgent extends InternalAgent with ActorLogging{
   protected def requestHandler: ActorRef
   protected def dbHandler: ActorRef
   //These need to be implemented 
-  override def preStart = start
-  override def postStop = stop
+  override def preStart: Unit = start
+  override def postStop: Unit = stop
   def receive  = {
     case any: Any => unhandled(any)
   }

@@ -8,11 +8,11 @@ import parsing.xmlGen.scalaxb.DataRecord
 import parsing.xmlGen.xmlTypes.{InfoItemType, ObjectType}
 
 case class Object(
-  val ids: Vector[QlmID],
-  val path: Path,
-  val typeAttribute: Option[String] = None,
-  val descriptions: Seq[Description] = Vector.empty,
-  val attributes: IMap[String,String] = HashMap.empty
+                   ids: Vector[QlmID],
+  path: Path,
+  typeAttribute: Option[String] = None,
+  descriptions: Seq[Description] = Vector.empty,
+  attributes: IMap[String,String] = HashMap.empty
 ) extends Node with Unionable[Object] {
   assert( ids.nonEmpty )
   assert( path.length > 1 )

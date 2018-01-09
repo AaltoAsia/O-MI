@@ -44,7 +44,7 @@ case class Charger(
       this.plug.forall(_.validFor(rplug))
     }
   }
-  def toOdf( parentPath: Path ) ={
+  def toOdf( parentPath: Path ): OdfObject ={
     val chargerPath = parentPath / "Charger"
     val brandII = brand.map{
       str => 

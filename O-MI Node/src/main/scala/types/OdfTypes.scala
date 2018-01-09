@@ -38,8 +38,8 @@ object OdfTreeCollection {
 object OdfQlmID{
 
   case class TimeWindow(
-    val start: Option[Timestamp] = None, 
-    val end: Option[Timestamp] = None
+                         start: Option[Timestamp] = None,
+    end: Option[Timestamp] = None
   ){
     def intersect(that: TimeWindow): Boolean = {
       val l:Boolean = (this.start, that.end) match {
@@ -91,12 +91,12 @@ object OdfQlmID{
   }
 }
 case class OdfQlmID(
-  val value:String,
-  val idType: Option[String] = None,
-  val tagType: Option[String] = None,
-  val startDate: Option[Timestamp] = None,
-  val endDate: Option[Timestamp] = None,
-  val attributes: HashMap[String, String] = HashMap()
+                     value:String,
+  idType: Option[String] = None,
+  tagType: Option[String] = None,
+  startDate: Option[Timestamp] = None,
+  endDate: Option[Timestamp] = None,
+  attributes: HashMap[String, String] = HashMap()
 ){
   import OdfQlmID._
   lazy val validityTimeWindow: Option[TimeWindow] ={

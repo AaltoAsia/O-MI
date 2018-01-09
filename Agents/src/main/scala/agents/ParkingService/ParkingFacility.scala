@@ -64,7 +64,7 @@ case class ParkingFacility(
      }
    }
 
-  def toOdf( parentPath: Path, calculatedPaths: Boolean = false ) = {
+  def toOdf( parentPath: Path, calculatedPaths: Boolean = false ): OdfObject = {
     val facilityPath = parentPath / name
     val calculatedIIs = if(calculatedPaths) {
       Vector( 

@@ -27,16 +27,16 @@ import types.Path
 
 
 case class DBPath(
-  val id: Option[Long],
-  val path: Path,
-  val isInfoItem: Boolean
+                   id: Option[Long],
+  path: Path,
+  isInfoItem: Boolean
 )
 
 case class TimedValue(
-  val id: Option[Long],
-  val timestamp: Timestamp,
-  val value: String,
-  val valueType: String
+                       id: Option[Long],
+  timestamp: Timestamp,
+  value: String,
+  valueType: String
 )
 
 trait Tables extends DBBase{
@@ -236,7 +236,7 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimmableDB{
         val actions =
           if (tablesCreated.contains("PATHSTABLE")){
             val pRoot = Path("Objects")
-            val dbP = DBPath(None, pRoot,false)
+            val dbP = DBPath(None, pRoot,isInfoItem = false)
             pathsTable.add( Seq(dbP) ).map{
               case ids: Seq[Long] => atomic { implicit txn =>
                 pathToDBPath ++= ids.map{
@@ -307,7 +307,7 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimmableDB{
           Map(path -> dbpath) ++ (
             path.ancestors
               .filterNot(reserved contains _)
-              .map(returnOrReserve(_, false))
+              .map(returnOrReserve(_, isInfoItem = false))
               .collect{
                 case dbpath @ DBPath(None, path, false) =>
                   path -> dbpath
@@ -320,9 +320,9 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimmableDB{
 
     nodes.foldLeft(Map[Path,DBPath]()){ case (reserved: Map[Path,DBPath], node: OdfNode) =>
       node match {
-        case obj: OdfObjects => handleNode(obj, false, reserved)
-        case obj: OdfObject => handleNode(obj, false, reserved)
-        case ii: OdfInfoItem => handleNode(ii, true, reserved)
+        case obj: OdfObjects => handleNode(obj, isInfo = false, reserved)
+        case obj: OdfObject => handleNode(obj, isInfo = false, reserved)
+        case ii: OdfInfoItem => handleNode(ii, isInfo = true, reserved)
       }
     }
   }
@@ -505,7 +505,7 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimmableDB{
           }
       case Some( DBPath(Some(id), originPath, false) ) =>
           val ( objs, iis ) = pathToDBPath.single.values.filter{ // FIXME: filter on a Map
-            case dbPath: DBPath => dbPath == originPath || dbPath.path.isDescendantOf(originPath)
+            case dbPath: DBPath => dbPath.path == originPath || dbPath.path.isDescendantOf(originPath)
           }.partition{ case dbPath: DBPath => dbPath.isInfoItem }
           val tableDrops = iis.map{
             case DBPath(Some(id), descendantPath, true)  =>
@@ -549,7 +549,7 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimmableDB{
       pathValues => pathValues.schema.drop
     }:_*)
     db.run( valueDropsActions.andThen( pathsTable.delete ).andThen(
-      pathsTable.add( Seq( DBPath(None, Path("Objects"),false))).map{ seq => seq.length }
+      pathsTable.add( Seq( DBPath(None, Path("Objects"),isInfoItem = false))).map{ seq => seq.length }
     ).transactionally )
   }
 

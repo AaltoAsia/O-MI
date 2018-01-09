@@ -408,7 +408,7 @@ object Results{
   }
 
   case class Timeout(
-    val description: Option[String] = None
+                      description: Option[String] = None
   ) extends OmiResult(Returns.Timeout(description)) with UnionableResult{
     def union(o: UnionableResult): UnionableResult ={
       o match {

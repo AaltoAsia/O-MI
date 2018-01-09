@@ -37,82 +37,82 @@ trait Value[+V]{
 }
 
 case class ODFValue(
-  val value: ODF,
-  val timestamp: Timestamp,
-  val attributes: Map[String,String]
+                     value: ODF,
+  timestamp: Timestamp,
+  attributes: Map[String,String]
 ) extends Value[ODF] {
   final val typeAttribute: String = "odf"
   def valueAsDataRecord = DataRecord(None, Some("Objects"),value.asObjectsType)
 }
 
-case class StringValue( 
-  val value: String,
-  val timestamp: Timestamp,
-  val attributes: Map[String,String]
+case class StringValue(
+                        value: String,
+  timestamp: Timestamp,
+  attributes: Map[String,String]
 ) extends Value[String] {
   final val typeAttribute: String = "xs:string"
   def valueAsDataRecord: DataRecord[Any] = DataRecord(value) 
 }
 
-case class IntValue( 
-  val value: Int,
-  val timestamp: Timestamp,
-  val attributes: Map[String,String]
+case class IntValue(
+                     value: Int,
+  timestamp: Timestamp,
+  attributes: Map[String,String]
 ) extends Value[Int] {
   final val typeAttribute: String = "xs:int"
   def valueAsDataRecord: DataRecord[Any] = DataRecord(value) 
 }
 
-case class LongValue( 
-  val value: Long,
-  val timestamp: Timestamp,
-  val attributes: Map[String,String]
+case class LongValue(
+                      value: Long,
+  timestamp: Timestamp,
+  attributes: Map[String,String]
 ) extends Value[Long] {
   final val typeAttribute: String = "xs:long"
   def valueAsDataRecord: DataRecord[Any] = DataRecord(value) 
 }
 
-case class ShortValue( 
-  val value: Short,
-  val timestamp: Timestamp,
-  val attributes: Map[String,String]
+case class ShortValue(
+                       value: Short,
+  timestamp: Timestamp,
+  attributes: Map[String,String]
 ) extends Value[Short] {
   final val typeAttribute: String = "xs:short"
   def valueAsDataRecord: DataRecord[Any] = DataRecord(value) 
 }
 
-case class FloatValue( 
-  val value: Float,
-  val timestamp: Timestamp,
-  val attributes: Map[String,String]
+case class FloatValue(
+                       value: Float,
+  timestamp: Timestamp,
+  attributes: Map[String,String]
 ) extends Value[Float] {
   final val typeAttribute: String = "xs:float"
   def valueAsDataRecord: DataRecord[Any] = DataRecord(value) 
 }
 
-case class DoubleValue( 
-  val value: Double,
-  val timestamp: Timestamp,
-  val attributes: Map[String,String]
+case class DoubleValue(
+                        value: Double,
+  timestamp: Timestamp,
+  attributes: Map[String,String]
 ) extends Value[Double] {
   final val typeAttribute: String = "xs:double"
   def valueAsDataRecord: DataRecord[Any] = DataRecord(value) 
 }
 
-case class BooleanValue( 
-  val value: Boolean,
-  val timestamp: Timestamp,
-  val attributes: Map[String,String]
+case class BooleanValue(
+                         value: Boolean,
+  timestamp: Timestamp,
+  attributes: Map[String,String]
 ) extends Value[Boolean] {
   final val typeAttribute: String = "xs:boolean"
   def valueAsDataRecord: DataRecord[Any] = DataRecord(value) 
 }
 
-case class StringPresentedValue( 
-  val value: String,
-  val timestamp: Timestamp,
-  val typeAttribute: String = "xs:string",
-  val attributes: Map[String,String]
+case class StringPresentedValue(
+                                 value: String,
+  timestamp: Timestamp,
+  typeAttribute: String = "xs:string",
+  attributes: Map[String,String]
 ) extends Value[String] {
   def valueAsDataRecord: DataRecord[Any] = DataRecord(value) 
 }

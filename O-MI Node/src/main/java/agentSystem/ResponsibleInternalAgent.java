@@ -11,8 +11,8 @@ public interface ResponsibleInternalAgent extends InternalAgent{
   /**
    * Method to be called when a WriteRequest  is received.
    */
-  public Future<ResponseRequest> handleWrite(WriteRequest write);
+  Future<ResponseRequest> handleWrite(WriteRequest write);
   //public Future<ResponseRequest>  handleRead(ReadRequest read);
-  public Future<ResponseRequest> handleCall(CallRequest call);
+  Future<ResponseRequest> handleCall(CallRequest call);
 
 }

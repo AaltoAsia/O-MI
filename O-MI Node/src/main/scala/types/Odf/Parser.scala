@@ -265,7 +265,7 @@ object ODFParser extends parsing.Parser[OdfParseResult] {
       case str: String  => 
         val xmlValue = valueType.mixed.map{
           case dr: xmlGen.scalaxb.DataRecord[_] => 
-            xmlGen.scalaxb.DataRecord.toXML(dr,None,None,xmlGen.odfDefaultScope,false)
+            xmlGen.scalaxb.DataRecord.toXML(dr,None,None,xmlGen.odfDefaultScope,typeAttribute = false)
             }.foldLeft(NodeSeq.Empty){
               case (res: NodeSeq, ns: NodeSeq) => res ++ ns
             }

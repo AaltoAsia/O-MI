@@ -37,15 +37,15 @@ object InfoItem{
   }
 }
 
-case class InfoItem( 
-  val nameAttribute: String,
-  val path: Path,
-  val typeAttribute: Option[String] = None,
-  val names: Vector[QlmID] = Vector.empty,
-  val descriptions: Vector[Description]= Vector.empty,
-  val values: Vector[Value[Any]]= Vector.empty,
-  val metaData: Option[MetaData] = None,
-  val attributes: IMap[String,String] = HashMap.empty
+case class InfoItem(
+                     nameAttribute: String,
+  path: Path,
+  typeAttribute: Option[String] = None,
+  names: Vector[QlmID] = Vector.empty,
+  descriptions: Vector[Description]= Vector.empty,
+  values: Vector[Value[Any]]= Vector.empty,
+  metaData: Option[MetaData] = None,
+  attributes: IMap[String,String] = HashMap.empty
 ) extends Node with Unionable[InfoItem]{
   assert( nameAttribute == path.last )
   def updateValues( vals: Vector[Value[Any]] ) = this.copy(values = vals)
@@ -140,7 +140,7 @@ case class InfoItem(
         }.toVector
   }
   def createParent: Node = {
-    val parentPath = path.init
+    val parentPath: Path = path.init
     if( parentPath == new Path( "Objects") ){
       new Objects()
     } else {

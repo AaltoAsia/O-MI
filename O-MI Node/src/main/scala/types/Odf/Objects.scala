@@ -7,8 +7,8 @@ import parsing.xmlGen.scalaxb.DataRecord
 import parsing.xmlGen.xmlTypes.{ObjectsType, ObjectType}
 
 case class Objects(
-  val version: Option[String] = None,
-  val attributes: Map[String,String] = HashMap.empty
+                    version: Option[String] = None,
+  attributes: Map[String,String] = HashMap.empty
 ) extends Node {
   val path: Path = new Path( "Objects")
   def hasStaticData: Boolean = attributes.nonEmpty 

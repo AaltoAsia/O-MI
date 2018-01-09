@@ -12,8 +12,8 @@ object Description{
 
 }
 case class  Description(
-  val text: String,
-  val language: Option[String] = None
+                         text: String,
+  language: Option[String] = None
 ) {
   def union( other: Description ): Description ={
     Description(
