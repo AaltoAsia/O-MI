@@ -75,8 +75,8 @@ class AgentResponsibilities(){
       case ( None, paths:Set[Path] ) =>
         None -> odf.getUpTreeAsODF(paths.toVector)
     }.mapValues{
-      case odf => 
-        request.replaceOdf( NewTypeConverter.convertODF(odf))
+      case _odf =>
+        request.replaceOdf( NewTypeConverter.convertODF(_odf))
     }
   }
   

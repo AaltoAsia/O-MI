@@ -513,9 +513,9 @@ trait XMLProtocol extends scalaxb.XMLStandardTypes {
     }
 
     def writesChildNodes(__obj: ReadRequestType, __scope: scala.xml.NamespaceBinding): Seq[scala.xml.Node] =
-      Seq.concat(__obj.nodeList map { scalaxb.toXML[NodesType](_, Some("http://www.opengroup.org/xsd/omi/1.0/"), Some("nodeList"), __scope, false) } getOrElse {Nil},
+      Seq.concat(__obj.nodeList map { scalaxb.toXML[NodesType](_, Some("http://www.opengroup.org/xsd/omi/1.0/"), Some("nodeList"), __scope, false) } getOrElse Nil,
         __obj.requestID flatMap { scalaxb.toXML[String](_, Some("http://www.opengroup.org/xsd/omi/1.0/"), Some("requestID"), __scope, false) },
-        __obj.msg map { scalaxb.toXML[MsgType](_, Some("http://www.opengroup.org/xsd/omi/1.0/"), Some("msg"), __scope, false) } getOrElse {Nil})
+        __obj.msg map { scalaxb.toXML[MsgType](_, Some("http://www.opengroup.org/xsd/omi/1.0/"), Some("msg"), __scope, false) } getOrElse Nil)
 
   }
 
@@ -550,9 +550,9 @@ trait XMLProtocol extends scalaxb.XMLStandardTypes {
     }
 
     def writesChildNodes(__obj: WriteRequestType, __scope: scala.xml.NamespaceBinding): Seq[scala.xml.Node] =
-      Seq.concat(__obj.nodeList map { scalaxb.toXML[NodesType](_, Some("http://www.opengroup.org/xsd/omi/1.0/"), Some("nodeList"), __scope, false) } getOrElse {Nil},
+      Seq.concat(__obj.nodeList map { scalaxb.toXML[NodesType](_, Some("http://www.opengroup.org/xsd/omi/1.0/"), Some("nodeList"), __scope, false) } getOrElse Nil,
         __obj.requestID flatMap { scalaxb.toXML[String](_, Some("http://www.opengroup.org/xsd/omi/1.0/"), Some("requestID"), __scope, false) },
-        __obj.msg map { scalaxb.toXML[MsgType](_, Some("http://www.opengroup.org/xsd/omi/1.0/"), Some("msg"), __scope, false) } getOrElse {Nil})
+        __obj.msg map { scalaxb.toXML[MsgType](_, Some("http://www.opengroup.org/xsd/omi/1.0/"), Some("msg"), __scope, false) } getOrElse Nil)
 
   }
 
@@ -602,9 +602,9 @@ trait XMLProtocol extends scalaxb.XMLStandardTypes {
     }
 
     def writesChildNodes(__obj: CallRequestType, __scope: scala.xml.NamespaceBinding): Seq[scala.xml.Node] =
-      Seq.concat(__obj.nodeList map { scalaxb.toXML[NodesType](_, Some("http://www.opengroup.org/xsd/omi/1.0/"), Some("nodeList"), __scope, false) } getOrElse {Nil},
+      Seq.concat(__obj.nodeList map { scalaxb.toXML[NodesType](_, Some("http://www.opengroup.org/xsd/omi/1.0/"), Some("nodeList"), __scope, false) } getOrElse Nil,
         __obj.requestID flatMap { scalaxb.toXML[String](_, Some("http://www.opengroup.org/xsd/omi/1.0/"), Some("requestID"), __scope, false) },
-        __obj.msg map { scalaxb.toXML[MsgType](_, Some("http://www.opengroup.org/xsd/omi/1.0/"), Some("msg"), __scope, false) } getOrElse {Nil})
+        __obj.msg map { scalaxb.toXML[MsgType](_, Some("http://www.opengroup.org/xsd/omi/1.0/"), Some("msg"), __scope, false) } getOrElse Nil)
 
   }
 
@@ -639,9 +639,9 @@ trait XMLProtocol extends scalaxb.XMLStandardTypes {
     }
 
     def writesChildNodes(__obj: DeleteRequestType, __scope: scala.xml.NamespaceBinding): Seq[scala.xml.Node] =
-      Seq.concat(__obj.nodeList map { scalaxb.toXML[NodesType](_, Some("http://www.opengroup.org/xsd/omi/1.0/"), Some("nodeList"), __scope, false) } getOrElse {Nil},
+      Seq.concat(__obj.nodeList map { scalaxb.toXML[NodesType](_, Some("http://www.opengroup.org/xsd/omi/1.0/"), Some("nodeList"), __scope, false) } getOrElse Nil,
         __obj.requestID flatMap { scalaxb.toXML[String](_, Some("http://www.opengroup.org/xsd/omi/1.0/"), Some("requestID"), __scope, false) },
-        __obj.msg map { scalaxb.toXML[MsgType](_, Some("http://www.opengroup.org/xsd/omi/1.0/"), Some("msg"), __scope, false) } getOrElse {Nil})
+        __obj.msg map { scalaxb.toXML[MsgType](_, Some("http://www.opengroup.org/xsd/omi/1.0/"), Some("msg"), __scope, false) } getOrElse Nil)
 
   }
 
@@ -680,9 +680,9 @@ trait XMLProtocol extends scalaxb.XMLStandardTypes {
     def writesChildNodes(__obj: RequestResultType, __scope: scala.xml.NamespaceBinding): Seq[scala.xml.Node] =
       Seq.concat(scalaxb.toXML[ReturnType](__obj.returnValue, Some("http://www.opengroup.org/xsd/omi/1.0/"), Some("return"), __scope, false),
         __obj.requestID flatMap { scalaxb.toXML[IdType](_, Some("http://www.opengroup.org/xsd/omi/1.0/"), Some("requestID"), __scope, false) },
-        __obj.msg map { scalaxb.toXML[MsgType](_, Some("http://www.opengroup.org/xsd/omi/1.0/"), Some("msg"), __scope, false) } getOrElse {Nil},
-        __obj.nodeList map { scalaxb.toXML[NodesType](_, Some("http://www.opengroup.org/xsd/omi/1.0/"), Some("nodeList"), __scope, false) } getOrElse {Nil},
-        __obj.omiEnvelope map { scalaxb.toXML[OmiEnvelopeType](_, Some("http://www.opengroup.org/xsd/omi/1.0/"), Some("omiEnvelope"), __scope, false) } getOrElse {Nil})
+        __obj.msg map { scalaxb.toXML[MsgType](_, Some("http://www.opengroup.org/xsd/omi/1.0/"), Some("msg"), __scope, false) } getOrElse Nil,
+        __obj.nodeList map { scalaxb.toXML[NodesType](_, Some("http://www.opengroup.org/xsd/omi/1.0/"), Some("nodeList"), __scope, false) } getOrElse Nil,
+        __obj.omiEnvelope map { scalaxb.toXML[OmiEnvelopeType](_, Some("http://www.opengroup.org/xsd/omi/1.0/"), Some("omiEnvelope"), __scope, false) } getOrElse Nil)
 
   }
 
@@ -795,7 +795,7 @@ trait XMLProtocol extends scalaxb.XMLStandardTypes {
         p2 map { scalaxb.fromXML[IdType](_, scalaxb.ElemName(node) :: stack) }) })
     
     def writesChildNodes(__obj: CancelRequestType, __scope: scala.xml.NamespaceBinding): Seq[scala.xml.Node] =
-      Seq.concat(__obj.nodeList map { scalaxb.toXML[NodesType](_, Some("http://www.opengroup.org/xsd/omi/1.0/"), Some("nodeList"), __scope, false) } getOrElse {Nil},
+      Seq.concat(__obj.nodeList map { scalaxb.toXML[NodesType](_, Some("http://www.opengroup.org/xsd/omi/1.0/"), Some("nodeList"), __scope, false) } getOrElse Nil,
         __obj.requestID flatMap { scalaxb.toXML[IdType](_, Some("http://www.opengroup.org/xsd/omi/1.0/"), Some("requestID"), __scope, false) })
 
   }

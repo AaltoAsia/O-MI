@@ -211,7 +211,7 @@ class AnalyticsStore(
   def addUser(path: Path, user: Int, timestamp: Long): Option[Vector[(Int, Long)]] = {
     val tt = currentTime - userAccessIntervalWindow.toMillis
     val temp1: Vector[(Int, Long)] = userSTM.get(path).toVector.flatten
-    val temp2: Vector[(Int, Long)] = temp1.filterNot{case (foundUser, timestamp) => (timestamp < tt) || (foundUser == user)}//(value => (value._2 < tt )||( value._1 == user))
+    val temp2: Vector[(Int, Long)] = temp1.filterNot{case (foundUser, _timestamp) => (_timestamp < tt) || (foundUser == user)}//(value => (value._2 < tt )||( value._1 == user))
     userSTM.put(path, temp2.:+((user, timestamp): (Int,Long)))
   }
 

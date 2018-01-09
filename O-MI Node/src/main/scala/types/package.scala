@@ -92,7 +92,7 @@ package object OdfTypes {
 
   def unionOption[T](a: Option[T], b: Option[T])(f: (T,T) => T): Option[T] = {
     (a,b) match{
-        case (Some(a), Some(_b)) => Some(f(a,_b))
+        case (Some(_a), Some(_b)) => Some(f(_a,_b))
         case (None, Some(_b)) => Some(_b)
         case (Some(_a), None) => Some(_a)
         case (None, None) => None

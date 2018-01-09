@@ -140,9 +140,9 @@ case class OdfQlmID(
   def union( that: OdfQlmID ): OdfQlmID ={
     assert( unionable( that) )
     val tw: Option[TimeWindow] = (validityTimeWindow, that.validityTimeWindow) match {
-      case (Some(tw), Some(ovtw)) => Some(tw.union(ovtw))
-      case (None, Some(tw)) =>Some(tw )
-      case (Some(tw), None ) => Some(tw)
+      case (Some(_tw), Some(ovtw)) => Some(_tw.union(ovtw))
+      case (None, Some(_tw)) =>Some(_tw )
+      case (Some(_tw), None ) => Some(_tw)
       case (None, None) => None
     }
     OdfQlmID(

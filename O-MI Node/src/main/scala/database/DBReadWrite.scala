@@ -60,8 +60,8 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables with TrimmableDB{
       //val leftUpdateQ  =  leftValsQ.map(_ + 2).update(leftValsQ)
 
       DBIO.seq(
-        sqlu"""UPDATE "HIERARCHYNODES" SET "RIGHTBOUNDARY" = "RIGHTBOUNDARY" + 2 WHERE "RIGHTBOUNDARY" >= ${value}""",
-        sqlu"""UPDATE "HIERARCHYNODES" SET "LEFTBOUNDARY" = "LEFTBOUNDARY" + 2 WHERE "LEFTBOUNDARY" > ${value}""")
+        sqlu"""UPDATE "HIERARCHYNODES" SET "RIGHTBOUNDARY" = "RIGHTBOUNDARY" + 2 WHERE "RIGHTBOUNDARY" >= $value""",
+        sqlu"""UPDATE "HIERARCHYNODES" SET "LEFTBOUNDARY" = "LEFTBOUNDARY" + 2 WHERE "LEFTBOUNDARY" > $value""")
     }
 
     // @return insertId
@@ -119,10 +119,10 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables with TrimmableDB{
           ), 0)((delete1, delete2) => delete1 + delete2)
           removedDistance = removedRight - removedLeft + 1
           updateActions = DBIO.seq(
-            sqlu"""UPDATE HIERARCHYNODES SET RIGHTBOUNDARY =  RIGHTBOUNDARY - ${removedDistance}
-              WHERE RIGHTBOUNDARY > ${removedLeft}""",
-            sqlu"""UPDATE HIERARCHYNODES SET LEFTBOUNDARY = LEFTBOUNDARY - ${removedDistance}
-              WHERE LEFTBOUNDARY > ${removedLeft}""").map(_ => 0)
+            sqlu"""UPDATE HIERARCHYNODES SET RIGHTBOUNDARY =  RIGHTBOUNDARY - $removedDistance
+              WHERE RIGHTBOUNDARY > $removedLeft""",
+            sqlu"""UPDATE HIERARCHYNODES SET LEFTBOUNDARY = LEFTBOUNDARY - $removedDistance
+              WHERE LEFTBOUNDARY > $removedLeft""").map(_ => 0)
           numDel <- DBIO.fold(Seq(removeOp, updateActions), 0)((start, next) => start + next)
 
         } yield removedIds//FIX

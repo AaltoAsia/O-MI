@@ -172,9 +172,9 @@ trait OmiService
           
             val origPath = Path(pathStr)
             val path = origPath match {
-              case path if path.lastOption.exists(List("value", "MetaData", "description","id", "name").contains(_)) =>
-                Path(path.init) // check permission for parent infoitem/object
-              case path => path
+              case _path if _path.lastOption.exists(List("value", "MetaData", "description","id", "name").contains(_)) =>
+                Path(_path.init) // check permission for parent infoitem/object
+              case _path => _path
             }
 
             val asReadRequest = (singleStores.hierarchyStore execute GetTree()).get(path).map(_.createAncestors).map( p => ReadRequest(p,user0 = UserInfo(remoteAddress = Some(user))))
@@ -307,7 +307,7 @@ trait OmiService
               }
             case Left(errors) => { // Parsing errors found
 
-              log.warn(s"${requestString}")
+              log.warn(s"$requestString")
               log.warn("Parse Errors: {}", errors.mkString(", "))
 
               val errorResponse = Responses.ParseErrors(errors.toVector)
@@ -334,7 +334,7 @@ trait OmiService
           // check the error code for logging
           val statusO = response.results.map{ result => result.returnValue.returnCode}
           if (statusO exists (_ != "200")){
-            log.warn(s"Error code $statusO with following request:\n${requestString}")
+            log.warn(s"Error code $statusO with following request:\n$requestString")
           }
 
           response.asXML // return
@@ -525,7 +525,7 @@ trait WebSocketOMISupport { self: OmiService =>
         // TODO: check what happens when sending empty String
         resultMessage = ws.TextMessage(response.toString)
         queueResult <- queue offer resultMessage
-      } yield {queueResult}
+      } yield queueResult
 
       def removeRelatedSub() = {
         futureResponse.map{ 

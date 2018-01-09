@@ -357,7 +357,7 @@ class SubscriptionManager(
       val subPaths = iSub.paths.map(path => (path, hTree.get(path)))
       val (failures, nodes) = subPaths.foldLeft[(Seq[Path], Seq[OdfNode])]((Seq(), Seq())){
             case ((paths, _nodes), (p,Some(node))) => (paths, _nodes.:+(node))
-            case ((paths, nodes), (p, None))    => (paths.:+(p), nodes)
+            case ((paths, _nodes), (p, None))    => (paths.:+(p), _nodes)
           }
       val subscribedInfoItems = OdfTypes
         .getInfoItems(nodes: _*)

@@ -309,8 +309,8 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimmableDB{
               .filterNot(reserved contains _)
               .map(returnOrReserve(_, isInfoItem = false))
               .collect{
-                case dbpath @ DBPath(None, path, false) =>
-                  path -> dbpath
+                case dbpath @ DBPath(None, _path, false) =>
+                  _path -> dbpath
               }
               .toMap
           )
@@ -508,7 +508,7 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimmableDB{
             case dbPath: DBPath => dbPath.path == originPath || dbPath.path.isDescendantOf(originPath)
           }.partition{ case dbPath: DBPath => dbPath.isInfoItem }
           val tableDrops = iis.map{
-            case DBPath(Some(id), descendantPath, true)  =>
+            case DBPath(Some(_id), descendantPath, true)  =>
             valueTables.get(descendantPath) match{
               case Some( pathValues ) =>
                 pathValues.schema.drop

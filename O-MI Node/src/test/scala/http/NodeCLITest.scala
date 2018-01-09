@@ -398,10 +398,10 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
         interval,
         startTime
       ))
-      val correct: String  =s"Started: ${startTime}\r\n" +
-      s"Ends: ${endTime}\r\n" +
-      s"Interval: ${interval}\r\n" +
-      s"Callback: ${callback}\r\n" +
+      val correct: String  =s"Started: $startTime\r\n" +
+      s"Ends: $endTime\r\n" +
+      s"Interval: $interval\r\n" +
+      s"Callback: $callback\r\n" +
       s"Paths:\r\n${paths.mkString("\r\n")}\r\n>"
       showSubTestBase(sub,correct)
   }
@@ -423,8 +423,8 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
         endTime,
         callback
       ))
-      val correct: String  =s"Ends: ${endTime}\r\n" +
-      s"Callback: ${callback}\r\n" +
+      val correct: String  =s"Ends: $endTime\r\n" +
+      s"Callback: $callback\r\n" +
       s"Paths:\r\n${paths.mkString("\r\n")}\r\n>"
       showSubTestBase(sub,correct)
   }
@@ -448,10 +448,10 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
         startTime,
         paths
       ))
-      val correct: String  =s"Started: ${startTime}\r\n" +
-      s"Ends: ${endTime}\r\n" +
-      s"Interval: ${interval}\r\n" +
-      s"Last polled: ${nextRunTime}\r\n" +
+      val correct: String  =s"Started: $startTime\r\n" +
+      s"Ends: $endTime\r\n" +
+      s"Interval: $interval\r\n" +
+      s"Last polled: $nextRunTime\r\n" +
       s"Paths:\r\n${paths.mkString("\r\n")}\r\n>"
       showSubTestBase(sub,correct)
   }
@@ -474,10 +474,10 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
         startTime,
         paths
       ))
-      val correct: String  = s"Started: ${startTime}\r\n" +
-      s"Ends: ${endTime}\r\n" +
+      val correct: String  = s"Started: $startTime\r\n" +
+      s"Ends: $endTime\r\n" +
       s"Interval: -1\r\n" +
-      s"Last polled: ${nextRunTime}\r\n" +
+      s"Last polled: $nextRunTime\r\n" +
       s"Paths:\r\n${paths.mkString("\r\n")}\r\n>"
       showSubTestBase(sub,correct)
   }

@@ -12,8 +12,8 @@ object QlmID{
 
   def unionReduce( ids: Seq[QlmID] ): Seq[QlmID] ={
     ids.groupBy( _.id ).map{
-      case (id, ids) =>
-        ids.foldLeft(QlmID(id))( _ union _ )
+      case (id, _ids) =>
+        _ids.foldLeft(QlmID(id))( _ union _ )
     }.toVector
   }
 }

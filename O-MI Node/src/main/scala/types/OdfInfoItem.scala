@@ -282,7 +282,7 @@ object OdfValue{
       }
     }
     create match {
-      case Success(value) => value
+      case Success(_value) => _value
       case Failure(_) =>
         //println( s"Creating of OdfValue failed with type $typeValue, caused by: $e")
         OdfStringPresentedValue(value, timestamp, attributes = attributes)

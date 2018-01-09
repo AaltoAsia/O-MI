@@ -195,11 +195,11 @@ class InfluxDBImplementation(
                log.warning( s"Database ${config.databaseName} not found from InfluxDB at address ${config.address}")
                log.warning( s"Creating database ${config.databaseName} to InfluxDB in address ${config.address}")
                sendQuery(s"create database ${config.databaseName} ").flatMap{
-                 case response @ HttpResponse( status, headers, entity, protocol ) if status.isSuccess =>
+                 case response @ HttpResponse( status, headers, _entity, protocol ) if status.isSuccess =>
                     log.info( s"Database ${config.databaseName} created seccessfully to InfluxDB at address ${config.address}")
                    Future.successful()
-                 case response @ HttpResponse( status, headers, entity, protocol ) if status.isFailure =>
-                   entity.toStrict(10.seconds).flatMap{ stricted => Unmarshal(stricted).to[String].map{
+                 case response @ HttpResponse( status, headers, _entity, protocol ) if status.isFailure =>
+                   _entity.toStrict(10.seconds).flatMap{ stricted => Unmarshal(stricted).to[String].map{
                      str =>
                        log.error( s"Database ${config.databaseName} could not be created to InfluxDB at address ${config.address}")
                        log.warning(s""" Query returned $status with:\n $str""")
