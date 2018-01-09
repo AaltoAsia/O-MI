@@ -102,10 +102,8 @@ trait ODF//[M <: Map[Path,Node], S<: SortedSet[Path] ]
   }
   def nodesWithStaticData: Vector[Node] = nodes.values.filter( _.hasStaticData ).toVector
   def getSubTree( path: Path): Seq[Node] = {
-    (
-      //nodes.get(path) ++ 
-      getSubTreePaths(path).flatMap{   case p: Path => nodes.get(p) }
-    ).toVector
+    //nodes.get(path) ++
+      getSubTreePaths(path).flatMap { case p: Path => nodes.get(p) }.toVector
   }
   def getChilds( path: Path): Seq[Node] = {
     getChildPaths(path).flatMap{   case p: Path => nodes.get(p) }.toVector
@@ -127,7 +125,7 @@ trait ODF//[M <: Map[Path,Node], S<: SortedSet[Path] ]
       case objs: Objects =>
         objs.asObjectsType(objectTypes) 
     }.getOrElse{
-      (new Objects()).asObjectsType(objectTypes) 
+      new Objects().asObjectsType(objectTypes)
     }
   }
   def contains( path: Path ): Boolean = paths.contains(path)

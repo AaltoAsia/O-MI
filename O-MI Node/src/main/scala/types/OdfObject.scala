@@ -47,7 +47,7 @@ class  OdfObjectImpl(
     val thatObj: HashMap[Path, OdfObject] = HashMap(another.objects.map(o => (o.path, o)): _*)
     val tmp: OdfTreeCollection[OdfQlmID] = id
     val tmp2: OdfTreeCollection[OdfQlmID] = another.id
-    val idsWithDuplicate: Vector[OdfQlmID] = (this.id.toVector ++ another.id.toVector)
+    val idsWithDuplicate: Vector[OdfQlmID] = this.id.toVector ++ another.id.toVector
     val ids: Seq[OdfQlmID]  = idsWithDuplicate.groupBy{ 
       case qlmId: OdfQlmID => qlmId.value 
     }.values.collect{
@@ -259,7 +259,7 @@ class  OdfObjectImpl(
         subobj.asObjectType
       }.toSeq,
       attributes = Map.empty[String, DataRecord[Any]] ++
-        typeValue.map{ n => ("@type" -> DataRecord(n))} ++
+        typeValue.map{ n => "@type" -> DataRecord(n) } ++
         attributesToDataRecord( this.attributes )
     )
   }

@@ -105,12 +105,12 @@ case class ImmutableODF private[odf] (
 
   def removePaths( pathsToRemove: Iterable[Path]) : ODF = {
     val subTrees = pathsToRemove.flatMap{ p => getSubTreePaths(p) }.toSet
-    this.copy( nodes --( subTrees ) )
+    this.copy( nodes -- subTrees )
   }
   
   def removePath( path: Path) : ODF ={
     val subtreeP = getSubTreePaths( path )
-    this.copy( nodes --( subtreeP ) )
+    this.copy( nodes -- subtreeP )
   }
 
   def add( node: Node ) : ODF ={

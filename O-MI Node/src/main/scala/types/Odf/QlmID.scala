@@ -41,20 +41,20 @@ case class QlmID(
   implicit def asQlmIDType: QlmIDType = {
     val idTypeAttr: Seq[(String,DataRecord[Any])] = idType.map{
           typ =>
-            ("@idType" -> DataRecord(typ))
+            "@idType" -> DataRecord(typ)
         }.toSeq 
     val tagTypeAttr: Seq[(String,DataRecord[Any])]  = tagType.map{
           typ =>
-            ("@tagType" -> DataRecord(typ))
+            "@tagType" -> DataRecord(typ)
         }.toSeq  
   
     val startDateAttr = startDate.map{
               startDate =>
-                ("@startDate" -> DataRecord(timestampToXML(startDate)))
+                "@startDate" -> DataRecord(timestampToXML(startDate))
             }.toSeq
     val endDateAttr = endDate.map{
               endDate =>
-                ("@endDate" -> DataRecord(timestampToXML(endDate)))
+                "@endDate" -> DataRecord(timestampToXML(endDate))
         }.toSeq
     QlmIDType(
       id,

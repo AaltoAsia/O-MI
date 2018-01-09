@@ -166,9 +166,9 @@ trait DBWriteHandler extends DBHandlerBase {
     relatedPollSubs.collect {
       //if no old value found for path or start time of subscription is after last value timestamp
       //if new value is updated value. forall for option returns true if predicate is true or the value is None
-      case sub if(oldValueOpt.forall(oldValue =>
+      case sub if oldValueOpt.forall(oldValue =>
         singleStores.valueShouldBeUpdated(oldValue, newValue) &&
-          (oldValue.timestamp.before(sub.startTime) || oldValue.value != newValue.value))) => {
+          (oldValue.timestamp.before(sub.startTime) || oldValue.value != newValue.value)) => {
         singleStores.pollDataPrevayler execute AddPollData(sub.id, path, newValue)
       }
     }

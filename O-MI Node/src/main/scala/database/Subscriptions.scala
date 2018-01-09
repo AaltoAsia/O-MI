@@ -330,9 +330,7 @@ case class AddPollData(subId: Long, path: Path, value: OdfValue[Any]) extends Tr
 }
 
 case class CheckSubscriptionData(subId: Long) extends Query[PollSubData, collection.mutable.HashMap[Path,List[OdfValue[Any]]]] {
-  def query(p: PollSubData, date: Date): mutable.HashMap[Path, List[OdfValue[Any]]] = {
-    p.idToData.get(subId).getOrElse(collection.mutable.HashMap.empty[Path, List[OdfValue[Any]]])
-  }
+  def query(p: PollSubData, date: Date): mutable.HashMap[Path, List[OdfValue[Any]]] = p.idToData.getOrElse(subId, collection.mutable.HashMap.empty[Path, List[OdfValue[Any]]])
 }
 
 /**

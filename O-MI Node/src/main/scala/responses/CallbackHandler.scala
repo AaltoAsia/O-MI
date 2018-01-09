@@ -279,7 +279,7 @@ class CallbackHandler(
     def queueSend(futureResponse: Future[NodeSeq]): Future[QueueOfferResult] = {
       val result = for {
         response <- futureResponse
-        if (response.nonEmpty)
+        if response.nonEmpty
 
           queue <- futureQueue
 

@@ -106,7 +106,7 @@ with RequiresMessageQueue[BoundedMessageQueueSemantics]
     case TakeSnapshot                   => {
       val snapshotDur: FiniteDuration = takeSnapshot
       log.info(s"Taking Snapshot took $snapshotDur")
-      cleanPrevayler
+      cleanPrevayler()
     }
   }
 }

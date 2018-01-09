@@ -102,7 +102,7 @@ trait DBReadHandler extends DBHandlerBase{
 
          // NOTE: Might go off sync with tree or values if the request is large,
          // but it shouldn't be a big problem
-         val metadataTree = (singleStores.hierarchyStore execute GetTree())
+         val metadataTree = singleStores.hierarchyStore execute GetTree()
 
          //Find nodes from the request that HAVE METADATA OR DESCRIPTION REQUEST
          def nodesWithoutMetadata: Option[OdfObjects] = getOdfNodes(read.odf).collect {

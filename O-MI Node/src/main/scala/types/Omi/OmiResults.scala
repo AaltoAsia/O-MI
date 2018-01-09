@@ -58,10 +58,10 @@ class OmiResult(
       None,
       None,
       Map(
-        ("@targetType" -> DataRecord(TargetTypeType.fromString("node", omiDefaultScope )))
+        "@targetType" -> DataRecord(TargetTypeType.fromString("node", omiDefaultScope))
       ) ++ odf.map{
         objects =>
-        ("@msgformat" -> DataRecord("odf"))
+        "@msgformat" -> DataRecord("odf")
 
       }
     )

@@ -105,7 +105,7 @@ trait IpAuthorization extends AuthorizationExtension {
           compareLog()
           val maxBits: Int = 32
           val allOnes: Int = -1
-          val shiftBy: Int = (maxBits - subNetMaskLength)
+          val shiftBy: Int = maxBits - subNetMaskLength
           //Without  if-clause, shifting by 32 or more is undefined behaviour
           //OracleJDK: Shifts correctly, OpenJDK: DOES NOT SHIFT AT ALL
           val mask: Int = if( shiftBy >= 32 ) 0 else allOnes << shiftBy  
@@ -124,14 +124,14 @@ trait IpAuthorization extends AuthorizationExtension {
             if( subNetMaskLength <= 64 ){
               //Subnet is shorter than or exactly 64 bits. Only first Long is needs
               //mask.
-              val shiftBy: Int = (maxBits - subNetMaskLength)
+              val shiftBy: Int = maxBits - subNetMaskLength
               //Without  if-clause, shifting by 64 or more is undefined behaviour
               //OracleJDK: Shifts correctly, OpenJDK: DOES NOT SHIFT AT ALL
               (if(shiftBy >= 64 ){0} else {allOnes << shiftBy}, 0l)
             } else if ( subNetMaskLength > 64){
               //Subnet is longer than 64 bits. Only second Long is needs
               //shift. First one is taken as whole.
-              val shiftBy: Int = (subNetMaskLength - maxBits)
+              val shiftBy: Int = subNetMaskLength - maxBits
               (allOnes, allOnes << shiftBy)
             } 
           }
@@ -170,7 +170,7 @@ trait IpAuthorization extends AuthorizationExtension {
       ip*/
       val ip : Int = (0 until 4).map{
         case byteIndex: Int =>
-          val converted: Int = (bytes(byteIndex) & 0xFF)
+          val converted: Int = bytes(byteIndex) & 0xFF
           val shiftBy: Int = 32 - 8 * ( byteIndex + 1 )
           val shifted: Int = converted << shiftBy
           shifted
@@ -189,7 +189,7 @@ trait IpAuthorization extends AuthorizationExtension {
     private[this] def bytesToLong(bytes: Seq[Byte]) : Long = {
       val ip : Long = (0 until 8).map{
         case byteIndex: Int =>
-          val converted: Long = (bytes(byteIndex) & 0xFF)
+          val converted: Long = bytes(byteIndex) & 0xFF
           val shiftBy: Int = 64 - 8 * ( byteIndex + 1 )
           val shifted: Long = converted << shiftBy
           shifted

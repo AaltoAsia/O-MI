@@ -90,7 +90,7 @@ object OdfParser extends Parser[OdfParseResult] {
         Left(errors) 
       case empty : Seq[ParseError] if empty.isEmpty =>
 
-      val requestProcessTime = currentTime
+      val requestProcessTime = currentTime()
 
       Try{
         xmlGen.scalaxb.fromXML[ObjectsType](root)

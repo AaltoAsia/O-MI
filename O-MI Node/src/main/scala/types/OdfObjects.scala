@@ -107,12 +107,12 @@ class OdfObjectsImpl(
   }
 
   def odfDefaultScope: NamespaceBinding = scalaxb.toScope(
-    (Set(
-      None -> "http://www.opengroup.org/xsd/odf/1.0/"//,
+    Set(
+      None -> "http://www.opengroup.org/xsd/odf/1.0/" //,
       //Some("xs") -> "http://www.w3.org/2001/XMLSchema",
       //Some("odf") -> "http://www.opengroup.org/xsd/odf/1.0/"
-      
-      )).toSet:_*
+
+    ).toSet:_*
   )
 
   /** Method to convert to scalaxb generated class. */
@@ -122,7 +122,7 @@ class OdfObjectsImpl(
         obj: OdfObject => 
         obj.asObjectType
       }.toSeq,
-      attributes = version.fold(Map.empty[String, DataRecord[Any]])(n => Map(("@version" -> DataRecord(n)))) ++ attributesToDataRecord( this.attributes )
+      attributes = version.fold(Map.empty[String, DataRecord[Any]])(n => Map("@version" -> DataRecord(n))) ++ attributesToDataRecord( this.attributes )
     )
   }
   implicit def asXML : NodeSeq= {

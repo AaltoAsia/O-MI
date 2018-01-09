@@ -36,7 +36,7 @@ package object omi  {
       case response: xmlTypes.ResponseListType => 
       scalaxb.DataRecord[xmlTypes.ResponseListType](namespace, Some("response"), response)
     }
-    xmlTypes.OmiEnvelopeType( datarecord, Map(("@version" -> DataRecord("1.0")), ("@ttl" -> DataRecord(ttl))))
+    xmlTypes.OmiEnvelopeType( datarecord, Map("@version" -> DataRecord("1.0"), "@ttl" -> DataRecord(ttl)))
   }
  def omiEnvelopeToXML(omiEnvelope: OmiEnvelopeType) : NodeSeq ={
     scalaxb.toXML[OmiEnvelopeType](omiEnvelope, Some("omi"), Some("omiEnvelope"), omiDefaultScope)

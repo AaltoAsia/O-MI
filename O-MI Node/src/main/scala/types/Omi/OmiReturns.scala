@@ -41,7 +41,7 @@ class OmiReturn(
   def toReturnType: xmlTypes.ReturnType ={
     xmlTypes.ReturnType(
       "",
-      Map(("@returnCode" -> DataRecord(returnCode)),("@description" -> DataRecord(description)))
+      Map("@returnCode" -> DataRecord(returnCode), "@description" -> DataRecord(description))
     )
   }
 }

@@ -107,8 +107,8 @@ class MutableODF private[odf](
   }
   def removePaths( removedPaths: Iterable[Path]) : ODF = {
     val subtrees = removedPaths.flatMap( getSubTreePaths( _ ) )
-    this.nodes --=( subtrees )
-    this.paths --=( subtrees )
+    this.nodes --= subtrees
+    this.paths --= subtrees
     this
   } 
   def immutable: ImmutableODF = ImmutableODF( 
@@ -154,8 +154,8 @@ class MutableODF private[odf](
   
   def removePath( path: Path) : ODF ={
     val subtreeP = getSubTreePaths( path )
-    this.nodes --=( subtreeP )
-    this.paths --=( subtreeP )
+    this.nodes --= subtreeP
+    this.paths --= subtreeP
     this
   }
 

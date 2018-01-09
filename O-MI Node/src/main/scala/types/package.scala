@@ -52,7 +52,7 @@ package object OmiTypes  {
       case response: xmlTypes.ResponseListType => 
       scalaxb.DataRecord[xmlTypes.ResponseListType](namespace, Some("response"), response)
     }
-    xmlTypes.OmiEnvelopeType( datarecord, Map(("@version" -> DataRecord("1.0")), ("@ttl" -> DataRecord(ttl))))
+    xmlTypes.OmiEnvelopeType( datarecord, Map("@version" -> DataRecord("1.0"), "@ttl" -> DataRecord(ttl)))
   }
  def omiEnvelopeToXML(omiEnvelope: OmiEnvelopeType) : NodeSeq ={
     scalaxb.toXML[OmiEnvelopeType](omiEnvelope, Some("omi"), Some("omiEnvelope"), omiDefaultScope)
@@ -121,7 +121,7 @@ package object OdfTypes {
   def getOdfNodes(hasPaths: OdfNode*): Seq[OdfNode] = {
     hasPaths.flatMap {
       case info: OdfInfoItem => Seq(info)
-      case obj:  OdfObject   => Seq(obj) ++ getOdfNodes((obj.objects.toSeq ++ obj.infoItems.toSeq): _*)
+      case obj:  OdfObject   => Seq(obj) ++ getOdfNodes(obj.objects.toSeq ++ obj.infoItems.toSeq: _*)
       case objs: OdfObjects  => Seq(objs) ++ getOdfNodes(objs.objects.toSeq: _*)
     }.toSeq
   }

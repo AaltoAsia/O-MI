@@ -189,7 +189,7 @@ case class RemoveIntervalSub(id: Long) extends TransactionWithQuery[Subs, Boolea
       val scheduleTime: Long = eventSub.endTime.getTime - d.getTime // eventSub.ttl match
 
       if(scheduleTime > 0L){
-        val newSubs: HashMap[Path, Vector[EventSub]] = HashMap(eventSub.paths.map(n => (n -> Vector(eventSub))): _*)
+        val newSubs: HashMap[Path, Vector[EventSub]] = HashMap(eventSub.paths.map(n => n -> Vector(eventSub)): _*)
         store.eventSubs = store.eventSubs.merged[Vector[EventSub]](newSubs){
           case ((path, subsA), (_, subsB)) => (path, subsA ++ subsB)
         }

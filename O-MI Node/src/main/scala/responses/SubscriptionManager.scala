@@ -111,7 +111,7 @@ class SubscriptionManager(
   private[this] def scheduleTtls(): Unit = {
     log.debug("Scheduling removesubscriptions for the first time...")
     //interval subs
-    val intervalSubs = (singleStores.subStore execute GetAllIntervalSubs())
+    val intervalSubs = singleStores.subStore execute GetAllIntervalSubs()
 
     val allSubs = (singleStores.subStore execute GetAllEventSubs()) ++
       (singleStores.subStore execute GetAllPollSubs()) ++ intervalSubs
@@ -224,7 +224,7 @@ class SubscriptionManager(
       var previousValue = values.head
 
       while (i < values.length) {
-        if (values(i).timestamp.getTime >= (nextTick)) {
+        if (values(i).timestamp.getTime >= nextTick) {
           buffer += previousValue
           nextTick += interval
         } else {
@@ -258,7 +258,7 @@ class SubscriptionManager(
     val pollData = combinedWithPaths.map(pathValuesTuple => {
 
       val (path, values) = pathValuesTuple match {
-        case (p, v) if (v.nonEmpty) => {
+        case (p, v) if v.nonEmpty => {
           v.lastOption match {
             case Some(last) =>
               log.info(s"Found previous values for intervalsubscription: $last")

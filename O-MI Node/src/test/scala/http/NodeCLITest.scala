@@ -74,7 +74,7 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
   }
 
   class RemoveTester( path: Path)extends CLIHelperT{
-    val getAllData: Future[Option[OdfObjects]] = Future.failed((new Exception("not implemented")))
+    val getAllData: Future[Option[OdfObjects]] = Future.failed(new Exception("not implemented"))
     def writeOdf(odf:OdfObjects) = Unit
     override def handlePathRemove(parentPath: Path): Boolean = { 
       path == parentPath || path.isAncestorOf(parentPath)

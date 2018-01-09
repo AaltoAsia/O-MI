@@ -187,7 +187,7 @@ with CancelHandler
     agents.get(agentName) match {
       case Some( ai: AgentInformation) if ai.running  =>  
         implicit val to: Timeout = Timeout(request.handleTTL)
-        val f = ai.actorRef ? ( request.withSenderInformation( ActorSenderInformation( self.path.name, self) ) )
+        val f = ai.actorRef ? request.withSenderInformation(ActorSenderInformation(self.path.name, self))
         f.mapTo[ResponseRequest]
 
       case Some( ai: AgentInformation) if !ai.running  =>  

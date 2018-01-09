@@ -112,7 +112,7 @@ case class Object(
       infoitems,
       objects,
       attributes = (
-       attributesToDataRecord(attributes) ++  typeAttribute.map{ n => ("@type" -> DataRecord(n))}).toMap
+       attributesToDataRecord(attributes) ++  typeAttribute.map{ n => "@type" -> DataRecord(n) }).toMap
     )
   }
     

@@ -28,7 +28,7 @@ case class  Description(
     DescriptionType(
       text, 
       language.fold(Map.empty[String, DataRecord[Any]]){
-        n=>Map( ("@lang" -> DataRecord(n)) ) 
+        n=>Map( "@lang" -> DataRecord(n) )
       }
     )
   }

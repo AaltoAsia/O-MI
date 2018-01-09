@@ -25,9 +25,9 @@ trait Value[+V]{
        valueAsDataRecord 
       ),
     HashMap(
-      ("@type" -> DataRecord(typeAttribute)),
-      ("@unixTime" -> DataRecord(timestamp.getTime() / 1000)),
-      ("@dateTime" -> DataRecord(timestampToXML(timestamp)))
+      "@type" -> DataRecord(typeAttribute),
+      "@unixTime" -> DataRecord(timestamp.getTime() / 1000),
+      "@dateTime" -> DataRecord(timestampToXML(timestamp))
     ) ++ attributesToDataRecord( attributes )
     )
   }

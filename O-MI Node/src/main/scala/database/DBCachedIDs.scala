@@ -112,11 +112,11 @@ trait DBCachedReadWrite extends DBReadWrite{
         }
     }.flatten
 
-    val writeExisting = (latestValues ++= pathToWrite)
+    val writeExisting = latestValues ++= pathToWrite
 
     val idNotFound = infos.filter{ case info => pathToHierarchyID.get(info.path).isEmpty}
     val writeAction = if( idNotFound.nonEmpty ){
-      val pathsData: Map[Path, Seq[OdfValue[Any]]] = idNotFound.map(ii => (ii.path -> ii.values.sortBy(_.timestamp.getTime))).toMap
+      val pathsData: Map[Path, Seq[OdfValue[Any]]] = idNotFound.map(ii => ii.path -> ii.values.sortBy(_.timestamp.getTime)).toMap
 
       val writeNewAction = for {
         addObjectsAction <- DBIO.sequence(

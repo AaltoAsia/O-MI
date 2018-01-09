@@ -113,7 +113,7 @@ sealed trait JavaRequestIDRequest{
  */
 sealed trait RequestIDRequest extends JavaRequestIDRequest{
   def requestIDs : OdfTreeCollection[RequestID]
-  def requestIDsAsJava : JIterable[RequestID] = asJavaIterable(requestIDs)
+  def requestIDsAsJava() : JIterable[RequestID] = asJavaIterable(requestIDs)
 }
 
 case class UserInfo(

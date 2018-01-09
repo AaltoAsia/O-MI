@@ -48,7 +48,7 @@ class  OdfInfoItemImpl(
     require(path == another.path, s"Should have same paths, got $path versus ${another.path}")
     OdfInfoItem(
       path,
-      (values ++ another.values),
+      values ++ another.values,
       another.description orElse description,{
       val combined : Option[OdfMetaData] = for{
         t <- metaData
@@ -141,10 +141,10 @@ sealed trait OdfValue[+T]{
        valueAsDataRecord 
       ),
     HashMap(
-      ("@type" -> DataRecord(typeValue)),
-      ("@unixTime" -> DataRecord(timestamp.getTime() / 1000)),
-      ("@dateTime" -> DataRecord(timestampToXML(timestamp)))
-    ) ++(attributes.mapValues(DataRecord(_)))
+      "@type" -> DataRecord(typeValue),
+      "@unixTime" -> DataRecord(timestamp.getTime() / 1000),
+      "@dateTime" -> DataRecord(timestampToXML(timestamp))
+    ) ++ attributes.mapValues(DataRecord(_))
     )
   }
   def isNumeral : Boolean = typeValue match {

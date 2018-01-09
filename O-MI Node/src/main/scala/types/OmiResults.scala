@@ -54,10 +54,10 @@ class OmiResult(
 
       }
     val attributeRecords = Map(
-        ("@targetType" -> DataRecord(TargetTypeType.fromString("node", omiDefaultScope )))
+        "@targetType" -> DataRecord(TargetTypeType.fromString("node", omiDefaultScope))
       ) ++ odf.map{
         objects =>
-        ("@msgformat" -> DataRecord("odf"))
+        "@msgformat" -> DataRecord("odf")
       }
 
     xmlTypes.RequestResultType(

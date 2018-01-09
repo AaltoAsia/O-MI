@@ -124,7 +124,7 @@ class DBHandler(
       )
     )
   )
-  private def agentKnownAndRunning(agentName: AgentName) : Boolean = agents.get(agentName).map(_.running).getOrElse(false)
+  private def agentKnownAndRunning(agentName: AgentName) : Boolean = agents.get(agentName).exists(_.running)
   private def addAgent( newAgent: NewAgent) = {
     agentResponsibilities.add(newAgent.responsibilities)
     agents += (newAgent.agentName -> AgentInformation( newAgent.agentName, running = true, newAgent.actorRef))
