@@ -10,7 +10,7 @@ import parsing.xmlGen._
 import parsing.xmlGen.scalaxb._
 import parsing.xmlGen.scalaxb.XMLStandardTypes._
 import parsing.xmlGen.xmlTypes._
-import parsing.xmlGen.xmlTypes.{ValueType}
+import parsing.xmlGen.xmlTypes.ValueType
 
 trait Value[+V]{
   val value:V

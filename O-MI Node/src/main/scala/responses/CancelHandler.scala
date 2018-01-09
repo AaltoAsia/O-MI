@@ -43,7 +43,7 @@ trait CancelHandler {
     * @return (xml response, HTTP status code) wrapped in a Future
     */
   def handleCancel(cancel: CancelRequest): Future[ResponseRequest] = {
-    implicit val timeout = Timeout(10.seconds) // NOTE: ttl will timeout from elsewhere
+    implicit val timeout: Timeout = Timeout(10.seconds) // NOTE: ttl will timeout from elsewhere
     val jobs: Future[Seq[OmiResult]] = Future.sequence(cancel.requestIDs.map {
       id =>
       (subscriptionManager ? RemoveSubscription(id)).mapTo[Boolean].map( res =>

@@ -191,7 +191,7 @@ class RawRequestWrapper(val rawRequest: String, private val user0: UserInfo) ext
    * Access the request easily and leave responsibility of error handling to someone else.
    * TODO: Only one request per xml message is supported currently
    */
-  lazy val unwrapped = parsed match {
+  lazy val unwrapped: Try[OmiRequest] = parsed match {
     case Right(requestSeq) => Try{ val req = requestSeq.head; req.user = user;req} // change user to correct, user parameter is MUTABLE and might be error prone. TODO change in future versions.
     case Left(errors) => Failure(ParseError.combineErrors(errors))
   }
@@ -264,7 +264,7 @@ case class ReadRequest(
  // oldest: Option[Int ] = None,
  // callback: Option[Callback] = None,
  // ttl: Duration = 10.seconds) = this(odf,begin,end,newest,oldest,callback,ttl,None)
-  def withCallback = cb => this.copy(callback = cb)
+  def withCallback: Option[Callback] => ReadRequest = cb => this.copy(callback = cb)
 
   implicit def asReadRequest : xmlTypes.ReadRequestType = {
     xmlTypes.ReadRequestType(
@@ -289,7 +289,7 @@ case class ReadRequest(
     )
   }
   implicit def asOmiEnvelope : xmlTypes.OmiEnvelopeType = requestToEnvelope(asReadRequest, ttlAsSeconds)
-  def replaceOdf( nOdf: OdfObjects ) = copy(odf = nOdf)
+  def replaceOdf( nOdf: OdfObjects ): ReadRequest = copy(odf = nOdf)
 
   def withSenderInformation(si:SenderInformation):OmiRequest = this.copy( senderInformation = Some(si))
 }
@@ -306,7 +306,7 @@ case class PollRequest(
 ) extends OmiRequest {
 
   user = user0
-  def withCallback = cb => this.copy(callback = cb)
+  def withCallback: Option[Callback] => PollRequest = cb => this.copy(callback = cb)
   
   implicit def asReadRequest : xmlTypes.ReadRequestType = xmlTypes.ReadRequestType(
     None,
@@ -338,7 +338,7 @@ case class SubscriptionRequest(
   senderInformation: Option[SenderInformation] = None
 ) extends OmiRequest with SubLike with OdfRequest{
   user = user0
-  def withCallback = cb => this.copy(callback = cb)
+  def withCallback: Option[Callback] => SubscriptionRequest = cb => this.copy(callback = cb)
 
   implicit def asReadRequest : xmlTypes.ReadRequestType = xmlTypes.ReadRequestType(
     None,
@@ -359,7 +359,7 @@ case class SubscriptionRequest(
   )
   implicit def asOmiEnvelope : xmlTypes.OmiEnvelopeType= requestToEnvelope(asReadRequest, ttlAsSeconds)
   def withSenderInformation(si:SenderInformation):OmiRequest = this.copy( senderInformation = Some(si))
-  def replaceOdf( nOdf: OdfObjects ) = copy(odf = nOdf)
+  def replaceOdf( nOdf: OdfObjects ): SubscriptionRequest = copy(odf = nOdf)
 }
 
 
@@ -375,7 +375,7 @@ case class WriteRequest(
 ) extends OmiRequest with OdfRequest with PermissiveRequest{
 
   user = user0
-  def withCallback = cb => this.copy(callback = cb)
+  def withCallback: Option[Callback] => WriteRequest = cb => this.copy(callback = cb)
 
   implicit def asWriteRequest : xmlTypes.WriteRequestType = xmlTypes.WriteRequestType(
     None,
@@ -394,7 +394,7 @@ case class WriteRequest(
       ).flatten.toMap
   )
   implicit def asOmiEnvelope : xmlTypes.OmiEnvelopeType = requestToEnvelope(asWriteRequest, ttlAsSeconds)
-  def replaceOdf( nOdf: OdfObjects ) = copy(odf = nOdf)
+  def replaceOdf( nOdf: OdfObjects ): WriteRequest = copy(odf = nOdf)
   def withSenderInformation(si:SenderInformation):OmiRequest = this.copy( senderInformation = Some(si))
 }
 
@@ -407,7 +407,7 @@ case class CallRequest(
 ) extends OmiRequest with OdfRequest with PermissiveRequest {
   user = user0
 
-  def withCallback = cb => this.copy(callback = cb)
+  def withCallback: Option[Callback] => CallRequest = cb => this.copy(callback = cb)
 
   implicit def asCallRequest : xmlTypes.CallRequestType = xmlTypes.CallRequestType(
     None,
@@ -426,7 +426,7 @@ case class CallRequest(
       ).flatten.toMap
   )
   implicit def asOmiEnvelope : xmlTypes.OmiEnvelopeType = requestToEnvelope(asCallRequest, ttlAsSeconds)
-  def replaceOdf( nOdf: OdfObjects ) = copy(odf = nOdf)
+  def replaceOdf( nOdf: OdfObjects ): CallRequest = copy(odf = nOdf)
   def withSenderInformation(si:SenderInformation):OmiRequest = this.copy( senderInformation = Some(si))
 }
 
@@ -439,7 +439,7 @@ case class DeleteRequest(
 ) extends OmiRequest with OdfRequest with PermissiveRequest{
   user = user0
 
-  def withCallback = cb => this.copy(callback = cb)
+  def withCallback: Option[Callback] => DeleteRequest = cb => this.copy(callback = cb)
 
   implicit def asDeleteRequest : xmlTypes.DeleteRequestType = xmlTypes.DeleteRequestType(
     None,
@@ -458,7 +458,7 @@ case class DeleteRequest(
       ).flatten.toMap
   )
   implicit def asOmiEnvelope : xmlTypes.OmiEnvelopeType = requestToEnvelope(asDeleteRequest, ttlAsSeconds)
-  def replaceOdf( nOdf: OdfObjects ) = copy(odf = nOdf)
+  def replaceOdf( nOdf: OdfObjects ): DeleteRequest = copy(odf = nOdf)
   def withSenderInformation(si:SenderInformation):OmiRequest = this.copy( senderInformation = Some(si))
 }
 /**
@@ -479,7 +479,7 @@ case class CancelRequest(
     }.toSeq
   )
   def callback : Option[Callback] = None
-  def withCallback = cb => this
+  def withCallback: Option[Callback] => CancelRequest = cb => this
 
   implicit def asOmiEnvelope : xmlTypes.OmiEnvelopeType = requestToEnvelope(asCancelRequest, ttlAsSeconds)
   def withSenderInformation(si:SenderInformation):OmiRequest = this.copy( senderInformation = Some(si))
@@ -509,7 +509,7 @@ class ResponseRequest(
     senderInformation: Option[SenderInformation] = this.senderInformation
   ) : ResponseRequest = ResponseRequest( results, ttl)
 
-  def withCallback = cb => this.copy(callback = cb)
+  def withCallback: Option[Callback] => ResponseRequest = cb => this.copy(callback = cb)
 
   def odf : OdfObjects = results.foldLeft(OdfObjects()){
     _ union _.odf.getOrElse(OdfObjects())

@@ -101,7 +101,7 @@ trait InternalAgentLoader extends BaseAgentSystem {
         log.warning(e.getStackTrace.mkString("\n"))
     }
   }
-  def notifyAboutNewAgent( agentInfo: AgentInfo ) ={
+  def notifyAboutNewAgent( agentInfo: AgentInfo ): Unit ={
     agentInfo.agent.foreach{
       agentRef: ActorRef =>
         def msg = NewAgent(agentInfo.name,agentRef,agentInfo.responsibilities)
@@ -257,7 +257,7 @@ trait InternalAgentLoader extends BaseAgentSystem {
     val file = new File(jarName)
     loadJar( file )
   }
-  private[this] def addJarToClassloader( jarName: String) = {
+  private[this] def addJarToClassloader( jarName: String): Unit = {
     val urlsO = loadJar(jarName)
     urlsO match {
       case None => 

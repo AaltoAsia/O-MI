@@ -19,13 +19,14 @@ import java.sql.Timestamp
 import java.util.Date
 
 import scala.concurrent.duration.FiniteDuration
-
-import akka.actor.{Cancellable, Props, Actor}
-import database.{Union, SingleStores}
+import akka.actor.{Actor, Cancellable, Props}
+import database.{SingleStores, Union}
 import http.OmiConfigExtension
 import types.OdfTypes._
-import types.OmiTypes.{WriteRequest, ReadRequest, OmiRequest}
+import types.OmiTypes.{OmiRequest, ReadRequest, WriteRequest}
 import types.Path
+
+import scala.concurrent.ExecutionContextExecutor
 
 case class AddRead(path: Path, timestamp: Long)
 case class AddWrite(path: Path, timestamps: Vector[Long])
@@ -58,14 +59,14 @@ class AnalyticsStore(
   val readAverageCount: Int = settings.readAvgIntervalSampleSize
   val newDataAverageCount: Int = settings.writeAvgIntervalSampleSize
   val updateFrequency: FiniteDuration = settings.updateInterval
-  val averageWriteInfoName = settings.averageWriteInfoName
-  val averageReadInfoName = settings.averageReadIAnfoName
-  val numWriteInfoName = settings.numberWritesInfoName
-  val numReadInfoName = settings.numberReadsInfoName
-  val numUserInfoName = settings.numberUsersInfoName
-  val MAX_ARRAY_LENGTH = settings.analyticsMaxHistoryLength
+  val averageWriteInfoName: String = settings.averageWriteInfoName
+  val averageReadInfoName: String = settings.averageReadIAnfoName
+  val numWriteInfoName: String = settings.numberWritesInfoName
+  val numReadInfoName: String = settings.numberReadsInfoName
+  val numUserInfoName: String = settings.numberUsersInfoName
+  val MAX_ARRAY_LENGTH: Int = settings.analyticsMaxHistoryLength
   //start schedules
-  implicit val ec = context.system.dispatcher
+  implicit val ec: ExecutionContextExecutor = context.system.dispatcher
 
   var writeC: Option[Cancellable] = None
   var readC: Option[Cancellable] = None
@@ -185,7 +186,7 @@ class AnalyticsStore(
   def writeFrequency(path: Path): Vector[Long] = {
     writeSTM.get(path).toVector.flatten
   }
-  def currentTime = new Date().getTime()
+  def currentTime: Long = new Date().getTime()
 
  //public
   def addRead(path: Path, timestamp: Long): Option[Vector[Long]] = {

@@ -36,7 +36,7 @@ import types._
 /** Parser for messages with O-MI protocol*/
 object OMIParser extends parsing.Parser[OmiParseResult] {
 
-  protected[this] override def schemaPath = Array[Source](
+  protected[this] override def schemaPath: Array[Source] = Array[Source](
     new StreamSource(getClass.getClassLoader().getResourceAsStream("omi.xsd")),
     new StreamSource(getClass.getClassLoader().getResourceAsStream("odf.xsd"))
   )

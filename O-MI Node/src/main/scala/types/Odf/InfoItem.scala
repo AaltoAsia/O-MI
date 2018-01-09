@@ -48,7 +48,7 @@ case class InfoItem(
   attributes: IMap[String,String] = HashMap.empty
 ) extends Node with Unionable[InfoItem]{
   assert( nameAttribute == path.last )
-  def updateValues( vals: Vector[Value[Any]] ) = this.copy(values = vals)
+  def updateValues( vals: Vector[Value[Any]] ): InfoItem = this.copy(values = vals)
   def update( that: InfoItem ): InfoItem={
     val pathsMatches = path == that.path
     assert( nameAttribute == that.nameAttribute && pathsMatches)

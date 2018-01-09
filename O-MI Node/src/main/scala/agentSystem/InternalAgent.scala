@@ -72,8 +72,8 @@ trait ScalaInternalAgent extends InternalAgent with ActorLogging{
     case any: Any => unhandled(any)
   }
 
-  final def agentSystem = context.parent
-  final def name = self.path.name
+  final def agentSystem: ActorRef = context.parent
+  final def name: String = self.path.name
   final def writeToDB(write: WriteRequest) : Future[ResponseRequest] = requestFromDB(write)
   final def readFromDB(read: ReadRequest) : Future[ResponseRequest] = requestFromDB(read)
   final def requestFromDB(request: OdfRequest) : Future[ResponseRequest] = {

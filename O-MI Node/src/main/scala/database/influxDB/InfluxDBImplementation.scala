@@ -13,6 +13,7 @@ import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
 import akka.actor.ActorSystem
+import akka.event.LoggingAdapter
 import akka.event.slf4j.Logger
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.client.RequestBuilding
@@ -23,9 +24,7 @@ import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.unmarshalling._
 import akka.stream.{ActorMaterializer, Materializer}
 import spray.json._
-
 import database._
-
 import http.OmiConfigExtension
 import types.odf._
 import types.OmiTypes._
@@ -33,9 +32,11 @@ import types.OdfTypes._
 import types.Path
 import types.Path._
 
+import scala.collection.immutable
+
 object InfluxDBJsonProtocol extends DefaultJsonProtocol {
 
-    def getSeries(json: spray.json.JsValue)= json match{
+    def getSeries(json: spray.json.JsValue): immutable.Seq[JsValue] = json match{
       case obj: JsObject =>
         obj.getFields("results").collect{
           case results: JsArray  =>
@@ -144,7 +145,7 @@ class InfluxDBImplementation(
   final class AcceptHeader(format: String) extends ModeledCustomHeader[AcceptHeader] {
     override def renderInRequests = true
     override def renderInResponses = false
-    override val companion = AcceptHeader
+    override val companion: AcceptHeader.type = AcceptHeader
     override def value: String = format
   }
   object AcceptHeader extends ModeledCustomHeaderCompanion[AcceptHeader] {
@@ -161,7 +162,7 @@ class InfluxDBImplementation(
  import system.dispatcher // execution context for futures
  val httpExt = Http(system)
  implicit val mat: Materializer = ActorMaterializer()
- def log = system.log
+ def log: LoggingAdapter = system.log
   def infoItemToWriteFormat( ii: InfoItem ): Seq[String] = {
         val measurement: String = pathToMeasurementName( ii.path)
         ii.values.map{
@@ -182,7 +183,7 @@ class InfluxDBImplementation(
        case entity : HttpEntity.Strict =>
          val ent = entity.copy(contentType =`application/json`)
 
-         implicit val showDatabaseFormat = new InfluxDBJsonProtocol.InfluxDBJsonShowDatabasesFormat()
+         implicit val showDatabaseFormat: InfluxDBJsonProtocol.InfluxDBJsonShowDatabasesFormat = new InfluxDBJsonProtocol.InfluxDBJsonShowDatabasesFormat()
          Unmarshal(ent).to[Seq[String]].map{
            case databases: Seq[String] =>
              log.debug( s" Found following databases: ${databases.mkString(", ")}")
@@ -220,7 +221,7 @@ class InfluxDBImplementation(
     val responseF : Future[HttpResponse] = httpExt.singleRequest(request)//httpHandler(request)
     responseF
   }
-  def httpResponseToStrict( futureResponse: Future[HttpResponse] ) ={
+  def httpResponseToStrict( futureResponse: Future[HttpResponse] ): Future[HttpEntity.Strict] ={
     futureResponse.flatMap{
        case response @ HttpResponse( status, headers, entity, protocol ) if status.isSuccess =>
          entity.toStrict(10.seconds)
@@ -278,7 +279,7 @@ class InfluxDBImplementation(
       }
   }
 
-  implicit val odfJsonFormatter = new InfluxDBJsonProtocol.InfluxDBJsonODFFormat()
+  implicit val odfJsonFormatter: InfluxDBJsonProtocol.InfluxDBJsonODFFormat = new InfluxDBJsonProtocol.InfluxDBJsonODFFormat()
 /* GetNBetween
  * SELECT * FROM PATH WHERE time < end AND time > begin ORDER BY time DESC LIMIt newest
  *

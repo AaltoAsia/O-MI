@@ -24,7 +24,7 @@ class InfluxDBConfigExtension( config: Config) extends Extension {
     case exp: ConfigException.Missing => None
   }.get
 
-  val query= ( userO, passwdO) match {
+  val query: Query = ( userO, passwdO) match {
     case (Some(user) , Some(passwd )) =>
     Query((s"db",s"$databaseName"),(s"precision","ms"),(s"u",user),("p",passwd))
     case (None,None) =>

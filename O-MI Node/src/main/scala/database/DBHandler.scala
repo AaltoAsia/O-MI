@@ -99,7 +99,7 @@ class DBHandler(
     }
   }
 
-  def permissionCheck( request: OdfRequest)={
+  def permissionCheck( request: OdfRequest): Boolean ={
     if( request.senderInformation.isEmpty ){
       true
     } else {
@@ -112,7 +112,7 @@ class DBHandler(
       }
     }
   }
-  def permissionCheckFuture( request: OdfRequest)= {
+  def permissionCheckFuture( request: OdfRequest): Future[Boolean] = {
     Future{
       permissionCheck(request)
     }

@@ -46,11 +46,11 @@ object LatestValues {
 
 
 case class LookupSensorData(sensor: Path) extends Query[LatestValues, Option[OdfValue[Any]]] {
-  def query(ls: LatestValues, d: Date) = ls.allData.get(sensor)
+  def query(ls: LatestValues, d: Date): Option[OdfValue[Any]] = ls.allData.get(sensor)
 }
 
 case class LookupSensorDatas(sensors: Vector[Path]) extends Query[LatestValues, Vector[(Path, OdfValue[Any])]] {
-  def query(ls: LatestValues, d: Date) = {
+  def query(ls: LatestValues, d: Date): Vector[(Path, OdfValue[Any])] = {
     (for (sensorPath <- sensors) yield {
       val dataOpt = ls.allData get sensorPath
       (dataOpt map {data => (sensorPath, data)}).toList
@@ -58,15 +58,15 @@ case class LookupSensorDatas(sensors: Vector[Path]) extends Query[LatestValues, 
   }
 }
 case class LookupAllDatas() extends Query[LatestValues, Map[Path, OdfValue[Any]]] {
-  def query(ls: LatestValues, d: Date) = ls.allData
+  def query(ls: LatestValues, d: Date): Map[Path, OdfValue[Any]] = ls.allData
 }
 
 case class SetSensorData(sensor: Path, value: OdfValue[Any]) extends Transaction[LatestValues] {
-  def executeOn(ls: LatestValues, d: Date) = ls.allData = ls.allData + (sensor -> value)
+  def executeOn(ls: LatestValues, d: Date): Unit = ls.allData = ls.allData + (sensor -> value)
 }
 
 case class EraseSensorData(sensor: Path) extends Transaction[LatestValues] {
-  def executeOn(ls: LatestValues, d: Date) = ls.allData = ls.allData - sensor
+  def executeOn(ls: LatestValues, d: Date): Unit = ls.allData = ls.allData - sensor
 }
 
 
@@ -80,19 +80,19 @@ object OdfTree {
 }
 
 case class GetTree() extends Query[OdfTree, OdfObjects] {
-  def query(t: OdfTree, d: Date) = t.root
+  def query(t: OdfTree, d: Date): OdfObjects = t.root
 }
 
 /**
  * This is used for updating also
  */
 case class Union(anotherRoot: OdfObjects) extends Transaction[OdfTree] {
-  def executeOn(t: OdfTree, d: Date) = t.root = t.root union anotherRoot.valuesRemoved  // Remove values so they don't pile up
+  def executeOn(t: OdfTree, d: Date): Unit = t.root = t.root union anotherRoot.valuesRemoved  // Remove values so they don't pile up
 }
 
 case class TreeRemovePath(path: Path) extends Transaction[OdfTree] {
 
-  def executeOn(t: OdfTree, d: Date) = {
+  def executeOn(t: OdfTree, d: Date): Unit = {
     val nodeOption = t.root.get(path)
     nodeOption match {
       case Some(ob: OdfObject)   => {
@@ -182,7 +182,7 @@ case class RemoveIntervalSub(id: Long) extends TransactionWithQuery[Subs, Boolea
 
 //TODO EventSub
   case class AddEventSub(eventSub: EventSub) extends Transaction[Subs] {
-    def executeOn(store: Subs, d: Date) = {
+    def executeOn(store: Subs, d: Date): Unit = {
       //val sId = subIDCounter.single.getAndTransform(_+1)
       //val currentTime: Long = System.currentTimeMillis()
 
@@ -202,7 +202,7 @@ case class RemoveIntervalSub(id: Long) extends TransactionWithQuery[Subs, Boolea
   */
 
   case class AddIntervalSub(intervalSub: IntervalSub) extends Transaction[Subs] {
-    def executeOn(store: Subs, d: Date) = {
+    def executeOn(store: Subs, d: Date): Unit = {
       val scheduleTime: Long = intervalSub.endTime.getTime - d.getTime
       if(scheduleTime > 0){
         store.intervalSubs = store.intervalSubs.updated(intervalSub.id, intervalSub)//) intervalSub//TODO check this
@@ -211,7 +211,7 @@ case class RemoveIntervalSub(id: Long) extends TransactionWithQuery[Subs, Boolea
   }
 
     case class AddPollSub(polledSub: PolledSub) extends Transaction[Subs] {
-      def executeOn(store: Subs, d: Date) = {
+      def executeOn(store: Subs, d: Date): Unit = {
         val scheduleTime: Long = polledSub.endTime.getTime - d.getTime
         if (scheduleTime > 0){
           store.idToSub = store.idToSub + (polledSub.id -> polledSub)

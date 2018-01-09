@@ -18,10 +18,9 @@ import java.sql.Timestamp
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
-import scala.collection.mutable.{ Map => MutableMap, HashMap => MutableHashMap}
+import scala.collection.mutable.{HashMap => MutableHashMap, Map => MutableMap}
 import scala.language.postfixOps
-
-import org.slf4j.LoggerFactory
+import org.slf4j.{Logger, LoggerFactory}
 //import slick.driver.H2Driver.api._
 import slick.jdbc.meta.MTable
 import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
@@ -39,7 +38,7 @@ trait DBCachedReadWrite extends DBReadWrite{
   val pathToHierarchyID: MutableMap[Path,Set[Int]] = MutableHashMap()
   val hierarchyIDToPath: MutableMap[Int,Path] = MutableHashMap()
 
-  override protected val log = LoggerFactory.getLogger("DBCachedReadWrite")
+  override protected val log: Logger = LoggerFactory.getLogger("DBCachedReadWrite")
 
   def initialize(): Unit = this.synchronized {
 

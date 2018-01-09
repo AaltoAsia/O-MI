@@ -144,7 +144,7 @@ trait AuthApiProvider extends AuthorizationExtension {
           } yield pathTrees.fold(OdfObjects())(_ union _)
 
           newOdfOpt match {
-            case Some(newOdf) if (newOdf.objects.nonEmpty) =>
+            case Some(newOdf) if newOdf.objects.nonEmpty =>
               orgOmiRequest.unwrapped flatMap {
                 case r: ReadRequest         => Success(r.copy(odf = newOdf))
                 case r: SubscriptionRequest => Success(r.copy(odf = newOdf))

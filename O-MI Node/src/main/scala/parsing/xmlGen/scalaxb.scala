@@ -4,7 +4,7 @@ package scalaxb
 
 import scala.collection.immutable.HashMap
 import scala.xml.{Node, NodeSeq, NamespaceBinding, Elem, UnprefixedAttribute, PrefixedAttribute}
-import javax.xml.datatype.{XMLGregorianCalendar}
+import javax.xml.datatype.XMLGregorianCalendar
 import javax.xml.namespace.QName
 import javax.xml.bind.DatatypeConverter
 

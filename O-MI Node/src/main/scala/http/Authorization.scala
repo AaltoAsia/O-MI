@@ -93,7 +93,7 @@ object Authorization {
 
     private[this] def combineTests(otherTest: PermissionTest, ourTest: PermissionTest): PermissionTest = {
       (request: RequestWrapper) =>
-        otherTest(request) orElse ( ourTest(request)) match {
+        otherTest(request) orElse ourTest(request) match {
           case s @ Success(_) => s
           case f @ Failure(UnauthorizedEx(_)) => f
           case f @ Failure(ex) =>

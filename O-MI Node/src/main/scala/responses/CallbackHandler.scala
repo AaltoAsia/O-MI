@@ -72,12 +72,12 @@ class CallbackHandler(
 ){
   import system.dispatcher
   protected val httpExtension: HttpExt = Http(system)
-  val portsUsedByNode = settings.ports.values.toSeq
+  val portsUsedByNode: Seq[Int] = settings.ports.values.toSeq
 
   protected def currentTimestamp =  new Timestamp( new Date().getTime )
 
   implicit val logSource: LogSource[CallbackHandler]= new LogSource[CallbackHandler] {
-      def genString(requestHandler:  CallbackHandler) = requestHandler.toString
+      def genString(requestHandler:  CallbackHandler): String = requestHandler.toString
     }
 
   protected val log: LoggingAdapter = Logging( system, this)

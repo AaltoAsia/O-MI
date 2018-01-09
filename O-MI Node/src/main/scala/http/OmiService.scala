@@ -30,11 +30,10 @@ import akka.actor.{ActorRef, ActorSystem}
 import akka.pattern.ask
 import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport
 import akka.http.scaladsl.marshalling.PredefinedToResponseMarshallers._
-import akka.http.scaladsl.marshalling.{Marshaller, ToResponseMarshallable}
+import akka.http.scaladsl.marshalling.{Marshaller, ToEntityMarshaller, ToResponseMarshallable}
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.server.RequestContext
+import akka.http.scaladsl.server.{Directive0, RequestContext, Route}
 import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.server.Directive0
 import akka.stream.scaladsl._
 import akka.stream._
 import akka.stream.ActorMaterializer
@@ -110,7 +109,7 @@ trait OmiService
 
   //Get the files from the html directory; http://localhost:8080/html/form.html
   //this version words with 'sbt run' and 're-start' as well as the packaged version
-  val staticHtml = if(Files.exists(Paths.get("./html"))){
+  val staticHtml: Route = if(Files.exists(Paths.get("./html"))){
     getFromDirectory("./html")
   } else getFromDirectory("O-MI Node/html")
   //val staticHtml = getFromResourceDirectory("html")
@@ -124,11 +123,11 @@ trait OmiService
   }
 
   // Change default to xml mediatype and require explicit type for html
-  val htmlXml = ScalaXmlSupport.nodeSeqMarshaller(MediaTypes.`text/html`)
-  implicit val xmlCT = ScalaXmlSupport.nodeSeqMarshaller(MediaTypes.`text/xml`)
+  val htmlXml: ToEntityMarshaller[NodeSeq] = ScalaXmlSupport.nodeSeqMarshaller(MediaTypes.`text/html`)
+  implicit val xmlCT: ToEntityMarshaller[NodeSeq] = ScalaXmlSupport.nodeSeqMarshaller(MediaTypes.`text/xml`)
 
   // should be removed?
-  val helloWorld = get {
+  val helloWorld: Route = get {
      val document = { 
         <html>
         <body>
@@ -161,7 +160,7 @@ trait OmiService
     complete(ToResponseMarshallable(document)(htmlXml))
   }
 
-  val getDataDiscovery =
+  val getDataDiscovery: Route =
     path(Remaining) { uriPath =>
       get {
         makePermissionTestFunction() { hasPermissionTest =>
@@ -354,7 +353,7 @@ trait OmiService
   }
 
   def handleRequest(request : OmiRequest ): Future[ResponseRequest ]= {
-    implicit val to = Timeout( request.handleTTL )
+    implicit val to: Timeout = Timeout( request.handleTTL )
     request match {
       // Part of a fix to stop response request infinite loop (server and client sending OK to others' OK)
       case respRequest: ResponseRequest if respRequest.results.forall{ result => result.odf.isEmpty } =>
@@ -418,14 +417,14 @@ trait OmiService
         Future.fromTry(result )
       } else {
         log.debug(s"\n\n FAILED WITH ADDRESSESS $userAddr \n\n")
-        Future.failed((InvalidCallback(cba, "Callback to remote addresses(different than user address) require admin privileges")))
+        Future.failed(InvalidCallback(cba, "Callback to remote addresses(different than user address) require admin privileges"))
       }
   }
 
   /** 
    * Receives HTTP-POST directed to root with o-mi xml as body. (Non-standard convenience feature)
    */
-  val postXMLRequest = post {// Handle POST requests from the client
+  val postXMLRequest: Route = post {// Handle POST requests from the client
     makePermissionTestFunction() { hasPermissionTest =>
       entity(as[String]) {requestString =>   // XML and O-MI parsed later
         extractClientIP { user =>
@@ -441,7 +440,7 @@ trait OmiService
   /**
    * Receives POST at root with O-MI compliant msg parameter.
    */
-  val postFormXMLRequest = post {
+  val postFormXMLRequest: Route = post {
     makePermissionTestFunction() { hasPermissionTest =>
       formFields("msg".as[String]) {requestString =>
         extractClientIP { user =>
@@ -455,7 +454,7 @@ trait OmiService
   }
 
   // Combine all handlers
-  val myRoute = corsEnabled {
+  val myRoute: Route = corsEnabled {
     path("") {
       webSocketUpgrade ~
       postFormXMLRequest ~
@@ -482,7 +481,7 @@ trait WebSocketOMISupport { self: OmiService =>
   type InSink = Sink[ws.Message, _]
   type OutSource = Source[ws.Message, SourceQueueWithComplete[ws.Message]]
 
-  def webSocketUpgrade = //(implicit r: RequestContext): Directive0 =
+  def webSocketUpgrade: Route = //(implicit r: RequestContext): Directive0 =
     makePermissionTestFunction() { hasPermissionTest =>
       extractUpgradeToWebSocket {wsRequest =>
         extractClientIP { ip =>

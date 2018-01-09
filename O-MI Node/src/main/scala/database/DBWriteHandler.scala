@@ -26,13 +26,15 @@ import types.OdfTypes._
 import types.OmiTypes._
 import types.Path
 import analytics.{AddWrite, AnalyticsStore}
-import agentSystem.{AgentName}
+import agentSystem.AgentName
 
 trait DBWriteHandler extends DBHandlerBase {
 
 
 
-  import context.{system}//, dispatcher}
+  import context.system
+
+  //, dispatcher}
   protected def handleWrite( write: WriteRequest ) : Future[ResponseRequest] = {
     val odfObjects = write.odf
     val infoItems : Seq[OdfInfoItem] = odfObjects.infoItems // getInfoItems(odfObjects)
@@ -71,7 +73,7 @@ trait DBWriteHandler extends DBHandlerBase {
     log.debug(s"Sending in progress; Subscription subId:$id addr:$callbackAddr interval:-1")
     //log.debug("Send msg:\n" + xmlMsg)
 
-    def failed(reason: String) =
+    def failed(reason: String): Unit =
       log.warning(
         s"Callback failed; subscription id:$id interval:-1  reason: $reason")
 
@@ -94,7 +96,7 @@ trait DBWriteHandler extends DBHandlerBase {
     }
   }
 
-  private def processEvents(events: Seq[InfoItemEvent]) = {
+  private def processEvents(events: Seq[InfoItemEvent]): Unit = {
     //Add write data to analytics if wanted
     analyticsStore.foreach{ store =>
       events

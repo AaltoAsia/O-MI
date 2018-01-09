@@ -80,7 +80,7 @@ with CancelHandler
   }
 
   def handleReadRequest( read: ReadRequest) : Future[ResponseRequest] = {
-    implicit val to = Timeout(read.handleTTL)
+    implicit val to: Timeout = Timeout(read.handleTTL)
     val responseFuture = (dbHandler ? read).mapTo[ResponseRequest]
     responseFuture.onComplete{
       case Failure(t) =>
@@ -95,7 +95,7 @@ with CancelHandler
     val responsibleToRequest = agentResponsibilities.splitRequestToResponsible( write )
     val responsesFromResponsible = responsibleToRequest.map{
       case (None, subrequest) =>  
-        implicit val to = Timeout(subrequest.handleTTL)
+        implicit val to: Timeout = Timeout(subrequest.handleTTL)
         log.debug(s"Asking DBHandler to handle request parts that are not owned by an Agent.")
         (dbHandler ? subrequest).mapTo[ResponseRequest]
       case (Some(agentName), subrequest) => 
@@ -186,7 +186,7 @@ with CancelHandler
   private def askAgent( agentName: AgentName, request: OmiRequest ): Future[ResponseRequest]={
     agents.get(agentName) match {
       case Some( ai: AgentInformation) if ai.running  =>  
-        implicit val to = Timeout(request.handleTTL)
+        implicit val to: Timeout = Timeout(request.handleTTL)
         val f = ai.actorRef ? ( request.withSenderInformation( ActorSenderInformation( self.path.name, self) ) )
         f.mapTo[ResponseRequest]
 

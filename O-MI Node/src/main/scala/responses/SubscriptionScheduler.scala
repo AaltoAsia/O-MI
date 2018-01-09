@@ -25,7 +25,7 @@ class SubscriptionScheduler {
   val timeunit = SECONDS
   private val scheduler = Executors.newSingleThreadScheduledExecutor()
 
-  private def createRunnable(message: Any, sender: ActorRef): Runnable = new Runnable() {def run() = sender ! message}
+  private def createRunnable(message: Any, sender: ActorRef): Runnable = new Runnable() {def run(): Unit = sender ! message}
 
   def scheduleOnce(timeout: Duration, sender: ActorRef, message: Any): ScheduledFuture[_] = {
     val task: Runnable = createRunnable(message, sender)

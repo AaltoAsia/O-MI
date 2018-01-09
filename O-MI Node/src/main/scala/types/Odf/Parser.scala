@@ -43,7 +43,7 @@ import types._
 /** Parser for data in O-DF format*/
 object ODFParser extends parsing.Parser[OdfParseResult] {
   val schemaName = "odf.xsd"
-  protected[this] override def schemaPath = Array[Source](
+  protected[this] override def schemaPath: Array[Source] = Array[Source](
     new StreamSource(getClass.getClassLoader().getResourceAsStream("odf.xsd"))
   )
 

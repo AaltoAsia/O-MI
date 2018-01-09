@@ -23,7 +23,7 @@ import scala.concurrent.{Future, duration}
 import scala.util.{Random, Try}
 import scala.concurrent.duration._
 import scala.collection.immutable.HashMap
-import akka.actor.{Actor, ActorLogging, Cancellable, Props}
+import akka.actor.{Actor, ActorLogging, Cancellable, Props, Scheduler}
 import database._
 import http.CLICmds.{GetSubsWithPollData, ListSubsCmd, SubInfoCmd}
 import http.OmiConfigExtension
@@ -101,14 +101,14 @@ class SubscriptionManager(
 ) extends Actor with ActorLogging {
   val minIntervalDuration = Duration(1, duration.SECONDS)
   val ttlScheduler = new SubscriptionScheduler
-  val intervalScheduler = context.system.scheduler
+  val intervalScheduler: Scheduler = context.system.scheduler
   val intervalMap: ConcurrentHashMap[Long, Cancellable] = new ConcurrentHashMap
 
   /**
    * Schedule remove operation for subscriptions that are in prevayler stores,
    * only run at startup
    */
-  private[this] def scheduleTtls() = {
+  private[this] def scheduleTtls(): Unit = {
     log.debug("Scheduling removesubscriptions for the first time...")
     //interval subs
     val intervalSubs = (singleStores.subStore execute GetAllIntervalSubs())

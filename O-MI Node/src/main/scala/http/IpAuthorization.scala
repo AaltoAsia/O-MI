@@ -93,7 +93,7 @@ trait IpAuthorization extends AuthorizationExtension {
      **/
     private[this] def isInSubnet(subnet: InetAddress, subNetMaskLength: Int, ip: InetAddress) : Boolean = {
       // TODO: bytes should be printed as unsigned
-      def compareLog() = log.debug("Whitelist check for IP address: " + ip.getHostAddress +
+      def compareLog(): Unit = log.debug("Whitelist check for IP address: " + ip.getHostAddress +
         " against " + subnet.getHostAddress
         )
       val ipv4 = 4

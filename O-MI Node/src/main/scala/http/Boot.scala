@@ -18,21 +18,19 @@ import java.net.InetSocketAddress
 import java.util.Date
 
 import scala.concurrent.duration._
-import scala.concurrent.{Await, Future, ExecutionContext}
+import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.language.postfixOps
 import scala.util.{Failure, Success, Try}
-
 import analytics.AnalyticsStore
-import org.slf4j.LoggerFactory
-
+import org.slf4j.{Logger, LoggerFactory}
 import akka.actor.{ActorRef, ActorSystem, Props}
 import akka.stream.ActorMaterializer
 import akka.io.{IO, Tcp}
 import akka.pattern.ask
 import akka.util.Timeout
-import akka.http.scaladsl.{HttpExt, Http}
+import akka.http.scaladsl.{Http, HttpExt}
 import akka.http.scaladsl.Http.ServerBinding
-import akka.http.scaladsl.server.RouteResult // implicit route2HandlerFlow
+import akka.http.scaladsl.server.RouteResult
 import akka.stream.{ActorMaterializer, Materializer}
 //import akka.http.WebBoot
 //import akka.http.javadsl.ServerBinding
@@ -94,7 +92,7 @@ class OmiServer extends OmiNode{
       )
     else None
 
-  val dbHandler = system.actorOf(
+  val dbHandler: ActorRef = system.actorOf(
    DBHandler.props(
      dbConnection,
      singleStores,
@@ -104,7 +102,7 @@ class OmiServer extends OmiNode{
    "database-handler"
   )
   
-  val subscriptionManager = system.actorOf(
+  val subscriptionManager: ActorRef = system.actorOf(
     SubscriptionManager.props(
       settings,
       singleStores,
@@ -124,7 +122,7 @@ class OmiServer extends OmiNode{
     "request-handler"
   )
 
-  val agentSystem = system.actorOf(
+  val agentSystem: ActorRef = system.actorOf(
    AgentSystem.props(
      analytics.filter(n => settings.enableWriteAnalytics),
      dbHandler,
@@ -134,7 +132,7 @@ class OmiServer extends OmiNode{
    "agent-system"
   )
 
-  val cliListener =system.actorOf(
+  val cliListener: ActorRef =system.actorOf(
     Props(
       new OmiNodeCLIListener(
         system,
@@ -232,7 +230,7 @@ object OmiServer {
         ))
       
       val write = WriteRequest( objects, None,  60  seconds)
-      implicit val timeout = Timeout( 60 seconds)
+      implicit val timeout: Timeout = Timeout( 60 seconds)
       val future : Future[ResponseRequest]= (requestHandler ? write ).mapTo[ResponseRequest]
       future.onSuccess{
         case response: ResponseRequest=>
@@ -263,7 +261,7 @@ object OmiServer {
  * Starting point of the stand-alone program.
  */
 object Boot /*extends Starter */{// with App{
-  val log = LoggerFactory.getLogger("OmiServiceTest")
+  val log: Logger = LoggerFactory.getLogger("OmiServiceTest")
 
   def main(args: Array[String]) : Unit= {
     val p = Path("Objects\\"+"/O\\"+"/II")

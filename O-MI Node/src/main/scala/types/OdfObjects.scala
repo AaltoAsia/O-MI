@@ -16,11 +16,10 @@ package OdfTypes
 
 
 import scala.collection.immutable.HashMap
-import scala.xml.NodeSeq
-
+import scala.xml.{NamespaceBinding, NodeSeq}
 import parsing.xmlGen.scalaxb.DataRecord
 import parsing.xmlGen.xmlTypes._
-import parsing.xmlGen.{odfDefaultScope, scalaxb, defaultScope}
+import parsing.xmlGen.{defaultScope, odfDefaultScope, scalaxb}
 import types.OdfTypes.OdfTreeCollection._
 
 /** Class implementing OdfObjects. */
@@ -107,7 +106,7 @@ class OdfObjectsImpl(
     constructor(uniqueObjs, anotherUniqueObjs,sharedObjs)
   }
 
-  def odfDefaultScope = scalaxb.toScope(
+  def odfDefaultScope: NamespaceBinding = scalaxb.toScope(
     (Set(
       None -> "http://www.opengroup.org/xsd/odf/1.0/"//,
       //Some("xs") -> "http://www.w3.org/2001/XMLSchema",

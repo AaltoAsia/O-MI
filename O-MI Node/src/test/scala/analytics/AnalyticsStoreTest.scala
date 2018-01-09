@@ -21,7 +21,7 @@ import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
 import scala.util.Try
 
-import agentSystem.{AgentSystem}
+import agentSystem.AgentSystem
 import akka.actor.{Props, ActorSystem, ActorRef}
 import akka.http.scaladsl.model.RemoteAddress
 import akka.stream.ActorMaterializer

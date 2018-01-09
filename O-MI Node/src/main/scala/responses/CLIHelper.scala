@@ -33,7 +33,7 @@ trait CLIHelperT{
 class CLIHelper(val singleStores: SingleStores, dbConnection: DB )(implicit system: ActorSystem) extends CLIHelperT{
 
   implicit val logSource: LogSource[CLIHelper]= new LogSource[CLIHelper] {
-      def genString( handler:  CLIHelper) = handler.toString
+      def genString( handler:  CLIHelper): String = handler.toString
     }
   protected val log: LoggingAdapter = Logging( system, this)
 

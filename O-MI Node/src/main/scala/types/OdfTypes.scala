@@ -104,7 +104,7 @@ case class OdfQlmID(
     else None
   }
 
-  def unionableIdType( that: OdfQlmID ) ={
+  def unionableIdType( that: OdfQlmID ): Boolean ={
       (idType, that.idType) match {
         case (Some(id), Some(otherId)) =>  
           id == otherId
@@ -113,7 +113,7 @@ case class OdfQlmID(
         case (None, None) => true
       }
   }
-  def unionableTagType( that: OdfQlmID ) ={
+  def unionableTagType( that: OdfQlmID ): Boolean ={
       (tagType, that.tagType) match {
         case (Some(tag), Some(otherTag)) =>  
           tag == otherTag
@@ -122,7 +122,7 @@ case class OdfQlmID(
         case (None, None) => true
       }
   }
-  def unionableValidityTimeWindow( that: OdfQlmID ) ={
+  def unionableValidityTimeWindow( that: OdfQlmID ): Boolean ={
       (validityTimeWindow, that.validityTimeWindow) match {
         case (Some(tw), Some(ovtw)) =>  
           tw.intersect(ovtw)
@@ -131,7 +131,7 @@ case class OdfQlmID(
         case (None, None) => true
       }
   }
-  def unionable( that: OdfQlmID ) = {
+  def unionable( that: OdfQlmID ): Boolean = {
     value == that.value && 
     unionableIdType(that) && 
     unionableTagType(that) && 
@@ -272,14 +272,14 @@ case class OdfObjects(
   }
 
 
-  lazy val infoItems = getInfoItems(this)
-  lazy val paths = infoItems map (_.path)
+  lazy val infoItems: OdfTreeCollection[OdfInfoItem] = getInfoItems(this)
+  lazy val paths: Vector[Path] = infoItems map (_.path)
 
   /**
    * Returns Object nodes that have metadata-like information.
    * Includes nodes that have type or description
    */
-  lazy val objectsWithMetadata = getOdfNodes(this) collect {
+  lazy val objectsWithMetadata: Seq[OdfObject] = getOdfNodes(this) collect {
       case o @ OdfObject(_, _, _, _, desc, typeVal, attr) 
         if desc.isDefined || typeVal.isDefined || attr.nonEmpty => o
         /*

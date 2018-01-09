@@ -193,8 +193,8 @@ package object OdfTypes {
   def getPathValuePairs( objs: OdfObjects ) : OdfTreeCollection[(Path,OdfValue[Any])]={
     getInfoItems(objs).flatMap{ infoitem => infoitem.values.map{ value => (infoitem.path, value)} }
   }
-  def timestampToXML(timestamp: Timestamp) ={ 
-    val cal = new GregorianCalendar();
+  def timestampToXML(timestamp: Timestamp): XMLGregorianCalendar ={
+    val cal = new GregorianCalendar()
     cal.setTime(timestamp)
     DatatypeFactory.newInstance().newXMLGregorianCalendar(cal)
   }

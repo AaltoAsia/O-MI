@@ -91,10 +91,10 @@ class OmiNodeCLI(
   backup <filename for subs> <filename for odf>
   restore <filename for subs> <filename for odf>
   """
-  val ip = sourceAddress.toString
+  val ip: AgentName = sourceAddress.toString
   implicit val timeout : Timeout = 1.minute
 
-  val commandTimeout = 1.minute
+  val commandTimeout: FiniteDuration = 1.minute
 
   override def preStart: Unit ={
     val connectToManager = (agentSystem ? NewCLI(ip,self)).mapTo[Boolean]

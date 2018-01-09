@@ -5,7 +5,7 @@ import scala.collection.mutable.{Map => MutableMap}
 
 import com.typesafe.config.Config
 import akka.actor.{ActorRef, Actor, ActorSystem, Props , Terminated}
-import akka.testkit.{TestActorRef}
+import akka.testkit.TestActorRef
 
 import agentSystem._
 import types.OmiTypes.{Responses, WriteRequest, ReadRequest, CallRequest, ResponseRequest}
