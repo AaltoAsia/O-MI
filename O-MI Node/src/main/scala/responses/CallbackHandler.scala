@@ -162,15 +162,15 @@ class CallbackHandler(
 
   }
   private[this] def sendWS( callback: WSCallback, request: ResponseRequest, ttl: Duration): Future[Unit] = {
-    webSocketConnections.get(callback.address).map{
-      case handler: SendHandler=> 
+    webSocketConnections.get(callback.address).map {
+      handler: SendHandler =>
 
-            log.debug(
-              s"Trying to send response to WebSocket connection ${callback.address}"
-            )
+        log.debug(
+          s"Trying to send response to WebSocket connection ${callback.address}"
+        )
         val f = handler(request)
-        f.onComplete{
-          case Success(_) => 
+        f.onComplete {
+          case Success(_) =>
             log.debug(
               s"Response  send successfully to WebSocket connection ${callback.address}"
             )
@@ -186,15 +186,15 @@ class CallbackHandler(
     )
   }
   private[this] def sendCurrentConnection( callback: CurrentConnectionCallback, request: ResponseRequest, ttl: Duration): Future[Unit] = {
-    currentConnections.get(callback.identifier).map{
-      case wsConnection: CurrentConnection => 
+    currentConnections.get(callback.identifier).map {
+      wsConnection: CurrentConnection =>
 
-            log.debug(
-              s"Trying to send response to current connection ${callback.identifier}"
-            )
+        log.debug(
+          s"Trying to send response to current connection ${callback.identifier}"
+        )
         val f = wsConnection.handler(request)
-        f.onComplete{
-          case Success(_) => 
+        f.onComplete {
+          case Success(_) =>
             log.debug(
               s"Response  send successfully to current connection ${callback.identifier}"
             )

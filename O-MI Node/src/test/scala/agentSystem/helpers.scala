@@ -138,13 +138,13 @@ class TestManager( testAgents: scala.collection.mutable.Map[AgentName, AgentInfo
   protected val requestHandler: ActorRef
   )(implicit system: ActorSystem) extends BaseAgentSystem with InternalAgentManager{
   protected val agents: scala.collection.mutable.Map[AgentName, AgentInfo] = testAgents
-  agents.values.foreach{
-    case ai: AgentInfo => 
-      ai.agent.foreach{
+  agents.values.foreach {
+    ai: AgentInfo =>
+      ai.agent.foreach {
         ref =>
-         if( ref != ActorRef.noSender ) context.watch( ref)
+          if (ref != ActorRef.noSender) context.watch(ref)
       }
-  
+
   }
   protected def settings : AgentSystemConfigExtension = ???
   def receive : Actor.Receive = {

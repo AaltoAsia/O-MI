@@ -234,15 +234,16 @@ object OmiServer {
       val future : Future[ResponseRequest]= (requestHandler ? write ).mapTo[ResponseRequest]
       future.onSuccess{
         case response: ResponseRequest=>
-        Results.unionReduce(response.results).forall{
-          case result : OmiResult => result.returnValue match {
-            case s: Successful => 
-              system.log.debug("O-MI InputPusher system working.")
-              true
-            case f: OmiReturn => 
-              system.log.error( s"O-MI InputPusher system not working; $response")
-              false
-          }
+        Results.unionReduce(response.results).forall {
+          result: OmiResult =>
+            result.returnValue match {
+              case s: Successful =>
+                system.log.debug("O-MI InputPusher system working.")
+                true
+              case f: OmiReturn =>
+                system.log.error(s"O-MI InputPusher system not working; $response")
+                false
+            }
         }
       }
 

@@ -131,18 +131,18 @@ object Results{
             case other : Success => 
               Results.Success( 
                 requestIDs ++ other.requestIDs,
-                other.odf.flatMap{
-                  case objects: ImmutableODF => 
-                    odf.map{
-                      case objs: ImmutableODF =>
+                other.odf.flatMap {
+                  objects: ImmutableODF =>
+                    odf.map {
+                      objs: ImmutableODF =>
                         objects.union(objs).immutable
                     }
                 }.orElse(odf),
-                other.description.flatMap{
-                  case str1 : String =>
-                    description.map{
-                      case str2: String =>
-                        if( str1 == str2 ) str1
+                other.description.flatMap {
+                  str1: String =>
+                    description.map {
+                      str2: String =>
+                        if (str1 == str2) str1
                         else s"$str1.\n$str2"
                     }
                 }.orElse(description)

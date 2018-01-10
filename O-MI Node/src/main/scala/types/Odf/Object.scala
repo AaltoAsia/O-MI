@@ -43,12 +43,12 @@ case class Object(
     assert( containSameId && pathsMatches)
     new Object(
       if( that.ids.nonEmpty ){
-        QlmID.unionReduce( that.ids ++ ids).toVector.filter{ case id => id.id.nonEmpty}
+        QlmID.unionReduce( that.ids ++ ids).toVector.filter(id => id.id.nonEmpty)
       } else Vector.empty,
       path,
       that.typeAttribute.orElse(typeAttribute),
       if( that.descriptions.nonEmpty ){
-        Description.unionReduce(that.descriptions ++ descriptions).toVector.filter{ case desc => desc.text.nonEmpty}
+        Description.unionReduce(that.descriptions ++ descriptions).toVector.filter(desc => desc.text.nonEmpty)
       } else Vector.empty,
       that.attributes ++ attributes
     )
@@ -73,17 +73,17 @@ case class Object(
     
   }
   def createAncestors: Seq[Node] = {
-    path.getAncestors.map{
-          case ancestorPath: Path => 
-            new Object(
-              Vector(
-                new QlmID(
-                  ancestorPath.last
-                )
-              ),
-              ancestorPath
+    path.getAncestors.map {
+      ancestorPath: Path =>
+        new Object(
+          Vector(
+            new QlmID(
+              ancestorPath.last
             )
-        }.toVector
+          ),
+          ancestorPath
+        )
+    }.toVector
   }
   def createParent: Node = {
     val parentPath = path.getParent

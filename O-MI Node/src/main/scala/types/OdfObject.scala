@@ -48,8 +48,8 @@ class  OdfObjectImpl(
     val tmp: OdfTreeCollection[OdfQlmID] = id
     val tmp2: OdfTreeCollection[OdfQlmID] = another.id
     val idsWithDuplicate: Vector[OdfQlmID] = this.id.toVector ++ another.id.toVector
-    val ids: Seq[OdfQlmID]  = idsWithDuplicate.groupBy{ 
-      case qlmId: OdfQlmID => qlmId.value 
+    val ids: Seq[OdfQlmID]  = idsWithDuplicate.groupBy {
+      qlmId: OdfQlmID => qlmId.value
     }.values.collect{
         case Seq(single: OdfQlmID) => Seq(single)
         case Seq( id: OdfQlmID, otherId: OdfQlmID) => 

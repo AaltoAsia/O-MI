@@ -103,10 +103,10 @@ class OmiConfigExtension( val config: Config) extends Extension
   //IP
   val inputWhiteListUsers: Vector[String]= config.getStringList("omi-service.input-whitelist-users").toVector
 
-  val inputWhiteListIps: Vector[Vector[Byte]] = config.getStringList("omi-service.input-whitelist-ips").map{
-    case s: String => 
-    val ip = inetAddrToBytes(InetAddress.getByName(s)) 
-    ip.toVector
+  val inputWhiteListIps: Vector[Vector[Byte]] = config.getStringList("omi-service.input-whitelist-ips").map {
+    s: String =>
+      val ip = inetAddrToBytes(InetAddress.getByName(s))
+      ip.toVector
   }.toVector
 
   val inputWhiteListSubnets : Map[InetAddress, Int] = config.getStringList("omi-service.input-whitelist-subnets").map{ 

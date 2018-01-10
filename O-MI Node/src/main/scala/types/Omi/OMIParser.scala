@@ -300,12 +300,12 @@ object OMIParser extends parsing.Parser[OmiParseResult] {
                 result.returnValue.description
               ),
             Vector( result.requestID.map(parseRequestID).toSeq : _* ), 
-            result.msg.map{
-              case msg : xmlGen.xmlTypes.MsgType => 
+            result.msg.map {
+              msg: xmlGen.xmlTypes.MsgType =>
                 //TODO: figure right type parameter
-                val odfParseResult = parseMsg(msg,result.msgformat)
+                val odfParseResult = parseMsg(msg, result.msgformat)
                 odfParseResult match {
-                  case Left(errors)  => throw combineErrors(iterableAsScalaIterable(errors))
+                  case Left(errors) => throw combineErrors(iterableAsScalaIterable(errors))
                   case Right(odf) => odf
                 }
             }

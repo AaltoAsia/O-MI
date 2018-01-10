@@ -36,8 +36,8 @@ case class Objects(
   implicit def asObjectsType( objects: Seq[ObjectType]) : ObjectsType ={
     ObjectsType(
       objects,
-      attributes = attributesToDataRecord( attributes ) ++ version.map{
-        case version: String => "@version" -> DataRecord(version)
+      attributes = attributesToDataRecord( attributes ) ++ version.map {
+        version: String => "@version" -> DataRecord(version)
       }  
     )
   }

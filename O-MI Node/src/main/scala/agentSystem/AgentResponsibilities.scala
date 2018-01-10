@@ -74,10 +74,8 @@ class AgentResponsibilities(){
         Some(agentName) -> odf.getUpTreeAsODF(paths.toVector)
       case ( None, paths:Set[Path] ) =>
         None -> odf.getUpTreeAsODF(paths.toVector)
-    }.mapValues{
-      case _odf =>
-        request.replaceOdf( NewTypeConverter.convertODF(_odf))
-    }
+    }.mapValues(_odf =>
+      request.replaceOdf(NewTypeConverter.convertODF(_odf)))
   }
   
   private def createFilter( request: OdfRequest ): RequestFilter => Boolean ={
@@ -125,13 +123,11 @@ class AgentResponsibilities(){
     val odf = OldTypeConverter.convertOdfObjects(request.odf)
     val leafPathes = odf.getLeafPaths
     //println( s"Pathes of leaf nodes:\n$leafPathes")
-    val pathToResponsible: Seq[(Path,Option[AgentName])]= leafPathes.map{
-      case path: Path =>
-        val allPaths : Seq[Path] = path.getAncestorsAndSelf.sortBy(_.length).reverse
-        val responsibility : Option[AgentResponsibility] = allPaths.find{
-          case _path => pathsToResponsible.get(_path).nonEmpty
-        }.flatMap{ case _path => pathsToResponsible.get(_path) }
-        
+    val pathToResponsible: Seq[(Path,Option[AgentName])]= leafPathes.map {
+      path: Path =>
+        val allPaths: Seq[Path] = path.getAncestorsAndSelf.sortBy(_.length).reverse
+        val responsibility: Option[AgentResponsibility] = allPaths.find(_path => pathsToResponsible.get(_path).nonEmpty).flatMap(_path => pathsToResponsible.get(_path))
+
         val responsible = responsibility.map(_.agentName)
         (path, responsible)
     }.toSeq
@@ -155,8 +151,8 @@ class AgentResponsibilities(){
     }
     //println( s"Responsible Agent's names:\n${responsibleToPaths.keys}")
 
-    val result = responsibleToPaths.keys.flatten.filter{
-      case keyname: AgentName => optionAgentName.forall{ name => name != keyname }
+    val result = responsibleToPaths.keys.flatten.filter {
+      keyname: AgentName => optionAgentName.forall { name => name != keyname }
     }.isEmpty
     //println( s"Permissien check:$result")
     result

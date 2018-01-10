@@ -5,9 +5,8 @@ import parsing.xmlGen.scalaxb.DataRecord
 import parsing.xmlGen.xmlTypes._
 object Description{
   def unionReduce( descs: Seq[Description] ): Seq[Description] ={
-    descs.groupBy( _.language ).mapValues{
-      case descriptions => descriptions.foldLeft( Description(""))( _ union _)
-    }.values.toVector
+    descs.groupBy( _.language ).mapValues(
+      descriptions => descriptions.foldLeft(Description(""))(_ union _)).values.toVector
   }
 
 }

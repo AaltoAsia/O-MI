@@ -12,20 +12,20 @@ case class MetaData(
   def update( that: MetaData ): MetaData ={
     
     val intersectingNames = names.intersect( that.names )
-    val intersectedII = intersectingNames.flatMap{
-      case name: String =>
-        ( nameToII.get(name), that.nameToII.get(name) ) match {
-          case (Some( ii ), Some( tii) ) => Some( ii.update(tii) )
-          case (ii,tii) =>  tii.orElse(ii)
+    val intersectedII = intersectingNames.flatMap {
+      name: String =>
+        (nameToII.get(name), that.nameToII.get(name)) match {
+          case (Some(ii), Some(tii)) => Some(ii.update(tii))
+          case (ii, tii) => tii.orElse(ii)
         }
     }
     new MetaData( 
-      ((names -- intersectingNames).flatMap{
-        case name: String => 
+      ((names -- intersectingNames).flatMap {
+        name: String =>
           nameToII.get(name)
       } ++
-      (that.names -- intersectingNames).flatMap{
-        case name: String => 
+      (that.names -- intersectingNames).flatMap {
+        name: String =>
           that.nameToII.get(name)
       } ++ intersectedII).toVector
     )
@@ -33,20 +33,20 @@ case class MetaData(
   def union( that: MetaData ): MetaData ={
 
     val intersectingNames = names.intersect( that.names )
-    val intersectedII = intersectingNames.flatMap{
-      case name: String =>
-        ( nameToII.get(name), that.nameToII.get(name) ) match {
-          case (Some( ii ), Some( tii) ) => Some( ii.union(tii) )
-          case (ii,tii) =>  ii.orElse(tii)
+    val intersectedII = intersectingNames.flatMap {
+      name: String =>
+        (nameToII.get(name), that.nameToII.get(name)) match {
+          case (Some(ii), Some(tii)) => Some(ii.union(tii))
+          case (ii, tii) => ii.orElse(tii)
         }
     }
     new MetaData( 
-      ((names -- intersectingNames).flatMap{
-        case name: String => 
+      ((names -- intersectingNames).flatMap {
+        name: String =>
           nameToII.get(name)
       } ++
-      (that.names -- intersectingNames).flatMap{
-        case name: String => 
+      (that.names -- intersectingNames).flatMap {
+        name: String =>
           that.nameToII.get(name)
       } ++ intersectedII).toVector
     )

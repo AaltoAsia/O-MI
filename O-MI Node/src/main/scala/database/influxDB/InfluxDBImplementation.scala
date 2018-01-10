@@ -179,38 +179,40 @@ class InfluxDBImplementation(
   }
 
   def initialize(): Unit = {
-    val initialisation = httpResponseToStrict(sendQuery("show databases")).flatMap{
-       case entity : HttpEntity.Strict =>
-         val ent = entity.copy(contentType =`application/json`)
+    val initialisation = httpResponseToStrict(sendQuery("show databases")).flatMap {
+      entity: HttpEntity.Strict =>
+        val ent = entity.copy(contentType = `application/json`)
 
-         implicit val showDatabaseFormat: InfluxDBJsonProtocol.InfluxDBJsonShowDatabasesFormat = new InfluxDBJsonProtocol.InfluxDBJsonShowDatabasesFormat()
-         Unmarshal(ent).to[Seq[String]].map{
-           case databases: Seq[String] =>
-             log.debug( s" Found following databases: ${databases.mkString(", ")}")
-             if( databases.contains( config.databaseName ) ){
-               //Everything okay
-               log.info( s"Database ${config.databaseName} found from InfluxDB at address ${config.address}")
-                   Future.successful()
-             } else {
-               //Create or error
-               log.warning( s"Database ${config.databaseName} not found from InfluxDB at address ${config.address}")
-               log.warning( s"Creating database ${config.databaseName} to InfluxDB in address ${config.address}")
-               sendQuery(s"create database ${config.databaseName} ").flatMap{
-                 case response @ HttpResponse( status, headers, _entity, protocol ) if status.isSuccess =>
-                    log.info( s"Database ${config.databaseName} created seccessfully to InfluxDB at address ${config.address}")
-                   Future.successful()
-                 case response @ HttpResponse( status, headers, _entity, protocol ) if status.isFailure =>
-                   _entity.toStrict(10.seconds).flatMap{ stricted => Unmarshal(stricted).to[String].map{
-                     str =>
-                       log.error( s"Database ${config.databaseName} could not be created to InfluxDB at address ${config.address}")
-                       log.warning(s""" Query returned $status with:\n $str""")
-                       throw new Exception( str)
-                   }}
-               }
+        implicit val showDatabaseFormat: InfluxDBJsonProtocol.InfluxDBJsonShowDatabasesFormat = new InfluxDBJsonProtocol.InfluxDBJsonShowDatabasesFormat()
+        Unmarshal(ent).to[Seq[String]].map {
+          databases: Seq[String] =>
+            log.debug(s" Found following databases: ${databases.mkString(", ")}")
+            if (databases.contains(config.databaseName)) {
+              //Everything okay
+              log.info(s"Database ${config.databaseName} found from InfluxDB at address ${config.address}")
+              Future.successful()
+            } else {
+              //Create or error
+              log.warning(s"Database ${config.databaseName} not found from InfluxDB at address ${config.address}")
+              log.warning(s"Creating database ${config.databaseName} to InfluxDB in address ${config.address}")
+              sendQuery(s"create database ${config.databaseName} ").flatMap {
+                case response@HttpResponse(status, headers, _entity, protocol) if status.isSuccess =>
+                  log.info(s"Database ${config.databaseName} created seccessfully to InfluxDB at address ${config.address}")
+                  Future.successful()
+                case response@HttpResponse(status, headers, _entity, protocol) if status.isFailure =>
+                  _entity.toStrict(10.seconds).flatMap { stricted =>
+                    Unmarshal(stricted).to[String].map {
+                      str =>
+                        log.error(s"Database ${config.databaseName} could not be created to InfluxDB at address ${config.address}")
+                        log.warning(s""" Query returned $status with:\n $str""")
+                        throw new Exception(str)
+                    }
+                  }
+              }
 
-             }
-         }
-     }
+            }
+        }
+    }
     
     Await.result( initialisation, 1 minutes)
   }
@@ -242,7 +244,7 @@ class InfluxDBImplementation(
     writeManyNewTypes(iis)
   }
   def writeManyNewTypes(data: Seq[InfoItem]): Future[OmiReturn] = {
-    val valuesAsString = data.flatMap{ case ii: InfoItem => infoItemToWriteFormat(ii) }.mkString("\n")
+    val valuesAsString = data.flatMap { ii: InfoItem => infoItemToWriteFormat(ii) }.mkString("\n")
     val request = RequestBuilding.Post(writeAddress, valuesAsString)//.withHeaders()
     val response = httpExt.singleRequest(request)
 
@@ -270,11 +272,11 @@ class InfluxDBImplementation(
     newest: Option[Int],
     oldest: Option[Int]): Future[Option[OdfObjects]]={
       val iODF = OldTypeConverter.convertOdfObjects(requests.map( _.createAncestors ).fold(OdfObjects())( _ union _ ))
-      getNBetweenNewTypes( iODF, begin, end, newest, oldest).map{
-        case result: Option[ImmutableODF] =>
-          result.map{
-            resultODF: ImmutableODF  => 
-              NewTypeConverter.convertODF( resultODF )
+      getNBetweenNewTypes( iODF, begin, end, newest, oldest).map {
+        result: Option[ImmutableODF] =>
+          result.map {
+            resultODF: ImmutableODF =>
+              NewTypeConverter.convertODF(resultODF)
           }
       }
   }
@@ -345,16 +347,16 @@ class InfluxDBImplementation(
              log.warning(s"Read returned $status with:\n $str")
              throw new Exception( str)
          }}
-     }.flatMap{
-       case entity : HttpEntity.Strict =>
-         val ent = entity.copy(contentType =`application/json`)
+     }.flatMap {
+       entity: HttpEntity.Strict =>
+         val ent = entity.copy(contentType = `application/json`)
          //TODO: Parse JSON to ImmutableODF
 
-         Unmarshal(ent).to[ImmutableODF].map{
-           case odf: ImmutableODF =>
-             log.info( s"Influx O-DF:\n$odf" )
-             if( odf.getPaths.length < 2 && requestedODF.getPaths.length < 2) None
-             else Some( requestedODF.union(odf).immutable )
+         Unmarshal(ent).to[ImmutableODF].map {
+           odf: ImmutableODF =>
+             log.info(s"Influx O-DF:\n$odf")
+             if (odf.getPaths.length < 2 && requestedODF.getPaths.length < 2) None
+             else Some(requestedODF.union(odf).immutable)
          }
 
      }
@@ -372,10 +374,10 @@ class InfluxDBImplementation(
      filteringClause: String 
    ): String= {
      val iisGroupedByParents = iis.groupBy{ ii => ii.path.getParent } 
-     val queries = iis.map{
-       case ii: InfoItem =>
-         val measurementName = pathToMeasurementName( ii.path )
-         val select = s"""SELECT "value" FROM "$measurementName"""" 
+     val queries = iis.map {
+       ii: InfoItem =>
+         val measurementName = pathToMeasurementName(ii.path)
+         val select = s"""SELECT "value" FROM "$measurementName""""
          select + filteringClause
      }
      queries.mkString(";")
@@ -385,10 +387,10 @@ class InfluxDBImplementation(
    def remove( path: Path ): Future[Seq[Int]] ={
       val cachedODF = OldTypeConverter.convertOdfObjects(singleStores.hierarchyStore execute GetTree())
       val removedIIs = cachedODF.getSubTreeAsODF(path).getInfoItems
-      val query = "q=" + removedIIs.map{
-        case ii: InfoItem =>
-         val mName = pathToMeasurementName(ii.path)
-         s"""DROP MEASUREMENT "$mName""""
+      val query = "q=" + removedIIs.map {
+        ii: InfoItem =>
+          val mName = pathToMeasurementName(ii.path)
+          s"""DROP MEASUREMENT "$mName""""
       }.mkString(";")
 
      val request = RequestBuilding.Post(readAddress, query).withHeaders(AcceptHeader("application/json"))
@@ -397,8 +399,8 @@ class InfluxDBImplementation(
        case HttpResponse( status, headers, entity, protocol ) if status.isSuccess =>
          Future{
            singleStores.hierarchyStore execute TreeRemovePath( path)
-           removedIIs.map{
-              case ii: InfoItem =>1
+           removedIIs.map {
+             ii: InfoItem => 1
            }
          }
        case HttpResponse( status, headers, entity, protocol ) if status.isFailure =>

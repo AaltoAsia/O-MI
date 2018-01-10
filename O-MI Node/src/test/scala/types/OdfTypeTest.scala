@@ -57,11 +57,11 @@ class OdfTypesTest extends mutable.Specification{
       case ii: InfoItem => ii.copy( names = Vector(), descriptions = ii.descriptions.headOption.toVector)
     } )
     val oldType = NewTypeConverter.convertODF( newType )
-    oldType.asXML showAs{
-      case ns => 
+    oldType.asXML showAs {
+      ns =>
         "Original:\n\n" + p.format(newTypeWithoutNamesForIIs.asXML.head) + "\n\n" ++
-        "Converted:\n\n" + p.format(ns.head) + "\n"
-      
+          "Converted:\n\n" + p.format(ns.head) + "\n"
+
     } must beEqualToIgnoringSpace( newTypeWithoutNamesForIIs.asXML )
   }
   def convertedOldHasSameXML ={
@@ -73,11 +73,11 @@ class OdfTypesTest extends mutable.Specification{
         throw new Exception("Parsing failed!")
     }
     val newType = OldTypeConverter.convertOdfObjects(oldType) 
-    newType.asXML showAs{
-      case ns => 
+    newType.asXML showAs {
+      ns =>
         "Original:\n\n" + p.format(oldType.asXML.head) + "\n\n" ++
-        "Converted:\n\n" + p.format(ns.head) + "\n"
-      
+          "Converted:\n\n" + p.format(ns.head) + "\n"
+
     } must beEqualToIgnoringSpace( oldType.asXML )
   }
   def  repeatedNewConvertTest ={
@@ -132,11 +132,11 @@ class OdfTypesTest extends mutable.Specification{
     val newType = OldTypeConverter.convertOdfObjects(oldType) 
     val backToOld = NewTypeConverter.convertODF(newType)
     val p = new scala.xml.PrettyPrinter(120, 4)
-    backToOld.asXML showAs{
-      case ns => 
+    backToOld.asXML showAs {
+      ns =>
         "Original:\n\n" + p.format(oldType.asXML.head) + "\n\n" ++
-        "Converted:\n\n" + p.format(ns.head) + "\n"
-      
+          "Converted:\n\n" + p.format(ns.head) + "\n"
+
     } must beEqualToIgnoringSpace(
       oldType.asXML     
     )
@@ -286,11 +286,8 @@ class OdfTypesTest extends mutable.Specification{
     o_df: ODF
   ) = {
     val p = new scala.xml.PrettyPrinter(120, 4)
-    o_df.asXML showAs{
-      case ns => 
-        "Generated:\n\n" + p.format(ns.head) + "\n"
-      
-    } must beEqualToIgnoringSpace( testingNodesAsXML )
+    o_df.asXML showAs (ns =>
+      "Generated:\n\n" + p.format(ns.head) + "\n") must beEqualToIgnoringSpace( testingNodesAsXML )
   }
   def fromXMLTest[M<:scala.collection.Map[OdfPath,Node],S <: scala.collection.SortedSet[OdfPath]](
     o_df: ODF

@@ -7,9 +7,9 @@ object OldTypeConverter{
     val objects = Objects(
       odfObjects.version
     )
-    val objs = odfObjects.objects.flatMap{
-      case odfObject: OdfObject => 
-        convertOdfObject( odfObject )
+    val objs = odfObjects.objects.flatMap {
+      odfObject: OdfObject =>
+        convertOdfObject(odfObject)
     }
     ImmutableODF( Vector(objects) ++ objs )
   }

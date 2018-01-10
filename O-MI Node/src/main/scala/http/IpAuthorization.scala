@@ -168,10 +168,10 @@ trait IpAuthorization extends AuthorizationExtension {
       ((bytes(2) & 0xFF) << 8)  |
       ((bytes(3) & 0xFF) << 0)
       ip*/
-      val ip : Int = (0 until 4).map{
-        case byteIndex: Int =>
+      val ip : Int = (0 until 4).map {
+        byteIndex: Int =>
           val converted: Int = bytes(byteIndex) & 0xFF
-          val shiftBy: Int = 32 - 8 * ( byteIndex + 1 )
+          val shiftBy: Int = 32 - 8 * (byteIndex + 1)
           val shifted: Int = converted << shiftBy
           shifted
       }.foldLeft(0){
@@ -187,10 +187,10 @@ trait IpAuthorization extends AuthorizationExtension {
      * @return Long, bytes presented as Long.
      **/
     private[this] def bytesToLong(bytes: Seq[Byte]) : Long = {
-      val ip : Long = (0 until 8).map{
-        case byteIndex: Int =>
+      val ip : Long = (0 until 8).map {
+        byteIndex: Int =>
           val converted: Long = bytes(byteIndex) & 0xFF
-          val shiftBy: Int = 64 - 8 * ( byteIndex + 1 )
+          val shiftBy: Int = 64 - 8 * (byteIndex + 1)
           val shifted: Long = converted << shiftBy
           shifted
       }.foldLeft(0l){

@@ -60,13 +60,13 @@ trait InternalAgentLoader extends BaseAgentSystem {
   def start() : Unit = {
     val classnames = settings.agentConfigurations
     classnames.foreach {
-      case configEntry : AgentConfigEntry =>
-      agents.get( configEntry.name ) match{
-        case None =>
-          loadAndStart(configEntry)
-        case Some( agentInf ) =>
-          log.warning("Agent already running: " + configEntry.name)
-      }
+      configEntry: AgentConfigEntry =>
+        agents.get(configEntry.name) match {
+          case None =>
+            loadAndStart(configEntry)
+          case Some(agentInf) =>
+            log.warning("Agent already running: " + configEntry.name)
+        }
     }
     log.info(s"All ${classnames.length} agent configurations processed.")
   }
@@ -179,28 +179,28 @@ trait InternalAgentLoader extends BaseAgentSystem {
   protected def stopAgent(agentName:AgentName): Unit ={
     log.warning( s"Stopping Agent $agentName...")
 
-    agents.get( agentName  ).foreach{
-      case agentInfo: AgentInfo =>
-      
-        agentInfo.agent.foreach{
-          case agentRef : ActorRef =>
-            context.stop( agentRef )
+    agents.get( agentName  ).foreach {
+      agentInfo: AgentInfo =>
+
+        agentInfo.agent.foreach {
+          agentRef: ActorRef =>
+            context.stop(agentRef)
         }
         requestHandler ! AgentStopped(agentInfo.name)
         dbHandler ! AgentStopped(agentInfo.name)
-        agents.update(agentName, agentInfo.copy( running = false, agent = None ) )
+        agents.update(agentName, agentInfo.copy(running = false, agent = None))
     }
   }
   protected def agentStopped(agentRef: ActorRef): Unit ={
     val agentName = agentRef.path.name 
     log.warning( s"Agent $agentName has been stopped/terminated" )
     context.unwatch( agentRef )
-    agents.get( agentName  ).foreach{
-      case agentInfo: AgentInfo =>
+    agents.get( agentName  ).foreach {
+      agentInfo: AgentInfo =>
         requestHandler ! AgentStopped(agentInfo.name)
         dbHandler ! AgentStopped(agentInfo.name)
-        agents.update(agentName, agentInfo.copy( running = false, agent = None ) )
-        connectedCLIs.foreach{
+        agents.update(agentName, agentInfo.copy(running = false, agent = None))
+        connectedCLIs.foreach {
           case (ip, ref) => ref ! s"Agent $agentName stopped."
         }
     }

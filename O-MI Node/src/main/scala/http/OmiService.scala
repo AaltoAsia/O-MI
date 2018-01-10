@@ -290,8 +290,8 @@ trait OmiService
               val unwrappedRequest = req.unwrapped // NOTE: Be careful when implementing multi-request messages
               unwrappedRequest match {
                 case Success(request : OmiRequest) =>
-                  defineCallbackForRequest(request, currentConnectionCallback).flatMap{
-                    case request: OmiRequest => handleRequest( request )
+                  defineCallbackForRequest(request, currentConnectionCallback).flatMap {
+                    request: OmiRequest => handleRequest(request)
                   }.recover{
                     case e: TimeoutException => Responses.TTLTimeout(Some(e.getMessage()))
                     case e: IllegalArgumentException => Responses.InvalidRequest(Some(e.getMessage()))
@@ -328,11 +328,10 @@ trait OmiService
 
       // if timeoutfuture completes first then timeout is returned
       Future.firstCompletedOf(Seq(responseF, ttlPromise.future)) map {
-
-        case response : ResponseRequest =>
+        response: ResponseRequest =>
           // check the error code for logging
-          val statusO = response.results.map{ result => result.returnValue.returnCode}
-          if (statusO exists (_ != "200")){
+          val statusO = response.results.map { result => result.returnValue.returnCode }
+          if (statusO exists (_ != "200")) {
             log.warn(s"Error code $statusO with following request:\n$requestString")
           }
 
@@ -407,10 +406,8 @@ trait OmiService
       if(!settings.callbackAuthorizationEnabled || admin || userAddr.exists(asd => asd._1 == asd._2)) {
 
         val cbTry = callbackHandler.createCallbackAddress(address)
-        val result = cbTry.map{
-          case callback =>
-            request.withCallback( Some( callback ) )
-        }.recoverWith{
+        val result = cbTry.map(callback =>
+          request.withCallback(Some(callback))).recoverWith{
           case throwable : Throwable =>
             Try{ throw InvalidCallback(RawCallback(address), throwable.getMessage(), throwable  ) }
         }

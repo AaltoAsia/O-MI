@@ -44,25 +44,25 @@ trait DBCachedReadWrite extends DBReadWrite{
 
     val getHierarchyIds = hierarchyNodes.filter(_.isInfoItem).map{
       hNode => (hNode.path, hNode.id) // NOTE: Heavy operation
-    }.result.map{ 
-      case pathToIds => 
-        val p2IDset: Map[Path,Set[Int]] = pathToIds.flatMap{
-          case (p,hid) => 
-            p.getParentsAndSelf.map{ path => 
-              (path,hid)
+    }.result.map {
+      pathToIds =>
+        val p2IDset: Map[Path, Set[Int]] = pathToIds.flatMap {
+          case (p, hid) =>
+            p.getParentsAndSelf.map { path =>
+              (path, hid)
             }
-        }.groupBy{ 
+        }.groupBy {
           case (p, hid) => p
-          }.mapValues{ 
-            case p2ids => 
-              p2ids.map{
-                case (p, hid) => hid
-              }.toSet
-          }
-      pathToHierarchyID ++= p2IDset
-      hierarchyIDToPath ++= pathToIds.map{
-        case (p,id) => (id,p)
-      }
+        }.mapValues {
+          p2ids =>
+            p2ids.map {
+              case (p, hid) => hid
+            }.toSet
+        }
+        pathToHierarchyID ++= p2IDset
+        hierarchyIDToPath ++= pathToIds.map {
+          case (p, id) => (id, p)
+        }
     }
     val setup = DBIO.seq(
       allSchemas.create,
@@ -93,13 +93,13 @@ trait DBCachedReadWrite extends DBReadWrite{
    */
   def writeMany(infos: Seq[OdfInfoItem]): Future[OmiReturn] = {
     val pathToWrite: Seq[DBValue] = infos.flatMap {
-      case info =>
+      info =>
         pathToHierarchyID.get(info.path).flatMap {
-          case hIDset =>
+          hIDset =>
             hIDset.headOption.map {
               hID =>
                 info.values.map {
-                  case odfVal =>
+                  odfVal =>
                     DBValue(
                       hID,
                       //create new timestamp if option is None
@@ -114,7 +114,7 @@ trait DBCachedReadWrite extends DBReadWrite{
 
     val writeExisting = latestValues ++= pathToWrite
 
-    val idNotFound = infos.filter{ case info => pathToHierarchyID.get(info.path).isEmpty}
+    val idNotFound = infos.filter(info => pathToHierarchyID.get(info.path).isEmpty)
     val writeAction = if( idNotFound.nonEmpty ){
       val pathsData: Map[Path, Seq[OdfValue[Any]]] = idNotFound.map(ii => ii.path -> ii.values.sortBy(_.timestamp.getTime)).toMap
 
@@ -146,29 +146,27 @@ trait DBCachedReadWrite extends DBReadWrite{
         updateAction <- latestValues ++= dbValues
           
       } yield idMap.toSeq
-      writeExisting.flatMap{
-        case written =>
-          writeNewAction.map{
-            case p2IDs : Seq[(types.Path, Int)] if p2IDs.nonEmpty => 
-              val p2set: Map[Path,Set[Int]] = p2IDs.flatMap{
-                case (p,hid) => 
-                  p.getParentsAndSelf.map{ path => 
-                    (path,hid)
+      writeExisting.flatMap {
+        written =>
+          writeNewAction.map {
+            case p2IDs: Seq[(types.Path, Int)] if p2IDs.nonEmpty =>
+              val p2set: Map[Path, Set[Int]] = p2IDs.flatMap {
+                case (p, hid) =>
+                  p.getParentsAndSelf.map { path =>
+                    (path, hid)
                   }
-              }.groupBy{ 
+              }.groupBy {
                 case (p, hid) => p
-              }.mapValues{ 
-                case p2ids => p2ids.map{ case (_,id) => id}.toSet
-              }.map{
-                case (p,hidSet) => 
+              }.mapValues(p2ids => p2ids.map { case (_, id) => id }.toSet).map {
+                case (p, hidSet) =>
                   val preSet = pathToHierarchyID.get(p)
-                  val newSet = preSet.map{ set=> set ++ hidSet}.getOrElse(hidSet)
-                  pathToHierarchyID.update(p,newSet)
-                  (p,newSet)
+                  val newSet = preSet.map { set => set ++ hidSet }.getOrElse(hidSet)
+                  pathToHierarchyID.update(p, newSet)
+                  (p, newSet)
               }
-              hierarchyIDToPath ++= p2IDs.map{ case (p,id) => (id,p) }
+              hierarchyIDToPath ++= p2IDs.map { case (p, id) => (id, p) }
               Returns.Success()
-            case seq : Seq[(types.Path, Int)] if seq.isEmpty =>
+            case seq: Seq[(types.Path, Int)] if seq.isEmpty =>
               Returns.InternalError(Some("Using old database. Should use Warp 10."))
           }
       }
@@ -246,35 +244,27 @@ trait DBCachedReadWrite extends DBReadWrite{
       val limited = (newestO, oldestO) match {
         case (None, None) => 
           if( beginO.isEmpty && endO.isEmpty )
-            timeframed.map{
-              case query =>
-                query.sortBy(_.timestamp.desc).take(1)
-            }
-          else timeframed.map{
-              case query =>
-                query.sortBy(_.timestamp.desc)
-            }
+            timeframed.map(query =>
+              query.sortBy(_.timestamp.desc).take(1))
+          else timeframed.map(query =>
+            query.sortBy(_.timestamp.desc))
 
         case ( Some(newest), None ) =>
-          timeframed.map{
-            case query =>
-              query.sortBy(_.timestamp.desc).take( newest ) 
-          }
+          timeframed.map(query =>
+            query.sortBy(_.timestamp.desc).take(newest))
 
         case ( None, Some(oldest)) =>
-          timeframed.map{
-            case query =>
-                query.sortBy(_.timestamp.asc).take( oldest )
-            }
+          timeframed.map(query =>
+            query.sortBy(_.timestamp.asc).take(oldest))
           
 
         case ( Some(newest), Some(oldest)) =>  
-          timeframed.map{
-            case query =>
-                  (
-                    query.sortBy(_.timestamp.desc).take( newest ) ++ 
-                    query.sortBy(_.timestamp.asc).take( oldest )
-                  ).sortBy(_.timestamp.desc)
+          timeframed.map {
+            query =>
+              (
+                query.sortBy(_.timestamp.desc).take(newest) ++
+                  query.sortBy(_.timestamp.asc).take(oldest)
+                ).sortBy(_.timestamp.desc)
           }
       }
 
@@ -303,9 +293,9 @@ trait DBCachedReadWrite extends DBReadWrite{
    * @param path path to to-be-deleted sub tree.
    */
   override def remove( path: Path ) : Future[Seq[Int]] = {
-    super.remove(path).map{
-      case ids: Seq[Int] => 
-        val paths = ids.flatMap{
+    super.remove(path).map {
+      ids: Seq[Int] =>
+        val paths = ids.flatMap {
           id: Int => hierarchyIDToPath.get(id)
         }
         pathToHierarchyID --= paths

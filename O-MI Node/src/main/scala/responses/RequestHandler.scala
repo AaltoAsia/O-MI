@@ -103,22 +103,20 @@ with CancelHandler
         askAgent(agentName,subrequest)
     }
     val fSeq = Future.sequence(
-      responsesFromResponsible.map{
-        case future: Future[ResponseRequest] =>
-          
-          val recovered = future.recover{
+      responsesFromResponsible.map {
+        future: Future[ResponseRequest] =>
+
+          val recovered = future.recover {
             case e: Exception =>
-              log.error( e,"DBHandler returned exception")
+              log.error(e, "DBHandler returned exception")
               Responses.InternalError(e)
           }
-          recovered 
+          recovered
       }
     )
     fSeq.map{
       responses: Iterable[ResponseRequest] =>
-        val results = responses.flatMap{
-          case response => response.results
-        }
+        val results = responses.flatMap(response => response.results)
         ResponseRequest(
           Results.unionReduce(results.toVector)
         )
@@ -141,19 +139,17 @@ with CancelHandler
         case (Some(agentName), subrequest: CallRequest) => 
           log.debug(s"Asking responsible Agent $agentName to handle part of request.")
           askAgent(agentName,subrequest)
-          }.map{
-            case future: Future[ResponseRequest] =>
-              future.recover{
-                case e: Exception =>
-                  Responses.InternalError(e)
-              }
+          }.map {
+        future: Future[ResponseRequest] =>
+          future.recover {
+            case e: Exception =>
+              Responses.InternalError(e)
           }
+      }
           )
-    fSeq.map{
-      case responses =>
-        val results = responses.flatMap{
-          case response => response.results
-        }
+    fSeq.map {
+      responses =>
+        val results = responses.flatMap(response => response.results)
         ResponseRequest(
           Results.unionReduce(results.toVector)
         )

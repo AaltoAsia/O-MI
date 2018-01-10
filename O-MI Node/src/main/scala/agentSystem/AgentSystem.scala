@@ -125,11 +125,11 @@ class AgentSystem()(
         val responsibilityObj = agentConfig.getObject(s"responsible")
         val pathStrings : Iterable[String] = responsibilityObj.keys
         val responsibilityConfig = responsibilityObj.toConfig()
-        pathStrings.map{
-          case pathStr: String  => 
+        pathStrings.map {
+          pathStr: String =>
             AgentResponsibility(
               name,
-              Path(pathStr.split("/").map{ id => URLDecoder.decode( id, "UTF-8"  ).replace("/","\\/")}.mkString("/")),
+              Path(pathStr.split("/").map { id => URLDecoder.decode(id, "UTF-8").replace("/", "\\/") }.mkString("/")),
               RequestFilter(responsibilityConfig.getString(pathStr))
             )
         }.toVector

@@ -511,8 +511,8 @@ class ResponseRequest(
 
   def withCallback: Option[Callback] => ResponseRequest = cb => this.copy(callback = cb)
 
-  def odf : Option[ImmutableODF] = results.flatMap{
-    case result: OmiResult => result.odf
+  def odf : Option[ImmutableODF] = results.flatMap {
+    result: OmiResult => result.odf
   }.reduceOption{
     ( l: ImmutableODF,r: ImmutableODF) => l.union(r).immutable 
   }

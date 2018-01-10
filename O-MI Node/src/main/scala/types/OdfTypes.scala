@@ -243,9 +243,9 @@ case class OdfObjects(
   def withValues(pathValuesPairs: Map[Path,OdfTreeCollection[OdfValue[Any]]]): OdfObjects = {
     this.copy(
       objects = objects map {
-        case o : OdfObject=> 
-          if (pathValuesPairs.keys.exists( p => o.path.isAncestorOf(p))) 
-            o.withValues(pathValuesPairs) 
+        o: OdfObject =>
+          if (pathValuesPairs.keys.exists(p => o.path.isAncestorOf(p)))
+            o.withValues(pathValuesPairs)
           else o
       }
     )

@@ -57,24 +57,24 @@ case class InfoItem(
       path,
       that.typeAttribute.orElse( typeAttribute ),
       QlmID.unionReduce( that.names ++ names).toVector.filter{ id => id.id.nonEmpty},
-      Description.unionReduce(that.descriptions ++ descriptions).toVector.filter{ case desc => desc.text.nonEmpty},
+      Description.unionReduce(that.descriptions ++ descriptions).toVector.filter(desc => desc.text.nonEmpty),
       if( that.values.nonEmpty ) that.values else values,
-      that.metaData.flatMap{
-        case md: MetaData => 
-          metaData.map{
-            case current: MetaData => 
-              current update md 
-          }.orElse( that.metaData )
+      that.metaData.flatMap {
+        md: MetaData =>
+          metaData.map {
+            current: MetaData =>
+              current update md
+          }.orElse(that.metaData)
       }.orElse( metaData ),
       if( that.attributes.nonEmpty ) attributes ++ that.attributes else attributes
     )
 
   }
   def intersection( that: InfoItem ): InfoItem ={
-    val typeMatches = typeAttribute.forall{
-      case typeStr: String => 
-        that.typeAttribute.forall{
-          case otherTypeStr: String => typeStr == otherTypeStr
+    val typeMatches = typeAttribute.forall {
+      typeStr: String =>
+        that.typeAttribute.forall {
+          otherTypeStr: String => typeStr == otherTypeStr
         }
     }
     val pathsMatches = path == that.path
@@ -87,7 +87,7 @@ case class InfoItem(
         QlmID.unionReduce( that.names ++ names).toVector.filter{ id => id.id.nonEmpty}
       } else Vector.empty,
       if( that.descriptions.nonEmpty ){
-        Description.unionReduce(that.descriptions ++ descriptions).toVector.filter{ case desc => desc.text.nonEmpty}
+        Description.unionReduce(that.descriptions ++ descriptions).toVector.filter(desc => desc.text.nonEmpty)
       } else Vector.empty,
       values,
       (metaData, that.metaData) match{
@@ -100,10 +100,10 @@ case class InfoItem(
   }
 
   def union( that: InfoItem ): InfoItem ={
-    val typeMatches = typeAttribute.forall{
-      case typeStr: String => 
-        that.typeAttribute.forall{
-          case otherTypeStr: String => typeStr == otherTypeStr
+    val typeMatches = typeAttribute.forall {
+      typeStr: String =>
+        that.typeAttribute.forall {
+          otherTypeStr: String => typeStr == otherTypeStr
         }
     }
     val pathsMatches = path == that.path
@@ -175,9 +175,9 @@ case class InfoItem(
       nameTags.map{
           qlmid => qlmid.asQlmIDType
       },
-      this.descriptions.map{ 
-        case des: Description => 
-          des.asDescriptionType 
+      this.descriptions.map {
+        des: Description =>
+          des.asDescriptionType
       }.toVector,
       this.metaData.map(_.asMetaDataType).toSeq,
       //Seq(QlmIDType(path.lastOption.getOrElse(throw new IllegalArgumentException(s"OdfObject should have longer than one segment path: $path")))),
