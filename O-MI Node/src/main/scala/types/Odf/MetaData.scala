@@ -19,15 +19,15 @@ case class MetaData(
           case (ii, tii) => tii.orElse(ii)
         }
     }
-    new MetaData( 
+    MetaData(
       ((names -- intersectingNames).flatMap {
         name: String =>
           nameToII.get(name)
       } ++
-      (that.names -- intersectingNames).flatMap {
-        name: String =>
-          that.nameToII.get(name)
-      } ++ intersectedII).toVector
+        (that.names -- intersectingNames).flatMap {
+          name: String =>
+            that.nameToII.get(name)
+        } ++ intersectedII).toVector
     )
   }
   def union( that: MetaData ): MetaData ={
@@ -40,15 +40,15 @@ case class MetaData(
           case (ii, tii) => ii.orElse(tii)
         }
     }
-    new MetaData( 
+    MetaData(
       ((names -- intersectingNames).flatMap {
         name: String =>
           nameToII.get(name)
       } ++
-      (that.names -- intersectingNames).flatMap {
-        name: String =>
-          that.nameToII.get(name)
-      } ++ intersectedII).toVector
+        (that.names -- intersectingNames).flatMap {
+          name: String =>
+            that.nameToII.get(name)
+        } ++ intersectedII).toVector
     )
   }
   implicit def asMetaDataType : MetaDataType = MetaDataType( infoItems.map(_.asInfoItemType) )

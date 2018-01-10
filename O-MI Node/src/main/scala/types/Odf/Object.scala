@@ -21,8 +21,8 @@ case class Object(
     val pathsMatches = path == that.path 
     val containSameId = ids.map( _.id ).toSet.intersect( that.ids.map( _.id).toSet ).nonEmpty
     assert( containSameId && pathsMatches)
-    new Object(
-      QlmID.unionReduce( ids ++ that.ids).toVector,
+    Object(
+      QlmID.unionReduce(ids ++ that.ids).toVector,
       path,
       that.typeAttribute.orElse(typeAttribute),
       Description.unionReduce(descriptions ++ that.descriptions).toVector,
@@ -41,13 +41,13 @@ case class Object(
     val pathsMatches = path == that.path 
     val containSameId = ids.map( _.id ).toSet.intersect( that.ids.map( _.id).toSet ).nonEmpty
     assert( containSameId && pathsMatches)
-    new Object(
-      if( that.ids.nonEmpty ){
-        QlmID.unionReduce( that.ids ++ ids).toVector.filter(id => id.id.nonEmpty)
+    Object(
+      if (that.ids.nonEmpty) {
+        QlmID.unionReduce(that.ids ++ ids).toVector.filter(id => id.id.nonEmpty)
       } else Vector.empty,
       path,
       that.typeAttribute.orElse(typeAttribute),
-      if( that.descriptions.nonEmpty ){
+      if (that.descriptions.nonEmpty) {
         Description.unionReduce(that.descriptions ++ descriptions).toVector.filter(desc => desc.text.nonEmpty)
       } else Vector.empty,
       that.attributes ++ attributes
@@ -58,13 +58,13 @@ case class Object(
     val pathsMatches = path == that.path 
     val containSameId = ids.map( _.id ).toSet.intersect( that.ids.map( _.id).toSet ).nonEmpty
     assert( containSameId && pathsMatches)
-    new Object(
+    Object(
       QlmID.unionReduce(ids ++ that.ids).toVector,
       path,
       (typeAttribute, that.typeAttribute) match {
-        case (Some( t ), Some( ot ) ) =>
-          if ( t == ot) Some( t ) 
-          else Some( t + " " + ot)
+        case (Some(t), Some(ot)) =>
+          if (t == ot) Some(t)
+          else Some(t + " " + ot)
         case (t, ot) => t.orElse(ot)
       },
       Description.unionReduce(descriptions ++ that.descriptions).toVector,
@@ -75,7 +75,7 @@ case class Object(
   def createAncestors: Seq[Node] = {
     path.getAncestors.map {
       ancestorPath: Path =>
-        new Object(
+        Object(
           Vector(
             new QlmID(
               ancestorPath.last
@@ -88,9 +88,9 @@ case class Object(
   def createParent: Node = {
     val parentPath = path.getParent
     if( parentPath.isEmpty || parentPath == Path( "Objects") ){
-      new Objects()
+      Objects()
     } else {
-      new Object(
+      Object(
         Vector(
           QlmID(
             parentPath.last

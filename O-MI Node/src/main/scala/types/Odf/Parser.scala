@@ -138,9 +138,9 @@ object ODFParser extends parsing.Parser[OdfParseResult] {
     requestProcessTime: Timestamp
   ): ImmutableODF = {
     val path = new Path("Objects")
-    val objs = new Objects(
-      objects.version, 
-      parseAttributes(objects.attributes - "@version")    
+    val objs = Objects(
+      objects.version,
+      parseAttributes(objects.attributes - "@version")
     )
     val subtree: Vector[Node] = objects.ObjectValue.flatMap{ 
       obj => parseObject( requestProcessTime, obj, path ) 
@@ -173,12 +173,12 @@ object ODFParser extends parsing.Parser[OdfParseResult] {
       throw new IllegalArgumentException("No <id> on object: " + obj.id.toString)
     )
 
-    val odfObj = new Object(
-      obj.id.map{ qlmIdType => parseQlmID(qlmIdType)}.toVector,
-      npath, 
+    val odfObj = Object(
+      obj.id.map { qlmIdType => parseQlmID(qlmIdType) }.toVector,
+      npath,
       obj.typeValue,
-      obj.description.map{ des => new Description( des.value, des.lang )}.toVector,
-      parseAttributes(obj.attributes - "@type")    
+      obj.description.map { des => new Description(des.value, des.lang) }.toVector,
+      parseAttributes(obj.attributes - "@type")
     ) 
     val iIs: Vector[InfoItem] = obj.InfoItem.map{ 
       item => parseInfoItem( requestProcessTime, item, npath ) 
@@ -224,9 +224,9 @@ object ODFParser extends parsing.Parser[OdfParseResult] {
       }.toVector,
       item.MetaData.map{
         md => 
-          new MetaData(
-            md.InfoItem.map{ 
-              mItem => parseInfoItem( requestProcessTime, mItem, npath / "MetaData" ) 
+          MetaData(
+            md.InfoItem.map {
+              mItem => parseInfoItem(requestProcessTime, mItem, npath / "MetaData")
             }.toVector
           )
       }.headOption

@@ -128,23 +128,23 @@ case class InfoItem(
             if( ancestorPath == Path("Objects")){
               Objects()
             } else {
-              new Object(
+              Object(
                 Vector(
                   new QlmID(
                     ancestorPath.last
                   )
                 ),
-              ancestorPath
-            )
+                ancestorPath
+              )
             }
         }.toVector
   }
   def createParent: Node = {
     val parentPath: Path = path.init
     if( parentPath == new Path( "Objects") ){
-      new Objects()
+      Objects()
     } else {
-      new Object(
+      Object(
         Vector(
           new QlmID(
             parentPath.last

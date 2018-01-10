@@ -313,7 +313,7 @@ import spray.json._
   private def backupDatabase(filePath: String): Future[Option[Unit]] = {
     val allData: Future[Option[OdfObjects]] = removeHandler.getAllData()
     allData.map(aData => {
-      aData.foreach(odf => {
+      aData.map(odf => {
         val file = new File(filePath)
         val bw = new BufferedWriter(new FileWriter(file))
         val res = odf.asXML

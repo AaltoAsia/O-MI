@@ -35,7 +35,7 @@ class AgentResponsibilities(){
           keyPath: Path =>
             keyPath.isAncestorOf( path) || keyPath == path
         }
-        val keyPathsToAgentName: Iterable[Option[Tuple2[Path,AgentName]]] = ancestorKeyPaths.map{
+        val keyPathsToAgentName: Iterable[Option[(Path, AgentName)]] = ancestorKeyPaths.map{
           keyPath: Path =>
             pathsToResponsible.get(keyPath).collect{
               case AgentResponsibility(
@@ -46,8 +46,8 @@ class AgentResponsibilities(){
                 keyPath -> agentName
             }
         }.filter{ tuple => tuple.nonEmpty }
-        val responsiblesTuple: Option[Tuple2[Path,AgentName]] = keyPathsToAgentName.fold( Option.empty[Tuple2[Path,AgentName]]){
-          case (Some( currentTuple:Tuple2[Path,AgentName]), Some(tuple:Tuple2[Path,AgentName])) =>
+        val responsiblesTuple: Option[(Path, AgentName)] = keyPathsToAgentName.fold( Option.empty[(Path, AgentName)]){
+          case (Some( currentTuple:(Path, AgentName)), Some(tuple:(Path, AgentName))) =>
             currentTuple match {
               case (longestPath: Path, currentAgent: AgentName) =>
                 tuple match {
@@ -59,9 +59,9 @@ class AgentResponsibilities(){
                       }
                 }
             }
-          case ( Some(tuple: Tuple2[Path,AgentName]), None) =>
+          case ( Some(tuple: (Path, AgentName)), None) =>
             Some( tuple)
-          case ( None, Some(tuple: Tuple2[Path,AgentName])) =>
+          case ( None, Some(tuple: (Path, AgentName))) =>
             Some( tuple)
           case ( None, None) => None
         }

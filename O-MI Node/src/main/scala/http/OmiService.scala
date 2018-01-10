@@ -276,7 +276,7 @@ trait OmiService
       originalReq.ttl match {
         case ttl: FiniteDuration => ttlPromise.completeWith(
           akka.pattern.after(ttl, using = system.scheduler) {
-            log.info(s"TTL timed out after $ttl");
+            log.info(s"TTL timed out after $ttl")
             Future.successful(Responses.TTLTimeout())
           }
         )

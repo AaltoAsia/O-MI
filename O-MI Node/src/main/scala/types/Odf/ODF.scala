@@ -125,7 +125,7 @@ trait ODF//[M <: Map[Path,Node], S<: SortedSet[Path] ]
       case objs: Objects =>
         objs.asObjectsType(objectTypes) 
     }.getOrElse{
-      new Objects().asObjectsType(objectTypes)
+      Objects().asObjectsType(objectTypes)
     }
   }
   def contains( path: Path ): Boolean = paths.contains(path)

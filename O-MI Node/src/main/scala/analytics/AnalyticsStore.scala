@@ -242,8 +242,8 @@ class AnalyticsStore(
       val temp = values.takeRight(readAverageCount).sorted
       if (temp.length > 1) {
         temp.tail.zip(temp.init) // calculate difference between adjacent values
-         .map(a => a._1 - a._2)
-         .reduceLeft(_ + _) //sum the intervals
+          .map(a => a._1 - a._2)
+          .sum //sum the intervals
          ./((temp.length - 1) * 1000.0) //convert to seconds
       } else 0
     }.toMap
@@ -254,8 +254,8 @@ class AnalyticsStore(
       val temp = values.takeRight(newDataAverageCount).sorted
       if(temp.length > 1) {
         temp.tail.zip(temp.init)
-          .map(a=> a._1 - a._2)
-          .reduceLeft(_+_)
+          .map(a => a._1 - a._2)
+          .sum
           ./((temp.length - 1) * 1000.0) //convert to seconds
       } else 0
     }.toMap

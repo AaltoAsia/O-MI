@@ -140,11 +140,11 @@ trait InternalAgentLoader extends BaseAgentSystem {
                   val agentRef = context.actorOf( props, agentConfigEntry.name.toString )
                   context.watch( agentRef )
                   agentConfigEntry.toInfo(agentRef)
-                case clazz: Class[_] => throw new WrongPropsCreated(props, agentConfigEntry.classname)
+                case clazz: Class[_] => throw WrongPropsCreated(props, agentConfigEntry.classname)
               }
-            case clazz: Class[_] => throw new PropsCreatorNotImplemented(clazz)
+            case clazz: Class[_] => throw PropsCreatorNotImplemented(clazz)
           }
-          case clazz: Class[_] => throw new InternalAgentNotImplemented(clazz)
+          case clazz: Class[_] => throw InternalAgentNotImplemented(clazz)
       }
   
   }
@@ -167,12 +167,12 @@ trait InternalAgentLoader extends BaseAgentSystem {
               val agentRef = context.actorOf( props, agentConfigEntry.name.toString )
               context.watch( agentRef )
               agentConfigEntry.toInfo(agentRef)
-            case clazz: Class[_] => throw new WrongPropsCreated(props, agentConfigEntry.classname)
+            case clazz: Class[_] => throw WrongPropsCreated(props, agentConfigEntry.classname)
           }
         case clazz: Class[_] if !creatorInterface.isAssignableFrom(clazz) =>
-          throw new PropsCreatorNotImplemented(clazz)
+          throw PropsCreatorNotImplemented(clazz)
         case clazz: Class[_] if !agentInterface.isAssignableFrom(clazz) => 
-          throw new InternalAgentNotImplemented(clazz)
+          throw InternalAgentNotImplemented(clazz)
     }
   }
   
