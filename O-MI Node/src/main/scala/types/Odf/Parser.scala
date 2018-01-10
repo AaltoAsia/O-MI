@@ -103,7 +103,7 @@ object ODFParser extends parsing.Parser[OdfParseResult] {
       } match {
         case Failure(e) => 
             //println( s"Exception: $e\nStackTrace:\n")
-            e.printStackTrace
+            e.printStackTrace()
             Left( Vector( ScalaxbError( e.getMessage ) ) )
       
         case Success(objects) => 
@@ -113,7 +113,7 @@ object ODFParser extends parsing.Parser[OdfParseResult] {
             case Success(odf) => Right(odf)
             case Failure(e) => 
             //println( s"Exception: $e\nStackTrace:\n")
-            e.printStackTrace
+            e.printStackTrace()
               Left( Vector( ODFParserError( e.getMessage ) ) )
           }
       }

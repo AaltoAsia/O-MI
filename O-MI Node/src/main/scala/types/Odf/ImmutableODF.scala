@@ -41,7 +41,7 @@ case class ImmutableODF private[odf] (
           case (obj: Object, Some(ou: Object)) => obj.update(ou)
           case (objs: Objects, Some(objsu: Objects)) => objs.update(objsu)
           case (n, None) => n
-          case (n, Some(a)) => throw new Exception("Missmatching types in ODF when updating.")
+          case (_, Some(_)) => throw new Exception("Missmatching types in ODF when updating.")
         }
     }.values.toVector
     )
@@ -90,7 +90,7 @@ case class ImmutableODF private[odf] (
                 Some(obj.union(oo))
               case (obj: Objects, oo: Objects) =>
                 Some(obj.union(oo))
-              case (n, on) =>
+              case (_, _) =>
                 throw new Exception("Found two different types in same Path when tried to create union.")
             }
           case (t, o) => t.orElse(o)
@@ -245,7 +245,7 @@ case class ImmutableODF private[odf] (
       case another: ODF =>
         //println( s"Path equals: ${paths equals another.paths}\n Nodes equals:${nodes equals another.nodes}" )
         (paths equals another.paths) && (nodes equals another.nodes)
-      case a: Any => 
+      case _: Any =>
         //println( s" Comparing ODF with something: $a")
         false
     }

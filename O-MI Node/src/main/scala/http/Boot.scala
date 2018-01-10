@@ -97,7 +97,7 @@ class OmiServer extends OmiNode{
      dbConnection,
      singleStores,
      callbackHandler,
-     analytics.filter(n => settings.enableWriteAnalytics)
+     analytics.filter(_ => settings.enableWriteAnalytics)
    ),
    "database-handler"
   )
@@ -117,14 +117,14 @@ class OmiServer extends OmiNode{
       subscriptionManager,
       dbHandler,
       settings,
-      analytics.filter(r => settings.enableReadAnalytics)
+      analytics.filter(_ => settings.enableReadAnalytics)
     ),
     "request-handler"
   )
 
   val agentSystem: ActorRef = system.actorOf(
    AgentSystem.props(
-     analytics.filter(n => settings.enableWriteAnalytics),
+     analytics.filter(_ => settings.enableWriteAnalytics),
      dbHandler,
      requestHandler,
      settings
@@ -237,10 +237,10 @@ object OmiServer {
         Results.unionReduce(response.results).forall {
           result: OmiResult =>
             result.returnValue match {
-              case s: Successful =>
+              case _: Successful =>
                 system.log.debug("O-MI InputPusher system working.")
                 true
-              case f: OmiReturn =>
+              case _: OmiReturn =>
                 system.log.error(s"O-MI InputPusher system not working; $response")
                 false
             }

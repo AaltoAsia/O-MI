@@ -169,8 +169,8 @@ trait ODF//[M <: Map[Path,Node], S<: SortedSet[Path] ]
   }
   def pathsWithType( typeStr: String ): Set[Path] ={
     nodes.values.collect{
-      case ii: InfoItem if ii.typeAttribute == Some( typeStr ) => ii.path
-      case obj: Object if obj.typeAttribute == Some( typeStr ) => obj.path
+      case ii: InfoItem if ii.typeAttribute.contains(typeStr) => ii.path
+      case obj: Object if obj.typeAttribute.contains(typeStr) => obj.path
     }.toSet
   }
 

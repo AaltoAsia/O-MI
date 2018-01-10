@@ -249,8 +249,8 @@ trait DBWriteHandler extends DBHandlerBase {
       case t: Throwable => log.error(t, "Error when writing values for paths $paths")
     }
 
-    val writeFuture = dbWriteFuture.map{ 
-      n =>
+    val writeFuture = dbWriteFuture.map{
+      _ =>
         // Update our hierarchy data structures if needed
 
         if (updatedStaticItems.nonEmpty) {

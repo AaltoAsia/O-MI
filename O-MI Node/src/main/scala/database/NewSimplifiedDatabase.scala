@@ -562,7 +562,7 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimmableDB{
     }
     db.run(pathsLog)
   }
-  def logValueTables ={
+  def logValueTables() ={
     val tmp = valueTables.mapValues(vt => vt.name)
     log.debug(s"CURRENTLY VALUE TABLES IN MAP:\n${tmp.mkString("\n")}") 
   }

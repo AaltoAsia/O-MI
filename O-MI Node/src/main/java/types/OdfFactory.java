@@ -188,7 +188,7 @@ public class OdfFactory{
    * @param infoitems Child O-DF InfoItems of created O-DF Object.
    * @param objects Child O-DF Objects of created O-DF Object.
    * @param description Description of O-DF Object.
-   * @param typeValue
+   * @param typeValue Type of an O-DF Object
    * @return OdfObject
    */
   public static OdfObject createOdfObject(
@@ -217,7 +217,7 @@ public class OdfFactory{
    * @param infoitems Child O-DF InfoItems of created O-DF Object.
    * @param objects Child O-DF Objects of created O-DF Object.
    * @param description Description of O-DF Object.
-   * @param typeValue
+   * @param typeValue Type of an O-DF Object
    * @return OdfObject
    */
   public static OdfObject createOdfObject(
@@ -254,7 +254,7 @@ public class OdfFactory{
    * @param path Path of O-DF Object.
    * @param infoitems Child O-DF InfoItems of created O-DF Object.
    * @param objects Child O-DF Objects of created O-DF Object.
-   * @param typeValue
+   * @param typeValue Type of an O-DF Object
    * @return OdfObject
    */
   public static OdfObject createOdfObject(
@@ -334,7 +334,7 @@ public class OdfFactory{
    * @param path Path of O-DF Object.
    * @param infoitems Child O-DF InfoItems of created O-DF Object.
    * @param objects Child O-DF Objects of created O-DF Object.
-   * @param typeValue
+   * @param typeValue Type of an O-DF Object
    * @return OdfObject
    */
   public static OdfObject createOdfObject(

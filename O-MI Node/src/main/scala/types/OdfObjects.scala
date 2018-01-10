@@ -40,7 +40,7 @@ class OdfObjectsImpl(
       thisObjs.merged(anotherObjs){case ((k1, v1),(_, v2)) => (k1,v1.combine(v2))}.values,
     unionOption(version,another.version){
       case (a, b) if a > b =>a
-      case (a, b) => b
+      case (_, b) => b
     },
       this.attributes ++ another.attributes
     )

@@ -71,7 +71,7 @@ abstract trait Parser[Result] {
     val validator: Validator = schema.newValidator()
       validator.validate(new StreamSource(new StringReader(xml.toString)))
     } match {
-      case Success(a) =>
+      case Success(_) =>
         Seq.empty;
       case Failure(e) => 
         

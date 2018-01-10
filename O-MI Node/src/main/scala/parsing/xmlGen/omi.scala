@@ -14,8 +14,8 @@ case class OmiEnvelopeType(omienvelopetypeoption: scalaxb.DataRecord[xmlTypes.Om
   lazy val ttl: String ={
     val dr = attributes("@ttl")
     dr.value match{
-      case str: String => dr.as[String]
-      case l: Long => dr.as[Long].toString
+      case _: String => dr.as[String]
+      case _: Long => dr.as[Long].toString
       case other => other.toString
     }
   }

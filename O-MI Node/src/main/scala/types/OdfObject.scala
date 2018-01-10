@@ -111,8 +111,8 @@ class  OdfObjectImpl(
             infoI = OdfInfoItem(
               path,
               last.values,
-              last.description.fold(last.description)(n => head.description),
-              last.metaData.fold(last.metaData)(n => head.metaData),
+              last.description.fold(last.description)(_ => head.description),
+              last.metaData.fold(last.metaData)(_ => head.metaData),
               last.typeValue.orElse(head.typeValue),
               head.attributes ++ last.attributes 
               ) //use metadata and description from hierarchytree
@@ -139,7 +139,7 @@ class  OdfObjectImpl(
           sharedInfosOut,
           sharedObjsOut,
           //get description only if another has it too
-          another.description.fold(another.description)(n => description),
+          another.description.fold(another.description)(_ => description),
           another.typeValue orElse typeValue,
           attributes ++ another.attributes 
         )

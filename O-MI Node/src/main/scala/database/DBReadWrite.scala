@@ -157,10 +157,10 @@ trait DBReadWrite extends DBReadOnly with OmiNodeTables with TrimmableDB{
     ).map{ case idSeqs: Seq[Seq[Int]] => idSeqs.flatten }
   }
   //add root node when removed or when first started
-  protected def addRoot = {
+  protected def addRoot() = {
     hierarchyNodes += DBNode(None, Path("Objects"), 1, 2, Path("Objects").length, "", 0, isInfoItem = false)
   }
-  def addRootR: Future[Int] = {
+  def addRootR(): Future[Int] = {
     db.run(addRoot)
   }
 

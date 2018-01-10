@@ -29,7 +29,7 @@ class InfluxDBConfigExtension( config: Config) extends Extension {
     Query((s"db",s"$databaseName"),(s"precision","ms"),(s"u",user),("p",passwd))
     case (None,None) =>
     Query((s"db",s"$databaseName"),(s"precision","ms"))
-    case (a,b) => throw new Exception( "Either user or password for influxdb is missing." )
+    case (_, _) => throw new Exception( "Either user or password for influxdb is missing." )
   }
   val queryAddress : Uri = address.withPath( Path("/query")).withQuery(query)
   val writeAddress : Uri = address.withPath(Path("/write")).withQuery(query)

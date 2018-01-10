@@ -235,7 +235,7 @@ class MutableODF private[odf](
       case another: ODF =>
         //println( s"Path equals: ${paths equals another.paths}\n Nodes equals:${nodes equals another.nodes}" )
         (paths equals another.paths) && (nodes equals another.nodes)
-      case a: Any => 
+      case _: Any =>
         //println( s" Comparing ODF with something: $a")
         false
     }

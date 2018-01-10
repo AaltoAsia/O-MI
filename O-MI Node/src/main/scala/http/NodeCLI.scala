@@ -99,7 +99,7 @@ class OmiNodeCLI(
   override def preStart: Unit ={
     val connectToManager = (agentSystem ? NewCLI(ip,self)).mapTo[Boolean]
     connectToManager.onSuccess{
-      case u: Boolean =>
+      case _: Boolean =>
         send(connection)(s"CLI connected to AgentManager.\r\n>")
      log.info(s"$ip connected to AgentManager. Connection: $connection")
     }
@@ -181,7 +181,7 @@ class OmiNodeCLI(
 
           subsStrChart( intervals, events, polls)
       }.recover{
-          case a: Throwable  =>
+          case _: Throwable  =>
             log.info("Failed to get list of Subscriptions.\r\n Sending ...")
             "Failed to get list of subscriptions.\r\n>"
       }
@@ -217,7 +217,7 @@ class OmiNodeCLI(
           log.info(s"Subscription with id $id not found.\r\n Sending ...")
           s"Subscription with id $id not found.\r\n>"
       }.recover{
-        case a: Throwable  =>
+        case _: Throwable  =>
           log.info(s"Failed to get subscription with $id.\r\n Sending ...")
           s"Failed to get subscription with $id.\r\n>"
       }
@@ -263,7 +263,7 @@ class OmiNodeCLI(
           case false =>
             s"Failed to remove subscription with $id. Subscription does not exist or it is already expired.\r\n>"
         }.recover{
-          case a : Throwable =>
+          case _: Throwable =>
             "Command failure unknown.\r\n>"
         }
       Await.result(result, commandTimeout)
@@ -286,7 +286,7 @@ class OmiNodeCLI(
       data <- backupDatabase(odfPath)
     } yield data)
     res match {
-      case Success(s) => {"Success\n"}
+      case Success(_) => {"Success\n"}
       case Failure(ex) => {
         log.error(ex, "failure during backup")
         "Failure\n"
@@ -330,7 +330,7 @@ import spray.json._
       res <- Try(restoreSubs(subFilePath))
     } yield res
     temp match {
-      case Success(s) => {
+      case Success(_) => {
         "Success\n"
       }
       case Failure(ex) => {

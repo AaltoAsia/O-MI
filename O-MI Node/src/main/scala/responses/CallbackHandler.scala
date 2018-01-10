@@ -124,7 +124,7 @@ class CallbackHandler(
           )(check)(trySend)
     
     retry.onFailure{
-      case e : Throwable=>
+      case _: Throwable=>
         system.log.warning(
           s"Failed to send POST request to $address after trying until ttl ended."
         )

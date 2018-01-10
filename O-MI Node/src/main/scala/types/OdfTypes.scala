@@ -210,8 +210,8 @@ case class OdfObjects(
   /** Method for searching OdfNode from O-DF Structure */
   def getNodesOfType(typeValue: String): Seq[OdfNode] ={
     getOdfNodes( this ).collect {
-      case obj: OdfObject if obj.typeValue == Some(typeValue ) => obj
-      case ii: OdfInfoItem if ii.typeValue == Some(typeValue ) => ii
+      case obj: OdfObject if obj.typeValue.contains(typeValue) => obj
+      case ii: OdfInfoItem if ii.typeValue.contains(typeValue) => ii
     }.toVector
   }
   def get(path: Path) : Option[OdfNode] = {
@@ -304,8 +304,8 @@ case class OdfObject(
 
   def getNodesOfType(typeValue: String): Seq[OdfNode] ={
     getOdfNodes( this ).collect {
-      case obj: OdfObject if obj.typeValue == Some(typeValue ) => obj
-      case ii: OdfInfoItem if ii.typeValue == Some(typeValue ) => ii
+      case obj: OdfObject if obj.typeValue.contains(typeValue) => obj
+      case ii: OdfInfoItem if ii.typeValue.contains(typeValue) => ii
     }.toVector
   }
 
@@ -412,7 +412,7 @@ case class OdfInfoItem(
     s"OdfInfoItem should have longer than two segment path (use OdfObjects for <Objects>): Path($path)")
   def get(path: Path): Option[OdfNode] = if (path == this.path) Some(this) else None
   def getNodesOfType(typeValue: String): Seq[OdfNode] ={
-    if( this.typeValue == Some(typeValue))
+    if( this.typeValue.contains(typeValue))
       Vector( this )
     else Vector.empty
   }

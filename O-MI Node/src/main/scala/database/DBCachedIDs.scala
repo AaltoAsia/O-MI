@@ -281,7 +281,7 @@ trait DBCachedReadWrite extends DBReadWrite{
               }
             }.foldLeft(OdfObjects()){ case (l, r) => l.union(r.createAncestors) }
             )
-          case dbvals => None
+          case _ => None
       }
       db.run(toObjects.transactionally)
 

@@ -94,7 +94,7 @@ object OmiParser extends Parser[OmiParseResult] {
       } match {
         case Failure(e) => 
             //println( s"Exception: $e\nStackTrace:\n")
-            e.printStackTrace
+            e.printStackTrace()
             Left( Iterable( ScalaxbError( e.getMessage ) ) )
       
         case Success(envelope) => 
@@ -126,7 +126,7 @@ object OmiParser extends Parser[OmiParseResult] {
               Left( Iterable( e ) )
             case Failure(e) => 
               //println( s"Exception: $e\nStackTrace:\n")
-              e.printStackTrace
+              e.printStackTrace()
               Left( Iterable( OMIParserError(e.getMessage) ) )
           }
       }

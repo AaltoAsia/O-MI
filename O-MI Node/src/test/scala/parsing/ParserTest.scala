@@ -802,13 +802,13 @@ val object1 = createAncestors(OdfObject(
     }
     def parseErrorTypeToString( pe: ParseError ): String ={
       pe match {
-        case s: SchemaError => "SchemaError"
-        case s: ScalaXMLError => "ScalaXMLError"
-        case s: ScalaxbError => "ScalaxbError"
-        case s: ODFParserError => "ODFParserError"
-        case s: OMIParserError => "OMIParserError"
-        case s: ParseErrorList => "ParserErrorList"
-        case s => throw pe
+        case _: SchemaError => "SchemaError"
+        case _: ScalaXMLError => "ScalaXMLError"
+        case _: ScalaxbError => "ScalaxbError"
+        case _: ODFParserError => "ODFParserError"
+        case _: OMIParserError => "OMIParserError"
+        case _: ParseErrorList => "ParserErrorList"
+        case _ => throw pe
       }
     }
 }
