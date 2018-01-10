@@ -85,7 +85,7 @@ trait UnionableResult{ this: OmiResult =>
     //println( s"Checking equality for ${this.getClass} and ${a.getClass}" )
     a.getClass == this.getClass
   }
-  def tryUnion(o: UnionableResult) = Try{
+  def tryUnion(o: UnionableResult): Try[UnionableResult] = Try{
     require(unionableWith(o))
     o match {
       case t: UnionableResult => union(t)

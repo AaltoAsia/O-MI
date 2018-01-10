@@ -44,7 +44,7 @@ object RequestHandler{
     dbHandler : ActorRef,
     settings: OmiConfigExtension,
     analyticsStore: Option[ActorRef]
-    ) = Props( 
+    ): Props = Props(
       new RequestHandler(
         subscriptionManager,
         dbHandler,
@@ -69,7 +69,7 @@ with CancelHandler
   case class AgentInformation( agentName: AgentName, running: Boolean, actorRef: ActorRef)
   private val agentResponsibilities: AgentResponsibilities = new AgentResponsibilities()
   private val agents: MutableMap[AgentName,AgentInformation] = MutableMap.empty
-  def receive = {
+  def receive: PartialFunction[Any, Unit] = {
     case read: ReadRequest => respond( handleReadRequest( read ))
     case write: WriteRequest => respond( handleWriteRequest( write ))
     case call: CallRequest => respond( handleCallRequest( call ))

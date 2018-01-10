@@ -42,7 +42,7 @@ case class ODFValue(
   attributes: Map[String,String]
 ) extends Value[ODF] {
   final val typeAttribute: String = "odf"
-  def valueAsDataRecord = DataRecord(None, Some("Objects"),value.asObjectsType)
+  def valueAsDataRecord: DataRecord[ObjectsType] = DataRecord(None, Some("Objects"),value.asObjectsType)
 }
 
 case class StringValue(

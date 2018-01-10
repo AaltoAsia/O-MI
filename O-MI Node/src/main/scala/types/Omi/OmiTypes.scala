@@ -102,7 +102,7 @@ sealed trait PermissiveRequest
 sealed trait OdfRequest extends OmiRequest{
   def odf : ImmutableODF
   def replaceOdf( nOdf: ImmutableODF ) : OdfRequest
-  def odfAsDataRecord = DataRecord(None, Some("Objects"), odf.asXML)
+  def odfAsDataRecord: DataRecord[NodeSeq] = DataRecord(None, Some("Objects"), odf.asXML)
 }
 
 sealed trait JavaRequestIDRequest{

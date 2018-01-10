@@ -40,7 +40,7 @@ class ODFAgent(
   case class Update()
 	
   val rnd: Random = new Random()
-  def date = new java.util.Date()
+  def date: Date = new java.util.Date()
 
   override def preStart: Unit ={
     val file =  new File(config.getString("file"))
@@ -125,7 +125,7 @@ class ODFAgent(
     } 
   }
 
-  override  def receive  = {
+  override  def receive: PartialFunction[Any, Unit] = {
     case Update() => update()
   }
    override def postStop: Unit = {

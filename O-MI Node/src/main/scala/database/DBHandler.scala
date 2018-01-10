@@ -41,7 +41,7 @@ object DBHandler{
     singleStores: SingleStores,
     callbackHandler: CallbackHandler,
     analyticsStore: Option[ActorRef]
-  ) = Props(
+  ): Props = Props(
     new DBHandler(
       dbConnection,
       singleStores,
@@ -62,7 +62,7 @@ class DBHandler(
   with DBWriteHandler
 {
   import context.{system, dispatcher}
-  def receive = {
+  def receive: PartialFunction[Any, Unit] = {
     case na: NewAgent => addAgent(na)
     case na: AgentStopped => agentStopped(na.agentName)
     case write: WriteRequest => 
@@ -117,7 +117,7 @@ class DBHandler(
       permissionCheck(request)
     }
   }
-  def permissionFailureResponse = ResponseRequest(
+  def permissionFailureResponse: ResponseRequest = ResponseRequest(
     Vector(
       Results.InvalidRequest(
         Some("Agent doesn't have permissions to access some part of O-DF.")

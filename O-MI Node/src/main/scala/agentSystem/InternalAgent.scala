@@ -68,7 +68,7 @@ trait ScalaInternalAgent extends InternalAgent with ActorLogging{
   //These need to be implemented 
   override def preStart: Unit = start
   override def postStop: Unit = stop
-  def receive  = {
+  def receive: PartialFunction[Any, Unit] = {
     case any: Any => unhandled(any)
   }
 
@@ -92,11 +92,11 @@ trait ScalaInternalAgent extends InternalAgent with ActorLogging{
     val requestWithSenderInfo = request.withSenderInformation( si )
     (dbHandler ? requestWithSenderInfo).mapTo[ResponseRequest]
   }
-  final def respond(msg: Any){
+  final def respond(msg: Any): Unit = {
     val senderRef = sender()
     senderRef ! msg
   }
-  final def respondFuture(msgFuture: Future[Any]){
+  final def respondFuture(msgFuture: Future[Any]): Unit = {
     val senderRef = sender()
     msgFuture.map{
       any => senderRef ! any

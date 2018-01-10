@@ -143,8 +143,8 @@ class InfluxDBImplementation(
   protected val singleStores: SingleStores
 ) extends DB {
   final class AcceptHeader(format: String) extends ModeledCustomHeader[AcceptHeader] {
-    override def renderInRequests = true
-    override def renderInResponses = false
+    override def renderInRequests: Boolean = true
+    override def renderInResponses: Boolean = false
     override val companion: AcceptHeader.type = AcceptHeader
     override def value: String = format
   }

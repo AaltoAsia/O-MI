@@ -20,5 +20,5 @@ package object parkingService{
               }
             } 
   }
-  def currentTime = new Timestamp( new Date().getTime )
+  def currentTime: Timestamp = new Timestamp( new Date().getTime )
 } 

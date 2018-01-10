@@ -70,7 +70,7 @@ case class PowerPlug(
       chargingSpeed.contains( str)
     }  
   }
-  def toOdf( parentPath: Path ) ={
+  def toOdf( parentPath: Path ): OdfObject ={
     val plugPath = parentPath / "Plug"
     val pTII = plugType.map{ pT =>
       OdfInfoItem(

@@ -41,7 +41,7 @@ class OmiReturn(
     returnCode: ReturnCode = this.returnCode,
     description: Option[String] = this.description,
     extraAttributes: Map[String, String] = this.extraAttributes
-  ) = new OmiReturn(returnCode, description, extraAttributes)
+  ): OmiReturn = new OmiReturn(returnCode, description, extraAttributes)
 
   def descriptionAsJava: String = description.getOrElse("") // what? description.map{ str => s"Success: $str"}.getOrElse("Success.")
   def unionableWith(other: OmiReturn) : Boolean = {

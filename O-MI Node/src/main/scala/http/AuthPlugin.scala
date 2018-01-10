@@ -33,8 +33,8 @@ import types.Path
 sealed trait AuthorizationResult{
   def user: UserInfo
 }
-case class Authorized(user: UserInfo) extends AuthorizationResult {def instance = this}
-case class Unauthorized(user: UserInfo = UserInfo()) extends AuthorizationResult {def instance = this}
+case class Authorized(user: UserInfo) extends AuthorizationResult {def instance: Authorized = this}
+case class Unauthorized(user: UserInfo = UserInfo()) extends AuthorizationResult {def instance: Unauthorized = this}
 case class Partial(authorized: JavaIterable[Path], user: UserInfo) extends AuthorizationResult
 /**
  * Wraps a new O-MI request that is potentially modified from the original to pass authorization.

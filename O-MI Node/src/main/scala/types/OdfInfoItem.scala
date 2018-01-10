@@ -191,7 +191,7 @@ sealed trait OdfValue[+T]{
       case Right(odf: OdfObjects ) => odf
       case Left( spe: Seq[ParseError] ) => throw spe.head
     }*/
-    def valueAsDataRecord = DataRecord(None, Some("Objects"),value.asObjectsType)
+    def valueAsDataRecord: DataRecord[ObjectsType] = DataRecord(None, Some("Objects"),value.asObjectsType)
   } 
   final case class OdfIntValue(value: Int, timestamp: Timestamp, attributes: HashMap[String, String]) extends OdfValue[Int]{
     def typeValue:            String = "xs:int"
