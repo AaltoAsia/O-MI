@@ -298,7 +298,7 @@ object OmiParser extends Parser[OmiParseResult] {
                 result.returnValue.returnCode,
                 result.returnValue.description
               ),
-            OdfTreeCollection( result.requestID.map(parseRequestID).toSeq : _* ), 
+            OdfTreeCollection( result.requestID.map(parseRequestID) : _* ),
             result.msg.map {
               msg: xmlGen.xmlTypes.MsgType =>
                 //TODO: figure right type parameter

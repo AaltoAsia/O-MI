@@ -51,5 +51,5 @@ case class MetaData(
       } ++ intersectedII).toVector
     )
   }
-  implicit def asMetaDataType : MetaDataType = MetaDataType( infoItems.map(_.asInfoItemType ).toSeq )
+  implicit def asMetaDataType : MetaDataType = MetaDataType( infoItems.map(_.asInfoItemType) )
 }

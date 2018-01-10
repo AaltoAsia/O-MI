@@ -95,9 +95,9 @@ object OldTypeConverter{
 
   def convertOdfMetaData( odfMD: OdfMetaData ): MetaData ={
     MetaData(
-      odfMD.infoItems.map{
-        ii => convertOdfInfoItem( ii )
-      }.toVector
+      odfMD.infoItems.map {
+        ii => convertOdfInfoItem(ii)
+      }
     )
   }
 }

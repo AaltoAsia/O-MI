@@ -108,11 +108,11 @@ case class Object(
         attributes = Map.empty
       )),*/
       ids.map(_.asQlmIDType), //
-      descriptions.map( des => des.asDescriptionType ).toSeq,
+      descriptions.map(des => des.asDescriptionType),
       infoitems,
       objects,
       attributes = (
-       attributesToDataRecord(attributes) ++  typeAttribute.map{ n => "@type" -> DataRecord(n) }).toMap
+        attributesToDataRecord(attributes) ++ typeAttribute.map { n => "@type" -> DataRecord(n) })
     )
   }
     

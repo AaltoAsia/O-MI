@@ -65,7 +65,7 @@ trait PollHandler{
       }
     })
     val response = resultsFut.map(results =>
-        ResponseRequest(results.toVector)
+        ResponseRequest(results)
     )
 
     response

@@ -38,7 +38,9 @@ import types.OdfTypes._
 package object OmiTypes  {
   type  OmiParseResult = Either[Iterable[ParseError], Iterable[OmiRequest]]
   type RequestID = Long
-  def getPaths(request: OdfRequest): Seq[Path] = getLeafs(request.odf).map{ _.path }.toSeq
+  def getPaths(request: OdfRequest): Seq[Path] = getLeafs(request.odf).map {
+    _.path
+  }
   def requestToEnvelope(request: OmiEnvelopeTypeOption, ttl : Long): xmlTypes.OmiEnvelopeType ={
     val namespace = Some("omi.xsd")
     val version = "1.0"
@@ -118,12 +120,10 @@ package object OdfTypes {
     else OdfTreeCollection(objects)
   }
   /** Helper method for getting all OdfNodes found in given OdfNodes. Basically get list of all nodes in tree.  */
-  def getOdfNodes(hasPaths: OdfNode*): Seq[OdfNode] = {
-    hasPaths.flatMap {
-      case info: OdfInfoItem => Seq(info)
-      case obj:  OdfObject   => Seq(obj) ++ getOdfNodes(obj.objects.toSeq ++ obj.infoItems.toSeq: _*)
-      case objs: OdfObjects  => Seq(objs) ++ getOdfNodes(objs.objects.toSeq: _*)
-    }.toSeq
+  def getOdfNodes(hasPaths: OdfNode*): Seq[OdfNode] = hasPaths.flatMap {
+    case info: OdfInfoItem => Seq(info)
+    case obj: OdfObject => Seq(obj) ++ getOdfNodes(obj.objects.toSeq ++ obj.infoItems.toSeq: _*)
+    case objs: OdfObjects => Seq(objs) ++ getOdfNodes(objs.objects.toSeq: _*)
   }
 
   /** Helper method for getting all OdfInfoItems found in OdfObjects */

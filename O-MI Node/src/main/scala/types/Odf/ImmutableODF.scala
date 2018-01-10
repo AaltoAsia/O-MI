@@ -51,8 +51,8 @@ case class ImmutableODF private[odf] (
     //Generate ancestors for remaining paths, so that no parentless paths remains. 
     //Remove duplicates
     val newPaths = (paths -- cutPaths).flatMap {
-      path: Path => path.getAncestorsAndSelf
-    }.toSet
+      case path: Path => path.getAncestorsAndSelf
+    }
     val removedPaths = cutPaths -- newPaths
     ImmutableODF(nodes -- removedPaths)
   }
@@ -71,10 +71,10 @@ case class ImmutableODF private[odf] (
   }
   def union[TM <: Map[Path,Node], TS <: SortedSet[Path]]( that: ODF ): ODF = {
     val pathIntersection: SortedSet[Path] = this.paths.intersect( that.paths)
-    val thisOnlyNodes: Set[Node] = (paths -- pathIntersection ).flatMap {
-      p: Path =>
+    val thisOnlyNodes: Set[Node] = (paths -- pathIntersection).flatMap {
+      case p: Path =>
         nodes.get(p)
-    }.toSet
+    }
     val thatOnlyNodes: Set[Node] = (that.paths -- pathIntersection ).flatMap {
       p: Path =>
         that.nodes.get(p)

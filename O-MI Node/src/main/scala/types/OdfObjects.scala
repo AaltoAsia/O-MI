@@ -88,17 +88,17 @@ class OdfObjectsImpl(
     Seq[OdfObject],
     Map[Path,Seq[OdfObject]]) => A) = {
     val uniqueObjs : Seq[OdfObject]  = objects.filterNot(
-        obj => another.objects.toSeq.exists(
-          aobj => aobj.path  == obj.path 
-        ) 
-      ).toSeq
+      obj => another.objects.exists(
+        aobj => aobj.path == obj.path
+      )
+    )
      val anotherUniqueObjs =  another.objects.filterNot(
-        aobj => objects.toSeq.exists(
-          obj => aobj.path  == obj.path
-        )
-      ).toSeq
+       aobj => objects.exists(
+         obj => aobj.path == obj.path
+       )
+     )
     
-    val sharedObjs = ( objects.toSeq ++ another.objects.toSeq ).filterNot(
+    val sharedObjs = ( objects ++ another.objects ).filterNot(
       obj => (uniqueObjs ++ anotherUniqueObjs).exists(
         uobj => uobj.path == obj.path
       )
@@ -118,10 +118,10 @@ class OdfObjectsImpl(
   /** Method to convert to scalaxb generated class. */
   implicit def asObjectsType : ObjectsType ={
     ObjectsType(
-      ObjectValue = objects.map{
-        obj: OdfObject => 
-        obj.asObjectType
-      }.toSeq,
+      ObjectValue = objects.map {
+        obj: OdfObject =>
+          obj.asObjectType
+      },
       attributes = version.fold(Map.empty[String, DataRecord[Any]])(n => Map("@version" -> DataRecord(n))) ++ attributesToDataRecord( this.attributes )
     )
   }

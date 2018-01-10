@@ -299,7 +299,7 @@ object OMIParser extends parsing.Parser[OmiParseResult] {
                 result.returnValue.returnCode,
                 result.returnValue.description
               ),
-            Vector( result.requestID.map(parseRequestID).toSeq : _* ), 
+            Vector( result.requestID.map(parseRequestID) : _* ),
             result.msg.map {
               msg: xmlGen.xmlTypes.MsgType =>
                 //TODO: figure right type parameter

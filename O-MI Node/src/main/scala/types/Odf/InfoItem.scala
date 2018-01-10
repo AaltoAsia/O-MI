@@ -176,14 +176,14 @@ case class InfoItem(
           qlmid => qlmid.asQlmIDType
       },
       this.descriptions.map {
-        des: Description =>
+        case des: Description =>
           des.asDescriptionType
-      }.toVector,
+      },
       this.metaData.map(_.asMetaDataType).toSeq,
       //Seq(QlmIDType(path.lastOption.getOrElse(throw new IllegalArgumentException(s"OdfObject should have longer than one segment path: $path")))),
-      this.values.map{ 
-        value : Value[Any] => value.asValueType
-      }.toSeq,
+      this.values.map {
+        value: Value[Any] => value.asValueType
+      },
       HashMap(
         "@name" -> DataRecord(
           nameAttribute

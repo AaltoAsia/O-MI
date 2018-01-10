@@ -312,7 +312,7 @@ case class OdfObject(
   def get(path: Path) : Option[OdfNode] = path match{
       case this.path => Some(this)
       case default : Path =>
-    val haspaths = infoItems.toSeq.map{ item => item : OdfNode} ++ objects.toSeq.map{ item => item : OdfNode}
+    val haspaths = infoItems.map{ item => item : OdfNode} ++ objects.map{ item => item : OdfNode}
     val grouped = haspaths.groupBy(_.path).mapValues{_.headOption.getOrElse(OdfObjects())}
     grouped.get(path) match {
       case None => 

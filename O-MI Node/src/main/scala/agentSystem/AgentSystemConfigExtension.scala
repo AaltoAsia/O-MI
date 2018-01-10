@@ -26,17 +26,17 @@ trait AgentSystemConfigExtension  extends Extension {
       ).toVector 
     } match {
       case Success(internalAgents) =>
-        internalAgents.flatMap{ 
-          agentConfig : Config =>
-            Try{
+        internalAgents.flatMap {
+          agentConfig: Config =>
+            Try {
               AgentConfigEntry(agentConfig)
-            } match{
+            } match {
               case Success(ace: AgentConfigEntry) => Some(ace)
-              case Failure(e) => 
+              case Failure(e) =>
                 //println( e.getMessage)
                 None
             }
-        }.toVector
+        }
       case Failure(e: Missing) => 
         //println("Received missing from agent-system.internal-agents configuration")
         Vector.empty

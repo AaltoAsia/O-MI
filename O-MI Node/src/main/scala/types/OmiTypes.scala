@@ -310,10 +310,10 @@ case class PollRequest(
   
   implicit def asReadRequest : xmlTypes.ReadRequestType = xmlTypes.ReadRequestType(
     None,
-    requestIDs.map{
+    requestIDs.map {
       id =>
-      id.toString//xmlTypes.IdType(id.toString) //FIXME: id has different types with cancel and read
-    }.toSeq,
+        id.toString //xmlTypes.IdType(id.toString) //FIXME: id has different types with cancel and read
+    },
     None,
     List(
         callbackAsUri.map(c => "@callback" -> DataRecord(c)),
@@ -473,10 +473,10 @@ case class CancelRequest(
   user = user0
   implicit def asCancelRequest : xmlTypes.CancelRequestType = xmlTypes.CancelRequestType(
     None,
-    requestIDs.map{
+    requestIDs.map {
       id =>
-      xmlTypes.IdType(id.toString)
-    }.toSeq
+        xmlTypes.IdType(id.toString)
+    }
   )
   def callback : Option[Callback] = None
   def withCallback: Option[Callback] => CancelRequest = cb => this
@@ -517,13 +517,13 @@ class ResponseRequest(
 
   implicit def asResponseListType : xmlTypes.ResponseListType =
     xmlTypes.ResponseListType(
-      results.map{ result =>
+      results.map { result =>
         result.asRequestResultType
-      }.toVector.toSeq)
+      }.toVector)
    
   def union(another: ResponseRequest): ResponseRequest ={
     ResponseRequest(
-      Results.unionReduce( (results ++ another.results).toVector ).toVector,
+      Results.unionReduce((results ++ another.results).toVector),
       if( ttl >= another.ttl) ttl else another.ttl
     )
   }
@@ -541,11 +541,11 @@ class ResponseRequest(
   
   def withSenderInformation(si:SenderInformation):OmiRequest = this.copy( senderInformation = Some(si))
 
-  def odfResultsToWrites: Seq[WriteRequest] = results.collect{
-        case omiResult : OmiResult if omiResult.odf.nonEmpty =>
-        val odf = omiResult.odf.get
-        WriteRequest( odf, None,ttl)
-  }.toVector
+  def odfResultsToWrites: Seq[WriteRequest] = results.collect {
+    case omiResult: OmiResult if omiResult.odf.nonEmpty =>
+      val odf = omiResult.odf.get
+      WriteRequest(odf, None, ttl)
+  }
   def odfResultsToSingleWrite: WriteRequest ={
     WriteRequest(
       odfResultsToWrites.foldLeft(OdfObjects()){

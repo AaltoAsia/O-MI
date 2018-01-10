@@ -64,9 +64,9 @@ object InfluxDBJsonProtocol extends DefaultJsonProtocol {
 
             serie.getFields( "name", "columns", "values") match{
               case Seq(JsString("databases"), JsArray(Seq(JsString("name"))), JsArray( values )) =>
-                values.collect{
+                values.collect {
                   case JsArray(Seq(JsString(dbName))) => dbName
-                }.toVector
+                }
 
               case seq: Seq[JsValue] => Vector.empty
             }
@@ -81,11 +81,11 @@ object InfluxDBJsonProtocol extends DefaultJsonProtocol {
           case serie: JsObject =>
             serie.getFields( "name", "columns", "values") match{
               case Seq(JsString("measurements"), JsArray(Seq(JsString("name"))), JsArray( values )) =>
-                values.collect{
+                values.collect {
                   case JsArray(Seq(JsString(strPath))) =>
                     val path = measurementNameToPath(strPath)
                     path
-                }.toVector
+                }
 
                   case seq: Seq[JsValue] => Vector.empty
             }

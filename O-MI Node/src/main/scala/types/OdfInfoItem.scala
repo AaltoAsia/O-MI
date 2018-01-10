@@ -81,9 +81,9 @@ class  OdfInfoItemImpl(
       MetaData = metaData.map(_.asMetaData).toSeq,
       iname = Vector.empty,
       //Seq(QlmIDType(path.lastOption.getOrElse(throw new IllegalArgumentException(s"OdfObject should have longer than one segment path: $path")))),
-      value = values.map{ 
-        value : OdfValue[Any] => value.asValueType
-      }.toSeq,
+      value = values.map {
+        value: OdfValue[Any] => value.asValueType
+      },
       attributes = HashMap{
         "@name" -> DataRecord(
           path.lastOption.map{ name => name.replace("\\/","/") }.getOrElse(throw new IllegalArgumentException(s"OdfObject should have longer than one segment path: $path"))

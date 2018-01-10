@@ -375,7 +375,7 @@ class SubscriptionManager(
       val succResult = Vector(Results.Success(OdfTreeCollection(iSub.id), optionObjects))
       val failedResults = if (failures.nonEmpty) Vector(Results.SubscribedPathsNotFound(failures)) else Vector.empty
       val responseTTL = iSub.interval
-      val response = ResponseRequest((succResult ++ failedResults).toVector, responseTTL)
+      val response = ResponseRequest((succResult ++ failedResults), responseTTL)
 
       val callbackF = callbackHandler.sendCallback(iSub.callback, response) // FIXME: change resultXml to ResponseRequest(..., responseTTL)
       callbackF.onSuccess {
