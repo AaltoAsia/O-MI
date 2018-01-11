@@ -159,9 +159,10 @@
         'jQuery.jstree': ['jQuery'],
         codeMirrorExtension: ['CodeMirror', 'jQuery'],
         'CodeMirror.modes.xml': ['CodeMirror'],
-        '$.fn.datetimepicker': ['jQuery'],
-        Initialize: ['jQuery', 'CodeMirror', '$.fn.modal', 'jQuery.jstree'],
-        FormLogic: ['jQuery', 'Initialize'],
+        '$.fn.datetimepicker': ['jQuery', 'moment'],
+        Initialize: ['jQuery', 'CodeMirror', '$.fn.modal', 'jQuery.jstree', '$.fn.datetimepicker'],
+        FormLogic: ['jQuery', 'Initialize','CodeMirror'],
+        omi: ['$.fn.datetimepicker'],
         newInfoItemForm: ['Initialize']
       },
     }, function(success, failed){
