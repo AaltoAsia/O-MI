@@ -40,8 +40,8 @@ with ActorLogging
 with RequiresMessageQueue[BoundedMessageQueueSemantics]
 {
 
-  protected val scheduler = context.system.scheduler
-  protected val snapshotInterval = settings.snapshotInterval
+  protected val scheduler: Scheduler = context.system.scheduler
+  protected val snapshotInterval: FiniteDuration = settings.snapshotInterval
   case object TakeSnapshot
   if( settings.writeToDisk){
     log.info(s"scheduling prevayler snapshot every $snapshotInterval")
@@ -79,7 +79,7 @@ with RequiresMessageQueue[BoundedMessageQueueSemantics]
           log.warning(s"Exception reading directory $dir for prevayler cleaning: $e")
         case Success(necessaryFiles) =>
           val allFiles = dir.listFiles(new FilenameFilter {
-            def accept(dir: File, name: String) = (name endsWith ".journal") || (name endsWith ".snapshot")
+            def accept(dir: File, name: String): Boolean = (name endsWith ".journal") || (name endsWith ".snapshot")
           })
 
           val extraFiles = allFiles filterNot (necessaryFiles contains _)
@@ -106,7 +106,7 @@ with RequiresMessageQueue[BoundedMessageQueueSemantics]
     case TakeSnapshot                   => {
       val snapshotDur: FiniteDuration = takeSnapshot
       log.info(s"Taking Snapshot took $snapshotDur")
-      cleanPrevayler
+      cleanPrevayler()
     }
   }
 }

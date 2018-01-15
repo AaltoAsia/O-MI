@@ -34,7 +34,7 @@ import types._
 /** Parser for messages with O-MI protocol*/
 object OmiParser extends Parser[OmiParseResult] {
 
-  protected[this] override def schemaPath = Array[Source](
+  protected[this] override def schemaPath: Array[Source] = Array[Source](
     new StreamSource(getClass.getClassLoader().getResourceAsStream("omi.xsd")),
     new StreamSource(getClass.getClassLoader().getResourceAsStream("odf.xsd"))
   )
@@ -94,7 +94,7 @@ object OmiParser extends Parser[OmiParseResult] {
       } match {
         case Failure(e) => 
             //println( s"Exception: $e\nStackTrace:\n")
-            e.printStackTrace
+            e.printStackTrace()
             Left( Iterable( ScalaxbError( e.getMessage ) ) )
       
         case Success(envelope) => 
@@ -126,7 +126,7 @@ object OmiParser extends Parser[OmiParseResult] {
               Left( Iterable( e ) )
             case Failure(e) => 
               //println( s"Exception: $e\nStackTrace:\n")
-              e.printStackTrace
+              e.printStackTrace()
               Left( Iterable( OMIParserError(e.getMessage) ) )
           }
       }
@@ -298,13 +298,13 @@ object OmiParser extends Parser[OmiParseResult] {
                 result.returnValue.returnCode,
                 result.returnValue.description
               ),
-            OdfTreeCollection( result.requestID.map(parseRequestID).toSeq : _* ), 
-            result.msg.map{
-              case msg : xmlGen.xmlTypes.MsgType => 
+            OdfTreeCollection( result.requestID.map(parseRequestID) : _* ),
+            result.msg.map {
+              msg: xmlGen.xmlTypes.MsgType =>
                 //TODO: figure right type parameter
-                val odfParseResult = parseMsg(msg,result.msgformat)
+                val odfParseResult = parseMsg(msg, result.msgformat)
                 odfParseResult match {
-                  case Left(errors)  => throw combineErrors(iterableAsScalaIterable(errors))
+                  case Left(errors) => throw combineErrors(iterableAsScalaIterable(errors))
                   case Right(odf) => odf
                 }
             }

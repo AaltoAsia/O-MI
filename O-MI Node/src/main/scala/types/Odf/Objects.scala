@@ -7,8 +7,8 @@ import parsing.xmlGen.scalaxb.DataRecord
 import parsing.xmlGen.xmlTypes.{ObjectsType, ObjectType}
 
 case class Objects(
-  val version: Option[String] = None,
-  val attributes: Map[String,String] = HashMap.empty
+                    version: Option[String] = None,
+  attributes: Map[String,String] = HashMap.empty
 ) extends Node {
   val path: Path = new Path( "Objects")
   def hasStaticData: Boolean = attributes.nonEmpty 
@@ -22,22 +22,22 @@ case class Objects(
     Vector()
   }
   def intersection( that: Objects ) : Objects ={
-    new Objects(
-      that.version.orElse(version),//What if versions are differents?
+    Objects(
+      that.version.orElse(version), //What if versions are differents?
       that.attributes ++ attributes
     )
   }
   def union( that: Objects ) : Objects ={
-    new Objects(
-      version.orElse(that.version),//What if versions are differents?
+    Objects(
+      version.orElse(that.version), //What if versions are differents?
       attributes ++ that.attributes
     )
   }
   implicit def asObjectsType( objects: Seq[ObjectType]) : ObjectsType ={
     ObjectsType(
       objects,
-      attributes = attributesToDataRecord( attributes ) ++ version.map{
-        case version: String => "@version" -> DataRecord(version)
+      attributes = attributesToDataRecord( attributes ) ++ version.map {
+        version: String => "@version" -> DataRecord(version)
       }  
     )
   }

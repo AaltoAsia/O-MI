@@ -23,7 +23,7 @@ import scala.concurrent.{Future, duration}
 import scala.util.{Random, Try}
 import scala.concurrent.duration._
 import scala.collection.immutable.HashMap
-import akka.actor.{Actor, ActorLogging, Cancellable, Props}
+import akka.actor.{Actor, ActorLogging, Cancellable, Props, Scheduler}
 import database._
 import http.CLICmds.{GetSubsWithPollData, ListSubsCmd, SubInfoCmd}
 import http.OmiConfigExtension
@@ -101,17 +101,17 @@ class SubscriptionManager(
 ) extends Actor with ActorLogging {
   val minIntervalDuration = Duration(1, duration.SECONDS)
   val ttlScheduler = new SubscriptionScheduler
-  val intervalScheduler = context.system.scheduler
+  val intervalScheduler: Scheduler = context.system.scheduler
   val intervalMap: ConcurrentHashMap[Long, Cancellable] = new ConcurrentHashMap
 
   /**
    * Schedule remove operation for subscriptions that are in prevayler stores,
    * only run at startup
    */
-  private[this] def scheduleTtls() = {
+  private[this] def scheduleTtls(): Unit = {
     log.debug("Scheduling removesubscriptions for the first time...")
     //interval subs
-    val intervalSubs = (singleStores.subStore execute GetAllIntervalSubs())
+    val intervalSubs = singleStores.subStore execute GetAllIntervalSubs()
 
     val allSubs = (singleStores.subStore execute GetAllEventSubs()) ++
       (singleStores.subStore execute GetAllPollSubs()) ++ intervalSubs
@@ -224,7 +224,7 @@ class SubscriptionManager(
       var previousValue = values.head
 
       while (i < values.length) {
-        if (values(i).timestamp.getTime >= (nextTick)) {
+        if (values(i).timestamp.getTime >= nextTick) {
           buffer += previousValue
           nextTick += interval
         } else {
@@ -258,7 +258,7 @@ class SubscriptionManager(
     val pollData = combinedWithPaths.map(pathValuesTuple => {
 
       val (path, values) = pathValuesTuple match {
-        case (p, v) if (v.nonEmpty) => {
+        case (p, v) if v.nonEmpty => {
           v.lastOption match {
             case Some(last) =>
               log.info(s"Found previous values for intervalsubscription: $last")
@@ -357,7 +357,7 @@ class SubscriptionManager(
       val subPaths = iSub.paths.map(path => (path, hTree.get(path)))
       val (failures, nodes) = subPaths.foldLeft[(Seq[Path], Seq[OdfNode])]((Seq(), Seq())){
             case ((paths, _nodes), (p,Some(node))) => (paths, _nodes.:+(node))
-            case ((paths, nodes), (p, None))    => (paths.:+(p), nodes)
+            case ((paths, _nodes), (p, None))    => (paths.:+(p), _nodes)
           }
       val subscribedInfoItems = OdfTypes
         .getInfoItems(nodes: _*)
@@ -375,7 +375,7 @@ class SubscriptionManager(
       val succResult = Vector(Results.Success(OdfTreeCollection(iSub.id), optionObjects))
       val failedResults = if (failures.nonEmpty) Vector(Results.SubscribedPathsNotFound(failures)) else Vector.empty
       val responseTTL = iSub.interval
-      val response = ResponseRequest((succResult ++ failedResults).toVector, responseTTL)
+      val response = ResponseRequest((succResult ++ failedResults), responseTTL)
 
       val callbackF = callbackHandler.sendCallback(iSub.callback, response) // FIXME: change resultXml to ResponseRequest(..., responseTTL)
       callbackF.onSuccess {

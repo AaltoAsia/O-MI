@@ -110,11 +110,9 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
   }
 
   def afterAll = {
-    val future = serverBinding.flatMap{
-      case sb => sb.unbind()
-    }.flatMap{
-      case s: Unit =>
-      system.terminate()
+    val future = serverBinding.flatMap(sb => sb.unbind()).flatMap {
+      s: Unit =>
+        system.terminate()
     }
     future.onFailure{ 
       case t: Throwable =>
@@ -218,10 +216,8 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
 
         val responseFuture = http.singleRequest(getPostRequest(request.get))//pipeline(Post("http://localhost:8080/", request.get))
 
-        val response = Try(Await.result(responseFuture.flatMap{
-          case n => 
-            Unmarshal(n).to[NodeSeq]
-        }, Duration(10, "second")))
+        val response = Try(Await.result(responseFuture.flatMap(n =>
+          Unmarshal(n).to[NodeSeq]), Duration(10, "second")))
 
         response must beSuccessfulTry
 
@@ -243,10 +239,8 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
           val t1 = request aka "Read request message" must beSuccessfulTry
           val t2 = correctResponse aka "Correct response message" must beSuccessfulTry
 
-          val responseFuture = http.singleRequest(getPostRequest(request.get)).flatMap{
-            case n => 
-              Unmarshal(n).to[NodeSeq]
-          }
+          val responseFuture = http.singleRequest(getPostRequest(request.get)).flatMap(n =>
+            Unmarshal(n).to[NodeSeq])
           responseFuture.onFailure{
             case t : Throwable =>
              system.log.error( t, "Ummarshalling failure loq: ")

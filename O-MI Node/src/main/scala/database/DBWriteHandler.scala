@@ -26,13 +26,15 @@ import types.OdfTypes._
 import types.OmiTypes._
 import types.Path
 import analytics.{AddWrite, AnalyticsStore}
-import agentSystem.{AgentName}
+import agentSystem.AgentName
 
 trait DBWriteHandler extends DBHandlerBase {
 
 
 
-  import context.{system}//, dispatcher}
+  import context.system
+
+  //, dispatcher}
   protected def handleWrite( write: WriteRequest ) : Future[ResponseRequest] = {
     val odfObjects = write.odf
     val infoItems : Seq[OdfInfoItem] = odfObjects.infoItems // getInfoItems(odfObjects)
@@ -71,7 +73,7 @@ trait DBWriteHandler extends DBHandlerBase {
     log.debug(s"Sending in progress; Subscription subId:$id addr:$callbackAddr interval:-1")
     //log.debug("Send msg:\n" + xmlMsg)
 
-    def failed(reason: String) =
+    def failed(reason: String): Unit =
       log.warning(
         s"Callback failed; subscription id:$id interval:-1  reason: $reason")
 
@@ -94,7 +96,7 @@ trait DBWriteHandler extends DBHandlerBase {
     }
   }
 
-  private def processEvents(events: Seq[InfoItemEvent]) = {
+  private def processEvents(events: Seq[InfoItemEvent]): Unit = {
     //Add write data to analytics if wanted
     analyticsStore.foreach{ store =>
       events
@@ -164,9 +166,9 @@ trait DBWriteHandler extends DBHandlerBase {
     relatedPollSubs.collect {
       //if no old value found for path or start time of subscription is after last value timestamp
       //if new value is updated value. forall for option returns true if predicate is true or the value is None
-      case sub if(oldValueOpt.forall(oldValue =>
+      case sub if oldValueOpt.forall(oldValue =>
         singleStores.valueShouldBeUpdated(oldValue, newValue) &&
-          (oldValue.timestamp.before(sub.startTime) || oldValue.value != newValue.value))) => {
+          (oldValue.timestamp.before(sub.startTime) || oldValue.value != newValue.value)) => {
         singleStores.pollDataPrevayler execute AddPollData(sub.id, path, newValue)
       }
     }
@@ -247,8 +249,8 @@ trait DBWriteHandler extends DBHandlerBase {
       case t: Throwable => log.error(t, "Error when writing values for paths $paths")
     }
 
-    val writeFuture = dbWriteFuture.map{ 
-      n =>
+    val writeFuture = dbWriteFuture.map{
+      _ =>
         // Update our hierarchy data structures if needed
 
         if (updatedStaticItems.nonEmpty) {

@@ -1,9 +1,12 @@
 package parsing
 
+import java.net.URI
+
+import akka.http.scaladsl.model.Uri
+
 import scala.collection.JavaConversions.seqAsJavaList
 import scala.concurrent.duration._
 import xml._
-
 import org.specs2._
 import types.OdfTypes.OdfTreeCollection._
 import types.OdfTypes._
@@ -51,6 +54,9 @@ class TypesTest extends Specification {
       parse message type write    $pWrite
       parse message type cancel   $pCancel
       parse message type response $pResponse
+
+  OmiTypes test
+    $omiTypes1
     """
 
   def e1 = !ParseErrorList("test error").isInstanceOf[OmiRequest]
@@ -108,10 +114,30 @@ class TypesTest extends Specification {
   
   def e301 = {
     val path1 =   Path("test1/test2")
-    
+
     (path1 / "test3" / "test4" / "test5").toSeq should be equalTo (  Path("test1/test2/test3/test4/test5").toSeq)
   }
 
+  def omiTypes1 = {
+    val reg1 = ReadRequest(OdfObjects(),None,None,None,None,None)
+    val reg2 = ReadRequest(OdfObjects(),None,None,None,None,Some(HTTPCallback(Uri("Http://google.com"))))
+    reg1.hasCallback should be equalTo(false) and(
+    reg2.hasCallback should be equalTo(true)) and(
+    reg2.callbackAsUri must beSome.like{case a => a.isInstanceOf[URI]}) and(
+    reg2.asXML must beAnInstanceOf[NodeSeq]) and(
+    reg2.parsed must beRight) and(
+    reg2.unwrapped must beSuccessfulTry) and(
+    reg2.rawRequest must startWith("<omiEnvelope"))
+  }
+  def omiTypes2 = {
+    val reg1 = ReadRequest(OdfObjects(),None,None,None,None,None, 0 seconds)
+    val reg2 = ReadRequest(OdfObjects(),None,None,None,None,None, 5 seconds)
+    val reg3 = ReadRequest(OdfObjects(),None,None,None,None,None, Duration.Inf)
+
+    reg1.handleTTL must be equalTo(2 minutes) and(
+    reg2.handleTTL must be equalTo(5 seconds)) and(
+    reg3.handleTTL must be equalTo(FiniteDuration(Int.MaxValue, MILLISECONDS)))
+  }
   val testOdfMsg: NodeSeq ={
     <msg xmlns = "omi.xsd">
       <Objects xmlns="odf.xsd">

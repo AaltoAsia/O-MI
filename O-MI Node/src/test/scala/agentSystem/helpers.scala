@@ -5,7 +5,7 @@ import scala.collection.mutable.{Map => MutableMap}
 
 import com.typesafe.config.Config
 import akka.actor.{ActorRef, Actor, ActorSystem, Props , Terminated}
-import akka.testkit.{TestActorRef}
+import akka.testkit.TestActorRef
 
 import agentSystem._
 import types.OmiTypes.{Responses, WriteRequest, ReadRequest, CallRequest, ResponseRequest}
@@ -138,13 +138,13 @@ class TestManager( testAgents: scala.collection.mutable.Map[AgentName, AgentInfo
   protected val requestHandler: ActorRef
   )(implicit system: ActorSystem) extends BaseAgentSystem with InternalAgentManager{
   protected val agents: scala.collection.mutable.Map[AgentName, AgentInfo] = testAgents
-  agents.values.foreach{
-    case ai: AgentInfo => 
-      ai.agent.foreach{
+  agents.values.foreach {
+    ai: AgentInfo =>
+      ai.agent.foreach {
         ref =>
-         if( ref != ActorRef.noSender ) context.watch( ref)
+          if (ref != ActorRef.noSender) context.watch(ref)
       }
-  
+
   }
   protected def settings : AgentSystemConfigExtension = ???
   def receive : Actor.Receive = {

@@ -7,9 +7,9 @@ object OldTypeConverter{
     val objects = Objects(
       odfObjects.version
     )
-    val objs = odfObjects.objects.flatMap{
-      case odfObject: OdfObject => 
-        convertOdfObject( odfObject )
+    val objs = odfObjects.objects.flatMap {
+      odfObject: OdfObject =>
+        convertOdfObject(odfObject)
     }
     ImmutableODF( Vector(objects) ++ objs )
   }
@@ -95,9 +95,9 @@ object OldTypeConverter{
 
   def convertOdfMetaData( odfMD: OdfMetaData ): MetaData ={
     MetaData(
-      odfMD.infoItems.map{
-        ii => convertOdfInfoItem( ii )
-      }.toVector
+      odfMD.infoItems.map {
+        ii => convertOdfInfoItem(ii)
+      }
     )
   }
 }

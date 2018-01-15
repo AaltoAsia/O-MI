@@ -288,7 +288,7 @@ requestsExt = (WebOmi) ->
     update : (newVal) ->
       o = WebOmi.omi
       doc = currentParams.requestDoc
-      if currentParams[name] != newVal
+      if currentParams[name] != newVal and doc? 
         attrParents = o.evaluateXPath doc, attrParentXPath
         if not attrParents?
           WebOmi.error "Tried to update #{name}, but #{attrParentXPath} was not found in", doc

@@ -43,7 +43,7 @@ trait InternalAgentSuccess     extends InternalAgentResponse
 case class CommandSuccessful() extends InternalAgentSuccess 
 
 
-class InternalAgentFailure(msg : String, exp : Option[Throwable] )  extends  Exception(msg, exp.getOrElse(null)) with InternalAgentResponse
+class InternalAgentFailure(msg : String, exp : Option[Throwable] )  extends  Exception(msg, exp.orNull) with InternalAgentResponse
 class InternalAgentConfigurationFailure( msg: String, exp: Option[Throwable] ) extends InternalAgentFailure( msg, exp )
 
 class CommandFailed(msg : String, exp : Option[Throwable] ) extends InternalAgentFailure(msg, exp) 
@@ -54,7 +54,7 @@ sealed trait ResponsibleAgentMsg
 case class ResponsibleWrite( promise: Promise[ResponseRequest], write: WriteRequest)
 
 case class AgentConfigurationException( msg: String, exp: Option[Throwable] = None) 
-  extends Exception( msg, exp.getOrElse(null) )
+  extends Exception( msg, exp.orNull )
 
 abstract class  ScalaInternalAgentTemplate(
   protected val requestHandler: ActorRef,
@@ -66,14 +66,14 @@ trait ScalaInternalAgent extends InternalAgent with ActorLogging{
   protected def requestHandler: ActorRef
   protected def dbHandler: ActorRef
   //These need to be implemented 
-  override def preStart = start
-  override def postStop = stop
-  def receive  = {
+  override def preStart: Unit = start
+  override def postStop: Unit = stop
+  def receive: PartialFunction[Any, Unit] = {
     case any: Any => unhandled(any)
   }
 
-  final def agentSystem = context.parent
-  final def name = self.path.name
+  final def agentSystem: ActorRef = context.parent
+  final def name: String = self.path.name
   final def writeToDB(write: WriteRequest) : Future[ResponseRequest] = requestFromDB(write)
   final def readFromDB(read: ReadRequest) : Future[ResponseRequest] = requestFromDB(read)
   final def requestFromDB(request: OdfRequest) : Future[ResponseRequest] = {
@@ -92,11 +92,11 @@ trait ScalaInternalAgent extends InternalAgent with ActorLogging{
     val requestWithSenderInfo = request.withSenderInformation( si )
     (dbHandler ? requestWithSenderInfo).mapTo[ResponseRequest]
   }
-  final def respond(msg: Any){
+  final def respond(msg: Any): Unit = {
     val senderRef = sender()
     senderRef ! msg
   }
-  final def respondFuture(msgFuture: Future[Any]){
+  final def respondFuture(msgFuture: Future[Any]): Unit = {
     val senderRef = sender()
     msgFuture.map{
       any => senderRef ! any

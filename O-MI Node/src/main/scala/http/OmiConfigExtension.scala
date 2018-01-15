@@ -14,6 +14,7 @@
 
 package http
 
+import java.lang
 import java.util.concurrent.TimeUnit
 import java.net.{InetAddress, URLDecoder}
 
@@ -21,7 +22,6 @@ import scala.collection.JavaConversions._
 import scala.concurrent.duration._
 import scala.util.Try
 import scala.language.implicitConversions
-
 import agentSystem.AgentSystemConfigExtension
 import akka.actor.{ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
 import com.typesafe.config.Config
@@ -64,7 +64,7 @@ class OmiConfigExtension( val config: Config) extends Extension
   /** fast journal databases paths */
   val journalsDirectory: String = config.getString("journalDBs.directory")
   val writeToDisk: Boolean = config.getBoolean("journalDBs.write-to-disk")
-  val maxJournalSizeBytes = config.getBytes("journalDBs.max-journal-filesize")
+  val maxJournalSizeBytes: lang.Long = config.getBytes("journalDBs.max-journal-filesize")
   // Listen interfaces and ports
 
   val interface: String = config.getString("omi-service.interface")
@@ -103,10 +103,10 @@ class OmiConfigExtension( val config: Config) extends Extension
   //IP
   val inputWhiteListUsers: Vector[String]= config.getStringList("omi-service.input-whitelist-users").toVector
 
-  val inputWhiteListIps: Vector[Vector[Byte]] = config.getStringList("omi-service.input-whitelist-ips").map{
-    case s: String => 
-    val ip = inetAddrToBytes(InetAddress.getByName(s)) 
-    ip.toVector
+  val inputWhiteListIps: Vector[Vector[Byte]] = config.getStringList("omi-service.input-whitelist-ips").map {
+    s: String =>
+      val ip = inetAddrToBytes(InetAddress.getByName(s))
+      ip.toVector
   }.toVector
 
   val inputWhiteListSubnets : Map[InetAddress, Int] = config.getStringList("omi-service.input-whitelist-subnets").map{ 

@@ -38,7 +38,7 @@ trait InternalAgentManager extends BaseAgentSystem with InternalAgentLoader{
   def commandForNonexistingMsg( name : AgentName ) : String = s"Command for nonexistent agent: $name."
   def couldNotFindMsg( name : AgentName ) : String = s"Could not find agent: $name."
 
-  protected def connectCLI( ip: String, cliRef: ActorRef ) ={
+  protected def connectCLI( ip: String, cliRef: ActorRef ): Boolean ={
     connectedCLIs += ip -> cliRef
     true
   }
@@ -57,7 +57,7 @@ trait InternalAgentManager extends BaseAgentSystem with InternalAgentLoader{
     msg
   }
 
-  protected def handleStart( start: StartAgentCmd ) = {
+  protected def handleStart( start: StartAgentCmd ): Future[String] = {
     val agentName = start.agent
     handleAgentCmd(agentName) { 
       agentInfo: AgentInfo =>
@@ -75,7 +75,7 @@ trait InternalAgentManager extends BaseAgentSystem with InternalAgentLoader{
       }
     }
   }
-  protected def handleStop( stop: StopAgentCmd ) = {
+  protected def handleStop( stop: StopAgentCmd ): Future[String] = {
     val agentName = stop.agent
     handleAgentCmd(agentName){
       agentInfo: AgentInfo =>

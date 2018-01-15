@@ -31,7 +31,7 @@ import OmiTypes.ResponseRequest
      */
     val toSeq: Vector[String] = {
       val normalized = pathSeq.filterNot(_ == "")
-      normalized.toVector // make sure that it is Vector, hashcode problems with Seq (Array?)
+      normalized // make sure that it is Vector, hashcode problems with Seq (Array?)
     }
 
     /**

@@ -42,7 +42,7 @@ trait SamlHttpHeaderAuth extends AuthorizationExtension {
   val settings: OmiConfigExtension
 
   private[this] lazy val  whitelistedUsers: Vector[Eppn] ={
-    val tmp= settings.inputWhiteListUsers.map(Eppn(_)).toVector
+    val tmp= settings.inputWhiteListUsers.map(Eppn(_))
 
     log.info(s"O-MI node is configured to allow SAML users: $tmp")
     if (tmp.nonEmpty)

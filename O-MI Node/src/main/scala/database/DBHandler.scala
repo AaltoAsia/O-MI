@@ -41,7 +41,7 @@ object DBHandler{
     singleStores: SingleStores,
     callbackHandler: CallbackHandler,
     analyticsStore: Option[ActorRef]
-  ) = Props(
+  ): Props = Props(
     new DBHandler(
       dbConnection,
       singleStores,
@@ -62,7 +62,7 @@ class DBHandler(
   with DBWriteHandler
 {
   import context.{system, dispatcher}
-  def receive = {
+  def receive: PartialFunction[Any, Unit] = {
     case na: NewAgent => addAgent(na)
     case na: AgentStopped => agentStopped(na.agentName)
     case write: WriteRequest => 
@@ -99,7 +99,7 @@ class DBHandler(
     }
   }
 
-  def permissionCheck( request: OdfRequest)={
+  def permissionCheck( request: OdfRequest): Boolean ={
     if( request.senderInformation.isEmpty ){
       true
     } else {
@@ -112,22 +112,22 @@ class DBHandler(
       }
     }
   }
-  def permissionCheckFuture( request: OdfRequest)= {
+  def permissionCheckFuture( request: OdfRequest): Future[Boolean] = {
     Future{
       permissionCheck(request)
     }
   }
-  def permissionFailureResponse = ResponseRequest(
+  def permissionFailureResponse: ResponseRequest = ResponseRequest(
     Vector(
       Results.InvalidRequest(
         Some("Agent doesn't have permissions to access some part of O-DF.")
       )
     )
   )
-  private def agentKnownAndRunning(agentName: AgentName) : Boolean = agents.get(agentName).map(_.running).getOrElse(false)
+  private def agentKnownAndRunning(agentName: AgentName) : Boolean = agents.get(agentName).exists(_.running)
   private def addAgent( newAgent: NewAgent) = {
     agentResponsibilities.add(newAgent.responsibilities)
-    agents += (newAgent.agentName -> AgentInformation( newAgent.agentName, true, newAgent.actorRef))
+    agents += (newAgent.agentName -> AgentInformation( newAgent.agentName, running = true, newAgent.actorRef))
   }
   private def agentStopped( agentName: AgentName ) ={
     agents -= agentName

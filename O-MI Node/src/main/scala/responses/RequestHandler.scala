@@ -44,7 +44,7 @@ object RequestHandler{
     dbHandler : ActorRef,
     settings: OmiConfigExtension,
     analyticsStore: Option[ActorRef]
-    ) = Props( 
+    ): Props = Props(
       new RequestHandler(
         subscriptionManager,
         dbHandler,
@@ -69,7 +69,7 @@ with CancelHandler
   case class AgentInformation( agentName: AgentName, running: Boolean, actorRef: ActorRef)
   private val agentResponsibilities: AgentResponsibilities = new AgentResponsibilities()
   private val agents: MutableMap[AgentName,AgentInformation] = MutableMap.empty
-  def receive = {
+  def receive: PartialFunction[Any, Unit] = {
     case read: ReadRequest => respond( handleReadRequest( read ))
     case write: WriteRequest => respond( handleWriteRequest( write ))
     case call: CallRequest => respond( handleCallRequest( call ))
@@ -80,7 +80,7 @@ with CancelHandler
   }
 
   def handleReadRequest( read: ReadRequest) : Future[ResponseRequest] = {
-    implicit val to = Timeout(read.handleTTL)
+    implicit val to: Timeout = Timeout(read.handleTTL)
     val responseFuture = (dbHandler ? read).mapTo[ResponseRequest]
     responseFuture.onComplete{
       case Failure(t) =>
@@ -95,7 +95,7 @@ with CancelHandler
     val responsibleToRequest = agentResponsibilities.splitRequestToResponsible( write )
     val responsesFromResponsible = responsibleToRequest.map{
       case (None, subrequest) =>  
-        implicit val to = Timeout(subrequest.handleTTL)
+        implicit val to: Timeout = Timeout(subrequest.handleTTL)
         log.debug(s"Asking DBHandler to handle request parts that are not owned by an Agent.")
         (dbHandler ? subrequest).mapTo[ResponseRequest]
       case (Some(agentName), subrequest) => 
@@ -103,22 +103,20 @@ with CancelHandler
         askAgent(agentName,subrequest)
     }
     val fSeq = Future.sequence(
-      responsesFromResponsible.map{
-        case future: Future[ResponseRequest] =>
-          
-          val recovered = future.recover{
+      responsesFromResponsible.map {
+        future: Future[ResponseRequest] =>
+
+          val recovered = future.recover {
             case e: Exception =>
-              log.error( e,"DBHandler returned exception")
+              log.error(e, "DBHandler returned exception")
               Responses.InternalError(e)
           }
-          recovered 
+          recovered
       }
     )
     fSeq.map{
       responses: Iterable[ResponseRequest] =>
-        val results = responses.flatMap{
-          case response => response.results
-        }
+        val results = responses.flatMap(response => response.results)
         ResponseRequest(
           Results.unionReduce(results.toVector)
         )
@@ -141,19 +139,17 @@ with CancelHandler
         case (Some(agentName), subrequest: CallRequest) => 
           log.debug(s"Asking responsible Agent $agentName to handle part of request.")
           askAgent(agentName,subrequest)
-          }.map{
-            case future: Future[ResponseRequest] =>
-              future.recover{
-                case e: Exception =>
-                  Responses.InternalError(e)
-              }
+          }.map {
+        future: Future[ResponseRequest] =>
+          future.recover {
+            case e: Exception =>
+              Responses.InternalError(e)
           }
+      }
           )
-    fSeq.map{
-      case responses =>
-        val results = responses.flatMap{
-          case response => response.results
-        }
+    fSeq.map {
+      responses =>
+        val results = responses.flatMap(response => response.results)
         ResponseRequest(
           Results.unionReduce(results.toVector)
         )
@@ -175,7 +171,7 @@ with CancelHandler
 
   private def addAgent( newAgent: NewAgent) = {
     agentResponsibilities.add(newAgent.responsibilities)
-    agents += (newAgent.agentName -> AgentInformation( newAgent.agentName, true, newAgent.actorRef))
+    agents += (newAgent.agentName -> AgentInformation( newAgent.agentName, running = true, newAgent.actorRef))
   }
 
   private def agentStopped( agentName: AgentName ) ={
@@ -186,8 +182,8 @@ with CancelHandler
   private def askAgent( agentName: AgentName, request: OmiRequest ): Future[ResponseRequest]={
     agents.get(agentName) match {
       case Some( ai: AgentInformation) if ai.running  =>  
-        implicit val to = Timeout(request.handleTTL)
-        val f = ai.actorRef ? ( request.withSenderInformation( ActorSenderInformation( self.path.name, self) ) )
+        implicit val to: Timeout = Timeout(request.handleTTL)
+        val f = ai.actorRef ? request.withSenderInformation(ActorSenderInformation(self.path.name, self))
         f.mapTo[ResponseRequest]
 
       case Some( ai: AgentInformation) if !ai.running  =>  

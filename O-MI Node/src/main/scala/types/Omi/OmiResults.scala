@@ -58,10 +58,10 @@ class OmiResult(
       None,
       None,
       Map(
-        ("@targetType" -> DataRecord(TargetTypeType.fromString("node", omiDefaultScope )))
+        "@targetType" -> DataRecord(TargetTypeType.fromString("node", omiDefaultScope))
       ) ++ odf.map{
         objects =>
-        ("@msgformat" -> DataRecord("odf"))
+        "@msgformat" -> DataRecord("odf")
 
       }
     )
@@ -85,7 +85,7 @@ trait UnionableResult{ this: OmiResult =>
     //println( s"Checking equality for ${this.getClass} and ${a.getClass}" )
     a.getClass == this.getClass
   }
-  def tryUnion(o: UnionableResult) = Try{
+  def tryUnion(o: UnionableResult): Try[UnionableResult] = Try{
     require(unionableWith(o))
     o match {
       case t: UnionableResult => union(t)
@@ -131,18 +131,18 @@ object Results{
             case other : Success => 
               Results.Success( 
                 requestIDs ++ other.requestIDs,
-                other.odf.flatMap{
-                  case objects: ImmutableODF => 
-                    odf.map{
-                      case objs: ImmutableODF =>
+                other.odf.flatMap {
+                  objects: ImmutableODF =>
+                    odf.map {
+                      objs: ImmutableODF =>
                         objects.union(objs).immutable
                     }
                 }.orElse(odf),
-                other.description.flatMap{
-                  case str1 : String =>
-                    description.map{
-                      case str2: String =>
-                        if( str1 == str2 ) str1
+                other.description.flatMap {
+                  str1: String =>
+                    description.map {
+                      str2: String =>
+                        if (str1 == str2) str1
                         else s"$str1.\n$str2"
                     }
                 }.orElse(description)
@@ -400,7 +400,7 @@ object Results{
   }
 
   case class Timeout(
-    val description: Option[String] = None
+                      description: Option[String] = None
   ) extends OmiResult(Returns.Timeout(description)) with UnionableResult{
     def union(o: UnionableResult): UnionableResult ={
       o match {

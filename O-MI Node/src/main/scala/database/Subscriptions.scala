@@ -156,41 +156,50 @@ object CustomJsonProtocol extends DefaultJsonProtocol{
       "callback",
       "paths",
       "data") match {
-      case Seq(JsNumber(id), JsNumber(endTime), JsNumber(interval), JsNumber(startTime), JsNumber(lastPolled), JsNull, JsArray(paths: Vector[JsString]), JsArray(data: Vector[JsObject])) if interval.toLong == -1=> { // PollNormalEventsub
+      case Seq(JsNumber(id), JsNumber(endTime), JsNumber(interval), JsNumber(startTime), JsNumber(lastPolled), JsNull, JsArray(paths: Vector[JsString]), JsArray(data: Vector[JsObject])) => {
         val subData: Seq[(Path, List[OdfValue[Any]])] = data.map(_.getFields("path","values") match {
           case Seq(JsString(path), JsArray(values: Vector[JsObject])) => (Path(path), values.map(_.getFields("value", "typeValue", "timeStamp", "attributes") match {
             case Seq(JsString(value), JsString(typeValue), JsNumber(timeStamp), JsObject(attributes: Map[String, JsString])) =>  OdfValue(value, typeValue, new Timestamp(timeStamp.toLong), attributes.map{case (key, jsvalue) => (key, jsvalue.value)}(breakOut))
           }).toList)
         })
+        if(interval.toLong == -1) { //normal poll sub
+          (PollNormalEventSub(
+            id.toLong,
+            new Timestamp(endTime.toLong),
+            new Timestamp(lastPolled.toLong),
+            new Timestamp(startTime.toLong),
+            paths.map(p => Path(p.value))
+          ), Some(SubData(subData.toMap.map(identity)(breakOut))))
+        } else if(interval.toLong == -2) { //poll new event sub
+          (PollNewEventSub(
+            id.toLong,
+            new Timestamp(endTime.toLong),
+            new Timestamp(lastPolled.toLong),
+            new Timestamp(startTime.toLong),
+            paths.map(p => Path(p.value))
+          ), Some(SubData(subData.toMap.map(identity)(breakOut))))
+        } else {
+          (PollIntervalSub( //interval poll sub
+            id.toLong,
+            new Timestamp(endTime.toLong),
+            interval.toLong seconds,
+            new Timestamp(lastPolled.toLong),
+            new Timestamp(startTime.toLong),
+            paths.map(p => Path(p.value))
+          ), Some(SubData(subData.toMap.map(identity)(breakOut))))
+        }
+      }
+      case Seq(JsNumber(id), JsNumber(endTime), JsNumber(interval), JsNull, JsNull, JsString(callback), JsArray(paths: Vector[JsString]), JsNull) if interval.toLong == -1 || interval.toLong == -2=> { //EventSub
+        println(interval.toLong)
+        if(interval.toLong == -1) {
+          (NormalEventSub(id.toLong, paths.map(p => Path(p.value)), new Timestamp(endTime.toLong), createCB(callback)), None)
+        } else if(interval.toLong == -2) {
+          (NewEventSub(id.toLong, paths.map(p => Path(p.value)), new Timestamp(endTime.toLong), createCB(callback)), None)
+        } else{
+          http.Boot.log.error(s"Invalid subscription with no start time and interval ${interval.toLong} different than -1 and -2")
+          throw new Exception(s"Invalid subscription with no start time and interval ${interval.toLong} different than -1 and -2")
+        }
 
-        (PollNormalEventSub(id.toLong,new Timestamp(endTime.toLong), new Timestamp(lastPolled.toLong),new Timestamp(startTime.toLong), paths.map(p => Path(p.value))),
-        Some(SubData(subData.toMap.map(identity)(breakOut))))
-      }
-      case Seq(JsNumber(id), JsNumber(endTime), JsNumber(interval), JsNumber(startTime), JsNumber(lastPolled), JsNull, JsArray(paths: Vector[JsString]), JsArray(data: Vector[JsObject])) if interval.toLong == -2=> { // PollNewEventsub
-        val subData: Seq[(Path, List[OdfValue[Any]])] = data.map(_.getFields("path","values") match {
-          case Seq(JsString(path), JsArray(values: Vector[JsObject])) => (Path(path), values.map(_.getFields("value", "typeValue", "timeStamp", "attributes") match {
-            case Seq(JsString(value), JsString(typeValue), JsNumber(timeStamp), JsObject(attributes: Map[String, JsString])) =>  OdfValue(value, typeValue, new Timestamp(timeStamp.toLong), attributes.map{case (key, jsvalue) => (key, jsvalue.value)}(breakOut))
-          }).toList)
-        })
-
-        (PollNewEventSub(id.toLong,new Timestamp(endTime.toLong), new Timestamp(lastPolled.toLong),new Timestamp(startTime.toLong), paths.map(p => Path(p.value))),
-        Some(SubData(subData.toMap.map(identity)(breakOut))))
-      }
-      case Seq(JsNumber(id), JsNumber(endTime), JsNumber(interval), JsNumber(startTime), JsNumber(lastPolled), JsNull, JsArray(paths: Vector[JsString]), JsArray(data: Vector[JsObject])) => { //PollInterval
-        val subData: Seq[(Path, List[OdfValue[Any]])] = data.map(_.getFields("path","values") match {
-          case Seq(JsString(path), JsArray(values: Vector[JsObject])) => (Path(path), values.map(_.getFields("value", "typeValue", "timeStamp", "attributes") match {
-            case Seq(JsString(value), JsString(typeValue), JsNumber(timeStamp), JsObject(attributes: Map[String, JsString])) =>  OdfValue(value, typeValue, new Timestamp(timeStamp.toLong), attributes.map{case (key, jsvalue) => (key, jsvalue.value)}(breakOut))
-          }).toList)
-        })
-
-        (PollIntervalSub(id.toLong, new Timestamp(endTime.toLong),interval.toLong seconds, new Timestamp(lastPolled.toLong),new Timestamp(startTime.toLong), paths.map(p => Path(p.value))),
-          Some(SubData(subData.toMap.map(identity)(breakOut))))
-      }
-      case Seq(JsNumber(id), JsNumber(endTime), JsNumber(interval), JsNull, JsNull, JsString(callback), JsArray(paths: Vector[JsString]), JsNull) if interval.toLong == -1 => { //EventSub
-        (NormalEventSub(id.toLong,paths.map(p=> Path(p.value)),new Timestamp(endTime.toLong),createCB(callback)), None)
-      }
-      case Seq(JsNumber(id), JsNumber(endTime), JsNumber(interval), JsNull, JsNull, JsString(callback), JsArray(paths: Vector[JsString]), JsNull) if interval.toLong == -2 => { //EventSub
-        (NewEventSub(id.toLong,paths.map(p=> Path(p.value)),new Timestamp(endTime.toLong),createCB(callback)), None)
       }
       case Seq(JsNumber(id), JsNumber(endTime), JsNumber(interval), JsNumber(startTime), JsNull, JsString(callback), JsArray(paths: Vector[JsString]), JsNull) => { //IntervalSub
         (IntervalSub(id.toLong, paths.map(p => Path(p.value)), new Timestamp(endTime.toLong), createCB(callback), interval.toLong seconds, new Timestamp(startTime.toLong)), None)
@@ -330,9 +339,7 @@ case class AddPollData(subId: Long, path: Path, value: OdfValue[Any]) extends Tr
 }
 
 case class CheckSubscriptionData(subId: Long) extends Query[PollSubData, collection.mutable.HashMap[Path,List[OdfValue[Any]]]] {
-  def query(p: PollSubData, date: Date): mutable.HashMap[Path, List[OdfValue[Any]]] = {
-    p.idToData.get(subId).getOrElse(collection.mutable.HashMap.empty[Path, List[OdfValue[Any]]])
-  }
+  def query(p: PollSubData, date: Date): mutable.HashMap[Path, List[OdfValue[Any]]] = p.idToData.getOrElse(subId, collection.mutable.HashMap.empty[Path, List[OdfValue[Any]]])
 }
 
 /**

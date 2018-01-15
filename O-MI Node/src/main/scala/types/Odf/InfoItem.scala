@@ -37,18 +37,18 @@ object InfoItem{
   }
 }
 
-case class InfoItem( 
-  val nameAttribute: String,
-  val path: Path,
-  val typeAttribute: Option[String] = None,
-  val names: Vector[QlmID] = Vector.empty,
-  val descriptions: Vector[Description]= Vector.empty,
-  val values: Vector[Value[Any]]= Vector.empty,
-  val metaData: Option[MetaData] = None,
-  val attributes: IMap[String,String] = HashMap.empty
+case class InfoItem(
+                     nameAttribute: String,
+  path: Path,
+  typeAttribute: Option[String] = None,
+  names: Vector[QlmID] = Vector.empty,
+  descriptions: Vector[Description]= Vector.empty,
+  values: Vector[Value[Any]]= Vector.empty,
+  metaData: Option[MetaData] = None,
+  attributes: IMap[String,String] = HashMap.empty
 ) extends Node with Unionable[InfoItem]{
   assert( nameAttribute == path.last )
-  def updateValues( vals: Vector[Value[Any]] ) = this.copy(values = vals)
+  def updateValues( vals: Vector[Value[Any]] ): InfoItem = this.copy(values = vals)
   def update( that: InfoItem ): InfoItem={
     val pathsMatches = path == that.path
     assert( nameAttribute == that.nameAttribute && pathsMatches)
@@ -57,24 +57,24 @@ case class InfoItem(
       path,
       that.typeAttribute.orElse( typeAttribute ),
       QlmID.unionReduce( that.names ++ names).toVector.filter{ id => id.id.nonEmpty},
-      Description.unionReduce(that.descriptions ++ descriptions).toVector.filter{ case desc => desc.text.nonEmpty},
+      Description.unionReduce(that.descriptions ++ descriptions).toVector.filter(desc => desc.text.nonEmpty),
       if( that.values.nonEmpty ) that.values else values,
-      that.metaData.flatMap{
-        case md: MetaData => 
-          metaData.map{
-            case current: MetaData => 
-              current update md 
-          }.orElse( that.metaData )
+      that.metaData.flatMap {
+        md: MetaData =>
+          metaData.map {
+            current: MetaData =>
+              current update md
+          }.orElse(that.metaData)
       }.orElse( metaData ),
       if( that.attributes.nonEmpty ) attributes ++ that.attributes else attributes
     )
 
   }
   def intersection( that: InfoItem ): InfoItem ={
-    val typeMatches = typeAttribute.forall{
-      case typeStr: String => 
-        that.typeAttribute.forall{
-          case otherTypeStr: String => typeStr == otherTypeStr
+    val typeMatches = typeAttribute.forall {
+      typeStr: String =>
+        that.typeAttribute.forall {
+          otherTypeStr: String => typeStr == otherTypeStr
         }
     }
     val pathsMatches = path == that.path
@@ -87,7 +87,7 @@ case class InfoItem(
         QlmID.unionReduce( that.names ++ names).toVector.filter{ id => id.id.nonEmpty}
       } else Vector.empty,
       if( that.descriptions.nonEmpty ){
-        Description.unionReduce(that.descriptions ++ descriptions).toVector.filter{ case desc => desc.text.nonEmpty}
+        Description.unionReduce(that.descriptions ++ descriptions).toVector.filter(desc => desc.text.nonEmpty)
       } else Vector.empty,
       values,
       (metaData, that.metaData) match{
@@ -100,10 +100,10 @@ case class InfoItem(
   }
 
   def union( that: InfoItem ): InfoItem ={
-    val typeMatches = typeAttribute.forall{
-      case typeStr: String => 
-        that.typeAttribute.forall{
-          case otherTypeStr: String => typeStr == otherTypeStr
+    val typeMatches = typeAttribute.forall {
+      typeStr: String =>
+        that.typeAttribute.forall {
+          otherTypeStr: String => typeStr == otherTypeStr
         }
     }
     val pathsMatches = path == that.path
@@ -128,23 +128,23 @@ case class InfoItem(
             if( ancestorPath == Path("Objects")){
               Objects()
             } else {
-              new Object(
+              Object(
                 Vector(
                   new QlmID(
                     ancestorPath.last
                   )
                 ),
-              ancestorPath
-            )
+                ancestorPath
+              )
             }
         }.toVector
   }
   def createParent: Node = {
-    val parentPath = path.init
+    val parentPath: Path = path.init
     if( parentPath == new Path( "Objects") ){
-      new Objects()
+      Objects()
     } else {
-      new Object(
+      Object(
         Vector(
           new QlmID(
             parentPath.last
@@ -175,15 +175,15 @@ case class InfoItem(
       nameTags.map{
           qlmid => qlmid.asQlmIDType
       },
-      this.descriptions.map{ 
-        case des: Description => 
-          des.asDescriptionType 
-      }.toVector,
+      this.descriptions.map {
+        case des: Description =>
+          des.asDescriptionType
+      },
       this.metaData.map(_.asMetaDataType).toSeq,
       //Seq(QlmIDType(path.lastOption.getOrElse(throw new IllegalArgumentException(s"OdfObject should have longer than one segment path: $path")))),
-      this.values.map{ 
-        value : Value[Any] => value.asValueType
-      }.toSeq,
+      this.values.map {
+        value: Value[Any] => value.asValueType
+      },
       HashMap(
         "@name" -> DataRecord(
           nameAttribute

@@ -47,9 +47,9 @@ class  OdfObjectImpl(
     val thatObj: HashMap[Path, OdfObject] = HashMap(another.objects.map(o => (o.path, o)): _*)
     val tmp: OdfTreeCollection[OdfQlmID] = id
     val tmp2: OdfTreeCollection[OdfQlmID] = another.id
-    val idsWithDuplicate: Vector[OdfQlmID] = (this.id.toVector ++ another.id.toVector)
-    val ids: Seq[OdfQlmID]  = idsWithDuplicate.groupBy{ 
-      case qlmId: OdfQlmID => qlmId.value 
+    val idsWithDuplicate: Vector[OdfQlmID] = this.id ++ another.id
+    val ids: Seq[OdfQlmID]  = idsWithDuplicate.groupBy {
+      qlmId: OdfQlmID => qlmId.value
     }.values.collect{
         case Seq(single: OdfQlmID) => Seq(single)
         case Seq( id: OdfQlmID, otherId: OdfQlmID) => 
@@ -111,8 +111,8 @@ class  OdfObjectImpl(
             infoI = OdfInfoItem(
               path,
               last.values,
-              last.description.fold(last.description)(n => head.description),
-              last.metaData.fold(last.metaData)(n => head.metaData),
+              last.description.fold(last.description)(_ => head.description),
+              last.metaData.fold(last.metaData)(_ => head.metaData),
               last.typeValue.orElse(head.typeValue),
               head.attributes ++ last.attributes 
               ) //use metadata and description from hierarchytree
@@ -139,7 +139,7 @@ class  OdfObjectImpl(
           sharedInfosOut,
           sharedObjsOut,
           //get description only if another has it too
-          another.description.fold(another.description)(n => description),
+          another.description.fold(another.description)(_ => description),
           another.typeValue orElse typeValue,
           attributes ++ another.attributes 
         )
@@ -205,36 +205,36 @@ class  OdfObjectImpl(
       Map[Path,Seq[OdfObject]]) => A) = {
     assert( path == another.path )
     val uniqueInfos =  
-      infoItems.filterNot( 
-        obj => another.infoItems.toSeq.exists( 
-          aobj => aobj.path  == obj.path 
-        ) 
-      ).toSeq
-    val anotherUniqueInfos = another.infoItems.filterNot(
-        aobj => infoItems.toSeq.exists(
-          obj => aobj.path  == obj.path
+      infoItems.filterNot(
+        obj => another.infoItems.exists(
+          aobj => aobj.path == obj.path
         )
-      ).toSeq
+      )
+    val anotherUniqueInfos = another.infoItems.filterNot(
+      aobj => infoItems.exists(
+        obj => aobj.path == obj.path
+      )
+    )
     
-    val sharedInfos = ( infoItems.toSeq ++ another.infoItems.toSeq ).filterNot(
+    val sharedInfos = ( infoItems ++ another.infoItems ).filterNot(
         obj => (uniqueInfos ++ anotherUniqueInfos).exists(
           uobj => uobj.path == obj.path
         )
       ).groupBy(_.path)
 
     val uniqueObjs =  
-      objects.filterNot( 
-        obj => another.objects.toSeq.exists( 
-          aobj => aobj.path  == obj.path 
-        ) 
-      ).toSeq 
-    val anotherUniqueObjs = another.objects.filterNot(
-        aobj => objects.toSeq.exists(
-          obj => aobj.path  == obj.path
+      objects.filterNot(
+        obj => another.objects.exists(
+          aobj => aobj.path == obj.path
         )
-      ).toSeq
+      )
+    val anotherUniqueObjs = another.objects.filterNot(
+      aobj => objects.exists(
+        obj => aobj.path == obj.path
+      )
+    )
     
-    val sharedObjs = (objects.toSeq ++ another.objects.toSeq).filterNot(
+    val sharedObjs = (objects ++ another.objects).filterNot(
       obj => (uniqueObjs ++ anotherUniqueObjs).exists(
         uobj => uobj.path == obj.path
       )
@@ -250,16 +250,16 @@ class  OdfObjectImpl(
       )),*/
       id.map(_.asQlmIDType), //
       description.map( des => des.asDescription ).toSeq,
-      infoItems.map{ 
+      infoItems.map {
         info: OdfInfoItem =>
-        info.asInfoItemType
-      }.toSeq,
-      ObjectValue = objects.map{
+          info.asInfoItemType
+      },
+      ObjectValue = objects.map {
         subobj: OdfObject =>
-        subobj.asObjectType
-      }.toSeq,
+          subobj.asObjectType
+      },
       attributes = Map.empty[String, DataRecord[Any]] ++
-        typeValue.map{ n => ("@type" -> DataRecord(n))} ++
+        typeValue.map{ n => "@type" -> DataRecord(n) } ++
         attributesToDataRecord( this.attributes )
     )
   }

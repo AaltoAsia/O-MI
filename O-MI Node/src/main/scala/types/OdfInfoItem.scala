@@ -48,7 +48,7 @@ class  OdfInfoItemImpl(
     require(path == another.path, s"Should have same paths, got $path versus ${another.path}")
     OdfInfoItem(
       path,
-      (values ++ another.values),
+      values ++ another.values,
       another.description orElse description,{
       val combined : Option[OdfMetaData] = for{
         t <- metaData
@@ -81,9 +81,9 @@ class  OdfInfoItemImpl(
       MetaData = metaData.map(_.asMetaData).toSeq,
       iname = Vector.empty,
       //Seq(QlmIDType(path.lastOption.getOrElse(throw new IllegalArgumentException(s"OdfObject should have longer than one segment path: $path")))),
-      value = values.map{ 
-        value : OdfValue[Any] => value.asValueType
-      }.toSeq,
+      value = values.map {
+        value: OdfValue[Any] => value.asValueType
+      },
       attributes = HashMap{
         "@name" -> DataRecord(
           path.lastOption.map{ name => name.replace("\\/","/") }.getOrElse(throw new IllegalArgumentException(s"OdfObject should have longer than one segment path: $path"))
@@ -141,10 +141,10 @@ sealed trait OdfValue[+T]{
        valueAsDataRecord 
       ),
     HashMap(
-      ("@type" -> DataRecord(typeValue)),
-      ("@unixTime" -> DataRecord(timestamp.getTime() / 1000)),
-      ("@dateTime" -> DataRecord(timestampToXML(timestamp)))
-    ) ++(attributes.mapValues(DataRecord(_)))
+      "@type" -> DataRecord(typeValue),
+      "@unixTime" -> DataRecord(timestamp.getTime() / 1000),
+      "@dateTime" -> DataRecord(timestampToXML(timestamp))
+    ) ++ attributes.mapValues(DataRecord(_))
     )
   }
   def isNumeral : Boolean = typeValue match {
@@ -191,7 +191,7 @@ sealed trait OdfValue[+T]{
       case Right(odf: OdfObjects ) => odf
       case Left( spe: Seq[ParseError] ) => throw spe.head
     }*/
-    def valueAsDataRecord = DataRecord(None, Some("Objects"),value.asObjectsType)
+    def valueAsDataRecord: DataRecord[ObjectsType] = DataRecord(None, Some("Objects"),value.asObjectsType)
   } 
   final case class OdfIntValue(value: Int, timestamp: Timestamp, attributes: HashMap[String, String]) extends OdfValue[Int]{
     def typeValue:            String = "xs:int"
@@ -282,7 +282,7 @@ object OdfValue{
       }
     }
     create match {
-      case Success(value) => value
+      case Success(_value) => _value
       case Failure(_) =>
         //println( s"Creating of OdfValue failed with type $typeValue, caused by: $e")
         OdfStringPresentedValue(value, timestamp, attributes = attributes)

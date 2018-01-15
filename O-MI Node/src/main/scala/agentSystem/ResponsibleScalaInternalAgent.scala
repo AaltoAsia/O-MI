@@ -47,7 +47,7 @@ trait ResponsibleScalaInternalAgent
     }
   }
 
-  override def receive  = {
+  override def receive: PartialFunction[Any, Unit] = {
     case write: WriteRequest => respondFuture(handleWrite(write))
     //case read: ReadRequest => respondFuture(handleRead(read))
     case call: CallRequest => respondFuture(handleCall(call))

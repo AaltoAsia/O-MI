@@ -18,12 +18,11 @@ import java.sql.Timestamp
 
 import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.Future
-
 import http.OmiConfigExtension
-import com.typesafe.config.{ConfigFactory,Config}
-import akka.actor.{ActorRef,ActorSystem}
-import org.slf4j.LoggerFactory
-import org.prevayler.PrevaylerFactory
+import com.typesafe.config.{Config, ConfigFactory}
+import akka.actor.{ActorRef, ActorSystem}
+import org.slf4j.{Logger, LoggerFactory}
+import org.prevayler.{Prevayler, PrevaylerFactory}
 import parsing.xmlGen.xmlTypes.MetaDataType
 import slick.backend.DatabaseConfig
 import slick.jdbc.meta.MSchema
@@ -107,12 +106,12 @@ class SingleStores(protected val settings: OmiConfigExtension) {
     }
   }
   /** List of all prevayler directories. Currently used for removing unnecessary files in these directories */
-  val prevaylerDirectories = ArrayBuffer[File]()
+  val prevaylerDirectories: ArrayBuffer[File] = ArrayBuffer[File]()
 
-  val latestStore       = createPrevayler(LatestValues.empty, "latestStore")
-  val hierarchyStore    = createPrevayler(OdfTree.empty, "hierarchyStore")
-  val subStore          = createPrevayler(Subs.empty,"subscriptionStore")
-  val pollDataPrevayler = createPrevayler(PollSubData.empty, "pollDataPrevayler")
+  val latestStore: Prevayler[LatestValues] = createPrevayler(LatestValues.empty, "latestStore")
+  val hierarchyStore: Prevayler[OdfTree] = createPrevayler(OdfTree.empty, "hierarchyStore")
+  val subStore: Prevayler[Subs] = createPrevayler(Subs.empty,"subscriptionStore")
+  val pollDataPrevayler: Prevayler[PollSubData] = createPrevayler(PollSubData.empty, "pollDataPrevayler")
   subStore execute RemoveWebsocketSubs()
 
   def buildOdfFromValues(items: Seq[(Path,OdfValue[Any])]): OdfObjects = {
@@ -219,7 +218,7 @@ class DatabaseConnection()(
   //val db = Database.forConfig(dbConfigName)
   initialize()
 
-  val dbmaintainer = system.actorOf(DBMaintainer.props(
+  val dbmaintainer: ActorRef = system.actorOf(DBMaintainer.props(
     this,
     singleStores,
     settings
@@ -326,7 +325,7 @@ slick-config {
 //) extends DBCachedReadWrite with DB {
 ) extends NewSimplifiedDatabase with DB {
 
-  override protected val log = LoggerFactory.getLogger("TestDB")
+  override protected val log: Logger = LoggerFactory.getLogger("TestDB")
   log.debug("Creating TestDB: " + name)
   override val dc = DatabaseConfig.forConfig[JdbcProfile](configName,config)
   import dc.driver.api._
@@ -335,7 +334,7 @@ slick-config {
    // keepAliveConnection=true)
   initialize()
 
-  val dbmaintainer = if( useMaintainer) { system.actorOf(DBMaintainer.props(
+  val dbmaintainer: ActorRef = if( useMaintainer) { system.actorOf(DBMaintainer.props(
     this,
     singleStores,
     settings

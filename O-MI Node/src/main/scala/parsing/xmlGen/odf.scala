@@ -2,11 +2,13 @@
 package parsing 
 package xmlGen
 package xmlTypes
-import scala.collection.immutable.{Vector, HashMap}
+import javax.xml.datatype.XMLGregorianCalendar
+
+import scala.collection.immutable.{HashMap, Vector}
 
 case class ObjectsType(ObjectValue: Seq[ObjectType] = Vector.empty,
   attributes: Map[String, scalaxb.DataRecord[Any]] = HashMap()) {
-  lazy val version = attributes.get("@version") map { _.as[String]}
+  lazy val version: Option[String] = attributes.get("@version") map { _.as[String]}
 }
 
       
@@ -17,7 +19,7 @@ case class ObjectType(id: Seq[QlmIDType] = Vector.empty,
   InfoItem: Seq[InfoItemType] = Vector.empty,
   ObjectValue: Seq[ObjectType] = Vector.empty,
   attributes: Map[String, scalaxb.DataRecord[Any]] = HashMap()) {
-  lazy val typeValue = attributes.get("@type") map { _.as[String]}
+  lazy val typeValue: Option[String] = attributes.get("@type") map { _.as[String]}
 }
 
       
@@ -29,8 +31,8 @@ case class InfoItemType(
   MetaData: Seq[MetaDataType] = Vector.empty,
   value: Seq[ValueType] = Vector.empty,
   attributes: Map[String, scalaxb.DataRecord[Any]] = HashMap()) {
-  lazy val name = attributes("@name").as[String]
-  lazy val typeValue = attributes.get("@type") map { _.as[String]}
+  lazy val name: String = attributes("@name").as[String]
+  lazy val typeValue: Option[String] = attributes.get("@type") map { _.as[String]}
 }
 
       
@@ -44,7 +46,7 @@ case class MetaDataType(InfoItem: Seq[InfoItemType] = Vector.empty)
 */
 case class DescriptionType(value: String,
   attributes: Map[String, scalaxb.DataRecord[Any]] = HashMap()) {
-  lazy val lang = attributes.get("@lang") map { _.as[String]}
+  lazy val lang: Option[String] = attributes.get("@lang") map { _.as[String]}
 }
 
       
@@ -52,10 +54,10 @@ case class DescriptionType(value: String,
 
 case class QlmIDType(value: String,
   attributes: Map[String, scalaxb.DataRecord[Any]] = HashMap()) {
-  lazy val idType = attributes.get("@idType") map { _.as[String]}
-  lazy val tagType = attributes.get("@tagType") map { _.as[String]}
-  lazy val startDate = attributes.get("@startDate") map { _.as[javax.xml.datatype.XMLGregorianCalendar]}
-  lazy val endDate = attributes.get("@endDate") map { _.as[javax.xml.datatype.XMLGregorianCalendar]}
+  lazy val idType: Option[String] = attributes.get("@idType") map { _.as[String]}
+  lazy val tagType: Option[String] = attributes.get("@tagType") map { _.as[String]}
+  lazy val startDate: Option[XMLGregorianCalendar] = attributes.get("@startDate") map { _.as[javax.xml.datatype.XMLGregorianCalendar]}
+  lazy val endDate: Option[XMLGregorianCalendar] = attributes.get("@endDate") map { _.as[javax.xml.datatype.XMLGregorianCalendar]}
 }
 
       
@@ -63,9 +65,9 @@ case class QlmIDType(value: String,
 
 case class ValueType(mixed: Seq[scalaxb.DataRecord[Any]] = Vector.empty,
   attributes: Map[String, scalaxb.DataRecord[Any]] = HashMap()) {
-  lazy val typeValue = attributes("@type").as[String]
-  lazy val dateTime = attributes.get("@dateTime") map { _.as[javax.xml.datatype.XMLGregorianCalendar]}
-  lazy val unixTime = attributes.get("@unixTime") map { _.as[Long]}
+  lazy val typeValue: String = attributes("@type").as[String]
+  lazy val dateTime: Option[XMLGregorianCalendar] = attributes.get("@dateTime") map { _.as[javax.xml.datatype.XMLGregorianCalendar]}
+  lazy val unixTime: Option[Long] = attributes.get("@unixTime") map { _.as[Long]}
 }
 
       

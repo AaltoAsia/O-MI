@@ -14,7 +14,7 @@
 
 package agentSystem
 
-import java.net.{URLDecoder}
+import java.net.URLDecoder
 import scala.collection.JavaConversions._
 import scala.util.{Try, Failure, Success}
 import scala.collection.mutable.{Map => MutableMap }
@@ -106,7 +106,7 @@ class AgentSystem()(
         classname,
         config,
         Some(agentRef),
-        true,
+        running = true,
         responsibilities,
         language.get
       )
@@ -125,11 +125,11 @@ class AgentSystem()(
         val responsibilityObj = agentConfig.getObject(s"responsible")
         val pathStrings : Iterable[String] = responsibilityObj.keys
         val responsibilityConfig = responsibilityObj.toConfig()
-        pathStrings.map{
-          case pathStr: String  => 
+        pathStrings.map {
+          pathStr: String =>
             AgentResponsibility(
               name,
-              Path(pathStr.split("/").map{ id => URLDecoder.decode( id, "UTF-8"  ).replace("/","\\/")}.mkString("/")),
+              Path(pathStr.split("/").map { id => URLDecoder.decode(id, "UTF-8").replace("/", "\\/") }.mkString("/")),
               RequestFilter(responsibilityConfig.getString(pathStr))
             )
         }.toVector
@@ -169,7 +169,7 @@ class AgentSystem()(
   final case class Java() extends Language
 
 object Language{
-  def apply( str: String ) = str.toLowerCase() match {
+  def apply( str: String ): Language = str.toLowerCase() match {
     case "java" => Java()
     case "scala" => Scala()
     case str: String => Unknown(str)
@@ -180,9 +180,9 @@ trait BaseAgentSystem extends Actor with ActorLogging{
   /** Container for internal agents */
   protected def agents: MutableMap[AgentName, AgentInfo]
   protected implicit def settings: AgentSystemConfigExtension 
-  implicit val timeout = Timeout(5 seconds) 
+  implicit val timeout: Timeout = Timeout(5 seconds)
   protected val connectedCLIs: MutableMap[String,ActorRef] = MutableMap.empty
-  override val supervisorStrategy =
+  override val supervisorStrategy: OneForOneStrategy =
     OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1 minute) {
       case fail: ActorInitializationException =>
         log.warning(  s"Agent ${sender().path.name} encountered exception during creation.") 

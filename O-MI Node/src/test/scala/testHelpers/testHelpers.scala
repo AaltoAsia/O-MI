@@ -263,8 +263,8 @@ class WsTestCallbackServer(destination: ActorRef, interface: String, port: Int)(
       case msg: Message => Future successful ""
     }
     val msgSink = Sink.foreach[Future[String]]{ future: Future[String]  => 
-      future.map{ 
-        case requestString: String =>
+      future.map {
+        requestString: String =>
           destination ! requestString
       }
     }

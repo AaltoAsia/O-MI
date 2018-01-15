@@ -20,7 +20,7 @@ object VehicleType extends Enumeration{
       case s: String => Unknown
     }
   }
-  def toString( vt: VehicleType ) = vt match {
+  def toString( vt: VehicleType ): String = vt match {
       case Car => "Car"
       case Truck => "Truck"
       case Coach => "Coach"

@@ -58,9 +58,9 @@ class ExternalAgentListener(
   } with ExtensibleAuthorization with IpAuthorization
 
   private val authorization = new ExtAgentAuthorization
-   implicit val timeout = config.getDuration("timeout", SECONDS).seconds
-   val port = config.getInt("port")
-   val interface = config.getString("interface")
+   implicit val timeout: FiniteDuration = config.getDuration("timeout", SECONDS).seconds
+   val port: Int = config.getInt("port")
+   val interface: AgentName = config.getString("interface")
   import Tcp._
   implicit def actorSystem : ActorSystem = context.system
 
@@ -77,7 +77,7 @@ class ExternalAgentListener(
   
   /** Partial function for handling received messages.
     */
-  override  def receive  = {
+  override  def receive: PartialFunction[Any, Unit] = {
     case Bound(localAddress) =>
       // TODO: do something?
       // It seems that this branch was not executed?
@@ -167,7 +167,7 @@ class ExternalAgentHandler(
             log.warning(s"Malformed odf received from agent ${sender()}: ${errors.mkString("\n")}")
           case Right(odf) =>
             val ttl  = Duration(5,SECONDS)
-            implicit val timeout = Timeout(ttl)
+            implicit val timeout: Timeout = Timeout(ttl)
             val write = WriteRequest( odf, None,  Duration(5,SECONDS))
             val result = (requestHandler ? write).mapTo[ResponseRequest]
             result.onComplete{

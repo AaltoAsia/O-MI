@@ -8,11 +8,11 @@ import parsing.xmlGen.scalaxb.DataRecord
 import parsing.xmlGen.xmlTypes.{InfoItemType, ObjectType}
 
 case class Object(
-  val ids: Vector[QlmID],
-  val path: Path,
-  val typeAttribute: Option[String] = None,
-  val descriptions: Seq[Description] = Vector.empty,
-  val attributes: IMap[String,String] = HashMap.empty
+                   ids: Vector[QlmID],
+  path: Path,
+  typeAttribute: Option[String] = None,
+  descriptions: Seq[Description] = Vector.empty,
+  attributes: IMap[String,String] = HashMap.empty
 ) extends Node with Unionable[Object] {
   assert( ids.nonEmpty )
   assert( path.length > 1 )
@@ -21,8 +21,8 @@ case class Object(
     val pathsMatches = path == that.path 
     val containSameId = ids.map( _.id ).toSet.intersect( that.ids.map( _.id).toSet ).nonEmpty
     assert( containSameId && pathsMatches)
-    new Object(
-      QlmID.unionReduce( ids ++ that.ids).toVector,
+    Object(
+      QlmID.unionReduce(ids ++ that.ids).toVector,
       path,
       that.typeAttribute.orElse(typeAttribute),
       Description.unionReduce(descriptions ++ that.descriptions).toVector,
@@ -41,14 +41,14 @@ case class Object(
     val pathsMatches = path == that.path 
     val containSameId = ids.map( _.id ).toSet.intersect( that.ids.map( _.id).toSet ).nonEmpty
     assert( containSameId && pathsMatches)
-    new Object(
-      if( that.ids.nonEmpty ){
-        QlmID.unionReduce( that.ids ++ ids).toVector.filter{ case id => id.id.nonEmpty}
+    Object(
+      if (that.ids.nonEmpty) {
+        QlmID.unionReduce(that.ids ++ ids).toVector.filter(id => id.id.nonEmpty)
       } else Vector.empty,
       path,
       that.typeAttribute.orElse(typeAttribute),
-      if( that.descriptions.nonEmpty ){
-        Description.unionReduce(that.descriptions ++ descriptions).toVector.filter{ case desc => desc.text.nonEmpty}
+      if (that.descriptions.nonEmpty) {
+        Description.unionReduce(that.descriptions ++ descriptions).toVector.filter(desc => desc.text.nonEmpty)
       } else Vector.empty,
       that.attributes ++ attributes
     )
@@ -58,13 +58,13 @@ case class Object(
     val pathsMatches = path == that.path 
     val containSameId = ids.map( _.id ).toSet.intersect( that.ids.map( _.id).toSet ).nonEmpty
     assert( containSameId && pathsMatches)
-    new Object(
+    Object(
       QlmID.unionReduce(ids ++ that.ids).toVector,
       path,
       (typeAttribute, that.typeAttribute) match {
-        case (Some( t ), Some( ot ) ) =>
-          if ( t == ot) Some( t ) 
-          else Some( t + " " + ot)
+        case (Some(t), Some(ot)) =>
+          if (t == ot) Some(t)
+          else Some(t + " " + ot)
         case (t, ot) => t.orElse(ot)
       },
       Description.unionReduce(descriptions ++ that.descriptions).toVector,
@@ -73,24 +73,24 @@ case class Object(
     
   }
   def createAncestors: Seq[Node] = {
-    path.getAncestors.map{
-          case ancestorPath: Path => 
-            new Object(
-              Vector(
-                new QlmID(
-                  ancestorPath.last
-                )
-              ),
-              ancestorPath
+    path.getAncestors.map {
+      ancestorPath: Path =>
+        Object(
+          Vector(
+            new QlmID(
+              ancestorPath.last
             )
-        }.toVector
+          ),
+          ancestorPath
+        )
+    }.toVector
   }
   def createParent: Node = {
     val parentPath = path.getParent
     if( parentPath.isEmpty || parentPath == Path( "Objects") ){
-      new Objects()
+      Objects()
     } else {
-      new Object(
+      Object(
         Vector(
           QlmID(
             parentPath.last
@@ -108,11 +108,11 @@ case class Object(
         attributes = Map.empty
       )),*/
       ids.map(_.asQlmIDType), //
-      descriptions.map( des => des.asDescriptionType ).toSeq,
+      descriptions.map(des => des.asDescriptionType),
       infoitems,
       objects,
       attributes = (
-       attributesToDataRecord(attributes) ++  typeAttribute.map{ n => ("@type" -> DataRecord(n))}).toMap
+        attributesToDataRecord(attributes) ++ typeAttribute.map { n => "@type" -> DataRecord(n) })
     )
   }
     

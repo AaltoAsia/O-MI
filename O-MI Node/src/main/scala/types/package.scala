@@ -38,7 +38,9 @@ import types.OdfTypes._
 package object OmiTypes  {
   type  OmiParseResult = Either[Iterable[ParseError], Iterable[OmiRequest]]
   type RequestID = Long
-  def getPaths(request: OdfRequest): Seq[Path] = getLeafs(request.odf).map{ _.path }.toSeq
+  def getPaths(request: OdfRequest): Seq[Path] = getLeafs(request.odf).map {
+    _.path
+  }
   def requestToEnvelope(request: OmiEnvelopeTypeOption, ttl : Long): xmlTypes.OmiEnvelopeType ={
     val namespace = Some("omi.xsd")
     val version = "1.0"
@@ -52,7 +54,7 @@ package object OmiTypes  {
       case response: xmlTypes.ResponseListType => 
       scalaxb.DataRecord[xmlTypes.ResponseListType](namespace, Some("response"), response)
     }
-    xmlTypes.OmiEnvelopeType( datarecord, Map(("@version" -> DataRecord("1.0")), ("@ttl" -> DataRecord(ttl))))
+    xmlTypes.OmiEnvelopeType( datarecord, Map("@version" -> DataRecord("1.0"), "@ttl" -> DataRecord(ttl)))
   }
  def omiEnvelopeToXML(omiEnvelope: OmiEnvelopeType) : NodeSeq ={
     scalaxb.toXML[OmiEnvelopeType](omiEnvelope, Some("omi"), Some("omiEnvelope"), omiDefaultScope)
@@ -92,7 +94,7 @@ package object OdfTypes {
 
   def unionOption[T](a: Option[T], b: Option[T])(f: (T,T) => T): Option[T] = {
     (a,b) match{
-        case (Some(a), Some(_b)) => Some(f(a,_b))
+        case (Some(_a), Some(_b)) => Some(f(_a,_b))
         case (None, Some(_b)) => Some(_b)
         case (Some(_a), None) => Some(_a)
         case (None, None) => None
@@ -118,12 +120,10 @@ package object OdfTypes {
     else OdfTreeCollection(objects)
   }
   /** Helper method for getting all OdfNodes found in given OdfNodes. Basically get list of all nodes in tree.  */
-  def getOdfNodes(hasPaths: OdfNode*): Seq[OdfNode] = {
-    hasPaths.flatMap {
-      case info: OdfInfoItem => Seq(info)
-      case obj:  OdfObject   => Seq(obj) ++ getOdfNodes((obj.objects.toSeq ++ obj.infoItems.toSeq): _*)
-      case objs: OdfObjects  => Seq(objs) ++ getOdfNodes(objs.objects.toSeq: _*)
-    }.toSeq
+  def getOdfNodes(hasPaths: OdfNode*): Seq[OdfNode] = hasPaths.flatMap {
+    case info: OdfInfoItem => Seq(info)
+    case obj: OdfObject => Seq(obj) ++ getOdfNodes(obj.objects.toSeq ++ obj.infoItems.toSeq: _*)
+    case objs: OdfObjects => Seq(objs) ++ getOdfNodes(objs.objects.toSeq: _*)
   }
 
   /** Helper method for getting all OdfInfoItems found in OdfObjects */
@@ -193,8 +193,8 @@ package object OdfTypes {
   def getPathValuePairs( objs: OdfObjects ) : OdfTreeCollection[(Path,OdfValue[Any])]={
     getInfoItems(objs).flatMap{ infoitem => infoitem.values.map{ value => (infoitem.path, value)} }
   }
-  def timestampToXML(timestamp: Timestamp) ={ 
-    val cal = new GregorianCalendar();
+  def timestampToXML(timestamp: Timestamp): XMLGregorianCalendar ={
+    val cal = new GregorianCalendar()
     cal.setTime(timestamp)
     DatatypeFactory.newInstance().newXMLGregorianCalendar(cal)
   }

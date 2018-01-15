@@ -51,7 +51,7 @@ object NewTypeConverter{
     infoItems: Seq[OdfInfoItem] = Vector.empty,
     objects: Seq[OdfObject] = Vector.empty
   ) : OdfObject = {
-    var ids = obj.ids.map( convertQlmID(_)).toVector 
+    var ids = obj.ids.map(convertQlmID(_))
     if( !ids.map(_.value).contains(obj.path.last ) ){
       ids = ids ++ Vector( OdfQlmID(obj.path.last) )
     }
@@ -82,7 +82,7 @@ object NewTypeConverter{
   def convertInfoItem( ii: InfoItem ): OdfInfoItem ={
     OdfInfoItem(
       Path( ii.path.toSeq ),
-      ii.values.map( convertValue ).toVector,
+      ii.values.map(convertValue),
       ii.descriptions.map( convertDescription ).headOption,
       ii.metaData.map( convertMetaData ),
       ii.typeAttribute,
@@ -101,6 +101,6 @@ object NewTypeConverter{
   }
 
   def convertMetaData( md: MetaData ): OdfMetaData = {
-    OdfMetaData( md.infoItems.map( ii => convertInfoItem( ii )).toVector )
+    OdfMetaData( md.infoItems.map(ii => convertInfoItem(ii)) )
   }
 }

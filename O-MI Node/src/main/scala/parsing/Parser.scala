@@ -37,7 +37,7 @@ import types.OmiTypes.UserInfo
 abstract trait Parser[Result] {
 
   //O-MI version this parser supports
-  def supportedVersion = "1.0"
+  def supportedVersion: String = "1.0"
   // Secure parser that has a fix for xml external entity attack (and xml bomb)
   def XMLParser : XMLLoader[Elem] = {
     val spf = SAXParserFactory.newInstance()
@@ -71,7 +71,7 @@ abstract trait Parser[Result] {
     val validator: Validator = schema.newValidator()
       validator.validate(new StreamSource(new StringReader(xml.toString)))
     } match {
-      case Success(a) =>
+      case Success(_) =>
         Seq.empty;
       case Failure(e) => 
         

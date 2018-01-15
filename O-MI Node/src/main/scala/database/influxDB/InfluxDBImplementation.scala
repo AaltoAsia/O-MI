@@ -13,6 +13,7 @@ import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
 import akka.actor.ActorSystem
+import akka.event.LoggingAdapter
 import akka.event.slf4j.Logger
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.client.RequestBuilding
@@ -23,9 +24,7 @@ import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.unmarshalling._
 import akka.stream.{ActorMaterializer, Materializer}
 import spray.json._
-
 import database._
-
 import http.OmiConfigExtension
 import types.odf._
 import types.OmiTypes._
@@ -33,9 +32,11 @@ import types.OdfTypes._
 import types.Path
 import types.Path._
 
+import scala.collection.immutable
+
 object InfluxDBJsonProtocol extends DefaultJsonProtocol {
 
-    def getSeries(json: spray.json.JsValue)= json match{
+    def getSeries(json: spray.json.JsValue): immutable.Seq[JsValue] = json match{
       case obj: JsObject =>
         obj.getFields("results").collect{
           case results: JsArray  =>
@@ -63,9 +64,9 @@ object InfluxDBJsonProtocol extends DefaultJsonProtocol {
 
             serie.getFields( "name", "columns", "values") match{
               case Seq(JsString("databases"), JsArray(Seq(JsString("name"))), JsArray( values )) =>
-                values.collect{
+                values.collect {
                   case JsArray(Seq(JsString(dbName))) => dbName
-                }.toVector
+                }
 
               case seq: Seq[JsValue] => Vector.empty
             }
@@ -80,11 +81,11 @@ object InfluxDBJsonProtocol extends DefaultJsonProtocol {
           case serie: JsObject =>
             serie.getFields( "name", "columns", "values") match{
               case Seq(JsString("measurements"), JsArray(Seq(JsString("name"))), JsArray( values )) =>
-                values.collect{
+                values.collect {
                   case JsArray(Seq(JsString(strPath))) =>
                     val path = measurementNameToPath(strPath)
                     path
-                }.toVector
+                }
 
                   case seq: Seq[JsValue] => Vector.empty
             }
@@ -142,9 +143,9 @@ class InfluxDBImplementation(
   protected val singleStores: SingleStores
 ) extends DB {
   final class AcceptHeader(format: String) extends ModeledCustomHeader[AcceptHeader] {
-    override def renderInRequests = true
-    override def renderInResponses = false
-    override val companion = AcceptHeader
+    override def renderInRequests: Boolean = true
+    override def renderInResponses: Boolean = false
+    override val companion: AcceptHeader.type = AcceptHeader
     override def value: String = format
   }
   object AcceptHeader extends ModeledCustomHeaderCompanion[AcceptHeader] {
@@ -161,7 +162,7 @@ class InfluxDBImplementation(
  import system.dispatcher // execution context for futures
  val httpExt = Http(system)
  implicit val mat: Materializer = ActorMaterializer()
- def log = system.log
+ def log: LoggingAdapter = system.log
   def infoItemToWriteFormat( ii: InfoItem ): Seq[String] = {
         val measurement: String = pathToMeasurementName( ii.path)
         ii.values.map{
@@ -178,38 +179,40 @@ class InfluxDBImplementation(
   }
 
   def initialize(): Unit = {
-    val initialisation = httpResponseToStrict(sendQuery("show databases")).flatMap{
-       case entity : HttpEntity.Strict =>
-         val ent = entity.copy(contentType =`application/json`)
+    val initialisation = httpResponseToStrict(sendQuery("show databases")).flatMap {
+      entity: HttpEntity.Strict =>
+        val ent = entity.copy(contentType = `application/json`)
 
-         implicit val showDatabaseFormat = new InfluxDBJsonProtocol.InfluxDBJsonShowDatabasesFormat()
-         Unmarshal(ent).to[Seq[String]].map{
-           case databases: Seq[String] =>
-             log.debug( s" Found following databases: ${databases.mkString(", ")}")
-             if( databases.contains( config.databaseName ) ){
-               //Everything okay
-               log.info( s"Database ${config.databaseName} found from InfluxDB at address ${config.address}")
-                   Future.successful()
-             } else {
-               //Create or error
-               log.warning( s"Database ${config.databaseName} not found from InfluxDB at address ${config.address}")
-               log.warning( s"Creating database ${config.databaseName} to InfluxDB in address ${config.address}")
-               sendQuery(s"create database ${config.databaseName} ").flatMap{
-                 case response @ HttpResponse( status, headers, entity, protocol ) if status.isSuccess =>
-                    log.info( s"Database ${config.databaseName} created seccessfully to InfluxDB at address ${config.address}")
-                   Future.successful()
-                 case response @ HttpResponse( status, headers, entity, protocol ) if status.isFailure =>
-                   entity.toStrict(10.seconds).flatMap{ stricted => Unmarshal(stricted).to[String].map{
-                     str =>
-                       log.error( s"Database ${config.databaseName} could not be created to InfluxDB at address ${config.address}")
-                       log.warning(s""" Query returned $status with:\n $str""")
-                       throw new Exception( str)
-                   }}
-               }
+        implicit val showDatabaseFormat: InfluxDBJsonProtocol.InfluxDBJsonShowDatabasesFormat = new InfluxDBJsonProtocol.InfluxDBJsonShowDatabasesFormat()
+        Unmarshal(ent).to[Seq[String]].map {
+          databases: Seq[String] =>
+            log.debug(s" Found following databases: ${databases.mkString(", ")}")
+            if (databases.contains(config.databaseName)) {
+              //Everything okay
+              log.info(s"Database ${config.databaseName} found from InfluxDB at address ${config.address}")
+              Future.successful()
+            } else {
+              //Create or error
+              log.warning(s"Database ${config.databaseName} not found from InfluxDB at address ${config.address}")
+              log.warning(s"Creating database ${config.databaseName} to InfluxDB in address ${config.address}")
+              sendQuery(s"create database ${config.databaseName} ").flatMap {
+                case response@HttpResponse(status, headers, _entity, protocol) if status.isSuccess =>
+                  log.info(s"Database ${config.databaseName} created seccessfully to InfluxDB at address ${config.address}")
+                  Future.successful()
+                case response@HttpResponse(status, headers, _entity, protocol) if status.isFailure =>
+                  _entity.toStrict(10.seconds).flatMap { stricted =>
+                    Unmarshal(stricted).to[String].map {
+                      str =>
+                        log.error(s"Database ${config.databaseName} could not be created to InfluxDB at address ${config.address}")
+                        log.warning(s""" Query returned $status with:\n $str""")
+                        throw new Exception(str)
+                    }
+                  }
+              }
 
-             }
-         }
-     }
+            }
+        }
+    }
     
     Await.result( initialisation, 1 minutes)
   }
@@ -220,7 +223,7 @@ class InfluxDBImplementation(
     val responseF : Future[HttpResponse] = httpExt.singleRequest(request)//httpHandler(request)
     responseF
   }
-  def httpResponseToStrict( futureResponse: Future[HttpResponse] ) ={
+  def httpResponseToStrict( futureResponse: Future[HttpResponse] ): Future[HttpEntity.Strict] ={
     futureResponse.flatMap{
        case response @ HttpResponse( status, headers, entity, protocol ) if status.isSuccess =>
          entity.toStrict(10.seconds)
@@ -241,7 +244,7 @@ class InfluxDBImplementation(
     writeManyNewTypes(iis)
   }
   def writeManyNewTypes(data: Seq[InfoItem]): Future[OmiReturn] = {
-    val valuesAsString = data.flatMap{ case ii: InfoItem => infoItemToWriteFormat(ii) }.mkString("\n")
+    val valuesAsString = data.flatMap { ii: InfoItem => infoItemToWriteFormat(ii) }.mkString("\n")
     val request = RequestBuilding.Post(writeAddress, valuesAsString)//.withHeaders()
     val response = httpExt.singleRequest(request)
 
@@ -269,16 +272,16 @@ class InfluxDBImplementation(
     newest: Option[Int],
     oldest: Option[Int]): Future[Option[OdfObjects]]={
       val iODF = OldTypeConverter.convertOdfObjects(requests.map( _.createAncestors ).fold(OdfObjects())( _ union _ ))
-      getNBetweenNewTypes( iODF, begin, end, newest, oldest).map{
-        case result: Option[ImmutableODF] =>
-          result.map{
-            resultODF: ImmutableODF  => 
-              NewTypeConverter.convertODF( resultODF )
+      getNBetweenNewTypes( iODF, begin, end, newest, oldest).map {
+        result: Option[ImmutableODF] =>
+          result.map {
+            resultODF: ImmutableODF =>
+              NewTypeConverter.convertODF(resultODF)
           }
       }
   }
 
-  implicit val odfJsonFormatter = new InfluxDBJsonProtocol.InfluxDBJsonODFFormat()
+  implicit val odfJsonFormatter: InfluxDBJsonProtocol.InfluxDBJsonODFFormat = new InfluxDBJsonProtocol.InfluxDBJsonODFFormat()
 /* GetNBetween
  * SELECT * FROM PATH WHERE time < end AND time > begin ORDER BY time DESC LIMIt newest
  *
@@ -344,16 +347,16 @@ class InfluxDBImplementation(
              log.warning(s"Read returned $status with:\n $str")
              throw new Exception( str)
          }}
-     }.flatMap{
-       case entity : HttpEntity.Strict =>
-         val ent = entity.copy(contentType =`application/json`)
+     }.flatMap {
+       entity: HttpEntity.Strict =>
+         val ent = entity.copy(contentType = `application/json`)
          //TODO: Parse JSON to ImmutableODF
 
-         Unmarshal(ent).to[ImmutableODF].map{
-           case odf: ImmutableODF =>
-             log.info( s"Influx O-DF:\n$odf" )
-             if( odf.getPaths.length < 2 && requestedODF.getPaths.length < 2) None
-             else Some( requestedODF.union(odf).immutable )
+         Unmarshal(ent).to[ImmutableODF].map {
+           odf: ImmutableODF =>
+             log.info(s"Influx O-DF:\n$odf")
+             if (odf.getPaths.length < 2 && requestedODF.getPaths.length < 2) None
+             else Some(requestedODF.union(odf).immutable)
          }
 
      }
@@ -371,10 +374,10 @@ class InfluxDBImplementation(
      filteringClause: String 
    ): String= {
      val iisGroupedByParents = iis.groupBy{ ii => ii.path.getParent } 
-     val queries = iis.map{
-       case ii: InfoItem =>
-         val measurementName = pathToMeasurementName( ii.path )
-         val select = s"""SELECT "value" FROM "$measurementName"""" 
+     val queries = iis.map {
+       ii: InfoItem =>
+         val measurementName = pathToMeasurementName(ii.path)
+         val select = s"""SELECT "value" FROM "$measurementName""""
          select + filteringClause
      }
      queries.mkString(";")
@@ -384,10 +387,10 @@ class InfluxDBImplementation(
    def remove( path: Path ): Future[Seq[Int]] ={
       val cachedODF = OldTypeConverter.convertOdfObjects(singleStores.hierarchyStore execute GetTree())
       val removedIIs = cachedODF.getSubTreeAsODF(path).getInfoItems
-      val query = "q=" + removedIIs.map{
-        case ii: InfoItem =>
-         val mName = pathToMeasurementName(ii.path)
-         s"""DROP MEASUREMENT "$mName""""
+      val query = "q=" + removedIIs.map {
+        ii: InfoItem =>
+          val mName = pathToMeasurementName(ii.path)
+          s"""DROP MEASUREMENT "$mName""""
       }.mkString(";")
 
      val request = RequestBuilding.Post(readAddress, query).withHeaders(AcceptHeader("application/json"))
@@ -396,8 +399,8 @@ class InfluxDBImplementation(
        case HttpResponse( status, headers, entity, protocol ) if status.isSuccess =>
          Future{
            singleStores.hierarchyStore execute TreeRemovePath( path)
-           removedIIs.map{
-              case ii: InfoItem =>1
+           removedIIs.map {
+             ii: InfoItem => 1
            }
          }
        case HttpResponse( status, headers, entity, protocol ) if status.isFailure =>

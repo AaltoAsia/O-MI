@@ -2,8 +2,10 @@ package types
 package OmiTypes
 
 import scala.concurrent.duration._
-import types.OdfTypes.{ OdfTreeCollection, OdfObjects}
+import types.OdfTypes.{OdfObjects, OdfTreeCollection}
 import OmiTypes._
+
+import scala.xml.NodeSeq
 
 object Responses{
   def Success(
@@ -55,7 +57,7 @@ object Responses{
   )
 
   def NoResponse() : ResponseRequest = new ResponseRequest(OdfTreeCollection.empty, 0.seconds){
-    override val asXML = xml.NodeSeq.Empty
+    override val asXML: NodeSeq = xml.NodeSeq.Empty
     override val asOmiEnvelope: parsing.xmlGen.xmlTypes.OmiEnvelopeType =
       throw new AssertionError("This request is not an omiEnvelope")
   }

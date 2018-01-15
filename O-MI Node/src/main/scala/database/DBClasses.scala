@@ -189,7 +189,7 @@ trait OmiNodeTables extends DBBase {
     val rootPath = Path("Objects")
     db.run(
       DBIO.seq(
-        (allTables map (_.delete)): _*
+        allTables map (_.delete): _*
       ).andThen(hierarchyNodes += DBNode(None, rootPath, 1, 2, rootPath.length, "", 0, isInfoItem = false))
     )
   }

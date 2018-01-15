@@ -42,7 +42,7 @@ trait PollHandler{
     */
   def handlePoll(poll: PollRequest): Future[ResponseRequest] = {
     val ttl = poll.handleTTL
-    implicit val timeout = Timeout(ttl) 
+    implicit val timeout: Timeout = Timeout(ttl)
     val time = new Date().getTime
     val resultsFut =
       Future.sequence(poll.requestIDs.map { id : RequestID=>
@@ -65,7 +65,7 @@ trait PollHandler{
       }
     })
     val response = resultsFut.map(results =>
-        ResponseRequest(results.toVector)
+        ResponseRequest(results)
     )
 
     response

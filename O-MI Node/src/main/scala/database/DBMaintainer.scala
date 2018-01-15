@@ -55,7 +55,7 @@ extends SingleStoresMaintainer(singleStores, settings)
     case TakeSnapshot                   => 
       val snapshotDur: FiniteDuration = takeSnapshot
       log.info(s"Taking Snapshot took $snapshotDur")
-      cleanPrevayler
+      cleanPrevayler()
     
     case _ => log.warning("Unknown message received.")
 

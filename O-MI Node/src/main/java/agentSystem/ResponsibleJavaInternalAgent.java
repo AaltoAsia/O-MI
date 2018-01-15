@@ -26,15 +26,15 @@ public abstract class ResponsibleJavaInternalAgent extends JavaInternalAgent imp
   }
   public Future<ResponseRequest> handleWrite(WriteRequest write){
     return writeToDB(write);
-  };
+  }
 
-  public Future<ResponseRequest> handleCall(CallRequest call){
+    public Future<ResponseRequest> handleCall(CallRequest call){
     return Futures.successful( 
         Responses.NotImplemented(Duration.apply(10,TimeUnit.SECONDS))
     );
-  };
+  }
 
-  //public abstract void handleCall(CallRequest call);
+    //public abstract void handleCall(CallRequest call);
   @Override
   public void onReceive(Object message) {
     if( message instanceof WriteRequest ){

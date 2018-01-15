@@ -1,6 +1,6 @@
 package responses
 
-import agentSystem.{AgentSystem }
+import agentSystem.AgentSystem
 import akka.util.Timeout
 import akka.testkit.EventFilter
 import akka.pattern.ask
@@ -136,7 +136,7 @@ class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with Bef
   }
   def afterAll = {
     //system.eventStream.publish(UnMute(EventFilter.debug(),EventFilter.info(), EventFilter.warning()))
-    cleanAndShutdown
+    cleanAndShutdown()
     singleStores.hierarchyStore execute TreeRemovePath(types.Path("Objects"))
   }
 

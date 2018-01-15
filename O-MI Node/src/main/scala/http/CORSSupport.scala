@@ -14,13 +14,14 @@
 
 package http
 
+import akka.http.scaladsl.server.Directive0
 import ch.megard.akka.http.cors._
  
 /**
  * https://github.com/lomigmegard/akka-http-cors
  */
 trait CORSSupport {
-   val corsSettings = CorsSettings.defaultSettings.copy(
+   val corsSettings: CorsSettings.Default = CorsSettings.defaultSettings.copy(
     //allowGenericHttpRequests = false,
     //allowedOrigins = HttpOriginRange.*,
     allowedHeaders = HttpHeaderRange.Default(collection.immutable.Seq(
@@ -35,7 +36,7 @@ trait CORSSupport {
       "User-Agent")),
     maxAge = Some(3 * 24 * 60 * 60)
   )
-  def corsEnabled = CorsDirectives.cors(corsSettings)
+  def corsEnabled: Directive0 = CorsDirectives.cors(corsSettings)
   
 }
 

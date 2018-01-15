@@ -16,11 +16,10 @@ package OdfTypes
 
 
 import scala.collection.immutable.HashMap
-import scala.xml.NodeSeq
-
+import scala.xml.{NamespaceBinding, NodeSeq}
 import parsing.xmlGen.scalaxb.DataRecord
 import parsing.xmlGen.xmlTypes._
-import parsing.xmlGen.{odfDefaultScope, scalaxb, defaultScope}
+import parsing.xmlGen.{defaultScope, odfDefaultScope, scalaxb}
 import types.OdfTypes.OdfTreeCollection._
 
 /** Class implementing OdfObjects. */
@@ -41,7 +40,7 @@ class OdfObjectsImpl(
       thisObjs.merged(anotherObjs){case ((k1, v1),(_, v2)) => (k1,v1.combine(v2))}.values,
     unionOption(version,another.version){
       case (a, b) if a > b =>a
-      case (a, b) => b
+      case (_, b) => b
     },
       this.attributes ++ another.attributes
     )
@@ -89,17 +88,17 @@ class OdfObjectsImpl(
     Seq[OdfObject],
     Map[Path,Seq[OdfObject]]) => A) = {
     val uniqueObjs : Seq[OdfObject]  = objects.filterNot(
-        obj => another.objects.toSeq.exists(
-          aobj => aobj.path  == obj.path 
-        ) 
-      ).toSeq
+      obj => another.objects.exists(
+        aobj => aobj.path == obj.path
+      )
+    )
      val anotherUniqueObjs =  another.objects.filterNot(
-        aobj => objects.toSeq.exists(
-          obj => aobj.path  == obj.path
-        )
-      ).toSeq
+       aobj => objects.exists(
+         obj => aobj.path == obj.path
+       )
+     )
     
-    val sharedObjs = ( objects.toSeq ++ another.objects.toSeq ).filterNot(
+    val sharedObjs = ( objects ++ another.objects ).filterNot(
       obj => (uniqueObjs ++ anotherUniqueObjs).exists(
         uobj => uobj.path == obj.path
       )
@@ -107,23 +106,23 @@ class OdfObjectsImpl(
     constructor(uniqueObjs, anotherUniqueObjs,sharedObjs)
   }
 
-  def odfDefaultScope = scalaxb.toScope(
-    (Set(
-      None -> "http://www.opengroup.org/xsd/odf/1.0/"//,
+  def odfDefaultScope: NamespaceBinding = scalaxb.toScope(
+    Set(
+      None -> "http://www.opengroup.org/xsd/odf/1.0/" //,
       //Some("xs") -> "http://www.w3.org/2001/XMLSchema",
       //Some("odf") -> "http://www.opengroup.org/xsd/odf/1.0/"
-      
-      )).toSet:_*
+
+    ).toSet:_*
   )
 
   /** Method to convert to scalaxb generated class. */
   implicit def asObjectsType : ObjectsType ={
     ObjectsType(
-      ObjectValue = objects.map{
-        obj: OdfObject => 
-        obj.asObjectType
-      }.toSeq,
-      attributes = version.fold(Map.empty[String, DataRecord[Any]])(n => Map(("@version" -> DataRecord(n)))) ++ attributesToDataRecord( this.attributes )
+      ObjectValue = objects.map {
+        obj: OdfObject =>
+          obj.asObjectType
+      },
+      attributes = version.fold(Map.empty[String, DataRecord[Any]])(n => Map("@version" -> DataRecord(n))) ++ attributesToDataRecord( this.attributes )
     )
   }
   implicit def asXML : NodeSeq= {

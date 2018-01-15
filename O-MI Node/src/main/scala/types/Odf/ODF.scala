@@ -46,44 +46,44 @@ trait ODF//[M <: Map[Path,Node], S<: SortedSet[Path] ]
   }.toVector
   def get( path: Path): Option[Node] = nodes.get(path)
   def getSubTreePaths( pathsToGet: Seq[Path]): Seq[Path] = {
-    paths.filter{
-      case path: Path => 
-        pathsToGet.exists{
-          case filter: Path =>
-            filter.isAncestorOf( path ) || filter == path
+    paths.filter {
+      path: Path =>
+        pathsToGet.exists {
+          filter: Path =>
+            filter.isAncestorOf(path) || filter == path
         }
     }.toVector
   }
   def getUpTreePaths( pathsToGet: Seq[Path]): Seq[Path] = {
-    paths.filter{
-      case path: Path => 
-        pathsToGet.exists{
-          case filter: Path =>
-            filter.isDescendantOf( path ) || filter == path
+    paths.filter {
+      path: Path =>
+        pathsToGet.exists {
+          filter: Path =>
+            filter.isDescendantOf(path) || filter == path
         }
     }.toVector
   }
   def getSubTreePaths( path: Path): Seq[Path] = {
       paths
         .iteratorFrom(path)
-        .takeWhile{ case p: Path => path.isAncestorOf(p) || p == path}
+        .takeWhile { p: Path => path.isAncestorOf(p) || p == path }
         .toVector
   }
   def getUpTree( pathsToGet: Seq[Path]): Seq[Node] = {
-    nodes.values.filter{
-      case node: Node => 
-        pathsToGet.exists{
-          case filter: Path =>
-            filter.isDescendantOf( node.path ) || filter == node.path
+    nodes.values.filter {
+      node: Node =>
+        pathsToGet.exists {
+          filter: Path =>
+            filter.isDescendantOf(node.path) || filter == node.path
         }
     }.toVector
   }
   def getSubTree( pathsToGet: Seq[Path]): Seq[Node] = {
-    nodes.values.filter{
-      case node: Node => 
-        pathsToGet.exists{
-          case filter: Path =>
-            filter.isAncestorOf( node.path ) || filter == node.path
+    nodes.values.filter {
+      node: Node =>
+        pathsToGet.exists {
+          filter: Path =>
+            filter.isAncestorOf(node.path) || filter == node.path
         }
     }.toVector
   }
@@ -96,19 +96,17 @@ trait ODF//[M <: Map[Path,Node], S<: SortedSet[Path] ]
     nodes.toVector:_*
   )
   def getChildPaths( path: Path): Seq[Path] = {
-    getSubTreePaths(path).filter{ 
-      case p: Path => path.isParentOf(p) 
+    getSubTreePaths(path).filter {
+      p: Path => path.isParentOf(p)
     }
   }
   def nodesWithStaticData: Vector[Node] = nodes.values.filter( _.hasStaticData ).toVector
   def getSubTree( path: Path): Seq[Node] = {
-    (
-      //nodes.get(path) ++ 
-      getSubTreePaths(path).flatMap{   case p: Path => nodes.get(p) }
-    ).toVector
+    //nodes.get(path) ++
+      getSubTreePaths(path).flatMap { p: Path => nodes.get(p) }.toVector
   }
   def getChilds( path: Path): Seq[Node] = {
-    getChildPaths(path).flatMap{   case p: Path => nodes.get(p) }.toVector
+    getChildPaths(path).flatMap { p: Path => nodes.get(p) }.toVector
   }
 
   def --( removedPaths: Iterable[Path] ) : ODF = removePaths( removedPaths )
@@ -127,7 +125,7 @@ trait ODF//[M <: Map[Path,Node], S<: SortedSet[Path] ]
       case objs: Objects =>
         objs.asObjectsType(objectTypes) 
     }.getOrElse{
-      (new Objects()).asObjectsType(objectTypes) 
+      Objects().asObjectsType(objectTypes)
     }
   }
   def contains( path: Path ): Boolean = paths.contains(path)
@@ -171,8 +169,8 @@ trait ODF//[M <: Map[Path,Node], S<: SortedSet[Path] ]
   }
   def pathsWithType( typeStr: String ): Set[Path] ={
     nodes.values.collect{
-      case ii: InfoItem if ii.typeAttribute == Some( typeStr ) => ii.path
-      case obj: Object if obj.typeAttribute == Some( typeStr ) => obj.path
+      case ii: InfoItem if ii.typeAttribute.contains(typeStr) => ii.path
+      case obj: Object if obj.typeAttribute.contains(typeStr) => obj.path
     }.toSet
   }
 

@@ -61,10 +61,10 @@ class ParkingAgent(
     Path(config.getString(name))
   }
   //Base path for service, contains at least all method
-  val servicePath = configStringToPath("servicePath")
+  val servicePath: Path = configStringToPath("servicePath")
 
   //Path to object containing all parking lots.
-  val parkingLotsPath = configStringToPath("parkingFacilitiesPath")
+  val parkingLotsPath: Path = configStringToPath("parkingFacilitiesPath")
 
   //File used to populate node with initial state
   val startStateFile =  new File(config.getString("initialStateFile"))
@@ -84,7 +84,7 @@ class ParkingAgent(
     throw  AgentConfigurationException(s"Could not get initial state for $name. Could not read file $startStateFile.")
   }
 
-  val initialPFs = initialODF.get( parkingLotsPath ).collect{
+  val initialPFs: Vector[ParkingFacility] = initialODF.get( parkingLotsPath ).collect{
     case obj: OdfObject =>
      val pfs =  obj.objects.filter{
         pfObj: OdfObject =>
@@ -101,12 +101,12 @@ class ParkingAgent(
       }
       pfs.toVector
   }.getOrElse( throw new Exception("No parking facilities found in O-DF or configured path is wrong"))
-  val findParkingPath = servicePath / "FindParking"
+  val findParkingPath: Path = servicePath / "FindParking"
   
   case class ParkingSpaceStatus( path: Path, user: Option[String], free: Boolean)
   //TODO: Populate!!!
   val parkingSpaceStatuses: MutableMap[Path,ParkingSpaceStatus] = MutableHashMap()
-  val initialWrite = writeToDB( WriteRequest(initialODF) )
+  val initialWrite: Future[ResponseRequest] = writeToDB( WriteRequest(initialODF) )
 
   initialWrite.recover{
     case e: Exception => 
@@ -227,12 +227,12 @@ class ParkingAgent(
     arrivalTime: Option[String]
   )
   val parameterPath =  Path("Objects/Parameters")
-  val destinationParameterPath     = parameterPath / "Destination"
-  val vehicleParameterPath     = parameterPath / "Vehicle"
-  val arrivalTimeParameterPath  = parameterPath / "ArrivalTime"
-  val distanceFromDestinationParameterPath  = parameterPath / "DistanceFromDestination"
-  val usageTypeParameterPath     = parameterPath / "ParkingUsageType"
-  val chargerParameterPath     = parameterPath / "Charger"
+  val destinationParameterPath: Path = parameterPath / "Destination"
+  val vehicleParameterPath: Path = parameterPath / "Vehicle"
+  val arrivalTimeParameterPath: Path = parameterPath / "ArrivalTime"
+  val distanceFromDestinationParameterPath: Path = parameterPath / "DistanceFromDestination"
+  val usageTypeParameterPath: Path = parameterPath / "ParkingUsageType"
+  val chargerParameterPath: Path = parameterPath / "Charger"
   def getfindParkingParams(objects: OdfObjects): Option[ParkingParameters] ={
     val destinationO = objects.get(destinationParameterPath).collect{
       case obj: OdfObject =>
@@ -427,7 +427,7 @@ class ParkingAgent(
     response
   }
   
-  def handleEvents( events: Seq[ParkingEvent] ) ={
+  def handleEvents( events: Seq[ParkingEvent] ): Future[ResponseRequest] ={
     if( events.length == 1 ){
       events.headOption.map{
         case reservation: Reservation => 
@@ -513,10 +513,10 @@ class ParkingAgent(
   }
 
   case class CloseLid( pathToLidState: Path )
-  def closeLidIn( pathToLidState: Path, delay: FiniteDuration = 2.seconds ) ={
+  def closeLidIn( pathToLidState: Path, delay: FiniteDuration = 2.seconds ): Cancellable ={
     context.system.scheduler.scheduleOnce( delay, self, CloseLid( pathToLidState) )
   }
-  def closeLid( pathToLidState: Path ) ={
+  def closeLid( pathToLidState: Path ): Future[ResponseRequest] ={
    val write = WriteRequest( OdfInfoItem(
      pathToLidState,
      values = Vector( OdfValue( "Locked", currentTime ))
@@ -556,7 +556,7 @@ class ParkingAgent(
         pfs
     }
   }
-  def updateCalculatedIIsToDB ={
+  def updateCalculatedIIsToDB: Future[ResponseRequest] ={
     getCurrentParkingFacilities.flatMap{
       parkingFacilities: Vector[ParkingFacility] =>
         val newPFs= parkingFacilities.map{

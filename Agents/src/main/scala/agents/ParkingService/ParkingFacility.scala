@@ -64,7 +64,7 @@ case class ParkingFacility(
      }
    }
 
-  def toOdf( parentPath: Path, calculatedPaths: Boolean = false ) = {
+  def toOdf( parentPath: Path, calculatedPaths: Boolean = false ): OdfObject = {
     val facilityPath = parentPath / name
     val calculatedIIs = if(calculatedPaths) {
       Vector( 
@@ -155,7 +155,7 @@ case class OpeningHoursSpecification(
   opens: Option[String],
   closes: Option[String]
 ){
-  def toOdf( parentPath: Path ) ={
+  def toOdf( parentPath: Path ): OdfObject ={
     val ohsPath = parentPath / "openingHoursSpecification"
     OdfObject( 
       Vector( OdfQlmID( "openingHoursSpecification"  ) ),
@@ -223,7 +223,7 @@ case class GPSCoordinates(
     }
   }
 
-  def toOdf( parentPath: Path, objectName: String ) ={
+  def toOdf( parentPath: Path, objectName: String ): OdfObject ={
     val geoPath = parentPath / objectName
     OdfObject(
       Vector( OdfQlmID( objectName ) ),

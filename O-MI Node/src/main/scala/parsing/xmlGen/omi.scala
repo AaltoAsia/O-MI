@@ -3,16 +3,19 @@ package parsing
 package xmlGen
 package xmlTypes
 
+import java.net.URI
+import javax.xml.datatype.XMLGregorianCalendar
+
 import scala.collection.immutable.HashMap
 
 case class OmiEnvelopeType(omienvelopetypeoption: scalaxb.DataRecord[xmlTypes.OmiEnvelopeTypeOption],
   attributes: Map[String, scalaxb.DataRecord[Any]] = Map()) {
-  lazy val version = attributes("@version").as[String]
-  lazy val ttl ={
+  lazy val version: String = attributes("@version").as[String]
+  lazy val ttl: String ={
     val dr = attributes("@ttl")
     dr.value match{
-      case str: String => dr.as[String]
-      case l: Long => dr.as[Long].toString
+      case _: String => dr.as[String]
+      case _: Long => dr.as[Long].toString
       case other => other.toString
     }
   }
@@ -59,15 +62,15 @@ case class ReadRequestType(nodeList: Option[xmlTypes.NodesType] = None,
   requestID: Seq[String] = Vector.empty,
   msg: Option[xmlTypes.MsgType] = None,
   attributes: Map[String, scalaxb.DataRecord[Any]] = Map()) extends RequestBaseType with OmiEnvelopeTypeOption {
-  lazy val callback = attributes.get("@callback") map { _.as[java.net.URI]}
-  lazy val msgformat = attributes.get("@msgformat") map { _.as[String]}
-  lazy val targetType = attributes("@targetType").as[TargetTypeType]
-  lazy val interval = attributes.get("@interval") map { _.as[String]}
-  lazy val oldest = attributes.get("@oldest") map { _.as[BigInt]}
-  lazy val begin = attributes.get("@begin") map { _.as[javax.xml.datatype.XMLGregorianCalendar]}
-  lazy val end = attributes.get("@end") map { _.as[javax.xml.datatype.XMLGregorianCalendar]}
-  lazy val newest = attributes.get("@newest") map { _.as[BigInt]}
-  lazy val all = attributes.get("@all") map { _.as[Boolean]}
+  lazy val callback: Option[URI] = attributes.get("@callback") map { _.as[java.net.URI]}
+  lazy val msgformat: Option[String] = attributes.get("@msgformat") map { _.as[String]}
+  lazy val targetType: TargetTypeType = attributes("@targetType").as[TargetTypeType]
+  lazy val interval: Option[String] = attributes.get("@interval") map { _.as[String]}
+  lazy val oldest: Option[BigInt] = attributes.get("@oldest") map { _.as[BigInt]}
+  lazy val begin: Option[XMLGregorianCalendar] = attributes.get("@begin") map { _.as[javax.xml.datatype.XMLGregorianCalendar]}
+  lazy val end: Option[XMLGregorianCalendar] = attributes.get("@end") map { _.as[javax.xml.datatype.XMLGregorianCalendar]}
+  lazy val newest: Option[BigInt] = attributes.get("@newest") map { _.as[BigInt]}
+  lazy val all: Option[Boolean] = attributes.get("@all") map { _.as[Boolean]}
 }
 
       
@@ -77,9 +80,9 @@ case class WriteRequestType(nodeList: Option[xmlTypes.NodesType] = None,
   requestID: Seq[String] = Vector.empty,
   msg: Option[xmlTypes.MsgType] = None,
   attributes: Map[String, scalaxb.DataRecord[Any]] = Map()) extends RequestBaseType with OmiEnvelopeTypeOption {
-  lazy val callback = attributes.get("@callback") map { _.as[java.net.URI]}
-  lazy val msgformat = attributes.get("@msgformat") map { _.as[String]}
-  lazy val targetType = attributes("@targetType").as[TargetTypeType]
+  lazy val callback: Option[URI] = attributes.get("@callback") map { _.as[java.net.URI]}
+  lazy val msgformat: Option[String] = attributes.get("@msgformat") map { _.as[String]}
+  lazy val targetType: TargetTypeType = attributes("@targetType").as[TargetTypeType]
 }
 
       
@@ -97,9 +100,9 @@ case class CallRequestType(nodeList: Option[xmlTypes.NodesType] = None,
   requestID: Seq[String] = Vector.empty,
   msg: Option[xmlTypes.MsgType] = None,
   attributes: Map[String, scalaxb.DataRecord[Any]] = Map()) extends RequestBaseType with OmiEnvelopeTypeOption {
-  lazy val callback = attributes.get("@callback") map { _.as[java.net.URI]}
-  lazy val msgformat = attributes.get("@msgformat") map { _.as[String]}
-  lazy val targetType = attributes("@targetType").as[TargetTypeType]
+  lazy val callback: Option[URI] = attributes.get("@callback") map { _.as[java.net.URI]}
+  lazy val msgformat: Option[String] = attributes.get("@msgformat") map { _.as[String]}
+  lazy val targetType: TargetTypeType = attributes("@targetType").as[TargetTypeType]
 }
 
       
@@ -111,9 +114,9 @@ case class DeleteRequestType(nodeList: Option[xmlTypes.NodesType] = None,
   requestID: Seq[String] = Vector.empty,
   msg: Option[xmlTypes.MsgType] = None,
   attributes: Map[String, scalaxb.DataRecord[Any]] = Map()) extends RequestBaseType with OmiEnvelopeTypeOption {
-  lazy val callback = attributes.get("@callback") map { _.as[java.net.URI]}
-  lazy val msgformat = attributes.get("@msgformat") map { _.as[String]}
-  lazy val targetType = attributes("@targetType").as[TargetTypeType]
+  lazy val callback: Option[URI] = attributes.get("@callback") map { _.as[java.net.URI]}
+  lazy val msgformat: Option[String] = attributes.get("@msgformat") map { _.as[String]}
+  lazy val targetType: TargetTypeType = attributes("@targetType").as[TargetTypeType]
 }
 
       
@@ -128,8 +131,8 @@ case class RequestResultType(
   nodeList: Option[xmlTypes.NodesType] = None,
   omiEnvelope: Option[xmlTypes.OmiEnvelopeType] = None,
   attributes: Map[String, scalaxb.DataRecord[Any]] = Map()) {
-  lazy val msgformat = attributes.get("@msgformat") map { _.as[String]}
-  lazy val targetType = attributes("@targetType").as[TargetTypeType]
+  lazy val msgformat: Option[String] = attributes.get("@msgformat") map { _.as[String]}
+  lazy val targetType: TargetTypeType = attributes("@targetType").as[TargetTypeType]
 }
 
       
@@ -139,8 +142,8 @@ case class RequestResultType(
 */
 case class ReturnType(value: String,
   attributes: Map[String, scalaxb.DataRecord[Any]] = Map()) {
-  lazy val returnCode = attributes("@returnCode").as[String]
-  lazy val description = attributes.get("@description") flatMap { _.as[Option[String]]}
+  lazy val returnCode: String = attributes("@returnCode").as[String]
+  lazy val description: Option[String] = attributes.get("@description") flatMap { _.as[Option[String]]}
 }
 
       
@@ -150,7 +153,7 @@ case class ReturnType(value: String,
 */
 case class NodesType(node: Seq[java.net.URI] = Vector.empty,
   attributes: Map[String, scalaxb.DataRecord[Any]] = Map()) {
-  lazy val typeValue = attributes.get("@type") map { _.as[String]}
+  lazy val typeValue: Option[String] = attributes.get("@type") map { _.as[String]}
 }
 
       
@@ -160,7 +163,7 @@ case class NodesType(node: Seq[java.net.URI] = Vector.empty,
 */
 case class IdType(value: String,
   attributes: Map[String, scalaxb.DataRecord[Any]] = Map()) {
-  lazy val format = attributes.get("@format") map { _.as[String]}
+  lazy val format: Option[String] = attributes.get("@format") map { _.as[String]}
 }
 
       

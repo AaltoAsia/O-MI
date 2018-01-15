@@ -30,11 +30,10 @@ import akka.actor.{ActorRef, ActorSystem}
 import akka.pattern.ask
 import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport
 import akka.http.scaladsl.marshalling.PredefinedToResponseMarshallers._
-import akka.http.scaladsl.marshalling.{Marshaller, ToResponseMarshallable}
+import akka.http.scaladsl.marshalling.{Marshaller, ToEntityMarshaller, ToResponseMarshallable}
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.server.RequestContext
+import akka.http.scaladsl.server.{Directive0, RequestContext, Route}
 import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.server.Directive0
 import akka.stream.scaladsl._
 import akka.stream._
 import akka.stream.ActorMaterializer
@@ -110,7 +109,7 @@ trait OmiService
 
   //Get the files from the html directory; http://localhost:8080/html/form.html
   //this version words with 'sbt run' and 're-start' as well as the packaged version
-  val staticHtml = if(Files.exists(Paths.get("./html"))){
+  val staticHtml: Route = if(Files.exists(Paths.get("./html"))){
     getFromDirectory("./html")
   } else getFromDirectory("O-MI Node/html")
   //val staticHtml = getFromResourceDirectory("html")
@@ -124,11 +123,11 @@ trait OmiService
   }
 
   // Change default to xml mediatype and require explicit type for html
-  val htmlXml = ScalaXmlSupport.nodeSeqMarshaller(MediaTypes.`text/html`)
-  implicit val xmlCT = ScalaXmlSupport.nodeSeqMarshaller(MediaTypes.`text/xml`)
+  val htmlXml: ToEntityMarshaller[NodeSeq] = ScalaXmlSupport.nodeSeqMarshaller(MediaTypes.`text/html`)
+  implicit val xmlCT: ToEntityMarshaller[NodeSeq] = ScalaXmlSupport.nodeSeqMarshaller(MediaTypes.`text/xml`)
 
   // should be removed?
-  val helloWorld = get {
+  val helloWorld: Route = get {
      val document = { 
         <html>
         <body>
@@ -161,7 +160,7 @@ trait OmiService
     complete(ToResponseMarshallable(document)(htmlXml))
   }
 
-  val getDataDiscovery =
+  val getDataDiscovery: Route =
     path(Remaining) { uriPath =>
       get {
         makePermissionTestFunction() { hasPermissionTest =>
@@ -172,9 +171,9 @@ trait OmiService
           
             val origPath = Path(pathStr)
             val path = origPath match {
-              case path if path.lastOption.exists(List("value", "MetaData", "description","id", "name").contains(_)) =>
-                Path(path.init) // check permission for parent infoitem/object
-              case path => path
+              case _path if _path.lastOption.exists(List("value", "MetaData", "description","id", "name").contains(_)) =>
+                Path(_path.init) // check permission for parent infoitem/object
+              case _path => _path
             }
 
             val asReadRequest = (singleStores.hierarchyStore execute GetTree()).get(path).map(_.createAncestors).map( p => ReadRequest(p,user0 = UserInfo(remoteAddress = Some(user))))
@@ -277,7 +276,7 @@ trait OmiService
       originalReq.ttl match {
         case ttl: FiniteDuration => ttlPromise.completeWith(
           akka.pattern.after(ttl, using = system.scheduler) {
-            log.info(s"TTL timed out after $ttl");
+            log.info(s"TTL timed out after $ttl")
             Future.successful(Responses.TTLTimeout())
           }
         )
@@ -291,8 +290,8 @@ trait OmiService
               val unwrappedRequest = req.unwrapped // NOTE: Be careful when implementing multi-request messages
               unwrappedRequest match {
                 case Success(request : OmiRequest) =>
-                  defineCallbackForRequest(request, currentConnectionCallback).flatMap{
-                    case request: OmiRequest => handleRequest( request )
+                  defineCallbackForRequest(request, currentConnectionCallback).flatMap {
+                    request: OmiRequest => handleRequest(request)
                   }.recover{
                     case e: TimeoutException => Responses.TTLTimeout(Some(e.getMessage()))
                     case e: IllegalArgumentException => Responses.InvalidRequest(Some(e.getMessage()))
@@ -307,7 +306,7 @@ trait OmiService
               }
             case Left(errors) => { // Parsing errors found
 
-              log.warn(s"${requestString}")
+              log.warn(s"$requestString")
               log.warn("Parse Errors: {}", errors.mkString(", "))
 
               val errorResponse = Responses.ParseErrors(errors.toVector)
@@ -329,12 +328,11 @@ trait OmiService
 
       // if timeoutfuture completes first then timeout is returned
       Future.firstCompletedOf(Seq(responseF, ttlPromise.future)) map {
-
-        case response : ResponseRequest =>
+        response: ResponseRequest =>
           // check the error code for logging
-          val statusO = response.results.map{ result => result.returnValue.returnCode}
-          if (statusO exists (_ != "200")){
-            log.warn(s"Error code $statusO with following request:\n${requestString}")
+          val statusO = response.results.map { result => result.returnValue.returnCode }
+          if (statusO exists (_ != "200")) {
+            log.warn(s"Error code $statusO with following request:\n$requestString")
           }
 
           response.asXML // return
@@ -354,7 +352,7 @@ trait OmiService
   }
 
   def handleRequest(request : OmiRequest ): Future[ResponseRequest ]= {
-    implicit val to = Timeout( request.handleTTL )
+    implicit val to: Timeout = Timeout( request.handleTTL )
     request match {
       // Part of a fix to stop response request infinite loop (server and client sending OK to others' OK)
       case respRequest: ResponseRequest if respRequest.results.forall{ result => result.odf.isEmpty } =>
@@ -408,24 +406,22 @@ trait OmiService
       if(!settings.callbackAuthorizationEnabled || admin || userAddr.exists(asd => asd._1 == asd._2)) {
 
         val cbTry = callbackHandler.createCallbackAddress(address)
-        val result = cbTry.map{
-          case callback =>
-            request.withCallback( Some( callback ) )
-        }.recoverWith{
+        val result = cbTry.map(callback =>
+          request.withCallback(Some(callback))).recoverWith{
           case throwable : Throwable =>
             Try{ throw InvalidCallback(RawCallback(address), throwable.getMessage(), throwable  ) }
         }
         Future.fromTry(result )
       } else {
         log.debug(s"\n\n FAILED WITH ADDRESSESS $userAddr \n\n")
-        Future.failed((InvalidCallback(cba, "Callback to remote addresses(different than user address) require admin privileges")))
+        Future.failed(InvalidCallback(cba, "Callback to remote addresses(different than user address) require admin privileges"))
       }
   }
 
   /** 
    * Receives HTTP-POST directed to root with o-mi xml as body. (Non-standard convenience feature)
    */
-  val postXMLRequest = post {// Handle POST requests from the client
+  val postXMLRequest: Route = post {// Handle POST requests from the client
     makePermissionTestFunction() { hasPermissionTest =>
       entity(as[String]) {requestString =>   // XML and O-MI parsed later
         extractClientIP { user =>
@@ -441,7 +437,7 @@ trait OmiService
   /**
    * Receives POST at root with O-MI compliant msg parameter.
    */
-  val postFormXMLRequest = post {
+  val postFormXMLRequest: Route = post {
     makePermissionTestFunction() { hasPermissionTest =>
       formFields("msg".as[String]) {requestString =>
         extractClientIP { user =>
@@ -455,7 +451,7 @@ trait OmiService
   }
 
   // Combine all handlers
-  val myRoute = corsEnabled {
+  val myRoute: Route = corsEnabled {
     path("") {
       webSocketUpgrade ~
       postFormXMLRequest ~
@@ -482,7 +478,7 @@ trait WebSocketOMISupport { self: OmiService =>
   type InSink = Sink[ws.Message, _]
   type OutSource = Source[ws.Message, SourceQueueWithComplete[ws.Message]]
 
-  def webSocketUpgrade = //(implicit r: RequestContext): Directive0 =
+  def webSocketUpgrade: Route = //(implicit r: RequestContext): Directive0 =
     makePermissionTestFunction() { hasPermissionTest =>
       extractUpgradeToWebSocket {wsRequest =>
         extractClientIP { ip =>
@@ -525,7 +521,7 @@ trait WebSocketOMISupport { self: OmiService =>
         // TODO: check what happens when sending empty String
         resultMessage = ws.TextMessage(response.toString)
         queueResult <- queue offer resultMessage
-      } yield {queueResult}
+      } yield queueResult
 
       def removeRelatedSub() = {
         futureResponse.map{ 

@@ -93,7 +93,7 @@ object Authorization {
 
     private[this] def combineTests(otherTest: PermissionTest, ourTest: PermissionTest): PermissionTest = {
       (request: RequestWrapper) =>
-        otherTest(request) orElse ( ourTest(request)) match {
+        otherTest(request) orElse ourTest(request) match {
           case s @ Success(_) => s
           case f @ Failure(UnauthorizedEx(_)) => f
           case f @ Failure(ex) =>
@@ -208,7 +208,7 @@ trait LogUnauthorized extends AuthorizationExtension {
   private def extractIp: Directive1[UserInfo] = extractClientIP map (_.toOption)
   private def logFunc: UserInfo => PermissionTest = {ip => {(wrap: RequestWrapper) =>
     wrap.unwrapped flatMap {
-      case r : OmiRequest =>
+      r: OmiRequest =>
         log.warn(s"Unauthorized user from ip $ip: tried to make ${r.getClass.getSimpleName}.")
         Failure(UnauthorizedEx())
     }

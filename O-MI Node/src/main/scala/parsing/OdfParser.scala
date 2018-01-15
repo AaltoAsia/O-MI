@@ -36,7 +36,7 @@ import types._
 /** Parser for data in O-DF format*/
 object OdfParser extends Parser[OdfParseResult] {
   val schemaName = "odf.xsd"
-  protected[this] override def schemaPath = Array[Source](
+  protected[this] override def schemaPath: Array[Source] = Array[Source](
     new StreamSource(getClass.getClassLoader().getResourceAsStream("odf.xsd"))
   )
 
@@ -90,14 +90,14 @@ object OdfParser extends Parser[OdfParseResult] {
         Left(errors) 
       case empty : Seq[ParseError] if empty.isEmpty =>
 
-      val requestProcessTime = currentTime
+      val requestProcessTime = currentTime()
 
       Try{
         xmlGen.scalaxb.fromXML[ObjectsType](root)
       } match {
         case Failure(e) => 
             //println( s"Exception: $e\nStackTrace:\n")
-            e.printStackTrace
+            e.printStackTrace()
             Left( Iterable( ScalaxbError( e.getMessage ) ) )
       
         case Success(objects) => 
@@ -107,7 +107,7 @@ object OdfParser extends Parser[OdfParseResult] {
             case Success(odf) => Right(odf)
             case Failure(e) => 
             //println( s"Exception: $e\nStackTrace:\n")
-            e.printStackTrace
+            e.printStackTrace()
               Left( Iterable( ODFParserError( e.getMessage ) ) )
           }
       }
@@ -184,14 +184,14 @@ private[this] def parseInfoItem(requestProcessTime: Timestamp, item: InfoItemTyp
 private[this] def parseValue(requestProcessTime: Timestamp, valueType: ValueType) = { 
   val typeValue = valueType.typeValue
   def handleObjectsValue ={
-      val objectsTypes = valueType.mixed.filter{
-          case dr: scalaxb.DataRecord[Any] =>
-            dr.value match {
-              case objectsType: xmlTypes.ObjectsType =>
-                true
-              case _ => false
-            }
-        }.map( _.as[xmlTypes.ObjectsType] ).head //XXX: head used should not have multiple Objects
+      val objectsTypes = valueType.mixed.filter {
+        dr: scalaxb.DataRecord[Any] =>
+          dr.value match {
+            case objectsType: xmlTypes.ObjectsType =>
+              true
+            case _ => false
+          }
+      }.map( _.as[xmlTypes.ObjectsType] ).head //XXX: head used should not have multiple Objects
           OdfObjectsValue(
             parseObjects(objectsTypes,requestProcessTime),//.asXML.toString,
             timeSolver(valueType, requestProcessTime)
@@ -210,10 +210,10 @@ private[this] def parseValue(requestProcessTime: Timestamp, valueType: ValueType
           }.foldLeft("")( _ + _)
           */
     case str: String  => 
-      val xmlValue = valueType.mixed.map{
-        case dr: xmlGen.scalaxb.DataRecord[_] => 
-          xmlGen.scalaxb.DataRecord.toXML(dr,None,None,xmlGen.odfDefaultScope,false)
-          }.foldLeft(NodeSeq.Empty){
+      val xmlValue = valueType.mixed.map {
+        dr: xmlGen.scalaxb.DataRecord[_] =>
+          xmlGen.scalaxb.DataRecord.toXML(dr, None, None, xmlGen.odfDefaultScope, typeAttribute = false)
+      }.foldLeft(NodeSeq.Empty){
             case (res: NodeSeq, ns: NodeSeq) => res ++ ns
           }
       OdfValue(
