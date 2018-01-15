@@ -322,7 +322,7 @@ class ParkingAgent(
   override protected def handleWrite(write: WriteRequest) : Future[ResponseRequest] = {
     def plugMeasureUpdate( plug: PowerPlug): Boolean =  plug.current.nonEmpty || plug.power.nonEmpty || plug.voltage.nonEmpty
     val currentPFsF = getCurrentParkingFacilities
-    currentPFsF.flatMap{
+    val response = currentPFsF.flatMap{
       currentPFs: Vector[ParkingFacility] =>
         val odfToPFs = Future{
           write.odf.get(parkingLotsPath).collect{
@@ -423,6 +423,8 @@ class ParkingAgent(
       
       }
     }
+    val res = Try{ Await.ready(response, 10.minutes) }
+    response
   }
   
   def handleEvents( events: Seq[ParkingEvent] ) ={
