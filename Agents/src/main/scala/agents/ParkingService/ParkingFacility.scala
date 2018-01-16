@@ -179,7 +179,7 @@ case class OpeningHoursSpecification(
 object OpeningHoursSpecification{
 
   def apply( obj: OdfObject ): OpeningHoursSpecification ={
-    assert(obj.typeValue.contains( "schema:OpeningHoursSpecification"))
+    assert(obj.typeValue.contains( "schema:OpeningHoursSpecification"), "Wrong type for OpeningHoursSpecification Object.")
     OpeningHoursSpecification(
       obj.get( obj.path / "opens" ).collect{
         case ii: OdfInfoItem =>
@@ -252,7 +252,7 @@ case class GPSCoordinates(
 object GPSCoordinates{
 
   def apply( obj: OdfObject ): GPSCoordinates ={
-    assert(obj.typeValue.contains( "schema:GeoCoordinates"))
+    assert(obj.typeValue.contains( "schema:GeoCoordinates"), "Wrong type for GeoCoordinates Object")
     GPSCoordinates(
       obj.get( obj.path / "latitude" ).collect{
         case ii: OdfInfoItem =>

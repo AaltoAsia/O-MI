@@ -7,6 +7,8 @@ import java.util.Date
 import java.net.URLDecoder
 
 import scala.util.{Success, Failure, Try}
+import scala.util.control.NonFatal
+import scala.concurrent.ExecutionException
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, Future}
 import scala.concurrent.Future._
@@ -212,9 +214,16 @@ class ParkingAgent(
               //log.debug(s"${responses.size} to response:\n" + response.asXML.toString)
               response
           }.recover{
-            case e: Exception => 
-              log.error(e, "Caught exception: ")
+            case e: ExecutionException => 
+              log.error(e.getCause().toString)
+              e.getCause().printStackTrace()
+              Responses.InternalError(e.getCause())                                                                                                                                                             
+              
+            case NonFatal(e) => 
+              log.error(e.getCause().toString)
+              e.getCause().printStackTrace()
               Responses.InternalError(e)
+
           }
       }
   }
@@ -419,7 +428,14 @@ class ParkingAgent(
               }
             }
       }.recover{
-        case e: Exception => Responses.InternalError( e)
+          case e: ExecutionException =>
+              log.error(e.getCause().toString)
+              e.getCause().printStackTrace()
+            Responses.InternalError(e.getCause())                                                                                                                                                             
+          case NonFatal(e) => 
+              log.error(e.getCause().toString)
+              e.getCause().printStackTrace()
+            Responses.InternalError(e)
       
       }
     }
