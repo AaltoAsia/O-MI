@@ -258,7 +258,8 @@ requestsExt = (WebOmi) ->
             siblingValue = o.evaluateXPath(currentOdfNode, "odf:value[1]")[0]
             maybeInsertBefore currentOdfNode, siblingValue, meta
 
-          when "infoitem"
+          when "method"
+             , "infoitem"
             info =
               if currentParams.request == "write"
                 # when request is write
