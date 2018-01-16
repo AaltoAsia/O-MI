@@ -233,7 +233,7 @@ trait LogPermissiveRequestBeginning extends AuthorizationExtension {
       wrap.unwrapped flatMap {
         case r: PermissiveRequest with OdfRequest =>
           log.debug(s"Permissive request received: ${r.getClass.getSimpleName}: " +
-            r.odf.paths.take(3).mkString(", ") + "...")
+            r.odf.getPaths.take(3).mkString(", ") + "...")
           Failure(UnauthorizedEx())
         case r: PermissiveRequest =>
           log.debug(s"Permissive request received: ${r.toString.take(80)}...")

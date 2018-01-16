@@ -2,14 +2,14 @@ package types
 package OmiTypes
 
 import scala.concurrent.duration._
-import types.OdfTypes.{OdfObjects, OdfTreeCollection}
+import types.odf._
 import OmiTypes._
 
 import scala.xml.NodeSeq
 
 object Responses{
   def Success(
-    objects : Option[OdfObjects], 
+    objects : Option[ODF], 
     ttl: Duration
     ) : ResponseRequest =ResponseRequest(
       OdfTreeCollection(
@@ -21,7 +21,7 @@ object Responses{
     )
   def Success(
     requestIDs: OdfTreeCollection[RequestID] = OdfTreeCollection.empty[RequestID], 
-    objects : Option[OdfObjects] = None, 
+    objects : Option[ODF] = None, 
     description: Option[String] = None,
     ttl: Duration = 10.seconds
     ) : ResponseRequest =ResponseRequest(
@@ -51,7 +51,7 @@ object Responses{
     OdfTreeCollection(Results.InvalidCallback(callbackAddr,reason)),
     ttl
   )
-  def NotFoundPaths( objects: OdfObjects, ttl: Duration = 10.seconds ) : ResponseRequest =ResponseRequest(
+  def NotFoundPaths( objects: ODF, ttl: Duration = 10.seconds ) : ResponseRequest =ResponseRequest(
     OdfTreeCollection(Results.NotFoundPaths(objects)),
     ttl
   )
@@ -89,7 +89,7 @@ object Responses{
     OdfTreeCollection(Results.TTLTimeout(message)),
     ttl
   )
-  def Poll( requestID: RequestID, objects: OdfObjects, ttl: Duration = 10.seconds) : ResponseRequest =ResponseRequest(
+  def Poll( requestID: RequestID, objects: ODF, ttl: Duration = 10.seconds) : ResponseRequest =ResponseRequest(
     OdfTreeCollection(
       Results.Poll(
         requestID,

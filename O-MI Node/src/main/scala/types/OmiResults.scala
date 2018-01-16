@@ -6,14 +6,14 @@ import scala.collection.JavaConversions._
 import scala.concurrent.duration._
 import parsing.xmlGen.scalaxb.DataRecord
 import parsing.xmlGen.{omiDefaultScope, scalaxb, xmlTypes}
-import types.OdfTypes.{ OdfTreeCollection, OdfObjects}
+import types.odf._
 import parsing.xmlGen.xmlTypes._
 import scala.reflect.ClassTag
 import scala.util.Try
 
 trait JavaOmiResult{
   def requestIDsAsJava(): JIterable[RequestID]
-  def odfAsJava(): JIterable[OdfObjects] 
+  def odfAsJava(): JIterable[ODF] 
 }
 /** 
  * Result of a O-MI request
@@ -21,15 +21,15 @@ trait JavaOmiResult{
 class OmiResult(
   val returnValue : OmiReturn,
   val requestIDs: OdfTreeCollection[RequestID] = OdfTreeCollection.empty,
-  val odf: Option[OdfTypes.OdfObjects] = None
+  val odf: Option[ODF] = None
 ) extends JavaOmiResult {
 
   def requestIDsAsJava(): JIterable[RequestID] = asJavaIterable(requestIDs) 
-  def odfAsJava(): JIterable[OdfObjects] = asJavaIterable(odf)
+  def odfAsJava(): JIterable[ODF] = asJavaIterable(odf)
   def copy(
     returnValue : OmiReturn = this.returnValue,
     requestIDs: OdfTreeCollection[RequestID] = this.requestIDs,
-    odf: Option[OdfTypes.OdfObjects] = this.odf
+    odf: Option[ODF] = this.odf
   ): OmiResult = OmiResult(returnValue, requestIDs, odf)
 
   implicit def asRequestResultType : xmlTypes.RequestResultType ={
@@ -99,7 +99,7 @@ object OmiResult{
   def apply(
     returnValue : OmiReturn,
     requestIDs: OdfTreeCollection[RequestID] = OdfTreeCollection.empty,
-    odf: Option[OdfTypes.OdfObjects] = None
+    odf: Option[ODF] = None
   ): OmiResult = new OmiResult(returnValue,requestIDs,odf) 
 }
 
@@ -122,7 +122,7 @@ object Results{
 
     case class Success(
       override val requestIDs: OdfTreeCollection[RequestID] = OdfTreeCollection.empty,
-      override val odf: Option[OdfObjects] = None,
+      override val odf: Option[ODF] = None,
       description: Option[String] = None
       ) extends OmiResult(
         Returns.Success(description),
@@ -135,9 +135,9 @@ object Results{
               Results.Success( 
                 requestIDs ++ other.requestIDs,
                 other.odf.flatMap {
-                  objects: OdfObjects =>
+                  objects: ODF =>
                     odf.map {
-                      objs: OdfObjects =>
+                      objs: ODF =>
                         objects.union(objs)
                     }
                 }.orElse(odf),
@@ -273,7 +273,7 @@ object Results{
     }
 
     case class NotFoundPaths(
-      objects: OdfObjects 
+      objects: ODF 
       ) extends OmiResult (
         Returns.NotFoundPaths(),
         odf = Some(objects)
@@ -360,7 +360,7 @@ object Results{
 
   case class Poll( 
     requestID: RequestID, 
-    objects: OdfObjects
+    objects: ODF
     )  extends OmiResult( 
       Returns.Success(),
       OdfTreeCollection(requestID),
@@ -377,7 +377,7 @@ object Results{
       }
     }
 
-  case class Read( objects: OdfObjects) extends OmiResult(
+  case class Read( objects: ODF) extends OmiResult(
     Returns.Success(),
     odf = Some(objects)
   ) with UnionableResult{

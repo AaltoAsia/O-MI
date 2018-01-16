@@ -31,6 +31,7 @@ import http.Authorization.ExtensibleAuthorization
 import http.{IpAuthorization, OmiConfig, OmiConfigExtension}
 import parsing.OdfParser
 import types.OdfTypes._
+import types.odf.{ OldTypeConverter, ImmutableODF}
 import types.OmiTypes._
 import types._
 import agentSystem._
@@ -91,7 +92,7 @@ class ExternalAgentListener(
 
       // Code for ip address authorization check
       val user = RemoteAddress(remote)//remote.getAddress())
-      val requestForPermissionCheck = OmiTypes.WriteRequest(OdfObjects(), None, Duration.Inf)
+      val requestForPermissionCheck = OmiTypes.WriteRequest(ImmutableODF(), None, Duration.Inf)
 
       if( authorization.ipHasPermission(user)(requestForPermissionCheck).isSuccess ){
         log.info(s"Agent connected from $remote to $local")
@@ -168,7 +169,7 @@ class ExternalAgentHandler(
           case Right(odf) =>
             val ttl  = Duration(5,SECONDS)
             implicit val timeout: Timeout = Timeout(ttl)
-            val write = WriteRequest( odf, None,  Duration(5,SECONDS))
+            val write = WriteRequest( OldTypeConverter.convertOdfObjects(odf), None,  Duration(5,SECONDS))
             val result = (requestHandler ? write).mapTo[ResponseRequest]
             result.onComplete{
               case Success( response: ResponseRequest )=>

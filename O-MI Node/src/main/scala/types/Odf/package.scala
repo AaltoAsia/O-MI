@@ -16,6 +16,7 @@ import types.ParseError
 
 package object odf {
   type OdfParseResult = Either[JavaIterable[ParseError], ImmutableODF]
+  type OdfTreeCollection[T] = Vector[T]
   trait Unionable[T] { 
     def union(t: T): T 
   }

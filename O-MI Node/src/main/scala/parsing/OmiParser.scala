@@ -25,7 +25,7 @@ import scala.xml.{Elem, Node, NodeSeq, UnprefixedAttribute }
 
 import akka.http.scaladsl.model.RemoteAddress
 import parsing.xmlGen.xmlTypes
-import types.OdfTypes._
+import types.odf._
 import types.OmiTypes._
 import types.OmiTypes.Callback._ // implicit: String => Callback
 import types.ParseError._
@@ -347,7 +347,7 @@ object OmiParser extends Parser[OmiParseResult] {
     }
   }
 
-  private[this] def parseOdf(node: Node): OdfParseResult = OdfParser.parse(node)
+  private[this] def parseOdf(node: Node): OdfParseResult = ODFParser.parse(node)
 
   def gcalendarToTimestampOption(gcal: Option[javax.xml.datatype.XMLGregorianCalendar]): Option[Timestamp] = gcal match {
     case None => None

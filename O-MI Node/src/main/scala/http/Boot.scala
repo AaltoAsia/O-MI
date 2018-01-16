@@ -40,6 +40,7 @@ import agentSystem._
 import responses.{RequestHandler, SubscriptionManager, CallbackHandler}
 import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 import types.OdfTypes._
+import types.odf.{ OldTypeConverter }
 import types.OmiTypes.{OmiReturn,OmiResult,Results,WriteRequest,ResponseRequest}
 import types.OmiTypes.Returns.ReturnTypes._
 import types.Path
@@ -229,7 +230,7 @@ object OmiServer {
           Some(OdfDescription(numDescription))
         ))
       
-      val write = WriteRequest( objects, None,  60  seconds)
+      val write = WriteRequest( OldTypeConverter.convertOdfObjects(objects), None,  60  seconds)
       implicit val timeout: Timeout = Timeout( 60 seconds)
       val future : Future[ResponseRequest]= (requestHandler ? write ).mapTo[ResponseRequest]
       future.onSuccess{

@@ -44,6 +44,7 @@ import parsing.OmiParser
 import responses.{CallbackHandler, RESTHandler, RESTRequest, RemoveSubscription, RequestHandler}
 import responses.CallbackHandler._
 import types.OmiTypes._
+import types.odf._
 import types.OmiTypes.Callback._
 import types.{ParseError, Path}
 import database.{GetTree, SingleStores}
@@ -176,7 +177,7 @@ trait OmiService
               case _path => _path
             }
 
-            val asReadRequest = (singleStores.hierarchyStore execute GetTree()).get(path).map(_.createAncestors).map( p => ReadRequest(p,user0 = UserInfo(remoteAddress = Some(user))))
+            val asReadRequest = (singleStores.hierarchyStore execute GetTree()).get(path).map(_.createAncestors).map( p => ReadRequest(OldTypeConverter.convertOdfObjects(p),user0 = UserInfo(remoteAddress = Some(user))))
               asReadRequest match {
                 case Some(readReq) =>
                   hasPermissionTest(readReq) match {

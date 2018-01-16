@@ -18,6 +18,8 @@ import agentSystem.*;
 import types.*;
 import types.OdfTypes.*;
 import types.OmiTypes.*;
+import types.odf.OldTypeConverter;
+import types.odf.NewTypeConverter;
 
 public class ResponsibleJavaAgentDemo extends ResponsibleJavaInternalAgent {
   static public Props props(final Config config, final ActorRef requestHandler,final ActorRef dbHandler){
@@ -41,7 +43,7 @@ public class ResponsibleJavaAgentDemo extends ResponsibleJavaInternalAgent {
 
   public Future<ResponseRequest> handleCall(CallRequest call){
     try{
-      OdfNode node = call.odf().get( new Path( "Objects/Service/Greeter" ) ).get();
+      OdfNode node = NewTypeConverter.convertODF(call.odf()).get( new Path( "Objects/Service/Greeter" ) ).get();
       OdfInfoItem ii = (OdfInfoItem)node;
       OdfValue<Object> value = ii.values().head();
       OdfValue<Object> newValue = OdfFactory.createOdfValue(
@@ -57,7 +59,7 @@ public class ResponsibleJavaAgentDemo extends ResponsibleJavaInternalAgent {
 
       return Futures.successful( 
           Responses.Success(
-            scala.Option.apply(new_ii.createAncestors()),
+            scala.Option.apply(OldTypeConverter.convertOdfObjects(new_ii.createAncestors())),
             Duration.apply(10,TimeUnit.SECONDS)
           )
       );

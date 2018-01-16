@@ -16,7 +16,7 @@ package types
 
 
 import java.lang.{Iterable => JavaIterable}
-import java.util.GregorianCalendar
+import java.util.{GregorianCalendar, Date}
 import javax.xml.datatype.DatatypeFactory
 import java.sql.Timestamp
 import javax.xml.datatype.XMLGregorianCalendar
@@ -38,9 +38,7 @@ import types.OdfTypes._
 package object OmiTypes  {
   type  OmiParseResult = Either[Iterable[ParseError], Iterable[OmiRequest]]
   type RequestID = Long
-  def getPaths(request: OdfRequest): Seq[Path] = getLeafs(request.odf).map {
-    _.path
-  }
+  def getPaths(request: OdfRequest): Seq[Path] = request.odf.getLeafPaths.toSeq
   def requestToEnvelope(request: OmiEnvelopeTypeOption, ttl : Long): xmlTypes.OmiEnvelopeType ={
     val namespace = Some("omi.xsd")
     val version = "1.0"
@@ -77,6 +75,7 @@ package object OmiTypes  {
     </omi:msg>
   }
 
+  def currentTimestamp: Timestamp= new Timestamp( new Date().getTime ) 
 }
 
 

@@ -26,6 +26,7 @@ import http.Authorization.{UnauthorizedEx, AuthorizationExtension, CombinedTest}
 import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.server.Directives.extract
 import types.OdfTypes._
+import types.odf.{OldTypeConverter}
 import types.OmiTypes._
 import types.Path
 
@@ -57,7 +58,7 @@ trait AuthApi {
     omiRequest match {
       case odfRequest: OdfRequest =>
 
-        val paths = getLeafs(odfRequest.odf) map (_.path) // todo: refactor getLeafs to member lazy to re-use later
+        val paths = odfRequest.odf.getLeafPaths // todo: refactor getLeafs to member lazy to re-use later
 
         odfRequest match {
           case r: PermissiveRequest =>  // Write or Response
@@ -145,12 +146,13 @@ trait AuthApiProvider extends AuthorizationExtension {
 
           newOdfOpt match {
             case Some(newOdf) if newOdf.objects.nonEmpty =>
+              val nODF= OldTypeConverter.convertOdfObjects(newOdf) 
               orgOmiRequest.unwrapped flatMap {
-                case r: ReadRequest         => Success(r.copy(odf = newOdf))
-                case r: SubscriptionRequest => Success(r.copy(odf = newOdf))
-                case r: WriteRequest        => Success(r.copy(odf = newOdf))
+                case r: ReadRequest         => Success(r.copy(odf = nODF))
+                case r: SubscriptionRequest => Success(r.copy(odf = nODF))
+                case r: WriteRequest        => Success(r.copy(odf = nODF))
                 case r: ResponseRequest     => Success(r.copy(results =
-                  OdfTreeCollection(r.results.head.copy(odf = Some(newOdf))) // TODO: make better copy logic?
+                  OdfTreeCollection(r.results.head.copy(odf = Some(nODF))) // TODO: make better copy logic?
                 ))
                 case r: AnyRef => throw new NotImplementedError(
                   s"Partial authorization granted for ${maybePaths.mkString(", ")}, BUT request '${r.getClass.getSimpleName}' not yet implemented in O-MI node.")

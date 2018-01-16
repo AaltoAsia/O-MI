@@ -8,6 +8,7 @@ import scala.collection.immutable.HashMap;
 import scala.concurrent.duration.*;
 import types.OmiTypes.*;
 import types.OmiTypes.Results;
+import types.odf.OldTypeConverter;
 
 final public class ResultFactory{
   public static OmiResult Success(
@@ -17,7 +18,7 @@ final public class ResultFactory{
     ){
     return new Results.Success(
         types.JavaHelpers.requestIDsFromJava(requestIDs),
-        scala.Option.apply(odf),
+        scala.Option.apply(OldTypeConverter.convertOdfObjects(odf)),
         scala.Option.apply(description)
     );
   }

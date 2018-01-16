@@ -27,7 +27,7 @@ class AgentResponsibilities(){
   }
   def splitCallAndWriteToResponsible( request: OdfRequest ) : ImmutableMap[Option[AgentName], OdfRequest] ={
     def filter: RequestFilter => Boolean = createFilter(request)
-    val odf = OldTypeConverter.convertOdfObjects(request.odf)
+    val odf = request.odf
       
     odf.getLeafPaths.groupBy{
       path: Path => 
@@ -75,7 +75,7 @@ class AgentResponsibilities(){
       case ( None, paths:Set[Path] ) =>
         None -> odf.getUpTreeAsODF(paths.toVector)
     }.mapValues(_odf =>
-      request.replaceOdf(NewTypeConverter.convertODF(_odf)))
+      request.replaceOdf(_odf))
   }
   
   private def createFilter( request: OdfRequest ): RequestFilter => Boolean ={
@@ -120,7 +120,7 @@ class AgentResponsibilities(){
     else checkResponsibilityFor(Some(agentName), request) 
   }
   def checkResponsibilityFor(optionAgentName: Option[AgentName], request:OdfRequest): Boolean ={
-    val odf = OldTypeConverter.convertOdfObjects(request.odf)
+    val odf = request.odf
     val leafPathes = odf.getLeafPaths
     //println( s"Pathes of leaf nodes:\n$leafPathes")
     val pathToResponsible: Seq[(Path,Option[AgentName])]= leafPathes.map {

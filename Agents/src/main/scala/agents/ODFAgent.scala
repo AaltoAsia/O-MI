@@ -17,6 +17,7 @@ import scala.collection.mutable.{Queue => MutableQueue}
 import scala.xml._
 import scala.util.{Random, Try, Success, Failure}
 import java.util.concurrent.TimeUnit
+import types.odf.{ OldTypeConverter, ImmutableODF}
 import java.util.Date
 import java.sql.Timestamp;
 import java.io.File
@@ -104,7 +105,7 @@ class ODFAgent(
       val allNodes = updated ++ objectsWithMetaData
       val newObjects = allNodes.map(createAncestors(_)).foldLeft(OdfObjects())(_.union(_))
       
-      val write = WriteRequest( newObjects, None, interval)
+      val write = WriteRequest( OldTypeConverter.convertOdfObjects(newObjects), None, interval)
       val result = writeToDB( write)
       result.onComplete{
         case Success( response: ResponseRequest )=>

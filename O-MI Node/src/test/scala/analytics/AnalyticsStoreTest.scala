@@ -38,6 +38,7 @@ import org.specs2.mock.Mockito
 import org.specs2.specification.AfterAll
 import responses.{CallbackHandler, RequestHandler, SubscriptionManager}
 import types.{OdfTypes, Path}
+import types.odf.{ OldTypeConverter}
 import types.OdfTypes._
 import types.OmiTypes.{ReadRequest, WriteRequest, ResponseRequest, UserInfo}
 
@@ -152,7 +153,7 @@ class AnalyticsStoreTest extends Specification with Mockito with AfterAll {
         if(!metadata)OdfTypes.createAncestors(OdfInfoItem(p))
         else OdfTypes.createAncestors(OdfInfoItem(p, metaData = Some(OdfMetaData(OdfTreeCollection.empty))))
       ReadRequest(
-        odf = _odf,
+        odf = OldTypeConverter.convertOdfObjects(_odf),
         user0 = UserInfo(remoteAddress = Some(RemoteAddress.apply(bytes = Array[Byte](127,0,0,user + 1 toByte))))
       )
     }
@@ -177,7 +178,7 @@ class AnalyticsStoreTest extends Specification with Mockito with AfterAll {
   def addValue(path: Path, nv: Vector[OdfValue[Any]]): Unit = {
     val pp = Path("Objects/AnalyticsStoreTest/")
     val odf = OdfTypes.createAncestors(OdfInfoItem(pp / path, nv))
-    val writeReq = WriteRequest( odf)
+    val writeReq = WriteRequest( OldTypeConverter.convertOdfObjects(odf))
     implicit val timeout = Timeout( 10 seconds )
     val future = (requestHandler ? writeReq).mapTo[ResponseRequest]
     Await.ready(future, 10 seconds)// InputPusher.handlePathValuePairs(Seq((pp / path, nv)))

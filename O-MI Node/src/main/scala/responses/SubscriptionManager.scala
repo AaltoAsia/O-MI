@@ -29,6 +29,7 @@ import http.CLICmds.{GetSubsWithPollData, ListSubsCmd, SubInfoCmd}
 import http.OmiConfigExtension
 import responses.CallbackHandler.{CallbackFailure, MissingConnection}
 import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
+import types.odf.{ OldTypeConverter, NewTypeConverter }
 import types.OdfTypes._
 import types.OmiTypes._
 import types._
@@ -372,7 +373,7 @@ class SubscriptionManager(
           case (s, n) => Some(s.fold(n)(prev=> prev.union(n)))
         }
       val optionObjects: Option[OdfObjects] = optionObjectsWithoutTypes.map(ob => hTree.intersect(ob))
-      val succResult = Vector(Results.Success(OdfTreeCollection(iSub.id), optionObjects))
+      val succResult = Vector(Results.Success(OdfTreeCollection(iSub.id), optionObjects.map{ objs => OldTypeConverter.convertOdfObjects( objs)}))
       val failedResults = if (failures.nonEmpty) Vector(Results.SubscribedPathsNotFound(failures)) else Vector.empty
       val responseTTL = iSub.interval
       val response = ResponseRequest((succResult ++ failedResults), responseTTL)
@@ -470,6 +471,7 @@ class SubscriptionManager(
       val endTime = subEndTimestamp(subscription.ttl)
       val currentTime = System.currentTimeMillis()
       val currentTimestamp = new Timestamp(currentTime)
+      val subscribedOdf = NewTypeConverter.convertODF( subscription.odf )
 
       val subId = subscription.callback match {
         case cb@Some(callback: RawCallback) =>
@@ -482,7 +484,7 @@ class SubscriptionManager(
             singleStores.subStore execute AddEventSub(
               NormalEventSub(
                 newId,
-                OdfTypes.getLeafs(subscription.odf).iterator.map(_.path).toSeq,
+                OdfTypes.getLeafs(subscribedOdf).iterator.map(_.path).toSeq,
                 endTime,
                 callback
               )
@@ -494,7 +496,7 @@ class SubscriptionManager(
             singleStores.subStore execute AddEventSub(
               NewEventSub(
                 newId,
-                OdfTypes.getLeafs(subscription.odf).iterator.map(_.path).toSeq,
+                OdfTypes.getLeafs(subscribedOdf).iterator.map(_.path).toSeq,
                 endTime,
                 callback
               )
@@ -504,7 +506,7 @@ class SubscriptionManager(
           } //subscription for new node
           case dur: FiniteDuration if dur.gteq(minIntervalDuration) => {
             val iSub = IntervalSub(newId,
-              OdfTypes.getLeafs(subscription.odf).iterator.map(_.path).toSeq,
+              OdfTypes.getLeafs(subscribedOdf).iterator.map(_.path).toSeq,
               endTime,
               callback,
               dur,
@@ -528,7 +530,7 @@ class SubscriptionManager(
           }
         }
         case None => {
-          val paths = OdfTypes.getLeafs(subscription.odf).iterator.map(_.path).toSeq
+          val paths = OdfTypes.getLeafs(subscribedOdf).iterator.map(_.path).toSeq
           subscription.interval match {
             case Duration(-1, duration.SECONDS) => {
               //event poll sub

@@ -13,8 +13,9 @@ import analytics.{AddUser, AddRead, AnalyticsStore}
 import scala.xml.{NodeSeq, PrettyPrinter}
 //import akka.http.StatusCode
 
-import types.OdfTypes._
+import types.odf.{ NewTypeConverter, ImmutableODF, ODF, OldTypeConverter }
 import types.OmiTypes._
+import types.OdfTypes._
 import types.Path
 import types.Path._
 import http.{ActorSystemContext, Storages}
@@ -26,7 +27,7 @@ trait DBReadHandler extends DBHandlerBase{
     */
   def handleRead(read: ReadRequest): Future[ResponseRequest] = {
      read match{
-       case ReadRequest(_,_,begin,end,Some(newest),Some(oldest),_,_,_) =>
+       case ReadRequest(_,_,begin,end,Some(newest),Some(oldest),_,_,_,_) =>
          Future.successful(
            ResponseRequest( Vector(
              Results.InvalidRequest(
@@ -97,7 +98,8 @@ trait DBReadHandler extends DBHandlerBase{
            s"ttl: ${default.ttl} )"
           )
 
-         val leafs = getLeafs(read.odf)
+         val requestedObjects = NewTypeConverter.convertODF(read.odf) 
+         val leafs = getLeafs(requestedObjects)
 
 
          // NOTE: Might go off sync with tree or values if the request is large,
@@ -105,7 +107,7 @@ trait DBReadHandler extends DBHandlerBase{
          val metadataTree = singleStores.hierarchyStore execute GetTree()
 
          //Find nodes from the request that HAVE METADATA OR DESCRIPTION REQUEST
-         def nodesWithoutMetadata: Option[OdfObjects] = getOdfNodes(read.odf).collect {
+         def nodesWithoutMetadata: Option[OdfObjects] = getOdfNodes(requestedObjects).collect {
            case oii@OdfInfoItem(_, _, desc, mData, typeValue,attr)
            if desc.isDefined || mData.isDefined || typeValue.nonEmpty ||attr.nonEmpty=> 
               createAncestors(oii.copy(values = OdfTreeCollection()))
@@ -146,19 +148,19 @@ trait DBReadHandler extends DBHandlerBase{
 
              val notFound = requestsPaths.filterNot { path => foundOdfAsPaths.contains(path) }.toSet.toSeq
              val notFoundOdf = notFound.flatMap{ 
-               path => read.odf.get(path).map{ node => createAncestors(node)}
+               path => requestedObjects.get(path).map{ node => createAncestors(node)}
             }.foldLeft(OdfObjects()){ 
               case (result, nf) => 
                 result.union(nf)
             }
-             val found = if( metaCombined.objects.nonEmpty ) Some( Results.Read(metaCombined) ) else None
-             val nfResults = if (notFound.nonEmpty) Vector(Results.NotFoundPaths(notFoundOdf)) 
+             val found = if( metaCombined.objects.nonEmpty ) Some( Results.Read(OldTypeConverter.convertOdfObjects(metaCombined)) ) else None
+             val nfResults = if (notFound.nonEmpty) Vector(Results.NotFoundPaths(OldTypeConverter.convertOdfObjects(notFoundOdf))) 
              else Vector.empty
              val omiResults = nfResults ++ found.toVector
 
              ResponseRequest( omiResults )
            case None =>
-             ResponseRequest( Vector(Results.NotFoundPaths(read.odf) ) )
+             ResponseRequest( Vector(Results.NotFoundPaths(OldTypeConverter.convertOdfObjects(requestedObjects)) ) )
          }
          resultF
      }

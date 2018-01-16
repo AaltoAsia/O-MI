@@ -2,6 +2,8 @@ package types
 package odf
 
 import types.OdfTypes._
+
+@deprecated( "Should refactor all OdfTypes usages to use new ODF types.")
 object OldTypeConverter{
   def convertOdfObjects( odfObjects: OdfObjects ): ImmutableODF ={
     val objects = Objects(
