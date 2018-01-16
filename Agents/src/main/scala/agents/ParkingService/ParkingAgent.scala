@@ -285,7 +285,7 @@ class ParkingAgent(
                 log.debug( s"$dist < ${parameters.distanceFromDestination}" )
                 dist <= parameters.distanceFromDestination
             }
-        }.getOrElse(false) && pf.containsSpacesFor( parameters.vehicle )
+        }.getOrElse(false) //&& pf.containsSpacesFor( parameters.vehicle )
     }
     val parkingFacilitiesWithMatchingSpots: Vector[ParkingFacility]= nearbyParkingFacilities.map{
       pf: ParkingFacility =>
