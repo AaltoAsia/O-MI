@@ -86,23 +86,6 @@ class ParkingAgent(
     throw  AgentConfigurationException(s"Could not get initial state for $name. Could not read file $startStateFile.")
   }
 
-  val initialPFs: Vector[ParkingFacility] = initialODF.get( parkingLotsPath ).collect{
-    case obj: OdfObject =>
-     val pfs =  obj.objects.filter{
-        pfObj: OdfObject =>
-          log.debug( s"${pfObj.typeValue.toString}" )
-          pfObj.typeValue.contains( "mv:ParkingFacility") ||
-          pfObj.typeValue.contains( "mv:ParkingLot") ||
-          pfObj.typeValue.contains( "mv:ParkingGarage") ||
-          pfObj.typeValue.contains( "mv:UndergroundParkingGarage") ||
-          pfObj.typeValue.contains( "mv:AutomatedParkingGarage") ||
-          pfObj.typeValue.contains( "mv:BicycleParkingStation") 
-      }.map{
-        pfObj: OdfObject =>
-          ParkingFacility( pfObj )
-      }
-      pfs.toVector
-  }.getOrElse( throw new Exception("No parking facilities found in O-DF or configured path is wrong"))
   val findParkingPath: Path = servicePath / "FindParking"
   
   case class ParkingSpaceStatus( path: Path, user: Option[String], free: Boolean)
@@ -215,13 +198,11 @@ class ParkingAgent(
               response
           }.recover{
             case e: ExecutionException => 
-              log.error(e.getCause().toString)
-              e.getCause().printStackTrace()
+              log.error("ParkingAgent call request: ", e)
               Responses.InternalError(e.getCause())                                                                                                                                                             
               
             case NonFatal(e) => 
-              log.error(e.getCause().toString)
-              e.getCause().printStackTrace()
+              log.error("ParkingAgent call request: ", e)
               Responses.InternalError(e)
 
           }
@@ -429,12 +410,10 @@ class ParkingAgent(
             }
       }.recover{
           case e: ExecutionException =>
-              log.error(e.getCause().toString)
-              e.getCause().printStackTrace()
+            log.error("ParkingAgent write request: ", e)
             Responses.InternalError(e.getCause())                                                                                                                                                             
           case NonFatal(e) => 
-              log.error(e.getCause().toString)
-              e.getCause().printStackTrace()
+            log.error("ParkingAgent write request: ", e)
             Responses.InternalError(e)
       
       }
