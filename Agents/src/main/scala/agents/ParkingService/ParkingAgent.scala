@@ -34,6 +34,13 @@ import UsageType._
 import VehicleType._
 
 /**
+ * TODO: Rewrite using ODF type. Note that new types are not as easy to parse to
+ * parking types as
+ * objects because of linearity of new data structure. *Objects do not know it's
+ * childobjects directly, but from set of paths from ODF.
+ */
+
+/**
  * Companion object for ResponsibleScalaAgent. Extends PropsCreator to enforce recommended practice in Props creation.
  *  <a href="http://doc.akka.io/docs/akka/2.4/scala/actors.html#Recommended_Practices">Akka recommends to</a>.
  *
@@ -231,7 +238,7 @@ class ParkingAgent(
     destination: GPSCoordinates,
     distanceFromDestination: Double,
     vehicle: Vehicle,
-    usageType: Option[UsageType],
+    userGroup: Option[UsageType],
     charger: Option[Charger],
     arrivalTime: Option[String]
   )
@@ -240,7 +247,7 @@ class ParkingAgent(
   val vehicleParameterPath: Path = parameterPath / "Vehicle"
   val arrivalTimeParameterPath: Path = parameterPath / "ArrivalTime"
   val distanceFromDestinationParameterPath: Path = parameterPath / "DistanceFromDestination"
-  val usageTypeParameterPath: Path = parameterPath / "ParkingUsageType"
+  val userGroupParameterPath: Path = parameterPath / "ParkingUsageType"
   val chargerParameterPath: Path = parameterPath / "Charger"
   def getfindParkingParams(objects: OdfObjects): Option[ParkingParameters] ={
     val destinationO = objects.get(destinationParameterPath).collect{
@@ -251,7 +258,7 @@ class ParkingAgent(
       case obj: OdfObject =>
         Vehicle(obj)
     }
-    val usageTypeO = objects.get(usageTypeParameterPath).collect{
+    val userGroupO = objects.get(userGroupParameterPath).collect{
       case ii: OdfInfoItem =>
         getStringFromInfoItem(ii).map( UsageType(_))
     }.flatten
@@ -271,7 +278,7 @@ class ParkingAgent(
       destination <- destinationO
       distanceFromDestination <- distanceFromDestinationO.orElse( Some( 1000.0) )
       vehicle <- vehicleO
-    } yield ParkingParameters( destination, distanceFromDestination, vehicle, usageTypeO, chargerO, arrivalTimeO) 
+    } yield ParkingParameters( destination, distanceFromDestination, vehicle, userGroupO, chargerO, arrivalTimeO) 
   }
 
   def findParking( parameters: ParkingParameters ):Future[ResponseRequest]= getCurrentParkingFacilities.map{
@@ -296,9 +303,9 @@ class ParkingAgent(
                 vT: VehicleType => 
                   vT == parameters.vehicle.vehicleType
               } 
-              val usageCheck = parameters.usageType.forall{
+              val usageCheck = parameters.userGroup.forall{
                 check: UsageType =>
-                pS.usageType.forall{
+                pS.userGroup.forall{
                   uT: UsageType => 
                     uT == check
                 }
@@ -585,7 +592,7 @@ class ParkingAgent(
                 ps: ParkingSpace =>
                   ParkingSpace( 
                     ps.name,
-                    ps.usageType,
+                    ps.userGroup,
                     ps.intendedFor,
                     ps.available,
                     None,

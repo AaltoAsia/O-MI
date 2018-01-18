@@ -38,11 +38,12 @@ case class ParkingFacility(
   geo: Option[GPSCoordinates],
   parkingSpaces: Seq[ParkingSpace],
   maxParkingHours: Option[String],
-  openingHours: Option[OpeningHoursSpecification]
+  openingHours: Option[OpeningHoursSpecification],
+  capacities: Vector[Capacity] = Vector.empty
 ){
-   def numberOfCarsharingParkingSpaces: Int = parkingSpaces.count{ parkingSpot => parkingSpot.usageType.contains(UsageType.Carsharing)}
-   def numberOfDisabledPersonParkingSpaces: Int= parkingSpaces.count{ parkingSpot => parkingSpot.usageType.contains(UsageType.DisabledPerson)}
-   def numberOfWomensParkingSpaces: Int= parkingSpaces.count{ parkingSpot => parkingSpot.usageType.contains(UsageType.Womens)}
+   def numberOfCarsharingParkingSpaces: Int = parkingSpaces.count{ parkingSpot => parkingSpot.userGroup.contains(UsageType.Carsharing)}
+   def numberOfDisabledPersonParkingSpaces: Int= parkingSpaces.count{ parkingSpot => parkingSpot.userGroup.contains(UsageType.DisabledPerson)}
+   def numberOfWomensParkingSpaces: Int= parkingSpaces.count{ parkingSpot => parkingSpot.userGroup.contains(UsageType.Womens)}
 
    def numberOfBicycleParkingSpaces: Int = parkingSpaces.count{ parkingSpot => parkingSpot.intendedFor.contains(VehicleType.Bicycle)}
    def numberOfMotorbikeParkingSpaces: Int= parkingSpaces.count{ parkingSpot => parkingSpot.intendedFor.contains(VehicleType.Motorbike)}
@@ -64,6 +65,32 @@ case class ParkingFacility(
      }
    }
 
+  /*
+   * TODO:
+   * Are capacities calculated based on parking spaces in parking facility or
+   * are they just calculated based on something else? If calculated other way
+   * parking facility would not need information about parking spaces. However
+   * then we could need to store capacity some other way.
+   *
+   * TODO:
+   * * Replace InfoItems with Capacities objects.
+   * * Dicide naming converntion for capacity objects.
+   */
+  def calculateCapacities: ParkingFacility = this.copy( capacities =  
+    parkingSpaces.groupBy{ 
+     case space: ParkingSpace => 
+       (space.intendedFor, space.userGroup)
+   }.map{
+     case (Tuple2( vehicle, userGroup), parkingSpaceses) => 
+       Capacity( // Are these always calculated?
+         ???, //TODO: What is name of this actually "vehicles for usergroup"? 
+         Some( parkingSpaceses.count( _.available.getOrElse(false) ) ),
+         Some( parkingSpaceses.length ),
+         vehicle,
+         userGroup
+       )
+   }.toVector
+  )
   def toOdf( parentPath: Path, calculatedPaths: Boolean = false ): OdfObject = {
     val facilityPath = parentPath / name
     val calculatedIIs = if(calculatedPaths) {
@@ -131,6 +158,14 @@ case class ParkingFacility(
       facilityPath / "ParkingSpaces",
       Vector(),
       parkingSpaces.map( _.toOdf(facilityPath / "ParkingSpaces") ).toVector,
+      typeValue = Some( "list" )
+    )
+
+    val capacitiesObj = OdfObject(
+      Vector( OdfQlmID( "Capacities" ) ),
+      facilityPath / "Capacitiess",
+      Vector(),
+      capacities.map( _.toOdf(facilityPath / "Capacities") ).toVector,
       typeValue = Some( "list" )
     )
 
