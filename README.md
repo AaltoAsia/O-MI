@@ -94,7 +94,7 @@ Setup development environment
 2. [Install sbt](http://www.scala-sbt.org/0.13/tutorial/Setup.html)
 3. (windows: logout, or put sbt into PATH yourself)
 4. Open a cmd or shell to the `O-MI` project directory
-5. Then run `sbt re-start` to compile and run the Node
+5. Then run `sbt` and in opened the ">" prompt run `re-start` to compile and run the Node
 6. Visit http://localhost:8080/ to see that it's working
 
 You can check the [Simple Build Tool cheat sheet](#simple-build-tool-cheat-sheet) section to learn more
