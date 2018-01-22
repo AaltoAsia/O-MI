@@ -12,6 +12,7 @@ import types.OdfTypes.OdfTreeCollection._
 import types.OdfTypes._
 import types.OmiTypes._
 import types.Path._
+import types.odf.OldTypeConverter
 import types._
 
 
@@ -61,17 +62,17 @@ class TypesTest extends Specification {
 
   def e1 = !ParseErrorList("test error").isInstanceOf[OmiRequest]
 
-  def e2 = ReadRequest(OdfObjects(), None, None, None, None, None, 0.seconds).isInstanceOf[OmiRequest]
+  def e2 = ReadRequest( OldTypeConverter.convertOdfObjects(OdfObjects()), None, None, None, None, None, 0.seconds).isInstanceOf[OmiRequest]
 
-  def e3 = WriteRequest( OdfObjects(), None, 10.seconds).isInstanceOf[OmiRequest]
+  def e3 = WriteRequest(  OldTypeConverter.convertOdfObjects(OdfObjects()), None, 10.seconds).isInstanceOf[OmiRequest]
 
-  def e4 = SubscriptionRequest(1.seconds, OdfObjects(), None, None, None,  0.seconds).isInstanceOf[OmiRequest]
+  def e4 = SubscriptionRequest(1.seconds, OldTypeConverter.convertOdfObjects(OdfObjects()), None, None, None,  0.seconds).isInstanceOf[OmiRequest]
 
   def e5 = {
     ResponseRequest(Seq(OmiResult(Returns.Success()))).isInstanceOf[OmiRequest]
   }
 
-  def e6 = CancelRequest(Seq(), 10.seconds).isInstanceOf[OmiRequest]
+  def e6 = CancelRequest(Vector.empty, 10.seconds).isInstanceOf[OmiRequest]
   
   def e10 = {
     !  OdfInfoItem(Path("Objects/obj1/sensor")).isInstanceOf[OmiRequest]
@@ -119,8 +120,8 @@ class TypesTest extends Specification {
   }
 
   def omiTypes1 = {
-    val reg1 = ReadRequest(OdfObjects(),None,None,None,None,None)
-    val reg2 = ReadRequest(OdfObjects(),None,None,None,None,Some(HTTPCallback(Uri("Http://google.com"))))
+    val reg1 = ReadRequest( OldTypeConverter.convertOdfObjects(OdfObjects()),None,None,None,None,None)
+    val reg2 = ReadRequest( OldTypeConverter.convertOdfObjects(OdfObjects()),None,None,None,None,Some(HTTPCallback(Uri("Http://google.com"))))
     reg1.hasCallback should be equalTo(false) and(
     reg2.hasCallback should be equalTo(true)) and(
     reg2.callbackAsUri must beSome.like{case a => a.isInstanceOf[URI]}) and(
@@ -130,9 +131,9 @@ class TypesTest extends Specification {
     reg2.rawRequest must startWith("<omiEnvelope"))
   }
   def omiTypes2 = {
-    val reg1 = ReadRequest(OdfObjects(),None,None,None,None,None, 0 seconds)
-    val reg2 = ReadRequest(OdfObjects(),None,None,None,None,None, 5 seconds)
-    val reg3 = ReadRequest(OdfObjects(),None,None,None,None,None, Duration.Inf)
+    val reg1 = ReadRequest( OldTypeConverter.convertOdfObjects(OdfObjects()),None,None,None,None,None, 0 seconds)
+    val reg2 = ReadRequest( OldTypeConverter.convertOdfObjects(OdfObjects()),None,None,None,None,None, 5 seconds)
+    val reg3 = ReadRequest( OldTypeConverter.convertOdfObjects(OdfObjects()),None,None,None,None,None, Duration.Inf)
 
     reg1.handleTTL must be equalTo(2 minutes) and(
     reg2.handleTTL must be equalTo(5 seconds)) and(

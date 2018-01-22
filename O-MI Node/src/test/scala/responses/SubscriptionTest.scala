@@ -27,6 +27,7 @@ import com.typesafe.config.ConfigFactory
 import database._
 import types.OmiTypes._
 import types.OdfTypes._
+import types.odf.{OldTypeConverter, NewTypeConverter}
 import types._
 import http.{ OmiConfig, OmiConfigExtension }
 
@@ -120,7 +121,7 @@ class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with Bef
         result =>
           result.odf.headOption.map{
             objects =>
-              getInfoItems(objects).flatMap{
+              getInfoItems(NewTypeConverter.convertODF(objects)).flatMap{
                 info => info.values
               }
           }
@@ -198,7 +199,7 @@ class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with Bef
 
             result <- response.results.headOption
             objects <- result.odf
-          } yield getInfoItems(objects) flatMap {info => info.values}
+          } yield getInfoItems(NewTypeConverter.convertODF(objects)) flatMap {info => info.values}
         ).toVector
 
       } yield vectorResult
@@ -335,7 +336,7 @@ class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with Bef
               .reduceOption(_.union(_))
               .getOrElse(throw new Exception("subscription path did not exist"))
 
-    val req = SubscriptionRequest( interval seconds, p, None, None, None, ttl seconds)
+    val req = SubscriptionRequest( interval seconds, OldTypeConverter.convertOdfObjects(p), None, None, None, ttl seconds)
     implicit val timeout : Timeout = req.handleTTL
     Await.result((requestHandler ? req).mapTo[ResponseRequest], Duration.Inf)
   }
@@ -345,7 +346,7 @@ class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with Bef
     val hTree = singleStores.hierarchyStore execute GetTree()
     val pp = Path("Objects/SubscriptionTest/")
     val odf = OdfTypes.createAncestors(OdfObject(OdfTreeCollection(OdfQlmID(path)),pp / path))
-    val req = SubscriptionRequest( interval seconds, odf, None, None, None, ttl seconds)
+    val req = SubscriptionRequest( interval seconds,  OldTypeConverter.convertOdfObjects(odf), None, None, None, ttl seconds)
     implicit val timeout : Timeout = req.handleTTL
     Await.result((requestHandler ? req).mapTo[ResponseRequest], Duration.Inf)
   }
@@ -365,7 +366,7 @@ class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with Bef
   def addValue(path: Path, nv: Vector[OdfValue[Any]]): Unit = {
     val pp = Path("Objects/SubscriptionTest/")
     val odf = OdfTypes.createAncestors(OdfInfoItem(pp / path, nv))
-    val writeReq = WriteRequest( odf)
+    val writeReq = WriteRequest(  OldTypeConverter.convertOdfObjects(odf))
     implicit val timeout = Timeout( 10 seconds )
     val future = requestHandler ? writeReq
     Await.ready(future, 10 seconds)// InputPusher.handlePathValuePairs(Seq((pp / path, nv)))

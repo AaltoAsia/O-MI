@@ -16,6 +16,7 @@ import scala.xml.NodeSeq
 import scala.collection.JavaConversions.asJavaIterable
 import scala.collection.JavaConversions.seqAsJavaList
 import scala.collection.JavaConversions.iterableAsScalaIterable
+import types.odf.OldTypeConverter
 
 import scala.concurrent.duration._
 
@@ -424,7 +425,7 @@ invalidOmiTest(
       </msg>
     </read>
   </omiEnvelope>""")
-temp should be equalTo Right(Iterable(ReadRequest(OdfObjects())))
+temp should be equalTo Right(Iterable(ReadRequest( OldTypeConverter.convertOdfObjects(OdfObjects()))))
 
     }
 
@@ -538,12 +539,12 @@ temp should be equalTo Right(Iterable(ReadRequest(OdfObjects())))
 
             }
             lazy val readRequestTest = ReadRequest(
-              readOdf2,
+               OldTypeConverter.convertOdfObjects(readOdf2),
               callback = Some(HTTPCallback("http://testing.test"))
                 )
               lazy val subscriptionRequestTest = SubscriptionRequest(
                 10 seconds,
-                readOdf2,
+                OldTypeConverter.convertOdfObjects(readOdf2),
                 callback = Some(HTTPCallback("http://testing.test"))
                   )
 
@@ -641,13 +642,13 @@ val object1 = createAncestors(OdfObject(
 
             }
   lazy val writeRequestTest = WriteRequest(
-    writeOdf,
+     OldTypeConverter.convertOdfObjects(writeOdf),
     Some(HTTPCallback("http://testing.test"))
   )
   lazy val responseRequestTest = ResponseRequest(
     Seq(OmiResult(
       OmiTypes.Returns.Success(),
-      odf = Some(writeOdf)
+      odf = Some( OldTypeConverter.convertOdfObjects(writeOdf))
       ))
   )
 

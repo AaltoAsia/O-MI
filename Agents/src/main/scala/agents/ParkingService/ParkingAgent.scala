@@ -24,6 +24,7 @@ import parsing.OdfParser
 import types.OmiTypes._
 import types.OdfTypes._
 import types._
+import types.odf.{ OldTypeConverter, NewTypeConverter}
 import types.Path._
 import types.Path
 import parsing.OdfParser
@@ -106,7 +107,7 @@ class ParkingAgent(
   case class ParkingSpaceStatus( path: Path, user: Option[String], free: Boolean)
   //TODO: Populate!!!
   val parkingSpaceStatuses: MutableMap[Path,ParkingSpaceStatus] = MutableHashMap()
-  val initialWrite: Future[ResponseRequest] = writeToDB( WriteRequest(initialODF) )
+  val initialWrite: Future[ResponseRequest] = writeToDB( WriteRequest(OldTypeConverter.convertOdfObjects(initialODF)) )
 
   initialWrite.recover{
     case e: Exception => 
@@ -314,7 +315,7 @@ class ParkingAgent(
             odf.union( add)
         
         }
-        Responses.Success(Some(odf), 10 seconds)
+        Responses.Success(Some(OldTypeConverter.convertOdfObjects(odf)), 10 seconds)
     } else{
         Responses.NotFound("Could not find parking facility with matching parking spaces." )
     }
@@ -388,7 +389,7 @@ class ParkingAgent(
               } else Future{ Responses.InvalidRequest( Some( "Multiple existing parking facilities."))}
             } else if( newPFs.nonEmpty && existingPFs.isEmpty ){
               log.debug("Adding new parking facility")
-              val responseF = writeToDB( WriteRequest( newPFs.map( _.toOdf(parkingLotsPath,true).createAncestors).fold(OdfObjects())( _.union(_) )) )
+              val responseF = writeToDB( WriteRequest( OldTypeConverter.convertOdfObjects(newPFs.map( _.toOdf(parkingLotsPath,true).createAncestors).fold(OdfObjects())( _.union(_) ))) )
               responseF.map{
                 case response: ResponseRequest =>
                   val succResult = response.results.collect{
@@ -433,7 +434,7 @@ class ParkingAgent(
         case reservation: Reservation => 
           log.debug("Reserving parking space")
 
-          val responseF = writeToDB( WriteRequest( reservation.toOdf.createAncestors ) )
+          val responseF = writeToDB( WriteRequest( OldTypeConverter.convertOdfObjects(reservation.toOdf.createAncestors ) ) )
             responseF.onSuccess{
               case response: ResponseRequest =>
                 if( reservation.openLid ){
@@ -448,7 +449,7 @@ class ParkingAgent(
           responseF
         case freeing: FreeReservation => 
           log.debug("Freeing parking space")
-          val responseF = writeToDB( WriteRequest( freeing.toOdf.createAncestors ) )
+          val responseF = writeToDB( WriteRequest( OldTypeConverter.convertOdfObjects(freeing.toOdf.createAncestors) ) )
           responseF.onSuccess{
             case response: ResponseRequest =>
               if( freeing.openLid ){
@@ -463,7 +464,7 @@ class ParkingAgent(
           responseF
         case oL: OpenLid =>
           log.debug("Opening lid")
-          val responseF = writeToDB( WriteRequest( oL.toOdf.createAncestors ) )
+          val responseF = writeToDB( WriteRequest( OldTypeConverter.convertOdfObjects(oL.toOdf.createAncestors) ) )
           responseF.onSuccess{
             case response: ResponseRequest =>
               closeLidIn( oL.path / "Charger" / "LidStatus" )
@@ -472,7 +473,7 @@ class ParkingAgent(
           responseF
         case upl: UpdatePlugMeasurements  =>
           log.debug("Received update from plug")
-          val responseF = writeToDB( WriteRequest( upl.toOdf.createAncestors ) )
+          val responseF = writeToDB( WriteRequest( OldTypeConverter.convertOdfObjects(upl.toOdf.createAncestors) ) )
           responseF
       }.getOrElse{
         Future{
@@ -517,10 +518,10 @@ class ParkingAgent(
     context.system.scheduler.scheduleOnce( delay, self, CloseLid( pathToLidState) )
   }
   def closeLid( pathToLidState: Path ): Future[ResponseRequest] ={
-   val write = WriteRequest( OdfInfoItem(
+   val write = WriteRequest( OldTypeConverter.convertOdfObjects(OdfInfoItem(
      pathToLidState,
      values = Vector( OdfValue( "Locked", currentTime ))
-   ).createAncestors)
+   ).createAncestors))
      
    writeToDB( write)
     
@@ -533,7 +534,9 @@ class ParkingAgent(
   }
   def getCurrentParkingFacilities: Future[Vector[ParkingFacility]]={
     val request = ReadRequest(
-      OdfObject( Vector(OdfQlmID(parkingLotsPath.last)),parkingLotsPath).createAncestors
+      OldTypeConverter.convertOdfObjects(
+        OdfObject( Vector(OdfQlmID(parkingLotsPath.last)),parkingLotsPath).createAncestors
+      )
     )
 
     val result = readFromDB(request)
@@ -544,7 +547,7 @@ class ParkingAgent(
           result : OmiResult =>
             result.returnValue.returnCode == ReturnCode.Success  && result.odf.nonEmpty
         }.flatMap{
-          result : OmiResult => result.odf
+          result : OmiResult => result.odf.map( NewTypeConverter.convertODF(_) )
         }.flatMap{
           odf: OdfObjects =>
             odf.get( parkingLotsPath ).map{
@@ -587,7 +590,7 @@ class ParkingAgent(
         val writeOdf = newPFs.fold(OdfObjects()){
           case ( odf: OdfObjects, l: OdfObjects) => odf.union(l)
         }
-        val request = WriteRequest( writeOdf )
+        val request = WriteRequest( OldTypeConverter.convertOdfObjects(writeOdf) )
         writeToDB( request )
     }
   }
