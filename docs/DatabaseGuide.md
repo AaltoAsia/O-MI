@@ -1,9 +1,15 @@
 Database configuration
 ======================
 
-We use Slick library for SQL database access. The default database in the reference implementation uses H2 database. It is possible to use different database driver for slick by editing application.conf file.
+We use Slick library for SQL database access. The default database in the reference implementation uses H2 database.
+
+SQL databases
+-------------
+
+It is possible to use different database driver for slick just by editing application.conf file and restarting the o-mi-node.
 
 ```
+# The default H2 db configuration
 slick-config {
   driver = "slick.driver.H2Driver$"
   db {
@@ -16,7 +22,9 @@ slick-config {
 }
 ```
 
-All the drivers supported by slick are not tested with the reference implementation and might cause problems if some of the used database features are not supported. Application.conf contains example configuration for postgres database.
+Supported SQL databeses are listed on the [Slick documentation](http://slick.lightbend.com/doc/3.2.1/supported-databases.html).
+
+All the drivers supported by slick are not tested with the reference implementation and might cause problems if some of the used database features are not supported. application.conf contains example configuration for postgres database.
 
 Other supported databases
 -------------------------
