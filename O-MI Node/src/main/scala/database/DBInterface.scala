@@ -182,7 +182,7 @@ class SingleStores(protected val settings: OmiConfigExtension) {
       case info : OdfInfoItem => 
         latestStore execute LookupSensorData(path) match {
           case Some(value) =>
-            OdfInfoItem(path, Iterable(value) ) 
+            OdfInfoItem(path, Iterable(value), attributes = info.attributes )
           case None => 
             info
         }
@@ -191,7 +191,7 @@ class SingleStores(protected val settings: OmiConfigExtension) {
           case obj : OdfObject => 
             obj.copy(
               objects = obj.objects map (o => OdfObject(o.id, o.path, typeValue = o.typeValue)),
-              infoItems = obj.infoItems map (i => OdfInfoItem(i.path)),
+              infoItems = obj.infoItems map (i => OdfInfoItem(i.path, attributes = i.attributes)),
               typeValue = obj.typeValue
             )
     }

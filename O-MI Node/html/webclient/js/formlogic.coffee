@@ -585,7 +585,7 @@ formLogicExt = ($, WebOmi) ->
         path = "#{parentPath}/#{name}"
         id   : idesc path
         text : name
-        type : "infoitem"
+        type : if xmlNode.attributes.method? then "method" else "infoitem"
         children :
           [
             (genData {nodeName:"description"}, path),

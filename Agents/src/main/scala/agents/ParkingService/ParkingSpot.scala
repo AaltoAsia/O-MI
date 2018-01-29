@@ -6,6 +6,8 @@ import scala.util._
 import types.OdfTypes._
 import types._
 
+
+//TODO: 'Rename' to UserGroup
 object UsageType extends Enumeration{
   type UsageType = Value
   val Carsharing, DisabledPerson, Taxi, Womens, ElectricVehicle, Unknown = Value   
@@ -34,15 +36,15 @@ import UsageType._
 import VehicleType._
 
 case class ParkingSpace(
-                         val name: String,
-                         val usageType: Option[UsageType],
-                         val intendedFor: Option[VehicleType],
-                         val available: Option[Boolean],
-                         val user: Option[String],
-                         val charger: Option[Charger],
-                         val maxHeight: Option[Double],
-                         val maxLength: Option[Double],
-                         val maxWidth: Option[Double]
+  val name: String,
+  val userGroup: Option[UsageType],
+  val intendedFor: Option[VehicleType],
+  val available: Option[Boolean],
+  val user: Option[String],
+  val charger: Option[Charger],
+  val maxHeight: Option[Double],
+  val maxLength: Option[Double],
+  val maxWidth: Option[Double]
 ){
   def validForVehicle( vehicle: Vehicle ): Boolean ={
     lazy val dimensionCheck = {
@@ -70,7 +72,7 @@ case class ParkingSpace(
         typeValue = Some( "mv:intededForVehicel")
       ) 
     }.toVector
-    val usageTypeII = usageType.map{
+    val userGroupII = userGroup.map{
       v: UsageType =>
       OdfInfoItem(
         spotPath / "parkingUsageType",
@@ -111,7 +113,7 @@ case class ParkingSpace(
     OdfObject( 
       Vector( OdfQlmID( name ) ),
       spotPath,
-      availableII ++ userII ++ maxHII ++ maxWII ++ maxLII ++ intendedTypeII ++ usageTypeII,
+      availableII ++ userII ++ maxHII ++ maxWII ++ maxLII ++ intendedTypeII ++ userGroupII,
       charger.map{ ch => ch.toOdf( spotPath ) }.toVector,
       typeValue = Some( "mv:ParkingSpace" )
     )

@@ -167,6 +167,7 @@ constsExt = ($, parent, util) ->
   my.icon =
     objects  : "glyphicon glyphicon-tree-deciduous"
     object   : "glyphicon glyphicon-folder-open"
+    method   : "glyphicon glyphicon-flash"
     infoitem : "glyphicon glyphicon-apple"
     metadata : "glyphicon glyphicon-info-sign"
     description : "glyphicon glyphicon-info-sign"
@@ -297,6 +298,9 @@ constsExt = ($, parent, util) ->
         valid_children : ["object"]
       infoitem :
         icon : "odf-infoitem " + my.icon.infoitem
+        valid_children : ["metadata", "description"]
+      method :
+        icon : "odf-method " + my.icon.method
         valid_children : ["metadata", "description"]
       metadata :
         icon : "odf-metadata " + my.icon.metadata

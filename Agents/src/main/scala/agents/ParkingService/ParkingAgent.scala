@@ -7,6 +7,8 @@ import java.util.Date
 import java.net.URLDecoder
 
 import scala.util.{Success, Failure, Try}
+import scala.util.control.NonFatal
+import scala.concurrent.ExecutionException
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, Future}
 import scala.concurrent.Future._
@@ -31,6 +33,13 @@ import parsing.OdfParser
 import scala.xml.XML
 import UsageType._
 import VehicleType._
+
+/**
+ * TODO: Rewrite using ODF type. Note that new types are not as easy to parse to
+ * parking types as
+ * objects because of linearity of new data structure. *Objects do not know it's
+ * childobjects directly, but from set of paths from ODF.
+ */
 
 /**
  * Companion object for ResponsibleScalaAgent. Extends PropsCreator to enforce recommended practice in Props creation.
@@ -85,23 +94,6 @@ class ParkingAgent(
     throw  AgentConfigurationException(s"Could not get initial state for $name. Could not read file $startStateFile.")
   }
 
-  val initialPFs: Vector[ParkingFacility] = initialODF.get( parkingLotsPath ).collect{
-    case obj: OdfObject =>
-     val pfs =  obj.objects.filter{
-        pfObj: OdfObject =>
-          log.debug( s"${pfObj.typeValue.toString}" )
-          pfObj.typeValue.contains( "mv:ParkingFacility") ||
-          pfObj.typeValue.contains( "mv:ParkingLot") ||
-          pfObj.typeValue.contains( "mv:ParkingGarage") ||
-          pfObj.typeValue.contains( "mv:UndergroundParkingGarage") ||
-          pfObj.typeValue.contains( "mv:AutomatedParkingGarage") ||
-          pfObj.typeValue.contains( "mv:BicycleParkingStation") 
-      }.map{
-        pfObj: OdfObject =>
-          ParkingFacility( pfObj )
-      }
-      pfs.toVector
-  }.getOrElse( throw new Exception("No parking facilities found in O-DF or configured path is wrong"))
   val findParkingPath: Path = servicePath / "FindParking"
   
   case class ParkingSpaceStatus( path: Path, user: Option[String], free: Boolean)
@@ -213,9 +205,14 @@ class ParkingAgent(
               //log.debug(s"${responses.size} to response:\n" + response.asXML.toString)
               response
           }.recover{
-            case e: Exception => 
-              log.error(e, "Caught exception: ")
+            case e: ExecutionException => 
+              log.error("ParkingAgent call request: ", e)
+              Responses.InternalError(e.getCause())                                                                                                                                                             
+              
+            case NonFatal(e) => 
+              log.error("ParkingAgent call request: ", e)
               Responses.InternalError(e)
+
           }
       }
   }
@@ -223,7 +220,7 @@ class ParkingAgent(
     destination: GPSCoordinates,
     distanceFromDestination: Double,
     vehicle: Vehicle,
-    usageType: Option[UsageType],
+    userGroup: Option[UsageType],
     charger: Option[Charger],
     arrivalTime: Option[String]
   )
@@ -232,7 +229,7 @@ class ParkingAgent(
   val vehicleParameterPath: Path = parameterPath / "Vehicle"
   val arrivalTimeParameterPath: Path = parameterPath / "ArrivalTime"
   val distanceFromDestinationParameterPath: Path = parameterPath / "DistanceFromDestination"
-  val usageTypeParameterPath: Path = parameterPath / "ParkingUsageType"
+  val userGroupParameterPath: Path = parameterPath / "ParkingUsageType"
   val chargerParameterPath: Path = parameterPath / "Charger"
   def getfindParkingParams(objects: OdfObjects): Option[ParkingParameters] ={
     val destinationO = objects.get(destinationParameterPath).collect{
@@ -243,7 +240,7 @@ class ParkingAgent(
       case obj: OdfObject =>
         Vehicle(obj)
     }
-    val usageTypeO = objects.get(usageTypeParameterPath).collect{
+    val userGroupO = objects.get(userGroupParameterPath).collect{
       case ii: OdfInfoItem =>
         getStringFromInfoItem(ii).map( UsageType(_))
     }.flatten
@@ -263,7 +260,7 @@ class ParkingAgent(
       destination <- destinationO
       distanceFromDestination <- distanceFromDestinationO.orElse( Some( 1000.0) )
       vehicle <- vehicleO
-    } yield ParkingParameters( destination, distanceFromDestination, vehicle, usageTypeO, chargerO, arrivalTimeO) 
+    } yield ParkingParameters( destination, distanceFromDestination, vehicle, userGroupO, chargerO, arrivalTimeO) 
   }
 
   def findParking( parameters: ParkingParameters ):Future[ResponseRequest]= getCurrentParkingFacilities.map{
@@ -277,7 +274,7 @@ class ParkingAgent(
                 log.debug( s"$dist < ${parameters.distanceFromDestination}" )
                 dist <= parameters.distanceFromDestination
             }
-        }.getOrElse(false) && pf.containsSpacesFor( parameters.vehicle )
+        }.getOrElse(false) //&& pf.containsSpacesFor( parameters.vehicle )
     }
     val parkingFacilitiesWithMatchingSpots: Vector[ParkingFacility]= nearbyParkingFacilities.map{
       pf: ParkingFacility =>
@@ -288,9 +285,9 @@ class ParkingAgent(
                 vT: VehicleType => 
                   vT == parameters.vehicle.vehicleType
               } 
-              val usageCheck = parameters.usageType.forall{
+              val usageCheck = parameters.userGroup.forall{
                 check: UsageType =>
-                pS.usageType.forall{
+                pS.userGroup.forall{
                   uT: UsageType => 
                     uT == check
                 }
@@ -420,7 +417,12 @@ class ParkingAgent(
               }
             }
       }.recover{
-        case e: Exception => Responses.InternalError( e)
+          case e: ExecutionException =>
+            log.error("ParkingAgent write request: ", e)
+            Responses.InternalError(e.getCause())                                                                                                                                                             
+          case NonFatal(e) => 
+            log.error("ParkingAgent write request: ", e)
+            Responses.InternalError(e)
       
       }
     }
@@ -572,7 +574,7 @@ class ParkingAgent(
                 ps: ParkingSpace =>
                   ParkingSpace( 
                     ps.name,
-                    ps.usageType,
+                    ps.userGroup,
                     ps.intendedFor,
                     ps.available,
                     None,

@@ -29,6 +29,8 @@ object Charger{
     Charger( brand, model, lidStatus, plugO )
   }
 }
+
+//TODO: Multiple plugs.
 case class Charger(
   brand: Option[String],
   model: Option[String],

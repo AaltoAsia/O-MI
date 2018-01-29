@@ -5,6 +5,7 @@ import scala.math
 import types.OdfTypes._
 import types._
 
+//TODO: How to present validFor*?
 object VehicleType extends Enumeration{
   type VehicleType = Value
   val Car, Truck, Coach, RecreationalVehicle, Bicycle, Motorbike, ElectricVehicle, Unknown = Value   

@@ -230,6 +230,7 @@
                 }
                 siblingValue = o.evaluateXPath(currentOdfNode, "odf:value[1]")[0];
                 return maybeInsertBefore(currentOdfNode, siblingValue, meta);
+              case "method":
               case "infoitem":
                 info = currentParams.request === "write" ? (maybeValues = $(node).data("values"), maybeDesc = $(node).data("description"), !(maybeValues != null) ? (maybeValues = [
                   {

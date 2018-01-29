@@ -9,6 +9,16 @@ package object parkingService{
   def getStringFromInfoItem( iI: OdfInfoItem): Option[String] ={
         iI.values.headOption.map{ value => value.value.toString} 
   }
+  def getLongFromInfoItem( iI: OdfInfoItem): Option[Long] ={
+    iI.values.headOption.map{ value => 
+      value.value match {
+        case l: Long => l
+        case i: Int => i
+        case s: String => s.toInt
+        case s: Any => s.toString.toInt
+      }
+    } 
+  }
   def getDoubleFromInfoItem( iI: OdfInfoItem): Option[Double] ={
             iI.values.headOption.map{
               value => 
