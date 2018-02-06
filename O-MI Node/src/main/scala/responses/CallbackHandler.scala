@@ -137,7 +137,7 @@ class CallbackHandler(
     import system.dispatcher // execution context for futures
     val future = creator
     future.flatMap{ check }.recoverWith{
-      case e if tryUntil.after( currentTimestamp ) && !system.isTerminated => 
+      case e if tryUntil.after( currentTimestamp ) =>
         log.debug(
           s"Retrying after $delay. Will keep trying until $tryUntil. Attempt $attempt."
         )
