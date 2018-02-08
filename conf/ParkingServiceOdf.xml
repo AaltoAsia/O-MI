@@ -51,12 +51,6 @@
                   <InfoItem name="model" type="mv:model" required="false">
                     <value>ExampleI</value>
                   </InfoItem>
-                  <InfoItem name="brand" type="mv:brand"  required="false">
-                    <value type="xs:string">Exampler</value>
-                  </InfoItem>
-                  <InfoItem name="model" type="mv:model"  required="false">
-                    <value type="xs:string">Example</value>
-                  </InfoItem>
                   <InfoItem name="three-phasedCurrentAvailable" type="mv:three-phasedCurrentAvailable" required="false">
                     <value type="xs:boolean">true</value>
                   </InfoItem>
@@ -140,7 +134,7 @@
                       <id>ParkingSpapces</id>
                       <Object type="mv:ParkingSpace">
                         <id>Name of parking space</id>
-                        <InfoItem name="Available"/>
+                        <InfoItem name="available"/>
                         <InfoItem name="validForUserGroup" type="mv:validForUserGroup"/>
                         <InfoItem name="vehicleHeightLimit" type="mv:vehicleHeightLimit"/>
                         <InfoItem name="vehicleLengthLimit" type="mv:vehicleLengthLimit"/>
@@ -266,7 +260,7 @@
           <id>ParkingSpaces</id>
           <Object type="mv:ParkingSpace">
             <id>CarSpace1</id>
-            <InfoItem name="Available">
+            <InfoItem name="available">
               <value type="xs:boolean">true</value>
             </InfoItem>
             <InfoItem name="validForVehicle" type="mv:validForVehicle">
@@ -284,7 +278,7 @@
           </Object>
           <Object type="mv:ParkingSpace">
             <id>CarSpace2</id>
-            <InfoItem name="Available">
+            <InfoItem name="available">
               <value type="xs:boolean">true</value>
             </InfoItem>
             <InfoItem name="validForVehicle" type="mv:validForVehicle">
@@ -302,7 +296,7 @@
           </Object>
           <Object type="mv:ParkingSpace">
             <id>CarSpacePersonWithDisabledParkingPermit1</id>
-            <InfoItem name="Available">
+            <InfoItem name="available">
               <value type="xs:boolean">true</value>
             </InfoItem>
             <InfoItem name="validForUserGroup" type="mv:validForUserGroup">
@@ -323,7 +317,7 @@
           </Object>
           <Object type="mv:ParkingSpace">
             <id>CarSpacePersonWithDisabledParkingPermit2</id>
-            <InfoItem name="Available">
+            <InfoItem name="available">
               <value type="xs:boolean">true</value>
             </InfoItem>
             <InfoItem name="validForUserGroup" type="mv:validForUserGroup">
@@ -344,7 +338,7 @@
           </Object>
           <Object type="mv:ParkingSpace">
             <id>EVSpace1</id>
-            <InfoItem name="Available">
+            <InfoItem name="available">
               <value type="xs:boolean">true</value>
             </InfoItem>
             <InfoItem name="validForVehicle" type="mv:validForVehicle">

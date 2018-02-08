@@ -21,12 +21,54 @@ object Charger{
        case ii: OdfInfoItem =>
         getStringFromInfoItem( ii )
      }.flatten
-     val plugO = obj.get( obj.path / "Plug" ).collect{
-       case cobj: OdfObject =>
-         PowerPlug( cobj )
-     }
+     val plugO = obj.get( obj.path / "Plugs" ).collect{
+       case cobj: OdfObject if cobj.typeValue == "list" =>
+        cobj.objects.collect{
+          case plugObj: OdfObject if plugObj.typeValue == "mv:Plug" =>
+            PowerPlug(plugObj)
+        }
+     }.toVector.flatten
+     val pt = obj.get( obj.path / "plugType" ).collect{
+       case ii: OdfInfoItem =>
+        getStringFromInfoItem( ii )
+     }.flatten
+     val current = obj.get( obj.path / "currentInA" ).collect{
+       case ii: OdfInfoItem =>
+        getDoubleFromInfoItem( ii )
+     }.flatten
+     val currentType = obj.get( obj.path / "currentType" ).collect{
+       case ii: OdfInfoItem =>
+        getStringFromInfoItem( ii )
+     }.flatten
+     val powerInkW = obj.get( obj.path / "powerInkW" ).collect{
+       case ii: OdfInfoItem =>
+        getDoubleFromInfoItem( ii )
+     }.flatten
+     val voltageInV = obj.get( obj.path / "voltageInV" ).collect{
+       case ii: OdfInfoItem =>
+        getDoubleFromInfoItem( ii )
+     }.flatten
+     val tpca = obj.get( obj.path / "three-phasedCurrentAvailable" ).collect{
+       case ii: OdfInfoItem =>
+        getBooleanFromInfoItem( ii )
+     }.flatten
+     val iFCC = obj.get( obj.path / "isFastChargeCapable" ).collect{
+       case ii: OdfInfoItem =>
+        getBooleanFromInfoItem( ii )
+     }.flatten
 
-    Charger( brand, model, lidStatus, plugO )
+    Charger( 
+      brand,
+      model, 
+      lidStatus, 
+       current,
+       currentType,
+       powerInkW,
+       voltageInV,
+       tpca,
+       iFCC,
+      plugO 
+    )
   }
 }
 
@@ -35,16 +77,22 @@ case class Charger(
   brand: Option[String],
   model: Option[String],
   lidStatus: Option[String],
-  plug: Option[PowerPlug]
+  currentInA: Option[Double],
+  currentType: Option[String],
+  powerInkW: Option[Double],
+  voltageInV: Option[Double],
+  threePhasedCurrentAvailable: Option[Boolean],
+  isFastChargeCapable: Option[Boolean],
+  plugs: Seq[PowerPlug]
 ){
   def validFor( requested: Charger ): Boolean={
     requested.brand.forall{ str: String => 
       brand.contains( str)
     } && requested.model.forall{ str: String => 
       brand.contains( str)
-    } && requested.plug.forall{ rplug: PowerPlug =>
+    } /*&& requested.plugs.exists{ rplug: PowerPlug =>
       this.plug.forall(_.validFor(rplug))
-    }
+    }*/
   }
   def toOdf( parentPath: Path ): OdfObject ={
     val chargerPath = parentPath / "Charger"
@@ -71,11 +119,59 @@ case class Charger(
           Vector( OdfValue( str, currentTime ))
         )
     }
+    val powerInkWII = powerInkW.map{ pT =>
+      OdfInfoItem(
+        chargerPath / "powerInkW",
+        Vector( OdfValue( pT, currentTime ) ),
+        typeValue = Some( "mv:powerInkW" )
+      )
+    }.toVector
+    val currentII = currentInA.map{ pT =>
+      OdfInfoItem(
+        chargerPath / "currentInA",
+        Vector( OdfValue( pT, currentTime ) ),
+        typeValue = Some( "mv:currentInA" )
+      )
+    }.toVector
+    val currentTypeII = currentType.map{ cT =>
+      OdfInfoItem(
+        chargerPath / "currentType",
+        Vector( OdfValue( cT, currentTime ) ),
+        typeValue = Some( "mv:currentType" )
+      )
+    }.toVector
+    val voltageInVII = voltageInV.map{ pT =>
+      OdfInfoItem(
+        chargerPath / "voltageInV",
+        Vector( OdfValue( pT, currentTime ) ),
+        typeValue = Some( "mv:voltageInV" )
+      )
+    }.toVector
+    val tpcaII = threePhasedCurrentAvailable.map{ tpca =>
+      OdfInfoItem(
+        chargerPath / "three-phasedCurrentAvailable",
+        Vector( OdfValue( tpca, currentTime ) ),
+        typeValue = Some( "mv:three-phasedCurrentAvailable" )
+      )
+    }.toVector
+    val iFCCII = isFastChargeCapable.map{ iFCC=>
+      OdfInfoItem(
+        chargerPath / "isFastChargeCapable",
+        Vector( OdfValue( iFCC, currentTime ) ),
+        typeValue = Some( "mv:isFastChargeCapable" )
+      )
+    }.toVector
     OdfObject(
       Vector( OdfQlmID( "Charger" )),
       chargerPath,
-      brandII ++ modelII,
-      plug.map( _.toOdf( chargerPath ) ).toVector ,
+      brandII ++ modelII ++
+      currentII ++ 
+      currentTypeII ++
+      powerInkWII ++ 
+      voltageInVII ++
+      tpcaII ++ 
+      iFCCII, 
+      plugs.map( _.toOdf( chargerPath ) ).toVector ,
       typeValue = Some( "mv:Charger" )
     )
   }
