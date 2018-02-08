@@ -73,6 +73,7 @@ class CallbackHandler(
   import system.dispatcher
   protected val httpExtension: HttpExt = Http(system)
   val portsUsedByNode: Seq[Int] = settings.ports.values.toSeq
+  val whenTerminated = system.whenTerminated
 
   protected def currentTimestamp =  new Timestamp( new Date().getTime )
 
@@ -137,7 +138,7 @@ class CallbackHandler(
     import system.dispatcher // execution context for futures
     val future = creator
     future.flatMap{ check }.recoverWith{
-      case e if tryUntil.after( currentTimestamp ) && !system.isTerminated => 
+      case e if tryUntil.after( currentTimestamp ) && !whenTerminated.isCompleted =>
         log.debug(
           s"Retrying after $delay. Will keep trying until $tryUntil. Attempt $attempt."
         )
