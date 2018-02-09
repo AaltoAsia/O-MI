@@ -30,7 +30,7 @@ import types.Path._
 import types.Path
 import parsing.OdfParser
 import scala.xml.XML
-import UsageType._
+import UserGroup._
 import VehicleType._
 
 /**
@@ -219,7 +219,7 @@ class ParkingAgent(
     destination: GPSCoordinates,
     distanceFromDestination: Double,
     vehicle: Vehicle,
-    userGroup: Option[UsageType],
+    validForUserGroup: Option[UserGroup],
     charger: Option[Charger],
     arrivalTime: Option[String]
   )
@@ -228,7 +228,7 @@ class ParkingAgent(
   val vehicleParameterPath: Path = parameterPath / "Vehicle"
   val arrivalTimeParameterPath: Path = parameterPath / "ArrivalTime"
   val distanceFromDestinationParameterPath: Path = parameterPath / "DistanceFromDestination"
-  val userGroupParameterPath: Path = parameterPath / "ParkingUsageType"
+  val validForUserGroupParameterPath: Path = parameterPath / "ParkingUserGroup"
   val chargerParameterPath: Path = parameterPath / "Charger"
   def getfindParkingParams(objects: OdfObjects): Option[ParkingParameters] ={
     val destinationO = objects.get(destinationParameterPath).collect{
@@ -239,9 +239,9 @@ class ParkingAgent(
       case obj: OdfObject =>
         Vehicle(obj)
     }
-    val userGroupO = objects.get(userGroupParameterPath).collect{
+    val validForUserGroupO = objects.get(validForUserGroupParameterPath).collect{
       case ii: OdfInfoItem =>
-        getStringFromInfoItem(ii).map( UsageType(_))
+        getStringFromInfoItem(ii).map( UserGroup(_))
     }.flatten
     val arrivalTimeO = objects.get(arrivalTimeParameterPath).collect{
       case ii: OdfInfoItem =>
@@ -259,7 +259,7 @@ class ParkingAgent(
       destination <- destinationO
       distanceFromDestination <- distanceFromDestinationO.orElse( Some( 1000.0) )
       vehicle <- vehicleO
-    } yield ParkingParameters( destination, distanceFromDestination, vehicle, userGroupO, chargerO, arrivalTimeO) 
+    } yield ParkingParameters( destination, distanceFromDestination, vehicle, validForUserGroupO, chargerO, arrivalTimeO) 
   }
 
   def findParking( parameters: ParkingParameters ):Future[ResponseRequest]= getCurrentParkingFacilities.map{
@@ -280,18 +280,18 @@ class ParkingAgent(
         pf.copy(
           parkingSpaces = pf.parkingSpaces.filter{
             pS: ParkingSpace => 
-              val vehicleCheck = pS.intendedFor.forall{
+              val vehicleCheck = pS.validForVehicle.forall{
                 vT: VehicleType => 
                   vT == parameters.vehicle.vehicleType
               } 
-              val usageCheck = parameters.userGroup.forall{
-                check: UsageType =>
-                pS.userGroup.forall{
-                  uT: UsageType => 
+              val usageCheck = parameters.validForUserGroup.forall{
+                check: UserGroup =>
+                pS.validForUserGroup.forall{
+                  uT: UserGroup => 
                     uT == check
                 }
               }
-              val sizeCheck = pS.validForVehicle( parameters.vehicle )
+              val sizeCheck = pS.validDimensions( parameters.vehicle )
               val chargerCheck = parameters.charger.forall{
                 case charger: Charger =>
                   pS.charger.exists{
@@ -317,7 +317,7 @@ class ParkingAgent(
     }
   }
   override protected def handleWrite(write: WriteRequest) : Future[ResponseRequest] = {
-    def plugMeasureUpdate( plug: PowerPlug): Boolean =  plug.current.nonEmpty || plug.power.nonEmpty || plug.voltage.nonEmpty
+    def plugMeasureUpdate( plug: PowerPlug): Boolean =  plug.currentInA.nonEmpty || plug.powerInkW.nonEmpty || plug.voltageInV.nonEmpty
     val currentPFsF = getCurrentParkingFacilities
     val response = currentPFsF.flatMap{
       currentPFs: Vector[ParkingFacility] =>
@@ -370,10 +370,11 @@ class ParkingAgent(
                             OpenLid( path, user)
                           } else throw WrongUser(path)
 
-                        case ParkingSpace(name,_,_,_,_,Some(Charger(_,_,_,Some(plug))),_,_,_) if plugMeasureUpdate(plug) =>
+                          /*
+                        case ParkingSpace(name,_,_,_,_,Some(Charger(_,_,_,_,_,_,_,_,_,plugs)),_,_,_) if plugs.exists(plugMeasureUpdate(_)) =>
                           val path = parkingLotsPath / targetPF.name / "ParkingSpaces" / name
-                          UpdatePlugMeasurements( path, plug.current, plug.power, plug.voltage) 
-
+                          UpdatePlugMeasurements( path, plug.currentInA, plug.powerInkW, plug.voltageInV) 
+                          */
                         case ps: ParkingSpace =>
                           val path = parkingLotsPath / targetPF.name / "ParkingSpaces" / name
                           throw UnknownEvent(path)
@@ -571,8 +572,8 @@ class ParkingAgent(
                 ps: ParkingSpace =>
                   ParkingSpace( 
                     ps.name,
-                    ps.userGroup,
-                    ps.intendedFor,
+                    ps.validForUserGroup,
+                    ps.validForVehicle,
                     ps.available,
                     None,
                     None,
