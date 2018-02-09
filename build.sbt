@@ -4,7 +4,7 @@ import NativePackagerHelper._
 import Path.relativeTo
 import LinuxPlugin._
 import WindowsPlugin._//import com.typesafe.sbt.packager.archetypes.systemloader.ServerLoader.{Systemd,SystemV,Upstart}
-
+import DebianConstants._
 lazy val separator = taskKey[Unit]("Prints seperating string")
 separator := println("########################################################\n\n\n\n")
 
@@ -29,7 +29,7 @@ addCommandAlias("systemTest", "omiNode/testOnly http.SystemTest")
 
 def commonSettings(moduleName: String) = Seq(
   name := s"O-MI-$moduleName",
-  version := "0.10.1.Dev", // WARN: Release ver must be "x.y.z" (no dashes, '-')
+  version := "0.10.1.dev", // WARN: Release ver must be "x.y.z" (no dashes, '-')
   //version := "0.9.3", 
   scalaVersion := "2.11.8",
   scalacOptions := Seq("-unchecked", "-feature", "-deprecation", "-encoding", "utf8", "-Xlint"),

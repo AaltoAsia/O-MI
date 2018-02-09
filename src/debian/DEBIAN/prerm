@@ -1,0 +1,155 @@
+#!/bin/bash
+set -e
+# #######################################
+# ## SBT Native Packager Bash Library  ##
+# #######################################
+
+# Adding system user
+# $1 = user
+# $2 = uid
+# $3 = group
+# $4 = description
+# $5 = shell (defaults to /bin/false)
+addUser() {
+    user="$1"
+    if [ -z "$user" ]; then
+        echo "usage: addUser user [group] [description] [shell]"
+        exit 1
+    fi
+    uid="$2"
+    if [ -z "$uid" ]; then
+        uid_flags=""
+    else
+        uid_flags="--uid $uid"
+    fi
+    group=${3:-$user}
+    descr=${4:-No description}
+    shell=${5:-/bin/false}
+    if ! getent passwd | grep -q "^$user:";
+    then
+        echo "Creating system user: $user in $group with $descr and shell $shell"
+        useradd $uid_flags --gid $group -r --shell $shell -c "$descr" $user
+    fi
+}
+
+# Adding system group
+# $1 = group
+# $2 = gid
+addGroup() {
+    group="$1"
+    gid="$2"
+    if [ -z "$gid" ]; then
+        gid_flags=""
+    else
+        gid_flags="--gid $gid"
+    fi
+    if ! getent group | grep -q "^$group:" ;
+    then
+        echo "Creating system group: $group"
+        groupadd $gid_flags -r $group
+    fi
+}
+
+# Will return true even if deletion fails
+# $1 = user
+deleteUser() {
+    if hash deluser 2>/dev/null; then
+        deluser --quiet --system $1 > /dev/null || true
+    elif hash userdel 2>/dev/null; then
+        userdel $1
+    else
+        echo "WARNING: Could not delete user $1 . No suitable program (deluser, userdel) found"
+    fi
+}
+
+# Will return true even if deletion fails
+# $1 = group
+deleteGroup() {
+    if hash delgroup 2>/dev/null; then
+        delgroup --quiet --system $1 > /dev/null || true
+    elif hash groupdel 2>/dev/null; then
+        groupdel $1
+    else
+        echo "WARNING: Could not delete user $1 . No suitable program (delgroup, groupdel) found"
+    fi
+}
+
+# #######################################
+
+# systemd support
+#
+# Adding service for management
+# $1 = service name
+#
+addService() {
+    app_name=$1
+
+    app_sys_config="/etc/sysconfig/${app_name}"
+    [ -e "${app_sys_config}" ] && . "${app_sys_config}"
+    if [ -n "${PACKAGE_PREFIX}" ] ;
+    then
+        default_install_location="/usr/share/o-mi-node"
+        actual_install_location="${PACKAGE_PREFIX}/${app_name}"
+
+        sed -i "s|$default_install_location|$actual_install_location|g" "/usr/lib/systemd/system/${app_name}.service"
+    fi
+
+    systemctl enable "$app_name.service"
+}
+
+#
+# Start the service
+# $1 = service name
+#
+startService() {
+    app_name=$1
+    systemctl start "$app_name.service"
+}
+
+#
+# Removing service from autostart
+# $1 = service name
+#
+
+stopService() {
+    app_name=$1
+
+    systemctl stop "$app_name.service"
+    systemctl disable "$app_name.service"
+}
+
+#
+# Restarting the service after package upgrade
+# $1 = service name
+#
+restartService() {
+    app_name=$1
+
+    systemctl daemon-reload
+    systemctl try-restart "$app_name.service"
+}
+
+DATES=$(date +%s)
+
+set +e
+
+systemctl is-active o-mi-node.service
+if [ $? -eq 0 ]
+then
+  { sed "/Success/ q"; kill "$!"; } < <(exec sh -c " (echo 'backup /usr/share/o-mi-node/logs/$DATES-subs /usr/share/o-mi-node/logs/$DATES-odf' && cat) | nc localhost 8180" )
+else
+  read -p "o-mi-node service not running! unable to do backup. Do you wan't to continue? [y/n]" -n 1 -r
+  echo
+  if [[ ! $REPLY =~ ^[Yy]$ ]]
+  then
+    exit 1
+  fi
+fi
+
+set -e
+
+stopService o-mi-node || echo "o-mi-node wasn't even running!"
+
+
+
+exit 0
