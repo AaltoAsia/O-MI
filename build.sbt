@@ -11,7 +11,7 @@ addCommandAlias("release", ";doc;universal:packageBin;universal:packageZipTarbal
 addCommandAlias("systemTest", "omiNode/testOnly http.SystemTest")
 
 //update Both when updating (windows has two %% for url escaping)
-val unixWarp10URL = "https://bintray.com/cityzendata/generic/download_file?file_path=io%2Fwarp10%2Fwarp10%%2F1.1.0%2Fwarp10-1.1.0.tar.gz"
+val unixWarp10URL = "https://bintray.com/cityzendata/generic/download_file?file_path=io%2Fwarp10%2Fwarp10%2F1.2.13%2Fwarp10-1.2.13.tar.gz" //"https://bintray.com/cityzendata/generic/download_file?file_path=io%2Fwarp10%2Fwarp10%%2F1.1.0%2Fwarp10-1.1.0.tar.gz"
 val windowsWarp10URL = "https://bintray.com/cityzendata/generic/download_file?file_path=io%%2Fwarp10%%2Fwarp10%%2F1.1.0%%2Fwarp10-1.1.0.tar.gz"
 
 def commonSettings(moduleName: String) = Seq(
@@ -146,16 +146,27 @@ if [ ! -f "${WARP10_CONFIG}" ]; then
   "$java_cmd" -cp "${app_classpath}" ReplacePath "${WARP10_HOME}"
 fi
 
-if [ "$(find ${WARP10_HOME}/data -maxdepth 1 -type f -printf 1 | wc -m)" -eq 0 ]; then
+LEVELDB_HOME="`${java_cmd} -Xms64m -Xmx64m -XX:+UseG1GC -cp ${WARP10_CP} io.warp10.WarpConfig ${WARP10_CONFIG} 'leveldb.home' | grep 'leveldb.home' | sed -e 's/^.*=//'`"
+
+if [ ! -e ${LEVELDB_HOME} ]; then
+  echo "${LEVELDB_HOME} does not exist - Creating it..."
+  mkdir -p ${LEVELDB_HOME} 2>&1
+  if [ $? != 0 ]; then
+    echo "${LEVELDB_HOME} creation failed"
+    exit 1
+  fi
+fi
+
+if [ "$(find -L ${LEVELDB_HOME} -maxdepth 1 -type f | wc -l)" -eq 0 ]; then
   echo "Init leveldb"
   # Create leveldb database
-  echo "Init leveldb database..." >> "${WARP10_HOME}/logs/nohup.out"
-   "$java_cmd" -cp "${WARP10_CP}" "${WARP10_INIT}" "${WARP10_HOME}/data" >> "${WARP10_HOME}/logs/nohup.out" 2>&1
+  echo \"Init leveldb database...\" >> ${WARP10_HOME}/logs/warp10.log
+  $java_cmd ${WARP10_JAVA_OPTS} -cp ${WARP10_CP} ${WARP10_INIT} ${LEVELDB_HOME} >> ${WARP10_HOME}/logs/warp10.log 2>&1
 fi
 
 if [ "`jps -lm|grep ${WARP10_CLASS}|cut -f 1 -d' '`" == "" ]
 then
-  "$java_cmd" "${WARP10_JAVA_OPTS}" -cp "${WARP10_CP}" "${WARP10_CLASS}" "${WARP10_CONFIG}" >> "${WARP10_HOME}/logs/nohup.out" 2>&1 &
+  "$java_cmd" "${WARP10_JAVA_OPTS}" -cp "${WARP10_CP}" "${WARP10_CLASS}" "${WARP10_CONFIG}" >> "${WARP10_HOME}/logs/warp10.log" 2>&1 &
 else
   echo "A Warp 10 instance is already running"
 fi

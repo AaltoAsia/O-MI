@@ -29,6 +29,7 @@ public class ReplacePath {
       String template = new String(Files.readAllBytes(templatePath), charset);
       template = template.replaceAll("(?m)^standalone\\.home.*", "standalone.home = " + currentPath.toAbsolutePath().toString().replace('\\', '/'));
       template = template.replaceAll("(?m)^standalone\\.port.*", "standalone.port = 8280");
+      template = template.replaceAll("(?m)^warp10\\.plugins.*", "//warp10.plugins = io.warp10.plugins.quantum.QuantumPlugin");
       Files.write(templatePath, template.getBytes(charset));
 
       String logString = new String(Files.readAllBytes(logPath),charset);
