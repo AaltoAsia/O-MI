@@ -31,7 +31,9 @@ import akka.pattern.ask
 import akka.util.{ByteString, Timeout}
 import database._
 import responses._
-import types.OmiTypes.{DefinedCallback, HTTPCallback, WSCallback}
+import spray.json.JsArray
+import types.OdfTypes.{OdfObjects, OdfParseResult}
+import types.OmiTypes.{DefinedCallback, HTTPCallback}
 import types.Path
 
 import scala.io.Source
@@ -46,6 +48,7 @@ object CLICmds
   case class StopAgentCmd(agent: String)
   case class ListAgentsCmd()
   case class ListSubsCmd()
+  case class GetSubsWithPollData()
   case class SubInfoCmd(id: Long)
   case class RemovePath(path: String)
 }
@@ -53,11 +56,11 @@ object CLICmds
 import http.CLICmds._
 object OmiNodeCLI{
   def props(
-    connection: ActorRef,
-    sourceAddress: InetSocketAddress,   
-    removeHandler: RemoveHandlerT,
-    agentSystem: ActorRef,
-    subscriptionManager: ActorRef
+             connection: ActorRef,
+             sourceAddress: InetSocketAddress,
+             removeHandler: CLIHelperT,
+             agentSystem: ActorRef,
+             subscriptionManager: ActorRef
     )(
       ) : Props = Props(
         new OmiNodeCLI(
@@ -73,11 +76,11 @@ object OmiNodeCLI{
  *
  */
 class OmiNodeCLI(
-  protected val connection: ActorRef,
-  protected val sourceAddress: InetSocketAddress,   
-  protected val removeHandler: RemoveHandlerT,
-  protected val agentSystem: ActorRef,
-  protected val subscriptionManager: ActorRef
+                  protected val connection: ActorRef,
+                  protected val sourceAddress: InetSocketAddress,
+                  protected val removeHandler: CLIHelperT,
+                  protected val agentSystem: ActorRef,
+                  protected val subscriptionManager: ActorRef
 ) extends Actor with ActorLogging {
 
   val commands = """Current commands:
@@ -88,6 +91,8 @@ class OmiNodeCLI(
   showSub <id>
   remove <subscription id>
   remove <path>
+  backup <filename for subs> <filename for odf>
+  restore <filename for subs> <filename for odf>
   """
   val ip = sourceAddress.toString
   implicit val timeout : Timeout = 1.minute
@@ -147,7 +152,7 @@ class OmiNodeCLI(
   def subsStrChart (
     intervals: Set[IntervalSub],
     events: Set[EventSub],
-    polls: Set[PolledSub]) : String = {
+    polls: Set[PolledSub]): String = {
 
       val (idS, intervalS, startTimeS, endTimeS, callbackS, lastPolledS) =
         ("ID", "INTERVAL", "START TIME", "END TIME", "CALLBACK", "LAST POLLED")
@@ -171,10 +176,10 @@ class OmiNodeCLI(
   private def listSubs(): String = {
     log.info(s"Got list subs command from $ip")
     val result = (subscriptionManager ? ListSubsCmd())
-        .map{
+      .map{
         case AllSubscriptions(intervals: Set[IntervalSub],
           events: Set[EventSub],
-          polls: Set[PolledSub]) => // type arguments cannot be checked
+          polls: Set[PolledSub]) =>
           log.info("Received list of Subscriptions. Sending ...")
 
           subsStrChart( intervals, events, polls)
@@ -335,6 +340,81 @@ class OmiNodeCLI(
 
   }
 
+  private def backupSubsAndDatabase(subPath: String, odfPath: String) = {
+    val res = Try(for{
+      subs <- backupSubscriptions(subPath)
+      data <- backupDatabase(odfPath)
+    } yield data)
+    res match {
+      case Success(s) => {"Success\n"}
+      case Failure(ex) => {
+        log.error(ex, "failure during backup")
+        "Failure\n"
+      }
+    }
+  }
+
+import CustomJsonProtocol._
+import spray.json._
+
+
+  private def backupSubscriptions(filePath: String): Future[Unit] = {
+    val allSubscriptions: Future[List[(SavedSub, Option[SubData])]] = (subscriptionManager ? GetSubsWithPollData()).mapTo[List[(SavedSub, Option[SubData])]]
+
+    allSubscriptions.map(allSubs => {
+      val file = new File(filePath)
+      val bw = new BufferedWriter(new FileWriter(file))
+      val res = JsArray(allSubs.map{sub =>
+        Try(sub.toJson)}.map{case Success(s) => Some(s);case Failure(ex) => {log.warning(ex.getMessage);None}}.flatten.toVector)
+      bw.write(res.prettyPrint)
+      bw.close()
+    })
+  }
+  private def backupDatabase(filePath: String): Future[Option[Unit]] = {
+    val allData: Future[Option[OdfObjects]] = removeHandler.getAllData()
+    allData.map(aData => {
+      aData.map(odf => {
+        val file = new File(filePath)
+        val bw = new BufferedWriter(new FileWriter(file))
+        val res = odf.asXML
+        val printer = new scala.xml.PrettyPrinter(200, 2)
+        bw.write(printer.format(res.head))
+        bw.close()
+      })
+    })
+  }
+
+  private def restoreSubsAndDatabase(subFilePath: String, odfFilePath: String) = {
+    val temp: Try[String] = for{
+      _   <- Try(restoreDatabase(odfFilePath))
+      res <- Try(restoreSubs(subFilePath))
+    } yield res
+    temp match {
+      case Success(s) => {
+        "Success\n"
+      }
+      case Failure(ex) => {
+        log.error(ex, "Failure when restoring subs and Database")
+        "Failure\n"
+      }
+    }
+  }
+
+  private def restoreDatabase(filePath: String) = {
+    val parsed: OdfParseResult = parsing.OdfParser.parse(new File(filePath))
+    parsed.right.map(removeHandler.writeOdf(_))
+    "Done\n"
+  }
+
+  private def restoreSubs(filePath: String) = {
+    val json: JsValue = Source.fromFile(filePath).getLines().mkString.parseJson
+    val subs: Seq[(SavedSub, Option[SubData])] = json match {
+      case JsArray(subscriptions: Vector[JsObject]) => subscriptions.map(sub => Try(sub.convertTo[(SavedSub, Option[SubData])])).flatMap{case Success(s) => Some(s);case Failure(ex)=> {log.warning(ex.getMessage);None}}
+    }
+    subscriptionManager ! LoadSubs(subs)
+    "Done\n"
+  }
+
   private def send(receiver: ActorRef)(msg: String): Unit =
     receiver ! Write(ByteString(msg)) 
 
@@ -363,9 +443,9 @@ class OmiNodeCLI(
         case Vector("start", agent) => send(sender)(startAgent(agent))
         case Vector("stop", agent)  => send(sender)(stopAgent(agent))
         case Vector("remove", pathOrId) => send(sender)(remove(pathOrId))
-        case Vector("backup") => backUpSubscriptions()
-        case Vector("load") => loadSubscriptions()
-        case Vector(cmd @ _*) => 
+        case Vector("backup", subFilePath, odfFilePath) => send(sender)(backupSubsAndDatabase(subFilePath, odfFilePath))
+        case Vector("restore", subFilePath, odfFilePath) => send(sender)(restoreSubsAndDatabase(subFilePath, odfFilePath))
+        case Vector(cmd @ _*) =>
           log.warning(s"Unknown command from $ip: "+ cmd.mkString(" "))
           send(sender)("Unknown command. Use help to get information of current commands.\r\n>") 
       }
@@ -404,7 +484,7 @@ class OmiNodeCLIListener(
     case Connected(remote, local) =>
       val connection = sender()
       log.info(s"CLI connected from $remote to $local")
-      val remover = new RemoveHandler(singleStores, dbConnection )(system)
+      val remover = new CLIHelper(singleStores, dbConnection )(system)
 
       val cli = context.system.actorOf(
         OmiNodeCLI.props(connection, remote,remover,agentSystem, subscriptionManager),

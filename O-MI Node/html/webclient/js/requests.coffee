@@ -1,4 +1,4 @@
-###########################################################################
+#######################################################################
 #  Copyright (c) 2015 Aalto University.
 #
 #  Licensed under the 4-clause BSD (the "License");
@@ -10,7 +10,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-##########################################################################
+######################################################################
 
 # import WebOmi, add submodule
 requestsExt = (WebOmi) ->

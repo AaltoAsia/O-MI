@@ -13,7 +13,7 @@
 ##########################################################################
 
 
-###################
+###############
 # UTILITY FUNCTIONS
 # extend module webOmi; public helper functions, TODO: move to other file?
 utilExt = ($, parent) ->
@@ -237,11 +237,54 @@ constsExt = ($, parent, util) ->
       createNode "a", "description", "description", null
 
   my.odfTreeSettings =
-    plugins : ["checkbox", "types", "contextmenu"]
+    plugins : ["checkbox", "types", "contextmenu", "sort"]
     core :
       error : (msg) -> WebOmi.debug msg
       force_text : true
       check_callback : true
+      data : (node, callback) ->
+        if node.id == '#' # root
+          callback.call this, [
+            id: "Objects"
+            text: "Objects"
+            state: {opened : false}
+            type: "objects"
+            parent: "#"
+            children: true
+          ]
+          return
+            
+        that = this
+        tree = WebOmi.consts.odfTreeDom.jstree()
+        node = tree.get_node node, true # get dom
+        parents = $.makeArray node.parentsUntil WebOmi.consts.odfTreeDom, "li"
+        parents.reverse()
+        parents.push node
+        parents = (encodeURIComponent tree.get_node(node).text for node in parents)
+        path = parents.join '/'
+        serverUrl = my.serverUrl.val()
+        serverUrl = serverUrl
+          .replace /^wss:/, "https:"
+          .replace /^ws:/, "http:"
+        
+        xhr = $.get
+          url : serverUrl + path
+          dataType : "xml"
+          cache : false
+          success : ((parentPath) -> (xml) ->
+            data = WebOmi.formLogic.OdfToJstree xml.documentElement, path
+            children = for child in data.children
+              switch child.type
+                when "objects", "object"
+                  child.children = true  # tell jstree that there can be children
+              child
+            callback.call that, data.children
+          ) path
+        
+        xhr.fail (xhr, msg, err) ->
+          WebOmi.debug ["O-DF GET fail", xhr, msg, err]
+          alert "Failed to get Object(s): "+msg
+    
     types :
       default :
         icon : "odf-objects " + my.icon.objects
@@ -317,6 +360,7 @@ constsExt = ($, parent, util) ->
     my.sendBtn      = $ '#send'
     my.resetAllBtn  = $ '#resetall'
     my.progressBar  = $ '.response .progress-bar'
+    my.sortOdfTreeCheckbox = $ '#sortOdfTree'
 
     loc = window.location
     proto = if loc.protocol == "https:" then "wss:" else "ws:"
@@ -330,7 +374,9 @@ constsExt = ($, parent, util) ->
 
 
     my.odfTree = my.odfTreeDom.jstree()
-    my.odfTree.set_type('Objects', 'objects')
+    my.odfTree.set_type 'Objects', 'objects'
+    # Commented: done in html instead
+    #my.odfTree.get_node('#Objects', true).addClass('jstree-closed')
 
     my.requestSelDom
       .jstree

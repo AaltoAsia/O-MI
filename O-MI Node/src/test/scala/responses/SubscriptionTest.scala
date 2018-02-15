@@ -149,14 +149,26 @@ class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with Bef
       code === 200
     }*/
 
-    "return incrementing id for new subscription" >> {
+    "return random positive integer as id for new subscription" >> {
       val ns1 = addSub(1,5, Seq(Path("p/1")))
       val ns2 = addSub(1,5, Seq(Path("p/1")))
       val ns3 = addSub(1,5, Seq(Path("p/1")))
       val ns4 = addSub(1,5, Seq(Path("p/1")))
-      val rIDs = Vector( ns1, ns2, ns3, ns4).flatMap{ n => n.results.headOption }.flatMap{ result => result.requestIDs.headOption }
-      val (check, last) = rIDs.foldLeft(( 0l must be_<(1l),0l)){ case ( l, r) => (l._1 and( l._2 must be_<( r )) , r) }
-      rIDs must be size(4) and check
+      val ns5 = addSub(1,5, Seq(Path("p/1")))
+      val ns6 = addSub(1,5, Seq(Path("p/1")))
+      val ns7 = addSub(1,5, Seq(Path("p/1")))
+      val ns8 = addSub(1,5, Seq(Path("p/1")))
+      val ns9 = addSub(1,5, Seq(Path("p/1")))
+      val ns10 = addSub(1,5, Seq(Path("p/1")))
+      val ns11 = addSub(1,5, Seq(Path("p/1")))
+      val ns12 = addSub(1,5, Seq(Path("p/1")))
+      val ns13 = addSub(1,5, Seq(Path("p/1")))
+      val ns14 = addSub(1,5, Seq(Path("p/1")))
+      val ns15 = addSub(1,5, Seq(Path("p/1")))
+      val ns16 = addSub(1,5, Seq(Path("p/1")))
+      val rIDs = Vector( ns1, ns2, ns3, ns4, ns5, ns6, ns7, ns8, ns9, ns10, ns11, ns12, ns13, ns14, ns15, ns16).flatMap{ n => n.results.headOption }.flatMap{ result => result.requestIDs.headOption }
+      val check = rIDs.foldLeft( 0l must be_<(1l)){ case ( l, r) => l and((r must beBetween(0L, Int.MaxValue)))}
+      rIDs must be size(16) and check
     }
 
     "fail when trying to use invalid interval" in new Actors {
@@ -332,7 +344,7 @@ class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with Bef
   def addSubForObject(ttl: Long, interval: Long, path: String, callback: String = "") = {
     val hTree = singleStores.hierarchyStore execute GetTree()
     val pp = Path("Objects/SubscriptionTest/")
-    val odf = OdfTypes.createAncestors(OdfObject(OdfTreeCollection(QlmID(path)),pp / path))
+    val odf = OdfTypes.createAncestors(OdfObject(OdfTreeCollection(OdfQlmID(path)),pp / path))
     val req = SubscriptionRequest( interval seconds, odf, None, None, None, ttl seconds)
     implicit val timeout : Timeout = req.handleTTL
     Await.result((requestHandler ? req).mapTo[ResponseRequest], Duration.Inf)

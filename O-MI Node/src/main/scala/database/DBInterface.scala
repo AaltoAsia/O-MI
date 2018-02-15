@@ -49,7 +49,7 @@ package object database {
   }
   def historyLength: Int = histLength
 
-  val dbConfigName = "dbconf"
+  val dbConfigName = "slick-config"
 
 }
 //import database.database._
@@ -113,7 +113,6 @@ class SingleStores(protected val settings: OmiConfigExtension) {
   val hierarchyStore    = createPrevayler(OdfTree.empty, "hierarchyStore")
   val subStore          = createPrevayler(Subs.empty,"subscriptionStore")
   val pollDataPrevayler = createPrevayler(PollSubData.empty, "pollDataPrevayler")
-  val idPrevayler       = createPrevayler(SubIds(0), "idPrevayler")
   subStore execute RemoveWebsocketSubs()
 
   def buildOdfFromValues(items: Seq[(Path,OdfValue[Any])]): OdfObjects = {
@@ -307,7 +306,7 @@ class TestDB(
   useMaintainer: Boolean = true, 
   val config: Config = ConfigFactory.load(
     ConfigFactory.parseString("""
-dbconf {
+slick-config {
   driver = "slick.driver.H2Driver$"
   db {
     url = "jdbc:h2:mem:test1"
@@ -319,7 +318,7 @@ dbconf {
 }
 """
 )).withFallback(ConfigFactory.load()),
-  val configName: String = "dbconf")(
+  val configName: String = "slick-config")(
   protected val system : ActorSystem,
   protected val singleStores : SingleStores,
   protected val settings : OmiConfigExtension

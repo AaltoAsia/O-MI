@@ -20,26 +20,26 @@ import java.util.concurrent.TimeUnit._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Future, duration}
-import scala.util.Try
+import scala.util.{Random, Try}
 import scala.concurrent.duration._
 import scala.collection.immutable.HashMap
-
-import akka.actor.{Cancellable, Actor, ActorLogging, Props}
+import akka.actor.{Actor, ActorLogging, Cancellable, Props}
 import database._
-import http.CLICmds.{ ListSubsCmd, SubInfoCmd}
-import http.{OmiConfigExtension}
-import responses.CallbackHandler.{ MissingConnection, CallbackFailure}
+import http.CLICmds.{GetSubsWithPollData, ListSubsCmd, SubInfoCmd}
+import http.OmiConfigExtension
+import responses.CallbackHandler.{CallbackFailure, MissingConnection}
 import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 import types.OdfTypes._
 import types.OmiTypes._
 import types._
+
+import scala.annotation.tailrec
 
 /**
  * Message for triggering handling of intervalsubscriptions
  */
 case class HandleIntervals(id: Long)
 
-case class AllSubscriptions(intervalSubs: Set[IntervalSub], eventSubs: Set[EventSub], pollSubs: Set[PolledSub])
 case class LoadSubscription(sub: SavedSub)
 /**
  * New subscription event
@@ -59,6 +59,16 @@ case class RemoveSubscription(id: Long)
  * @param id
  */
 case class SubscriptionTimeout(id: Long)
+
+case class AllSubscriptions(intervals: Set[IntervalSub], events: Set[EventSub], polls: Set[PolledSub])
+
+/**
+  * Used for loading subscriptions during runtime
+  *
+  * @param subs list of subscriptions to be added along with optional poll subscription data
+  */
+case class LoadSubs(subs: Seq[(SavedSub, Option[SubData])])
+
 
 /**
  * Event for polling pollable subscriptions
@@ -132,7 +142,6 @@ class SubscriptionManager(
 
   //TODO FIX handleIntervals() //when server restarts
 
-
   def receive: PartialFunction[Any, Unit] = {
     case NewSubscription(subscription) => sender() ! subscribe(subscription)
     case HandleIntervals(id) => handleIntervals(id)
@@ -140,9 +149,58 @@ class SubscriptionManager(
     case SubscriptionTimeout(id) => removeSubscription(id)
     case PollSubscription(id) => sender() ! pollSubscription(id)
     case ListSubsCmd() => sender() ! getAllSubs()
+    case GetSubsWithPollData() => sender() ! getSubsWithPollData()
     case SubInfoCmd(id) => sender() ! getSub(id)
-    case LoadSubscription(sub)  => loadSub(sub)
+    case LoadSubs(subs: Seq[(SavedSub, Option[SubData])]) => sender() ! loadSub(subs)
   }
+
+  /**
+    * Used to load subscriptions during runtime using cli
+    *
+    * @param subs list of subs and optional poll subscription data
+    */
+  private def loadSub(subs: Seq[(SavedSub, Option[SubData])]): Unit = {
+    val allSubs = getAllSubs()
+    val existingIds: Set[Long] = (allSubs.polls ++ allSubs.intervals ++ allSubs.events).map(_.id)
+    subs.foreach{
+      case (sub: PolledEventSub, data) if !existingIds.contains(sub.id) =>{
+        singleStores.subStore execute AddPollSub(sub)
+
+        data.foreach(sData => {
+          for {
+            (path, data) <- sData.pathData
+            value <- data
+            res = singleStores.pollDataPrevayler execute AddPollData(sub.id, path, value)
+          } yield res
+        })
+      }
+      case (sub: PollIntervalSub, data)if !existingIds.contains(sub.id) => {
+        singleStores.subStore execute AddPollSub(sub)
+
+        data.foreach(sData => {
+          for {
+            (path, data) <- sData.pathData
+            value <- data
+            res = singleStores.pollDataPrevayler execute AddPollData(sub.id, path, value)
+          } yield res
+        })
+      }
+      case (sub:EventSub,_)if !existingIds.contains(sub.id) => {
+        singleStores.subStore execute AddEventSub(sub)
+      }
+      case (sub: IntervalSub, _)if !existingIds.contains(sub.id) => {
+        singleStores.subStore execute AddIntervalSub(sub)
+
+        intervalMap.put(sub.id, intervalScheduler.schedule(sub.interval,sub.interval,self,HandleIntervals(sub.id)))
+
+
+      }
+      case (sub,_) if existingIds.contains(sub.id)=> log.error(s"subscription with id ${sub.id} already exists")
+      case sub => log.error("Unknown subscription:" + sub)
+      }
+    }
+
+
 
   private def handlePollEvent(pollEvent: PolledEventSub) = {
     log.debug(s"Creating response message for Polled Event Subscription")
@@ -361,10 +419,26 @@ class SubscriptionManager(
 
   private def getAllSubs(): AllSubscriptions = {
     log.info("getting list of all subscriptions")
-    val intervalSubs: Set[IntervalSub] = singleStores.subStore execute GetAllIntervalSubs()
-    val eventSubs: Set[EventSub] = singleStores.subStore execute GetAllEventSubs()
-    val pollSubs: Set[PolledSub] = singleStores.subStore execute GetAllPollSubs()
+    val intervalSubs = singleStores.subStore execute GetAllIntervalSubs()
+    val eventSubs = singleStores.subStore execute GetAllEventSubs()
+    val pollSubs = singleStores.subStore execute GetAllPollSubs()
     AllSubscriptions(intervalSubs, eventSubs, pollSubs)
+  }
+
+  private def getSubsWithPollData(): List[(SavedSub, Option[SubData])] = {
+    val allSubs = getAllSubs()
+    (allSubs.events ++ allSubs.intervals ++ allSubs.polls).collect{
+        case e: EventSub => (e, None)
+        case i: IntervalSub => (i, None)
+        case pe: PolledEventSub => {
+          (pe,
+            Some(SubData((singleStores.pollDataPrevayler execute CheckSubscriptionData(pe.id)).map(identity)(collection.breakOut))))
+        }
+        case pi: PollIntervalSub =>{
+          (pi,
+            Some(SubData((singleStores.pollDataPrevayler execute CheckSubscriptionData(pi.id)).map(identity)(collection.breakOut))))
+        }
+      }.toList
   }
 
   private def getSub(id: Long) = {
@@ -374,36 +448,7 @@ class SubscriptionManager(
     val allSubs = intervalSubs ++ eventSubs ++ pollSubs
     allSubs.find { sub => sub.id == id }
   }
-  private def loadSub(subscription: SavedSub): Boolean = { // used for loading subscriptions from backup
-    subscription match {
-      case sub: PollNormalEventSub => {
-        singleStores.subStore execute AddPollSub(sub)
-        log.debug(s"loaded $sub")
-      }
-      case sub: PollNewEventSub => {
-        singleStores.subStore execute AddPollSub(sub)
-        log.debug(s"loaded $sub")
-      }
-      case sub: PollIntervalSub => {
-        singleStores.subStore execute AddPollSub(sub)
-        log.debug(s"loaded $sub")
-      }
-      case sub: IntervalSub => {
-        singleStores.subStore execute AddIntervalSub(sub)
-        intervalMap.put(sub.id, intervalScheduler.schedule(sub.interval,sub.interval,self,HandleIntervals(sub.id)))
-        log.debug(s"loaded $sub")
-      }
-      case sub: NormalEventSub => {
-        singleStores.subStore execute AddEventSub(sub)
-        log.debug(s"loaded $sub")
-      }
-      case sub: NewEventSub => {
-        singleStores.subStore execute AddEventSub(sub)
-        log.debug(s"loaded $sub")
-      }
-    }
-    true
-  }
+  private val rand = new Random()
   /**
    * Method used to add subscriptions to Prevayler database
    * @param subscription SubscriptionRequest of the subscription to add
@@ -411,7 +456,17 @@ class SubscriptionManager(
    */
   private def subscribe(subscription: SubscriptionRequest): Try[Long] = {
     Try {
-      val newId = singleStores.idPrevayler execute GetAndUpdateId
+
+      lazy val allSubs = getAllSubs()
+      lazy val allIds: Set[RequestID] = (allSubs.events ++ allSubs.intervals ++ allSubs.polls).map(_.id)
+      @tailrec def getNewId(): Long = {
+        val nId: Long = rand.nextInt(Int.MaxValue)
+        if(allIds.contains(nId))
+          getNewId()
+        else
+          nId
+      }
+      lazy val newId = getNewId() //positive random integer
       val endTime = subEndTimestamp(subscription.ttl)
       val currentTime = System.currentTimeMillis()
       val currentTimestamp = new Timestamp(currentTime)

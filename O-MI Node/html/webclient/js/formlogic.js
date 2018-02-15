@@ -6,7 +6,7 @@
     slice = [].slice;
 
   formLogicExt = function($, WebOmi) {
-    var consts, my;
+    var consts, genData, my, objChildren;
     my = WebOmi.formLogic = {};
     my.setRequest = function(xml) {
       var mirror;
@@ -525,91 +525,88 @@
       }
       return my.wsCallbacks = [];
     };
+    objChildren = WebOmi.omi.getObjectChildren;
+    my.OdfToJstree = genData = function(xmlNode, parentPath) {
+      var child, name, path;
+      switch (xmlNode.nodeName) {
+        case "Objects":
+          name = xmlNode.nodeName;
+          return {
+            id: idesc(name),
+            text: name,
+            state: {
+              opened: true
+            },
+            type: "objects",
+            children: (function() {
+              var i, len, ref, results;
+              ref = objChildren(xmlNode);
+              results = [];
+              for (i = 0, len = ref.length; i < len; i++) {
+                child = ref[i];
+                results.push(genData(child, name));
+              }
+              return results;
+            })()
+          };
+        case "Object":
+          name = WebOmi.omi.getOdfId(xmlNode);
+          path = parentPath + "/" + name;
+          return {
+            id: idesc(path),
+            text: name,
+            type: "object",
+            children: [
+              genData({
+                nodeName: "description"
+              }, path)
+            ].concat((function() {
+              var i, len, ref, results;
+              ref = objChildren(xmlNode);
+              results = [];
+              for (i = 0, len = ref.length; i < len; i++) {
+                child = ref[i];
+                results.push(genData(child, path));
+              }
+              return results;
+            })())
+          };
+        case "InfoItem":
+          name = WebOmi.omi.getOdfId(xmlNode);
+          path = parentPath + "/" + name;
+          return {
+            id: idesc(path),
+            text: name,
+            type: "infoitem",
+            children: [
+              genData({
+                nodeName: "description"
+              }, path), genData({
+                nodeName: "MetaData"
+              }, path)
+            ]
+          };
+        case "MetaData":
+          path = parentPath + "/MetaData";
+          return {
+            id: idesc(path),
+            text: "MetaData",
+            type: "metadata",
+            children: []
+          };
+        case "description":
+          path = parentPath + "/description";
+          return {
+            id: idesc(path),
+            text: "description",
+            type: "description",
+            children: []
+          };
+      }
+    };
     my.buildOdfTree = function(objectsNode) {
-      var evaluateXPath, genData, objChildren, tree, treeData;
+      var tree, treeData;
       tree = WebOmi.consts.odfTree;
-      evaluateXPath = WebOmi.omi.evaluateXPath;
-      objChildren = function(xmlNode) {
-        return evaluateXPath(xmlNode, './odf:InfoItem | ./odf:Object');
-      };
-      genData = function(xmlNode, parentPath) {
-        var child, name, path;
-        switch (xmlNode.nodeName) {
-          case "Objects":
-            name = xmlNode.nodeName;
-            return {
-              id: idesc(name),
-              text: name,
-              state: {
-                opened: true
-              },
-              type: "objects",
-              children: (function() {
-                var i, len, ref, results;
-                ref = objChildren(xmlNode);
-                results = [];
-                for (i = 0, len = ref.length; i < len; i++) {
-                  child = ref[i];
-                  results.push(genData(child, name));
-                }
-                return results;
-              })()
-            };
-          case "Object":
-            name = WebOmi.omi.getOdfId(xmlNode);
-            path = parentPath + "/" + name;
-            return {
-              id: idesc(path),
-              text: name,
-              type: "object",
-              children: [
-                genData({
-                  nodeName: "description"
-                }, path)
-              ].concat((function() {
-                var i, len, ref, results;
-                ref = objChildren(xmlNode);
-                results = [];
-                for (i = 0, len = ref.length; i < len; i++) {
-                  child = ref[i];
-                  results.push(genData(child, path));
-                }
-                return results;
-              })())
-            };
-          case "InfoItem":
-            name = WebOmi.omi.getOdfId(xmlNode);
-            path = parentPath + "/" + name;
-            return {
-              id: idesc(path),
-              text: name,
-              type: "infoitem",
-              children: [
-                genData({
-                  nodeName: "description"
-                }, path), genData({
-                  nodeName: "MetaData"
-                }, path)
-              ]
-            };
-          case "MetaData":
-            path = parentPath + "/MetaData";
-            return {
-              id: idesc(path),
-              text: "MetaData",
-              type: "metadata",
-              children: []
-            };
-          case "description":
-            path = parentPath + "/description";
-            return {
-              id: idesc(path),
-              text: "description",
-              type: "description",
-              children: []
-            };
-        }
-      };
       treeData = genData(objectsNode);
       tree.settings.core.data = [treeData];
       return tree.refresh();
@@ -651,14 +648,35 @@
         formLogic.clearResponse();
         return $('.clearHistory').trigger('click');
       });
+      consts.sortOdfTreeCheckbox.on('change', function() {
+        var root, tree;
+        tree = consts.odfTreeDom.jstree();
+        if (this.checked) {
+          tree.settings.sort = function(a, b) {
+            if (this.get_text(a) > this.get_text(b)) {
+              return 1;
+            } else {
+              return -1;
+            }
+          };
+          root = tree.get_node($("#Objects"));
+          tree.sort(root, true);
+          return tree.redraw_node(root, true);
+        } else {
+          return tree.settings.sort = function(a, b) {
+            return -1;
+          };
+        }
+      });
       consts.ui.odf.ref.on("changed.jstree", function(_, data) {
         var odfTreePath;
         switch (data.action) {
           case "select_node":
             odfTreePath = data.node.id;
-            return formLogic.modifyRequest(function() {
+            formLogic.modifyRequest(function() {
               return requests.params.odf.add(odfTreePath);
             });
+            return true;
           case "deselect_node":
             odfTreePath = data.node.id;
             formLogic.modifyRequest(function() {
@@ -667,6 +685,8 @@
             return $(jqesc(odfTreePath)).children(".jstree-children").find(".jstree-node").each(function(_, node) {
               return consts.odfTree.deselect_node(node, true);
             });
+          default:
+            return true;
         }
       });
       consts.ui.request.ref.on("select_node.jstree", function(_, data) {

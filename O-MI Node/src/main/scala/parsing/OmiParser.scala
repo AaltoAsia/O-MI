@@ -93,7 +93,7 @@ object OmiParser extends Parser[OmiParseResult] {
         xmlGen.scalaxb.fromXML[xmlTypes.OmiEnvelopeType](root)
       } match {
         case Failure(e) => 
-            println( s"Exception: $e\nStackTrace:\n")
+            //println( s"Exception: $e\nStackTrace:\n")
             e.printStackTrace
             Left( Iterable( ScalaxbError( e.getMessage ) ) )
       
@@ -125,7 +125,7 @@ object OmiParser extends Parser[OmiParseResult] {
             case Failure(e: ParseError) => 
               Left( Iterable( e ) )
             case Failure(e) => 
-              println( s"Exception: $e\nStackTrace:\n")
+              //println( s"Exception: $e\nStackTrace:\n")
               e.printStackTrace
               Left( Iterable( OMIParserError(e.getMessage) ) )
           }

@@ -34,8 +34,7 @@
     </appender>
 
 
-
-<!-- Possible to edit lvels of different loggers INFO level is currently set using filter
+<!-- Possible to edit levels of different loggers INFO level is currently set using filter
     <logger name="akka" level="INFO" />
     <logger name="slick" level="INFO" />
     <logger name="com.zaxxer.hikari" level="INFO" />
@@ -43,13 +42,10 @@
     <logger name="com.typesafe.sslconfig" level="INFO" />
     <logger name="spray.can" level="INFO" />
     <logger name="akka.io.TcpListener" level="INFO" />
-    
 
     <logger name="akka" level="INFO" />
     <logger name="agentSystem" level="INFO" />
     <logger name="accessControl" level="INFO" />
-    <logger name="spray.can" level="INFO" />
-    <logger name="akka.io.TcpListener" level="INFO" />
 -->
     <root level="INFO">
         <appender-ref ref="CONSOLE"/>

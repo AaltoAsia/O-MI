@@ -179,13 +179,6 @@ case class RemoveIntervalSub(id: Long) extends TransactionWithQuery[Subs, Boolea
     }
   }
 
-  case object GetAndUpdateId extends TransactionWithQuery[SubIds, Long] {
-    override def executeAndQuery(p: SubIds, date: Date): Long = {
-      p.id = p.id + 1
-      p.id
-    }
-  }
-
 
 //TODO EventSub
   case class AddEventSub(eventSub: EventSub) extends Transaction[Subs] {
@@ -266,11 +259,14 @@ case class RemoveIntervalSub(id: Long) extends TransactionWithQuery[Subs, Boolea
   //  }
   //}
 
-  case class GetSubsForPath(path: Path) extends Query[Subs, Set[PollNormalEventSub]] {
-    def query(store: Subs, d: Date): Set[PollNormalEventSub] = {
+  case class GetSubsForPath(path: Path) extends Query[Subs, Set[NotNewEventSub]] {
+    def query(store: Subs, d: Date): Set[NotNewEventSub] = {
       val ids = path.inits.flatMap(path => store.pathToSubs.get(path)).toSet.flatten
       //val ids = store.pathToSubs.get(path).toSet.flatten
-      ids.map(store.idToSub(_)).collect{case norms: PollNormalEventSub => norms}
+      ids.map(store.idToSub(_)).collect{
+        case events: PollNormalEventSub => events
+        case intervals: PollIntervalSub => intervals
+      }
     }
   }
 

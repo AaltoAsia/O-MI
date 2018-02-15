@@ -97,14 +97,14 @@ class CallbackHandler(
     val httpEntity = FormData( ("msg", request.asXML.toString)).toEntity( HttpCharsets.`UTF-8` )
     val httpRequest = RequestBuilding.Post(address, httpEntity)
 
-    log.info(
+    log.debug(
       s"Trying to send POST request to $address, will keep trying until $tryUntil."
     )
 
     val check : HttpResponse => Future[Unit] = { response =>
         if (response.status.isSuccess){
           //TODO: Handle content of response, possible piggybacking
-          log.info(
+          log.debug(
             s"Successful send POST request to $address with ${response.status}"
           )
           response.discardEntityBytes()

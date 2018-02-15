@@ -6,6 +6,9 @@ import scala.math
 import types.OdfTypes._
 import types._
 
+case class AllreadyReserved( path: Path ) extends Exception( s"Parking space at $path is allready reserved.")
+case class WrongUser( path: Path ) extends Exception( s"Parking space at $path is received to other user.")
+case class UnknownEvent(path: Path) extends Exception( s"Received unknown event fo Parking space at $path.")
 sealed trait ParkingEvent
 case class Reservation( path: Path, user: String, openLid: Boolean = false )extends ParkingEvent{
 
@@ -13,7 +16,7 @@ case class Reservation( path: Path, user: String, openLid: Boolean = false )exte
     val lidStatus = if( openLid ){
       Vector(
       OdfObject(
-        Vector( QlmID( "Charger" )),
+        Vector( OdfQlmID( "Charger" )),
         path / "Charger",
         infoItems = Vector(
           OdfInfoItem(
@@ -24,7 +27,7 @@ case class Reservation( path: Path, user: String, openLid: Boolean = false )exte
       ))
     } else Vector()
     OdfObject(
-      Vector( QlmID( path.last )),
+      Vector( OdfQlmID( path.last )),
       path,
       objects = lidStatus,
       infoItems = Vector(
@@ -46,7 +49,7 @@ case class FreeReservation( path: Path, user: String, openLid: Boolean = false )
     val lidStatus = if( openLid ){
       Vector(
       OdfObject(
-        Vector( QlmID( "Charger" )),
+        Vector( OdfQlmID( "Charger" )),
         path / "Charger",
         infoItems = Vector(
           OdfInfoItem(
@@ -57,7 +60,7 @@ case class FreeReservation( path: Path, user: String, openLid: Boolean = false )
       ))
     } else Vector()
     OdfObject(
-      Vector( QlmID( path.last )),
+      Vector( OdfQlmID( path.last )),
       path,
       objects = lidStatus,
       infoItems = Vector(
@@ -78,11 +81,11 @@ case class OpenLid( path: Path, user: String ) extends ParkingEvent{
   def lidStatusPath = path / "Charger" / "LidStatus"
   def toOdf: OdfObject ={
     OdfObject(
-      Vector( QlmID( path.last )),
+      Vector( OdfQlmID( path.last )),
       path,
       objects = Vector(
         OdfObject(
-          Vector( QlmID( "Charger" )),
+          Vector( OdfQlmID( "Charger" )),
           path / "Charger",
           infoItems = Vector(
             OdfInfoItem(
@@ -126,15 +129,15 @@ case class UpdatePlugMeasurements( path: Path, currentInmA: Option[Double], powe
       )
     }.toVector
     OdfObject(
-      Vector( QlmID( path.last )),
+      Vector( OdfQlmID( path.last )),
       path,
       objects = Vector(
         OdfObject(
-          Vector( QlmID( chargerPath.last )),
+          Vector( OdfQlmID( chargerPath.last )),
           chargerPath,
           objects = Vector(
             OdfObject(
-              Vector( QlmID( plugPath.last )),
+              Vector( OdfQlmID( plugPath.last )),
               plugPath,
               infoItems = currentII ++ powerII ++ voltageII
             )

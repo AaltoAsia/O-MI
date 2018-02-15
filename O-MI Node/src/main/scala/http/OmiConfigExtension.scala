@@ -30,8 +30,6 @@ import database.Warp10ConfigExtension
 import types.Path
 
 
-
- 
 class OmiConfigExtension( val config: Config) extends Extension
   with Warp10ConfigExtension
   with AgentSystemConfigExtension {
@@ -138,6 +136,7 @@ class OmiConfigExtension( val config: Config) extends Extension
   //connection fails
   val websocketQueueSize : Int = config.getInt("omi-service.websocket-queue-size")
 
+  val databaseImplementation : String = config.getString( "omi-service.database" )
 }
 
 

@@ -215,12 +215,13 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimmableDB{
               DBIO.sequence( actions )
           }
           valueTablesCreation
-        } else if( tableNames.nonEmpty ){
-          val msg = s"Database contains unknown tables while PATHSTABLE could not be found."
-          log.error( msg)
-          throw new Exception( msg ) 
-        } else{
-          log.info( s"No tables found. Creating PATHSTABLE.")
+        } else {
+          if( tableNames.nonEmpty ){
+            val msg = s"Database contains unknown tables while PATHSTABLE could not be found.\n Found following tables:\n${tableNames.mkString(", ")}"
+            log.warn( msg)
+          } else{
+            log.info( s"No tables found. Creating PATHSTABLE.")
+          }
           val queries = pathsTable.schema.create.map{ 
             case u: Unit => 
             log.debug("Created PATHSTABLE.")
@@ -335,7 +336,7 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimmableDB{
 
     val pathsToAdd = reserveNewPaths(leafs.toSet)
 
-    log.debug( s"Adding total of  ${pathsToAdd.length} paths to DB: $pathsToAdd")
+    log.debug( s"Adding total of  ${pathsToAdd.length} paths to DB")//: $pathsToAdd")
 
     val pathAddingAction = pathsTable.add(pathsToAdd.values)
     val getAddedDBPaths =  pathAddingAction.flatMap{
@@ -411,7 +412,7 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimmableDB{
         DBIO.sequence( valueWritingIOs ).map{
           case countsOfCreatedValuesPerPath: Seq[Seq[Int]] =>  
             val sum = countsOfCreatedValuesPerPath.map( _.sum).sum
-            log.info( s"Wrote total of $sum values to ${countsOfCreatedValuesPerPath.length} paths." )
+            log.debug( s"Wrote total of $sum values to ${countsOfCreatedValuesPerPath.length} paths." )
             Returns.Success()
         }
     }

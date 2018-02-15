@@ -19,6 +19,16 @@ object UsageType extends Enumeration{
       case s: String => Unknown
     }
   }
+  def toString( str: UsageType): String ={
+    str match{
+      case Carsharing => "CarsharingParkingSpace" 
+      case DisabledPerson => "DisabledParkingSpace" 
+      case Taxi => "TaxiParkingSpace"
+      case Womens => "Wonen'sParkingSpace"
+      case ElectricVehicle => "ElectricVehicle"
+      case Unknown => "Unknown"
+    }
+  }
 }
 import UsageType._
 import VehicleType._
@@ -52,6 +62,46 @@ case class ParkingSpace(
         Vector( OdfValue( b, currentTime ) )
       ) 
     }.toVector
+    val intendedTypeII = intendedFor.map{
+      v: VehicleType =>
+      OdfInfoItem(
+        spotPath / "intendedForVechile",
+        Vector( OdfValue( VehicleType.toString(v), currentTime ) ),
+        typeValue = Some( "mv:intededForVehicel")
+      ) 
+    }.toVector
+    val usageTypeII = usageType.map{
+      v: UsageType =>
+      OdfInfoItem(
+        spotPath / "parkingUsageType",
+        Vector( OdfValue( UsageType.toString(v), currentTime ) ),
+        typeValue = Some( "mv:parkingUsageType")
+      ) 
+    }.toVector
+    val maxHII = maxHeight.map{
+      v: Double=>
+      OdfInfoItem(
+        spotPath / "vechileHeightLimit",
+        Vector( OdfValue( v, currentTime ) ),
+        typeValue = Some( "mv:vehicleHeightLimit")
+      ) 
+    }.toVector
+    val maxLII = maxLength.map{
+      v: Double=>
+      OdfInfoItem(
+        spotPath / "vechileLengthLimit",
+        Vector( OdfValue( v, currentTime ) ),
+        typeValue = Some( "mv:vehicleLengthLimit")
+      ) 
+    }.toVector
+    val maxWII = maxWidth.map{
+      v: Double=>
+      OdfInfoItem(
+        spotPath / "vechileWidthLimit",
+        Vector( OdfValue( v, currentTime ) ),
+        typeValue = Some( "mv:vehicleWidthLimit")
+      ) 
+    }.toVector
     val userII = user.map{ str =>
       OdfInfoItem(
         spotPath / "User",
@@ -59,9 +109,9 @@ case class ParkingSpace(
       ) 
     }.toVector
     OdfObject( 
-      Vector( QlmID( name ) ),
+      Vector( OdfQlmID( name ) ),
       spotPath,
-      availableII ++ userII,
+      availableII ++ userII ++ maxHII ++ maxWII ++ maxLII ++ intendedTypeII ++ usageTypeII,
       charger.map{ ch => ch.toOdf( spotPath ) }.toVector,
       typeValue = Some( "mv:ParkingSpace" )
     )
@@ -83,7 +133,10 @@ object ParkingSpace {
     }.flatten
     val user = obj.get( obj.path / "User" ).collect{
       case ii: OdfInfoItem =>
-        getStringFromInfoItem( ii )
+        getStringFromInfoItem( ii ).flatMap{
+          str: String  =>
+          if( str.toLowerCase == "none" ) None  else Some( str )
+        }
     }.flatten
     val iFV = obj.get( obj.path / "intendedForVehicle" ).collect{
       case ii: OdfInfoItem =>

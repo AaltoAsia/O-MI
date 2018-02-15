@@ -29,7 +29,7 @@ import parsing.xmlGen.scalaxb.DataRecord
 import parsing.xmlGen.xmlTypes._
 import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 import types.OdfTypes._
-import types.OdfTypes.{QlmID => OdfQlmID}
+import types.OdfTypes.{OdfQlmID => OdfOdfQlmID}
 import types.OmiTypes.UserInfo
 import types._
 
@@ -85,7 +85,7 @@ object OdfParser extends Parser[OdfParseResult] {
   def parse(root: xml.Node): OdfParseResult = { 
     schemaValidation(root) match {
       case errors : Seq[ParseError] if errors.nonEmpty => 
-        println( root.toString )
+        //println( root.toString )
 
         Left(errors) 
       case empty : Seq[ParseError] if empty.isEmpty =>
@@ -96,7 +96,7 @@ object OdfParser extends Parser[OdfParseResult] {
         xmlGen.scalaxb.fromXML[ObjectsType](root)
       } match {
         case Failure(e) => 
-            println( s"Exception: $e\nStackTrace:\n")
+            //println( s"Exception: $e\nStackTrace:\n")
             e.printStackTrace
             Left( Iterable( ScalaxbError( e.getMessage ) ) )
       
@@ -106,7 +106,7 @@ object OdfParser extends Parser[OdfParseResult] {
           } match {
             case Success(odf) => Right(odf)
             case Failure(e) => 
-            println( s"Exception: $e\nStackTrace:\n")
+            //println( s"Exception: $e\nStackTrace:\n")
             e.printStackTrace
               Left( Iterable( ODFParserError( e.getMessage ) ) )
           }
@@ -142,7 +142,7 @@ private[this] def parseObject(requestProcessTime: Timestamp, obj: ObjectType, pa
   )
 
   OdfObject(
-    obj.id.map{ qlmIdType => parseQlmID(qlmIdType)},
+    obj.id.map{ qlmIdType => parseOdfQlmID(qlmIdType)},
     npath, 
     obj.InfoItem.map{ item => parseInfoItem( requestProcessTime, item, npath ) }.toIterable,
     obj.ObjectValue.map{ child => parseObject( requestProcessTime, child, npath ) }.toIterable,
@@ -254,8 +254,8 @@ private[this] def timeSolver(value: ValueType, requestProcessTime: Timestamp) = 
   case Some(cal) => 
     new Timestamp(cal.toGregorianCalendar().getTimeInMillis())
 }
-private[this] def parseQlmID( qlmIdType: QlmIDType): OdfQlmID ={
-  OdfQlmID(
+private[this] def parseOdfQlmID( qlmIdType: QlmIDType): OdfOdfQlmID ={
+  OdfOdfQlmID(
     qlmIdType.value,
     qlmIdType.idType,
     qlmIdType.tagType,

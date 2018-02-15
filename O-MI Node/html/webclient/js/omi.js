@@ -167,6 +167,9 @@
       }
       return false;
     };
+    my.getObjectChildren = function(xmlNode) {
+      return my.evaluateXPath(xmlNode, './odf:InfoItem | ./odf:Object');
+    };
     return WebOmi;
   };
 

@@ -40,6 +40,7 @@ import types.OdfTypes._
 import types.{ParseError, Path, Warp10ParseError}
 import types.OmiTypes.{OmiReturn, Returns}
 import Warp10JsonProtocol.Warp10JsonFormat
+import types.OdfTypes.OdfQlmID
 
 //serializer and deserializer for warp10 json formats
 object Warp10JsonProtocol extends DefaultJsonProtocol {
@@ -52,7 +53,7 @@ object Warp10JsonProtocol extends DefaultJsonProtocol {
       hTree.get(path.init) match {
         case Some(obj: OdfObject) => obj.copy(infoItems = OdfTreeCollection.empty,objects = OdfTreeCollection.empty)
         case _ => {
-          val id = OdfTreeCollection(QlmID(path.lastOption.getOrElse(
+          val id = OdfTreeCollection(OdfQlmID(path.lastOption.getOrElse(
             throw new DeserializationException(s"Found invalid path for Object: $path"))))
 
           OdfObject(id,path)

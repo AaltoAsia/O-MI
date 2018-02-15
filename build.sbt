@@ -7,7 +7,7 @@ import com.typesafe.sbt.packager.archetypes.ServerLoader.{Systemd,SystemV,Upstar
 lazy val separator = taskKey[Unit]("Prints seperating string")
 separator := println("########################################################\n\n\n\n")
 
-addCommandAlias("release", ";doc;universal:packageBin;universal:packageZipTarball")
+addCommandAlias("release", ";doc ;universal:packageBin ;universal:packageZipTarball ;debian:packageBin ;rpm:packageBin")
 addCommandAlias("systemTest", "omiNode/testOnly http.SystemTest")
 
 //update Both when updating (windows has two %% for url escaping)
@@ -16,7 +16,7 @@ val windowsWarp10URL = "https://bintray.com/cityzendata/generic/download_file?fi
 
 def commonSettings(moduleName: String) = Seq(
   name := s"O-MI-$moduleName",
-  version := "0.9.2-warp10",
+  version := "0.10.1-warp10", // WARN: Release ver must be "x.y.z" (no dashes, '-')
   scalaVersion := "2.11.8",
   scalacOptions := Seq("-unchecked", "-feature", "-deprecation", "-encoding", "utf8", "-Xlint"),
   scalacOptions in (Compile,doc) ++= Seq("-groups", "-deprecation", "-implicits", "-diagrams", "-diagrams-debug", "-encoding", "utf8"),
@@ -76,6 +76,7 @@ lazy val root = (project in file(".")).
   enablePlugins(DockerPlugin).
   //enablePlugins(SystemdPlugin).
   //enablePlugins(CodacyCoveragePlugin).
+  enablePlugins(RpmPlugin).
   settings(commonSettings("Node")).
   settings(
     Seq(
@@ -87,7 +88,7 @@ lazy val root = (project in file(".")).
     ///////////////////////
     //Package information//
     ///////////////////////
-      maintainer := "Andrea Buda <andrea.buda@aalto.fi>",
+      maintainer := "Tuomas Kinnunen <tuomas.kinnunen@aalto.fi>; Andrea Buda <andrea.buda@aalto.fi>",
       packageDescription := "Internet of Things data server",
       packageSummary := """Internet of Things data server implementing Open Messaging Interface and Open Data Format""",
 
@@ -223,8 +224,10 @@ fi
     ///////////////////////////////////////////////////////////////////////
 
       bashScriptExtraDefines += """addJava "-Dconfig.file=${app_home}/../configs/application.conf"""",
+      bashScriptExtraDefines += """addJava "-Dlogback.configurationFile=${app_home}/../configs/logback.xml"""",
       bashScriptExtraDefines += """cd  ${app_home}/..""",
-      batScriptExtraDefines += """set _JAVA_OPTS=%_JAVA_OPTS% -Dconfig.file="%O_MI_NODE_HOME%\\configs\\application.conf"""", 
+      batScriptExtraDefines += """set _JAVA_OPTS=%_JAVA_OPTS% -Dconfig.file=%O_MI_NODE_HOME%\\configs\\application.conf""", 
+      batScriptExtraDefines += """set _JAVA_OPTS=%_JAVA_OPTS% -Dlogback.configurationFile=%O_MI_NODE_HOME%\\configs\\logback.xml""", 
       batScriptExtraDefines += """cd "%~dp0\.."""",
 
     ////////////////////////////
@@ -234,11 +237,13 @@ fi
     //Mappings tells the plugin which files to include in package and in what directory
       mappings in Universal ++= { directory((baseDirectory in omiNode).value / "html")},
       mappings in Universal ++= {directory(baseDirectory.value / "configs")},
-      mappings in Universal += { 
+      mappings in Universal ++= { 
         println((packageBin in Compile).value)
         val src = (sourceDirectory in omiNode).value
-        val conf = src / "main" / "resources" / "application.conf"
-        conf -> "configs/application.conf"},
+        val conf = src / "main" / "resources" 
+        Seq(
+          conf / "application.conf" -> "configs/application.conf",
+          conf / "logback.xml" -> "configs/logback.xml")},
       mappings in Universal ++= {
         println((doc in Compile in omiNode).value)
         val base = (baseDirectory in omiNode).value
@@ -252,6 +257,12 @@ fi
       mappings in Universal ++= {
         val base = baseDirectory.value
         directory(base / "docs").map(n => (n._1, n._2))},
+
+      rpmVendor in Rpm  := "Aalto University",
+      // Must be in format x.y.z (no dashes)
+      // version in Rpm   := 
+      rpmLicense in Rpm := Some("BSD-3-Clause"),
+      rpmRelease in Rpm := "1",
 
     /////////////////////////////////////////////////////////////
     //Prevent aggregation of following commands to sub projects//

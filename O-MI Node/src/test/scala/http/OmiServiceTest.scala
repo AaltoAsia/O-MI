@@ -323,7 +323,7 @@ class OmiServiceTest
           val response = resp showAs (n =>
             "Request:\n" + request + "\n\n" + "Response:\n" + printer.format(n))
 
-          println(printer.format(resp))
+          //println(printer.format(resp))
 
           response must \("response") \ ("result") \ ("return", "returnCode" -> "200")
         }

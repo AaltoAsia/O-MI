@@ -86,14 +86,14 @@ case class PowerPlug(
         typeValue = Some( "mv:Power" )
       )
     }.toVector
-    val currentII = plugType.map{ pT =>
+    val currentII = current.map{ pT =>
       OdfInfoItem(
         plugPath / "currentInmA",
         Vector( OdfValue( pT, currentTime ) ),
         typeValue = Some( "mv:currentInmA" )
       )
     }.toVector
-    val voltageII = plugType.map{ pT =>
+    val voltageII = voltage.map{ pT =>
       OdfInfoItem(
         plugPath / "Voltage",
         Vector( OdfValue( pT, currentTime ) ),
@@ -123,7 +123,7 @@ case class PowerPlug(
     }.toVector
 
     OdfObject(
-      Vector( QlmID("Plug")),
+      Vector( OdfQlmID("Plug")),
       plugPath,
       pTII ++ 
       powerII ++ 
