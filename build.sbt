@@ -11,8 +11,8 @@ addCommandAlias("release", ";doc ;universal:packageBin ;universal:packageZipTarb
 addCommandAlias("systemTest", "omiNode/testOnly http.SystemTest")
 
 //update Both when updating (windows has two %% for url escaping)
-val unixWarp10URL = "https://bintray.com/cityzendata/generic/download_file?file_path=io%2Fwarp10%2Fwarp10%2F1.2.13%2Fwarp10-1.2.13.tar.gz" //"https://bintray.com/cityzendata/generic/download_file?file_path=io%2Fwarp10%2Fwarp10%%2F1.1.0%2Fwarp10-1.1.0.tar.gz"
-val windowsWarp10URL = "https://bintray.com/cityzendata/generic/download_file?file_path=io%%2Fwarp10%%2Fwarp10%%2F1.1.0%%2Fwarp10-1.1.0.tar.gz"
+val unixWarp10URL = "https://bintray.com/cityzendata/generic/download_file?file_path=io%2Fwarp10%2Fwarp10%2F1.2.13%2Fwarp10-1.2.13.tar.gz"
+val windowsWarp10URL = "https://bintray.com/cityzendata/generic/download_file?file_path=io%%2Fwarp10%%2Fwarp10%%2F1.2.13%%2Fwarp10-1.2.13.tar.gz"
 
 def commonSettings(moduleName: String) = Seq(
   name := s"O-MI-$moduleName",
@@ -203,16 +203,18 @@ fi
       batScriptExtraDefines += """  "%_JAVACMD%" -cp "%APP_CLASSPATH%" ReplacePath "%WARP10_HOME%"""",
       batScriptExtraDefines += """)""",
       batScriptExtraDefines += """""",
-      batScriptExtraDefines += """>nul 2>nul dir /a-d "%WARP10_HOME%\data\*" """,
+      batScriptExtraDefines += """>nul 2>nul dir /a-d "%WARP10_HOME%\leveldb\*" """,
       batScriptExtraDefines += """if %ERRORLEVEL% NEQ 0 (""",
       batScriptExtraDefines += """echo Initializing leveldb""",
-      batScriptExtraDefines += """echo "Init leveldb database..." >> "%WARP10_HOME%\\logs\\nohup.out"""",
-      batScriptExtraDefines += """  "%_JAVACMD%" -cp "%WARP10_JAR%" "%WARP10_INIT%" "%WARP10_HOME%/data" >> "%WARP10_HOME%\\logs\\nohup.out" 2>&1""",
+      batScriptExtraDefines += """echo "Init leveldb database..." >> "%WARP10_HOME%\\logs\\warp10.log"""",
+      batScriptExtraDefines += """  "%_JAVACMD% -Xms64m -Xmx64m -XX:+UseG1GC -cp "%WARP10_CP%" io.warp10.WarpConfig "%WARP10_CONFIG%" 'leveldb.home' """",
+      batScriptExtraDefines += """  mkdir "%WARP10_HOME%\leveldb"""",
+      batScriptExtraDefines += """  "%_JAVACMD%" -cp "%WARP10_JAR%" "%WARP10_INIT%" "%WARP10_HOME%/leveldb" >> "%WARP10_HOME%\\logs\\warp10.log" 2>&1""",
       batScriptExtraDefines += """)""",
       batScriptExtraDefines += """if "%JPS_OK%"=="true" (""",
       //batScriptExtraDefines += """"%JPS_CMD%" -l | "%FINDSTR_COMMAND%" %WARP10_CLASS%""",
       //batScriptExtraDefines += """if %ERRORLEVEL% gtr 0 (""",
-      batScriptExtraDefines += """  start "warp10" "%_JAVACMD%" !WARP10_JAVA_OPTS! -cp "!WARP10_CP!" !WARP10_CLASS! "!WARP10_CONFIG!" ^>^> "!WARP10_HOME!\\logs\\nohup.out" ^2^>^&^1""",
+      batScriptExtraDefines += """  start "warp10" "%_JAVACMD%" !WARP10_JAVA_OPTS! -cp "!WARP10_CP!" !WARP10_CLASS! "!WARP10_CONFIG!" ^>^> "!WARP10_HOME!\\logs\\warp10.log" ^2^>^&^1""",
       //batScriptExtraDefines += """) else (""",
       //batScriptExtraDefines += """  echo Warp10 is already running!""",
       //batScriptExtraDefines += """  )""",
