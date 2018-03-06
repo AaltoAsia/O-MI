@@ -13,21 +13,24 @@ Takes an O-DF path of InfoItem and writes random generated values to it.
 * [JavaRoomAgent](https://github.com/AaltoAsia/O-MI/blob/development/Agents/src/main/java/agents/JavaRoomAgent.java), 
 creates O-DF structure using OdfFactory and writes random generated values to it.
 
-* [JavaFileAgent](https://github.com/AaltoAsia/O-MI/blob/development/Agents/src/main/java/agents/JavaFileAgent.java).
+* [JavaFileAgent](JavaFileAgent.java).
 parses O-DF structure from given file ands writes random generated values to it.
 
-Development enviroment
+* [(all others)](https://github.com/AaltoAsia/O-MI/blob/development/Agents/src/main/java/agents/)
+
+Development environment
 ------
 
-(Note that it is also possible to develop with the O-MI Node environment with 
-sbt (see Readme.md). Directory for the agents is at `Agents/src/main/java/`)
+Note that it is also possible to develop with the O-MI Node environment with 
+sbt (see Readme.md). Directory for the agents is at `Agents/src/main/java/`.
+It might be the easier way if you are not using an IDE or it has sbt support.
 
-1. Get the release package
-  a. Download the latest release
-  b. or you can create a new release package by running `sbt release` (see 
-  Readme.md) that creates release packages to `target/scala-2.11/`.
+1. Get the release package, either:
+    * a) Download the latest release
+    * b) or you can create a new release package by running `sbt release` (see 
+       Readme.md) that creates release packages to `target/scala-2.11/`.
 2. Add O-MI Node's `lib` directory to the project libraries in your IDE. `lib` 
-  directory can be found add root level of release package.
+  directory can be found at root level of release package.
 
 
 
@@ -39,8 +42,8 @@ Java agent example
 *internal agent* to an [Akka Actor](http://doc.akka.io/docs/akka/2.4/java/untyped-actors.html) which is a higher level abstraction of a thread, see the Akka documentation for details.
 
 To implement *internal agent* using Java you need to create a class extending 
-`JavaInternalAgent`. `JavaInternalAgent` is abstract class providing some 
-default and utility members. It also extends Akka's `UntyppedActor`. 
+`JavaInternalAgent`. `JavaInternalAgent` is an abstract class providing some 
+default and utility members. It also extends Akka's `UntypedActor`. 
 We enforce AKka's recommended practice for `Props` creation by requiring every 
 `JavaInternalAgent` to have `public static 
 Props props(final `[Config](https://github.com/typesafehub/config)` config)`.
@@ -125,7 +128,7 @@ public class JavaTemplateAgent extends JavaInternalAgent {
 }
 ```
 `JavaTemplateAgent` implements everything that is required by O-MI Node to run it, 
-but it does not do anything. It has implementation of method `props` and 
+but it doesn't do anything. It has implementation of method `props` and 
 constructor taking a [Typesafe Config](https://github.com/typesafehub/config),
 `requestHandler` and `dbHandler` as parameters. 
 
@@ -138,7 +141,7 @@ We also want to be able to change how often our agent will generate new values a
 write them without recompiling. So we parse a `FiniteDuration` from `config` 
 and save it as seconds to variable `interval`.
 Variable `interval` defines duration between two writes to O-MI Node. 
-We also schedule an repeated sending of message `"Update"` to ourself.
+We also schedule a repeated sending of message `"Update"` to ourself.
 
 ```Java
   protected Config config;
@@ -259,7 +262,7 @@ that will contain the result of the write.
 ```
 
 Because we do not want to block the processing of the agent, we handle the
-results asynchronously too. To get to know haw to handle `Future`s refer to 
+results asynchronously too. To get to know how to handle `Future`s refer to 
 [Akka's Future documentation](http://doc.akka.io/docs/akka/2.4/java/futures.html).
 
 ```Java
@@ -292,7 +295,7 @@ results asynchronously too. To get to know haw to handle `Future`s refer to
 ```
 
 If O-MI Node stops our `JavaAgent`, we need stop sending `"Update"` message to
-ourself. After an `Actor` is stopped it will process current message and
+ourselves. After an `Actor` is stopped it will process current message and
 call `postStop` method for clean up. To cancel the sending of the `"Update"`
 message we just call `cancel` method of the previously stored `Cancelllable` in
 the `postStop` method.
@@ -308,8 +311,8 @@ Now we have an *internal agent*, but to get O-MI Node to run it, we need to
 compile it to a .jar file and put it to `deploy` directory, or if compiled with
 O-MI Node project, `InternalAgentLoader` will find it from project's .jar file.
 
-After this we have the final step, open the `application.conf` and add new object to
-`agent-system.internal-agents`. Object's format is: 
+After this we have the final step, open the `application.conf` and add a new object to
+`agent-system.internal-agents`. The format of the object is: 
 
 ```
     {
@@ -341,4 +344,5 @@ Finally you need to restart O-MI Node to update its configuration.
 
 Responsibility
 ----------------------
-TODO
+Agent can be "responsible" for some O-DF paths. This means that the node will direct `write` or `call` request of those O-DF paths to the agent instead of normal operation. The agent can then do anything with the received data and then decide if the request is considered as a success or reject it with an error message.
+...TODO
