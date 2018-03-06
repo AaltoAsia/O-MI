@@ -6,14 +6,14 @@ import scala.math
 import types.OdfTypes._
 import types._
 import Capacity._
-import UsageType._
+import UserGroup._
 import VehicleType._
 case class Capacity(
   val name: String,
   val currentCapacity: Option[Long],
   val totalCapacity: Option[Long],
   val validForVehicle: Option[VehicleType],
-  val usergroup: Option[UsageType]
+  val usergroup: Option[UserGroup]
 ){
 
   def toOdf( parentPath: Path ): OdfObject = {
@@ -44,7 +44,7 @@ case class Capacity(
         )
     }.toVector
     val userGroupII = usergroup.map{
-      veh: UsageType => 
+      veh: UserGroup => 
         OdfInfoItem(
           path / validForUserGroupStr,
           Vector( OdfValue( veh.toString, currentTime )),
@@ -86,9 +86,9 @@ object Capacity{
        case ii: OdfInfoItem =>
         getStringFromInfoItem( ii ).map( VehicleType(_))
      }.flatten
-    val usageType: Option[UsageType] = obj.get( obj.path / userGroupStr ).collect{ 
+    val usageType: Option[UserGroup] = obj.get( obj.path / userGroupStr ).collect{ 
        case ii: OdfInfoItem =>
-        getStringFromInfoItem( ii ).map( UsageType(_))
+        getStringFromInfoItem( ii ).map( UserGroup(_))
      }.flatten
     nameO.map{ name =>
       Capacity(

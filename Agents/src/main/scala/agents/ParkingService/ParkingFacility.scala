@@ -6,7 +6,7 @@ import types.OdfTypes._
 import types._
 
 import VehicleType._
-import UsageType._
+import UserGroup._
 
 object ParkingFacility{
   def apply(obj: OdfObject ): ParkingFacility={
@@ -41,24 +41,11 @@ case class ParkingFacility(
   openingHours: Option[OpeningHoursSpecification],
   capacities: Vector[Capacity] = Vector.empty
 ){
-   def numberOfCarsharingParkingSpaces: Int = parkingSpaces.count{ parkingSpot => parkingSpot.userGroup.contains(UsageType.Carsharing)}
-   def numberOfDisabledPersonParkingSpaces: Int= parkingSpaces.count{ parkingSpot => parkingSpot.userGroup.contains(UsageType.DisabledPerson)}
-   def numberOfWomensParkingSpaces: Int= parkingSpaces.count{ parkingSpot => parkingSpot.userGroup.contains(UsageType.Womens)}
 
-   def numberOfBicycleParkingSpaces: Int = parkingSpaces.count{ parkingSpot => parkingSpot.intendedFor.contains(VehicleType.Bicycle)}
-   def numberOfMotorbikeParkingSpaces: Int= parkingSpaces.count{ parkingSpot => parkingSpot.intendedFor.contains(VehicleType.Motorbike)}
-   def numberOfTruckParkingSpaces: Int = parkingSpaces.count{ parkingSpot => parkingSpot.intendedFor.contains(VehicleType.Truck)}
-   def numberOfCoachParkingSpaces: Int= parkingSpaces.count{ parkingSpot => parkingSpot.intendedFor.contains(VehicleType.Coach)}
-   def numberOfCarParkingSpaces: Int= parkingSpaces.count{ parkingSpot => parkingSpot.intendedFor.contains(VehicleType.Car)}
-   def numberOfElectricVehicleParkingSpaces: Int= parkingSpaces.count{ parkingSpot => parkingSpot.intendedFor.contains(VehicleType.ElectricVehicle)}
-
-   def numberOfOccupiedParkingSpaces: Int= parkingSpaces.count{ parkingSpace => parkingSpace.available.contains(false)}
-   def numberOfVacantParkingSpaces: Int= parkingSpaces.count{ parkingSpace => parkingSpace.available.contains(true)}
-   def totalCapacity: Int = parkingSpaces.length
    def containsSpacesFor( vehicle: Vehicle ): Boolean ={
      parkingSpaces.exists{
        parkingSpace: ParkingSpace => 
-         parkingSpace.intendedFor.forall{
+         parkingSpace.validForVehicle.forall{
            vt: VehicleType =>
              vt == vehicle.vehicleType
          }
@@ -75,72 +62,24 @@ case class ParkingFacility(
    * TODO:
    * * Replace InfoItems with Capacities objects.
    * * Dicide naming converntion for capacity objects.
-   */
   def calculateCapacities: ParkingFacility = this.copy( capacities =  
     parkingSpaces.groupBy{ 
      case space: ParkingSpace => 
-       (space.intendedFor, space.userGroup)
+       (space.validForVehicle, space.validForUserGroup)
    }.map{
-     case (Tuple2( vehicle, userGroup), parkingSpaceses) => 
+     case (Tuple2( vehicle, validForUserGroup), parkingSpaceses) => 
        Capacity( // Are these always calculated?
          ???, //TODO: What is name of this actually "vehicles for usergroup"? 
          Some( parkingSpaceses.count( _.available.getOrElse(false) ) ),
          Some( parkingSpaceses.length ),
          vehicle,
-         userGroup
+         validForUserGroup
        )
    }.toVector
   )
+   */
   def toOdf( parentPath: Path, calculatedPaths: Boolean = false ): OdfObject = {
     val facilityPath = parentPath / name
-    val calculatedIIs = if(calculatedPaths) {
-      Vector( 
-        OdfInfoItem(
-          facilityPath / "totalCapacity",
-          Vector( OdfValue( totalCapacity, currentTime) ),
-          typeValue = Some( "mv:totalCapacity")
-        ),
-        OdfInfoItem(
-          facilityPath / "numberOfVacantParkingSpaces",
-          Vector( OdfValue( numberOfVacantParkingSpaces, currentTime) ),
-          typeValue = Some( "mv:numberOfVacantParkingSpaces")
-        ),
-        OdfInfoItem(
-          facilityPath / "numberOfOccupiedParkingSpaces",
-          Vector( OdfValue( numberOfOccupiedParkingSpaces, currentTime) ),
-          typeValue = Some( "mv:numberOfOccupiedParkingSpaces")
-        ),
-        OdfInfoItem(
-          facilityPath / "numberOfParkingSpacesForMotorbikes",
-          Vector( OdfValue( numberOfMotorbikeParkingSpaces, currentTime) ),
-          typeValue = Some( "mv:numberOfParkingSpacesForMotorbikes")
-        ),
-        OdfInfoItem(
-          facilityPath / "numberOfParkingSpacesForTrucks",
-          Vector( OdfValue( numberOfTruckParkingSpaces, currentTime) ),
-          typeValue = Some( "mv:numberOfParkingSpacesForTrucks")
-        ),
-        OdfInfoItem(
-          facilityPath / "numberOfParkingSpacesForCars",
-          Vector( OdfValue( numberOfCarParkingSpaces, currentTime) ),
-          typeValue = Some( "mv:numberOfParkingSpacesForCars")
-        ),
-        OdfInfoItem(
-          facilityPath / "numberOfParkingSpacesForElectricVehicles",
-          Vector( OdfValue( numberOfElectricVehicleParkingSpaces, currentTime) ),
-          typeValue = Some( "mv:numberOfParkingSpacesForElectricVehicles")
-        ),
-        OdfInfoItem(
-          facilityPath / "numberOfParkingSpacesForCars",
-          Vector( OdfValue( numberOfCarParkingSpaces, currentTime) ),
-          typeValue = Some( "mv:numberOfParkingSpacesForCars")
-        ),
-        OdfInfoItem(
-          facilityPath / "numberOfParkingSpacesForCoachs",
-          Vector( OdfValue( numberOfCoachParkingSpaces, currentTime) ),
-          typeValue = Some( "mv:numberOfParkingSpacesForCoachs")
-        )
-    ) } else Vector()
     val iis = owner.map{ o: String =>
         OdfInfoItem(
           facilityPath / "Owner",
@@ -172,7 +111,7 @@ case class ParkingFacility(
     OdfObject(
       Vector( OdfQlmID( name ) ),
       facilityPath,
-      iis ++ calculatedIIs,
+      iis,
       geo.map( _.toOdf(facilityPath, "geo" )).toVector ++ openingHours.map( _.toOdf( facilityPath)).toVector ++ Vector( spaces ),
       typeValue = Some( "schema:ParkingFacility" )
     )
@@ -188,7 +127,8 @@ case class UndergroundParkingGarage extends ParkingFacility
 
 case class OpeningHoursSpecification( 
   opens: Option[String],
-  closes: Option[String]
+  closes: Option[String],
+  dayOfWeek: Option[String]
 ){
   def toOdf( parentPath: Path ): OdfObject ={
     val ohsPath = parentPath / "openingHoursSpecification"
@@ -205,6 +145,11 @@ case class OpeningHoursSpecification(
         OdfInfoItem(
           ohsPath / "closes",
           Vector( OdfValue( time, "schema:Time", currentTime) )
+        )},
+        dayOfWeek.map{ time: String  => 
+        OdfInfoItem(
+          ohsPath / "dayOfWeek",
+          Vector( OdfValue( time, "schema:DayOfWeek", currentTime) )
         )}
       ).flatten,
       typeValue = Some( "schema:OpeningHoursSpecification" )
@@ -221,6 +166,10 @@ object OpeningHoursSpecification{
           getStringFromInfoItem(ii)
       }.flatten,
       obj.get( obj.path / "closes" ).collect{
+        case ii: OdfInfoItem =>
+          getStringFromInfoItem(ii)
+      }.flatten,
+      obj.get( obj.path / "dayOfWeek" ).collect{
         case ii: OdfInfoItem =>
           getStringFromInfoItem(ii)
       }.flatten

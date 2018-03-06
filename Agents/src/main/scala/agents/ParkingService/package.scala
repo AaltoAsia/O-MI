@@ -9,6 +9,22 @@ package object parkingService{
   def getStringFromInfoItem( iI: OdfInfoItem): Option[String] ={
         iI.values.headOption.map{ value => value.value.toString} 
   }
+  def getBooleanFromInfoItem( iI: OdfInfoItem): Option[Boolean] ={
+        iI.values.headOption.map{ value => 
+          value.value match {
+            case b: Boolean  => b
+            case str: String => 
+            str.toLowerCase match{
+              case "true" => true
+              case "false" => false
+            }
+            case str: Any => str.toString.toLowerCase match{
+              case "true" => true
+              case "false" => false
+            }
+          }
+        } 
+  }
   def getLongFromInfoItem( iI: OdfInfoItem): Option[Long] ={
     iI.values.headOption.map{ value => 
       value.value match {

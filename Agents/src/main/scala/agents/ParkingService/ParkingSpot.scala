@@ -8,37 +8,39 @@ import types._
 
 
 //TODO: 'Rename' to UserGroup
-object UsageType extends Enumeration{
-  type UsageType = Value
-  val Carsharing, DisabledPerson, Taxi, Womens, ElectricVehicle, Unknown = Value   
-  def apply( str: String ): UsageType ={
+object UserGroup extends Enumeration{
+  type UserGroup = Value
+  val Carsharing, DisabledPerson, Taxi, Women, Inhabitants, Families, Unknown = Value   
+  def apply( str: String ): UserGroup ={
     str match{
-      case "CarsharingParkingSpace" => Carsharing
-      case "DisabledParkingSpace" => DisabledPerson
-      case "TaxiParkingSpace" => Taxi
-      case "Wonen'sParkingSpace" => Womens
-      case "ElectricVehicle" => ElectricVehicle
+      case "CarsharingUsers" => Carsharing
+      case "PersonWithDisabledParkingPermit" => DisabledPerson
+      case "TaxiDrivers" => Taxi
+      case "Women" => Women
+      case "Families" => Families
+      case "Inhabitants" => Inhabitants
       case s: String => Unknown
     }
   }
-  def toString( str: UsageType): String ={
+  def toString( str: UserGroup): String ={
     str match{
-      case Carsharing => "CarsharingParkingSpace" 
-      case DisabledPerson => "DisabledParkingSpace" 
-      case Taxi => "TaxiParkingSpace"
-      case Womens => "Wonen'sParkingSpace"
-      case ElectricVehicle => "ElectricVehicle"
+      case Carsharing => "CarsharingUsers" 
+      case DisabledPerson => "PersonWithDisabledParkingPermit" 
+      case Taxi => "TaxiDrivers"
+      case Women => "Women"
+      case Inhabitants => "Inhabitants"
+      case Families => "Families"
       case Unknown => "Unknown"
     }
   }
 }
-import UsageType._
+import UserGroup._
 import VehicleType._
 
 case class ParkingSpace(
   val name: String,
-  val userGroup: Option[UsageType],
-  val intendedFor: Option[VehicleType],
+  val validForUserGroup: Option[UserGroup],
+  val validForVehicle: Option[VehicleType],
   val available: Option[Boolean],
   val user: Option[String],
   val charger: Option[Charger],
@@ -46,38 +48,38 @@ case class ParkingSpace(
   val maxLength: Option[Double],
   val maxWidth: Option[Double]
 ){
-  def validForVehicle( vehicle: Vehicle ): Boolean ={
+  def validDimensions( vehicle: Vehicle ): Boolean ={
     lazy val dimensionCheck = {
       maxHeight.forall{ limit => vehicle.height.forall( _ <= limit ) } &&
       maxLength.forall{ limit => vehicle.length.forall( _  <= limit ) } &&
       maxWidth.forall{ limit => vehicle.width.forall( _  <= limit ) }
     }
 
-    intendedFor.contains( vehicle.vehicleType ) || dimensionCheck
+    validForVehicle.contains( vehicle.vehicleType ) || dimensionCheck
   }
   def toOdf( parentPath: Path ) ={
     val spotPath = parentPath / name
     val availableII = available.map{
       b: Boolean =>
       OdfInfoItem(
-        spotPath / "Available",
+        spotPath / "available",
         Vector( OdfValue( b, currentTime ) )
       ) 
     }.toVector
-    val intendedTypeII = intendedFor.map{
+    val validTypeII = validForVehicle.map{
       v: VehicleType =>
       OdfInfoItem(
-        spotPath / "intendedForVechile",
+        spotPath / "validForVehicle",
         Vector( OdfValue( VehicleType.toString(v), currentTime ) ),
-        typeValue = Some( "mv:intededForVehicel")
+        typeValue = Some( "mv:intededForVehicle")
       ) 
     }.toVector
-    val userGroupII = userGroup.map{
-      v: UsageType =>
+    val userGroupII = validForUserGroup.map{
+      v: UserGroup =>
       OdfInfoItem(
-        spotPath / "parkingUsageType",
-        Vector( OdfValue( UsageType.toString(v), currentTime ) ),
-        typeValue = Some( "mv:parkingUsageType")
+        spotPath / "validForUserGroup",
+        Vector( OdfValue( UserGroup.toString(v), currentTime ) ),
+        typeValue = Some( "mv:validForUserGroup")
       ) 
     }.toVector
     val maxHII = maxHeight.map{
@@ -113,7 +115,7 @@ case class ParkingSpace(
     OdfObject( 
       Vector( OdfQlmID( name ) ),
       spotPath,
-      availableII ++ userII ++ maxHII ++ maxWII ++ maxLII ++ intendedTypeII ++ userGroupII,
+      availableII ++ userII ++ maxHII ++ maxWII ++ maxLII ++ validTypeII ++ userGroupII,
       charger.map{ ch => ch.toOdf( spotPath ) }.toVector,
       typeValue = Some( "mv:ParkingSpace" )
     )
@@ -123,7 +125,7 @@ object ParkingSpace {
 
   def apply( obj: OdfObject ) : ParkingSpace ={
     val nameO = obj.id.headOption
-    val available: Option[Boolean] = obj.get( obj.path / "Available" ).collect{
+    val available: Option[Boolean] = obj.get( obj.path / "available" ).collect{
       case ii: OdfInfoItem =>
         getStringFromInfoItem( ii ).map{ 
           str: String =>  
@@ -140,16 +142,16 @@ object ParkingSpace {
           if( str.toLowerCase == "none" ) None  else Some( str )
         }
     }.flatten
-    val iFV = obj.get( obj.path / "intendedForVehicle" ).collect{
+    val iFV = obj.get( obj.path / "validForVehicle" ).collect{
       case ii: OdfInfoItem =>
         getStringFromInfoItem( ii ).map{
           case str: String  =>  VehicleType(str)
         }
     }.flatten
-    val ut = obj.get( obj.path / "parkingUsageType" ).collect{
+    val ut = obj.get( obj.path / "validForUserGroup" ).collect{
       case ii: OdfInfoItem =>
         getStringFromInfoItem( ii ).map{
-          case str: String  =>  UsageType(str)
+          case str: String  =>  UserGroup(str)
         }
     }.flatten
     val charger = obj.get( obj.path / "Charger" ).collect{

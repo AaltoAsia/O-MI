@@ -280,18 +280,20 @@ class OmiNodeCLI(
 
   }
 
-  private def backupSubsAndDatabase(subPath: String, odfPath: String) = {
-    val res = Try(for{
+  private def backupSubsAndDatabase(subPath: String, odfPath: String): String = {
+    val res: Future[Option[Unit]] = for{
       subs <- backupSubscriptions(subPath)
       data <- backupDatabase(odfPath)
-    } yield data)
-    res match {
+    } yield data
+    Await.ready(res,Duration.Inf)
+    "Success\r\n>"
+    /*res match {
       case Success(_) => {"Success\n"}
       case Failure(ex) => {
         log.error(ex, "failure during backup")
         "Failure\n"
       }
-    }
+    }*/
   }
 
 import CustomJsonProtocol._
