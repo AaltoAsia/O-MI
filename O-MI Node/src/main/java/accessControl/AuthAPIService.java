@@ -56,7 +56,7 @@ public class AuthAPIService implements AuthApi {
     public AuthAPIService(boolean useHTTPS, int authServicePort) {
         String authServiceURIScheme = useHTTPS ? "https://" : "http://";
         String mainURI = useHTTPS ? "localhost" : "localhost:"+authServicePort;
-        this.authServiceURI = authServiceURIScheme + mainURI + "/omi/auth0/permissions";
+        this.authServiceURI = authServiceURIScheme + mainURI + "/security/PermissionService";
     }
 
     static {
@@ -120,7 +120,15 @@ public class AuthAPIService implements AuthApi {
                 HttpHeader nextHeader = (HttpHeader)iterh.next();
                 if (nextHeader.name().equals("X-SSL-CLIENT")) {
                     String allInfo = nextHeader.value();
-                    subjectInfo = allInfo.substring(allInfo.indexOf("emailAddress=") + "emailAddress=".length());
+                    for( String field: allInfo.split("/") ){
+                      String[] fieldPair = field.split("=");
+                      String key = fieldPair[0];
+                      if( key.equals("CN") && fieldPair.length > 1){
+                        subjectInfo = fieldPair[1];
+                        break;
+                      }
+
+                    }
 
                     if (success)
                         break;
@@ -478,6 +486,8 @@ public class AuthAPIService implements AuthApi {
 
             if (response.toString().equals("false")) {
                 return new Unauthorized(new UserInfo(UserInfo.apply$default$1(), UserInfo.apply$default$2()));
+            } else if (response.toString().equals("true")) {
+                return new Authorized(new UserInfo(UserInfo.apply$default$1(), UserInfo.apply$default$2()));
             }
 
             JsonObject responseObject = new JsonParser().parse(response.toString()).getAsJsonObject();//response.toString(); //reuse variable
