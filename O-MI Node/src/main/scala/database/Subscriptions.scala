@@ -26,8 +26,8 @@ import akka.actor.Cancellable
 import akka.http.scaladsl.model.Uri
 import org.prevayler._
 import spray.json.{DefaultJsonProtocol, JsArray, JsNull, JsNumber, JsObject, JsString, JsValue, RootJsonFormat}
-import types.OdfTypes._
 import types._
+import types.odf._
 import types.OmiTypes._
 import collection.breakOut
 import scala.util.parsing.json.JSONObject
@@ -123,10 +123,10 @@ object Subs {
 }
 
 case class PollSubData(
-                        idToData: collection.mutable.HashMap[Long, collection.mutable.HashMap[Path, List[OdfValue[Any]]]])
+                        idToData: collection.mutable.HashMap[Long, collection.mutable.HashMap[Path, List[Value[Any]]]])
 
 case class SubData(
-                  pathData: HashMap[Path,List[OdfValue[Any]]]
+                  pathData: HashMap[Path,List[Value[Any]]]
                   )
 
 object PollSubData {
@@ -157,9 +157,9 @@ object CustomJsonProtocol extends DefaultJsonProtocol{
       "paths",
       "data") match {
       case Seq(JsNumber(id), JsNumber(endTime), JsNumber(interval), JsNumber(startTime), JsNumber(lastPolled), JsNull, JsArray(paths: Vector[JsString]), JsArray(data: Vector[JsObject])) => {
-        val subData: Seq[(Path, List[OdfValue[Any]])] = data.map(_.getFields("path","values") match {
+        val subData: Seq[(Path, List[Value[Any]])] = data.map(_.getFields("path","values") match {
           case Seq(JsString(path), JsArray(values: Vector[JsObject])) => (Path(path), values.map(_.getFields("value", "typeValue", "timeStamp", "attributes") match {
-            case Seq(JsString(value), JsString(typeValue), JsNumber(timeStamp), JsObject(attributes: Map[String, JsString])) =>  OdfValue(value, typeValue, new Timestamp(timeStamp.toLong), attributes.map{case (key, jsvalue) => (key, jsvalue.value)}(breakOut))
+            case Seq(JsString(value), JsString(typeValue), JsNumber(timeStamp), JsObject(attributes: Map[String, JsString])) =>  Value(value, typeValue, new Timestamp(timeStamp.toLong), attributes.map{case (key, jsvalue) => (key, jsvalue.value)}(breakOut))
           }).toList)
         })
         if(interval.toLong == -1) { //normal poll sub
@@ -216,9 +216,9 @@ object CustomJsonProtocol extends DefaultJsonProtocol{
                         values.map(v =>
                           JsObject(
                             "value" -> JsString(v.value.toString),
-                            "typeValue" -> JsString(v.typeValue),
+                            "typeValue" -> JsString(v.typeAttribute),
                             "timeStamp" -> JsNumber(v.timestamp.getTime),
-                            "attributes" -> JsObject(v.attributes.mapValues(a => JsString(a)))
+                            "attributes" -> JsObject(v.attributes.mapValues(a => JsString(a)).toMap)
                           )
                         ).toVector
                       )
@@ -320,7 +320,7 @@ object CustomJsonProtocol extends DefaultJsonProtocol{
  * @param path
  * @param value
  */
-case class AddPollData(subId: Long, path: Path, value: OdfValue[Any]) extends Transaction[PollSubData] {
+case class AddPollData(subId: Long, path: Path, value: Value[Any]) extends Transaction[PollSubData] {
   def executeOn(p: PollSubData, date: Date): Unit = {
     p.idToData.get(subId) match {
       case Some(pathToValues) => pathToValues.get(path) match {
@@ -338,17 +338,17 @@ case class AddPollData(subId: Long, path: Path, value: OdfValue[Any]) extends Tr
   }
 }
 
-case class CheckSubscriptionData(subId: Long) extends Query[PollSubData, collection.mutable.HashMap[Path,List[OdfValue[Any]]]] {
-  def query(p: PollSubData, date: Date): mutable.HashMap[Path, List[OdfValue[Any]]] = p.idToData.getOrElse(subId, collection.mutable.HashMap.empty[Path, List[OdfValue[Any]]])
+case class CheckSubscriptionData(subId: Long) extends Query[PollSubData, collection.mutable.HashMap[Path,List[Value[Any]]]] {
+  def query(p: PollSubData, date: Date): mutable.HashMap[Path, List[Value[Any]]] = p.idToData.getOrElse(subId, collection.mutable.HashMap.empty[Path, List[Value[Any]]])
 }
 
 /**
  * Used to Poll event subscription data from the prevayler. Can also used to remove data from subscription
  * @param subId
  */
-case class PollEventSubscription(subId: Long) extends TransactionWithQuery[PollSubData, collection.mutable.HashMap[Path,List[OdfValue[Any]]]] {
-  def executeAndQuery(p: PollSubData, date: Date): collection.mutable.HashMap[Path, List[OdfValue[Any]]] = {
-    p.idToData.remove(subId).getOrElse(collection.mutable.HashMap.empty[Path,List[OdfValue[Any]]])
+case class PollEventSubscription(subId: Long) extends TransactionWithQuery[PollSubData, collection.mutable.HashMap[Path,List[Value[Any]]]] {
+  def executeAndQuery(p: PollSubData, date: Date): collection.mutable.HashMap[Path, List[Value[Any]]] = {
+    p.idToData.remove(subId).getOrElse(collection.mutable.HashMap.empty[Path,List[Value[Any]]])
   }
 }
 
@@ -358,8 +358,8 @@ case class PollEventSubscription(subId: Long) extends TransactionWithQuery[PollS
  * so this can't be used to remove subscriptions.
  * @param subId
  */
-case class PollIntervalSubscription(subId:Long) extends TransactionWithQuery[PollSubData, collection.mutable.HashMap[Path, List[OdfValue[Any]]]]{
-  def executeAndQuery(p: PollSubData, date: Date): mutable.HashMap[Path, List[OdfValue[Any]]] = {
+case class PollIntervalSubscription(subId:Long) extends TransactionWithQuery[PollSubData, collection.mutable.HashMap[Path, List[Value[Any]]]]{
+  def executeAndQuery(p: PollSubData, date: Date): mutable.HashMap[Path, List[Value[Any]]] = {
     val removed = p.idToData.remove(subId)
 
     removed match {

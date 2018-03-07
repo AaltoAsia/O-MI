@@ -18,9 +18,12 @@ import scala.xml.XML
 
 import database._
 import parsing.xmlGen.{defaultScope, scalaxb, xmlTypes}
-import types.OdfTypes._
+import types.odf.{Object, InfoItem, Node, Objects}
 import types._
 import http.{ActorSystemContext, Storages}
+
+
+object RESTHandler{
 
 sealed trait RESTRequest{def path: Path} // path is OdfNode path
 case class Value(path: Path)      extends RESTRequest
@@ -40,9 +43,6 @@ object RESTRequest{
       case _                         => NodeReq(path)
     }
 }
-
-object RESTHandler{
-
   /**
    * Generates ODF containing only children of the specified path's (with path as root)
    * or if path ends with "value" it returns only that value.
@@ -70,15 +70,14 @@ object RESTHandler{
         }
       case ObjId(path) =>{  //should this query return the id as plain text or inside Object node?
         val xmlReturn = singleStores.getSingle(path).map{
-          case odfObj: OdfObject =>
+          case obj: Object =>
             scalaxb.toXML[xmlTypes.ObjectType](
-              odfObj.copy(infoItems = OdfTreeCollection(),objects = OdfTreeCollection(), description = None)
-              .asObjectType, Some("odf"), Some("Object"), defaultScope
+              obj.asObjectType(Vector.empty,Vector.empty), Some("odf"), Some("Object"), defaultScope
             ).headOption.getOrElse(
-              <error>Could not create from OdfObject </error>
+              <error>Could not create from odf.Object </error>
             )
-          case odfObjs: OdfObjects => <error>Id query not supported for root Object</error>
-          case odfInfoItem: OdfInfoItem => <error>Id query not supported for InfoItem</error>
+          case objs: Objects => <error>Id query not supported for root Objects</error>
+          case infoItem: InfoItem => <error>Id query not supported for InfoItem</error>
           case _ => <error>Matched default case. The impossible happened?</error>
         }
 
@@ -89,32 +88,57 @@ object RESTHandler{
         Some(Right(<InfoItem xmlns="odf.xsd" name={path.last}><name>{path.last}</name></InfoItem>))
         // TODO: support for multiple name
       case Description(path) =>
-        singleStores.hierarchyStore execute GetTree() get path flatMap (
-          _.description map (_.value)
-        ) map Left.apply _
+        singleStores.hierarchyStore execute GetTree() get path flatMap {
+          case o: Object => Some(o.descriptions map(_.asDescriptionType))
+          case ii: InfoItem => Some(ii.descriptions map (_.asDescriptionType))
+          case n: Node => None
+        } map {
+          case descriptions: Seq[xmlTypes.DescriptionType] =>
+            descriptions.map{ 
+              case desc: xmlTypes.DescriptionType =>
+                scalaxb.toXML[xmlTypes.DescriptionType](
+                  desc, Some("odf"), Some("description"), defaultScope
+                )
+            }.fold(xml.NodeSeq.Empty){
+              case (l:xml.NodeSeq, r:xml.NodeSeq) => l ++ r
+            }
+        } map( Right.apply _ )
         
       case NodeReq(path) =>
         val xmlReturn = singleStores.getSingle(path) map {
 
-          case odfObj: OdfObject =>
+          case obj: Object =>
+            val (objs: Seq[xmlTypes.ObjectType],iis: Seq[xmlTypes.InfoItemType]) = (singleStores.hierarchyStore execute GetTree() ).getChilds( obj.path).collect{
+              case cobj: Object => 
+                cobj.copy(descriptions = Vector.empty).asObjectType( Vector.empty, Vector.empty )
+              case ii: InfoItem =>
+                ii.copy(descriptions = Vector.empty, values= Vector.empty, metaData = None ).asInfoItemType
+            }.partition{
+              case cobj: xmlTypes.ObjectType => true
+              case ii: xmlTypes.InfoItemType => false
+            }
             scalaxb.toXML[xmlTypes.ObjectType](
-              odfObj.asObjectType, Some("odf"), Some("Object"), defaultScope
+              obj.asObjectType(iis,objs), Some("odf"), Some("Object"), defaultScope
             ).headOption.getOrElse(
-              <error>Could not create from OdfObject </error>
+              <error>Could not create from odf.Object </error>
             )
 
-          case odfObj: OdfObjects =>
+          case objs: Objects =>
+            val childs: Seq[xmlTypes.ObjectType] = (singleStores.hierarchyStore execute GetTree()).getChilds( objs.path).collect{
+              case obj: Object => 
+                obj.copy(descriptions = Vector.empty).asObjectType( Vector.empty, Vector.empty )
+            }
             scalaxb.toXML[xmlTypes.ObjectsType](
-              odfObj.asObjectsType, Some("odf"), Some("Objects"), defaultScope
+              objs.asObjectsType(childs), Some("odf"), Some("Objects"), defaultScope
             ).headOption.getOrElse(
-              <error>Could not create from OdfObjects </error>
+              <error>Could not create from odf.Objects </error>
             )
 
-          case infoitem: OdfInfoItem =>
+          case infoitem: InfoItem =>
             scalaxb.toXML[xmlTypes.InfoItemType](
               infoitem.asInfoItemType, Some("odf"), Some("InfoItem"), defaultScope
             ).headOption.getOrElse(
-              <error>Could not create from OdfInfoItem</error>
+              <error>Could not create from odf.InfoItem</error>
             )
           case _ => <error>Matched default case. The impossible happened?</error>
         }

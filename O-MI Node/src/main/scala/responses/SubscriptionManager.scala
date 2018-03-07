@@ -29,7 +29,7 @@ import http.CLICmds.{GetSubsWithPollData, ListSubsCmd, SubInfoCmd}
 import http.OmiConfigExtension
 import responses.CallbackHandler.{CallbackFailure, MissingConnection}
 import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
-import types.odf.{ OldTypeConverter, NewTypeConverter }
+import types.odf.{ ODF, ImmutableODF, InfoItem, Value, OldTypeConverter, NewTypeConverter }
 import types.OdfTypes._
 import types.OmiTypes._
 import types._
@@ -202,19 +202,20 @@ class SubscriptionManager(
 
 
 
-  private def handlePollEvent(pollEvent: PolledEventSub) = {
+  private def handlePollEvent(pollEvent: PolledEventSub): ImmutableODF = {
     log.debug(s"Creating response message for Polled Event Subscription")
-    val eventData = (singleStores.pollDataPrevayler execute PollEventSubscription(pollEvent.id))
-      .map { case (_path, _values) =>
-        OdfInfoItem(_path, _values.sortBy(_.timestamp.getTime()).toVector)
-      }.map(createAncestors)
+    val eventData/*: HashMap[Path,List[Value[Any]]]*/ = (singleStores.pollDataPrevayler execute PollEventSubscription(pollEvent.id))
+    val iisWithValues: Vector[InfoItem]= eventData.map{ 
+        case (path:Path, values:Seq[Value[Any]]) =>
+        InfoItem(path, values.sortBy(_.timestamp.getTime()).toVector)
+      }.toVector
+    ImmutableODF(iisWithValues)
 
-    eventData //eventData.map(eData => Some(eData))
   }
 
-  private def calculateIntervals(pollInterval: PollIntervalSub, values: Seq[OdfValue[Any]], pollTime: Long) = {
+  private def calculateIntervals(pollInterval: PollIntervalSub, values: Seq[Value[Any]], pollTime: Long): Option[Vector[Value[Any]]]= {
     //Refactor
-    val buffer: collection.mutable.Buffer[OdfValue[Any]] = collection.mutable.Buffer()
+    val buffer: collection.mutable.Buffer[Value[Any]] = collection.mutable.Buffer()
     val lastPolled = pollInterval.lastPolled.getTime()
     val pollTimeOffset = (lastPolled - pollInterval.startTime.getTime()) % pollInterval.interval.toMillis
     val interval = pollInterval.interval.toMillis
@@ -243,60 +244,61 @@ class SubscriptionManager(
     } else None
   }
 
-  private def handlePollInterval(pollInterval: PollIntervalSub, pollTime: Long, odfTree: OdfObjects) = {
+  private def handlePollInterval(pollInterval: PollIntervalSub, pollTime: Long, odf: ODF): ImmutableODF = {
 
     log.info(s"Creating response message for Polled Interval Subscription")
 
-    val intervalData = (singleStores.pollDataPrevayler execute PollIntervalSubscription(pollInterval.id))
+    val intervalData/*: Map[Path,List[Value[Any]]] */= (singleStores.pollDataPrevayler execute PollIntervalSubscription(pollInterval.id))
       .mapValues(_.sortBy(_.timestamp.getTime()))
 
-    val combinedWithPaths =
+    val combinedWithPaths: Map[Path,Seq[Value[Any]]] = odf.getSubTree( pollInterval.paths ).collect{
+        case ii: InfoItem =>
+          ii.path -> Vector[Value[Any]]() 
+      }.toMap[Path,Seq[Value[Any]]] ++ intervalData
+      /*
       OdfTypes  //TODO easier way to get child paths... maybe something like prefix map
               .getOdfNodes(pollInterval.paths.flatMap(path => odfTree.get(path)):_*)
         .map(n => n.path)
         .map(p => p -> Vector[OdfValue[Any]]()).toMap ++ intervalData
+    */
 
-    val pollData = combinedWithPaths.map(pathValuesTuple => {
-
-      val (path, values) = pathValuesTuple match {
-        case (p, v) if v.nonEmpty => {
-          v.lastOption match {
+    val pollData: Map[Path,Seq[Value[Any]]]= combinedWithPaths.map{
+        case ( path: Path, values: Seq[Value[Any]] ) if values.nonEmpty =>
+          values.lastOption match {
             case Some(last) =>
               log.info(s"Found previous values for intervalsubscription: $last")
-              (p, v :+ OdfValue(last.value.toString, last.typeValue, new Timestamp(pollTime)))
+              (path, values :+ last.retime(new Timestamp(pollTime)))
             case None =>
               val msg = s"Found previous values for intervalsubscription, but lastOption is None, should not be possible."
               log.error(msg)
               throw new Exception(msg)
           }
-        } //add polltime
-        case (p, v) => {
-          log.info(s"No values found for path: $p in Interval subscription poll for sub id ${pollInterval.id}")
-          val latestValue = singleStores.latestStore execute LookupSensorData(p) match {
+        case ( path: Path, values: Seq[Value[Any]]) if values.isEmpty =>
+          log.info(s"No values found for path: $path in Interval subscription poll for sub id ${pollInterval.id}")
+          val latestValue = singleStores.latestStore execute LookupSensorData(path) match {
             //lookup latest value from latestStore, if exists use that
             case Some(value) => {
               log.info(s"Found old value from latestStore for sub ${pollInterval.id}")
-              Vector(value, OdfValue(value.value, new Timestamp(pollTime), HashMap(value.attributes.toSeq:_*)))
+              Vector(value, value.retime(new Timestamp(pollTime)))
             }
             //no previous values v is empty
             case _ => {
               log.info("No previous value found return empty values.")
-              v
+              values
             }
           }
-          (p, latestValue)
+          path -> latestValue
+      }.flatMap{
+        case ( path:  Path, values: Seq[Value[Any]] ) =>
+        calculateIntervals(pollInterval, values, pollTime).map{
+          calculatedData: Vector[Value[Any]] => path -> calculatedData
         }
-
       }
-      val calculatedData = calculateIntervals(pollInterval, values, pollTime)
-
-      calculatedData.map(cData => path -> cData)
-    }).flatMap { n => //flatMap removes None values
-      //create OdfObjects from InfoItems
-      n.map { case (path, values) => createAncestors(OdfInfoItem(path, values)) }
-    }
-
-    pollData
+      val iisWithValues: Seq[InfoItem] = pollData.map{ 
+        case ( path:  Path, values: Seq[Value[Any]] ) =>
+          InfoItem(path,values.toVector)
+      }
+      ImmutableODF(iisWithValues)
   }
 
   /**
@@ -314,30 +316,23 @@ class SubscriptionManager(
    * @param id id of subscription to poll
    * @return
    */
-  private def pollSubscription(id: Long): Option[OdfObjects] = {
+  private def pollSubscription(id: Long): Option[ODF] = {
     val pollTime: Long = System.currentTimeMillis()
     val sub: Option[PolledSub] = singleStores.subStore execute PollSub(id)
-    sub match {
-      case Some(pollSub) => {
+    sub.map{
+      case pollSub: PolledSub => 
         log.debug(s"Polling subscription with id: ${pollSub.id}")
-        val odfTree = singleStores.hierarchyStore execute GetTree()
-        val emptyTree = odfTree.intersect(pollSub
-          .paths  //get subscriptions paths
-          .flatMap(path => odfTree.get(path)) //get odfNode for each path and flatten the Option values
-          .foldLeft(OdfObjects()){
-            case (objs: OdfObjects, node: OdfNode) => objs.union(createAncestors(node))
-          }.valuesRemoved.allMetaDatasRemoved)
+        val odfTree: ImmutableODF = singleStores.hierarchyStore execute GetTree()
+        val emptyTree = odfTree.getSubTreeAsODF(pollSub.paths).valuesRemoved
 
         //pollSubscription method removes the data from database and returns the requested data
-        val subValues: Iterable[OdfObjects] = pollSub match {
+        val subValues: ImmutableODF = pollSub match {
 
           case pollEvent: PolledEventSub => handlePollEvent(pollEvent)
 
           case pollInterval: PollIntervalSub => handlePollInterval(pollInterval, pollTime, odfTree)
         }
-        Some(subValues.fold(emptyTree)(_.union(_)))
-      }
-      case _ => None
+        subValues.union(emptyTree)
     }
   }
 
@@ -355,6 +350,23 @@ class SubscriptionManager(
 
       //send new data to callback addresses
       log.debug(s"Trying to send subscription data to ${iSub.callback}")
+      val subedTree =  hTree.getSubTreeAsODF(iSub.paths).mutable.metaDatasRemoved.descriptionsRemoved
+      val datas = singleStores.latestStore execute LookupSensorDatas(subedTree.getInfoItems.map(_.path))
+
+      val odfWithValues = subedTree.union(
+        ImmutableODF(datas.map{
+          case (path: Path, value: Value[Any]) => InfoItem(path, Vector(value)) 
+        })
+      )
+      val foundPaths = odfWithValues.getPaths
+      val missedPaths = iSub.paths.filterNot{
+        case path: Path => foundPaths.contains(path)
+      }
+      val succResult = Vector(Results.Success(OdfTreeCollection(iSub.id),Some(odfWithValues)))
+      val failedResults = if (missedPaths.nonEmpty) Vector(Results.SubscribedPathsNotFound(missedPaths)) else Vector.empty
+      val responseTTL = iSub.interval
+      val response = ResponseRequest((succResult ++ failedResults), responseTTL)
+      /*
       val subPaths = iSub.paths.map(path => (path, hTree.get(path)))
       val (failures, nodes) = subPaths.foldLeft[(Seq[Path], Seq[OdfNode])]((Seq(), Seq())){
             case ((paths, _nodes), (p,Some(node))) => (paths, _nodes.:+(node))
@@ -377,6 +389,7 @@ class SubscriptionManager(
       val failedResults = if (failures.nonEmpty) Vector(Results.SubscribedPathsNotFound(failures)) else Vector.empty
       val responseTTL = iSub.interval
       val response = ResponseRequest((succResult ++ failedResults), responseTTL)
+      */
 
       val callbackF = callbackHandler.sendCallback(iSub.callback, response) // FIXME: change resultXml to ResponseRequest(..., responseTTL)
       callbackF.onSuccess {
