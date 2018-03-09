@@ -65,7 +65,7 @@ object Authorization {
    * if the user is authorized to make the `sameOrNewRequest` that can have some unauthorized
    * objects removed or otherwise limit the original request.
    */
-  type PermissionTest = RequestWrapper => Try[RequestWrapper]
+  type PermissionTest = RequestWrapper => Try[(RequestWrapper, UserInfo)]
 
   /** Simple private container for forcing the combination of previous authorization.
    *  Call the apply for the result.
@@ -178,7 +178,7 @@ import http.Authorization._
  */
 trait AllowAllAuthorization extends AuthorizationExtension {
   abstract override def makePermissionTestFunction: CombinedTest = 
-    combineWithPrevious(super.makePermissionTestFunction, provide(req => Success(req)))
+    combineWithPrevious(super.makePermissionTestFunction, provide(req => Success((req, req.user))))
 }
 
 
@@ -193,7 +193,7 @@ trait AllowNonPermissiveToAll extends AuthorizationExtension {
         case r: PermissiveRequest =>
           Failure(UnauthorizedEx())
         case r: OmiRequest =>
-          Success(r)
+          Success((r, r.user))
       }
     }
   )
