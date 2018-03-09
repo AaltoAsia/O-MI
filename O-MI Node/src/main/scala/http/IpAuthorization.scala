@@ -67,9 +67,9 @@ trait IpAuthorization extends AuthorizationExtension {
           log.debug(s"Authorized IP: $user")
         }
 
-        result
+        result.map(r=> (r,r.user))
         // Read and Subscriptions should be allowed elsewhere
-              case _ => Failure(UnauthorizedEx())
+      case _ => Failure(UnauthorizedEx())
     }
 
     abstract override def makePermissionTestFunction: CombinedTest =

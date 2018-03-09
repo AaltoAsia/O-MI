@@ -284,8 +284,9 @@ trait OmiService
       }
 
       val responseF: Future[ResponseRequest] = hasPermissionTest(originalReq) match {
-        case Success(req: RequestWrapper) => { // Authorized
-           req.parsed match {
+        case Success((req: RequestWrapper, user: UserInfo)) => { // Authorized
+          req.user = UserInfo(user.remoteAddress, user.name) //Copy user info to requestwrapper
+          req.parsed match {
             case Right(requests) =>
               val unwrappedRequest = req.unwrapped // NOTE: Be careful when implementing multi-request messages
               unwrappedRequest match {
