@@ -10,6 +10,7 @@ import scala.collection.immutable.Map
 import scala.concurrent.duration._
 import scala.concurrent.{Future, Promise, ExecutionContext}
 import scala.util.{Failure, Success, Try}
+import scala.util.control.NonFatal
 import scala.xml.XML
 
 import akka.actor.{Actor, ActorRef, ActorSystem, ActorLogging}
@@ -24,6 +25,7 @@ import responses.CallbackHandler._
 import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 import types.odf.{ NewTypeConverter, ImmutableODF, ODF, OldTypeConverter }
 import types.OdfTypes._
+import types.odf._
 import types.OmiTypes._
 import types.Path
 import analytics.{AddWrite, AnalyticsStore}
@@ -31,46 +33,29 @@ import agentSystem.AgentName
 
 trait DBWriteHandler extends DBHandlerBase {
 
-
-
   import context.system
 
   //, dispatcher}
-  protected def handleWrite( write: WriteRequest ) : Future[ResponseRequest] = {
-    val odfObjects = NewTypeConverter.convertODF(write.odf)
-    val infoItems : Seq[OdfInfoItem] = odfObjects.infoItems // getInfoItems(odfObjects)
 
-    // Collect metadata 
-    val objectsWithMetadata = odfObjects.objectsWithMetadata
-    writeValues(infoItems, objectsWithMetadata).recover{
-      case t: Exception =>
-        log.error(t, "Error while handling write.")
-        Responses.InternalError(t)
-      case t: Throwable =>
-        log.error(t, "Error while handling write.")
-        Responses.InternalError(t)
-    }
-  }
-
-  private def sendEventCallback(esub: EventSub, infoItems: Seq[OdfInfoItem]): Unit = {
+  private def sendEventCallback(esub: EventSub, infoItems: Seq[InfoItem]): Unit = {
     sendEventCallback(esub,
-      (infoItems map createAncestors).foldLeft(OdfObjects())(_ union _)
+      ImmutableODF(infoItems)
     )
   }
 
-  private def sendEventCallback(esub: EventSub, odfWithoutTypes: OdfObjects) : Unit = {
+  private def sendEventCallback(esub: EventSub, odfWithoutTypes: ImmutableODF) : Unit = {
     val id = esub.id
     val callbackAddr = esub.callback
     val hTree = singleStores.hierarchyStore execute GetTree()
     //union with odfWithoutTypes to make sure that we don't lose odf branches that are not in hierarchy yet
     //and then intersect to get correct typeValues etc. from hierarchyTree
-    val odf = hTree.union(odfWithoutTypes.valuesRemoved).intersect(odfWithoutTypes)
+    val odf = hTree.union(odfWithoutTypes.valuesRemoved).intersection(odfWithoutTypes)
     val responseTTL =
       Try((esub.endTime.getTime - parsing.OdfParser.currentTime().getTime).milliseconds)
         .toOption.getOrElse(Duration.Inf)
 
     log.debug(s"Sending data to event sub: $id.")
-    val responseRequest = Responses.Poll(id, OldTypeConverter.convertOdfObjects(odf), responseTTL)
+    val responseRequest = Responses.Poll(id, odf, responseTTL)
     log.debug(s"Sending in progress; Subscription subId:$id addr:$callbackAddr interval:-1")
     //log.debug("Send msg:\n" + xmlMsg)
 
@@ -104,7 +89,7 @@ trait DBWriteHandler extends DBHandlerBase {
         .map(event => (event.infoItem.path, event.infoItem.values.map(_.timestamp.getTime())))
         .foreach(pv => store ! AddWrite(pv._1, pv._2))
     }
-    val esubLists: Seq[(EventSub, OdfInfoItem)] = events.collect{
+    val esubLists: Seq[(EventSub, InfoItem)] = events.collect{
       case AttachEvent(infoItem) =>
         val pollNewSubs = singleStores.subStore execute GetNewEventSubsForPath(infoItem.path)
         infoItem.values.headOption.foreach(value => pollNewSubs.foreach(pnes => singleStores.pollDataPrevayler execute AddPollData(pnes.id, infoItem.path, value)))
@@ -130,29 +115,6 @@ trait DBWriteHandler extends DBHandlerBase {
   }
 
   /**
-   * Function for handling OdfObjects.
-   *
-   */
-  protected def writeValues(
-    infoItems: Iterable[OdfInfoItem],
-    objectMetadatas: Vector[OdfObject] = Vector()
-  )(implicit system: ActorSystem): Future[ResponseRequest] ={
-    if( infoItems.nonEmpty || objectMetadatas.nonEmpty ) {
-      val future = handleInfoItems(infoItems, objectMetadatas)
-      future.map{ 
-          paths => 
-            log.debug("Successfully saved Odfs to DB")
-            Responses.Success()
-      }
-    } else {
-      Future{
-        log.debug("No infoitems or metadata to write. Successful write.")
-        Responses.Success()
-      }  
-    }
-  }
-
-  /**
    * Adds data for polled subscriptions to the Prevayler store.
    * Polling removes the related data from database
    * (except for polled interval subscriptions, in which case it leaves the latest value in the database)
@@ -161,7 +123,7 @@ trait DBWriteHandler extends DBHandlerBase {
    * @param oldValueOpt
    * @return returns Sequence of SubValues to be added to database
    */
-  private def handlePollData(path: Path, newValue: OdfValue[Any], oldValueOpt: Option[OdfValue[Any]]) = {
+  private def handlePollData(path: Path, newValue: Value[Any], oldValueOpt: Option[Value[Any]]) = {
     val relatedPollSubs = singleStores.subStore execute GetSubsForPath(path)
 
     relatedPollSubs.collect {
@@ -175,17 +137,14 @@ trait DBWriteHandler extends DBHandlerBase {
     }
   }
 
-  /**
-   * Function for handling sequences of OdfInfoItem.
-   * @return true if the write was accepted.
-   */
-  private def handleInfoItems(
-                               infoItems: Iterable[OdfInfoItem],
-                               objectMetadatas: Vector[OdfObject] = Vector()
-                               )(implicit system: ActorSystem): Future[Iterable[Path]] = {
+  protected def handleWrite( write: WriteRequest ) : Future[ResponseRequest] = {
+            //                   infoItems: Iterable[InfoItem],
+            //                   objectMetadatas: Vector[Object] = Vector()
+            //
+    val odf =write.odf
     // save only changed values
     val pathValueOldValueTuples = for {
-      info <- infoItems.toSeq
+      info <- odf.getInfoItems.toSeq
       path = info.path
       oldValueOpt = singleStores.latestStore execute LookupSensorData(path)
       value <- info.values
@@ -218,31 +177,31 @@ trait DBWriteHandler extends DBHandlerBase {
         case AttachEvent(item) => item
     }
 
-    val metas = infoItems filter { _.hasMetadata }
-
-    val iiDescriptions = infoItems filter { _.hasDescription }
-    val iiTypes = infoItems filter { _.typeValue.nonEmpty }
-    val iiAttr = infoItems filter { _.attributes.nonEmpty }
+    val staticData = odf.valuesRemoved.nodesWithStaticData
+    /*
+      infoItems filter { 
+      ii: InfoItem =>
+      ii.names.nonEmpty ||
+      ii.metaData.nonEmpty || 
+      ii.descriptions.nonEmpty ||
+      ii.typeAttribute.nonEmpty ||
+      ii.attributes.nonEmpty 
+    }*/
 
     val updatedStaticItems ={
-      metas ++ 
-      iiDescriptions ++ 
-      iiTypes ++ 
-      iiAttr ++ 
-      newItems ++ 
-      objectMetadatas
+      staticData ++ 
+      newItems //++ objectMetadatas
     }
 
-
-
     // DB + Poll Subscriptions
-    val infosToBeWrittenInDB: Seq[OdfInfoItem] =
+    val infosToBeWrittenInDB: Seq[InfoItem] =
       triggeringEvents //InfoItems contain single value
       .map(_.infoItem) //map type to OdfInfoItem
       .groupBy(_.path) //combine same paths
-      .flatMap( pathValues => //flatMap to remove None values
-        pathValues._2.reduceOption(_.combine(_)) //Combine infoitems with same paths to single infoitem
-      )(collection.breakOut) // breakOut to correct collection type
+      .flatMap{
+        case (path: Path, iis: InfoItem) => //flatMap to remove None values
+        iis.reduceOption(_.union(_)) //Combine infoitems with same paths to single infoitem
+      }(collection.breakOut) // breakOut to correct collection type
 
     val dbWriteFuture = dbConnection.writeMany(infosToBeWrittenInDB)
 
@@ -256,8 +215,7 @@ trait DBWriteHandler extends DBHandlerBase {
 
         if (updatedStaticItems.nonEmpty) {
           // aggregate all updates to single odf tree
-          val updateTree: OdfObjects =
-            (updatedStaticItems map createAncestors).foldLeft(OdfObjects())(_ union _)
+          val updateTree: ImmutableODF = ImmutableODF(updatedStaticItems)
 
           singleStores.hierarchyStore execute Union(updateTree)
         }
@@ -275,14 +233,21 @@ trait DBWriteHandler extends DBHandlerBase {
       case t: Throwable => log.error(t, "Error when trying to update hierarchy.")
     }
 
-
-
-
-    for{
+    val resultFuture = for{
       _ <- pollFuture
       _ <- writeFuture
-      res = infoItems.map(_.path) ++ objectMetadatas.map(_.path)
-    } yield res
+      res = odf.getInfoItems.map(_.path) ++ staticData.map(_.path)
+    } yield res.toSet
+    resultFuture.map{ 
+      paths => 
+        log.debug("Successfully saved Odfs to DB")
+        Responses.Success()
+    }.recover{
+      case NonFatal(t) =>
+        log.error(t, "Error while handling write.")
+        t.printStackTrace()
+        Responses.InternalError(t)
+    }
 
   }
 }

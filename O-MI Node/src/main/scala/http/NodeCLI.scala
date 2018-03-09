@@ -30,7 +30,7 @@ import akka.util.{ByteString, Timeout}
 import database._
 import responses._
 import spray.json.JsArray
-import types.OdfTypes.{OdfObjects, OdfParseResult}
+import types.odf._
 import types.Path
 
 import scala.io.Source
@@ -313,7 +313,7 @@ import spray.json._
     })
   }
   private def backupDatabase(filePath: String): Future[Option[Unit]] = {
-    val allData: Future[Option[OdfObjects]] = removeHandler.getAllData()
+    val allData: Future[Option[ODF]] = removeHandler.getAllData()
     allData.map(aData => {
       aData.map(odf => {
         val file = new File(filePath)
@@ -343,7 +343,7 @@ import spray.json._
   }
 
   private def restoreDatabase(filePath: String) = {
-    val parsed: OdfParseResult = parsing.OdfParser.parse(new File(filePath))
+    val parsed: OdfParseResult = ODFParser.parse(new File(filePath))
     parsed.right.map(removeHandler.writeOdf(_))
     "Done\n"
   }

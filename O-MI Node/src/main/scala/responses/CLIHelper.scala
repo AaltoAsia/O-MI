@@ -21,14 +21,14 @@ import scala.util.{Failure, Success}
 import akka.event.{LogSource, Logging, LoggingAdapter}
 import akka.actor.ActorSystem
 import database._
-import types.OdfTypes._
+import types.odf._
 import types._
 import http.{ActorSystemContext, OmiServer, Storages}
 
 trait CLIHelperT{
   def handlePathRemove(parentPath: Path): Boolean
-  def getAllData(): Future[Option[OdfObjects]]
-  def writeOdf(odf: OdfObjects): Unit
+  def getAllData(): Future[Option[ODF]]
+  def writeOdf(odf: ImmutableODF): Unit
   }
 class CLIHelper(val singleStores: SingleStores, dbConnection: DB )(implicit system: ActorSystem) extends CLIHelperT{
 
@@ -38,12 +38,12 @@ class CLIHelper(val singleStores: SingleStores, dbConnection: DB )(implicit syst
   protected val log: LoggingAdapter = Logging( system, this)
 
   def handlePathRemove(parentPath: Path): Boolean = {
-    val objects = singleStores.hierarchyStore execute GetTree()
-    val node = objects.get(parentPath)
-    node match {
-      case Some(_node) => {
+    val odf = singleStores.hierarchyStore execute GetTree()
+    val nodeO = odf.get(parentPath)
+    nodeO match {
+      case Some(node) => {
 
-        val leafs = getInfoItems(_node).map(_.path)
+        val leafs = odf.getSubTreePaths(node.path)
 
         singleStores.hierarchyStore execute TreeRemovePath(parentPath)
 
@@ -72,19 +72,22 @@ class CLIHelper(val singleStores: SingleStores, dbConnection: DB )(implicit syst
     * method in this class because it has viisbility to singleStores and Database
     * @return
     */
-  def getAllData(): Future[Option[OdfObjects]] = {
-    val odf: OdfObjects = singleStores.hierarchyStore execute GetTree()
-    val leafs = getLeafs(odf)
-    dbConnection.getNBetween(leafs,None,None,Some(100),None).map(objs => objs.map(_.union(odf)))
+  def getAllData(): Future[Option[ODF]] = {
+    val odf: ODF = singleStores.hierarchyStore execute GetTree()
+    val leafs = odf.getLeafs
+    dbConnection.getNBetween(leafs,None,None,Some(100),None).map{
+      o : Option[ODF]=>
+      o.map(_.union(odf))
+    }
   }
 
-  def writeOdf(odf: OdfObjects): Unit = {
-    val infoItems: Seq[OdfInfoItem] = odf.infoItems
+  def writeOdf(odf: ImmutableODF): Unit = {
+    val infoItems: Seq[InfoItem] = odf.getInfoItems
     dbConnection.writeMany(infoItems)
-    singleStores.hierarchyStore execute Union(odf)
-    val latestValues: Seq[(Path, OdfValue[Any])] =
+    singleStores.hierarchyStore execute Union(odf.immutable)
+    val latestValues: Seq[(Path, Value[Any])] =
       infoItems.collect{
-        case OdfInfoItem(path,values,_,_,_,_) if values.nonEmpty => (path, values.maxBy(_.timestamp.getTime()))
+        case ii: InfoItem if ii.values.nonEmpty => (ii.path, ii.values.maxBy(_.timestamp.getTime()))
       }
     latestValues.foreach(pv => singleStores.latestStore execute SetSensorData(pv._1,pv._2))
 

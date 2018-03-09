@@ -537,8 +537,10 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimmableDB{
   def clearDB(): Future[Int] = {
     val valueDropsActions = DBIO.seq(
       valueTables.values.map{
-      pathValues => pathValues.schema.drop
-    }:_*)
+      pathValues => pathValues.schema.drop.map{
+        u: Unit => 1 //XXX: Cast DriverAction to DBIOAction
+      }
+    }.toSeq:_*)
     db.run( valueDropsActions.andThen( pathsTable.delete ).andThen(
       pathsTable.add( Seq( DBPath(None, Path("Objects"),isInfoItem = false))).map{ seq => seq.length }
     ).transactionally )

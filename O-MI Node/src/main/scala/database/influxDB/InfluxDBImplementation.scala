@@ -28,7 +28,6 @@ import database._
 import http.OmiConfigExtension
 import types.odf._
 import types.OmiTypes._
-import types.OdfTypes._
 import types.Path
 import types.Path._
 
@@ -236,12 +235,8 @@ class InfluxDBImplementation(
      }
   }
 
-  def writeMany(data: Seq[OdfInfoItem]): Future[OmiReturn] ={
-    val iis = data.map{ 
-      oii: OdfInfoItem => 
-      OldTypeConverter.convertOdfInfoItem(oii)
-    }
-    writeManyNewTypes(iis)
+  def writeMany(infoItems: Seq[InfoItem]): Future[OmiReturn] ={
+    writeManyNewTypes(infoItems)
   }
   def writeManyNewTypes(data: Seq[InfoItem]): Future[OmiReturn] = {
     val valuesAsString = data.flatMap { ii: InfoItem => infoItemToWriteFormat(ii) }.mkString("\n")
@@ -266,19 +261,13 @@ class InfluxDBImplementation(
 
   }
   def getNBetween(
-    requests: Iterable[OdfNode],
+    nodes: Iterable[Node],
     begin: Option[Timestamp],
     end: Option[Timestamp],
     newest: Option[Int],
-    oldest: Option[Int]): Future[Option[OdfObjects]]={
-      val iODF = OldTypeConverter.convertOdfObjects(requests.map( _.createAncestors ).fold(OdfObjects())( _ union _ ))
-      getNBetweenNewTypes( iODF, begin, end, newest, oldest).map {
-        result: Option[ImmutableODF] =>
-          result.map {
-            resultODF: ImmutableODF =>
-              NewTypeConverter.convertODF(resultODF)
-          }
-      }
+    oldest: Option[Int]): Future[Option[ODF]]={
+      val iODF = ImmutableODF(nodes) 
+      getNBetweenNewTypes( iODF, begin, end, newest, oldest)
   }
 
   implicit val odfJsonFormatter: InfluxDBJsonProtocol.InfluxDBJsonODFFormat = new InfluxDBJsonProtocol.InfluxDBJsonODFFormat()
@@ -296,13 +285,13 @@ class InfluxDBImplementation(
     if( oldestO.nonEmpty ){
       Future.failed( new Exception("Oldest attribute is not allowed with InfluxDB."))
     } else {
-      val cachedODF = OldTypeConverter.convertOdfObjects(singleStores.hierarchyStore execute GetTree())
+      val cachedODF = singleStores.hierarchyStore execute GetTree()
       val requestedODF = cachedODF.select(requestODF)
       val requestedIIs = requestedODF.getInfoItems
       if( beginO.isEmpty && endO.isEmpty && newestO.isEmpty ){
         val pathToValue = singleStores.latestStore execute LookupSensorDatas( requestedIIs.map( _.path ).toVector) 
         val odfWithValues = ImmutableODF(pathToValue.map{
-          case ( path: Path, value: OdfValue[Any]) => InfoItem( path.last, path, values = Vector( OldTypeConverter.convertOdfValue(value)))
+          case ( path: Path, value: Value[Any]) => InfoItem( path.last, path, values = Vector( value))
         })
         Future{ Some(requestedODF.union(odfWithValues).immutable) }
       } else {
@@ -385,7 +374,7 @@ class InfluxDBImplementation(
    //TODO: Escape all odd parts
    def pathToMeasurementName(path: Path ): String = path.toString.replace("=","\\=").replace(",","\\,")
    def remove( path: Path ): Future[Seq[Int]] ={
-      val cachedODF = OldTypeConverter.convertOdfObjects(singleStores.hierarchyStore execute GetTree())
+      val cachedODF = singleStores.hierarchyStore execute GetTree()
       val removedIIs = cachedODF.getSubTreeAsODF(path).getInfoItems
       val query = "q=" + removedIIs.map {
         ii: InfoItem =>

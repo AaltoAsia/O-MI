@@ -134,19 +134,20 @@ trait AuthApiProvider extends AuthorizationExtension {
             paths <- Option(maybePaths) // paths might be null
 
             // Rebuild the request having only `paths`
-            pathTrees = paths collect {
+            pathTrees = currentTree.getSubTreeAsODF(paths.toVector)
+            /*paths collect {
               case path: Path =>              // filter nulls out
-                currentTree.get(path) match { // figure out is it InfoItem or Object
+                currentTree.getSubTreeAsODF(paths) match { // figure out is it InfoItem or Object
                   case Some(nodeType) => createAncestors(nodeType)
                   case None => OdfObjects()
                 }
-            }
+            }*/
 
-          } yield pathTrees.fold(OdfObjects())(_ union _)
+          } yield pathTrees//.fold(OdfObjects())(_ union _)
 
           newOdfOpt match {
-            case Some(newOdf) if newOdf.objects.nonEmpty =>
-              val nODF= OldTypeConverter.convertOdfObjects(newOdf) 
+            case Some(newOdf) if newOdf.getObjects.nonEmpty =>
+              val nODF= newOdf
               orgOmiRequest.unwrapped flatMap {
                 case r: ReadRequest         => Success(r.copy(odf = nODF))
                 case r: SubscriptionRequest => Success(r.copy(odf = nODF))
