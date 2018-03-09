@@ -164,7 +164,7 @@ class InfluxDBImplementation(
  implicit val mat: Materializer = ActorMaterializer()
  def log: LoggingAdapter = system.log
   def infoItemToWriteFormat( ii: InfoItem ): Seq[String] = {
-        val measurement: String = pathToMeasurementName( ii.path)
+        val measurement: String = pathToMeasurementName( ii.path).replace(" ","\\ ")
         ii.values.map{
           value: Value[Any] => 
             val valueStr: String= value.value match {
@@ -308,33 +308,33 @@ class InfluxDBImplementation(
       } else {
         lazy val filteringClause ={
           val whereClause = ( beginO, endO ) match{
-            case (Some( begin), Some(end)) => s" WHERE time >= '${begin.toString}' AND time <= '${end.toString}' "
-            case (None, Some(end)) => s" WHERE time <= '${end.toString}' "
-            case (Some( begin), None) => s" WHERE time >= '${begin.toString}' "
+            case (Some( begin), Some(end)) => s"WHERE time >= '${begin.toString}' AND time <= '${end.toString}'"
+            case (None, Some(end)) => s"WHERE time <= '${end.toString}'"
+            case (Some( begin), None) => s"WHERE time >= '${begin.toString}'"
             case (None, None) => ""
           }
           val limitClause = newestO.map{
             n: Int =>
-              s" LIMIT $n "
+              s"LIMIT $n"
           }.getOrElse{
-            if( beginO.isEmpty && endO.isEmpty ) " LIMIT 1 " else ""
+            if( beginO.isEmpty && endO.isEmpty ) "LIMIT 1" else ""
           }
-          whereClause + " ORDER BY time DESC " + limitClause
+         s"$whereClause ORDER BY time DESC $limitClause"
         }
 
         //XXX: What about Objects/ read all?
         if( requestedIIs.nonEmpty ){
           val iiQueries = getNBetweenInfoItemsQueryString(requestedIIs, filteringClause)
           read( iiQueries, requestedODF )
-        } else Future{
-          Some( requestedODF.immutable )
-        }
+          } else Future{
+            Some( requestedODF.immutable )
+          }
       }
 
     }
   }
    private def read(content : String, requestedODF: ODF) = {
-    val httpEntity = FormData( ("q", content)).toEntity( HttpCharsets.`UTF-8` )
+     val httpEntity = FormData( ("q", content)).toEntity( HttpCharsets.`UTF-8` )
      val request = RequestBuilding.Post(readAddress, httpEntity).withHeaders(AcceptHeader("application/json"))
      log.debug( s"Sending following request\n${content.toString}")
      val responseF : Future[HttpResponse] = httpExt.singleRequest(request)//httpHandler(request)
@@ -377,13 +377,13 @@ class InfluxDBImplementation(
      val queries = iis.map {
        ii: InfoItem =>
          val measurementName = pathToMeasurementName(ii.path)
-         val select = s"""SELECT "value" FROM "$measurementName""""
-         select + filteringClause
+         val select = s"""SELECT value FROM "$measurementName""""
+         s"$select $filteringClause"
      }
-     queries.mkString(";")
+     queries.mkString(";\n")
    }
    //TODO: Escape all odd parts
-   def pathToMeasurementName(path: Path ): String = path.toString.replace("=","\\=").replace(" ","\\ ").replace(",","\\,")
+   def pathToMeasurementName(path: Path ): String = path.toString.replace("=","\\=").replace(",","\\,")
    def remove( path: Path ): Future[Seq[Int]] ={
       val cachedODF = OldTypeConverter.convertOdfObjects(singleStores.hierarchyStore execute GetTree())
       val removedIIs = cachedODF.getSubTreeAsODF(path).getInfoItems

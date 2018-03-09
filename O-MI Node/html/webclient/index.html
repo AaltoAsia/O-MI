@@ -166,6 +166,9 @@
       },
     }, function(success, failed){
         if(Object.keys(failed).length > 0) console.log('Failed to load libraries ',failed);
+        else {
+          WebOmi.requests.forceLoadParams(WebOmi.requests.defaults.readAll());
+        }
       }
     );
     fallback.ready(['jQuery'], function(){
