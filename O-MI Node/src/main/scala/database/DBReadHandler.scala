@@ -15,7 +15,7 @@ import scala.xml.{NodeSeq, PrettyPrinter}
 
 import types.odf.{ NewTypeConverter, ImmutableODF, ODF, OldTypeConverter }
 import types.OmiTypes._
-import types.OdfTypes._
+import types.odf._
 import types.Path
 import types.Path._
 import http.{ActorSystemContext, Storages}
@@ -98,69 +98,64 @@ trait DBReadHandler extends DBHandlerBase{
            s"ttl: ${default.ttl} )"
           )
 
-         val requestedObjects = NewTypeConverter.convertODF(read.odf) 
-         val leafs = getLeafs(requestedObjects)
+         val requestedObjects = read.odf
+         val leafs = requestedObjects.getLeafs
 
+         //Get values from database
+         val odfWithValuesO: Future[Option[ODF]] = dbConnection.getNBetween(
+           leafs,
+           read.begin,
+           read.end,
+           read.newest,
+           read.oldest
+         )
 
          // NOTE: Might go off sync with tree or values if the request is large,
          // but it shouldn't be a big problem
          val metadataTree = singleStores.hierarchyStore execute GetTree()
 
          //Find nodes from the request that HAVE METADATA OR DESCRIPTION REQUEST
-         def nodesWithoutMetadata: Option[OdfObjects] = getOdfNodes(requestedObjects).collect {
-           case oii@OdfInfoItem(_, _, desc, mData, typeValue,attr)
-           if desc.isDefined || mData.isDefined || typeValue.nonEmpty ||attr.nonEmpty=> 
-              createAncestors(oii.copy(values = OdfTreeCollection()))
-           case obj@OdfObject(pat, _, _, _, des, _,attr)
-             if des.isDefined  || attr.nonEmpty => 
-               createAncestors(obj.copy(infoItems = OdfTreeCollection(), objects = OdfTreeCollection()))
-         }.reduceOption(_.union(_))
+         def odfWithoutMetaData: ODF = ImmutableODF(requestedObjects.getNodes.collect {
+           case ii: InfoItem
+           if ii.hasStaticData => ii.copy(values = OdfTreeCollection())
+           case obj: Object 
+             if obj.hasStaticData => obj
+         })
 
-         def objectsWithMetadata = 
-           nodesWithoutMetadata.map( objs => metadataTree.intersect( objs ) )
+         def odfWithMetaData = metadataTree.intersection( odfWithoutMetaData ) 
           
-         //Get values from database
-         val objectsWithValuesO: Future[Option[OdfObjects]] = dbConnection.getNBetween(leafs, read.begin, read.end, read.newest, read.oldest)
-
-         val resultF = objectsWithValuesO.map {
-           case Some(objectsWithValues) =>
+         val resultF = odfWithValuesO.map {
+           case Some(odfWithValues) =>
              //Select requested O-DF from metadataTree and remove MetaDatas and descriptions
-             val objectsWithValuesAndAttributes = 
-              metadataTree.allMetaDatasRemoved.intersect( objectsWithValues.valuesRemoved )
-                .union( objectsWithValues )
+             val odfWithValuesAndAttributes = metadataTree.mutable
+               .metaDatasRemoved
+               .descriptionsRemoved
+               .intersection( odfWithValues.valuesRemoved )
+               .union( odfWithValues )
 
 
-             val metaCombined = objectsWithMetadata
-               .fold(objectsWithValuesAndAttributes){
-                 metas => objectsWithValuesAndAttributes.union(metas) 
-               }
+             val metaCombined = odfWithValuesAndAttributes.union(odfWithMetaData) 
              val requestsPaths = leafs.map { _.path }
-             val foundOdf = getLeafs(objectsWithValuesAndAttributes)
-             val foundOdfAsPaths = foundOdf.flatMap { _.path.getParentsAndSelf }.toSet
+             val foundOdfAsPaths = odfWithValuesAndAttributes.getPaths
              //handle analytics
              analyticsStore.foreach{ store =>
                val reqTime: Long = new Date().getTime()
-               foundOdf.foreach(n => {
-                 store ! AddRead(n.path, reqTime)
-                 store ! AddUser(n.path, read.user.remoteAddress.map(_.hashCode()), reqTime)
+               foundOdfAsPaths.foreach(path => {
+                 store ! AddRead(path, reqTime)
+                 store ! AddUser(path, read.user.remoteAddress.map(_.hashCode()), reqTime)
                })
              }
 
              val notFound = requestsPaths.filterNot { path => foundOdfAsPaths.contains(path) }.toSet.toSeq
-             val notFoundOdf = notFound.flatMap{ 
-               path => requestedObjects.get(path).map{ node => createAncestors(node)}
-            }.foldLeft(OdfObjects()){ 
-              case (result, nf) => 
-                result.union(nf)
-            }
-             val found = if( metaCombined.objects.nonEmpty ) Some( Results.Read(OldTypeConverter.convertOdfObjects(metaCombined)) ) else None
-             val nfResults = if (notFound.nonEmpty) Vector(Results.NotFoundPaths(OldTypeConverter.convertOdfObjects(notFoundOdf))) 
+             def notFoundOdf =requestedObjects.getSubTreeAsODF(notFound)
+             val found = if( metaCombined.getPaths.nonEmpty ) Some( Results.Read(metaCombined) ) else None
+             val nfResults = if (notFound.nonEmpty) Vector(Results.NotFoundPaths(notFoundOdf)) 
              else Vector.empty
              val omiResults = nfResults ++ found.toVector
 
              ResponseRequest( omiResults )
            case None =>
-             ResponseRequest( Vector(Results.NotFoundPaths(OldTypeConverter.convertOdfObjects(requestedObjects)) ) )
+             ResponseRequest( Vector(Results.NotFoundPaths(requestedObjects) ) )
          }
          resultF
      }

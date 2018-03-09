@@ -66,7 +66,7 @@ object RESTRequest{
 
       case MetaData(path) =>
         singleStores.getMetaData(path) map { metaData =>
-          Right(scalaxb.toXML[xmlTypes.MetaDataType](metaData.asMetaData, Some("odf"), Some("MetaData"),defaultScope))
+          Right(scalaxb.toXML[xmlTypes.MetaDataType](metaData.asMetaDataType, Some("odf"), Some("MetaData"),defaultScope))
         }
       case ObjId(path) =>{  //should this query return the id as plain text or inside Object node?
         val xmlReturn = singleStores.getSingle(path).map{

@@ -30,6 +30,7 @@ import slick.jdbc.meta.MSchema
 import slick.driver.JdbcProfile
 import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 import types.OdfTypes._
+import types.odf._
 import types.OmiTypes.OmiReturn
 import types.Path
 import http.{ActorSystemContext, Settings, Storages}
@@ -55,31 +56,31 @@ package object database {
 //import database.database.dbConfigName
 import database.dbConfigName
 sealed trait InfoItemEvent {
-  val infoItem: OdfInfoItem
+  val infoItem: InfoItem
 }
 
 /**
  * Value of the InfoItem is changed and the new has newer timestamp. Event subs should be triggered.
  * Not a case class because pattern matching didn't work as expected (this class is extended).
  */
-class ChangeEvent(val infoItem: OdfInfoItem) extends InfoItemEvent {
+class ChangeEvent(val infoItem: InfoItem) extends InfoItemEvent {
   override def toString: String = s"ChangeEvent($infoItem)"
   override def hashCode: Int = infoItem.hashCode
 }
 object ChangeEvent {
-  def apply(ii: OdfInfoItem): ChangeEvent = new ChangeEvent(ii)
-  def unapply(ce: ChangeEvent): Option[OdfInfoItem] = Some(ce.infoItem)
+  def apply(ii: InfoItem): ChangeEvent = new ChangeEvent(ii)
+  def unapply(ce: ChangeEvent): Option[InfoItem] = Some(ce.infoItem)
 }
 
 /**
  * Received new value with newer timestamp but value is the same as the previous
  */
-case class SameValueEvent(infoItem: OdfInfoItem) extends InfoItemEvent
+case class SameValueEvent(infoItem: InfoItem) extends InfoItemEvent
 
 /*
  * New InfoItem (is also ChangeEvent)
  */
-case class AttachEvent(override val infoItem: OdfInfoItem) extends ChangeEvent(infoItem) with InfoItemEvent
+case class AttachEvent(override val infoItem: InfoItem) extends ChangeEvent(infoItem) with InfoItemEvent
 
 /**
  * Contains all stores that requires only one instance for interfacing
@@ -114,13 +115,10 @@ class SingleStores(protected val settings: OmiConfigExtension) {
   val pollDataPrevayler: Prevayler[PollSubData] = createPrevayler(PollSubData.empty, "pollDataPrevayler")
   subStore execute RemoveWebsocketSubs()
 
-  def buildOdfFromValues(items: Seq[(Path,OdfValue[Any])]): OdfObjects = {
-
-    val odfObjectsTrees = items map { case (path, value) =>
-      val infoItem = OdfInfoItem(path, OdfTreeCollection(value))
-      createAncestors(infoItem)
-    }
-  odfObjectsTrees.par.reduceOption(_ union _).getOrElse(OdfObjects())
+  def buildODFFromValues(items: Seq[(Path,Value[Any])]): ODF = {
+    ImmutableODF(items map { case (path, value) =>
+      InfoItem(path, Vector(value))
+    })
   }
 
 
@@ -132,7 +130,7 @@ class SingleStores(protected val settings: OmiConfigExtension) {
    * @param newValue the new value to be added
    * @return
    */
-  def valueShouldBeUpdated(oldValue: OdfValue[Any], newValue: OdfValue[Any]): Boolean = {
+  def valueShouldBeUpdated(oldValue: Value[Any], newValue: Value[Any]): Boolean = {
     oldValue.timestamp before newValue.timestamp
   }
 
@@ -146,7 +144,7 @@ class SingleStores(protected val settings: OmiConfigExtension) {
    * @param newValue Actual incoming data
    * @return Triggered responses
    */
-  def processData(path: Path, newValue: OdfValue[Any], oldValueOpt: Option[OdfValue[Any]]): Option[InfoItemEvent] = {
+  def processData(path: Path, newValue: Value[Any], oldValueOpt: Option[Value[Any]]): Option[InfoItemEvent] = {
 
     // TODO: Replace metadata and description if given
 
@@ -155,45 +153,54 @@ class SingleStores(protected val settings: OmiConfigExtension) {
         if (valueShouldBeUpdated(oldValue, newValue)) {
           // NOTE: This effectively discards incoming data that is older than the latest received value
           if (oldValue.value != newValue.value) {
-            Some(ChangeEvent(OdfInfoItem(path, Iterable(newValue))))
+            Some(ChangeEvent(InfoItem(path, Vector(newValue))))
           } else {
             // Value is same as the previous
-            Some(SameValueEvent(OdfInfoItem(path, Iterable(newValue))))
+            Some(SameValueEvent(InfoItem(path, Vector(newValue))))
           }
 
         } else None  // Newer data found
 
       case None =>  // no data was found => new sensor
-        val newInfo = OdfInfoItem(path, Iterable(newValue))
+        val newInfo = InfoItem(path, Vector(newValue))
         Some(AttachEvent(newInfo))
     }
 
   }
 
 
-  def getMetaData(path: Path) : Option[OdfMetaData] = {
+  def getMetaData(path: Path) : Option[MetaData] = {
     (hierarchyStore execute GetTree()).get(path).collect{
-      case OdfInfoItem(_,_,_,Some(mData),_,_) => mData
-    }
+      case ii: InfoItem if ii.metaData.nonEmpty => ii.metaData
+    }.flatten
   }
 
-  def getSingle(path: Path) : Option[OdfNode] ={
-    (hierarchyStore execute GetTree()).get(path).map{
-      case info : OdfInfoItem => 
+  def getSingle(path: Path) : Option[Node] ={
+    val tree = (hierarchyStore execute GetTree())
+      tree.get(path).map{
+      case info : InfoItem => 
         latestStore execute LookupSensorData(path) match {
           case Some(value) =>
-            OdfInfoItem(path, Iterable(value), attributes = info.attributes )
+            InfoItem(path.last, path, values = Vector(value), attributes = info.attributes )
           case None => 
             info
         }
-          case objs : OdfObjects => 
-            objs.copy(objects = objs.objects map (o => OdfObject(o.id, o.path,typeValue = o.typeValue)))
-          case obj : OdfObject => 
+          case objs : Objects => objs 
+            //objs.copy(objects = objs.objects map (o => OdfObject(o.id, o.path,typeValue = o.typeValue)))
+          case obj : Object => obj 
+            /*
+            val (ciis,cobjs) = tree.getChilds(obj.path).map{
+              case childObj: Object => childObj.copy( descriptions = Vector.empty) 
+              case childII: InfoItem => childII.copy( descriptions = Vector.empty, metaData = None) 
+            }.partition{
+              case childObj: Object => true 
+              case childII: InfoItem => false
+            }
             obj.copy(
               objects = obj.objects map (o => OdfObject(o.id, o.path, typeValue = o.typeValue)),
-              infoItems = obj.infoItems map (i => OdfInfoItem(i.path, attributes = i.attributes)),
+              infoItems = obj.infoItems map (i => InfoItem(i.path, attributes = i.attributes)),
               typeValue = obj.typeValue
-            )
+            )*/
     }
   } 
 }
@@ -378,17 +385,17 @@ trait DB {
    * @return Combined results in a O-DF tree
    */
   def getNBetween(
-    requests: Iterable[OdfNode],
+    requests: Iterable[Node],
     begin: Option[Timestamp],
     end: Option[Timestamp],
     newest: Option[Int],
-    oldest: Option[Int]): Future[Option[OdfObjects]]
+    oldest: Option[Int]): Future[Option[ODF]]
 
   /**
    * Used to set many values efficiently to the database.
    * @param data list item to be added consisting of Path and OdfValue[Any] tuples.
    */
-  def writeMany(data: Seq[OdfInfoItem]): Future[OmiReturn]
+  def writeMany(data: Seq[InfoItem]): Future[OmiReturn]
 
   /**
    * Used to remove given path and all its descendants from the database.

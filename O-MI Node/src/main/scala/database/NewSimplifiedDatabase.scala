@@ -20,8 +20,7 @@ import slick.driver.JdbcProfile
 import slick.lifted.{Index, ForeignKeyQuery, ProvenShape}
 //import scala.collection.JavaConversions.iterableAsScalaIterable
 import http.OmiConfigExtension
-import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
-import types.OdfTypes._
+import types.odf._
 import types.OmiTypes._
 import types.Path
 
@@ -257,9 +256,9 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimmableDB{
         db.run(actions.transactionally)
     }
     val initialization = populateMap
-      initialization.onComplete{
+    initialization.onComplete{
       case Success( path2DBPath ) => 
-        log.info( s"Initialized DB successfully. ${path2DBPath.single.length} paths in DB." )
+        //log.info( s"Initialized DB successfully. ${path2DBPath.single.length} paths in DB." )
       case Failure( t ) => 
         log.error( "DB initialization failed.", t )
         /*
@@ -274,12 +273,8 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimmableDB{
     Await.result( initialization, 1 minutes)
   }
 
-  def writeMany(data: Seq[OdfInfoItem]): Future[OmiReturn] = {
-    val odf : OdfObjects = data.foldLeft(OdfObjects()){
-      case (objs: OdfObjects, ii: OdfInfoItem) =>
-        objs.union(ii.createAncestors)
-    }
-    writeWithDBIOs(odf)
+  def writeMany(data: Seq[InfoItem]): Future[OmiReturn] = {
+    writeWithDBIOs(ImmutableODF(data))
   }
 
   private def returnOrReserve(path: Path, isInfoItem: Boolean): DBPath = {
@@ -299,9 +294,9 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimmableDB{
         s"while DB has ${if (ret.isInfoItem) "InfoItem" else "Object"}")
     else ret
   }
-  private def reserveNewPaths(nodes: Set[OdfNode]): Map[Path,DBPath] = {
+  private def reserveNewPaths(nodes: Set[Node]): Map[Path,DBPath] = {
 
-    def handleNode(o: OdfNode, isInfo: Boolean, reserved: Map[Path,DBPath]): Map[Path, DBPath] = {
+    def handleNode(o: Node, isInfo: Boolean, reserved: Map[Path,DBPath]): Map[Path, DBPath] = {
       val path = o.path
       val dbpath = returnOrReserve(path, isInfo)
       reserved ++ (dbpath match {
@@ -320,27 +315,27 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimmableDB{
       })
     }
 
-    nodes.foldLeft(Map[Path,DBPath]()){ case (reserved: Map[Path,DBPath], node: OdfNode) =>
+    nodes.foldLeft(Map[Path,DBPath]()){ case (reserved: Map[Path,DBPath], node: Node) =>
       node match {
-        case obj: OdfObjects => handleNode(obj, isInfo = false, reserved)
-        case obj: OdfObject => handleNode(obj, isInfo = false, reserved)
-        case ii: OdfInfoItem => handleNode(ii, isInfo = true, reserved)
+        case obj: Objects => handleNode(obj, isInfo = false, reserved)
+        case obj: Object => handleNode(obj, isInfo = false, reserved)
+        case ii: InfoItem => handleNode(ii, isInfo = true, reserved)
       }
     }
   }
 
 
-  def writeWithDBIOs( odf: OdfObjects ): Future[OmiReturn] = {
+  def writeWithDBIOs( odf: ODF ): Future[OmiReturn] = {
   
-    val leafs = getLeafs(odf)
+    val leafs = odf.getLeafs
 
     //Add new paths to PATHSTABLE and create new values tables for InfoItems
 
     val pathsToAdd = reserveNewPaths(leafs.toSet)
 
-    log.debug( s"Adding total of  ${pathsToAdd.length} paths to DB")//: $pathsToAdd")
+    //log.debug( s"Adding total of  ${pathsToAdd.length} paths to DB")//: $pathsToAdd")
 
-    val pathAddingAction = pathsTable.add(pathsToAdd.values)
+    val pathAddingAction = pathsTable.add(pathsToAdd.values.toVector)
     val getAddedDBPaths =  pathAddingAction.flatMap {
       ids: Seq[Long] =>
         pathsTable.getByIDs(ids)
@@ -368,7 +363,7 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimmableDB{
 
     //Write all values to values tables and create non-existing values tables
     val valueWritingIOs = leafs.collect{
-      case ii: OdfInfoItem =>
+      case ii: InfoItem =>
         pathsTable.getByPath(ii.path).flatMap {
           dbPaths: Seq[DBPath] =>
             val ios = dbPaths.collect {
@@ -384,7 +379,7 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimmableDB{
                 }
                 //Create DBValues
                 val timedValues: Seq[TimedValue] = ii.values.map {
-                  value => TimedValue(None, value.timestamp, value.value.toString, value.typeValue)
+                  value => TimedValue(None, value.timestamp, value.value.toString, value.typeAttribute)
                 }
                 //Find InfoItems values table from all tables
                 val valueInserts = tableByNameExists(valuesTable.name).flatMap {
@@ -423,27 +418,24 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimmableDB{
   }
 
   def getNBetween(
-    nodes: Iterable[OdfNode],
+    nodes: Iterable[Node],
     beginO: Option[Timestamp],
     endO: Option[Timestamp],
     newestO: Option[Int],
     oldestO: Option[Int]
-  ): Future[Option[OdfObjects]] = {
+  ): Future[Option[ODF]] = {
     if( beginO.isEmpty && endO.isEmpty &&  newestO.isEmpty && oldestO.isEmpty ){
-        val odf = nodes.map{
-          node: OdfNode =>
-            node.createAncestors
-        }.fold(OdfObjects()){
-          case ( odf:OdfObjects, objects: OdfObjects) =>
-            odf.union( objects)
-      }
-      readLatestFromCache( odf )
+      readLatestFromCache( 
+        nodes.flatMap{ 
+          node => node.path.getAncestorsAndSelf
+        }.toSet.toSeq
+      )
 
     } else{
       val iiIOAs = pathToDBPath.single.values.filter { // FIXME: filter is not how you use a Map?
         dbPath: DBPath =>
           nodes.exists {
-            node: OdfNode =>
+            node: Node =>
               dbPath.path == node.path ||
                 dbPath.path.isDescendantOf(node.path)
           }
@@ -469,24 +461,19 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimmableDB{
           }
           getNBetweenResults.map {
             tvs: Seq[TimedValue] =>
-              val ii = OdfInfoItem(
+              val ii = InfoItem(
                 path,
                 values = tvs.map {
-                  tv => OdfValue(tv.value, tv.valueType, tv.timestamp)
-                }
-              )
-              ii.createAncestors
+                  tv => Value(tv.value, tv.valueType, tv.timestamp)
+                }.toVector
+                )
           }
         }
       //Create OdfObjects from InfoItems and union them to one with parameter ODF
       val finalAction = DBIO.sequence(iiIOAs).map{
-        case objs: Seq[OdfObjects] if objs.nonEmpty =>
-          val r = objs.fold(OdfObjects()){
-            case (odf: OdfObjects, obj: OdfObjects) =>
-              odf.union(obj)
-          }
-          Some(r)
-        case objs: Seq[OdfObjects] if objs.isEmpty => None
+        case iis: Seq[InfoItem] if iis.nonEmpty =>
+          Some(ImmutableODF(iis.toVector))
+        case objs: Seq[ImmutableODF] if objs.isEmpty => None
       }
       val r = db.run(finalAction.transactionally)
       r
@@ -548,7 +535,8 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimmableDB{
    * 
    */
   def clearDB(): Future[Int] = {
-    val valueDropsActions = DBIO.seq(valueTables.values.map{
+    val valueDropsActions = DBIO.seq(
+      valueTables.values.map{
       pathValues => pathValues.schema.drop
     }:_*)
     db.run( valueDropsActions.andThen( pathsTable.delete ).andThen(
@@ -607,23 +595,23 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimmableDB{
     }
   }
 
-  def readLatestFromCache( objects: OdfObjects ): Future[Option[OdfObjects]] = Future{
+  def readLatestFromCache( requestedOdf: ODF ): Future[Option[ImmutableODF]] = { 
+    readLatestFromCache(requestedOdf.getPaths)
+  }
+  def readLatestFromCache( requestedPaths: Seq[Path] ): Future[Option[ImmutableODF]] = Future{
     // NOTE: Might go off sync with tree or values if the request is large,
     // but it shouldn't be a big problem
-    val requestedPaths = getLeafs(objects).map( _.path)
-    val iiPaths = (singleStores.hierarchyStore execute GetTree()).infoItems.collect{
-      case ii: OdfInfoItem if requestedPaths.exists{ path: Path => path.isAncestorOf( ii.path) || path == ii.path} =>
+    val iiPaths = (singleStores.hierarchyStore execute GetTree()).getInfoItems.collect{
+      case ii: InfoItem if requestedPaths.exists{ path: Path => path.isAncestorOf( ii.path) || path == ii.path} =>
         ii.path
     }
 
-    val pathToValue = singleStores.latestStore execute LookupSensorDatas( iiPaths)
-    val objectsWithValues = pathToValue.map{
-      case ( path: Path, value: OdfValue[Any]) => OdfInfoItem( path, values = Vector( value)).createAncestors
-    }.fold(OdfObjects()){
-      case ( odf: OdfObjects, iiObjs: OdfObjects) => odf.union( iiObjs)
-    }
+    val pathToValue = singleStores.latestStore execute LookupSensorDatas( iiPaths.toVector)
+    val objectsWithValues = ImmutableODF(pathToValue.map{
+      case ( path: Path, value: Value[Any]) => InfoItem( path, values = Vector( value))
+    })
 
     Some(objectsWithValues)
-  }
+}
 
 }

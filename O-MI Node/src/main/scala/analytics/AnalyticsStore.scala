@@ -22,7 +22,7 @@ import scala.concurrent.duration.FiniteDuration
 import akka.actor.{Actor, Cancellable, Props}
 import database.{SingleStores, Union}
 import http.OmiConfigExtension
-import types.OdfTypes._
+import types.odf._
 import types.OmiTypes.{OmiRequest, ReadRequest, WriteRequest}
 import types.Path
 
@@ -93,22 +93,22 @@ class AnalyticsStore(
   lazy val writeNumValueDescription = s"Amount of write messages in the last ${newDataIntervalWindow.toCoarsest.toString}"
   lazy val uniqueUserDescription = s"Number of unique users in the last $userAccessIntervalWindow"
 
-  def createInfoWithMeta(path: Path, value: String, timestamp: Long, desc: String): OdfInfoItem = {
+  def createInfoWithMeta(path: Path, value: String, timestamp: Long, desc: String): InfoItem = {
     val tt = new Timestamp(timestamp)
-    OdfInfoItem(
+    InfoItem(
+      path.init.last,
       path.init, //parent path
-      Vector.empty,
-      None,
-      Some(
-        OdfMetaData(
-          OdfTreeCollection(
-            OdfInfoItem(
+      metaData = Some(
+        MetaData(
+          Vector(
+            InfoItem(
+              path.last,
               path,
-              OdfTreeCollection(
-                OdfValue(value, tt)
+              values = Vector(
+                Value(value, tt)
               ),
-              Some(OdfDescription(desc)),
-            None//Some(OdfMetaData(OdfTreeCollection(OdfInfoItem(path./("syntax"),OdfTreeCollection(OdfValue(desc, tt))))))
+              descriptions = Vector(Description(desc))
+              //None//Some(MetaData(Vector(InfoItem(path./("syntax"),Vector(Value(desc, tt))))))
             )
           )
         )
@@ -120,12 +120,16 @@ class AnalyticsStore(
     context.system.log.info("updating write analytics")
     val tt = currentTime
     val nw = numWritesInTimeWindow(tt).map{
-      case (p, i) => createInfoWithMeta(p./(numWriteInfoName),i.toString, tt, writeNumValueDescription)}.map(_.createAncestors).reduceOption(_.union(_))
+      case (p, i) => 
+        createInfoWithMeta(p./(numWriteInfoName),i.toString, tt, writeNumValueDescription)
+    }
     val aw = avgIntervalWrite.map{
-      case (p,i) => createInfoWithMeta(p./(averageWriteInfoName), i.toString, tt, writeAverageDescription)}.map(_.createAncestors).reduceOption(_.union(_))
+      case (p,i) => 
+        createInfoWithMeta(p./(averageWriteInfoName), i.toString, tt, writeAverageDescription)
+    }
+    val data = ImmutableODF(aw ++ nw)
 
-    (nw ++ aw).reduceOption(_.union(_)) //combine two Options and return Optional value
-      .foreach(data => singleStores.hierarchyStore.execute(Union(data)))
+    singleStores.hierarchyStore.execute(Union(data))
 
   }
   def updateReadAnalyticsData(): Unit = {
@@ -133,20 +137,26 @@ class AnalyticsStore(
     context.system.log.info("updating read analytics")
     val tt = currentTime
     val nr = numAccessInTimeWindow(tt).map{
-      case (p, i) => createInfoWithMeta(p./(numReadInfoName),i.toString,tt, readNumValueDescription)}.map(_.createAncestors).reduceOption(_.union(_))
+      case (p, i) => createInfoWithMeta(p./(numReadInfoName),i.toString,tt, readNumValueDescription)
+    }//.map(_.createAncestors).reduceOption(_.union(_))
 
     val ar = avgIntervalAccess.map{
-      case (p,i) => createInfoWithMeta(p./(averageReadInfoName), i.toString, tt, readAverageDescription)}.map(_.createAncestors).reduceOption(_.union(_))
-    (nr ++ ar).reduceOption(_.union(_)) //combine two Options and return Optional value
-      .foreach(data => singleStores.hierarchyStore.execute(Union(data)))
+      case (p,i) => createInfoWithMeta(p./(averageReadInfoName), i.toString, tt, readAverageDescription)
+    }//.map(_.createAncestors).reduceOption(_.union(_))
+    val data = ImmutableODF(nr ++ ar)
+    singleStores.hierarchyStore.execute(Union(data))
+    //(nr ++ ar).reduceOption(_.union(_)) //combine two Options and return Optional value
+    //  .foreach(data => singleStores.hierarchyStore.execute(Union(data)))
   }
   def updateUserAnalyticsData(): Unit = {
     context.system.log.info("updating user analytics")
     val tt = currentTime
-    val data = uniqueUsers(tt).map{
+    val uua = uniqueUsers(tt).map{
       case (p, i) => createInfoWithMeta(p./(numUserInfoName), i.toString, tt, uniqueUserDescription)
-    }.map(_.createAncestors).reduceOption(_.union(_))
-    data.foreach(data=> singleStores.hierarchyStore.execute(Union(data)))
+    }//.map(_.createAncestors).reduceOption(_.union(_))
+    //data.foreach(data=> singleStores.hierarchyStore.execute(Union(data)))
+    val data = ImmutableODF(uua)
+    singleStores.hierarchyStore.execute(Union(data))
   }
 
   def receive: PartialFunction[Any, Unit] = {
