@@ -93,6 +93,7 @@ class MutableODF private[odf](
               case (obj: Objects, oo: Objects) =>
                 Some(obj.union(oo))
               case (n, on) =>
+                println(s"ERROR:\n $n is not same type as $on.\n")
                 throw new Exception(
                   "Found two different types in same Path when tried to create union."
                 )
@@ -248,7 +249,9 @@ object MutableODF{
       _nodes: Iterable[Node]  = Vector.empty
   ) : MutableODF ={
     val mutableHMap : MutableHashMap[Path,Node] = MutableHashMap.empty
-    val sorted = _nodes.toSeq.sortBy( _.path)(PathOrdering)
+    val sorted = _nodes.toSeq.sortBy{ 
+      n: Node => n.path
+    }(PathOrdering)
     sorted.foreach {
       node: Node =>
         if (mutableHMap.contains(node.path)) {

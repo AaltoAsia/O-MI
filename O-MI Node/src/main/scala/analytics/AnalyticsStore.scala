@@ -119,13 +119,13 @@ class AnalyticsStore(
   def updateWriteAnalyticsData(): Unit = {
     context.system.log.info("updating write analytics")
     val tt = currentTime
-    val nw = numWritesInTimeWindow(tt).map{
-      case (p, i) => 
-        createInfoWithMeta(p./(numWriteInfoName),i.toString, tt, writeNumValueDescription)
+    val nw = numWritesInTimeWindow(tt).collect{
+      case (path:Path,value:Int) if path.length > 2 => 
+        createInfoWithMeta(path./(numWriteInfoName),value.toString, tt, writeNumValueDescription)
     }
-    val aw = avgIntervalWrite.map{
-      case (p,i) => 
-        createInfoWithMeta(p./(averageWriteInfoName), i.toString, tt, writeAverageDescription)
+    val aw = avgIntervalWrite.collect{
+      case (path:Path,value:Double)  if path.length > 2 => 
+        createInfoWithMeta(path./(averageWriteInfoName), value.toString, tt, writeAverageDescription)
     }
     val data = ImmutableODF(aw ++ nw)
 
@@ -136,12 +136,14 @@ class AnalyticsStore(
 
     context.system.log.info("updating read analytics")
     val tt = currentTime
-    val nr = numAccessInTimeWindow(tt).map{
-      case (p, i) => createInfoWithMeta(p./(numReadInfoName),i.toString,tt, readNumValueDescription)
+    val nr = numAccessInTimeWindow(tt).collect{
+      case (path:Path,value:Int) if path.length > 2 => 
+        createInfoWithMeta(path./(numReadInfoName),value.toString,tt, readNumValueDescription)
     }//.map(_.createAncestors).reduceOption(_.union(_))
 
-    val ar = avgIntervalAccess.map{
-      case (p,i) => createInfoWithMeta(p./(averageReadInfoName), i.toString, tt, readAverageDescription)
+    val ar = avgIntervalAccess.collect{
+      case (path:Path,value:Double) if path.length > 2 => 
+         createInfoWithMeta(path./(averageReadInfoName), value.toString, tt, readAverageDescription)
     }//.map(_.createAncestors).reduceOption(_.union(_))
     val data = ImmutableODF(nr ++ ar)
     singleStores.hierarchyStore.execute(Union(data))
@@ -151,8 +153,9 @@ class AnalyticsStore(
   def updateUserAnalyticsData(): Unit = {
     context.system.log.info("updating user analytics")
     val tt = currentTime
-    val uua = uniqueUsers(tt).map{
-      case (p, i) => createInfoWithMeta(p./(numUserInfoName), i.toString, tt, uniqueUserDescription)
+    val uua = uniqueUsers(tt).collect{
+      case (path:Path,value:Int) if path.length > 2 => 
+        createInfoWithMeta(path./(numUserInfoName), value.toString, tt, uniqueUserDescription)
     }//.map(_.createAncestors).reduceOption(_.union(_))
     //data.foreach(data=> singleStores.hierarchyStore.execute(Union(data)))
     val data = ImmutableODF(uua)

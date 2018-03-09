@@ -47,7 +47,7 @@ case class InfoItem(
   metaData: Option[MetaData] = None,
   attributes: IMap[String,String] = HashMap.empty
 ) extends Node with Unionable[InfoItem]{
-  assert( nameAttribute == path.last )
+  assert( nameAttribute == path.last && path.length > 2 )
   def updateValues( vals: Vector[Value[Any]] ): InfoItem = this.copy(values = vals)
   def update( that: InfoItem ): InfoItem={
     val pathsMatches = path == that.path
@@ -141,7 +141,8 @@ case class InfoItem(
   }
   def createParent: Node = {
     val parentPath: Path = path.init
-    if( parentPath == new Path( "Objects") ){
+    if( parentPath == new Path( "Objects") || parentPath.isEmpty){
+      println(s"InfoItem under Objects: parentPath")
       Objects()
     } else {
       Object(

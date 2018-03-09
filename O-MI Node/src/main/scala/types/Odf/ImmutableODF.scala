@@ -255,10 +255,12 @@ case class ImmutableODF private[odf] (
 
 object ImmutableODF{
   def apply(
-      _nodes: Iterable[Node]  = Vector.empty
+      nodes: Iterable[Node]  = Vector.empty
   ) : ImmutableODF ={
     val mutableHMap : MutableHashMap[Path,Node] = MutableHashMap.empty
-    val sorted = _nodes.toSeq.sortBy( _.path)(PathOrdering)
+    val sorted = nodes.toSeq.sortBy{ 
+      n: Node => n.path
+    }(PathOrdering)
     sorted.foreach {
       node: Node =>
         if (mutableHMap.contains(node.path)) {

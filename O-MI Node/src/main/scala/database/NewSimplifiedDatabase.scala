@@ -467,13 +467,14 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimmableDB{
                   tv => Value(tv.value, tv.valueType, tv.timestamp)
                 }.toVector
                 )
+              ii
           }
         }
       //Create OdfObjects from InfoItems and union them to one with parameter ODF
       val finalAction = DBIO.sequence(iiIOAs).map{
         case iis: Seq[InfoItem] if iis.nonEmpty =>
           Some(ImmutableODF(iis.toVector))
-        case objs: Seq[ImmutableODF] if objs.isEmpty => None
+        case objs: Seq[InfoItem] if objs.isEmpty => None
       }
       val r = db.run(finalAction.transactionally)
       r

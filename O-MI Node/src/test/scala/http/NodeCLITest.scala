@@ -28,7 +28,7 @@ import akka.http.scaladsl.model.Uri
 import akka.io.Tcp.{Received, Write}
 import database._
 import http.CLICmds._
-import types.OdfTypes.OdfObjects
+import types.odf._
 
 
 
@@ -74,8 +74,8 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
   }
 
   class RemoveTester( path: Path)extends CLIHelperT{
-    val getAllData: Future[Option[OdfObjects]] = Future.failed(new Exception("not implemented"))
-    def writeOdf(odf:OdfObjects) = Unit
+    val getAllData: Future[Option[ODF]] = Future.failed(new Exception("not implemented"))
+    def writeOdf(odf:ImmutableODF) = Unit
     override def handlePathRemove(parentPath: Path): Boolean = { 
       path == parentPath || path.isAncestorOf(parentPath)
     }

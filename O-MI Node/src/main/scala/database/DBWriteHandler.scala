@@ -199,7 +199,7 @@ trait DBWriteHandler extends DBHandlerBase {
       .map(_.infoItem) //map type to OdfInfoItem
       .groupBy(_.path) //combine same paths
       .flatMap{
-        case (path: Path, iis: InfoItem) => //flatMap to remove None values
+        case (path: Path, iis: Vector[InfoItem]) => //flatMap to remove None values
         iis.reduceOption(_.union(_)) //Combine infoitems with same paths to single infoitem
       }(collection.breakOut) // breakOut to correct collection type
 

@@ -8,7 +8,7 @@ import types.OmiTypes.{Callback, HTTPCallback}
 import types.{OdfTypes, Path}
 import CustomJsonProtocol._
 import spray.json._
-import types.OdfTypes.OdfValue
+import types.odf.Value
 
 import scala.collection.immutable.HashMap
 import scala.collection.mutable
@@ -74,8 +74,8 @@ class BackupTest extends Specification{
 
   val subData = Some(
     SubData(HashMap((Path("Objects/a/b/2"),
-      List(OdfTypes.OdfValue(1, new Timestamp(System.currentTimeMillis())),
-        OdfTypes.OdfValue(2,new Timestamp(System.currentTimeMillis() + 1 )))))))
+      List(Value(1, new Timestamp(System.currentTimeMillis())),
+        Value(2,new Timestamp(System.currentTimeMillis() + 1 )))))))
 
   "Conversion between subscription-json-subscription transformation" should {
     "Work for polled -1 interval subscriptions" in {
