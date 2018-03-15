@@ -90,7 +90,7 @@ trait DBReadHandler extends DBHandlerBase{
          )*/
        case default: ReadRequest =>
          log.debug(
-           s"DBHandler handling Read(" + 
+           s"Read(" + 
            default.begin.map{ t => s"begin: $t," }.getOrElse("") + 
            default.end.map{ t => s"end: $t," }.getOrElse("") + 
            default.newest.map{ t => s"newest: $t," }.getOrElse("") + 
@@ -98,8 +98,8 @@ trait DBReadHandler extends DBHandlerBase{
            s"ttl: ${default.ttl} )"
           )
 
-         val requestedObjects = read.odf
-         val leafs = requestedObjects.getLeafs
+         val requestedODF = read.odf
+         val leafs = requestedODF.getLeafs
 
          //Get values from database
          val odfWithValuesO: Future[Option[ODF]] = dbConnection.getNBetween(
@@ -115,28 +115,36 @@ trait DBReadHandler extends DBHandlerBase{
          val metadataTree = singleStores.hierarchyStore execute GetTree()
 
          //Find nodes from the request that HAVE METADATA OR DESCRIPTION REQUEST
-         def odfWithoutMetaData: ODF = ImmutableODF(requestedObjects.getNodes.collect {
+         def odfWithMetaDataRequest: ODF = ImmutableODF(requestedODF.getNodes.collect {
            case ii: InfoItem
-           if ii.hasStaticData => ii.copy(values = OdfTreeCollection())
+           if ii.hasStaticData => 
+             log.debug(ii.toString)
+             ii.copy(values = OdfTreeCollection())
            case obj: Object 
-             if obj.hasStaticData => obj
+             if obj.hasStaticData =>
+             log.debug(obj.toString)
+             obj
          })
 
-         def odfWithMetaData = metadataTree.intersection( odfWithoutMetaData ) 
+         val odfWithMetaData = metadataTree.readTo( requestedODF).valuesRemoved 
+         log.debug("Nodes with metadata:\n" + odfWithMetaData.getNodes.mkString("\n"))
           
          val resultF = odfWithValuesO.map {
            case Some(odfWithValues) =>
              //Select requested O-DF from metadataTree and remove MetaDatas and descriptions
+             /*
              val odfWithValuesAndAttributes = metadataTree.mutable
                .metaDatasRemoved
                .descriptionsRemoved
                .intersection( odfWithValues.valuesRemoved )
                .union( odfWithValues )
+               */
 
+              log.debug("Nodes with values:\n" + odfWithValues.getNodes.mkString("\n"))
 
-             val metaCombined = odfWithValuesAndAttributes.union(odfWithMetaData) 
+             val metaCombined  = odfWithMetaData.union(odfWithValues)
              val requestsPaths = leafs.map { _.path }
-             val foundOdfAsPaths = odfWithValuesAndAttributes.getPaths
+             val foundOdfAsPaths = odfWithValues.getPaths
              //handle analytics
              analyticsStore.foreach{ store =>
                val reqTime: Long = new Date().getTime()
@@ -147,15 +155,15 @@ trait DBReadHandler extends DBHandlerBase{
              }
 
              val notFound = requestsPaths.filterNot { path => foundOdfAsPaths.contains(path) }.toSet.toSeq
-             def notFoundOdf =requestedObjects.getSubTreeAsODF(notFound)
-             val found = if( metaCombined.getPaths.nonEmpty ) Some( Results.Read(metaCombined) ) else None
+             def notFoundOdf =requestedODF.getSubTreeAsODF(notFound)
+             val found = if( metaCombined.getPaths.exists(p => p != Path("Objects") )) Some( Results.Read(metaCombined) ) else None
              val nfResults = if (notFound.nonEmpty) Vector(Results.NotFoundPaths(notFoundOdf)) 
              else Vector.empty
              val omiResults = nfResults ++ found.toVector
 
              ResponseRequest( omiResults )
            case None =>
-             ResponseRequest( Vector(Results.NotFoundPaths(requestedObjects) ) )
+             ResponseRequest( Vector(Results.NotFoundPaths(requestedODF) ) )
          }
          resultF
      }

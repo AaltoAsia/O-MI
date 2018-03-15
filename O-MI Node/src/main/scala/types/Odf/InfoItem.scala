@@ -66,7 +66,7 @@ case class InfoItem(
               current update md
           }.orElse(that.metaData)
       }.orElse( metaData ),
-      if( that.attributes.nonEmpty ) attributes ++ that.attributes else attributes
+       attributes ++ that.attributes
     )
 
   }
@@ -199,5 +199,47 @@ case class InfoItem(
     names.nonEmpty ||
     typeAttribute.nonEmpty ||
     descriptions.nonEmpty 
+  }
+
+  def readTo(to: InfoItem ): InfoItem ={
+    val desc = if( to.descriptions.nonEmpty ) {
+
+      val languages = to.descriptions.flatMap(_.language)
+      if( languages.nonEmpty ){
+        descriptions.filter{
+          case Description(text,Some(lang)) => languages.contains(lang)
+          case Description(text,None) => true
+        }
+      } else {
+        descriptions
+      }
+    } else if( this.descriptions.nonEmpty){
+      Vector(Description("",None))
+    } else Vector.empty
+    val mD = to.metaData match{
+      case Some( md: MetaData ) =>
+        val names = md.infoItems.map(_.nameAttribute)
+        if( names.nonEmpty ){
+          this.metaData.map{
+            md => md.copy( md.infoItems.filter{
+              case ii: InfoItem => 
+                names.contains(ii.nameAttribute)
+            })
+          }
+        } else this.metaData
+      case None =>
+        if( this.metaData.nonEmpty ) Some(MetaData(Vector()))
+        else None
+    }
+    //TODO: Filter names based on QlmID attributes
+
+    to.copy(
+      names = QlmID.unionReduce(names ++ to.names).toVector,
+      typeAttribute = typeAttribute.orElse(to.typeAttribute),
+      values = to.values ++ this.values,
+      descriptions = desc, 
+      metaData = mD,
+      attributes = attributes ++ to.attributes
+    )
   }
 }

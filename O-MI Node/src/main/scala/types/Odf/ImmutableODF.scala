@@ -29,6 +29,7 @@ case class ImmutableODF private[odf] (
         this.nodes.get( path )
     }.toVector )
   } 
+  def readTo(to: ODF) : ODF = ImmutableODF(readToNodes(to))
   protected[odf] val paths: ImmutableTreeSet[Path] = ImmutableTreeSet( nodes.keys.toSeq:_* )(PathOrdering)
   def isEmpty:Boolean = paths.size == 1 && paths.contains(Path("Objects"))
   def nonEmpty:Boolean = paths.size > 1 

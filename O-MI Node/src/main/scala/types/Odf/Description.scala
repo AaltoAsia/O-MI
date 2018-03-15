@@ -9,6 +9,7 @@ object Description{
       descriptions => descriptions.foldLeft(Description(""))(_ union _)).values.toVector
   }
 
+  def empty: Description = Description("")
 }
 case class  Description(
                          text: String,

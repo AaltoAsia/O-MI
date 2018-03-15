@@ -42,10 +42,11 @@
     <logger name="com.typesafe.sslconfig" level="INFO" />
     <logger name="spray.can" level="INFO" />
     <logger name="akka.io.TcpListener" level="INFO" />
+-->
 
     <logger name="agentSystem" level="DEBUG" />
+    <logger name="database" level="DEBUG" />
     <logger name="accessControl" level="INFO" />
--->
     <root level="INFO">
         <appender-ref ref="CONSOLE"/>
         <appender-ref ref="ASYNC"/>

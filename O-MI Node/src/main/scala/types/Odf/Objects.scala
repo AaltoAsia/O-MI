@@ -41,4 +41,10 @@ case class Objects(
       }  
     )
   }
+  def readTo(to: Objects ): Objects ={
+    to.copy( 
+      this.version.orElse(to.version),
+      this.attributes ++ to.attributes
+    )
+  }
 }

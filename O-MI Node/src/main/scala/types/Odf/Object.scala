@@ -115,5 +115,32 @@ case class Object(
         attributesToDataRecord(attributes) ++ typeAttribute.map { n => "@type" -> DataRecord(n) })
     )
   }
+
+  def readTo(to: Object): Object ={
+    val pathsMatches = path == to.path 
+    val containSameId = ids.map( _.id ).toSet.intersect( to.ids.map( _.id).toSet ).nonEmpty
+    assert( containSameId && pathsMatches)
+
+    val desc = if( to.descriptions.nonEmpty ) {
+      val languages = to.descriptions.flatMap(_.language)
+      if( languages.nonEmpty ){
+        descriptions.filter{
+          case Description(text,Some(lang)) => languages.contains(lang)
+          case Description(text,None) => true
+        }
+      } else {
+        descriptions
+      }
+    } else if( this.descriptions.nonEmpty){
+      Vector(Description("",None))
+    } else Vector.empty
+    //TODO: Filter ids based on QlmID attributes
+    to.copy( 
+      ids = QlmID.unionReduce(ids ++ to.ids).toVector,
+      typeAttribute = typeAttribute.orElse(to.typeAttribute),
+      descriptions = desc,
+      attributes = attributes ++ to.attributes
+    )
+  }
     
 }

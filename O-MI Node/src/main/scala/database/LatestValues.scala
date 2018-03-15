@@ -74,10 +74,10 @@ case class EraseSensorData(sensor: Path) extends Transaction[LatestValues] {
 /**
  * Stores hierarchy of the odf, so it removes all values if they end up in this tree
  */
-case class OdfTree(var root:MutableODF )
+case class OdfTree(var root:ImmutableODF )
 object OdfTree {
   type OdfTreeStore = Prevayler[OdfTree]
-  def empty = OdfTree(MutableODF())
+  def empty = OdfTree(ImmutableODF())
 }
 
 case class GetTree() extends Query[OdfTree, ImmutableODF] {
@@ -88,13 +88,13 @@ case class GetTree() extends Query[OdfTree, ImmutableODF] {
  * This is used for updating also
  */
 case class Union(anotherRoot: ImmutableODF) extends Transaction[OdfTree] {
-  def executeOn(t: OdfTree, d: Date): Unit = t.root = (t.root union anotherRoot.valuesRemoved).mutable // Remove values so they don't pile up
+  def executeOn(t: OdfTree, d: Date): Unit = t.root = (t.root union anotherRoot.valuesRemoved).immutable// Remove values so they don't pile up
 }
 
 case class TreeRemovePath(path: Path) extends Transaction[OdfTree] {
 
   def executeOn(t: OdfTree, d: Date): Unit = {
-    t.root = t.root.removePath( path ).mutable
+    t.root = t.root.removePath( path ).immutable
   }
 }
 case class RemoveIntervalSub(id: Long) extends TransactionWithQuery[Subs, Boolean] {

@@ -15,6 +15,7 @@ class MutableODF private[odf](
   type M = MutableHashMap[Path,Node]
   type S = MutableTreeSet[Path]
   protected[odf] val paths: MutableTreeSet[Path] = MutableTreeSet( nodes.keys.toSeq:_* )(PathOrdering)
+  def readTo(to: ODF) : ODF = MutableODF(readToNodes(to))
   def isEmpty:Boolean = paths.size == 1 && paths.contains(Path("Objects"))
   def nonEmpty:Boolean = paths.size > 1 
   def update[TM <: Map[Path,Node], TS <: SortedSet[Path]]( that: ODF ): ODF ={
