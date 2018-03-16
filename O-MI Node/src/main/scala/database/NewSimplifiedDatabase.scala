@@ -466,9 +466,8 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimmableDB{
               descriptions = Vector.empty,
               metaData = None,
               values = Vector( value)
-            )
-        }
-    })
+            )}
+    }.toVector)
 
     Some(objectsWithValues)
 }

@@ -127,7 +127,6 @@ trait DBReadHandler extends DBHandlerBase{
          })
 
          val odfWithMetaData = metadataTree.readTo( requestedODF).valuesRemoved 
-         log.debug("Nodes with metadata:\n" + odfWithMetaData.getNodes.mkString("\n"))
           
          val resultF = odfWithValuesO.map {
            case Some(odfWithValues) =>
@@ -140,7 +139,6 @@ trait DBReadHandler extends DBHandlerBase{
                .union( odfWithValues )
                */
 
-              log.debug("Nodes with values:\n" + odfWithValues.getNodes.mkString("\n"))
 
              val metaCombined  = odfWithMetaData.union(odfWithValues)
              val requestsPaths = leafs.map { _.path }

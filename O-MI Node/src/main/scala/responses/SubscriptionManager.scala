@@ -323,13 +323,11 @@ class SubscriptionManager(
       case pollSub: PolledSub => 
         log.debug(s"Polling subscription with id: ${pollSub.id}")
         val odfTree: ImmutableODF = singleStores.hierarchyStore execute GetTree()
-        val emptyTree = odfTree.getSubTreeAsODF(pollSub.paths).valuesRemoved
+        val emptyTree = odfTree.getSubTreeAsODF(pollSub.paths).valuesRemoved.metaDatasRemoved.descriptionsRemoved
 
         //pollSubscription method removes the data from database and returns the requested data
         val subValues: ImmutableODF = pollSub match {
-
           case pollEvent: PolledEventSub => handlePollEvent(pollEvent)
-
           case pollInterval: PollIntervalSub => handlePollInterval(pollInterval, pollTime, odfTree)
         }
         subValues.union(emptyTree)
@@ -344,13 +342,13 @@ class SubscriptionManager(
 
     log.debug(s"handling interval sub with id: $id")
     val currentTime = System.currentTimeMillis()
-    val hTree = singleStores.hierarchyStore execute GetTree()
     val intervalSubscriptionOption = singleStores.subStore execute GetIntervalSub(id)
     intervalSubscriptionOption.foreach { iSub => //same as if exists
 
       //send new data to callback addresses
       log.debug(s"Trying to send subscription data to ${iSub.callback}")
-      val subedTree =  hTree.getSubTreeAsODF(iSub.paths).mutable.metaDatasRemoved.descriptionsRemoved
+      val hTree = (singleStores.hierarchyStore execute GetTree())
+      val subedTree =  hTree.getSubTreeAsODF(iSub.paths).metaDatasRemoved.descriptionsRemoved
       val datas = singleStores.latestStore execute LookupSensorDatas(subedTree.getInfoItems.map(_.path))
 
       val odfWithValues = subedTree.union(

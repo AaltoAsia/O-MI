@@ -53,6 +53,7 @@ trait ODF//[M <: Map[Path,Node], S<: SortedSet[Path] ]
     case obj: Object => obj
   }.toVector
   def nodesWithStaticData: Vector[Node] = nodes.values.filter( _.hasStaticData ).toVector
+  def nodesWithAttributes: Vector[Node] = nodes.values.filter( _.attributes.nonEmpty ).toVector
   def getNodesMap: Map[Path,Node] = ImmutableHashMap(
     nodes.toVector:_*
   )

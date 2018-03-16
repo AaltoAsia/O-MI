@@ -173,11 +173,15 @@ object ODFParser extends parsing.Parser[OdfParseResult] {
       throw new IllegalArgumentException("No <id> on object: " + obj.id.toString)
     )
 
+    val ids = obj.id.map { qlmIdType => parseQlmID(qlmIdType) }.toVector
+    val descriptions = obj.description.map { 
+      des => new Description(des.value, des.lang) 
+    }.toVector
     val odfObj = Object(
-      obj.id.map { qlmIdType => parseQlmID(qlmIdType) }.toVector,
+      ids,
       npath,
       obj.typeValue,
-      obj.description.map { des => new Description(des.value, des.lang) }.toVector,
+      descriptions,
       parseAttributes(obj.attributes - "@type")
     ) 
     val iIs: Vector[InfoItem] = obj.InfoItem.map{ 
@@ -199,12 +203,9 @@ object ODFParser extends parsing.Parser[OdfParseResult] {
     val npath = path / validateId(item.name).getOrElse(
       throw new IllegalArgumentException("No name on infoItem")
     )
-
-    val ii = new InfoItem(
-      item.name,
-      npath,
-      item.typeValue,
-      item.iname.map{
+    val nameAttribute = item.name
+    val typeAttribute = item.typeValue
+    val names =item.iname.map{
         qlmIdType => parseQlmID( qlmIdType)
       }.filterNot{
         id =>
@@ -214,15 +215,16 @@ object ODFParser extends parsing.Parser[OdfParseResult] {
           id.startDate.isEmpty &&
           id.endDate.isEmpty &&
           id.attributes.isEmpty 
-      }.toVector,
-      item.description.map{ des =>
+      }.toVector
+    val descriptions = item.description.map{ des =>
         Description( des.value, des.lang ) 
-      }.toVector,
-      item.value.map{
+      }.toVector
+
+    val values = item.value.map{
         valueType => 
           parseValue(requestProcessTime,valueType)
-      }.toVector,
-      item.MetaData.map{
+      }.toVector
+    val metaData = item.MetaData.map{
         md => 
           MetaData(
             md.InfoItem.map {
@@ -230,6 +232,16 @@ object ODFParser extends parsing.Parser[OdfParseResult] {
             }.toVector
           )
       }.headOption
+    val attributes = parseAttributes(item.attributes -- Seq("@type","@name"))
+    val ii = new InfoItem(
+      nameAttribute,
+      npath,
+      typeAttribute,
+      names,
+      descriptions,
+      values,
+      metaData,
+      attributes
     ) 
     ii
   }

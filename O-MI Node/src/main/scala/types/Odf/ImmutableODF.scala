@@ -147,13 +147,19 @@ case class ImmutableODF private[odf] (
     )
   }
   def getSubTreeAsODF( pathsToGet: Seq[Path]): ODF = {
+    val ps = paths.filter{
+      path: Path =>
+        pathsToGet.contains(path) ||
+        pathsToGet.exists {
+          filter: Path =>
+            filter.isAncestorOf(path) || 
+            filter.isDescendantOf(path)  
+        }
+    }
     ImmutableODF(
-      nodes.values.filter {
-        node: Node =>
-          pathsToGet.exists {
-            filter: Path =>
-              filter.isAncestorOf(node.path) || filter == node.path
-          }
+      ps.flatMap{
+        path: Path => 
+          nodes.get(path)
       }.toVector
     )
   }
@@ -182,7 +188,7 @@ case class ImmutableODF private[odf] (
   }.toVector:_*))
   def descriptionsRemoved: ODF = this.copy( ImmutableHashMap( nodes.mapValues{ 
     case ii: InfoItem => ii.copy( descriptions = Vector())
-    case obj: Object => obj .copy( descriptions = Vector())
+    case obj: Object => obj.copy( descriptions = Vector())
     case obj: Objects => obj
   }.toVector:_*))
   def metaDatasRemoved: ODF = this.copy( ImmutableHashMap( nodes.mapValues{ 
@@ -192,7 +198,7 @@ case class ImmutableODF private[odf] (
   }.toVector:_*))
   def attributesRemoved: ODF = this.copy( ImmutableHashMap( nodes.mapValues{ 
     case ii: InfoItem => ii.copy( typeAttribute = None , attributes = ImmutableHashMap())
-    case obj: Object => obj .copy(typeAttribute = None , attributes = ImmutableHashMap() )
+    case obj: Object => obj.copy(typeAttribute = None , attributes = ImmutableHashMap() )
     case obj: Objects => obj
   }.toVector:_*))
   def immutable: ImmutableODF = this.copy()

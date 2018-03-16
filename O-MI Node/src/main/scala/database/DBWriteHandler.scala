@@ -38,8 +38,15 @@ trait DBWriteHandler extends DBHandlerBase {
   //, dispatcher}
 
   private def sendEventCallback(esub: EventSub, infoItems: Seq[InfoItem]): Unit = {
+    val odf = ImmutableODF(infoItems)
+    esub match {
+      case ne: NewEventSub =>
+        log.debug(s"NEWEVENTSUB iis: ${infoItems.mkString("\n")}")
+        log.debug(s"NEWEVENTSUB get nodes: ${odf.getNodes.mkString("\n")}")
+      case _ => 
+    }
     sendEventCallback(esub,
-      ImmutableODF(infoItems)
+      odf
     )
   }
 
@@ -47,9 +54,16 @@ trait DBWriteHandler extends DBHandlerBase {
     val id = esub.id
     val callbackAddr = esub.callback
     val hTree = singleStores.hierarchyStore execute GetTree()
+    val odf = hTree.getSubTreeAsODF(odfWithoutTypes.getLeafPaths).descriptionsRemoved.metaDatasRemoved.union(odfWithoutTypes)
     //union with odfWithoutTypes to make sure that we don't lose odf branches that are not in hierarchy yet
     //and then intersect to get correct typeValues etc. from hierarchyTree
-    val odf = hTree.union(odfWithoutTypes.valuesRemoved).intersection(odfWithoutTypes)
+    //val odf = hTree.union(odfWithoutTypes.valuesRemoved).intersection(odfWithoutTypes)
+    esub match {
+      case ne: NewEventSub =>
+    log.debug(s"NEWEVENTSUB total mystery: ${odfWithoutTypes.getNodes.mkString("\n")}")
+    log.debug(s"NEWEVENTSUB got nodes: ${odf.getNodes.mkString("\n")}")
+      case _ => 
+    }
     val responseTTL =
       Try((esub.endTime.getTime - parsing.OdfParser.currentTime().getTime).milliseconds)
         .toOption.getOrElse(Duration.Inf)
@@ -95,6 +109,8 @@ trait DBWriteHandler extends DBHandlerBase {
         infoItem.values.headOption.foreach(value => pollNewSubs.foreach(pnes => singleStores.pollDataPrevayler execute AddPollData(pnes.id, infoItem.path, value)))
         val nesubs: Seq[NewEventSub] = singleStores.subStore execute LookupNewEventSubs(infoItem.path)
         val esubs: Seq[NormalEventSub] = singleStores.subStore execute LookupEventSubs(infoItem.path)
+        if( nesubs.nonEmpty)
+          log.debug(s"${nesubs.mkString("\n")}")
         (esubs ++ nesubs) map { (_, infoItem) }  // make tuples
       case ChangeEvent(infoItem) =>  // note: AttachEvent extends ChangeEvent
 
@@ -108,6 +124,7 @@ trait DBWriteHandler extends DBHandlerBase {
     for ((esub, infoSeq) <- esubAggregation) {
 
         val infoItems = infoSeq map { case (_, infoItem) =>  infoItem}
+        log.debug(s"$esub -> ${infoItems.mkString("\n")}")
 
         sendEventCallback(esub, infoItems)
     }
@@ -188,10 +205,8 @@ trait DBWriteHandler extends DBHandlerBase {
       ii.attributes.nonEmpty 
     }*/
 
-    val updatedStaticItems ={
-      staticData ++ 
-      newItems //++ objectMetadatas
-    }
+    log.debug(s"Static data with attributes:\n${odf.getNodes.filter( _.attributes.nonEmpty ).mkString("\n")}")
+    val updatedStaticItems = staticData ++ newItems 
 
     // DB + Poll Subscriptions
     val infosToBeWrittenInDB: Seq[InfoItem] =
