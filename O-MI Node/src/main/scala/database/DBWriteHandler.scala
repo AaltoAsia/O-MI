@@ -23,8 +23,6 @@ import parsing.xmlGen.xmlTypes.MetaDataType
 import responses.CallbackHandler
 import responses.CallbackHandler._
 import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
-import types.odf.{ NewTypeConverter, ImmutableODF, ODF, OldTypeConverter }
-import types.OdfTypes._
 import types.odf._
 import types.OmiTypes._
 import types.Path

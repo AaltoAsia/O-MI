@@ -140,7 +140,7 @@ case class InfoItem(
         }.toVector
   }
   def createParent: Node = {
-    val parentPath: Path = path.init
+    val parentPath: Path = path.getParent
     if( parentPath == new Path( "Objects") || parentPath.isEmpty){
       println(s"InfoItem under Objects: parentPath")
       Objects()

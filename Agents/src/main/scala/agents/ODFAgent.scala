@@ -16,8 +16,9 @@ import scala.collection.JavaConversions.{iterableAsScalaIterable, asJavaIterable
 import scala.collection.mutable.{Queue => MutableQueue}
 import scala.xml._
 import scala.util.{Random, Try, Success, Failure}
+import scala.math.Numeric
 import java.util.concurrent.TimeUnit
-import types.odf.{ OldTypeConverter, ImmutableODF}
+import types.odf._
 import java.util.Date
 import java.sql.Timestamp;
 import java.io.File
@@ -35,7 +36,7 @@ class ODFAgent(
   dbHandler: ActorRef
 ) extends ScalaInternalAgentTemplate(requestHandler,dbHandler){
    val interval : FiniteDuration= config.getDuration("interval", TimeUnit.SECONDS).seconds
-   val odfQueue : MutableQueue[OdfObjects]= MutableQueue()
+   val odfQueue : MutableQueue[ODF]= MutableQueue()
   
   import scala.concurrent.ExecutionContext.Implicits._
   case class Update()
@@ -47,7 +48,7 @@ class ODFAgent(
     val file =  new File(config.getString("file"))
     if( file.exists() && file.canRead() ){
       val xml = XML.loadFile(file)
-      OdfParser.parse( xml ) match {
+      ODFParser.parse( xml ) match {
         case Left( errors ) =>
           val msg = errors.mkString("\n")
           log.warning(s"Odf has errors, $name could not be configured.")
@@ -77,35 +78,24 @@ class ODFAgent(
 
    def update() : Unit = {
     log.debug(s"$name pushing data.")
-    odfQueue.dequeueFirst{o: OdfObjects => true}
+    odfQueue.dequeueFirst{o: ODF => true}
     .foreach{
-      objects =>
-      val infoItems = getInfoItems(objects)
+      odf =>
 
       // Collect metadata 
-      val objectsWithMetaData = getOdfNodes(objects) collect {
-        case o @ OdfObject(_, _, _, _, desc, typeVal, attr) if desc.isDefined || typeVal.isDefined || attr.nonEmpty=> o
-      }   
-      val updated = infoItems.map{ infoItem => 
-          val newVal = infoItem.path.lastOption match {
-            case Some( name ) => 
-            infoItem.values.lastOption match {
-              case Some(oldVal: OdfDoubleValue) => genValue(name, oldVal.value)
-              case Some( oldVal ) => -1000.0
-              case None =>  -1000.0
+      val updated = odf.getInfoItems.map{ 
+        infoItem: InfoItem  => 
+          val newVal = infoItem.values.lastOption.map{
+            value: Value[Any] => 
+              genValue(value, new Timestamp( date.getTime() ))
             }
-            case None => -1000.0
-          }
-        infoItem.copy( values =Vector(OdfValue(
-          newVal.toString, 
-          "xs:double",
-          new Timestamp( date.getTime() )
-        )))
+        infoItem.copy( values = newVal.toVector)
       }
-      val allNodes = updated ++ objectsWithMetaData
-      val newObjects = allNodes.map(createAncestors(_)).foldLeft(OdfObjects())(_.union(_))
+      val newODF = ImmutableODF( updated ++ odf.valuesRemoved.nodesWithStaticData )
       
-      val write = WriteRequest( OldTypeConverter.convertOdfObjects(newObjects), None, interval)
+      log.debug(s"Create write request")
+      val write = WriteRequest( newODF, None, interval)
+      log.debug(s"Request done.")
       val result = writeToDB( write)
       result.onComplete{
         case Success( response: ResponseRequest )=>
@@ -122,7 +112,7 @@ class ODFAgent(
               // debug level is enabled (in logback.xml and application.conf)
               log.warning(s"$name's write future failed, error: $t")
       }
-      odfQueue.enqueue(newObjects)
+      odfQueue.enqueue(newODF)
     } 
   }
 
@@ -133,27 +123,20 @@ class ODFAgent(
     updateSchelude.cancel()
    }
   
-  private def genValue(sensorType: String, oldval: Double ) : String = {
-    val newval = (sensorType match {
-      case "temperature" => between( 18, oldval + Random.nextGaussian * 0.3, 26)
-      case "light" => between(100, oldval + Random.nextGaussian, 2500)
-      case "co2" => between(400, oldval + 20 * Random.nextGaussian, 1200)
-      case "humidity" => between(40, oldval + Random.nextGaussian, 60)
-      case "pir" => Random.nextInt % 2
-      case _ => Random.nextInt % 2
-    })
-    f"$newval%.1f".replace(',', '.')
-  }
-  private def between( begin: Double, value: Double, end: Double ) : Double = {
-    (begin <= value, value <= end) match {
-      case (false, true) =>
-        begin
-      case (true, true) =>
-        value
-      case (true, false) =>
-        end
-      case (false, false) =>
-        Double.NaN
+  private def genValue(value: Value[Any], nts: Timestamp ) : Value[Any] = {
+    value match {
+        case sval: StringPresentedValue => sval.copy( timestamp = nts )
+        case sval: StringValue => sval.copy( timestamp = nts )
+        case bval: BooleanValue => 
+          if( math.abs(Random.nextGaussian) > 1 ){
+            Value(!bval.value,nts)
+          } else bval.copy(timestamp =nts)
+        case nval: Value[Any] =>
+          nval.value match{
+            case oldValue: Int => 
+              Value(oldValue + (Random.nextGaussian*oldValue*0.10), nts )
+            case v => Value(v, nts, nval.attributes )
+          }
     }
   }
 }

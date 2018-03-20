@@ -38,9 +38,7 @@ import akka.stream.{ActorMaterializer, Materializer}
 import database._
 import agentSystem._
 import responses.{RequestHandler, SubscriptionManager, CallbackHandler}
-import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
-import types.OdfTypes._
-import types.odf.{ OldTypeConverter }
+import types.odf._
 import types.OmiTypes.{OmiReturn,OmiResult,Results,WriteRequest,ResponseRequest}
 import types.OmiTypes.Returns.ReturnTypes._
 import types.Path
@@ -223,16 +221,22 @@ object OmiServer {
 
       system.log.info("Testing InputPusher...")
 
-      val objects = createAncestors(
-        OdfInfoItem(
-          settings.settingsOdfPath / "num-latest-values-stored", 
-          Iterable(OdfValue(settings.numLatestValues.toString, "xs:integer", currentTime)),
-          Some(OdfDescription(numDescription))
-        ))
+      system.log.info("Create testing object")
+      val name =  "num-latest-values-stored"
+      val odf = ImmutableODF(Vector(
+        InfoItem(
+          name,
+          settings.settingsOdfPath / name, 
+          values = Vector(Value(settings.numLatestValues, "xs:integer", currentTime)),
+          descriptions = Vector(Description(numDescription))
+        )))
+      system.log.info("Testing object created")
       
-      val write = WriteRequest( OldTypeConverter.convertOdfObjects(objects), None,  60  seconds)
+      val write = WriteRequest( odf, None,  60  seconds)
+      system.log.info("Write created")
       implicit val timeout: Timeout = Timeout( 60 seconds)
       val future : Future[ResponseRequest]= (requestHandler ? write ).mapTo[ResponseRequest]
+      system.log.info("Write started")
       future.onSuccess{
         case response: ResponseRequest=>
         Results.unionReduce(response.results).forall {

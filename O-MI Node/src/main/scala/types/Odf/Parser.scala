@@ -169,11 +169,14 @@ object ODFParser extends parsing.Parser[OdfParseResult] {
     path: Path = Path("Objects")
   ) : Vector[Node] = { 
 
-    val npath = path / validateId(obj.id.headOption.map(_.value)).getOrElse(
+    val ids = obj.id.map { qlmIdType => parseQlmID(qlmIdType) }.toVector
+    val npath = path / ids.headOption.map{
+      id: QlmID => id.copy()
+    }.getOrElse(
       throw new IllegalArgumentException("No <id> on object: " + obj.id.toString)
     )
 
-    val ids = obj.id.map { qlmIdType => parseQlmID(qlmIdType) }.toVector
+
     val descriptions = obj.description.map { 
       des => new Description(des.value, des.lang) 
     }.toVector
@@ -320,19 +323,24 @@ object ODFParser extends parsing.Parser[OdfParseResult] {
       new Timestamp(cal.toGregorianCalendar().getTimeInMillis())
   }
   private[this] def parseQlmID( qlmIdType: QlmIDType): QlmID ={
-    QlmID(
-      qlmIdType.value,
-      qlmIdType.idType,
-      qlmIdType.tagType,
-      qlmIdType.startDate.map{
-        cal => new Timestamp(cal.toGregorianCalendar().getTimeInMillis())
-      },
-      qlmIdType.endDate.map{
-        cal => new Timestamp(cal.toGregorianCalendar().getTimeInMillis())
-      },
-      parseAttributes( 
-        qlmIdType.attributes -( "@idType" ,"@tagType","@startDate","@endDate")
-      )
-    )
+    validateId(qlmIdType.value).map{
+      id: String =>
+        QlmID(
+          id,
+          qlmIdType.idType,
+          qlmIdType.tagType,
+          qlmIdType.startDate.map{
+            cal => new Timestamp(cal.toGregorianCalendar().getTimeInMillis())
+          },
+          qlmIdType.endDate.map{
+            cal => new Timestamp(cal.toGregorianCalendar().getTimeInMillis())
+          },
+          parseAttributes( 
+            qlmIdType.attributes -( "@idType" ,"@tagType","@startDate","@endDate")
+          )
+        )
+    }.getOrElse{
+      throw new IllegalArgumentException("<id> is empty or contains only spaces.")
+    }
   }
 }

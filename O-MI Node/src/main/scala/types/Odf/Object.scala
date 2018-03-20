@@ -1,6 +1,7 @@
 package types
 package odf
 
+import scala.util.Try
 import scala.collection.{ Seq, Map }
 import scala.collection.immutable.{ HashMap, Map =>IMap}
 
@@ -8,15 +9,39 @@ import parsing.xmlGen.scalaxb.DataRecord
 import parsing.xmlGen.xmlTypes.{InfoItemType, ObjectType}
 
 case class Object(
-                   ids: Vector[QlmID],
-  path: Path,
-  typeAttribute: Option[String] = None,
-  descriptions: Seq[Description] = Vector.empty,
-  attributes: IMap[String,String] = HashMap.empty
+  val ids: Vector[QlmID],
+  val path: Path,
+  val typeAttribute: Option[String] = None,
+  val descriptions: Seq[Description] = Vector.empty,
+  val attributes: IMap[String,String] = HashMap.empty
 ) extends Node with Unionable[Object] {
-  assert( ids.nonEmpty )
-  assert( path.length > 1 )
-  assert( ids.map(_.id).toSet.contains(path.last) )
+  assert( ids.nonEmpty, "Object doesn't have any ids.")
+  assert( path.length > 1, "Length of path of Object is not greater than 1 (Objects/).")
+  def idsToStr() = ids.toList.map{ 
+    id: QlmID => 
+      val o = id.id.intern
+      new String(o) 
+      id.id
+  }.toVector
+
+  def idTest = idsToStr.exists{
+    str: String => 
+      /*if( path.last.startsWith("add") ){
+        println(s"str: $str, pl: ${path.last}")
+      }*/
+      val pl = path.last.replace("\\/","/")
+      /*if( path.last.startsWith("add") ){
+        println(s"str: $str, pl: ${path.last}")
+      }*/
+      val r = str == pl
+      /*if( path.last.startsWith("add") ){
+        println(s"id str $str == $pl => $r")
+        Thread.dumpStack()
+      }*/
+      r
+  }
+  def tmy =  s"Ids don't contain last id in path. ${path.last} not in (${idsToStr.mkString(",")})"
+  assert( idTest, tmy)
   def update( that: Object ): Object ={
     val pathsMatches = path == that.path 
     val containSameId = ids.map( _.id ).toSet.intersect( that.ids.map( _.id).toSet ).nonEmpty

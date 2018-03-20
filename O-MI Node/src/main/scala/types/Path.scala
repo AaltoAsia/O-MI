@@ -24,7 +24,7 @@ import OmiTypes.ResponseRequest
    * Path can be used as a sequence via an implicit conversion or _.toSeq
    */
   @SerialVersionUID(-6357227883745065036L)  
-  class Path(val pathSeq: Vector[String]) extends Serializable { // TODO: test the Serializable
+  class Path private(pathSeq: Vector[String]) extends Serializable { // TODO: test the Serializable
     import Path._
     /**
      * Removes extra path elements and holds the Path as Seq[String]
@@ -37,13 +37,21 @@ import OmiTypes.ResponseRequest
     /**
      * Removes extra path elements and holds the Path as Seq[String]
      */
-    val toArray: Array[String] = {
-      val normalized = pathSeq.filterNot(_ == "")
+    def toArray: Array[String] = {
+      val normalized = toSeq.filterNot(_ == "")
       normalized.toArray // make sure that it is Vector, hashcode problems with Seq (Array?)
     }
 
+    @deprecated("0.11.0","Easy to pass argument with wrong format where ids or names contains /. / used for seperating values")
     def this(pathStr: String) = this{
       pathStr.split("/").toVector.filterNot( _ == "")
+    }
+
+    def this(path: Path) = this{
+      path.toSeq
+    }
+    def this(seq: Seq[String]) = this{
+     seq.map(_.replace("[\\]*/","\\/")).filterNot(_ == "").toVector
     }
 
     /**
@@ -51,7 +59,7 @@ import OmiTypes.ResponseRequest
      * @param otherPath other path to join at the end of this one
      * @return new path with other joined to this path
      */
-    def /(otherPath: Path): Path = Path(this.pathSeq ++ otherPath.pathSeq)
+    def /(otherPath: Path): Path = Path(this.toSeq ++ otherPath.toSeq)
 
     /**
      * Add new id/name to end of paths
@@ -60,7 +68,10 @@ import OmiTypes.ResponseRequest
      */
     @deprecated("Use case is ambiguos. Joining with another string or adding new element. Use with other Path or odf.QlmID instead.", "0.9.2") 
     def /(idStr: String): Path = {
-      Path(this.pathSeq ++ Seq(idStr.replace("/","\\/")))
+      //val id = idStr.replace("/","\\/")
+      //if( idStr.startsWith("add") )
+      //  println(s"Appending $this / $idStr")
+      Path(this.toSeq ++ Seq(idStr))
     }
 
     /**
@@ -69,7 +80,9 @@ import OmiTypes.ResponseRequest
      * @return new path with added id at end.
      */
     def /(id: odf.QlmID): Path = {
-      Path(this.pathSeq ++ Seq(id.id.replace("/","\\/")))
+      //if( id.id.startsWith("add") )
+      //  println(s"Appending $this / ${id.id}")
+      Path(this.toSeq ++ Seq(id.id))
     }
 
     /**
@@ -78,8 +91,12 @@ import OmiTypes.ResponseRequest
      * @return new path with added id at end.
      */
     def /(id: OdfTypes.OdfQlmID): Path = {
-      Path(this.pathSeq ++ Seq(id.value.replace("/","\\/")))
+      println(s"Appending old $this / ${id.value}")
+      Path(this.toSeq ++ Seq(id.value))
     }
+
+    def append(str: String ): Path = this / str
+    //def append(id: QlmID ): Path = this / id
 
     /**
      * Get list of ancestors from this path, e.g "/a/b/c/d" => "/a", "/a/b", "/a/b/c", "a/b/c/d"
@@ -97,39 +114,52 @@ import OmiTypes.ResponseRequest
      * Creates a path string which represents this path with '/' separators.
      * Representation doesn't start nor end with a '/'.
      */
-    override def toString: String = this.mkString("/")
+    override def toString: String = this.toSeq.map(_.replace("[\\]*/","\\/")).mkString("/")
     
   def isAncestorOf( that: Path): Boolean ={
     if( length < that.length ){
-      that.pathSeq.startsWith(pathSeq) 
+      that.toSeq.startsWith(toSeq) 
     } else false
   }
   def isDescendantOf( that: Path): Boolean ={
     if( length > that.length ){
-      pathSeq.startsWith(that.pathSeq) 
+      toSeq.startsWith(that.toSeq) 
     } else false
   }
   def isChildOf( that: Path ) : Boolean ={
-    that.length + 1 == length && pathSeq.startsWith( that.pathSeq )
+    that.length + 1 == length && toSeq.startsWith( that.toSeq )
   }
   def isParentOf( that: Path ) : Boolean ={
-    length + 1 == that.length && that.pathSeq.startsWith( pathSeq )
+    length + 1 == that.length && that.toSeq.startsWith( toSeq )
   }
-  def nonEmpty: Boolean = pathSeq.nonEmpty
-  def isEmpty: Boolean = pathSeq.isEmpty
-    def ancestorsAndSelf: Seq[Path] = pathSeq.inits.map( Path(_)).toSeq
+  def nonEmpty: Boolean = toSeq.nonEmpty
+  def isEmpty: Boolean = toSeq.isEmpty
+    def ancestorsAndSelf: Seq[Path] = toSeq.inits.map( Path(_)).toSeq
     def ancestors: Seq[Path] = ancestorsAndSelf.tail
-    def length: Int = pathSeq.length
-  def getAncestorsAndSelf: Seq[Path] = pathSeq.inits.map( Path(_) ).filter( _.nonEmpty ).toVector ++ Vector(this)
-  def getAncestors: Seq[Path] = pathSeq.inits.map( Path(_) ).filter( _.nonEmpty ).toVector
-  def getParent: Path = Path(pathSeq.init)
+    def length: Int = toSeq.length
+  def getAncestorsAndSelf: Seq[Path] = toSeq.inits.map( Path(_) ).filter( _.nonEmpty ).toVector ++ Vector(this)
+  def getAncestors: Seq[Path] = toSeq.inits.map( Path(_) ).filter( _.nonEmpty ).toVector
+  def getParent: Path = Path(toSeq.init)
   }
 
   /** Helper object for Path, contains implicit conversion between Path and Seq[String]
     */
   object Path {
-    def apply(pathStr: String): Path = new Path(pathStr)
-    def apply(pathSeq: Seq[String]): Path = new Path(pathSeq.toVector)
+
+    @deprecated("0.11.0","Easy to pass argument with wrong format where ids or names contains /. / used for seperating values")
+    def apply(pathStr: String): Path ={
+      new Path(pathStr)
+    }
+    
+    def apply(toSeq: Seq[String]): Path ={
+      new Path(toSeq)//.map{
+      }
+//      idOrName: String  => idOrName.replace("/","\\/")
+//    }.toVector)
+    def apply(path: Path): Path ={
+      new Path(
+      path//.toSeq.map(_.replace("\\/","/"))
+    )}
     val empty = new Path(Vector.empty)
 
     object PathOrdering extends scala.math.Ordering[Path] {
