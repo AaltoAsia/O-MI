@@ -14,6 +14,8 @@
 
 package types
 import scala.collection.JavaConversions
+import scala.util.matching.Regex
+
 import scala.concurrent.{Future, ExecutionContext}
 import scala.util.{Failure, Success, Try}
 import OmiTypes.ResponseRequest
@@ -30,7 +32,7 @@ import OmiTypes.ResponseRequest
      * Removes extra path elements and holds the Path as Seq[String]
      */
     val toSeq: Vector[String] = {
-      val normalized = pathSeq.filterNot(_ == "")
+      val normalized = pathSeq.map(_.replace("[\\]*/","\\/")).filterNot(_ == "")
       normalized // make sure that it is Vector, hashcode problems with Seq (Array?)
     }
 
@@ -44,14 +46,14 @@ import OmiTypes.ResponseRequest
 
     @deprecated("0.11.0","Easy to pass argument with wrong format where ids or names contains /. / used for seperating values")
     def this(pathStr: String) = this{
-      pathStr.split("/").toVector.filterNot( _ == "")
+    (new Regex("([^\\\\/]|\\\\.)+")).findAllIn(pathStr).toVector.filterNot( _ == "")
     }
 
     def this(path: Path) = this{
       path.toSeq
     }
     def this(seq: Seq[String]) = this{
-     seq.map(_.replace("[\\]*/","\\/")).filterNot(_ == "").toVector
+      seq.map{str => str.replace("/","\\/")}.filterNot(_ == "").toVector
     }
 
     /**
@@ -91,7 +93,6 @@ import OmiTypes.ResponseRequest
      * @return new path with added id at end.
      */
     def /(id: OdfTypes.OdfQlmID): Path = {
-      println(s"Appending old $this / ${id.value}")
       Path(this.toSeq ++ Seq(id.value))
     }
 
@@ -114,7 +115,7 @@ import OmiTypes.ResponseRequest
      * Creates a path string which represents this path with '/' separators.
      * Representation doesn't start nor end with a '/'.
      */
-    override def toString: String = this.toSeq.map(_.replace("[\\]*/","\\/")).mkString("/")
+    override def toString: String = this.toSeq.mkString("/")
     
   def isAncestorOf( that: Path): Boolean ={
     if( length < that.length ){
@@ -150,10 +151,14 @@ import OmiTypes.ResponseRequest
     def apply(pathStr: String): Path ={
       new Path(pathStr)
     }
+    def apply(pathStr: String*): Path ={
+      new Path(Vector(pathStr).flatten.filterNot(_ == "").toVector)
+    }
     
+    /*
     def apply(toSeq: Seq[String]): Path ={
       new Path(toSeq)//.map{
-      }
+      }*/
 //      idOrName: String  => idOrName.replace("/","\\/")
 //    }.toVector)
     def apply(path: Path): Path ={
@@ -170,5 +175,5 @@ import OmiTypes.ResponseRequest
     import scala.language.implicitConversions // XXX: maybe a little bit stupid place for this
 
     implicit def PathAsSeq(p: Path): Vector[String] = p.toSeq
-    implicit def SeqAsPath(s: Seq[String]): Path = Path(s.toVector)
+    implicit def SeqAsPath(s: Seq[String]): Path = Path(s.toVector:_*)
   }

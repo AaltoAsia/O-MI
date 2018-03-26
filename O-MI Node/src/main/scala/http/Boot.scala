@@ -230,7 +230,7 @@ object OmiServer {
           values = Vector(Value(settings.numLatestValues, "xs:integer", currentTime)),
           descriptions = Vector(Description(numDescription))
         )))
-      system.log.info("Testing object created")
+      system.log.info(s"Testing object created. $odf")
       
       val write = WriteRequest( odf, None,  60  seconds)
       system.log.info("Write created")

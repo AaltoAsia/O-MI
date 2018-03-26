@@ -49,6 +49,7 @@ trait DBWriteHandler extends DBHandlerBase {
   }
 
   private def sendEventCallback(esub: EventSub, odfWithoutTypes: ImmutableODF) : Unit = {
+    log.debug("Sending event callbacks")
     val id = esub.id
     val callbackAddr = esub.callback
     val hTree = singleStores.hierarchyStore execute GetTree()
@@ -95,6 +96,7 @@ trait DBWriteHandler extends DBHandlerBase {
   }
 
   private def processEvents(events: Seq[InfoItemEvent]): Unit = {
+    log.debug("Processing events...")
     //Add write data to analytics if wanted
     analyticsStore.foreach{ store =>
       events
@@ -139,8 +141,11 @@ trait DBWriteHandler extends DBHandlerBase {
    * @return returns Sequence of SubValues to be added to database
    */
   private def handlePollData(path: Path, newValue: Value[Any], oldValueOpt: Option[Value[Any]]) = {
-    val relatedPollSubs = singleStores.subStore execute GetSubsForPath(path)
+    //log.debug(s"Handling poll data... for $path")
+    //TODO: Do this for multiple paths at the same time
+    val relatedPollSubs: Set[NotNewEventSub] = singleStores.subStore execute GetSubsForPath(path)
 
+   // log.debug(s"Related poll subs: ${relatedPollSubs.size} ")
     relatedPollSubs.collect {
       //if no old value found for path or start time of subscription is after last value timestamp
       //if new value is updated value. forall for option returns true if predicate is true or the value is None
@@ -156,8 +161,10 @@ trait DBWriteHandler extends DBHandlerBase {
             //                   infoItems: Iterable[InfoItem],
             //                   objectMetadatas: Vector[Object] = Vector()
             //
+    log.debug("HandleWrite...")
     val odf =write.odf
     // save only changed values
+    log.debug("Check old values")
     val pathValueOldValueTuples = for {
       info <- odf.getInfoItems.toSeq
       path = info.path
@@ -216,6 +223,7 @@ trait DBWriteHandler extends DBHandlerBase {
         iis.reduceOption(_.union(_)) //Combine infoitems with same paths to single infoitem
       }(collection.breakOut) // breakOut to correct collection type
 
+    log.debug("Writing infoitems to db")
     val dbWriteFuture = dbConnection.writeMany(infosToBeWrittenInDB)
 
     dbWriteFuture.onFailure{
@@ -226,12 +234,15 @@ trait DBWriteHandler extends DBHandlerBase {
       _ =>
         // Update our hierarchy data structures if needed
 
+        log.debug("Writing finished.")
         if (updatedStaticItems.nonEmpty) {
+          log.debug("Update cache...")
           // aggregate all updates to single odf tree
           val updateTree: ImmutableODF = ImmutableODF(updatedStaticItems)
 
           singleStores.hierarchyStore execute Union(updateTree)
         }
+        log.debug(s"Triggering ${triggeringEvents.length} events.")
         triggeringEvents.foreach(
           iie =>
             iie.infoItem.values.headOption.map(

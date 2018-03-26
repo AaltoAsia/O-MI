@@ -126,6 +126,7 @@ object ODFParser extends parsing.Parser[OdfParseResult] {
     HashMap(
       attributes.map{
         case (key: String, dr: DataRecord[Any]) =>
+          println(s"$key  = ${dr.value.toString}")
           val k = if( key.startsWith("@") ){
             key.tail 
           } else key
@@ -142,6 +143,7 @@ object ODFParser extends parsing.Parser[OdfParseResult] {
       objects.version,
       parseAttributes(objects.attributes - "@version")
     )
+    println( s"\n\n ${objects.attributes}" )
     val subtree: Vector[Node] = objects.ObjectValue.flatMap{ 
       obj => parseObject( requestProcessTime, obj, path ) 
     }.toVector

@@ -68,8 +68,12 @@ trait Tables extends DBBase{
     def getByID( id: Long ) = getByIDCQ(id).result
     def getByIDs( ids: Seq[Long] ) = getByIDsQ(ids).result
     def getByPaths( paths: Seq[Path] ) = getByPathsQ( paths ).result
+    def currentPaths = currentPathsQ.result
 
-    def add( dbPaths: Seq[DBPath] ) = insertQ( dbPaths.distinct )
+    def add( dbPaths: Seq[DBPath] ) = {
+      println( s"Adding following paths: ${dbPaths.map(_.path.toString).mkString("\n")}")
+      insertQ( dbPaths.distinct )
+    }
     def removeByIDs( ids: Seq[Long] ) = getByIDsQ( ids ).delete
     def removeByPaths( paths: Seq[Path] ) = getByPathsQ( paths ).delete
     def getInfoItems = infoItemsCQ.result
@@ -77,6 +81,7 @@ trait Tables extends DBBase{
     protected  lazy val infoItemsCQ = Compiled( infoItemsQ )
     protected  def infoItemsQ = this.filter{ dbp => dbp.isInfoItem }
 
+    protected def currentPathsQ = this.map{ row => row.path}
     protected def getByIDsQ( ids: Seq[Long] ) = this.filter{ row => row.id inSet( ids ) }
     protected def getByPathsQ( paths: Seq[Path] ) = this.filter{ row => row.path inSet( paths ) }
     protected lazy val getByIDCQ = Compiled( getByIDQ _ )

@@ -38,6 +38,10 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimmableDB{
       tableNames: Seq[String] =>
         val queries = if (tableNames.contains("PATHSTABLE")) {
           //Found needed table, check for value tables
+          db.run(pathsTable.currentPaths).onSuccess{
+            case paths: Seq[Path] => 
+              log.info(s"Found following paths in DB:${paths.mkString("\n")}") 
+          }
           val infoItemDBPaths = pathsTable.getInfoItems
 
           val valueTablesCreation = infoItemDBPaths.flatMap {
@@ -121,15 +125,21 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimmableDB{
   }
 
   def writeMany(data: Seq[InfoItem]): Future[OmiReturn] = {
+    log.debug("Writing many...")
     writeWithDBIOs(ImmutableODF(data))
   }
 
   private def returnOrReserve(path: Path, isInfoItem: Boolean): DBPath = {
     val ret = atomic { implicit txn =>
       pathToDBPath.get(path) match {
-        case Some(dbpath @ DBPath(Some(_),_,_)) => dbpath // Exists
-        case Some(         DBPath(None   ,_,_)) => retry  // Reserved
+        case Some(dbpath @ DBPath(Some(_),_,_)) => 
+          log.debug(s"Reserve $path $isInfoItem")
+          dbpath // Exists
+        case Some(         DBPath(None   ,_,_)) => 
+          log.debug(s"$path is reserved, retry")
+          retry  // Reserved
         case None => // Not found -> reserve
+          log.debug(s"Reserve $path for creation. $isInfoItem")
           val newDbPath = DBPath(None, path, isInfoItem)
           pathToDBPath += path -> newDbPath
           newDbPath
@@ -162,13 +172,16 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimmableDB{
       })
     }
 
-    nodes.foldLeft(Map[Path,DBPath]()){ case (reserved: Map[Path,DBPath], node: Node) =>
+    log.debug(s"Reserving New paths for ${nodes.size} nodes...")
+    val re= nodes.foldLeft(Map[Path,DBPath]()){ case (reserved: Map[Path,DBPath], node: Node) =>
       node match {
         case obj: Objects => handleNode(obj, isInfo = false, reserved)
         case obj: Object => handleNode(obj, isInfo = false, reserved)
         case ii: InfoItem => handleNode(ii, isInfo = true, reserved)
       }
     }
+    log.debug(s"Reserved New paths for ${nodes.size} nodes")
+    re
   }
 
 
@@ -178,18 +191,21 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimmableDB{
 
     //Add new paths to PATHSTABLE and create new values tables for InfoItems
 
-    val pathsToAdd = reserveNewPaths(leafs.toSet)
+    val pathsToAdd: Map[Path,DBPath]= reserveNewPaths(leafs.toSet)
 
-    //log.debug( s"Adding total of  ${pathsToAdd.length} paths to DB")//: $pathsToAdd")
+    log.debug( s"Adding total of  ${pathsToAdd.size} paths to DB")//: $pathsToAdd")
 
+    log.debug("Create Insert for new paths")
     val pathAddingAction = pathsTable.add(pathsToAdd.values.toVector)
     val getAddedDBPaths =  pathAddingAction.flatMap {
       ids: Seq[Long] =>
+        log.debug(s"Getting ${ids.length} paths by ids")
         pathsTable.getByIDs(ids)
     }
 
     val valueTableCreations = getAddedDBPaths.flatMap {
       addedDBPaths: Seq[DBPath] =>
+        log.debug(s"Got ${addedDBPaths.size} paths")
         atomic { implicit txn =>
           addedDBPaths.map {
             dbPath: DBPath => pathToDBPath += dbPath.path -> dbPath
@@ -204,15 +220,18 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimmableDB{
                 if (tableNames.contains(pathValues.name)) None // TODO: CHECKME
                 else Some(pathValues.schema.create.map { u: Unit => pathValues.name })
             }.flatten
+            log.debug(s"Creating ${creations.length} new tables...")
             DBIO.sequence(creations)
         }
     }
 
     //Write all values to values tables and create non-existing values tables
+    log.debug(s"Get leaf infoitems of odf")
     val valueWritingIOs = leafs.collect{
       case ii: InfoItem =>
         pathsTable.getByPath(ii.path).flatMap {
           dbPaths: Seq[DBPath] =>
+            log.debug(s"Got ${dbPaths.length} DBPaths for ${ii.path}")
             val ios = dbPaths.collect {
               case DBPath(Some(id), path, isInfoItem) =>
                 //Find correct TableQuery
@@ -225,6 +244,7 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimmableDB{
                     pathValues
                 }
                 //Create DBValues
+                log.debug(s"Creating ${ii.values.length} TimedValues for ${ii.path}")
                 val timedValues: Seq[TimedValue] = ii.values.map {
                   value => TimedValue(None, value.timestamp, value.value.toString, value.typeAttribute)
                 }
@@ -232,6 +252,7 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimmableDB{
                 val valueInserts = tableByNameExists(valuesTable.name).flatMap {
                   //Create missing table and write values
                   case true =>
+                    log.debug(s"Found values table of ${ii.path}, writing ${timedValues.length} values.")
                     valuesTable.add(timedValues)
                   case false =>
                     log.warn(s"Creating missing values table for $path")
@@ -251,6 +272,7 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimmableDB{
             DBIO.sequence(ios)
         }
     }
+    log.debug("Aggregate writing actions...")
     val actions = valueTableCreations.flatMap {
       createdTables: Seq[String] =>
         if (createdTables.nonEmpty) log.debug(s"Created following tables:\n${createdTables.mkString(", ")}")
@@ -261,7 +283,13 @@ trait NewSimplifiedDatabase extends Tables with DB with TrimmableDB{
             Returns.Success()
         }
     }
-    db.run(actions.transactionally)
+    log.debug("Running writing actions...")
+    val future = db.run(actions.transactionally)
+    future.onSuccess{
+      case re: OmiReturn => 
+        log.debug("Writing finished.")
+    }
+    future
   }
 
   def getNBetween(

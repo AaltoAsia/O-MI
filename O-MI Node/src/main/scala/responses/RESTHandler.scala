@@ -128,11 +128,16 @@ object RESTRequest{
               case obj: Object => 
                 obj.copy(descriptions = Vector.empty).asObjectType( Vector.empty, Vector.empty )
             }
-            scalaxb.toXML[xmlTypes.ObjectsType](
-              objs.asObjectsType(childs), Some("odf"), Some("Objects"), defaultScope
+            val xmlObjs =objs.asObjectsType(childs)
+            val xmlR = scalaxb.toXML[xmlTypes.ObjectsType](
+              xmlObjs, Some("odf"), Some("Objects"), defaultScope
             ).headOption.getOrElse(
               <error>Could not create from odf.Objects </error>
             )
+            println("\n\n"+objs.toString)
+            println("\n\n"+xmlObjs.toString)
+            println("\n\n"+xmlR.toString)
+            xmlR
 
           case infoitem: InfoItem =>
             scalaxb.toXML[xmlTypes.InfoItemType](
