@@ -152,7 +152,7 @@ lazy val root = (project in file(".")).
         val src = (sourceDirectory in omiNode).value
         val conf = src / "main" / "resources" 
         Seq(
-          conf / "application.conf" -> "conf/application.conf",
+          conf / "reference.conf" -> "conf/application.conf",
           conf / "logback.xml" -> "conf/logback.xml")},
       mappings in Universal ++= {
         println((doc in Compile in omiNode).value)
