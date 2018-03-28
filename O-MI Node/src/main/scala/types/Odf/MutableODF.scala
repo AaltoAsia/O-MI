@@ -94,7 +94,6 @@ class MutableODF private[odf](
               case (obj: Objects, oo: Objects) =>
                 Some(obj.union(oo))
               case (n, on) =>
-                println(s"ERROR:\n $n is not same type as $on.\n")
                 throw new Exception(
                   "Found two different types in same Path when tried to create union."
                 )
@@ -235,10 +234,8 @@ class MutableODF private[odf](
   override def equals( that: Any ) : Boolean ={
     that match{
       case another: ODF =>
-        //println( s"Path equals: ${paths equals another.paths}\n Nodes equals:${nodes equals another.nodes}" )
         (paths equals another.paths) && (nodes equals another.nodes)
       case _: Any =>
-        //println( s" Comparing ODF with something: $a")
         false
     }
   }

@@ -19,26 +19,13 @@ case class Object(
   assert( path.length > 1, "Length of path of Object is not greater than 1 (Objects/).")
   def idsToStr() = ids.toList.map{ 
     id: QlmID => 
-      val o = id.id.intern
-      new String(o) 
       id.id
   }.toVector
 
   def idTest = idsToStr.exists{
-    str: String => 
-      /*if( path.last.startsWith("add") ){
-        println(s"str: $str, pl: ${path.last}")
-      }*/
+    id: String => 
       val pl = path.last.replace("\\/","/")
-      /*if( path.last.startsWith("add") ){
-        println(s"str: $str, pl: ${path.last}")
-      }*/
-      val r = str == pl
-      /*if( path.last.startsWith("add") ){
-        println(s"id str $str == $pl => $r")
-        Thread.dumpStack()
-      }*/
-      r
+      str == pl
   }
   def tmy =  s"Ids don't contain last id in path. ${path.last} not in (${idsToStr.mkString(",")})"
   assert( idTest, tmy)

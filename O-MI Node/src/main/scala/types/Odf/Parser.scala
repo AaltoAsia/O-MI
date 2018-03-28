@@ -102,7 +102,6 @@ object ODFParser extends parsing.Parser[OdfParseResult] {
         xmlGen.scalaxb.fromXML[ObjectsType](root)
       } match {
         case Failure(e) => 
-            //println( s"Exception: $e\nStackTrace:\n")
             e.printStackTrace()
             Left( Vector( ScalaxbError( e.getMessage ) ) )
       
@@ -112,7 +111,6 @@ object ODFParser extends parsing.Parser[OdfParseResult] {
           } match {
             case Success(odf) => Right(odf)
             case Failure(e) => 
-            //println( s"Exception: $e\nStackTrace:\n")
             e.printStackTrace()
               Left( Vector( ODFParserError( e.getMessage ) ) )
           }
@@ -126,7 +124,6 @@ object ODFParser extends parsing.Parser[OdfParseResult] {
     HashMap(
       attributes.map{
         case (key: String, dr: DataRecord[Any]) =>
-          println(s"$key  = ${dr.value.toString}")
           val k = if( key.startsWith("@") ){
             key.tail 
           } else key
@@ -143,7 +140,6 @@ object ODFParser extends parsing.Parser[OdfParseResult] {
       objects.version,
       parseAttributes(objects.attributes - "@version")
     )
-    println( s"\n\n ${objects.attributes}" )
     val subtree: Vector[Node] = objects.ObjectValue.flatMap{ 
       obj => parseObject( requestProcessTime, obj, path ) 
     }.toVector

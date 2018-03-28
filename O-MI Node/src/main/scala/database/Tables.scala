@@ -71,7 +71,6 @@ trait Tables extends DBBase{
     def currentPaths = currentPathsQ.result
 
     def add( dbPaths: Seq[DBPath] ) = {
-      println( s"Adding following paths: ${dbPaths.map(_.path.toString).mkString("\n")}")
       insertQ( dbPaths.distinct )
     }
     def removeByIDs( ids: Seq[Long] ) = getByIDsQ( ids ).delete

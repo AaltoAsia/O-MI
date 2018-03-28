@@ -70,9 +70,6 @@ import OmiTypes.ResponseRequest
      */
     @deprecated("Use case is ambiguos. Joining with another string or adding new element. Use with other Path or odf.QlmID instead.", "0.9.2") 
     def /(idStr: String): Path = {
-      //val id = idStr.replace("/","\\/")
-      //if( idStr.startsWith("add") )
-      //  println(s"Appending $this / $idStr")
       Path(this.toSeq ++ Seq(idStr))
     }
 
@@ -82,8 +79,6 @@ import OmiTypes.ResponseRequest
      * @return new path with added id at end.
      */
     def /(id: odf.QlmID): Path = {
-      //if( id.id.startsWith("add") )
-      //  println(s"Appending $this / ${id.id}")
       Path(this.toSeq ++ Seq(id.id))
     }
 

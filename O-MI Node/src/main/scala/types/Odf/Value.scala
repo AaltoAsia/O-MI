@@ -197,10 +197,8 @@ object Value{
     create match {
       case Success(_value) => _value
       case Failure( _: Exception) =>
-        //println( s"Creating of Value failed with type $typeValue, caused by: $e")
         StringPresentedValue(value, timestamp, attributes = attributes)
       case Failure( _: Throwable) =>
-        //println( s"Creating of Value failed with type $typeValue, caused by: $e")
         StringPresentedValue(value, timestamp, attributes = attributes)
     }
       
