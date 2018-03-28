@@ -154,7 +154,6 @@ class SubscriptionManager(
     case LoadSubs(subs: Seq[(SavedSub, Option[SubData])]) => sender() ! loadSub(subs)
   }
 
-  def 
   /**
     * Used to load subscriptions during runtime using cli
     *

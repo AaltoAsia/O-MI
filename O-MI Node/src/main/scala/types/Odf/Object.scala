@@ -25,7 +25,7 @@ case class Object(
   def idTest = idsToStr.exists{
     id: String => 
       val pl = path.last.replace("\\/","/")
-      str == pl
+      id == pl
   }
   def tmy =  s"Ids don't contain last id in path. ${path.last} not in (${idsToStr.mkString(",")})"
   assert( idTest, tmy)
