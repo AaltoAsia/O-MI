@@ -46,7 +46,7 @@ trait Tables extends DBBase{
   type ReadWrite = Effect with Effect.Write with Effect.Read with Effect.Transactional
   type DBIOrw[Result] = DBIOAction[Result, NoStream, ReadWrite]
   implicit lazy val pathColumnType = MappedColumnType.base[Path, String](
-    { _.toString }, // Path to String
+    { _.toString.replace("\\/","\\\\/" )}, // Path to String
     { Path(_) }     // String to Path
     )
 

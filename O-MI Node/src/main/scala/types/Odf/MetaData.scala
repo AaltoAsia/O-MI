@@ -25,8 +25,7 @@ case class MetaData(
           case (ii, tii) => tii.orElse(ii)
         }
     }
-    MetaData(
-      ((names -- intersectingNames).flatMap {
+    val iis = ((names -- intersectingNames).flatMap {
         name: String =>
           nameToII.get(name)
       } ++
@@ -34,6 +33,8 @@ case class MetaData(
           name: String =>
             that.nameToII.get(name)
         } ++ intersectedII).toVector
+    MetaData(
+      iis.map{ ii => ii.copy( values = ii.values.sortBy(_.timestamp.getTime).headOption.toVector ) }
     )
   }
   def union( that: MetaData ): MetaData ={
@@ -46,8 +47,7 @@ case class MetaData(
           case (ii, tii) => ii.orElse(tii)
         }
     }
-    MetaData(
-      ((names -- intersectingNames).flatMap {
+    val iis = ((names -- intersectingNames).flatMap {
         name: String =>
           nameToII.get(name)
       } ++
@@ -55,6 +55,8 @@ case class MetaData(
           name: String =>
             that.nameToII.get(name)
         } ++ intersectedII).toVector
+    MetaData(
+      iis.map{ ii => ii.copy( values = ii.values.sortBy(_.timestamp.getTime).headOption.toVector )}
     )
   }
   implicit def asMetaDataType : MetaDataType = MetaDataType( infoItems.map(_.asInfoItemType) )

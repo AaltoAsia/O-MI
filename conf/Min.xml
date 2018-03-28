@@ -10,7 +10,7 @@
       <value type="xs:int">53</value>
     </InfoItem>
     <Object>
-      <id>Sub/Obj</id>
+      <id>SubObj</id>
       <InfoItem name="Sensor">
         <MetaData>
           <InfoItem name="Setting1">

@@ -88,7 +88,7 @@ case class GetTree() extends Query[OdfTree, ImmutableODF] {
  * This is used for updating also
  */
 case class Union(anotherRoot: ImmutableODF) extends Transaction[OdfTree] {
-  def executeOn(t: OdfTree, d: Date): Unit = t.root = (t.root union anotherRoot.valuesRemoved).immutable// Remove values so they don't pile up
+  def executeOn(t: OdfTree, d: Date): Unit = t.root = (t.root union anotherRoot).valuesRemoved.immutable// Remove values so they don't pile up
 }
 
 case class TreeRemovePath(path: Path) extends Transaction[OdfTree] {
