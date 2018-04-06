@@ -57,7 +57,7 @@ case class QlmID(
                 "@endDate" -> DataRecord(timestampToXML(endDate))
         }.toSeq
     QlmIDType(
-      id,
+      id.replace("\\/","/"),
         (
           idTypeAttr ++ 
           tagTypeAttr ++ 

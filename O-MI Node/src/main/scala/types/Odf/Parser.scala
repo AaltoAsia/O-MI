@@ -174,7 +174,6 @@ object ODFParser extends parsing.Parser[OdfParseResult] {
       throw new IllegalArgumentException("No <id> on object: " + obj.id.toString)
     )
 
-
     val descriptions = obj.description.map { 
       des => new Description(des.value, des.lang) 
     }.toVector
@@ -201,10 +200,10 @@ object ODFParser extends parsing.Parser[OdfParseResult] {
   ) : InfoItem  = { 
 
     // TODO: support many names from item.otherName
-    val npath = path / validateId(item.name).getOrElse(
+    val nameAttribute = item.name.replace("/","\\/")
+    val npath = path / validateId(nameAttribute).getOrElse(
       throw new IllegalArgumentException("No name on infoItem")
     )
-    val nameAttribute = item.name
     val typeAttribute = item.typeValue
     val names =item.iname.map{
         qlmIdType => parseQlmID( qlmIdType)
@@ -324,7 +323,7 @@ object ODFParser extends parsing.Parser[OdfParseResult] {
     validateId(qlmIdType.value).map{
       id: String =>
         QlmID(
-          id,
+          id.replace("/","\\/"),
           qlmIdType.idType,
           qlmIdType.tagType,
           qlmIdType.startDate.map{

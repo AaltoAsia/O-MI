@@ -186,7 +186,7 @@ case class InfoItem(
       },
       HashMap(
         "@name" -> DataRecord(
-          nameAttribute
+          nameAttribute.replace("\\/","/")
         )        
       ) ++ attributesToDataRecord( this.attributes ) ++ typeAttribute.map{ ta => "@type" -> DataRecord(ta)}.toVector
     )
