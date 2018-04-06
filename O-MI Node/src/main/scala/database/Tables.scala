@@ -24,6 +24,15 @@ import types.odf._
 import types.OmiTypes._
 import types.Path
 
+/**
+ * Base trait for databases. Has basic protected interface.
+ */
+trait DBBase{
+  val dc : DatabaseConfig[JdbcProfile] //= DatabaseConfig.forConfig[JdbcProfile](database.dbConfigName)
+  import dc.driver.api._
+  val db: Database
+  //protected[this] val db: Database
+}
 
 case class DBPath(
                    id: Option[Long],

@@ -33,7 +33,6 @@ import types.OdfTypes._
 import types.odf._
 import types.OmiTypes.OmiReturn
 import types.Path
-import http.{ActorSystemContext, Settings, Storages}
 
 
 package object database {
@@ -217,7 +216,7 @@ class DatabaseConnection()(
 
 //OLD DB:
 //) extends DBCachedReadWrite with DBBase with DB {
-) extends NewSimplifiedDatabase with DB {
+) extends OdfDatabase with DB {
 
   //val dc = DatabaseConfig.forConfig[JdbcProfile](dbConfigName)
   val dc : DatabaseConfig[JdbcProfile] = DatabaseConfig.forConfig[JdbcProfile](database.dbConfigName)
@@ -252,60 +251,6 @@ class DatabaseConnection()(
  * problems caused by overlapping test data.
  * Uses h2 named in-memory db
  * @param name name of the test database, optional. Data will be stored in memory
-class UncachedTestDB(
-  val name:String = "", 
-  useMaintainer: Boolean = true, 
-  val config: Config = ConfigFactory.load(
-    ConfigFactory.parseString("""
-dbconf {
-  driver = "slick.driver.H2Driver$"
-  db {
-    url = "jdbc:h2:mem:test1"
-    driver = org.h2.Driver
-    connectionPool = disabled
-    keepAliveConnection = true
-    connectionTimeout = 15s
-  }
-}
-"""
-)).withFallback(ConfigFactory.load()),
-  val configName: String = "dbconf")(
-  protected val system : ActorSystem,
-  protected val singleStores : SingleStores,
-  protected val settings : OmiConfigExtension
-) extends DBReadWrite with DB {
-
-  override protected val log = LoggerFactory.getLogger("UncachedTestDB")
-  log.debug("Creating UncachedTestDB: " + name)
-  override val dc = DatabaseConfig.forConfig[JdbcProfile](configName,config)
-  import dc.driver.api._
-  val db = dc.db
-   // Database.forURL(url, driver = driver,
-   // keepAliveConnection=true)
-  initialize()
-
-  val dbmaintainer = if( useMaintainer) {
-    system.actorOf(DBMaintainer.props(
-    this,
-    singleStores,
-    settings
-    ), "uncached-db-maintainer")
-  } else ActorRef.noSender
-  // Should be called after tests.
-  def destroy(): Unit = {
-    if(useMaintainer )system.stop(dbmaintainer)
-    log.debug("Removing UncachedTestDB: " + name)
-    db.close()
-  }
-}
- */
-
-
-/**
- * Database class to be used during tests instead of production db to prevent
- * problems caused by overlapping test data.
- * Uses h2 named in-memory db
- * @param name name of the test database, optional. Data will be stored in memory
  */
 class TestDB(
   val name:String = "", 
@@ -330,7 +275,7 @@ slick-config {
   protected val settings : OmiConfigExtension
 //OLD DB:
 //) extends DBCachedReadWrite with DB {
-) extends NewSimplifiedDatabase with DB {
+) extends OdfDatabase with DB {
 
   override protected val log: Logger = LoggerFactory.getLogger("TestDB")
   log.debug("Creating TestDB: " + name)

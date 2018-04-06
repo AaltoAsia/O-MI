@@ -23,7 +23,7 @@ import akka.actor.ActorSystem
 import database._
 import types.odf._
 import types._
-import http.{ActorSystemContext, OmiServer, Storages}
+import http.{ActorSystemContext, OmiServer}
 
 trait CLIHelperT{
   def handlePathRemove(parentPath: Path): Boolean

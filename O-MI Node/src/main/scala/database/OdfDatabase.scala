@@ -24,7 +24,7 @@ import types.odf._
 import types.OmiTypes._
 import types.Path
 
-trait NewSimplifiedDatabase extends Tables with DB with TrimmableDB{
+trait OdfDatabase extends Tables with DB with TrimmableDB{
   import dc.driver.api._
 
   protected val settings : OmiConfigExtension

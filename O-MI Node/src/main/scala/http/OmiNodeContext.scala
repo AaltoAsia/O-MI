@@ -8,12 +8,8 @@ import akka.stream.{ActorMaterializer, Materializer}
 import akka.http.scaladsl.HttpExt
 
 import responses.CallbackHandler
-import database.{DBReadWrite, SingleStores, DBReadOnly}
+import database.{SingleStores}
 
-trait Storages {
-  implicit val singleStores: SingleStores
-  implicit val dbConnection: DBReadWrite
-}
 
 trait Actors {
    val subscriptionManager: ActorRef
@@ -40,7 +36,6 @@ trait OmiNodeContext
   extends ActorSystemContext
   with    Actors
   with    Settings
-  with    Storages
   with    Callbacking
 {}
 object ContextConversion {
@@ -48,7 +43,4 @@ object ContextConversion {
   implicit def toActorSystem(sys: ActorSystemContext) : ActorSystem = sys.system
   implicit def toMaterializer(sys: ActorSystemContext) : Materializer = sys.materializer
   implicit def toConfigExtension(se: Settings): OmiConfigExtension = se.settings 
-  implicit def toDBReadWrite(storage: Storages): DBReadWrite = storage.dbConnection
-  implicit def toDBReadOnly(storage: Storages): DBReadOnly = storage.dbConnection
-  implicit def toSingleStores(storage: Storages): SingleStores = storage.singleStores
 }

@@ -20,7 +20,7 @@ import database._
 import parsing.xmlGen.{defaultScope, scalaxb, xmlTypes}
 import types.odf.{Object, InfoItem, Node, Objects}
 import types._
-import http.{ActorSystemContext, Storages}
+import http.ActorSystemContext
 
 
 object RESTHandler{

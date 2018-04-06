@@ -38,12 +38,12 @@ import com.typesafe.config.Config
 import com.typesafe.config.ConfigException._
 
 import responses.CallbackHandler
-import database.{DB, SingleStores, DBReadWrite}
+import database.{DB, SingleStores }
 import http.CLICmds._
 import http.OmiNodeContext
 import types.OmiTypes.WriteRequest
 import types.Path
-import http.{ActorSystemContext, Actors, Settings, Storages, OmiNodeContext, Callbacking}
+import http.{ActorSystemContext, Actors, Settings, OmiNodeContext, Callbacking}
 import AgentResponsibilities._
 
   case class NewCLI(ip: String, cliRef: ActorRef )

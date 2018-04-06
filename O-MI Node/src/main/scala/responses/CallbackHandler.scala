@@ -34,7 +34,7 @@ import akka.stream.scaladsl._
 import akka.stream._
 import types.OmiTypes._
 
-import http.{OmiConfigExtension, Storages, OmiNodeContext, Settings, ActorSystemContext, Actors}
+import http.{OmiConfigExtension, OmiNodeContext, Settings, ActorSystemContext, Actors}
 import CallbackHandler._
 object CallbackHandler{
   case class CurrentConnection(identifier: Int, handler: SendHandler )
