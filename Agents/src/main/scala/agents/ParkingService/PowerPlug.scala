@@ -29,7 +29,7 @@ object PowerPlug{
        case ii: OdfInfoItem =>
         getDoubleFromInfoItem( ii )
      }.flatten
-     val tpca = obj.get( obj.path / "three-phasedCurrentAvailable" ).collect{
+     val tpca = obj.get( obj.path / "threePhasedCurrentAvailable" ).collect{
        case ii: OdfInfoItem =>
         getBooleanFromInfoItem( ii )
      }.flatten
@@ -105,9 +105,9 @@ case class PowerPlug(
     }.toVector
     val tpcaII = threePhasedCurrentAvailable.map{ tpca =>
       OdfInfoItem(
-        plugPath / "three-phasedCurrentAvailable",
+        plugPath / "threePhasedCurrentAvailable",
         Vector( OdfValue( tpca, currentTime ) ),
-        typeValue = Some( "mv:three-phasedCurrentAvailable" )
+        typeValue = Some( "mv:threePhasedCurrentAvailable" )
       )
     }.toVector
     val iFCCII = isFastChargeCapable.map{ iFCC=>

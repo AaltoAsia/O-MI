@@ -51,7 +51,7 @@
                   <InfoItem name="model" type="mv:model" required="false">
                     <value>ExampleI</value>
                   </InfoItem>
-                  <InfoItem name="three-phasedCurrentAvailable" type="mv:three-phasedCurrentAvailable" required="false">
+                  <InfoItem name="threePhasedCurrentAvailable" type="mv:threePhasedCurrentAvailable" required="false">
                     <value type="xs:boolean">true</value>
                   </InfoItem>
                   <InfoItem name="isFastChargeCapable" type="mv:isFastChargeCapable"  required="false">
@@ -64,7 +64,7 @@
                       <InfoItem name="PlugType" type="mv:PlugType" required="false">
                         <value type="xs:string">Schuko Plug</value>
                       </InfoItem>
-                      <InfoItem name="three-phasedCurrentAvailable" type="mv:three-phasedCurrentAvailable" required="false">
+                      <InfoItem name="threePhasedCurrentAvailable" type="mv:threePhasedCurrentAvailable" required="false">
                         <value type="xs:boolean">true</value>
                       </InfoItem>
                       <InfoItem name="isFastChargeCapable" type="mv:isFastChargeCapable" required="false">
@@ -147,7 +147,7 @@
                           <InfoItem name="currentType" type="mv:currentType"/>
                           <InfoItem name="powerInkW" type="mv:powerInkW"/>
                           <InfoItem name="voltageInV" type="mv:voltageInV"/>
-                          <InfoItem name="three-phasedCurrentAvailable" type="mv:three-phasedCurrentAvailable"/>
+                          <InfoItem name="threePhasedCurrentAvailable" type="mv:threePhasedCurrentAvailable"/>
                           <InfoItem name="isFastChargeCapable" type="mv:isFastChargeCapable"/>
                           <Object type="list" >
                             <id>Plugs</id>
@@ -158,7 +158,7 @@
                               <InfoItem name="powerInkW" type="mv:powerInkW"/>
                               <InfoItem name="voltageInV" type="mv:voltageInV"/>
                               <InfoItem name="plugType" type="mv:PlugType"/>
-                              <InfoItem name="three-phasedCurrentAvailable" type="mv:three-phasedCurrentAvailable"/>
+                              <InfoItem name="threePhasedCurrentAvailable" type="mv:threePhasedCurrentAvailable"/>
                               <InfoItem name="isFastChargeCapable" type="mv:isFastChargeCapable"/>
                             </Object>
                           </Object>
@@ -373,7 +373,7 @@
               <InfoItem name="voltageInV" type="mv:voltageInV">
                 <value type="xs:double">230</value>
               </InfoItem>
-              <InfoItem name="three-phasedCurrentAvailable" type="mv:three-phasedCurrentAvailable">
+              <InfoItem name="threePhasedCurrentAvailable" type="mv:threePhasedCurrentAvailable">
                 <value type="xs:boolean">true</value>
               </InfoItem>
               <InfoItem name="isFastChargeCapable" type="mv:isFastChargeCapable">
@@ -398,7 +398,7 @@
                   <InfoItem name="voltageInV" type="mv:voltageInV">
                     <value type="xs:double">230</value>
                   </InfoItem>
-                  <InfoItem name="three-phasedCurrentAvailable" type="mv:three-phasedCurrentAvailable">
+                  <InfoItem name="threePhasedCurrentAvailable" type="mv:threePhasedCurrentAvailable">
                     <value type="xs:boolean">true</value>
                   </InfoItem>
                   <InfoItem name="isFastChargeCapable" type="mv:isFastChargeCapable">

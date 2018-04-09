@@ -48,7 +48,7 @@ object Charger{
        case ii: OdfInfoItem =>
         getDoubleFromInfoItem( ii )
      }.flatten
-     val tpca = obj.get( obj.path / "three-phasedCurrentAvailable" ).collect{
+     val tpca = obj.get( obj.path / "threephasedCurrentAvailable" ).collect{
        case ii: OdfInfoItem =>
         getBooleanFromInfoItem( ii )
      }.flatten
@@ -149,9 +149,9 @@ case class Charger(
     }.toVector
     val tpcaII = threePhasedCurrentAvailable.map{ tpca =>
       OdfInfoItem(
-        chargerPath / "three-phasedCurrentAvailable",
+        chargerPath / "threePhasedCurrentAvailable",
         Vector( OdfValue( tpca, currentTime ) ),
-        typeValue = Some( "mv:three-phasedCurrentAvailable" )
+        typeValue = Some( "mv:threePhasedCurrentAvailable" )
       )
     }.toVector
     val iFCCII = isFastChargeCapable.map{ iFCC=>
