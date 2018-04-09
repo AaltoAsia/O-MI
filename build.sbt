@@ -69,6 +69,7 @@ lazy val omiNode = (project in file("O-MI Node")).
   settings(
     (commonSettings("Backend") ++ 
      javadocSettings ++ Seq(
+      publish in Docker := {},
       parallelExecution in Test := false,
       //packageDoc in Compile += (baseDirectory).map( _ / html
       cleanFiles += {baseDirectory.value / "logs"},
@@ -82,6 +83,7 @@ lazy val agents = (project in file("Agents")).
   settings(commonSettings("Agents"): _*).
   settings(Seq(
     libraryDependencies ++= commonDependencies,
+    publish in Docker := {},
     crossTarget := (unmanagedBase in omiNode).value
     )).
     dependsOn(omiNode)
@@ -110,8 +112,11 @@ lazy val root = (project in file(".")).
     ///////////////////
     //Docker Settings//
     ///////////////////
-      packageName in Docker := "o-mi-reference",
+      packageName in Docker := "o-mi",
       dockerExposedPorts := Seq(8080, 8180),
+      dockerExposedVolumes := Seq("/opt/docker/logs"),
+      dockerRepository := Some("aaltoasia"),
+      //dockerUsername := Some("aaltoasia"),
 
     ////////////////////////////////////////////////
     //Locations to be cleared when using sbt clean//
