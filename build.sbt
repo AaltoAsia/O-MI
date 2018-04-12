@@ -30,7 +30,6 @@ addCommandAlias("systemTest", "omiNode/testOnly http.SystemTest")
 def commonSettings(moduleName: String) = Seq(
   name := s"O-MI-$moduleName",
   version := "0.10.1.dev", // WARN: Release ver must be "x.y.z" (no dashes, '-')
-  //version := "0.9.3", 
   scalaVersion := "2.11.8",
   scalacOptions := Seq("-unchecked", "-feature", "-deprecation", "-encoding", "utf8", "-Xlint"),
   scalacOptions in (Compile,doc) ++= Seq("-groups", "-deprecation", "-implicits", "-diagrams", "-diagrams-debug", "-encoding", "utf8"),
@@ -38,10 +37,8 @@ def commonSettings(moduleName: String) = Seq(
   autoAPIMappings := true,
   exportJars := true,
   EclipseKeys.withSource := true,
-  // coverage 1.3.x:
   coverageExcludedPackages := "parsing.xmlGen.*;",
 
-  // coverage 1.0.x:
   //ScoverageSbtPlugin.ScoverageKeys.coverageExcludedPackages := "parsing.xmlGen.*;"
   testFrameworks += new TestFramework("org.scalameter.ScalaMeterFramework"),
   logBuffered := false
@@ -69,6 +66,7 @@ lazy val omiNode = (project in file("O-MI Node")).
   settings(
     (commonSettings("Backend") ++ 
      javadocSettings ++ Seq(
+      publish in Docker := {},
       parallelExecution in Test := false,
       //packageDoc in Compile += (baseDirectory).map( _ / html
       cleanFiles += {baseDirectory.value / "logs"},
@@ -82,6 +80,7 @@ lazy val agents = (project in file("Agents")).
   settings(commonSettings("Agents"): _*).
   settings(Seq(
     libraryDependencies ++= commonDependencies,
+    publish in Docker := {},
     crossTarget := (unmanagedBase in omiNode).value
     )).
     dependsOn(omiNode)
@@ -110,8 +109,11 @@ lazy val root = (project in file(".")).
     ///////////////////
     //Docker Settings//
     ///////////////////
-      packageName in Docker := "o-mi-reference",
+      packageName in Docker := "o-mi",
       dockerExposedPorts := Seq(8080, 8180),
+      dockerExposedVolumes := Seq("/opt/docker/logs"),
+      dockerRepository := Some("aaltoasia"),
+      //dockerUsername := Some("aaltoasia"),
 
     ////////////////////////////////////////////////
     //Locations to be cleared when using sbt clean//

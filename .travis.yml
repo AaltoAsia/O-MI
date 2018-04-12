@@ -1,5 +1,5 @@
 dist: trusty
-sudo: false
+sudo: required
 git:
   depth: 4
 addons:
@@ -7,6 +7,8 @@ addons:
     packages:
       - fakeroot
 language: scala
+services:
+  - docker
 jdk:
   - oraclejdk8
 scala:
@@ -35,16 +37,21 @@ after_success:
 before_deploy:
   - sbt release debian:packageBin
 deploy:
-  provider: releases
-  api_key:
+  - provider: releases
+    api_key:
     secure: JL6HBX4DRR5jIf7x8cTFSKZRcnjCeAq3BpVfp4gfIknaYdW+Hs9wNE075hArVzeC9BqEJX3wdymguG7zznYpcRBrTXf8OInHFoOyMNvDGn4KHuAPUDp36BrkQLCys7tyVL6rI+ySx3wACWkx0Lwr30Mijtk12JlkRk/qy9h0Nj8=
-  file: 
-    - target/universal/o-mi-node-${TRAVIS_TAG}.zip
-    - target/universal/o-mi-node-${TRAVIS_TAG}.tgz
-    - target/O-MI-Node_${TRAVIS_TAG}_all.deb
-  draft: true
-  skip_cleanup: true
-  overwrite: true
-  on:
-    tags: true
-    all_branches: true
+    file: 
+      - target/universal/o-mi-node-${TRAVIS_TAG}.zip
+      - target/universal/o-mi-node-${TRAVIS_TAG}.tgz
+      - target/O-MI-Node_${TRAVIS_TAG}_all.deb
+    draft: true
+    skip_cleanup: true
+    overwrite: true
+    on:
+      tags: true
+      all_branches: true
+  - provider: script
+    script: bash docker_push
+    on:
+      tags: true
+      all_branches: true
