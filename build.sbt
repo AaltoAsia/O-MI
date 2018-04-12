@@ -74,7 +74,7 @@ lazy val omiNode = (project in file("O-MI Node")).
       target in (Compile, doc) := baseDirectory.value / "html" / "api",
       target in (JavaDoc, doc) := baseDirectory.value / "html" / "api" / "java",
       //Revolver.settings,
-      libraryDependencies ++= commonDependencies ++ testDependencies)): _*) //  ++ servletDependencies
+      libraryDependencies ++= commonDependencies ++ testDependencies)): _*)
 
 lazy val agents = (project in file("Agents")).
   settings(commonSettings("Agents"): _*).
