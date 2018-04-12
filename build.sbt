@@ -40,7 +40,6 @@ def commonSettings(moduleName: String) = Seq(
   // coverage 1.3.x:
   coverageExcludedPackages := "parsing.xmlGen.*;",
 
-  // coverage 1.0.x:
   //ScoverageSbtPlugin.ScoverageKeys.coverageExcludedPackages := "parsing.xmlGen.*;"
   testFrameworks += new TestFramework("org.scalameter.ScalaMeterFramework"),
   logBuffered := false

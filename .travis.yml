@@ -37,7 +37,8 @@ after_success:
 before_deploy:
   - sbt release debian:packageBin
 deploy:
-  - provider: releases
+  - 
+      provider: releases
       api_key:
       secure: JL6HBX4DRR5jIf7x8cTFSKZRcnjCeAq3BpVfp4gfIknaYdW+Hs9wNE075hArVzeC9BqEJX3wdymguG7zznYpcRBrTXf8OInHFoOyMNvDGn4KHuAPUDp36BrkQLCys7tyVL6rI+ySx3wACWkx0Lwr30Mijtk12JlkRk/qy9h0Nj8=
       file: 
@@ -50,7 +51,8 @@ deploy:
       on:
         tags: true
         all_branches: true
-  - provider: script
+  - 
+      provider: script
       script: bash docker_push
       on:
         tags: true
