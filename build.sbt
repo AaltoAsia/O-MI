@@ -37,7 +37,6 @@ def commonSettings(moduleName: String) = Seq(
   autoAPIMappings := true,
   exportJars := true,
   EclipseKeys.withSource := true,
-  // coverage 1.3.x:
   coverageExcludedPackages := "parsing.xmlGen.*;",
 
   //ScoverageSbtPlugin.ScoverageKeys.coverageExcludedPackages := "parsing.xmlGen.*;"
