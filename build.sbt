@@ -194,5 +194,4 @@ lazy val root = (project in file(".")).
 // Choose Tomcat or Jetty default settings and build a .war file with `sbt package`
 tomcat()
 // jetty()
-
   
