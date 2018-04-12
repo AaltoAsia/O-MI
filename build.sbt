@@ -88,7 +88,6 @@ lazy val agents = (project in file("Agents")).
 lazy val root = (project in file(".")).
   enablePlugins(JavaServerAppPackaging, SystemdPlugin).
   enablePlugins(DockerPlugin).
-  //enablePlugins(SystemdPlugin).
   //enablePlugins(CodacyCoveragePlugin).
   enablePlugins(RpmPlugin).
   settings(commonSettings("Node")).
