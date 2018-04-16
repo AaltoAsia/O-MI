@@ -38,7 +38,7 @@ script:
 after_success:
   - sbt "project omiNode" coverageReport coveralls codacyCoverage
 before_deploy:
-  - sbt release debian:packageBin
+  - sbt release
 deploy:
   - provider: releases
     api_key:
