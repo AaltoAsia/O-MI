@@ -7,6 +7,9 @@ addons:
     packages:
       - fakeroot
 language: scala
+before_install:
+  - sudo apt-get -qq update
+  -sudo apt-get install -y graphviz rpm
 services:
   - docker
 jdk:
@@ -23,7 +26,7 @@ branches:
     - master
     - development
     - travis
-    - /^[0-9]\.[0-9]\.[0-9].*$/
+    - /^\d+\.\d+\.\d+[.\- ].*$/
 cache:
   directories:
     - "$HOME/.ivy2/cache"
