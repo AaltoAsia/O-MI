@@ -46,7 +46,6 @@ def commonSettings(moduleName: String) = Seq(
 
 lazy val JavaDoc = config("genjavadoc") extend Compile
 
-//Something is broken
 lazy val javadocSettings = inConfig(JavaDoc)(Defaults.configSettings) ++ Seq(
   addCompilerPlugin("com.typesafe.genjavadoc" %% "genjavadoc-plugin" %
     "0.9" cross CrossVersion.full),
