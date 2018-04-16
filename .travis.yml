@@ -9,7 +9,7 @@ addons:
 language: scala
 before_install:
   - sudo apt-get -qq update
-  -sudo apt-get install -y graphviz rpm
+  - sudo apt-get install -y graphviz rpm
 services:
   - docker
 jdk:
