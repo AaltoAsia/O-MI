@@ -27,19 +27,16 @@ trait ODF//[M <: Map[Path,Node], S<: SortedSet[Path] ]
   //def copy( nodes : scala.collection.Map[Path,Node] ): ODF
 
 
-  def isEmpty:Boolean
-  def nonEmpty:Boolean
+  def isEmpty:Boolean = paths.isEmpty || (paths.size == 1 && paths.contains(Path("Objects")))
+  def nonEmpty:Boolean = !isEmpty
   def isRootOnly: Boolean = isEmpty
   def contains( path: Path ): Boolean = paths.contains(path)
 
-  def cutOut[TM <: Map[Path,Node], TS <: SortedSet[Path]]( that: ODF ): ODF
-  def cutOut( cutPaths: Set[Path] ): ODF
 
   def select( that: ODF ): ODF 
-  def getTree( paths: Seq[Path] ) : ODF
   def union[TM <: Map[Path,Node], TS <: SortedSet[Path]]( that: ODF ): ODF 
 
-  def removePaths( removedPaths: Iterable[Path]) : ODF  
+  def removePaths( removedPaths: Seq[Path]) : ODF  
 
   def immutable: ImmutableODF
   def mutable: MutableODF
@@ -58,9 +55,9 @@ trait ODF//[M <: Map[Path,Node], S<: SortedSet[Path] ]
     nodes.toVector:_*
   )
   def getChildPaths( path: Path): Seq[Path] = {
-    getSubTreePaths(path).filter {
+    paths.filter {
       p: Path => path.isParentOf(p)
-    }
+    }.toVector
   }
   def getChilds( path: Path): Seq[Node] = {
     getChildPaths(path).flatMap { p: Path => nodes.get(p) }.toVector
@@ -115,61 +112,13 @@ trait ODF//[M <: Map[Path,Node], S<: SortedSet[Path] ]
   }
 
   def get( path: Path): Option[Node] = nodes.get(path)
-  def getSubTreePaths( pathsToGet: Seq[Path]): Seq[Path] = {
-    paths.filter {
-      path: Path =>
-        pathsToGet.exists {
-          filter: Path =>
-            filter.isAncestorOf(path) || filter == path
-        }
-    }.toVector
-  }
-  def getUpTreePaths( pathsToGet: Seq[Path]): Seq[Path] = {
-    paths.filter {
-      path: Path =>
-        pathsToGet.exists {
-          filter: Path =>
-            filter.isDescendantOf(path) || filter == path
-        }
-    }.toVector
-  }
-  def getSubTreePaths( path: Path): Seq[Path] = {
-      paths
-        .iteratorFrom(path)
-        .takeWhile { p: Path => path.isAncestorOf(p) || p == path }
-        .toVector
-  }
-  def getUpTree( pathsToGet: Seq[Path]): Seq[Node] = {
-    nodes.values.filter {
-      node: Node =>
-        pathsToGet.exists {
-          filter: Path =>
-            filter.isDescendantOf(node.path) || filter == node.path
-        }
-    }.toVector
-  }
-  def getSubTree( pathsToGet: Seq[Path]): Seq[Node] = {
-    nodes.values.filter {
-      node: Node =>
-        pathsToGet.exists {
-          filter: Path =>
-            filter.isAncestorOf(node.path) || filter == node.path
-        }
-    }.toVector
-  }
-  def getSubTreeAsODF( pathsToGet: Seq[Path]): ODF
-  def getUpTreeAsODF( pathsToGet: Seq[Path]): ODF
-  
-  def getSubTree( path: Path): Seq[Node] = {
-    //nodes.get(path) ++
-      getSubTreePaths(path).flatMap { p: Path => nodes.get(p) }.toVector
-  }
 
-  def --( removedPaths: Iterable[Path] ) : ODF = removePaths( removedPaths )
+  def selectSubTree( pathsToGet: Seq[Path]): ODF
+  def selectUpTree( pathsToGet: Seq[Path]): ODF
+  def --( removedPaths: Seq[Path] ) : ODF = removePaths( removedPaths )
   def removePath( path: Path) : ODF
   def add( node: Node ) : ODF
   def addNodes( nodesToAdd: Seq[Node] ) : ODF 
-  def getSubTreeAsODF( path: Path): ODF
 
   implicit def asObjectsType : ObjectsType ={
     val firstLevelObjects= getChilds( new Path("Objects") )
@@ -225,10 +174,6 @@ trait ODF//[M <: Map[Path,Node], S<: SortedSet[Path] ]
     }
   }
   override lazy val hashCode: Int = this.nodes.hashCode
-  def intersection[TM <: Map[Path,Node], TS <: SortedSet[Path]]( that: ODF ) : ODF
-  def intersectingPaths[TM <: Map[Path,Node], TS <: SortedSet[Path]]( that: ODF ): SortedSet[Path] ={
-    paths.intersect(that.paths)
-  }
   def readTo(to: ODF) : ODF
   def readToNodes(to: ODF) : Seq[Node] ={
     val wantedPaths: SortedSet[Path] = this.paths.filter{
@@ -245,12 +190,12 @@ trait ODF//[M <: Map[Path,Node], S<: SortedSet[Path] ]
           case (None,_) => throw new Exception("Existing path does not map to node.")
           case (Some(obj: Object),None) => 
             obj.copy(
-              descriptions = {if( obj.descriptions.nonEmpty ) Vector(Description("")) else Vector.empty}
+              descriptions = {if( obj.descriptions.nonEmpty ) Set(Description("")) else Set.empty}
             )
           case (Some(ii: InfoItem),None) => 
             ii.copy(
               names = {if( ii.names.nonEmpty ) Vector(QlmID("")) else Vector.empty},
-              descriptions = {if( ii.descriptions.nonEmpty ) Vector(Description("")) else Vector.empty},
+              descriptions = {if( ii.descriptions.nonEmpty ) Set(Description("")) else Set.empty},
               metaData ={ if( ii.metaData.nonEmpty ) Some( MetaData.empty) else None}
             )
           case (Some(obj:Object),Some(toObj:Object)) => obj.readTo(toObj)

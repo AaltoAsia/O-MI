@@ -16,8 +16,6 @@ class MutableODF private[odf](
   type S = MutableTreeSet[Path]
   protected[odf] val paths: MutableTreeSet[Path] = MutableTreeSet( nodes.keys.toSeq:_* )(PathOrdering)
   def readTo(to: ODF) : ODF = MutableODF(readToNodes(to))
-  def isEmpty:Boolean = paths.size == 1 && paths.contains(Path("Objects"))
-  def nonEmpty:Boolean = paths.size > 1 
   def update[TM <: Map[Path,Node], TS <: SortedSet[Path]]( that: ODF ): ODF ={
     nodes.mapValues {
       node: Node =>
@@ -46,35 +44,21 @@ class MutableODF private[odf](
     }.toVector )
   } 
 
-  def cutOut( cutPaths: Set[Path] ): ODF ={
-  
-    //Remove intersecting paths.
-    //Generate ancestors for remaining paths, so that no parentless paths remains. 
-    //Remove duplicates
-    val newPaths = (paths -- cutPaths).flatMap {
-      path: Path => path.getAncestorsAndSelf
-    }.toSet
-    val removedPaths = cutPaths -- newPaths
-    this.nodes --= removedPaths
-    this.paths --= removedPaths
-    this
-  }
-  def cutOut[TM <: Map[Path,Node], TS <: SortedSet[Path]]( that: ODF ): ODF ={
-    cutOut( that.paths.toSet )
-  }
 
-  def getUpTreeAsODF( pathsToGet: Seq[Path]): ODF = {
+  def selectUpTree( pathsToGet: Seq[Path]): ODF = {
     MutableODF(
-      getUpTree( pathsToGet )
+      paths.filter{
+        ancestorPath: Path =>
+          pathsToGet.exists{
+            path: Path => 
+              path == ancestorPath ||
+              ancestorPath.isAncestorOf(path)
+          }
+      }.flatMap{
+        path: Path =>
+          nodes.get(path)
+      }.toVector
     )
-  }
-  def getTree( selectingPaths: Seq[Path] ) : ODF ={
-    val ancestorsPaths = selectingPaths.flatMap{ p => p.getAncestors }.toSet
-    val subTreePaths = getSubTreePaths( selectingPaths ).toSet
-    val nodesSelected = (subTreePaths ++ ancestorsPaths).flatMap{
-      path => nodes.get( path )
-    }
-    MutableODF( nodesSelected.toSeq )
   }
   def union[TM <: Map[Path,Node], TS <: SortedSet[Path]]( that: ODF ): ODF = {
     val pathIntersection: SortedSet[Path] = this.paths.intersect( that.paths)
@@ -106,8 +90,12 @@ class MutableODF private[odf](
     this.nodes ++= allNodes.map{ node => node.path -> node }
     this
   }
-  def removePaths( removedPaths: Iterable[Path]) : ODF = {
-    val subtrees = removedPaths.flatMap( getSubTreePaths( _ ) )
+  def removePaths( removedPaths: Seq[Path]) : ODF = {
+    val subtrees = paths.filter{
+      p =>
+        removedPaths.contains(p) ||
+        removedPaths.exists(_.isAncestorOf(p))
+    }.toSet
     this.nodes --= subtrees
     this.paths --= subtrees
     this
@@ -130,8 +118,8 @@ class MutableODF private[odf](
   }
   def descriptionsRemoved: ODF = {
     this.nodes.mapValues{
-      case ii: InfoItem => ii.copy( descriptions = Vector() )
-      case obj: Object => obj.copy( descriptions = Vector() )
+      case ii: InfoItem => ii.copy( descriptions = Set.empty )
+      case obj: Object => obj.copy( descriptions = Set.empty )
       case obj: Objects => obj
     }
     this
@@ -154,7 +142,10 @@ class MutableODF private[odf](
   }
   
   def removePath( path: Path) : ODF ={
-    val subtreeP = getSubTreePaths( path )
+    val subtreeP = paths.filter{
+      p =>
+        path.isAncestorOf(p) || p == path
+    }.toSet
     this.nodes --= subtreeP
     this.paths --= subtreeP
     this
@@ -192,34 +183,8 @@ class MutableODF private[odf](
     }
     this
   }
-  def getSubTreeAsODF( path: Path): ODF = {
-    val subtree: Seq[Node] = getSubTree( path)
-    val ancestors: Seq[Node] = path.getAncestors.flatMap {
-      ap: Path =>
-        nodes.get(ap)
-    }
-    MutableODF(
-        (subtree ++ ancestors).toVector
-    )
-  }
-  def intersection[TM <: Map[Path,Node], TS <: SortedSet[Path]]( that: ODF ) : ODF={
-    val iPaths = this.intersectingPaths(that)
-    MutableODF(
-      iPaths.map {
-        path: Path =>
-          (nodes.get(path), that.nodes.get(path)) match {
-            case (None, _) => throw new Exception(s"Not found element in intersecting path $path")
-            case (_, None) => throw new Exception(s"Not found element in intersecting path $path")
-            case (Some(ii: InfoItem), Some(oii: InfoItem)) => ii union oii
-            case (Some(obj: Object), Some(oObj: Object)) => obj union oObj
-            case (Some(objs: Objects), Some(oObjs: Objects)) => objs union oObjs
-            case (Some(l), Some(r)) => throw new Exception(s"Found nodes with different types in intersecting path $path")
-          }
-      }.toVector
-    )
   
-  }
-  def getSubTreeAsODF( pathsToGet: Seq[Path]): ODF = {
+  def selectSubTree( pathsToGet: Seq[Path]): ODF = {
     MutableODF(
       nodes.values.filter {
         node: Node =>

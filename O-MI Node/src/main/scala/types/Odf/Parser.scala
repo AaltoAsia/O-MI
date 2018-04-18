@@ -176,7 +176,7 @@ object ODFParser extends parsing.Parser[OdfParseResult] {
 
     val descriptions = obj.description.map { 
       des => new Description(des.value, des.lang) 
-    }.toVector
+    }.toSet
     val odfObj = Object(
       ids,
       npath,
@@ -218,7 +218,7 @@ object ODFParser extends parsing.Parser[OdfParseResult] {
       }.toVector
     val descriptions = item.description.map{ des =>
         Description( des.value, des.lang ) 
-      }.toVector
+      }.toSet
 
     val values = item.value.map{
         valueType => 

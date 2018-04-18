@@ -30,7 +30,7 @@ object OldTypeConverter{
       odfObject.typeValue,
       odfObject.description.map{
         des => convertOdfDescription(des)
-      }.toVector,
+      }.toSet,
       odfObject.attributes
     )
 
@@ -67,7 +67,7 @@ object OldTypeConverter{
       Vector(),
       odfII.description.map{
         des => convertOdfDescription(des)
-      }.toVector,
+      }.toSet,
       odfII.values.map{
         value => convertOdfValue( value )
       },

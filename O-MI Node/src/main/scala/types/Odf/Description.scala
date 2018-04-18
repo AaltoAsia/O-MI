@@ -4,7 +4,7 @@ package odf
 import parsing.xmlGen.scalaxb.DataRecord
 import parsing.xmlGen.xmlTypes._
 object Description{
-  def unionReduce( descs: Seq[Description] ): Seq[Description] ={
+  def unionReduce( descs: Set[Description] ): Seq[Description] ={
     descs.groupBy( _.language ).mapValues(
       descriptions => descriptions.foldLeft(Description(""))(_ union _)).values.toVector
   }

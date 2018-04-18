@@ -53,7 +53,7 @@ trait DBWriteHandler extends DBHandlerBase {
     val id = esub.id
     val callbackAddr = esub.callback
     val hTree = singleStores.hierarchyStore execute GetTree()
-    val odf = hTree.getSubTreeAsODF(odfWithoutTypes.getLeafPaths).descriptionsRemoved.metaDatasRemoved.union(odfWithoutTypes)
+    val odf = hTree.selectSubTree(odfWithoutTypes.getLeafPaths).descriptionsRemoved.metaDatasRemoved.union(odfWithoutTypes)
     //union with odfWithoutTypes to make sure that we don't lose odf branches that are not in hierarchy yet
     //and then intersect to get correct typeValues etc. from hierarchyTree
     //val odf = hTree.union(odfWithoutTypes.valuesRemoved).intersection(odfWithoutTypes)

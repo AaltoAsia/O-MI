@@ -31,8 +31,6 @@ case class ImmutableODF private[odf] (
   } 
   def readTo(to: ODF) : ODF = ImmutableODF(readToNodes(to))
   protected[odf] val paths: ImmutableTreeSet[Path] = ImmutableTreeSet( nodes.keys.toSeq:_* )(PathOrdering)
-  def isEmpty:Boolean = paths.size == 1 && paths.contains(Path("Objects"))
-  def nonEmpty:Boolean = paths.size > 1 
   def update[TM <: Map[Path,Node], TS <: SortedSet[Path]]( that: ODF ): ODF ={
     ImmutableODF(
     nodes.mapValues {
@@ -47,29 +45,8 @@ case class ImmutableODF private[odf] (
     }.values.toVector
     )
   }
-  def cutOut( cutPaths: Set[Path] ): ODF ={
-    //Remove intersecting paths.
-    //Generate ancestors for remaining paths, so that no parentless paths remains. 
-    //Remove duplicates
-    val newPaths = (paths -- cutPaths).flatMap {
-      case path: Path => path.getAncestorsAndSelf
-    }
-    val removedPaths = cutPaths -- newPaths
-    ImmutableODF(nodes -- removedPaths)
-  }
-  def cutOut[TM <: Map[Path,Node], TS <: SortedSet[Path]]( that: ODF ): ODF ={
-    cutOut( that.paths.toSet )
-  }
 
 
-  def getTree( selectingPaths: Seq[Path] ) : ODF ={
-    val ancestorsPaths = selectingPaths.flatMap{ p => p.getAncestors }.toSet
-    val subTreePaths = getSubTreePaths( selectingPaths )
-    val nodesSelected = (subTreePaths ++ ancestorsPaths).flatMap{
-      path => nodes.get( path )
-    }
-    ImmutableODF( nodesSelected )
-  }
   def union[TM <: Map[Path,Node], TS <: SortedSet[Path]]( that: ODF ): ODF = {
     val pathIntersection: SortedSet[Path] = this.paths.intersect( that.paths)
     val thisOnlyNodes: Set[Node] = (paths -- pathIntersection).flatMap {
@@ -104,13 +81,20 @@ case class ImmutableODF private[odf] (
     )
   }
 
-  def removePaths( pathsToRemove: Iterable[Path]) : ODF = {
-    val subTrees = pathsToRemove.flatMap{ p => getSubTreePaths(p) }.toSet
+  def removePaths( pathsToRemove: Seq[Path]) : ODF = {
+    val subTrees = paths.filter{
+      p =>
+        pathsToRemove.contains(p) ||
+        pathsToRemove.exists(_.isAncestorOf(p))
+    }.toSet
     this.copy( nodes -- subTrees )
   }
   
   def removePath( path: Path) : ODF ={
-    val subtreeP = getSubTreePaths( path )
+    val subtreeP = paths.filter{
+      p =>
+        path.isAncestorOf(p) || p == path
+    }
     this.copy( nodes -- subtreeP )
   }
 
@@ -141,12 +125,22 @@ case class ImmutableODF private[odf] (
     this.copy( newNodes )
   }
 
-  def getUpTreeAsODF( pathsToGet: Seq[Path]): ODF = {
+  def selectUpTree( pathsToGet: Seq[Path]): ODF = {
     ImmutableODF(
-      getUpTree( pathsToGet )
+      paths.filter{
+        ancestorPath: Path =>
+          pathsToGet.exists{
+            path: Path => 
+              path == ancestorPath ||
+              ancestorPath.isAncestorOf(path)
+          }
+      }.flatMap{
+        path: Path =>
+          nodes.get(path)
+      }.toVector
     )
   }
-  def getSubTreeAsODF( pathsToGet: Seq[Path]): ODF = {
+  def selectSubTree( pathsToGet: Seq[Path]): ODF = {
     val ps = paths.filter{
       path: Path =>
         pathsToGet.contains(path) ||
@@ -163,23 +157,6 @@ case class ImmutableODF private[odf] (
       }.toVector
     )
   }
-  def intersection[TM <: Map[Path,Node], TS <: SortedSet[Path]]( that: ODF ) : ODF={
-    val iPaths = this.intersectingPaths(that)
-    ImmutableODF(
-      iPaths.map {
-        path: Path =>
-          (nodes.get(path), that.nodes.get(path)) match {
-            case (None, _) => throw new Exception(s"Not found element in intersecting path $path")
-            case (_, None) => throw new Exception(s"Not found element in intersecting path $path")
-            case (Some(ii: InfoItem), Some(oii: InfoItem)) => ii intersection oii
-            case (Some(obj: Object), Some(oObj: Object)) => obj intersection oObj
-            case (Some(objs: Objects), Some(oObjs: Objects)) => objs intersection oObjs
-            case (Some(l), Some(r)) => throw new Exception(s"Found nodes with different types in intersecting path $path")
-          }
-      }.toVector
-    )
-  
-  }
 
   def valuesRemoved: ODF = this.copy( ImmutableHashMap( nodes.mapValues{ 
     case ii: InfoItem => ii.copy( values = Vector() )
@@ -187,8 +164,8 @@ case class ImmutableODF private[odf] (
     case obj: Objects => obj
   }.toVector:_*))
   def descriptionsRemoved: ODF = this.copy( ImmutableHashMap( nodes.mapValues{ 
-    case ii: InfoItem => ii.copy( descriptions = Vector())
-    case obj: Object => obj.copy( descriptions = Vector())
+    case ii: InfoItem => ii.copy( descriptions = Set.empty)
+    case obj: Object => obj.copy( descriptions = Set.empty)
     case obj: Objects => obj
   }.toVector:_*))
   def metaDatasRemoved: ODF = this.copy( ImmutableHashMap( nodes.mapValues{ 
@@ -236,15 +213,6 @@ case class ImmutableODF private[odf] (
       ImmutableHashMap(
         mutableHMap.toVector:_*
       )
-    )
-  }
-  def getSubTreeAsODF( path: Path): ODF = {
-    val subtree: Seq[Node] = getSubTree( path)
-    val ancestors: Seq[Node] = path.getAncestors.flatMap {
-      ap: Path => nodes.get(ap)
-    }
-    ImmutableODF(
-        (subtree ++ ancestors).toVector
     )
   }
   override def equals( that: Any ) : Boolean ={

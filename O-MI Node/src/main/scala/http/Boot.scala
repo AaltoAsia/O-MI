@@ -228,7 +228,7 @@ object OmiServer {
           name,
           settings.settingsOdfPath / name, 
           values = Vector(Value(settings.numLatestValues, "xs:integer", currentTime)),
-          descriptions = Vector(Description(numDescription))
+          descriptions = Set(Description(numDescription))
         )))
       system.log.info(s"Testing object created. $odf")
       

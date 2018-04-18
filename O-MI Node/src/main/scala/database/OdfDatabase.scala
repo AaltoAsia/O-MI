@@ -496,7 +496,7 @@ trait OdfDatabase extends Tables with DB with TrimmableDB{
           ii: InfoItem =>
             ii.copy(
               names = Vector.empty,
-              descriptions = Vector.empty,
+              descriptions = Set.empty,
               metaData = None,
               values = Vector( value)
             )}

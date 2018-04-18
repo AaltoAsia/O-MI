@@ -19,7 +19,7 @@ object InfoItem{
     path: Path,
     typeAttribute: Option[String],
     names: Vector[QlmID],
-    descriptions: Vector[Description],
+    descriptions: Set[Description],
     values: Vector[Value[Any]],
     metaData: Option[MetaData],
     attributes: IMap[String,String]
@@ -42,7 +42,7 @@ case class InfoItem(
   path: Path,
   typeAttribute: Option[String] = None,
   names: Vector[QlmID] = Vector.empty,
-  descriptions: Vector[Description]= Vector.empty,
+  descriptions: Set[Description]= Set.empty,
   values: Vector[Value[Any]]= Vector.empty,
   metaData: Option[MetaData] = None,
   attributes: IMap[String,String] = HashMap.empty
@@ -57,7 +57,7 @@ case class InfoItem(
       path,
       that.typeAttribute.orElse( typeAttribute ),
       QlmID.unionReduce( that.names ++ names).toVector.filter{ id => id.id.nonEmpty},
-      Description.unionReduce(that.descriptions ++ descriptions).toVector.filter(desc => desc.text.nonEmpty),
+      Description.unionReduce(descriptions ++ that.descriptions).toVector.filter(desc => desc.text.nonEmpty).toSet,
       if( that.values.nonEmpty ) that.values else values,
       that.metaData.flatMap {
         md: MetaData =>
@@ -70,6 +70,7 @@ case class InfoItem(
     )
 
   }
+  /*
   def intersection( that: InfoItem ): InfoItem ={
     val typeMatches = typeAttribute.forall {
       typeStr: String =>
@@ -97,7 +98,7 @@ case class InfoItem(
       },
       that.attributes ++ attributes 
     )
-  }
+  }*/
 
   def union( that: InfoItem ): InfoItem ={
     val typeMatches = typeAttribute.forall {
@@ -113,7 +114,7 @@ case class InfoItem(
       path,
       typeAttribute,
       QlmID.unionReduce(names ++ that.names).toVector,
-      Description.unionReduce(descriptions ++ that.descriptions).toVector,
+      Description.unionReduce(descriptions ++ that.descriptions).toSet,
       values ++ that.values,
       (metaData, that.metaData) match{
         case (Some( md ), Some( omd )) => Some( md.union(omd) )
@@ -175,7 +176,7 @@ case class InfoItem(
       nameTags.map{
           qlmid => qlmid.asQlmIDType
       },
-      this.descriptions.map {
+      this.descriptions.toVector.map {
         case des: Description =>
           des.asDescriptionType
       },
@@ -236,7 +237,7 @@ case class InfoItem(
       names = QlmID.unionReduce(names ++ to.names).toVector,
       typeAttribute = typeAttribute.orElse(to.typeAttribute),
       values = to.values ++ this.values,
-      descriptions = desc, 
+      descriptions = desc.toSet, 
       metaData = mD,
       attributes = attributes ++ to.attributes
     )

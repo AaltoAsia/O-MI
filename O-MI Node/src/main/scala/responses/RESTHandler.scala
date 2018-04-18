@@ -93,7 +93,7 @@ object RESTRequest{
           case ii: InfoItem => Some(ii.descriptions map (_.asDescriptionType))
           case n: Node => None
         } map {
-          case descriptions: Seq[xmlTypes.DescriptionType] =>
+          case descriptions: Set[xmlTypes.DescriptionType] =>
             descriptions.map{ 
               case desc: xmlTypes.DescriptionType =>
                 scalaxb.toXML[xmlTypes.DescriptionType](
@@ -110,9 +110,9 @@ object RESTRequest{
           case obj: Object =>
             val (objs: Seq[xmlTypes.ObjectType],iis: Seq[xmlTypes.InfoItemType]) = (singleStores.hierarchyStore execute GetTree() ).getChilds( obj.path).collect{
               case cobj: Object => 
-                cobj.copy(descriptions = Vector.empty).asObjectType( Vector.empty, Vector.empty )
+                cobj.copy(descriptions = Set.empty).asObjectType( Vector.empty, Vector.empty )
               case ii: InfoItem =>
-                ii.copy(descriptions = Vector.empty, values= Vector.empty, metaData = None ).asInfoItemType
+                ii.copy(descriptions = Set.empty, values= Vector.empty, metaData = None ).asInfoItemType
             }.partition{
               case cobj: xmlTypes.ObjectType => true
               case ii: xmlTypes.InfoItemType => false
@@ -126,7 +126,7 @@ object RESTRequest{
           case objs: Objects =>
             val childs: Seq[xmlTypes.ObjectType] = (singleStores.hierarchyStore execute GetTree()).getChilds( objs.path).collect{
               case obj: Object => 
-                obj.copy(descriptions = Vector.empty).asObjectType( Vector.empty, Vector.empty )
+                obj.copy(descriptions = Set.empty).asObjectType( Vector.empty, Vector.empty )
             }
             val xmlObjs =objs.asObjectsType(childs)
             val xmlR = scalaxb.toXML[xmlTypes.ObjectsType](
