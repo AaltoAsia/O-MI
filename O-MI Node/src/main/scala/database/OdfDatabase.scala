@@ -29,7 +29,7 @@ trait OdfDatabase extends Tables with DB with TrimmableDB{
 
   protected val settings : OmiConfigExtension
   protected val singleStores : SingleStores
-  protected val log = LoggerFactory.getLogger("SimplifiedDB")//FIXME: Better name
+  protected val log = LoggerFactory.getLogger("O-DF-database")//FIXME: Better name
   val pathToDBPath: TMap[Path, DBPath] = TMap()
 
   def initialize(): Unit = {
@@ -42,7 +42,7 @@ trait OdfDatabase extends Tables with DB with TrimmableDB{
             case paths: Seq[Path] => 
               log.info(s"Found following paths in DB:${paths.mkString("\n")}") 
           }
-          val infoItemDBPaths = pathsTable.getInfoItems
+          val infoItemDBPaths = pathsTable.selectAllInfoItems
 
           val valueTablesCreation = infoItemDBPaths.flatMap {
             dbPaths =>
@@ -205,7 +205,7 @@ trait OdfDatabase extends Tables with DB with TrimmableDB{
     val getAddedDBPaths =  pathAddingAction.flatMap {
       ids: Seq[Long] =>
         log.debug(s"Getting ${ids.length} paths by ids")
-        pathsTable.getByIDs(ids)
+        pathsTable.selectByIDs(ids)
     }
 
     val valueTableCreations = getAddedDBPaths.flatMap {
@@ -234,7 +234,7 @@ trait OdfDatabase extends Tables with DB with TrimmableDB{
     log.debug(s"Get leaf infoitems of odf")
     val valueWritingIOs = leafs.collect{
       case ii: InfoItem =>
-        pathsTable.getByPath(ii.path).flatMap {
+        pathsTable.selectByPath(ii.path).flatMap {
           dbPaths: Seq[DBPath] =>
             log.debug(s"Got ${dbPaths.length} DBPaths for ${ii.path}")
             val ios = dbPaths.collect {
@@ -332,11 +332,11 @@ trait OdfDatabase extends Tables with DB with TrimmableDB{
 
           val getNBetweenResults = tableByNameExists(valueTable.name).flatMap{
             case true =>
-              valueTable.getNBetween(beginO,endO,newestO,oldestO)
+              valueTable.selectNBetween(beginO,endO,newestO,oldestO)
             case false =>
               valueTable.schema.create.flatMap {
                 u: Unit =>
-                  valueTable.getNBetween(beginO, endO, newestO, oldestO)
+                  valueTable.selectNBetween(beginO, endO, newestO, oldestO)
               }
           }
           getNBetweenResults.map {
@@ -446,7 +446,7 @@ trait OdfDatabase extends Tables with DB with TrimmableDB{
     db.run(tables)
   }
   def dropDB(): Future[Unit] = {
-    val valueTableDrops = pathsTable.getInfoItems.flatMap {
+    val valueTableDrops = pathsTable.selectAllInfoItems.flatMap {
       dbPaths: Seq[DBPath] =>
         DBIO.sequence(dbPaths.map {
           case DBPath(Some(id), path, true) =>
