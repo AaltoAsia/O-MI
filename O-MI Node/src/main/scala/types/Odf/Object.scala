@@ -85,16 +85,20 @@ case class Object(
     
   }
   def createAncestors: Seq[Node] = {
-    path.getAncestors.map {
-      ancestorPath: Path =>
-        Object(
-          Vector(
-            new QlmID(
-              ancestorPath.last
-            )
-          ),
+    path.getAncestors.collect{
+      case ancestorPath: Path if ancestorPath.nonEmpty => 
+        if( ancestorPath == Path("Objects")){
+          Objects()
+        } else {
+          Object(
+            Vector(
+              new QlmID(
+                ancestorPath.last
+              )
+            ),
           ancestorPath
         )
+        }
     }.toVector
   }
   def createParent: Node = {
