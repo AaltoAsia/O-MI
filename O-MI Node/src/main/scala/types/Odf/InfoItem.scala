@@ -177,7 +177,7 @@ case class InfoItem(
           qlmid => qlmid.asQlmIDType
       },
       this.descriptions.toVector.map {
-        case des: Description =>
+        des: Description =>
           des.asDescriptionType
       },
       this.metaData.map(_.asMetaDataType).toSeq,

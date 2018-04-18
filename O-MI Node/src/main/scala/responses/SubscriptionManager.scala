@@ -252,7 +252,7 @@ class SubscriptionManager(
       .mapValues(_.sortBy(_.timestamp.getTime()))
 
     val combinedWithPaths: Map[Path,Seq[Value[Any]]] = odf.selectSubTree( pollInterval.paths ).getInfoItems.map{
-        case ii: InfoItem =>
+        ii: InfoItem =>
           ii.path -> Vector[Value[Any]]() 
       }.toMap[Path,Seq[Value[Any]]] ++ intervalData
       /*
