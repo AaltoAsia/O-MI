@@ -145,10 +145,10 @@ trait OdfDatabase extends Tables with DB with TrimmableDB{
           newDbPath
       }
     }
-    if (ret.isInfoItem != isInfoItem)
-      throw new IllegalArgumentException(
-        s"$path has Object/InfoItem conflict; Request has ${if (isInfoItem) "InfoItem" else "Object"} "+
-        s"while DB has ${if (ret.isInfoItem) "InfoItem" else "Object"}")
+  if (ret.isInfoItem != isInfoItem)
+    throw new IllegalArgumentException(
+      s"$path has Object/InfoItem conflict; Request has ${if (isInfoItem) "InfoItem" else "Object"} "+
+    s"while DB has ${if (ret.isInfoItem) "InfoItem" else "Object"}")
     else ret
   }
   private def reserveNewPaths(nodes: Set[Node]): Map[Path,DBPath] = {
@@ -158,13 +158,15 @@ trait OdfDatabase extends Tables with DB with TrimmableDB{
       val dbpath = returnOrReserve(path, isInfo)
       reserved ++ (dbpath match {
         case DBPath(None, _, _) =>
+          val ancestors = path.ancestors
+          val ancestorsNotReserved = ancestors.filterNot(reserved contains _)
+          log.debug(s" Following ancestors of Path $path are not yet reserved: ${ancestorsNotReserved}")
           Map(path -> dbpath) ++ (
-            path.ancestors
-              .filterNot(reserved contains _)
+          ancestorsNotReserved
               .map(returnOrReserve(_, isInfoItem = false))
               .collect{
                 case dbpath @ DBPath(None, _path, false) =>
-                  _path -> dbpath
+                  dbpath.path -> dbpath
               }
               .toMap
           )
@@ -172,15 +174,18 @@ trait OdfDatabase extends Tables with DB with TrimmableDB{
       })
     }
 
-    log.debug(s"Reserving New paths for ${nodes.size} nodes...")
-    val re= nodes.foldLeft(Map[Path,DBPath]()){ case (reserved: Map[Path,DBPath], node: Node) =>
-      node match {
-        case obj: Objects => handleNode(obj, isInfo = false, reserved)
-        case obj: Object => handleNode(obj, isInfo = false, reserved)
-        case ii: InfoItem => handleNode(ii, isInfo = true, reserved)
-      }
+    val newNodes = nodes.toSeq.sortBy(_.path)(Path.PathOrdering)
+    log.debug(s"Reserving New paths for ${newNodes.size} nodes...")
+    log.debug(s"Handle following nodes: ${newNodes.map(_.path).mkString("\n")}")
+    val re= newNodes.foldLeft(Map[Path,DBPath]()){
+      case (reserved: Map[Path,DBPath], node: Node) =>
+        node match {
+          case obj: Objects => handleNode(obj, isInfo = false, reserved)
+          case obj: Object => handleNode(obj, isInfo = false, reserved)
+          case ii: InfoItem => handleNode(ii, isInfo = true, reserved)
+        }
     }
-    log.debug(s"Reserved New paths for ${nodes.size} nodes")
+    log.debug(s"Reserved New paths for ${newNodes.size} nodes")
     re
   }
 

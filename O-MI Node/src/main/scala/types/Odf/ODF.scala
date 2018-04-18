@@ -66,7 +66,7 @@ trait ODF//[M <: Map[Path,Node], S<: SortedSet[Path] ]
     getChildPaths(path).flatMap { p: Path => nodes.get(p) }.toVector
   }
   def getLeafs: Vector[Node] = {
-    getLeafPaths.flatMap( nodes.get(_)).toVector
+    getLeafPaths.flatMap( nodes.get(_)).toVector.sortBy(_.path)(Path.PathOrdering)
   }
   def getLeafPaths: Set[Path] = {
     val ps = paths.toSeq

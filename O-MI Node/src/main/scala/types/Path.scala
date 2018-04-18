@@ -130,11 +130,11 @@ import OmiTypes.ResponseRequest
   }
   def nonEmpty: Boolean = toSeq.nonEmpty
   def isEmpty: Boolean = toSeq.isEmpty
-    def ancestorsAndSelf: Seq[Path] = toSeq.inits.map( Path(_)).toSeq
-    def ancestors: Seq[Path] = ancestorsAndSelf.tail
-    def length: Int = toSeq.length
-  def getAncestorsAndSelf: Seq[Path] = toSeq.inits.map( Path(_) ).filter( _.nonEmpty ).toVector ++ Vector(this)
-  def getAncestors: Seq[Path] = toSeq.inits.map( Path(_) ).filter( _.nonEmpty ).toVector
+  def ancestorsAndSelf: Seq[Path] = toSeq.inits.map( Path(_)).filter{ p => p.toSeq.nonEmpty}.toSeq
+      def ancestors: Seq[Path] = ancestorsAndSelf.tail
+      def length: Int = toSeq.length
+    def getAncestorsAndSelf: Seq[Path] = toSeq.inits.map( Path(_) ).filter( _.nonEmpty ).toVector ++ Vector(this)
+    def getAncestors: Seq[Path] = toSeq.inits.map( Path(_) ).filter( _.nonEmpty ).toVector
   def getParent: Path = Path(toSeq.init)
   }
 
