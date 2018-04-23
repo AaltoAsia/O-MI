@@ -17,41 +17,39 @@ package http
 import java.net.InetSocketAddress
 import java.util.Date
 
+import akka.actor.{ActorRef, ActorSystem, Props}
+import akka.http.scaladsl.Http.ServerBinding
+import akka.http.scaladsl.{Http, HttpExt}
+import akka.io.{IO, Tcp}
+import akka.pattern.ask
+import akka.stream.ActorMaterializer
+import akka.util.Timeout
+import analytics.AnalyticsStore
+import org.slf4j.{Logger, LoggerFactory}
+
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.language.postfixOps
 import scala.util.{Failure, Success, Try}
-import analytics.AnalyticsStore
-import org.slf4j.{Logger, LoggerFactory}
-import akka.actor.{ActorRef, ActorSystem, Props}
-import akka.stream.ActorMaterializer
-import akka.io.{IO, Tcp}
-import akka.pattern.ask
-import akka.util.Timeout
-import akka.http.scaladsl.{Http, HttpExt}
-import akka.http.scaladsl.Http.ServerBinding
-import akka.http.scaladsl.server.RouteResult
-import akka.stream.{ActorMaterializer, Materializer}
 //import akka.http.WebBoot
 //import akka.http.javadsl.ServerBinding
 
-import database._
 import agentSystem._
-import responses.{RequestHandler, SubscriptionManager, CallbackHandler}
-import types.odf._
-import types.OmiTypes.{OmiReturn,OmiResult,Results,WriteRequest,ResponseRequest}
-import types.OmiTypes.Returns.ReturnTypes._
-import types.Path
-import OmiServer._
+import database._
 import influxDB._
+import http.OmiServer._
+import responses.{CallbackHandler, RequestHandler, SubscriptionManager}
+import types.OmiTypes.Returns.ReturnTypes._
+import types.OmiTypes._
+import types.Path
+import types.odf._
 
 class OmiServer extends OmiNode{
 
 
   // we need an ActorSystem to host our application in
   implicit val system : ActorSystem = ActorSystem("on-core") 
-  implicit val materializer: ActorMaterializer = ActorMaterializer()(system)
-  import system.dispatcher // execution context for future
+  implicit val materializer: ActorMaterializer = ActorMaterializer()(system) // execution context for future
 
   /**
    * Settings loaded by akka (typesafe config) and our [[OmiConfigExtension]]

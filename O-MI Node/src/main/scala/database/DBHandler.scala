@@ -2,29 +2,15 @@ package database
 
 import java.lang.{Iterable => JavaIterable}
 
-
-
-import scala.collection.immutable.IndexedSeq
-import scala.collection.mutable.{Map => MutableMap}
-import scala.collection.immutable.Map
-import scala.concurrent.duration._
-import scala.concurrent.{Future, Promise, ExecutionContext}
-import scala.util.{Failure, Success, Try}
-import scala.xml.XML
-
-import akka.actor.{Actor, ActorRef, ActorSystem, ActorLogging, Props}
-import akka.pattern.ask
-import akka.util.Timeout
-import database._
-import responses.CallbackHandler
-import responses.CallbackHandler._
-import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
-import types.OdfTypes._
-import types.OmiTypes._
-import types.Path
-import analytics.{AddWrite, AnalyticsStore}
-import agentSystem.{AgentName, AgentResponsibilities}
 import agentSystem.AgentEvents._
+import agentSystem.{AgentName, AgentResponsibilities}
+import akka.actor.{Actor, ActorLogging, ActorRef, Props}
+import responses.CallbackHandler
+import types.OmiTypes._
+
+import scala.collection.mutable.{Map => MutableMap}
+import scala.concurrent.Future
+import scala.util.{Failure, Success}
 
 trait DBHandlerBase extends Actor 
   with ActorLogging{
@@ -61,7 +47,7 @@ class DBHandler(
   ) extends DBReadHandler
   with DBWriteHandler
 {
-  import context.{system, dispatcher}
+  import context.dispatcher
   def receive: PartialFunction[Any, Unit] = {
     case na: NewAgent => addAgent(na)
     case na: AgentStopped => agentStopped(na.agentName)

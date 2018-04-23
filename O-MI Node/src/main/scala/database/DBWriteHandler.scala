@@ -2,36 +2,21 @@ package database
 
 import java.lang.{Iterable => JavaIterable}
 
-
-
-import scala.collection.immutable.IndexedSeq
-import scala.collection.mutable.{Map => MutableMap}
-import scala.collection.immutable.Map
-import scala.concurrent.duration._
-import scala.concurrent.{Future, Promise, ExecutionContext}
-import scala.util.{Failure, Success, Try}
-import scala.util.control.NonFatal
-import scala.xml.XML
-
-import akka.actor.{Actor, ActorRef, ActorSystem, ActorLogging}
-import akka.pattern.ask
-import akka.util.Timeout
-import database._
-import parsing.xmlGen
+import analytics.AddWrite
 import parsing.xmlGen._
-import parsing.xmlGen.xmlTypes.MetaDataType
-import responses.CallbackHandler
 import responses.CallbackHandler._
 import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
-import types.odf._
 import types.OmiTypes._
 import types.Path
-import analytics.{AddWrite, AnalyticsStore}
-import agentSystem.AgentName
+import types.odf._
+
+import scala.collection.mutable.{Map => MutableMap}
+import scala.concurrent.Future
+import scala.concurrent.duration._
+import scala.util.Try
+import scala.util.control.NonFatal
 
 trait DBWriteHandler extends DBHandlerBase {
-
-  import context.system
 
   //, dispatcher}
 

@@ -2,22 +2,18 @@ package database
 
 import java.util.Date
 
+import analytics.{AddRead, AddUser}
+
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-import akka.actor.{Actor, ActorRef, ActorSystem, ActorLogging}
-import analytics.{AddUser, AddRead, AnalyticsStore}
-
 //import scala.collection.JavaConverters._ //JavaConverters provide explicit conversion methods
 //import scala.collection.JavaConversions.asJavaIterator
-import scala.xml.{NodeSeq, PrettyPrinter}
 //import akka.http.StatusCode
 
-import types.odf.{ NewTypeConverter, ImmutableODF, ODF, OldTypeConverter }
 import types.OmiTypes._
-import types.odf._
 import types.Path
-import types.Path._
+import types.odf.{ImmutableODF, ODF, _}
 
 trait DBReadHandler extends DBHandlerBase{
   /** Method for handling ReadRequest.

@@ -14,29 +14,22 @@
 package types
 package OmiTypes
 
-import java.lang.Iterable
-import java.sql.Timestamp
-import java.net.URI
-import java.util.GregorianCalendar
 import java.lang.{Iterable => JIterable}
-import javax.xml.datatype.DatatypeFactory
+import java.net.URI
+import java.sql.Timestamp
+
+import akka.actor.ActorRef
+import akka.http.scaladsl.model.RemoteAddress
+import parsing.xmlGen.scalaxb.DataRecord
+import parsing.xmlGen.xmlTypes._
+import parsing.xmlGen.{omiDefaultScope, xmlTypes}
+import types.odf._
 
 import scala.collection.JavaConversions._
 import scala.concurrent.duration._
-import scala.concurrent.{Future, ExecutionContext}
-import scala.util.{Try, Success, Failure}
 import scala.language.existentials
 import scala.util.{Failure, Success, Try}
 import scala.xml.NodeSeq
-
-import akka.actor.ActorRef
-
-import akka.http.scaladsl.model.RemoteAddress
-import parsing.xmlGen.scalaxb.DataRecord
-import parsing.xmlGen.{omiDefaultScope, scalaxb, xmlTypes}
-import parsing.xmlGen.xmlTypes._
-import responses.CallbackHandler
-import types.odf._
 
 trait JavaOmiRequest{
   def callbackAsJava(): JIterable[Callback]
@@ -92,7 +85,6 @@ case class ActorSenderInformation(
   actorRef: ActorRef
   ) extends SenderInformation{
 }
-import OmiRequestType._
 
 /**
  * This means request that is writing values
@@ -143,6 +135,7 @@ sealed trait RequestWrapper {
  */
 class RawRequestWrapper(val rawRequest: String, private val user0: UserInfo) extends RequestWrapper {
   import RawRequestWrapper._
+
   import scala.xml.pull._
   user = user0
 

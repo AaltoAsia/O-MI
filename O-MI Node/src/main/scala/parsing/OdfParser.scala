@@ -18,20 +18,17 @@ import java.sql.Timestamp
 import javax.xml.transform.Source
 import javax.xml.transform.stream.StreamSource
 
-import scala.collection.JavaConversions.asJavaIterable
-import scala.collection.immutable.HashMap
-import scala.util.{Failure, Success, Try}
-import scala.xml.{NodeSeq, Elem}
-
-import akka.http.scaladsl.model.RemoteAddress
 import parsing.xmlGen._
 import parsing.xmlGen.scalaxb.DataRecord
 import parsing.xmlGen.xmlTypes._
 import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
-import types.OdfTypes._
-import types.OdfTypes.{OdfQlmID => OdfOdfQlmID}
-import types.OmiTypes.UserInfo
+import types.OdfTypes.{OdfQlmID => OdfOdfQlmID, _}
 import types._
+
+import scala.collection.JavaConversions.asJavaIterable
+import scala.collection.immutable.HashMap
+import scala.util.{Failure, Success, Try}
+import scala.xml.{Elem, NodeSeq}
 
 /** Parser for data in O-DF format*/
 object OdfParser extends Parser[OdfParseResult] {
