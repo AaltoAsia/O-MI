@@ -52,6 +52,7 @@ trait Tables extends DBBase{
   type DBSIOro[Result] = DBIOAction[Seq[Result],Streaming[Result],Effect.Read] 
   type DBIOro[Result] = DBIOAction[Result, NoStream, Effect.Read]
   type DBIOwo[Result] = DBIOAction[Result, NoStream, Effect.Write]
+  type DBIOsw[Result] = DBIOAction[Result, NoStream, Effect.Schema with Effect.Write]
   type ReadWrite = Effect with Effect.Write with Effect.Read with Effect.Transactional
   type DBIOrw[Result] = DBIOAction[Result, NoStream, ReadWrite]
   implicit lazy val pathColumnType = MappedColumnType.base[Path, String](

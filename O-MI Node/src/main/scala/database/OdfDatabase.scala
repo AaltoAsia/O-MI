@@ -183,6 +183,7 @@ trait OdfDatabase extends Tables with DB with TrimmableDB{
           case obj: Objects => handleNode(obj, isInfo = false, reserved)
           case obj: Object => handleNode(obj, isInfo = false, reserved)
           case ii: InfoItem => handleNode(ii, isInfo = true, reserved)
+          case default: Node => throw new Exception("Unknown Node type.") 
         }
     }
     log.debug(s"Reserved New paths for ${newNodes.size} nodes")
@@ -289,9 +290,11 @@ trait OdfDatabase extends Tables with DB with TrimmableDB{
         }
     }
     log.debug("Running writing actions...")
-    val future = db.run(actions.transactionally)
+    val future:Future[OmiReturn] = db.run(actions.transactionally)
     future.onSuccess{
-      case re: OmiReturn => 
+      case default: OmiReturn => 
+        log.debug("Writing finished.")
+      case _ => 
         log.debug("Writing finished.")
     }
     future
@@ -354,7 +357,8 @@ trait OdfDatabase extends Tables with DB with TrimmableDB{
       val finalAction = DBIO.sequence(iiIOAs).map{
         case iis: Seq[InfoItem] if iis.nonEmpty =>
           Some(ImmutableODF(iis.toVector))
-        case objs: Seq[InfoItem] if objs.isEmpty => None
+        case iis: Seq[InfoItem] if iis.isEmpty => None
+        case _ => None
       }
       val r = db.run(finalAction.transactionally)
       r
@@ -362,10 +366,10 @@ trait OdfDatabase extends Tables with DB with TrimmableDB{
   }
 
   def remove(path: Path): Future[Seq[Int]] ={
-    val actions = pathToDBPath.single.get(path) match{
-      case Some( DBPath(Some(id), p, true) ) =>
-          valueTables.get(path) match{
-            case Some( pathValues ) =>
+    val actionsO: Option[DBIOsw[Int]] = pathToDBPath.single.get(path).collect{
+      case  DBPath(Some(id), p, true) =>
+          valueTables.get(path).map{
+            pathValues: PathValues  =>
               pathValues.schema.drop.flatMap {
                 u: Unit =>
                   atomic { implicit txn =>
@@ -374,17 +378,17 @@ trait OdfDatabase extends Tables with DB with TrimmableDB{
                   pathsTable.removeByIDs(Vector(id))
               }
           }
-      case Some( DBPath(Some(id), originPath, false) ) =>
+      case  DBPath(Some(id), originPath, false)  =>
           val ( objs, iis ) = pathToDBPath.single.values.filter { // FIXME: filter on a Map
             dbPath: DBPath => dbPath.path == originPath || dbPath.path.isDescendantOf(originPath)
           }.partition { dbPath: DBPath => dbPath.isInfoItem }
-          val tableDrops = iis.map{
+          val tableDrops = iis.collect{
             case DBPath(Some(_id), descendantPath, true)  =>
-            valueTables.get(descendantPath) match{
-              case Some( pathValues ) =>
+            valueTables.get(descendantPath).map{
+              pathValues: PathValues =>
                 pathValues.schema.drop
             }
-          }
+          }.flatten
           val tableDropsAction = DBIO.seq( tableDrops.toSeq:_* )
           val iiPaths =  iis.map( _.path)
           val removedPaths = objs.map( _.path ) ++ iiPaths 
@@ -394,12 +398,21 @@ trait OdfDatabase extends Tables with DB with TrimmableDB{
             pathToDBPath --= removedPaths
           }
           valueTables --= iiPaths
-          tableDropsAction.flatMap{
+         Some( tableDropsAction.flatMap{
             _ =>
               pathRemoves
-          }
+          })
+    }.flatten 
+    actionsO match{
+      case Some( actions: DBIOsw[Int] ) =>
+        db.run(actions.transactionally).map{ i: Int => Seq( i ) }
+      case None =>
+        Future.failed(
+          new Exception(
+            s"Could not find DBPpath for $path"
+          )
+        )
     }
-    db.run(actions.transactionally).map{ i: Int => Seq( i ) }
   }
 
   def trimDB(): Future[Seq[Int]] = {
@@ -448,7 +461,7 @@ trait OdfDatabase extends Tables with DB with TrimmableDB{
   def dropDB(): Future[Unit] = {
     val valueTableDrops = pathsTable.selectAllInfoItems.flatMap {
       dbPaths: Seq[DBPath] =>
-        DBIO.sequence(dbPaths.map {
+        DBIO.sequence(dbPaths.collect{
           case DBPath(Some(id), path, true) =>
             val pv = new PathValues(path, id)
             tableByNameExists(pv.name).flatMap {
