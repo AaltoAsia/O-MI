@@ -269,14 +269,11 @@ class OmiNodeCLI(
       Await.result(result, commandTimeout)
     } else {
       log.info(s"Trying to remove path $pathOrId")
-      if (removeHandler.handlePathRemove(Path(pathOrId))) {
-        log.info(s"Successfully removed path")
-        s"Successfully removed path $pathOrId\r\n>"
-      } else {
-        log.info(s"Given path does not exist")
-        s"Given path does not exist\r\n>"
+      val removeFuture: Future[Seq[Int]] = removeHandler.handlePathRemove(Seq(Path(pathOrId)))
+      val removeResult: Seq[Int] = Await.result(removeFuture,10 seconds)
+      log.info(s"Successfully removed: ${removeResult.sum} items")
+      s"Successfully removed path $pathOrId\r\n>"
       }
-    } //requestHandler isn't actor
 
   }
 
