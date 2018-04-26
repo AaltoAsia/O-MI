@@ -20,7 +20,7 @@ trait JavaOmiResult{
  **/
 class OmiResult(
   val returnValue : OmiReturn,
-  val requestIDs: OdfTreeCollection[RequestID] = OdfTreeCollection.empty,
+  val requestIDs: OdfCollection[RequestID] = OdfCollection.empty,
   val odf: Option[ODF] = None
 ) extends JavaOmiResult {
 
@@ -28,7 +28,7 @@ class OmiResult(
   def odfAsJava(): JIterable[ODF] = asJavaIterable(odf)
   def copy(
     returnValue : OmiReturn = this.returnValue,
-    requestIDs: OdfTreeCollection[RequestID] = this.requestIDs,
+    requestIDs: OdfCollection[RequestID] = this.requestIDs,
     odf: Option[ODF] = this.odf
   ): OmiResult = OmiResult(returnValue, requestIDs, odf)
 
@@ -98,13 +98,13 @@ trait UnionableResult{ this: OmiResult =>
 object OmiResult{
   def apply(
     returnValue : OmiReturn,
-    requestIDs: OdfTreeCollection[RequestID] = OdfTreeCollection.empty,
+    requestIDs: OdfCollection[RequestID] = OdfCollection.empty,
     odf: Option[ODF] = None
   ): OmiResult = new OmiResult(returnValue,requestIDs,odf) 
 }
 
 object Results{
-  def unionReduce(results: OdfTreeCollection[OmiResult]): OdfTreeCollection[OmiResult] ={
+  def unionReduce(results: OdfCollection[OmiResult]): OdfCollection[OmiResult] ={
     results.groupBy( _.getClass ).map{ 
       case (a: Any, rs : Seq[OmiResult]) => 
         if( rs.size == 1){
@@ -121,7 +121,7 @@ object Results{
 
 
     case class Success(
-      override val requestIDs: OdfTreeCollection[RequestID] = OdfTreeCollection.empty,
+      override val requestIDs: OdfCollection[RequestID] = OdfCollection.empty,
       override val odf: Option[ODF] = None,
       description: Option[String] = None
       ) extends OmiResult(
@@ -155,7 +155,7 @@ object Results{
       }
 
   case class SubscribedPathsNotFound(
-    paths: OdfTreeCollection[Path]
+    paths: OdfCollection[Path]
     ) extends OmiResult(
       Returns.SubscribedPathsNotFound(paths)
     ) with UnionableResult{
@@ -286,7 +286,7 @@ object Results{
       }
 
   case class NotFoundRequestIDs( 
-    override val requestIDs: OdfTreeCollection[RequestID] 
+    override val requestIDs: OdfCollection[RequestID] 
     ) extends OmiResult(
       Returns.NotFoundRequestIDs(),
       requestIDs
@@ -363,7 +363,7 @@ object Results{
     objects: ODF
     )  extends OmiResult( 
       Returns.Success(),
-      OdfTreeCollection(requestID),
+      OdfCollection(requestID),
       Some(objects)
     ) with UnionableResult{
       override def unionableWith(other: UnionableResult): Boolean = other match{
@@ -403,7 +403,7 @@ object Results{
           Some("Successfully started subscription")
         )
       ),
-    OdfTreeCollection(requestID)
+    OdfCollection(requestID)
   ){
   }
 

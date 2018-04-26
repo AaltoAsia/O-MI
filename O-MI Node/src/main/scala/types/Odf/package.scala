@@ -1,16 +1,17 @@
 package types 
 import java.lang.{Iterable => JavaIterable}
 import java.sql.Timestamp
-import java.util.GregorianCalendar
+import java.util.{GregorianCalendar, Dictionary}
 import javax.xml.datatype.{DatatypeFactory, XMLGregorianCalendar}
 
 import parsing.xmlGen.scalaxb._
 
 import scala.collection.immutable.{HashMap => ImmutableHashMap, TreeSet => ImmutableTreeSet}
+import scala.collection.JavaConverters._
 
 package object odf {
   type OdfParseResult = Either[JavaIterable[ParseError], ImmutableODF]
-  type OdfTreeCollection[T] = Vector[T]
+  type OdfCollection[T] = Vector[T]
   trait Unionable[T] { 
     def union(t: T): T 
   }
@@ -42,4 +43,8 @@ package object odf {
   def optionUnion[A]( left: Option[A], right: Option[A] ): Option[A]  ={
     right.orElse( left )
   }
+  def dictionaryToMap[K,V](dict: Dictionary[K,V] ): Map[K,V] ={
+    dict.asScala.toMap
+  }
+  
 }

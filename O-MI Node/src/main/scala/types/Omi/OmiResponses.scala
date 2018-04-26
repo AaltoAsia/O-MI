@@ -12,7 +12,7 @@ object Responses{
     objects : Option[ODF], 
     ttl: Duration
     ) : ResponseRequest =ResponseRequest(
-      OdfTreeCollection(
+      OdfCollection(
         Results.Success(
           odf = objects
         )
@@ -20,12 +20,12 @@ object Responses{
       ttl
     )
   def Success(
-    requestIDs: OdfTreeCollection[RequestID] = OdfTreeCollection.empty[RequestID], 
+    requestIDs: OdfCollection[RequestID] = OdfCollection.empty[RequestID], 
     objects : Option[ODF] = None, 
     description: Option[String] = None,
     ttl: Duration = 10.seconds
     ) : ResponseRequest =ResponseRequest(
-      OdfTreeCollection(
+      OdfCollection(
         Results.Success(
           requestIDs,
           objects,
@@ -36,27 +36,27 @@ object Responses{
     )
 
   def NotImplemented( ttl: Duration = 10.seconds) : ResponseRequest =ResponseRequest(
-    OdfTreeCollection(Results.NotImplemented()),
+    OdfCollection(Results.NotImplemented()),
     ttl
   )
   def Unauthorized( ttl: Duration = 10.seconds) : ResponseRequest =ResponseRequest(
-    OdfTreeCollection(Results.Unauthorized()),
+    OdfCollection(Results.Unauthorized()),
     ttl
   )
   def InvalidRequest(msg: Option[String] = None, ttl: Duration = 10.seconds) : ResponseRequest =ResponseRequest(
-    OdfTreeCollection(Results.InvalidRequest(msg)),
+    OdfCollection(Results.InvalidRequest(msg)),
     ttl
   )
   def InvalidCallback(callbackAddr: Callback, reason: Option[String] =None, ttl: Duration = 10.seconds ) : ResponseRequest =ResponseRequest(
-    OdfTreeCollection(Results.InvalidCallback(callbackAddr,reason)),
+    OdfCollection(Results.InvalidCallback(callbackAddr,reason)),
     ttl
   )
   def NotFoundPaths( objects: ODF, ttl: Duration = 10.seconds ) : ResponseRequest =ResponseRequest(
-    OdfTreeCollection(Results.NotFoundPaths(objects)),
+    OdfCollection(Results.NotFoundPaths(objects)),
     ttl
   )
 
-  def NoResponse() : ResponseRequest = new ResponseRequest(OdfTreeCollection.empty, 0.seconds){
+  def NoResponse() : ResponseRequest = new ResponseRequest(OdfCollection.empty, 0.seconds){
     override val asXML: NodeSeq = xml.NodeSeq.Empty
     override val asOmiEnvelope: parsing.xmlGen.xmlTypes.OmiEnvelopeType =
       throw new AssertionError("This request is not an omiEnvelope")
@@ -65,32 +65,32 @@ object Responses{
   def NotFound( description: String ) : ResponseRequest = NotFound( Some( description) )
   def NotFound( description: String, ttl: Duration ) : ResponseRequest = NotFound( Some( description),ttl )
   def NotFound( description: Option[String], ttl: Duration = 10.seconds ) : ResponseRequest = ResponseRequest(
-    OdfTreeCollection(Results.NotFound(description)),
+    OdfCollection(Results.NotFound(description)),
     ttl
   )
 
   def NotFoundRequestIDs( requestIDs: Vector[RequestID], ttl: Duration = 10.seconds ) : ResponseRequest =ResponseRequest(
-    OdfTreeCollection(Results.NotFoundRequestIDs(requestIDs)),
+    OdfCollection(Results.NotFoundRequestIDs(requestIDs)),
     ttl
   )
   def ParseErrors( errors: Vector[ParseError], ttl: Duration = 10.seconds ) : ResponseRequest =ResponseRequest(
-    OdfTreeCollection(Results.ParseErrors(errors)),
+    OdfCollection(Results.ParseErrors(errors)),
     ttl
   )
 
   def InternalError( message: Option[String] = None, ttl: Duration = 10.seconds ) : ResponseRequest =ResponseRequest(
-    OdfTreeCollection(Results.InternalError(message)),
+    OdfCollection(Results.InternalError(message)),
     ttl
   )
   def InternalError(e: Throwable, ttl: Duration): ResponseRequest = this.InternalError(Some(e.getMessage()),ttl)
   def InternalError(e: Throwable): ResponseRequest= this.InternalError(Some(e.getMessage()),10.seconds)
 
   def TTLTimeout(message: Option[String] = None, ttl: Duration = 10.seconds) : ResponseRequest =ResponseRequest(
-    OdfTreeCollection(Results.TTLTimeout(message)),
+    OdfCollection(Results.TTLTimeout(message)),
     ttl
   )
   def Poll( requestID: RequestID, objects: ODF, ttl: Duration = 10.seconds) : ResponseRequest =ResponseRequest(
-    OdfTreeCollection(
+    OdfCollection(
       Results.Poll(
         requestID,
         objects

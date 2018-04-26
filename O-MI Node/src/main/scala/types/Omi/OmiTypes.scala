@@ -107,7 +107,7 @@ sealed trait JavaRequestIDRequest{
  * Request that contains requestID(s) (read, cancel) 
  */
 sealed trait RequestIDRequest extends JavaRequestIDRequest{
-  def requestIDs : OdfTreeCollection[RequestID]
+  def requestIDs : OdfCollection[RequestID]
   def requestIDsAsJava() : JIterable[RequestID] = asJavaIterable(requestIDs)
 }
 
@@ -299,7 +299,7 @@ case class ReadRequest(
  **/
 case class PollRequest(
   callback: Option[Callback] = None,
-  requestIDs: OdfTreeCollection[Long ] = OdfTreeCollection.empty,
+  requestIDs: OdfCollection[Long ] = OdfCollection.empty,
   ttl: Duration = 10.seconds,
   private val user0: UserInfo = UserInfo(),
   senderInformation: Option[SenderInformation] = None,
@@ -490,7 +490,7 @@ case class DeleteRequest(
  * Cancel request, for cancelling subscription.
  **/
 case class CancelRequest(
-  requestIDs: OdfTreeCollection[Long ] = OdfTreeCollection.empty,
+  requestIDs: OdfCollection[Long ] = OdfCollection.empty,
   ttl: Duration = 10.seconds,
   private val user0: UserInfo = UserInfo(),
   senderInformation: Option[SenderInformation] = None,
@@ -523,7 +523,7 @@ trait JavaResponseRequest{
  * Response request, contains result for other requests
  **/
 class ResponseRequest(
-  val results: OdfTreeCollection[OmiResult],
+  val results: OdfCollection[OmiResult],
   val ttl: Duration,
   val callback : Option[Callback] = None,
   private val user0: UserInfo = UserInfo(),
@@ -538,7 +538,7 @@ class ResponseRequest(
   }
   def resultsAsJava(): JIterable[OmiResult] = asJavaIterable(results)
   def copy(
-    results: OdfTreeCollection[OmiResult] = this.results,
+    results: OdfCollection[OmiResult] = this.results,
     ttl: Duration = this.ttl,
     callback: Option[Callback] = this.callback,
     senderInformation: Option[SenderInformation] = this.senderInformation,
@@ -597,7 +597,7 @@ class ResponseRequest(
 
 object ResponseRequest{
   def apply(
-    results: OdfTreeCollection[OmiResult],
+    results: OdfCollection[OmiResult],
     ttl: Duration = 10.seconds
   ) : ResponseRequest = new ResponseRequest( results, ttl)
 }

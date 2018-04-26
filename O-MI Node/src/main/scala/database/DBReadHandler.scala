@@ -61,7 +61,7 @@ trait DBReadHandler extends DBHandlerBase{
            case ii: InfoItem
            if ii.hasStaticData => 
              log.debug(ii.toString)
-             ii.copy(values = OdfTreeCollection())
+             ii.copy(values = OdfCollection())
            case obj: Object 
              if obj.hasStaticData =>
              log.debug(obj.toString)

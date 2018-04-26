@@ -169,7 +169,7 @@ object OmiParser extends Parser[OmiParseResult] {
       Right(Iterable(
         PollRequest(
           callback,
-          OdfTreeCollection(read.requestID.map(parseRequestID):_*),
+          OdfCollection(read.requestID.map(parseRequestID):_*),
           ttl
         )))
     } else{
@@ -283,7 +283,7 @@ object OmiParser extends Parser[OmiParseResult] {
   private[this] def parseCancel(cancel: xmlTypes.CancelRequestType, ttl: Duration): OmiParseResult = {
     Right(Iterable(
       CancelRequest(
-        OdfTreeCollection(cancel.requestID.map(parseRequestID):_*),
+        OdfCollection(cancel.requestID.map(parseRequestID):_*),
         ttl
       )
     ))
@@ -291,14 +291,14 @@ object OmiParser extends Parser[OmiParseResult] {
   private[this] def parseResponse(response: xmlTypes.ResponseListType, ttl: Duration): OmiParseResult = Try{
     Iterable(
       ResponseRequest(
-        OdfTreeCollection(response.result.map{
+        OdfCollection(response.result.map{
           result =>
             OmiResult(
               OmiReturn(
                 result.returnValue.returnCode,
                 result.returnValue.description
               ),
-            OdfTreeCollection( result.requestID.map(parseRequestID) : _* ),
+            OdfCollection( result.requestID.map(parseRequestID) : _* ),
             result.msg.map {
               msg: xmlGen.xmlTypes.MsgType =>
                 //TODO: figure right type parameter
