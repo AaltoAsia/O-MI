@@ -38,10 +38,12 @@ trait OdfDatabase extends Tables with DB with TrimmableDB{
       tableNames: Seq[String] =>
         val queries = if (tableNames.contains("PATHSTABLE")) {
           //Found needed table, check for value tables
-          db.run(pathsTable.currentPaths).onSuccess{
-            case paths: Seq[Path] => 
-              log.info(s"Found following paths in DB:${paths.mkString("\n")}") 
-          }
+          /*
+          val currentPathsF: Future[Seq[Path]] = db.run(pathsTable.currentPaths)
+            currentPathsF.foreach{
+              paths: Seq[Path] => 
+                log.info(s"Found following paths in DB:${paths.mkString("\n")}") 
+          }*/
           val infoItemDBPaths = pathsTable.selectAllInfoItems
 
           val valueTablesCreation = infoItemDBPaths.flatMap {
@@ -183,7 +185,7 @@ trait OdfDatabase extends Tables with DB with TrimmableDB{
           case obj: Objects => handleNode(obj, isInfo = false, reserved)
           case obj: Object => handleNode(obj, isInfo = false, reserved)
           case ii: InfoItem => handleNode(ii, isInfo = true, reserved)
-          case default: Node => throw new Exception("Unknown Node type.") 
+          case default => throw new Exception("Unknown Node type.") 
         }
     }
     log.debug(s"Reserved New paths for ${newNodes.size} nodes")
@@ -292,9 +294,7 @@ trait OdfDatabase extends Tables with DB with TrimmableDB{
     log.debug("Running writing actions...")
     val future:Future[OmiReturn] = db.run(actions.transactionally)
     future.onSuccess{
-      case default: OmiReturn => 
-        log.debug("Writing finished.")
-      case _ => 
+      case default => 
         log.debug("Writing finished.")
     }
     future
@@ -440,17 +440,17 @@ trait OdfDatabase extends Tables with DB with TrimmableDB{
     ).transactionally )
   }
 
-  def logPathsTable ={
+  def logPathsTables: Unit ={
     val pathsLog =pathsTable.result.map{
       dbPaths => log.debug(s"PATHSTABLE CONTAINS CURRENTLY:\n${dbPaths.mkString("\n")}") 
     }
     db.run(pathsLog)
   }
-  def logValueTables() ={
+  def logValueTables(): Unit ={
     val tmp = valueTables.mapValues(vt => vt.name)
     log.debug(s"CURRENTLY VALUE TABLES IN MAP:\n${tmp.mkString("\n")}") 
   }
-  def logAllTables ={
+  def logAllTables: Unit ={
     val tables = MTable.getTables.map{
       tables =>
         val names = tables.map( _.name.name)
@@ -465,8 +465,9 @@ trait OdfDatabase extends Tables with DB with TrimmableDB{
           case DBPath(Some(id), path, true) =>
             val pv = new PathValues(path, id)
             tableByNameExists(pv.name).flatMap {
-              case true => pv.schema.drop
-              case false => DBIO.successful()
+              default: Boolean => 
+                if( default ) pv.schema.drop
+                else DBIO.successful()
             }
         })
     }
