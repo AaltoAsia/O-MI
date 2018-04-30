@@ -270,10 +270,17 @@ class OmiNodeCLI(
     } else {
       log.info(s"Trying to remove path $pathOrId")
       val removeFuture: Future[Seq[Int]] = removeHandler.handlePathRemove(Seq(Path(pathOrId)))
-      val removeResult: Seq[Int] = Await.result(removeFuture,10 seconds)
-      log.info(s"Successfully removed: ${removeResult.sum} items")
-      s"Successfully removed path $pathOrId\r\n>"
+      Await.ready(removeFuture,10 seconds)
+      removeFuture.value match {
+        case Some(Success(x)) if x.sum > 0 => {
+          log.info(s"Successfully removed: ${x.sum} items")
+          return s"Successfully removed path $pathOrId\r\n>"
+        }
+        case Some(Success(x)) => return s"Could not remove $pathOrId\r\n>"
+        case Some(Failure(ex)) => {log.error(ex, "Error while removing");s"Failed to remove$pathOrId\r\n>"}
+        case None => return "Given Path does not exists\r\n>"
       }
+    }
 
   }
 
