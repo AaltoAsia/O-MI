@@ -270,7 +270,7 @@ object OmiParser extends Parser[OmiParseResult] {
           case Left(errors)  => Left(errors)
           case Right(odf) =>
             Right(Iterable(
-              CallRequest(
+              DeleteRequest(
                 odf,
                 callback,
                 ttl
