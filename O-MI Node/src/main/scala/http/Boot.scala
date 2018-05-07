@@ -57,16 +57,18 @@ class OmiServer extends OmiNode{
   val settings : OmiConfigExtension = OmiConfig(system)
 
   val singleStores = new SingleStores(settings)
-  val dbConnection: DB  = settings.databaseImplementation match {
-    case "slick" => new DatabaseConnection()(
+  val dbConnection: DB  = settings.databaseImplementation.toUpperCase match {
+    case "SLICK" => new DatabaseConnection()(
       system,
       singleStores,
       settings
     )
-    case "influxDB" => new InfluxDBImplementation( 
+    case "INFLUXDB" => new InfluxDBImplementation(
        InfluxDBConfig( system )
       )( system, singleStores )
-    case "warp10" => ???
+    case "WARP10" => ???
+
+    case default => new StubDB(singleStores)
   }
 /*
   val dbConnection: DB = new influxdb.InfluxDBImplementation(

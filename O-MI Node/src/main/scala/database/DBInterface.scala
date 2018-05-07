@@ -26,6 +26,7 @@ import org.prevayler.{Prevayler, PrevaylerFactory}
 import parsing.xmlGen.xmlTypes.MetaDataType
 import slick.backend.DatabaseConfig
 import slick.jdbc.meta.MSchema
+import types.OmiTypes.ReturnCode
 //import slick.driver.H2Driver.api._
 import slick.driver.JdbcProfile
 import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
@@ -243,6 +244,77 @@ class DatabaseConnection()(
      if (fileExt == "sqlite3" || fileExt == "db")
        new File(dbPath).delete()
   }
+}
+
+class StubDB(val singleStores: SingleStores) extends DB{
+  import scala.concurrent.ExecutionContext.Implicits.global
+  def initialize(): Unit = Unit;
+
+  /**
+    * Used to get result values with given constrains in parallel if possible.
+    * first the two optional timestamps, if both are given
+    * search is targeted between these two times. If only start is given,all values from start time onwards are
+    * targeted. Similarly if only end is given, values before end time are targeted.
+    * Then the two Int values. Only one of these can be present. fromStart is used to select fromStart number
+    * of values from the beginning of the targeted area. Similarly from ends selects fromEnd number of values from
+    * the end.
+    * All parameters except the first are optional, given only the first returns all requested data
+    *
+    * @param requests SINGLE requests in a list (leafs in request O-DF); InfoItems, Objects and MetaDatas
+    * @param begin    optional start Timestamp
+    * @param end      optional end Timestamp
+    * @param newest   number of values to be returned from start
+    * @param oldest   number of values to be returned from end
+    * @return Combined results in a O-DF tree
+    */
+  def getNBetween(requests: Iterable[Node], begin: Option[Timestamp], end: Option[Timestamp], newest: Option[Int], oldest: Option[Int]): Future[Option[ODF]] = {
+    readLatestFromCache(
+      requests.map{
+        node => node.path
+      }.toSeq
+    )
+  }
+
+  def readLatestFromCache( requestedOdf: ODF ): Future[Option[ImmutableODF]] ={
+    readLatestFromCache(requestedOdf.getLeafPaths.toSeq)
+  }
+  def readLatestFromCache( leafPaths: Seq[Path]): Future[Option[ImmutableODF]] =Future{
+    // NOTE: Might go off sync with tree or values if the request is large,
+    // but it shouldn't be a big problem
+    val  p2iis = (singleStores.hierarchyStore execute GetTree()).getInfoItems.collect{
+      case ii: InfoItem if leafPaths.exists{ path: Path => path.isAncestorOf( ii.path) || path == ii.path} =>
+        ii.path -> ii
+    }.toMap
+
+    val pathToValue = singleStores.latestStore execute LookupSensorDatas( p2iis.keys.toVector)
+    val objectsWithValues = ImmutableODF(pathToValue.flatMap{
+      case ( path: Path, value: Value[Any]) =>
+        p2iis.get(path).map{
+          ii: InfoItem =>
+            ii.copy(
+              names = Vector.empty,
+              descriptions = Set.empty,
+              metaData = None,
+              values = Vector( value)
+            )}
+    }.toVector)
+    Some(objectsWithValues)
+  }
+  /**
+    * Used to set many values efficiently to the database.
+    *
+    * @param data list item to be added consisting of Path and OdfValue[Any] tuples.
+    */
+  def writeMany(data: Seq[InfoItem]): Future[OmiReturn] = {
+    Future.successful(OmiReturn.apply(ReturnCode.Success))
+  }
+
+  /**
+    * Used to remove given path and all its descendants from the database.
+    *
+    * @param path Parent path to be removed.
+    */
+  def remove(path: Path): Future[Seq[Int]] = Future.successful(Seq())
 }
 
 
