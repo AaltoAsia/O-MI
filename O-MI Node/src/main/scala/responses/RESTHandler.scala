@@ -134,9 +134,9 @@ object RESTRequest{
             ).headOption.getOrElse(
               <error>Could not create from odf.Objects </error>
             )
-            println("\n\n"+objs.toString)
-            println("\n\n"+xmlObjs.toString)
-            println("\n\n"+xmlR.toString)
+            //println("\n\n"+objs.toString)
+            //println("\n\n"+xmlObjs.toString)
+            //println("\n\n"+xmlR.toString)
             xmlR
 
           case infoitem: InfoItem =>
