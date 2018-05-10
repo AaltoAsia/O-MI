@@ -331,14 +331,7 @@ class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with Bef
   def addSub(ttl: Long, interval: Long, paths: Seq[Path], callback: String = "") = {
     val hTree = singleStores.hierarchyStore execute GetTree()
     val basePath = Path("Objects","SubscriptionTest")
-    val p = hTree.getSubTreeAsODF( paths.map( basePath / _ ) )
-    /*
-    val p = paths.flatMap(p => hTree.get( basePath / p))
-              .map(types.OdfTypes.createAncestors(_))
-              .reduceOption(_.union(_))
-              .getOrElse(throw new Exception("subscription path did not exist"))
-
-              */
+    val p = hTree.selectSubTree( paths.map( basePath / _ ) )
     val req = SubscriptionRequest( interval seconds, p, None, None, None, ttl seconds)
     implicit val timeout : Timeout = req.handleTTL
     Await.result((requestHandler ? req).mapTo[ResponseRequest], Duration.Inf)

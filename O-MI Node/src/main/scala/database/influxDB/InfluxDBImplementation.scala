@@ -375,7 +375,7 @@ class InfluxDBImplementation(
    def pathToMeasurementName(path: Path ): String = path.toString.replace("=","\\=").replace(",","\\,")
    def remove( path: Path ): Future[Seq[Int]] ={
       val cachedODF = singleStores.hierarchyStore execute GetTree()
-      val removedIIs = cachedODF.getSubTreeAsODF(path).getInfoItems
+      val removedIIs = cachedODF.selectSubTree(Vector(path)).getInfoItems
       val query = "q=" + removedIIs.map {
         ii: InfoItem =>
           val mName = pathToMeasurementName(ii.path)

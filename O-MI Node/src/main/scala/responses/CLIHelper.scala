@@ -43,7 +43,10 @@ class CLIHelper(val singleStores: SingleStores, dbConnection: DB )(implicit syst
     nodeO match {
       case Some(node) => {
 
-        val leafs = odf.getSubTreePaths(node.path)
+        val leafs = odf.getPaths.filter{
+          p: Path => 
+          node.path.isAncestorOf(p)
+        }
 
         singleStores.hierarchyStore execute TreeRemovePath(parentPath)
 

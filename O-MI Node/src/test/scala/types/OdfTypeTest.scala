@@ -17,6 +17,14 @@ import types.OdfTypes._
 class OdfTypesTest extends mutable.Specification{
   val testTime : Timestamp = Timestamp.valueOf("2017-05-11 15:44:55")
   sequential
+  "Object" should {
+    "union correctly" >> objectUnionTest
+    "update correctly" >> objectUpdateTest
+  }
+  "InfoItem" should {
+    "union correctly" >> infoItemUnionTest
+    "update correctly" >> infoItemUpdateTest
+  }
   "ImmubtableODF" should {
     val o_df = ImmutableODF( testingNodes )
     "create all given paths and their ancestors" in createCorrect(o_df)
@@ -30,6 +38,8 @@ class OdfTypesTest extends mutable.Specification{
     "return all SubTree paths when asked" in getCorrectSubTree(o_df)
     "create correct XML presentation" in toXMLTest(o_df)
     "add also missing ancestors when a Node is added" in addTest(o_df) 
+    "be empty if contains only Objects" in emptyTestMutable
+    "be nonEmpty if contains any additional nodes to Objects" in nonEmptyTestMutable
   }
   "ODFParser" should {
     val o_df = ImmutableODF( testingNodes )
@@ -42,19 +52,35 @@ class OdfTypesTest extends mutable.Specification{
     "Convert from old to new and back to old and stay the same" in repeatedOldConvertTest
     "Convert from new to old and back to new and stay the same" in repeatedNewConvertTest
   }
-  "Object" should {
-    "union correctly" >> objectUnionTest
+
+  def emptyTestMutable ={
+    val odf = MutableODF(
+      Vector(
+        Objects()
+      )
+    )
+    odf.getPaths.size <= 1 and 
+    odf.getPaths.contains(OdfPath("Objects")) === true and 
+    odf.isEmpty === true
   }
-  "InfoItem" should {
-    "union correctly" >> infoItemUnionTest
+  def nonEmptyTestMutable ={
+    val odf = MutableODF(
+      Vector(
+        InfoItem(
+          "test",
+          OdfPath("Objects","Obj","test")
+        )
+      )
+    )
+    odf.nonEmpty === true
   }
   def convertedNewHasSameXML ={
     val p = new scala.xml.PrettyPrinter(120, 4)
     val newType = ImmutableODF( testingNodes )
     val newTypeWithoutNamesForIIs = ImmutableODF( testingNodes.map{
       case obj: Objects => obj
-      case obj: Object => obj.copy( descriptions = obj.descriptions.headOption.toVector)
-      case ii: InfoItem => ii.copy( names = Vector(), descriptions = ii.descriptions.headOption.toVector)
+      case obj: Object => obj.copy( descriptions = obj.descriptions.headOption.toSet)
+      case ii: InfoItem => ii.copy( names = Vector(), descriptions = ii.descriptions.headOption.toSet)
     } )
     val oldType = NewTypeConverter.convertODF( newType )
     oldType.asXML showAs {
@@ -84,8 +110,8 @@ class OdfTypesTest extends mutable.Specification{
     val newType = ImmutableODF( testingNodes )
     val newTypeWithoutNamesForIIs = ImmutableODF( testingNodes.map{
       case obj: Objects => obj
-      case obj: Object => obj.copy( descriptions = obj.descriptions.headOption.toVector)
-      case ii: InfoItem => ii.copy( names = Vector(), descriptions = ii.descriptions.headOption.toVector)
+      case obj: Object => obj.copy( descriptions = obj.descriptions.headOption.toSet)
+      case ii: InfoItem => ii.copy( names = Vector(), descriptions = ii.descriptions.headOption.toSet)
     } )
     val iODF = newTypeWithoutNamesForIIs
     val oldType = NewTypeConverter.convertODF( iODF )
@@ -142,14 +168,16 @@ class OdfTypesTest extends mutable.Specification{
     )
 
   }
-
-
-  def infoItemUnionTest ={
+  def infoItemUpdateTest ={
     val lII = InfoItem(
       "II",
       OdfPath( "Objects","Obj","II"),
+      typeAttribute = Some( "test"),
       names =         Vector(QlmID( "II1" )),
-      descriptions =  Vector(Description("test", Some("English"))),
+      descriptions =  Set(
+        Description("test", Some("English")),
+        Description("test", Some("Finnish"))
+      ),
       values =        Vector(Value( "test",testTime )),
       metaData =      Some(MetaData(Vector(InfoItem( "MD1", OdfPath( "Objects","Obj","II","MetaData","MD1"))))),
       attributes =    HashMap( "test1" -> "test" )
@@ -158,7 +186,72 @@ class OdfTypesTest extends mutable.Specification{
       "II",
       OdfPath( "Objects","Obj","II"),
      names =         Vector(QlmID( "II2" )),
-     descriptions =  Vector(Description("test", Some("Finnish"))),
+     typeAttribute = Some( "testi"),
+     descriptions =  Set(
+       Description("testi", Some("Finnish")),
+       Description("test", Some("Swedesh"))
+     ),
+     values =        Vector(Value( 31,testTime )),
+     metaData =      Some(MetaData(Vector(InfoItem( "MD2", OdfPath( "Objects","Obj","II","MetaData","MD2"))))),
+     attributes =    HashMap( "test2" -> "test" )
+    )
+    val correct = InfoItem(
+      "II",
+      OdfPath( "Objects","Obj","II"),
+     typeAttribute = Some( "testi"),
+     names =         Vector(QlmID("II2"),QlmID( "II1" )),
+     descriptions =  Set(
+        Description("test", Some("English")),
+        Description("testi", Some("Finnish")),
+        Description("test", Some("Swedesh"))
+      ),
+     values =        Vector(Value( 31,testTime )),
+     metaData =      Some(MetaData(Vector(
+     InfoItem( "MD1", OdfPath( "Objects","Obj","II","MetaData","MD1")),
+       InfoItem( "MD2", OdfPath( "Objects","Obj","II","MetaData","MD2"))
+     ))),
+     attributes = HashMap( "test1" -> "test", "test2" -> "test" )
+    )
+    
+    val updated = lII.update(rII) 
+    checkIIMatch(updated,correct)
+  }
+  def checkIIMatch(test: InfoItem, correct: InfoItem) ={
+    (test.nameAttribute === correct.nameAttribute) and
+    (test.path === correct.path) and
+    (test.typeAttribute === correct.typeAttribute) and
+    (test.names === correct.names) and
+    (test.descriptions === correct.descriptions) and
+    (test.values === correct.values) and
+    (test.metaData === correct.metaData) and
+    (test.attributes === correct.attributes) and
+    (test should beEqualTo( correct)) 
+  }
+  def checkObjectMatch(test: Object,correct: Object ) = {
+    (test.ids === correct.ids) and
+    (test.path === correct.path) and
+    (test.typeAttribute === correct.typeAttribute) and
+    (test.descriptions === correct.descriptions) and
+    (test.attributes === correct.attributes) and
+    (test should beEqualTo( correct ) ) 
+  }
+
+
+  def infoItemUnionTest ={
+    val lII = InfoItem(
+      "II",
+      OdfPath( "Objects","Obj","II"),
+      names =         Vector(QlmID( "II1" )),
+      descriptions =  Set(Description("test", Some("English"))),
+      values =        Vector(Value( "test",testTime )),
+      metaData =      Some(MetaData(Vector(InfoItem( "MD1", OdfPath( "Objects","Obj","II","MetaData","MD1"))))),
+      attributes =    HashMap( "test1" -> "test" )
+      )
+    val rII =  InfoItem(
+      "II",
+      OdfPath( "Objects","Obj","II"),
+     names =         Vector(QlmID( "II2" )),
+     descriptions =  Set(Description("test", Some("Finnish"))),
      values =        Vector(Value( 31,testTime )),
      metaData =      Some(MetaData(Vector(InfoItem( "MD2", OdfPath( "Objects","Obj","II","MetaData","MD2"))))),
      attributes =    HashMap( "test2" -> "test" )
@@ -167,7 +260,7 @@ class OdfTypesTest extends mutable.Specification{
       "II",
       OdfPath( "Objects","Obj","II"),
      names =         Vector(QlmID("II2"),QlmID( "II1" )),
-     descriptions =  Vector(Description("test", Some("English")),Description("test", Some("Finnish"))),
+     descriptions =  Set(Description("test", Some("English")),Description("test", Some("Finnish"))),
      values =        Vector(Value( "test",testTime ),Value( 31,testTime )),
      metaData =      Some(MetaData(Vector(
      InfoItem( "MD1", OdfPath( "Objects","Obj","II","MetaData","MD1")),
@@ -176,7 +269,8 @@ class OdfTypesTest extends mutable.Specification{
      attributes = HashMap( "test1" -> "test", "test2" -> "test" )
     )
     
-    lII.union(rII) should beEqualTo( correct) 
+    val unioned = lII.union(rII) 
+    checkIIMatch(unioned,correct)
   }
 
   def objectUnionTest ={
@@ -184,24 +278,48 @@ class OdfTypesTest extends mutable.Specification{
       Vector( QlmID( "Obj" ), QlmID( "O1" )),
       OdfPath( "Objects","Obj" ),
       Some( "test1" ),
-      Vector(Description("test", Some("English"))),
+      Set(Description("test", Some("English"))),
       HashMap( "test1" -> "test" )
     )
     val rObj = Object(
       Vector( QlmID( "Obj" ), QlmID( "O2" )),
       OdfPath( "Objects","Obj" ),
       Some( "test2" ),
-      Vector(Description("test", Some("Finnish"))),
+      Set(Description("test", Some("Finnish"))),
       HashMap( "test2" -> "test" )
     )
     val correct = Object(
       Vector( QlmID( "O2" ), QlmID( "O1" ), QlmID( "Obj" )),
       OdfPath( "Objects","Obj" ),
       Some( "test1 test2" ),
-      Vector(Description("test", Some("English")),Description("test", Some("Finnish"))),
+      Set(Description("test", Some("English")),Description("test", Some("Finnish"))),
       HashMap( "test1" -> "test", "test2" -> "test" )
     )
-    lObj.union(rObj) should beEqualTo( correct) 
+    checkObjectMatch(lObj.union(rObj),correct) 
+  }
+  def objectUpdateTest ={
+    val lObj = Object(
+      Vector( QlmID( "Obj" ), QlmID( "O1" )),
+      OdfPath( "Objects","Obj" ),
+      Some( "test1" ),
+      Set(Description("test", Some("English"))),
+      HashMap( "test1" -> "test" )
+    )
+    val rObj = Object(
+      Vector( QlmID( "Obj" ), QlmID( "O2" )),
+      OdfPath( "Objects","Obj" ),
+      Some( "test2" ),
+      Set(Description("test", Some("Finnish"))),
+      HashMap( "test2" -> "test" )
+    )
+    val correct = Object(
+      Vector( QlmID( "O2" ), QlmID( "O1" ), QlmID( "Obj" )),
+      OdfPath( "Objects","Obj" ),
+      Some( "test2" ),
+      Set(Description("test", Some("English")),Description("test", Some("Finnish"))),
+      HashMap( "test1" -> "test", "test2" -> "test" )
+    )
+    checkObjectMatch(lObj.update(rObj),correct) 
   }
 
   def createCorrect[M<:scala.collection.Map[OdfPath,Node],S <: scala.collection.SortedSet[OdfPath]](
@@ -227,8 +345,9 @@ class OdfTypesTest extends mutable.Specification{
   def getCorrectSubTree[M<:scala.collection.Map[OdfPath,Node],S <: scala.collection.SortedSet[OdfPath]](
     o_df: ODF
   ) = {
-    o_df.getSubTreePaths( OdfPath("Objects","ObjectA")).toSet should contain(
+    o_df.selectSubTree( Seq(OdfPath("Objects","ObjectA"))).getPaths.toSet should contain(
       Set(
+        OdfPath("Objects"),
         OdfPath("Objects","ObjectA"),
         OdfPath("Objects","ObjectA","II1"),
         OdfPath("Objects","ObjectA","II2")
@@ -272,10 +391,11 @@ class OdfTypesTest extends mutable.Specification{
         )),
         attributes = testingAttributes
       )
-    o_df.add( beAdded ).getSubTreePaths( 
-      OdfPath("Objects","ObjectN")
-    ).toSet should contain(
+    o_df.add( beAdded ).selectSubTree( 
+      Seq(OdfPath("Objects","ObjectN"))
+    ).getPaths.toSet should contain(
       Set(
+        OdfPath("Objects"),
         OdfPath("Objects","ObjectN"),
         OdfPath("Objects","ObjectN","SubObj"),
         OdfPath("Objects","ObjectN","SubObj","II1")
@@ -434,7 +554,7 @@ class OdfTypesTest extends mutable.Specification{
   def testingAttributes = Map{
     "testing" -> "true"
   }
-  def testingDescription =Vector(
+  def testingDescription =Set(
     Description(
       "Testing",
       Some("English")

@@ -14,16 +14,14 @@
 
 package authorization
 
-import scala.util.{Failure, Success, Try}
-
-import akka.event.LoggingAdapter
-import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Directive.SingleValueModifiers
+import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.server.util.Tupler._
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
+import org.slf4j.{Logger, LoggerFactory}
 import types.OmiTypes._
+
+import scala.util.{Failure, Success, Try}
 
 
 //////////////////

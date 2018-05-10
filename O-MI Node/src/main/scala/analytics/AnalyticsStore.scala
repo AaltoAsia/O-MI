@@ -107,7 +107,7 @@ class AnalyticsStore(
               values = Vector(
                 Value(value, tt)
               ),
-              descriptions = Vector(Description(desc))
+              descriptions = Set(Description(desc))
               //None//Some(MetaData(Vector(InfoItem(path./("syntax"),Vector(Value(desc, tt))))))
             )
           )

@@ -29,7 +29,7 @@ trait OdfDatabase extends Tables with DB with TrimmableDB{
 
   protected val settings : OmiConfigExtension
   protected val singleStores : SingleStores
-  protected val log = LoggerFactory.getLogger("SimplifiedDB")//FIXME: Better name
+  protected val log = LoggerFactory.getLogger("O-DF-database")//FIXME: Better name
   val pathToDBPath: TMap[Path, DBPath] = TMap()
 
   def initialize(): Unit = {
@@ -38,11 +38,13 @@ trait OdfDatabase extends Tables with DB with TrimmableDB{
       tableNames: Seq[String] =>
         val queries = if (tableNames.contains("PATHSTABLE")) {
           //Found needed table, check for value tables
-          db.run(pathsTable.currentPaths).onSuccess{
-            case paths: Seq[Path] => 
-              log.info(s"Found following paths in DB:${paths.mkString("\n")}") 
-          }
-          val infoItemDBPaths = pathsTable.getInfoItems
+          /*
+          val currentPathsF: Future[Seq[Path]] = db.run(pathsTable.currentPaths)
+            currentPathsF.foreach{
+              paths: Seq[Path] => 
+                log.info(s"Found following paths in DB:${paths.mkString("\n")}") 
+          }*/
+          val infoItemDBPaths = pathsTable.selectAllInfoItems
 
           val valueTablesCreation = infoItemDBPaths.flatMap {
             dbPaths =>
@@ -145,10 +147,10 @@ trait OdfDatabase extends Tables with DB with TrimmableDB{
           newDbPath
       }
     }
-    if (ret.isInfoItem != isInfoItem)
-      throw new IllegalArgumentException(
-        s"$path has Object/InfoItem conflict; Request has ${if (isInfoItem) "InfoItem" else "Object"} "+
-        s"while DB has ${if (ret.isInfoItem) "InfoItem" else "Object"}")
+  if (ret.isInfoItem != isInfoItem)
+    throw new IllegalArgumentException(
+      s"$path has Object/InfoItem conflict; Request has ${if (isInfoItem) "InfoItem" else "Object"} "+
+    s"while DB has ${if (ret.isInfoItem) "InfoItem" else "Object"}")
     else ret
   }
   private def reserveNewPaths(nodes: Set[Node]): Map[Path,DBPath] = {
@@ -158,13 +160,15 @@ trait OdfDatabase extends Tables with DB with TrimmableDB{
       val dbpath = returnOrReserve(path, isInfo)
       reserved ++ (dbpath match {
         case DBPath(None, _, _) =>
+          val ancestors = path.ancestors
+          val ancestorsNotReserved = ancestors.filterNot(reserved contains _)
+          log.debug(s" Following ancestors of Path $path are not yet reserved: ${ancestorsNotReserved}")
           Map(path -> dbpath) ++ (
-            path.ancestors
-              .filterNot(reserved contains _)
+          ancestorsNotReserved
               .map(returnOrReserve(_, isInfoItem = false))
               .collect{
                 case dbpath @ DBPath(None, _path, false) =>
-                  _path -> dbpath
+                  dbpath.path -> dbpath
               }
               .toMap
           )
@@ -172,15 +176,19 @@ trait OdfDatabase extends Tables with DB with TrimmableDB{
       })
     }
 
-    log.debug(s"Reserving New paths for ${nodes.size} nodes...")
-    val re= nodes.foldLeft(Map[Path,DBPath]()){ case (reserved: Map[Path,DBPath], node: Node) =>
-      node match {
-        case obj: Objects => handleNode(obj, isInfo = false, reserved)
-        case obj: Object => handleNode(obj, isInfo = false, reserved)
-        case ii: InfoItem => handleNode(ii, isInfo = true, reserved)
-      }
+    val newNodes = nodes.toSeq.sortBy(_.path)(Path.PathOrdering)
+    log.debug(s"Reserving New paths for ${newNodes.size} nodes...")
+    log.debug(s"Handle following nodes: ${newNodes.map(_.path).mkString("\n")}")
+    val re= newNodes.foldLeft(Map[Path,DBPath]()){
+      case (reserved: Map[Path,DBPath], node: Node) =>
+        node match {
+          case obj: Objects => handleNode(obj, isInfo = false, reserved)
+          case obj: Object => handleNode(obj, isInfo = false, reserved)
+          case ii: InfoItem => handleNode(ii, isInfo = true, reserved)
+          case default => throw new Exception("Unknown Node type.") 
+        }
     }
-    log.debug(s"Reserved New paths for ${nodes.size} nodes")
+    log.debug(s"Reserved New paths for ${newNodes.size} nodes")
     re
   }
 
@@ -200,7 +208,7 @@ trait OdfDatabase extends Tables with DB with TrimmableDB{
     val getAddedDBPaths =  pathAddingAction.flatMap {
       ids: Seq[Long] =>
         log.debug(s"Getting ${ids.length} paths by ids")
-        pathsTable.getByIDs(ids)
+        pathsTable.selectByIDs(ids)
     }
 
     val valueTableCreations = getAddedDBPaths.flatMap {
@@ -229,7 +237,7 @@ trait OdfDatabase extends Tables with DB with TrimmableDB{
     log.debug(s"Get leaf infoitems of odf")
     val valueWritingIOs = leafs.collect{
       case ii: InfoItem =>
-        pathsTable.getByPath(ii.path).flatMap {
+        pathsTable.selectByPath(ii.path).flatMap {
           dbPaths: Seq[DBPath] =>
             log.debug(s"Got ${dbPaths.length} DBPaths for ${ii.path}")
             val ios = dbPaths.collect {
@@ -284,9 +292,9 @@ trait OdfDatabase extends Tables with DB with TrimmableDB{
         }
     }
     log.debug("Running writing actions...")
-    val future = db.run(actions.transactionally)
+    val future:Future[OmiReturn] = db.run(actions.transactionally)
     future.onSuccess{
-      case re: OmiReturn => 
+      case default => 
         log.debug("Writing finished.")
     }
     future
@@ -327,11 +335,11 @@ trait OdfDatabase extends Tables with DB with TrimmableDB{
 
           val getNBetweenResults = tableByNameExists(valueTable.name).flatMap{
             case true =>
-              valueTable.getNBetween(beginO,endO,newestO,oldestO)
+              valueTable.selectNBetween(beginO,endO,newestO,oldestO)
             case false =>
               valueTable.schema.create.flatMap {
                 u: Unit =>
-                  valueTable.getNBetween(beginO, endO, newestO, oldestO)
+                  valueTable.selectNBetween(beginO, endO, newestO, oldestO)
               }
           }
           getNBetweenResults.map {
@@ -349,7 +357,8 @@ trait OdfDatabase extends Tables with DB with TrimmableDB{
       val finalAction = DBIO.sequence(iiIOAs).map{
         case iis: Seq[InfoItem] if iis.nonEmpty =>
           Some(ImmutableODF(iis.toVector))
-        case objs: Seq[InfoItem] if objs.isEmpty => None
+        case iis: Seq[InfoItem] if iis.isEmpty => None
+        case _ => None
       }
       val r = db.run(finalAction.transactionally)
       r
@@ -357,10 +366,10 @@ trait OdfDatabase extends Tables with DB with TrimmableDB{
   }
 
   def remove(path: Path): Future[Seq[Int]] ={
-    val actions = pathToDBPath.single.get(path) match{
-      case Some( DBPath(Some(id), p, true) ) =>
-          valueTables.get(path) match{
-            case Some( pathValues ) =>
+    val actionsO: Option[DBIOsw[Int]] = pathToDBPath.single.get(path).collect{
+      case  DBPath(Some(id), p, true) =>
+          valueTables.get(path).map{
+            pathValues: PathValues  =>
               pathValues.schema.drop.flatMap {
                 u: Unit =>
                   atomic { implicit txn =>
@@ -369,17 +378,17 @@ trait OdfDatabase extends Tables with DB with TrimmableDB{
                   pathsTable.removeByIDs(Vector(id))
               }
           }
-      case Some( DBPath(Some(id), originPath, false) ) =>
+      case  DBPath(Some(id), originPath, false)  =>
           val ( objs, iis ) = pathToDBPath.single.values.filter { // FIXME: filter on a Map
             dbPath: DBPath => dbPath.path == originPath || dbPath.path.isDescendantOf(originPath)
           }.partition { dbPath: DBPath => dbPath.isInfoItem }
-          val tableDrops = iis.map{
+          val tableDrops = iis.collect{
             case DBPath(Some(_id), descendantPath, true)  =>
-            valueTables.get(descendantPath) match{
-              case Some( pathValues ) =>
+            valueTables.get(descendantPath).map{
+              pathValues: PathValues =>
                 pathValues.schema.drop
             }
-          }
+          }.flatten
           val tableDropsAction = DBIO.seq( tableDrops.toSeq:_* )
           val iiPaths =  iis.map( _.path)
           val removedPaths = objs.map( _.path ) ++ iiPaths 
@@ -389,12 +398,21 @@ trait OdfDatabase extends Tables with DB with TrimmableDB{
             pathToDBPath --= removedPaths
           }
           valueTables --= iiPaths
-          tableDropsAction.flatMap{
+         Some( tableDropsAction.flatMap{
             _ =>
               pathRemoves
-          }
+          })
+    }.flatten 
+    actionsO match{
+      case Some( actions: DBIOsw[Int] ) =>
+        db.run(actions.transactionally).map{ i: Int => Seq( i ) }
+      case None =>
+        Future.failed(
+          new Exception(
+            s"Could not find DBPpath for $path"
+          )
+        )
     }
-    db.run(actions.transactionally).map{ i: Int => Seq( i ) }
   }
 
   def trimDB(): Future[Seq[Int]] = {
@@ -422,17 +440,17 @@ trait OdfDatabase extends Tables with DB with TrimmableDB{
     ).transactionally )
   }
 
-  def logPathsTable ={
+  def logPathsTables: Unit ={
     val pathsLog =pathsTable.result.map{
       dbPaths => log.debug(s"PATHSTABLE CONTAINS CURRENTLY:\n${dbPaths.mkString("\n")}") 
     }
     db.run(pathsLog)
   }
-  def logValueTables() ={
+  def logValueTables(): Unit ={
     val tmp = valueTables.mapValues(vt => vt.name)
     log.debug(s"CURRENTLY VALUE TABLES IN MAP:\n${tmp.mkString("\n")}") 
   }
-  def logAllTables ={
+  def logAllTables: Unit ={
     val tables = MTable.getTables.map{
       tables =>
         val names = tables.map( _.name.name)
@@ -441,14 +459,15 @@ trait OdfDatabase extends Tables with DB with TrimmableDB{
     db.run(tables)
   }
   def dropDB(): Future[Unit] = {
-    val valueTableDrops = pathsTable.getInfoItems.flatMap {
+    val valueTableDrops = pathsTable.selectAllInfoItems.flatMap {
       dbPaths: Seq[DBPath] =>
-        DBIO.sequence(dbPaths.map {
+        DBIO.sequence(dbPaths.collect{
           case DBPath(Some(id), path, true) =>
             val pv = new PathValues(path, id)
             tableByNameExists(pv.name).flatMap {
-              case true => pv.schema.drop
-              case false => DBIO.successful()
+              default: Boolean => 
+                if( default ) pv.schema.drop
+                else DBIO.successful()
             }
         })
     }
@@ -491,7 +510,7 @@ trait OdfDatabase extends Tables with DB with TrimmableDB{
           ii: InfoItem =>
             ii.copy(
               names = Vector.empty,
-              descriptions = Vector.empty,
+              descriptions = Set.empty,
               metaData = None,
               values = Vector( value)
             )}

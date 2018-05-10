@@ -15,30 +15,27 @@ package agents
 
 import java.net.InetSocketAddress
 
-import scala.collection.JavaConversions.iterableAsScalaIterable
-import scala.concurrent.duration._
-import scala.concurrent.Await
-import scala.util.{Failure, Success, Try}
+import agentSystem._
 import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, Props}
 import akka.http.scaladsl.model.RemoteAddress
-import akka.util.Timeout
-import akka.pattern.ask
-import akka.actor.{Cancellable, Props}
 import akka.io.{IO, Tcp}
+import akka.pattern.ask
 import akka.util.Timeout
+import com.typesafe.config.Config
 import org.slf4j.LoggerFactory
 import authorization.Authorization.ExtensibleAuthorization
 import authorization.IpAuthorization
 import http.{OmiConfig, OmiConfigExtension}
 import parsing.OdfParser
-import types.OdfTypes._
-import types.odf.{ OldTypeConverter, ImmutableODF}
 import types.OmiTypes._
 import types._
-import agentSystem._
-import com.typesafe.config.Config
+import types.odf.{ImmutableODF, OldTypeConverter}
 
+import scala.collection.JavaConversions.iterableAsScalaIterable
+import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
+import scala.util.{Failure, Success}
 
 object  ExternalAgentListener extends PropsCreator{
   def props( config: Config, requestHandler: ActorRef, dbHandler: ActorRef ): Props = {

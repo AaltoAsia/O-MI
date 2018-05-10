@@ -15,28 +15,18 @@
 
 package responses
 
-import scala.util.{Success, Failure }
-import scala.collection.mutable.{Map => MutableMap}
-import scala.concurrent.duration._
-import scala.concurrent.{ExecutionContext, Future, TimeoutException}
-import scala.xml.NodeSeq
-
-import akka.actor.{ActorSystem, ActorRef, Actor, ActorLogging, Props}
+import agentSystem.AgentEvents._
+import agentSystem.{AgentName, AgentResponsibilities}
+import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.pattern.ask
 import akka.util.Timeout
-import akka.event.{LogSource, Logging, LoggingAdapter}
-
-import analytics.AnalyticsStore
-import database._
+import http.OmiConfigExtension
 import types.OmiTypes._
-import http.{ActorSystemContext, Actors, OmiConfigExtension }
-import http.ContextConversion._
+
+import scala.collection.mutable.{Map => MutableMap}
+import scala.concurrent.Future
 import scala.language.implicitConversions
-import CallbackHandler._
-import agentSystem.AgentResponsibilities
-import agentSystem.AgentResponsibilities._
-import agentSystem.AgentName
-import agentSystem.AgentEvents._
+import scala.util.{Failure, Success}
 
 object RequestHandler{
   def props(

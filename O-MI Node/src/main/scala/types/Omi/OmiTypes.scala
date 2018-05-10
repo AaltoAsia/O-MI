@@ -14,29 +14,22 @@
 package types
 package OmiTypes
 
-import java.lang.Iterable
-import java.sql.Timestamp
-import java.net.URI
-import java.util.GregorianCalendar
 import java.lang.{Iterable => JIterable}
-import javax.xml.datatype.DatatypeFactory
+import java.net.URI
+import java.sql.Timestamp
+
+import akka.actor.ActorRef
+import akka.http.scaladsl.model.RemoteAddress
+import parsing.xmlGen.scalaxb.DataRecord
+import parsing.xmlGen.xmlTypes._
+import parsing.xmlGen.{omiDefaultScope, xmlTypes}
+import types.odf._
 
 import scala.collection.JavaConversions._
 import scala.concurrent.duration._
-import scala.concurrent.{Future, ExecutionContext}
-import scala.util.{Try, Success, Failure}
 import scala.language.existentials
 import scala.util.{Failure, Success, Try}
 import scala.xml.NodeSeq
-
-import akka.actor.ActorRef
-
-import akka.http.scaladsl.model.RemoteAddress
-import parsing.xmlGen.scalaxb.DataRecord
-import parsing.xmlGen.{omiDefaultScope, scalaxb, xmlTypes}
-import parsing.xmlGen.xmlTypes._
-import responses.CallbackHandler
-import types.odf._
 
 trait JavaOmiRequest{
   def callbackAsJava(): JIterable[Callback]
@@ -92,7 +85,6 @@ case class ActorSenderInformation(
   actorRef: ActorRef
   ) extends SenderInformation{
 }
-import OmiRequestType._
 
 /**
  * This means request that is writing values
@@ -115,7 +107,7 @@ sealed trait JavaRequestIDRequest{
  * Request that contains requestID(s) (read, cancel) 
  */
 sealed trait RequestIDRequest extends JavaRequestIDRequest{
-  def requestIDs : OdfTreeCollection[RequestID]
+  def requestIDs : OdfCollection[RequestID]
   def requestIDsAsJava() : JIterable[RequestID] = asJavaIterable(requestIDs)
 }
 
@@ -143,6 +135,7 @@ sealed trait RequestWrapper {
  */
 class RawRequestWrapper(val rawRequest: String, private val user0: UserInfo) extends RequestWrapper {
   import RawRequestWrapper._
+
   import scala.xml.pull._
   user = user0
 
@@ -306,7 +299,7 @@ case class ReadRequest(
  **/
 case class PollRequest(
   callback: Option[Callback] = None,
-  requestIDs: OdfTreeCollection[Long ] = OdfTreeCollection.empty,
+  requestIDs: OdfCollection[Long ] = OdfCollection.empty,
   ttl: Duration = 10.seconds,
   private val user0: UserInfo = UserInfo(),
   senderInformation: Option[SenderInformation] = None,
@@ -497,7 +490,7 @@ case class DeleteRequest(
  * Cancel request, for cancelling subscription.
  **/
 case class CancelRequest(
-  requestIDs: OdfTreeCollection[Long ] = OdfTreeCollection.empty,
+  requestIDs: OdfCollection[Long ] = OdfCollection.empty,
   ttl: Duration = 10.seconds,
   private val user0: UserInfo = UserInfo(),
   senderInformation: Option[SenderInformation] = None,
@@ -530,7 +523,7 @@ trait JavaResponseRequest{
  * Response request, contains result for other requests
  **/
 class ResponseRequest(
-  val results: OdfTreeCollection[OmiResult],
+  val results: OdfCollection[OmiResult],
   val ttl: Duration,
   val callback : Option[Callback] = None,
   private val user0: UserInfo = UserInfo(),
@@ -545,7 +538,7 @@ class ResponseRequest(
   }
   def resultsAsJava(): JIterable[OmiResult] = asJavaIterable(results)
   def copy(
-    results: OdfTreeCollection[OmiResult] = this.results,
+    results: OdfCollection[OmiResult] = this.results,
     ttl: Duration = this.ttl,
     callback: Option[Callback] = this.callback,
     senderInformation: Option[SenderInformation] = this.senderInformation,
@@ -604,7 +597,7 @@ class ResponseRequest(
 
 object ResponseRequest{
   def apply(
-    results: OdfTreeCollection[OmiResult],
+    results: OdfCollection[OmiResult],
     ttl: Duration = 10.seconds
   ) : ResponseRequest = new ResponseRequest( results, ttl)
 }

@@ -2,15 +2,14 @@ package types
 package odf
 import java.sql.Timestamp
 
-import scala.collection.{ Seq, Map }
-import scala.collection.immutable.HashMap 
-import scala.util.{Try, Success, Failure}
-
 import parsing.xmlGen._
-import parsing.xmlGen.scalaxb._
 import parsing.xmlGen.scalaxb.XMLStandardTypes._
-import parsing.xmlGen.xmlTypes._
-import parsing.xmlGen.xmlTypes.ValueType
+import parsing.xmlGen.scalaxb._
+import parsing.xmlGen.xmlTypes.{ValueType, _}
+
+import scala.collection.immutable.HashMap
+import scala.collection.{Map, Seq}
+import scala.util.{Failure, Success, Try}
 
 trait Value[+V]{
   val value:V

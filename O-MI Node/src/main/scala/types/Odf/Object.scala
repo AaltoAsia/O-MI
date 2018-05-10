@@ -12,7 +12,7 @@ case class Object(
   val ids: Vector[QlmID],
   val path: Path,
   val typeAttribute: Option[String] = None,
-  val descriptions: Seq[Description] = Vector.empty,
+  val descriptions: Set[Description] = Set.empty,
   val attributes: IMap[String,String] = HashMap.empty
 ) extends Node with Unionable[Object] {
   assert( ids.nonEmpty, "Object doesn't have any ids.")
@@ -37,7 +37,7 @@ case class Object(
       QlmID.unionReduce(ids ++ that.ids).toVector,
       path,
       that.typeAttribute.orElse(typeAttribute),
-      Description.unionReduce(descriptions ++ that.descriptions).toVector,
+      Description.unionReduce(descriptions ++ that.descriptions).toSet,
       attributes ++ that.attributes
     )
     
@@ -48,23 +48,6 @@ case class Object(
     ids.length > 1 ||
     typeAttribute.nonEmpty ||
     descriptions.nonEmpty 
-  }
-  def intersection( that: Object ): Object ={
-    val pathsMatches = path == that.path 
-    val containSameId = ids.map( _.id ).toSet.intersect( that.ids.map( _.id).toSet ).nonEmpty
-    assert( containSameId && pathsMatches)
-    Object(
-      if (that.ids.nonEmpty) {
-        QlmID.unionReduce(that.ids ++ ids).toVector.filter(id => id.id.nonEmpty)
-      } else Vector.empty,
-      path,
-      that.typeAttribute.orElse(typeAttribute),
-      if (that.descriptions.nonEmpty) {
-        Description.unionReduce(that.descriptions ++ descriptions).toVector.filter(desc => desc.text.nonEmpty)
-      } else Vector.empty,
-      that.attributes ++ attributes
-    )
-    
   }
   def union( that: Object ): Object ={
     val pathsMatches = path == that.path 
@@ -79,7 +62,7 @@ case class Object(
           else Some(t + " " + ot)
         case (t, ot) => t.orElse(ot)
       },
-      Description.unionReduce(descriptions ++ that.descriptions).toVector,
+      Description.unionReduce(descriptions ++ that.descriptions).toSet,
       attributes ++ that.attributes
     )
     
@@ -124,7 +107,7 @@ case class Object(
         attributes = Map.empty
       )),*/
       ids.map(_.asQlmIDType), //
-      descriptions.map(des => des.asDescriptionType),
+      descriptions.map(des => des.asDescriptionType).toVector,
       infoitems,
       objects,
       attributes = (
@@ -154,7 +137,7 @@ case class Object(
     to.copy( 
       ids = QlmID.unionReduce(ids ++ to.ids).toVector,
       typeAttribute = typeAttribute.orElse(to.typeAttribute),
-      descriptions = desc,
+      descriptions = desc.toSet,
       attributes = attributes ++ to.attributes
     )
   }

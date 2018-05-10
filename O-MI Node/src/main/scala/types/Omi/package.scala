@@ -16,20 +16,17 @@ package types
 
 
 import java.lang.{Iterable => JavaIterable}
-import java.util.{GregorianCalendar, Date}
-import javax.xml.datatype.DatatypeFactory
 import java.sql.Timestamp
-import javax.xml.datatype.XMLGregorianCalendar
+import java.util.{Date, GregorianCalendar}
+import javax.xml.datatype.{DatatypeFactory, XMLGregorianCalendar}
 
-import scala.language.existentials
-import scala.util.{Failure, Success, Try}
-import scala.xml.NodeSeq
-import scala.collection.JavaConversions
-
+import parsing.xmlGen._
 import parsing.xmlGen.scalaxb.DataRecord
 import parsing.xmlGen.xmlTypes._
-import parsing.xmlGen._
-import types.OdfTypes._
+
+import scala.collection.JavaConversions
+import scala.language.existentials
+import scala.xml.NodeSeq
 
 /**
  * Package containing classes presenting O-MI request internally.

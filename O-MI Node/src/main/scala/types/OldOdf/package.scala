@@ -17,20 +17,14 @@ package types
 
 
 import java.lang.{Iterable => JavaIterable}
-import java.util.{GregorianCalendar, Date}
-import javax.xml.datatype.DatatypeFactory
 import java.sql.Timestamp
-import javax.xml.datatype.XMLGregorianCalendar
+import java.util.GregorianCalendar
+import javax.xml.datatype.{DatatypeFactory, XMLGregorianCalendar}
+
+import parsing.xmlGen._
+import parsing.xmlGen.scalaxb.DataRecord
 
 import scala.language.existentials
-import scala.util.{Failure, Success, Try}
-import scala.xml.NodeSeq
-import scala.collection.JavaConversions
-
-import parsing.xmlGen.scalaxb.DataRecord
-import parsing.xmlGen.xmlTypes._
-import parsing.xmlGen._
-import types.OdfTypes._
 
 /**
  * Package containing classes presenting O-DF format internally and helper methods for them

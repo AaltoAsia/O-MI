@@ -15,36 +15,21 @@
 package agentSystem
 
 import java.net.URLDecoder
-import scala.collection.JavaConversions._
-import scala.util.{Try, Failure, Success}
-import scala.collection.mutable.{Map => MutableMap }
-import scala.concurrent.duration._
-import scala.language.postfixOps
 
-import akka.actor.{
-  Actor,
-  ActorLogging,
-  ActorRef,
-  Props,
-  Terminated,
-  ActorInitializationException  
-}
-import akka.util.Timeout
-import akka.actor.OneForOneStrategy
-import akka.actor.SupervisorStrategy
+import agentSystem.AgentResponsibilities._
 import akka.actor.SupervisorStrategy._
-import analytics.AnalyticsStore
+import akka.actor.{Actor, ActorInitializationException, ActorLogging, ActorRef, OneForOneStrategy, Props, SupervisorStrategy, Terminated}
+import akka.util.Timeout
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigException._
-
-import responses.CallbackHandler
-import database.{DB, SingleStores }
 import http.CLICmds._
-import http.OmiNodeContext
-import types.OmiTypes.WriteRequest
 import types.Path
-import http.{ActorSystemContext, Actors, Settings, OmiNodeContext, Callbacking}
-import AgentResponsibilities._
+
+import scala.collection.JavaConversions._
+import scala.collection.mutable.{Map => MutableMap}
+import scala.concurrent.duration._
+import scala.language.postfixOps
+import scala.util.{Failure, Success, Try}
 
   case class NewCLI(ip: String, cliRef: ActorRef )
 object AgentEvents {
