@@ -1,0 +1,2609 @@
+<html>
+    <body>
+	<div>
+	<h1> O-DF in Database </h1>
+	<article>
+	    <textarea rows=47 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/">
+  <Object type="TypeOne">
+    <id idType="TypeTwo">Object1</id>
+    <description>Human readable description.</description>
+    <InfoItem name="Sensor1">
+      <description>Human readable description.</description>
+      <MetaData>
+        <InfoItem name="MetaData1">
+          <value unixTime="0" type="xs:integer">420</value>
+        </InfoItem>
+      </MetaData>
+      <value unixTime="0" type="xs:integer">0</value>
+      <value unixTime="1" type="xs:integer">1</value>
+      <value unixTime="2" type="xs:integer">2</value>
+      <value unixTime="3" type="xs:integer">3</value>
+      <value unixTime="4" type="xs:integer">4</value>
+      <value unixTime="5" type="xs:integer">5</value>
+      <value unixTime="6" type="xs:integer">6</value>
+      <value unixTime="7" type="xs:integer">7</value>
+      <value unixTime="8" type="xs:integer">8</value>
+      <value unixTime="9" type="xs:integer">9</value>
+    </InfoItem>
+    <Object type="TypeOne">
+      <id idType="TypeTwo">SubObject1</id>
+      <description>Human readable description.</description>
+      <InfoItem name="Sensor1">
+        <description>Human readable description.</description>
+        <MetaData>
+          <InfoItem name="MetaData1">
+            <value unixTime="0" type="xs:integer">420</value>
+          </InfoItem>
+        </MetaData>
+        <value unixTime="0" type="xs:integer">0</value>
+        <value unixTime="1" type="xs:integer">1</value>
+        <value unixTime="2" type="xs:integer">2</value>
+        <value unixTime="3" type="xs:integer">3</value>
+        <value unixTime="4" type="xs:integer">4</value>
+        <value unixTime="5" type="xs:integer">5</value>
+        <value unixTime="6" type="xs:integer">6</value>
+        <value unixTime="7" type="xs:integer">7</value>
+        <value unixTime="8" type="xs:integer">8</value>
+        <value unixTime="9" type="xs:integer">9</value>
+      </InfoItem>
+    </Object>
+    <Object>
+      <id>ExtraObject</id>
+      <InfoItem name="Extra">
+        <value type="xs:integer">42</value>
+      </InfoItem>
+    </Object>
+  </Object>
+</Objects>
+	    </textarea>
+	</article>
+	</div>
+	<div>
+
+	<h1> Write request </h1>
+	<article class="write test"> 
+	    <h2> Normal </h2>
+	    <div><p class="description">
+		This is normal write request, writes all data to data for test.
+		Written from localhost.
+		</p>
+	    </div>
+	    <div>
+		<h3>Request:</h3>
+		    <textarea class="request" rows=20 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="0">
+  <write msgformat="odf" >
+    <msg >
+      <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/">
+        <Object type="TypeOne">
+          <id idType="TypeTwo">Object1</id>
+          <description>Human readable description.</description>
+          <InfoItem name="Sensor1">
+            <description>Human readable description.</description>
+            <MetaData>
+              <InfoItem name="MetaData1">
+                <value unixTime="0" type="xs:integer">420</value>
+              </InfoItem>
+            </MetaData>
+            <value unixTime="0" type="xs:integer">0</value>
+            <value unixTime="1" type="xs:integer">1</value>
+            <value unixTime="2" type="xs:integer">2</value>
+            <value unixTime="3" type="xs:integer">3</value>
+            <value unixTime="4" type="xs:integer">4</value>
+            <value unixTime="5" type="xs:integer">5</value>
+            <value unixTime="6" type="xs:integer">6</value>
+            <value unixTime="7" type="xs:integer">7</value>
+            <value unixTime="8" type="xs:integer">8</value>
+            <value unixTime="9" type="xs:integer">9</value>
+          </InfoItem>
+          <Object type="TypeOne">
+            <id idType="TypeTwo">SubObject1</id>
+            <description>Human readable description.</description>
+            <InfoItem name="Sensor1">
+              <description>Human readable description.</description>
+              <MetaData>
+                <InfoItem name="MetaData1">
+                  <value unixTime="0" type="xs:string">420</value>
+                </InfoItem>
+              </MetaData>
+              <value unixTime="0" type="xs:integer">0</value>
+              <value unixTime="1" type="xs:integer">1</value>
+              <value unixTime="2" type="xs:integer">2</value>
+              <value unixTime="3" type="xs:integer">3</value>
+              <value unixTime="4" type="xs:integer">4</value>
+              <value unixTime="5" type="xs:integer">5</value>
+              <value unixTime="6" type="xs:integer">6</value>
+              <value unixTime="7" type="xs:integer">7</value>
+              <value unixTime="8" type="xs:integer">8</value>
+              <value unixTime="9" type="xs:integer">9</value>
+            </InfoItem>
+          </Object>
+          <Object>
+            <id>ExtraObject</id>
+            <InfoItem name="Extra">
+              <value unixTime="9" type="xs:integer">42</value>
+            </InfoItem>
+          </Object>
+        </Object>
+      </Objects>
+    </msg>
+  </write>
+</omiEnvelope>
+		</textarea>
+	    </div>
+	    <div>
+		<h3>Response:</h3>
+		    <textarea  class="response" rows=30 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="10" version="1.0">
+  <response>
+    <result>
+      <return returnCode="200"/>
+    </result>
+  </response>
+</omiEnvelope>
+		</textarea>
+	    </div>
+	</article>
+
+	<h1> Read request </h1>
+	<article class="request-response single test"> 
+	    <h2> Normal </h2>
+	    <div><p class="description">
+		This is normal read request without any extra arguments
+		</p>
+	    </div>
+	    <div>
+		<h3>Request:</h3>
+		    <textarea  class="request" rows=20 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="0">
+  <read msgformat="odf" >
+    <msg >
+      <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
+        <Object>
+          <id>Object1</id>
+          <InfoItem name="Sensor1"/>
+          <Object>
+            <id>SubObject1</id>
+          </Object>
+        </Object>
+      </Objects>
+    </msg>
+  </read>
+</omiEnvelope>
+		</textarea>
+	    </div>
+	    <div>
+		<h3>Response:</h3>
+		    <textarea class="response" rows=30 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="10" version="1.0">
+  <response>
+    <result msgformat="odf" >
+      <return returnCode="200"/>
+      <msg>
+        <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/">
+          <Object type="TypeOne">
+            <id idType="TypeTwo">Object1</id>
+            <description/>
+            <InfoItem name="Sensor1">
+              <description/>
+              <MetaData/>
+              <value unixTime="9" type="xs:integer">9</value>
+            </InfoItem>
+            <Object type="TypeOne">
+              <id idType="TypeTwo">SubObject1</id>
+              <description/>
+              <InfoItem name="Sensor1">
+                <description/>
+                <MetaData/>
+                <value unixTime="9" type="xs:integer">9</value>
+              </InfoItem>
+            </Object>
+          </Object>
+        </Objects>
+      </msg>
+    </result>
+  </response>
+</omiEnvelope>
+		</textarea>
+	    </div>
+	</article>
+	<article class="request-response single test"> 
+	    <h2> Subtree </h2>
+	    <div><p class="description">
+		This is normal read request without any extra arguments, but now only Object1's subtree is wanted.
+		</p>
+	    </div>
+	    <div>
+		<h3>Request:</h3>
+		    <textarea  class="request" rows=20 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="0">
+  <read msgformat="odf" >
+    <msg >
+      <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
+        <Object>
+          <id>Object1</id>
+        </Object>
+      </Objects>
+    </msg>
+  </read>
+</omiEnvelope>
+		</textarea>
+	    </div>
+	    <div>
+		<h3>Response:</h3>
+		    <textarea class="response" rows=30 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="10" version="1.0">
+  <response>
+    <result msgformat="odf" >
+      <return returnCode="200"/>
+      <msg>
+        <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/">
+          <Object type="TypeOne">
+            <id idType="TypeTwo">Object1</id>
+            <description/>
+            <InfoItem name="Sensor1">
+              <description/>
+              <MetaData/>
+              <value unixTime="9" type="xs:integer">9</value>
+            </InfoItem>
+            <Object type="TypeOne">
+              <id idType="TypeTwo">SubObject1</id>
+              <description/>
+              <InfoItem name="Sensor1">
+                <description/>
+                <MetaData/>
+                <value unixTime="9" type="xs:integer">9</value>
+              </InfoItem>
+            </Object>
+            <Object>
+              <id>ExtraObject</id>
+              <InfoItem name="Extra">
+                <value unixTime="9" type="xs:integer">42</value>
+              </InfoItem>
+            </Object>
+          </Object>
+        </Objects>
+      </msg>
+    </result>
+  </response>
+</omiEnvelope>
+		</textarea>
+	    </div>
+	</article>
+	<article class="request-response single test"> 
+	    <h2> Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" </h2>
+	    <div><p class="description">
+		This is normal read request without any extra arguments, but now whole tree is wanted.
+		</p>
+	    </div>
+	    <div>
+		<h3>Request:</h3>
+		    <textarea  class="request" rows=20 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="0">
+  <read msgformat="odf" >
+    <msg >
+      <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" ></Objects>
+    </msg>
+  </read>
+</omiEnvelope>
+		</textarea>
+	    </div>
+	    <div>
+		<h3>Response:</h3>
+		    <textarea class="response" rows=30 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="10" version="1.0">
+  <response>
+    <result msgformat="odf" >
+      <return returnCode="200"/>
+      <msg>
+        <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
+          <Object type="TypeOne">
+            <id idType="TypeTwo">Object1</id>
+            <description/>
+            <InfoItem name="Sensor1">
+              <description/>
+              <MetaData/>
+              <value unixTime="9" type="xs:integer">9</value>
+            </InfoItem>
+            <Object type="TypeOne">
+              <id idType="TypeTwo">SubObject1</id>
+              <description/>
+              <InfoItem name="Sensor1">
+                <description/>
+                <MetaData/>
+                <value unixTime="9" type="xs:integer">9</value>
+              </InfoItem>
+            </Object>
+            <Object>
+              <id>ExtraObject</id>
+              <InfoItem name="Extra">
+                <value unixTime="9" type="xs:integer">42</value>
+              </InfoItem>
+            </Object>
+          </Object>
+        </Objects>
+      </msg>
+    </result>
+  </response>
+</omiEnvelope>
+		</textarea>
+	    </div>
+	</article>
+	<article class="request-response single test"> 
+	    <h2> Not existing </h2>
+	    <div><p class="description">
+		This is normal read request without any extra arguments, now O-DF includes not existing elements. 
+		</p>
+	    </div>
+	    <div>
+		<h3>Request:</h3>
+		    <textarea  class="request" rows=20 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="0">
+  <read msgformat="odf" >
+    <msg >
+      <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
+        <Object>
+          <id>Object1</id>
+          <InfoItem name="Sensor1"/>
+          <InfoItem name="NotExistsSensor"/>
+          <Object>
+            <id>SubObject1</id>
+          </Object>
+          <Object>
+            <id>NotExistsObject</id>
+          </Object>
+        </Object>
+      </Objects>
+    </msg>
+  </read>
+</omiEnvelope>
+		</textarea>
+	    </div>
+	    <div>
+		<h3>Response:</h3>
+		    <textarea class="response" rows=30 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   version="1.0" ttl="10">
+  <response>
+    <result msgformat="odf" >
+      <return returnCode="200"/>
+      <msg>
+        <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
+          <Object type="TypeOne">
+            <id idType="TypeTwo">Object1</id>
+            <description/>
+            <InfoItem name="Sensor1">
+              <description/>
+              <MetaData/>
+              <value unixTime="9" type="xs:integer">9</value>
+            </InfoItem>
+            <Object type="TypeOne">
+              <id idType="TypeTwo">SubObject1</id>
+              <description/>
+              <InfoItem name="Sensor1">
+                <description/>
+                <MetaData/>
+                <value unixTime="9" type="xs:integer">9</value>
+              </InfoItem>
+            </Object>
+          </Object>
+        </Objects>
+      </msg>
+    </result>
+    <result msgformat="odf" >
+      <return description="Some parts of O-DF not found. msg element contains missing O-DF structure." returnCode="404"/>
+      <msg>
+        <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/">
+          <Object>
+            <id>Object1</id>
+            <InfoItem name="NotExistsSensor"/>
+            <Object>
+              <id>NotExistsObject</id>
+            </Object>
+          </Object>
+        </Objects>
+      </msg>
+    </result>
+  </response>
+</omiEnvelope>
+		</textarea>
+	    </div>
+	</article>
+
+	<article class="request-response single test"> 
+	    <h2> Getting MetaData </h2>
+	    <div><p class="description">
+		This is normal read request without any extra arguments, now MetaData is wanted from Objects/Object1/Sensor1
+		</p>
+	    </div>
+	    <div>
+		<h3>Request:</h3>
+		    <textarea  class="request" rows=20 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="0">
+  <read msgformat="odf" >
+    <msg>
+      <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
+        <Object>
+          <id>Object1</id>
+          <InfoItem name="Sensor1">
+            <MetaData/>
+          </InfoItem>
+          <Object>
+            <id>SubObject1</id>
+          </Object>
+        </Object>
+      </Objects>
+    </msg>
+  </read>
+</omiEnvelope>
+		    </textarea>
+	    </div>
+	    <div>
+		<h3>Response:</h3>
+		    <textarea class="response" rows=30 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="10" version="1.0">
+  <response>
+    <result msgformat="odf" >
+      <return returnCode="200"/>
+      <msg>
+        <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
+          <Object type="TypeOne">
+            <id idType="TypeTwo">Object1</id>
+            <description/>
+            <InfoItem name="Sensor1">
+              <description/>
+              <MetaData>
+                <InfoItem name="MetaData1">
+                  <value unixTime="0" type="xs:integer">420</value>
+                </InfoItem>
+              </MetaData>
+              <value unixTime="9" type="xs:integer">9</value>
+            </InfoItem>
+            <Object type="TypeOne">
+              <id idType="TypeTwo">SubObject1</id>
+              <description/>
+              <InfoItem name="Sensor1">
+                <description/>
+                <MetaData/>
+                <value unixTime="9" type="xs:integer">9</value>
+              </InfoItem>
+            </Object>
+          </Object>
+        </Objects>
+      </msg>
+    </result>
+  </response>
+</omiEnvelope>
+		    </textarea>
+	    </div>
+	</article>
+
+	<article class="request-response single test"> 
+	    <h2> Getting descriptions </h2>
+	    <div><p class="description">
+		This is normal read request without any extra arguments, now description is
+    wanted from Objects/Object1/Sensor1
+		</p>
+	    </div>
+	    <div>
+		<h3>Request:</h3>
+		    <textarea  class="request" rows=20 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="0">
+  <read msgformat="odf" >
+    <msg >
+      <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
+        <Object>
+          <id>Object1</id>
+          <InfoItem name="Sensor1">
+            <description/>
+          </InfoItem>
+          <Object>
+            <id>SubObject1</id>
+            <description/>
+          </Object>
+        </Object>
+      </Objects>
+    </msg>
+  </read>
+</omiEnvelope>
+		    </textarea>
+	    </div>
+	    <div>
+		<h3>Response:</h3>
+		    <textarea class="response" rows=30 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="10" version="1.0">
+  <response>
+    <result msgformat="odf" >
+      <return returnCode="200"/>
+      <msg>
+        <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
+          <Object type="TypeOne">
+            <id idType="TypeTwo">Object1</id>
+            <description/>
+            <InfoItem name="Sensor1">
+              <description>Human readable description.</description>
+              <MetaData/>
+              <value unixTime="9" type="xs:integer">9</value>
+            </InfoItem>
+            <Object type="TypeOne">
+              <id idType="TypeTwo">SubObject1</id>
+              <description>Human readable description.</description>
+              <InfoItem name="Sensor1">
+                <description/>
+                <MetaData/>
+                <value unixTime="9" type="xs:integer">9</value>
+              </InfoItem>
+            </Object>
+          </Object>
+        </Objects>
+      </msg>
+    </result>
+  </response>
+</omiEnvelope>
+		    </textarea>
+	    </div>
+	</article>
+
+	<article class="request-response single test"> 
+	    <h2> Newest </h2>
+	    <div><p class="description">
+		User wants 3 newest values. 
+		</p>
+		Argument:
+		<ul>
+		    <li>newest</li>
+		</ul>
+	    </div>
+	    <div>
+		<h3>Request:</h3>
+		    <textarea  class="request" rows=20 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="0">
+  <read msgformat="odf" newest="3">
+    <msg>
+      <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
+        <Object>
+          <id>Object1</id>
+          <InfoItem name="Sensor1"></InfoItem>
+          <Object>
+            <id>SubObject1</id>
+          </Object>
+        </Object>
+      </Objects>
+    </msg>
+  </read>
+</omiEnvelope>
+		    </textarea>
+	    </div>
+	    <div>
+		<h3>Response:</h3>
+		    <textarea class="response" rows=30 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="10" version="1.0">
+  <response>
+    <result msgformat="odf" >
+      <return returnCode="200"/>
+      <msg>
+        <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
+          <Object type="TypeOne">
+            <id idType="TypeTwo">Object1</id>
+            <description/>
+            <InfoItem name="Sensor1">
+              <description/>
+              <MetaData/>
+              <value unixTime="7" type="xs:integer">7</value>
+              <value unixTime="8" type="xs:integer">8</value>
+              <value unixTime="9" type="xs:integer">9</value>
+            </InfoItem>
+            <Object type="TypeOne">
+              <id idType="TypeTwo">SubObject1</id>
+              <description/>
+              <InfoItem name="Sensor1">
+                <description/>
+                <MetaData/>
+                <value unixTime="7" type="xs:integer">7</value>
+                <value unixTime="8" type="xs:integer">8</value>
+                <value unixTime="9" type="xs:integer">9</value>
+              </InfoItem>
+            </Object>
+          </Object>
+        </Objects>
+      </msg>
+    </result>
+  </response>
+</omiEnvelope>
+		    </textarea>
+	    </div>
+	</article>
+	<article class="request-response single test"> 
+	    <h2> Oldest </h2>
+	    <div><p class="description">
+		User wants 3 oldest values. 
+		</p>
+		Argument:
+		<ul>
+		    <li>oldest</li>
+		</ul>
+	    </div>
+	    <div>
+		<h3>Request:</h3>
+		    <textarea  class="request" rows=20 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="0">
+  <read msgformat="odf" oldest="3">
+    <msg>
+      <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
+        <Object>
+          <id>Object1</id>
+          <InfoItem name="Sensor1"/>
+          <Object>
+            <id>SubObject1</id>
+          </Object>
+        </Object>
+      </Objects>
+    </msg>
+  </read>
+</omiEnvelope>
+		    </textarea>
+	    </div>
+	    <div>
+		<h3>Response:</h3>
+		    <textarea class="response" rows=30 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="10" version="1.0">
+  <response>
+    <result msgformat="odf" >
+      <return returnCode="200"/>
+      <msg>
+        <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
+          <Object type="TypeOne">
+            <id idType="TypeTwo">Object1</id>
+            <description/>
+            <InfoItem name="Sensor1">
+              <description/>
+              <MetaData/>
+              <value unixTime="0" type="xs:integer">0</value>
+              <value unixTime="1" type="xs:integer">1</value>
+              <value unixTime="2" type="xs:integer">2</value>
+            </InfoItem>
+            <Object type="TypeOne">
+              <id idType="TypeTwo">SubObject1</id>
+              <description/>
+              <InfoItem name="Sensor1">
+                <description/>
+                <MetaData/>
+                <value unixTime="0" type="xs:integer">0</value>
+                <value unixTime="1" type="xs:integer">1</value>
+                <value unixTime="2" type="xs:integer">2</value>
+              </InfoItem>
+            </Object>
+          </Object>
+        </Objects>
+      </msg>
+    </result>
+  </response>
+</omiEnvelope>
+		    </textarea>
+	    </div>
+	</article>
+	<article class="request-response single test"> 
+	    <h2> Closed timeframe </h2>
+	    <div><p class="description">
+		User wants values between 01-01-1970T00:00:03.000 and 00:00:00.006. 
+		</p>
+		Argument:
+		<ul>
+		    <li>begin</li>
+		    <li>end</li>
+		</ul>
+	    </div>
+	    <div>
+		<h3>Request:</h3>
+		    <textarea  class="request" rows=20 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="0">
+  <read msgformat="odf" begin="1970-01-01T00:00:03.000" end="1970-01-01T00:00:06.000">
+    <msg >
+      <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
+        <Object>
+          <id>Object1</id>
+          <InfoItem name="Sensor1"/>
+          <Object>
+            <id>SubObject1</id>
+          </Object>
+        </Object>
+      </Objects>
+    </msg>
+  </read>
+</omiEnvelope>
+		    </textarea>
+	    </div>
+	    <div>
+		<h3>Response:</h3>
+		    <textarea class="response" rows=30 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="10" version="1.0">
+  <response>
+    <result msgformat="odf" >
+      <return returnCode="200"/>
+      <msg>
+        <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
+          <Object type="TypeOne">
+            <id idType="TypeTwo">Object1</id>
+            <description/>
+            <InfoItem name="Sensor1">
+              <description/>
+              <MetaData/>
+              <value unixTime="3" type="xs:integer">3</value>
+              <value unixTime="4" type="xs:integer">4</value>
+              <value unixTime="5" type="xs:integer">5</value>
+              <value unixTime="6" type="xs:integer">6</value>
+            </InfoItem>
+            <Object type="TypeOne">
+              <id idType="TypeTwo">SubObject1</id>
+              <description/>
+              <InfoItem name="Sensor1">
+                <description/>
+                <MetaData/>
+                <value unixTime="3" type="xs:integer">3</value>
+                <value unixTime="4" type="xs:integer">4</value>
+                <value unixTime="5" type="xs:integer">5</value>
+                <value unixTime="6" type="xs:integer">6</value>
+              </InfoItem>
+            </Object>
+          </Object>
+        </Objects>
+      </msg>
+    </result>
+  </response>
+</omiEnvelope>
+		    </textarea>
+	    </div>
+	</article>
+	<article class="request-response single test"> 
+	    <h2> Open timeframe, begin </h2>
+	    <div><p class="description">
+		User wants values after 01-01-1970T00:00:03.000 
+		</p>
+		Argument:
+		<ul>
+		    <li>begin</li>
+		</ul>
+	    </div>
+	    <div>
+		<h3>Request:</h3>
+		    <textarea  class="request" rows=20 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="0">
+  <read msgformat="odf" begin="1970-01-01T00:00:03.000">
+    <msg >
+      <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
+        <Object>
+          <id>Object1</id>
+          <InfoItem name="Sensor1"/>
+          <Object>
+            <id>SubObject1</id>
+          </Object>
+        </Object>
+      </Objects>
+    </msg>
+  </read>
+</omiEnvelope>
+		    </textarea>
+	    </div>
+	    <div>
+		<h3>Response:</h3>
+		    <textarea class="response" rows=30 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="10" version="1.0">
+  <response>
+    <result msgformat="odf" >
+      <return returnCode="200"/>
+      <msg>
+        <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
+          <Object type="TypeOne">
+            <id idType="TypeTwo">Object1</id>
+            <description/>
+            <InfoItem name="Sensor1">
+              <description/>
+              <MetaData/>
+              <value unixTime="3" type="xs:integer">3</value>
+              <value unixTime="4" type="xs:integer">4</value>
+              <value unixTime="5" type="xs:integer">5</value>
+              <value unixTime="6" type="xs:integer">6</value>
+              <value unixTime="7" type="xs:integer">7</value>
+              <value unixTime="8" type="xs:integer">8</value>
+              <value unixTime="9" type="xs:integer">9</value>
+            </InfoItem>
+            <Object type="TypeOne">
+              <id idType="TypeTwo">SubObject1</id>
+              <description/>
+              <InfoItem name="Sensor1">
+                <description/>
+                <MetaData/>
+                <value unixTime="3" type="xs:integer">3</value>
+                <value unixTime="4" type="xs:integer">4</value>
+                <value unixTime="5" type="xs:integer">5</value>
+                <value unixTime="6" type="xs:integer">6</value>
+                <value unixTime="7" type="xs:integer">7</value>
+                <value unixTime="8" type="xs:integer">8</value>
+                <value unixTime="9" type="xs:integer">9</value>
+              </InfoItem>
+            </Object>
+          </Object>
+        </Objects>
+      </msg>
+    </result>
+  </response>
+</omiEnvelope>
+		    </textarea>
+	    </div>
+	</article>
+	<article class="request-response single test"> 
+	    <h2> Open timeframe, end  </h2>
+	    <div><p class="description">
+		User wants values before 01-01-1970T00:00:06.000. 
+		</p>
+		Argument:
+		<ul>
+		    <li>begin</li>
+		</ul>
+	    </div>
+	    <div>
+		<h3>Request:</h3>
+		    <textarea  class="request" rows=20 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="0">
+  <read msgformat="odf" end="1970-01-01T00:00:06.000">
+    <msg >
+      <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
+        <Object>
+          <id>Object1</id>
+          <InfoItem name="Sensor1"/>
+          <Object>
+            <id>SubObject1</id>
+          </Object>
+        </Object>
+      </Objects>
+    </msg>
+  </read>
+</omiEnvelope>
+		    </textarea>
+	    </div>
+	    <div>
+		<h3>Response:</h3>
+		    <textarea class="response"  class="request" rows=30 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="10" version="1.0">
+  <response>
+    <result msgformat="odf" >
+      <return returnCode="200"/>
+      <msg>
+        <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
+          <Object type="TypeOne">
+            <id idType="TypeTwo">Object1</id>
+            <description/>
+            <InfoItem name="Sensor1">
+              <description/>
+              <MetaData/>
+              <value unixTime="0" type="xs:integer">0</value>
+              <value unixTime="1" type="xs:integer">1</value>
+              <value unixTime="2" type="xs:integer">2</value>
+              <value unixTime="3" type="xs:integer">3</value>
+              <value unixTime="4" type="xs:integer">4</value>
+              <value unixTime="5" type="xs:integer">5</value>
+              <value unixTime="6" type="xs:integer">6</value>
+            </InfoItem>
+            <Object type="TypeOne">
+              <id idType="TypeTwo">SubObject1</id>
+              <description/>
+              <InfoItem name="Sensor1">
+                <description/>
+                <MetaData/>
+                <value unixTime="0" type="xs:integer">0</value>
+                <value unixTime="1" type="xs:integer">1</value>
+                <value unixTime="2" type="xs:integer">2</value>
+                <value unixTime="3" type="xs:integer">3</value>
+                <value unixTime="4" type="xs:integer">4</value>
+                <value unixTime="5" type="xs:integer">5</value>
+                <value unixTime="6" type="xs:integer">6</value>
+              </InfoItem>
+            </Object>
+          </Object>
+        </Objects>
+      </msg>
+    </result>
+  </response>
+</omiEnvelope>
+		    </textarea>
+	    </div>
+	</article>
+	<article class="request-response single test"> 
+	    <h2> Closed timeframe with newest  </h2>
+	    <div><p class="description">
+		User wants two newest values between 01-01-1970T00:00:03.000 and 00:00:00.006. 
+		</p>
+		Argument:
+		<ul>
+		    <li>begin</li>
+		    <li>end</li>
+		    <li>newest</li>
+		</ul>
+	    </div>
+	    <div>
+		<h3>Request:</h3>
+		    <textarea  class="request" rows=20 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="0">
+  <read msgformat="odf" begin="1970-01-01T00:00:03.000" end="1970-01-01T00:00:06.000" newest="2">
+    <msg>
+      <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
+        <Object>
+          <id>Object1</id>
+          <InfoItem name="Sensor1"/>
+          <Object>
+            <id>SubObject1</id>
+          </Object>
+        </Object>
+      </Objects>
+    </msg>
+  </read>
+</omiEnvelope>
+		    </textarea>
+	    </div>
+	    <div>
+		<h3>Response:</h3>
+		    <textarea class="response" rows=30 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="10" version="1.0">
+  <response>
+    <result msgformat="odf" >
+      <return returnCode="200"/>
+      <msg>
+        <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
+          <Object type="TypeOne">
+            <id idType="TypeTwo">Object1</id>
+            <description/>
+            <InfoItem name="Sensor1">
+              <description/>
+              <MetaData/>
+              <value unixTime="5" type="xs:integer">5</value>
+              <value unixTime="6" type="xs:integer">6</value>
+            </InfoItem>
+            <Object type="TypeOne">
+              <id idType="TypeTwo">SubObject1</id>
+              <description/>
+              <InfoItem name="Sensor1">
+                <description/>
+                <MetaData/>
+                <value unixTime="5" type="xs:integer">5</value>
+                <value unixTime="6" type="xs:integer">6</value>
+              </InfoItem>
+            </Object>
+          </Object>
+        </Objects>
+      </msg>
+    </result>
+  </response>
+</omiEnvelope>
+		    </textarea>
+	    </div>
+	</article>
+	<article class="request-response single test"> 
+	    <h2> Closed timeframe with oldest  </h2>
+	    <div > <p class="description">
+		User wants two oldest values between 01-01-1970T00:00:03.000 and 00:00:00.006.
+		</p>
+		Argument:
+		<ul>
+		    <li>begin</li>
+		    <li>end</li>
+		    <li>oldest</li>
+		</ul>
+	    </div>
+	    <div>
+		<h3>Request:</h3>
+		    <textarea  class="request" rows=20 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="0">
+  <read msgformat="odf" begin="1970-01-01T00:00:03.000" end="1970-01-01T00:00:06.000" oldest="2">
+    <msg>
+      <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
+        <Object>
+          <id>Object1</id>
+          <InfoItem name="Sensor1"/>
+          <Object>
+            <id>SubObject1</id>
+          </Object>
+        </Object>
+      </Objects>
+    </msg>
+  </read>
+</omiEnvelope>
+		    </textarea>
+	    </div>
+	    <div>
+		<h3>Response:</h3>
+		    <textarea class="response" rows=30 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="10" version="1.0">
+  <response>
+    <result msgformat="odf" >
+      <return returnCode="200"/>
+      <msg>
+        <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
+          <Object type="TypeOne">
+            <id idType="TypeTwo">Object1</id>
+            <description/>
+            <InfoItem name="Sensor1">
+              <description/>
+              <MetaData/>
+              <value unixTime="3" type="xs:integer">3</value>
+              <value unixTime="4" type="xs:integer">4</value>
+            </InfoItem>
+            <Object type="TypeOne">
+              <id idType="TypeTwo">SubObject1</id>
+              <description/>
+              <InfoItem name="Sensor1">
+                <description/>
+                <MetaData/>
+                <value unixTime="3" type="xs:integer">3</value>
+                <value unixTime="4" type="xs:integer">4</value>
+              </InfoItem>
+            </Object>
+          </Object>
+        </Objects>
+      </msg>
+    </result>
+  </response>
+</omiEnvelope>
+		    </textarea>
+	    </div>
+	</article>
+	<article class="request-response single test"> 
+	    <h2> Open timeframe with oldest, begin </h2>
+	    <div > <p class="description">
+		User wants two oldest values after 01-01-1970T00:00:03.000.
+		</p>
+		Argument:
+		<ul>
+		    <li>begin</li>
+		    <li>oldest</li>
+		</ul>
+	    </div>
+	    <div>
+		<h3>Request:</h3>
+		    <textarea  class="request" rows=20 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="0">
+  <read msgformat="odf" begin="1970-01-01T00:00:03.000" oldest="2">
+    <msg >
+      <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
+        <Object>
+          <id>Object1</id>
+          <InfoItem name="Sensor1"/>
+          <Object>
+            <id>SubObject1</id>
+          </Object>
+        </Object>
+      </Objects>
+    </msg>
+  </read>
+</omiEnvelope>
+		    </textarea>
+	    </div>
+	    <div>
+		<h3>Response:</h3>
+		    <textarea class="response" rows=30 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="10" version="1.0">
+  <response>
+    <result msgformat="odf" >
+      <return returnCode="200"/>
+      <msg>
+        <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
+          <Object type="TypeOne">
+            <id idType="TypeTwo">Object1</id>
+            <description/>
+            <InfoItem name="Sensor1">
+              <description/>
+              <MetaData/>
+              <value unixTime="3" type="xs:integer">3</value>
+              <value unixTime="4" type="xs:integer">4</value>
+            </InfoItem>
+            <Object type="TypeOne">
+              <id idType="TypeTwo">SubObject1</id>
+              <description/>
+              <InfoItem name="Sensor1">
+                <description/>
+                <MetaData/>
+                <value unixTime="3" type="xs:integer">3</value>
+                <value unixTime="4" type="xs:integer">4</value>
+              </InfoItem>
+            </Object>
+          </Object>
+        </Objects>
+      </msg>
+    </result>
+  </response>
+</omiEnvelope>
+		    </textarea>
+	    </div>
+	</article>
+	<article class="request-response single test"> 
+	    <h2> Open timeframe with newest, begin  </h2>
+	    <div > <p class="description">
+		User wants two newest values after 01-01-1970T00:00:03.000.
+		</p>
+		Argument:
+		<ul>
+		    <li>begin</li>
+		    <li>newest</li>
+		</ul>
+	    </div>
+	    <div>
+		<h3>Request:</h3>
+		    <textarea  class="request" rows=20 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="0">
+  <read msgformat="odf" begin="1970-01-01T00:00:03.000" newest="2">
+    <msg >
+      <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
+        <Object>
+          <id>Object1</id>
+          <InfoItem name="Sensor1"/>
+          <Object>
+            <id>SubObject1</id>
+          </Object>
+        </Object>
+      </Objects>
+    </msg>
+  </read>
+</omiEnvelope>
+		    </textarea>
+	    </div>
+	    <div>
+		<h3>Response:</h3>
+		    <textarea class="response" rows=30 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="10" version="1.0">
+  <response>
+    <result msgformat="odf" >
+      <return returnCode="200"/>
+      <msg>
+        <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
+          <Object type="TypeOne">
+            <id idType="TypeTwo">Object1</id>
+            <description/>
+            <InfoItem name="Sensor1">
+              <description/>
+              <MetaData/>
+              <value unixTime="8" type="xs:integer">8</value>
+              <value unixTime="9" type="xs:integer">9</value>
+            </InfoItem>
+            <Object type="TypeOne">
+              <id idType="TypeTwo">SubObject1</id>
+              <description/>
+              <InfoItem name="Sensor1">
+                <description/>
+                <MetaData/>
+                <value unixTime="8" type="xs:integer">8</value>
+                <value unixTime="9" type="xs:integer">9</value>
+              </InfoItem>
+            </Object>
+          </Object>
+        </Objects>
+      </msg>
+    </result>
+  </response>
+</omiEnvelope>
+		    </textarea>
+	    </div>
+	</article>
+	<article class="request-response single test"> 
+	    <h2> Open timeframe with oldest, end  </h2>
+	    <div > <p class="description">
+		User wants two oldest values before 01-01-1970T00:00:06.000.
+		</p>
+		Argument:
+		<ul>
+		    <li>end</li>
+		    <li>oldest</li>
+		</ul>
+	    </div>
+	    <div>
+		<h3>Request:</h3>
+		    <textarea  class="request" rows=20 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="0">
+  <read msgformat="odf" end="1970-01-01T00:00:06.000" oldest="2">
+    <msg>
+      <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
+        <Object>
+          <id>Object1</id>
+          <InfoItem name="Sensor1"/>
+          <Object>
+            <id>SubObject1</id>
+          </Object>
+        </Object>
+      </Objects>
+    </msg>
+  </read>
+</omiEnvelope>
+		    </textarea>
+	    </div>
+	    <div>
+		<h3>Response:</h3>
+		    <textarea class="response" rows=30 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="10" version="1.0">
+  <response>
+    <result msgformat="odf" >
+      <return returnCode="200"/>
+      <msg>
+        <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
+          <Object type="TypeOne">
+            <id idType="TypeTwo">Object1</id>
+            <description/>
+            <InfoItem name="Sensor1">
+              <description/>
+              <MetaData/>
+              <value unixTime="0" type="xs:integer">0</value>
+              <value unixTime="1" type="xs:integer">1</value>
+            </InfoItem>
+            <Object type="TypeOne">
+              <id idType="TypeTwo">SubObject1</id>
+              <description/>
+              <InfoItem name="Sensor1">
+                <description/>
+                <MetaData/>
+                <value unixTime="0" type="xs:integer">0</value>
+                <value unixTime="1" type="xs:integer">1</value>
+              </InfoItem>
+            </Object>
+          </Object>
+        </Objects>
+      </msg>
+    </result>
+  </response>
+</omiEnvelope>
+		    </textarea>
+	    </div>
+	</article>
+	<article class="request-response single test"> 
+	    <h2> Open timeframe with newest, end </h2>
+	    <div > <p class="description">
+		User wants two newest values before 01-01-1970T00:00:06.000.
+		</p>
+		Argument:
+		<ul>
+		    <li>end</li>
+		    <li>newest</li>
+		</ul>
+	    </div>
+	    <div>
+		<h3>Request:</h3>
+		    <textarea  class="request" rows=20 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="0">
+  <read msgformat="odf" end="1970-01-01T00:00:06.000" newest="2">
+    <msg>
+      <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
+        <Object>
+          <id>Object1</id>
+          <InfoItem name="Sensor1"/>
+          <Object>
+            <id>SubObject1</id>
+          </Object>
+        </Object>
+      </Objects>
+    </msg>
+  </read>
+</omiEnvelope>
+		    </textarea>
+	    </div>
+	    <div>
+		<h3>Response:</h3>
+		    <textarea class="response" rows=30 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="10" version="1.0">
+  <response>
+    <result msgformat="odf" >
+      <return returnCode="200"/>
+      <msg>
+        <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
+          <Object type="TypeOne">
+            <id idType="TypeTwo">Object1</id>
+            <description/>
+            <InfoItem name="Sensor1">
+              <description/>
+              <MetaData/>
+              <value unixTime="5" type="xs:integer">5</value>
+              <value unixTime="6" type="xs:integer">6</value>
+            </InfoItem>
+            <Object type="TypeOne">
+              <id idType="TypeTwo">SubObject1</id>
+              <description/>
+              <InfoItem name="Sensor1">
+                <description/>
+                <MetaData/>
+                <value unixTime="5" type="xs:integer">5</value>
+                <value unixTime="6" type="xs:integer">6</value>
+              </InfoItem>
+            </Object>
+          </Object>
+        </Objects>
+      </msg>
+    </result>
+  </response>
+</omiEnvelope>
+		    </textarea>
+	    </div>
+	</article>
+	<article class="request-response single test"> 
+	    <h2> Callback  </h2>
+	    <div > <p class="description">
+		 User wants node to  send response for actual request to another address.
+		</p>
+		Argument:
+		<ul>
+		    <li>callback</li>
+		</ul>
+	    </div>
+	    <div>
+		<h3>Request:</h3>
+		    <textarea  class="request" rows=20 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="5">
+<read msgformat="odf" callback="http://localhost:5432">
+  <msg >
+    <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/">
+      <Object xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
+        <id>Object1</id>
+        <InfoItem name="Sensor1"/>
+        <Object>
+          <id>SubObject1</id>
+        </Object>
+      </Object>
+    </Objects>
+  </msg>
+</read>
+</omiEnvelope>
+      </textarea>
+    </div>
+    <div>
+  <h3>Response:</h3>
+      <textarea class="response" rows=30 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="10" version="1.0">
+  <response>
+    <result>
+      <return description="OK, callback job started" returnCode="200"/>
+    </result>
+  </response>
+</omiEnvelope>
+		    </textarea>
+	    </div>
+	</article>
+	<!--<article class="request-response single test" --> 
+	    <h2> Newest and Oldest  </h2>
+	    <div > <p class="description">
+		User has gone mad and wants two newest and two oldest values for same time
+		</p>
+		Argument:
+		<ul>
+		    <li>newest</li>
+		    <li>oldest</li>
+		</ul>
+	    </div>
+	    <div>
+		<h3>Request:</h3>
+		    <textarea  class="request" rows=20 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="0">
+  <read msgformat="odf" newest="2" oldest="2">
+    <msg xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
+      <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/">
+        <Object>
+          <id idType="TypeTwo">Object1</id>
+          <InfoItem name="Sensor1"/>
+          <Object>
+            <id idType="TypeTwo">SubObject1</id>
+          </Object>
+        </Object>
+      </Objects>
+    </msg>
+  </read>
+</omiEnvelope>
+		    </textarea>
+	    </div>
+	    <div>
+		<h3>Response:</h3>
+		    <textarea class="response" rows=30 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/odf/1.0/" xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="10" version="1.0">
+  <response>
+    <result>
+      <return description="Bad request: requirement failed: Both newest and oldest at the same time not supported!" returnCode="400"/>
+    </result>
+  </response>
+</omiEnvelope>
+		    </textarea>
+	    </div>
+	</article>-->
+	</div>
+	<div>
+	<h1> Subscription request </h1>
+	<article class="request-response test">
+	    <h2> Polled interval subscription</h2>
+	    <div >
+		<p class="description">
+		Subscription with interval of 1, but without a callback address.
+		</p>
+	    </div>
+	    <div class="msg-sequence">
+		<div>
+		    <h3>Request:</h3>
+			<textarea class="request" rows=30 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="10000">
+  <read msgformat="odf" interval="1">
+    <msg >
+      <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
+        <Object>
+          <id>Object1</id>
+          <InfoItem name="Sensor1"/>
+          <Object>
+            <id>SubObject1</id>
+          </Object>
+        </Object>
+      </Objects>
+    </msg>
+  </read>
+</omiEnvelope>
+			</textarea>
+		</div>
+		<div>
+		    <h3>Response:</h3>
+			<textarea class="response" rows=30 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="10" version="1.0">
+  <response>
+    <result>
+      <return description="Successfully started subscription" returnCode="200"/>
+      <requestID>1</requestID>
+    </result>
+  </response>
+</omiEnvelope>
+			</textarea>
+		</div>
+		<div>
+		    <h3>Request:</h3>
+			<textarea class="request" rows=30 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="10000">
+  <read msgformat="odf" >
+    <requestID>1</requestID>
+  </read>
+</omiEnvelope>
+			</textarea>
+		</div>
+		<div>
+		    <h3>Response:</h3>
+			<textarea class="response" rows=30 cols=100 style="border: none;" readonly wait=2>
+<?xml version="1.0"?>
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="10" version="1.0">
+  <response>
+    <result msgformat="odf" >
+      <return returnCode="200"/>
+      <requestID>1</requestID>
+      <msg>
+        <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
+          <Object type="TypeOne">
+            <id idType="TypeTwo">Object1</id>
+            <InfoItem name="Sensor1">
+              <value unixTime="9" type="xs:integer">9</value>
+              <value unixTime="9" type="xs:integer">9</value>
+            </InfoItem>
+            <Object type="TypeOne">
+              <id idType="TypeTwo">SubObject1</id>
+              <InfoItem name="Sensor1">
+                <value unixTime="9" type="xs:integer">9</value>
+                <value unixTime="9" type="xs:integer">9</value>
+              </InfoItem>
+            </Object>
+          </Object>
+        </Objects>
+      </msg>
+    </result>
+  </response>
+</omiEnvelope>
+			</textarea>
+		</div>
+		<div>
+		    <h3>Request:</h3>
+			<textarea class="request" rows=30 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="10000">
+  <read msgformat="odf" >
+    <requestID>1</requestID>
+  </read>
+</omiEnvelope>
+			</textarea>
+		</div>
+		<div>
+		    <h3>Response:</h3>
+			<textarea class="response" rows=30 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="10" version="1.0">
+  <response>
+    <result msgformat="odf" >
+      <return returnCode="200"/>
+      <requestID>1</requestID>
+      <msg>
+        <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
+          <Object type="TypeOne">
+            <id idType="TypeTwo">Object1</id>
+            <InfoItem name="Sensor1"/>
+            <Object type="TypeOne">
+              <id idType="TypeTwo">SubObject1</id>
+              <InfoItem name="Sensor1"/>
+            </Object>
+          </Object>
+        </Objects>
+      </msg>
+    </result>
+  </response>
+</omiEnvelope>
+			</textarea>
+		</div>
+		<div>
+		    <h3>Request:</h3>
+			<textarea class="request" rows=30 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="0">
+  <cancel>
+    <requestID>1</requestID>
+  </cancel>
+</omiEnvelope>
+			</textarea>
+		</div>
+		<div>
+		    <h3>Response:</h3>
+			<textarea class="response" rows=30 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="10" version="1.0">
+  <response>
+    <result>
+      <return returnCode="200"/>
+    </result>
+  </response>
+</omiEnvelope>
+			</textarea>
+		</div>
+	    </div>
+	</article>
+	<article class="request-response test">
+	    <h2> Polled event subscription</h2>
+	    <div >
+		<p class="description">
+		Subscription with interval of -1, but without a callback address.
+		</p>
+	    </div>
+	    <div class="msg-sequence">
+		<div>
+		    <h3>Request:</h3>
+			<textarea class="request" rows=30 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="10000">
+  <read msgformat="odf" interval="-1">
+    <msg >
+      <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
+        <Object>
+          <id>Object1</id>
+          <InfoItem name="Sensor1"/>
+          <Object>
+            <id>SubObject1</id>
+          </Object>
+        </Object>
+      </Objects>
+    </msg>
+  </read>
+</omiEnvelope>
+			</textarea>
+		</div>
+		<div>
+		    <h3>Response:</h3>
+			<textarea class="response" rows=30 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="10" version="1.0">
+  <response>
+    <result>
+      <return description="Successfully started subscription" returnCode="200"/>
+      <requestID>2</requestID>
+    </result>
+  </response>
+</omiEnvelope>
+			</textarea>
+		</div>
+		<div>
+		    <h3>Request:</h3>
+			<textarea class="request" rows=30 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="10000">
+  <read msgformat="odf" >
+    <requestID>2</requestID>
+  </read>
+</omiEnvelope>
+			</textarea>
+		</div>
+		<div>
+		    <h3>Response:</h3>
+			<textarea class="response" rows=30 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="10" version="1.0">
+  <response>
+    <result msgformat="odf" >
+      <return returnCode="200"/>
+      <requestID>2</requestID>
+      <msg>
+        <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
+          <Object type="TypeOne">
+            <id idType="TypeTwo">Object1</id>
+            <InfoItem name="Sensor1"/>
+            <Object type="TypeOne">
+              <id idType="TypeTwo">SubObject1</id>
+              <InfoItem name="Sensor1"/>
+            </Object>
+          </Object>
+        </Objects>
+      </msg>
+    </result>
+  </response>
+</omiEnvelope>
+			</textarea>
+		</div>
+		<div>
+		    <h3>Request:</h3>
+			<textarea class="request" rows=30 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="10000">
+  <write msgformat="odf" >
+    <msg >
+      <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
+        <Object>
+          <id>Object1</id>
+          <InfoItem name="Sensor1">
+            <value type="xs:integer">10</value>
+          </InfoItem>
+          <Object>
+            <id>SubObject1</id>
+            <InfoItem name="Sensor1">
+              <value type="xs:integer">10</value>
+            </InfoItem>
+          </Object>
+        </Object>
+      </Objects>
+    </msg>
+  </write>
+</omiEnvelope>
+			</textarea>
+		</div>
+		<div>
+		    <h3>Response:</h3>
+			<textarea class="response" rows=30 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="10" version="1.0">
+  <response>
+    <result>
+      <return returnCode="200"/>
+    </result>
+  </response>
+</omiEnvelope>
+			</textarea>
+		</div>
+		<div>
+		    <h3>Request:</h3>
+			<textarea class="request" rows=30 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="10000">
+  <read msgformat="odf" >
+    <requestID>2</requestID>
+  </read>
+</omiEnvelope>
+			</textarea>
+		</div>
+		<div>
+		    <h3>Response:</h3>
+			<textarea class="response" rows=30 cols=100 style="border: none;" readonly wait=2>
+<?xml version="1.0"?>
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="10" version="1.0">
+  <response>
+    <result msgformat="odf" >
+      <return returnCode="200"/>
+      <requestID>2</requestID>
+      <msg>
+        <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
+          <Object type="TypeOne">
+            <id idType="TypeTwo">Object1</id>
+            <InfoItem name="Sensor1">
+              <value  type="xs:integer">10</value>
+            </InfoItem>
+            <Object type="TypeOne">
+              <id idType="TypeTwo">SubObject1</id>
+              <InfoItem name="Sensor1">
+                <value  type="xs:integer">10</value>
+              </InfoItem>
+            </Object>
+          </Object>
+        </Objects>
+      </msg>
+    </result>
+  </response>
+</omiEnvelope>
+			</textarea>
+		</div>
+		<div>
+		    <h3>Request:</h3>
+			<textarea class="request" rows=30 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="0">
+  <cancel>
+    <requestID>2</requestID>
+  </cancel>
+</omiEnvelope>
+			</textarea>
+		</div>
+		<div>
+		    <h3>Response:</h3>
+			<textarea class="response" rows=30 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="10" version="1.0">
+  <response>
+    <result>
+      <return returnCode="200"/>
+    </result>
+  </response>
+</omiEnvelope>
+			</textarea>
+		</div>
+	</div>
+	</article>
+<article class="request-response test">
+	    <h2> Polled event subscription</h2>
+	    <div >
+		<p class="description">
+		Subscription with interval of -2, but without a callback address.
+		</p>
+	    </div>
+	    <div class="msg-sequence">
+		<div>
+		    <h3>Request:</h3>
+			<textarea class="request" rows=30 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="10000">
+  <read msgformat="odf" interval="-2">
+    <msg >
+      <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
+        <Object>
+          <id>NewObject2</id>
+        </Object>
+      </Objects>
+    </msg>
+  </read>
+</omiEnvelope>
+			</textarea>
+		</div>
+		<div>
+		    <h3>Response:</h3>
+			<textarea class="response" rows=30 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="10" version="1.0">
+  <response>
+    <result>
+      <return description="Successfully started subscription" returnCode="200"/>
+      <requestID>3</requestID>
+    </result>
+  </response>
+</omiEnvelope>
+			</textarea>
+		</div>
+		<div>
+		    <h3>Request:</h3>
+			<textarea class="request" rows=30 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="10000">
+  <read msgformat="odf" >
+    <requestID>3</requestID>
+  </read>
+</omiEnvelope>
+			</textarea>
+		</div>
+		<div>
+		    <h3>Response:</h3>
+			<textarea class="response" rows=30 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="10" version="1.0">
+  <response>
+    <result msgformat="odf" >
+      <return returnCode="200"/>
+      <requestID>3</requestID>
+      <msg>
+        <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
+        </Objects>
+      </msg>
+    </result>
+  </response>
+</omiEnvelope>
+			</textarea>
+		</div>
+		<div>
+		    <h3>Request:</h3>
+			<textarea class="request" rows=30 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="10000">
+  <write msgformat="odf" >
+    <msg >
+      <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
+        <Object>
+          <id>NewObject2</id>
+          <Object>
+            <id>SubObject1</id>
+            <InfoItem name="Sensor1">
+              <value type="xs:integer">10</value>
+            </InfoItem>
+          </Object>
+        </Object>
+      </Objects>
+    </msg>
+  </write>
+</omiEnvelope>
+			</textarea>
+		</div>
+		<div>
+		    <h3>Response:</h3>
+			<textarea class="response" rows=30 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="10" version="1.0">
+  <response>
+    <result>
+      <return returnCode="200"/>
+    </result>
+  </response>
+</omiEnvelope>
+			</textarea>
+		</div>
+		<div>
+		    <h3>Request:</h3>
+			<textarea class="request" rows=30 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="10000">
+  <read msgformat="odf" >
+    <requestID>3</requestID>
+  </read>
+</omiEnvelope>
+			</textarea>
+		</div>
+		<div>
+		    <h3>Response:</h3>
+			<textarea class="response" rows=30 cols=100 style="border: none;" readonly wait=2>
+<?xml version="1.0"?>
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="10" version="1.0">
+  <response>
+    <result msgformat="odf" >
+      <return returnCode="200"/>
+      <requestID>3</requestID>
+      <msg>
+        <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
+          <Object>
+            <id>NewObject2</id>
+            <Object>
+              <id>SubObject1</id>
+              <InfoItem name="Sensor1">
+                <value  type="xs:integer">10</value>
+              </InfoItem>
+            </Object>
+          </Object>
+        </Objects>
+      </msg>
+    </result>
+  </response>
+</omiEnvelope>
+			</textarea>
+		</div><div>
+		    <h3>Request:</h3>
+			<textarea class="request" rows=30 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="10000">
+  <write msgformat="odf" >
+    <msg >
+      <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
+        <Object>
+          <id>NewObject2</id>
+          <Object>
+            <id>SubObject1</id>
+            <InfoItem name="Sensor1">
+              <value type="xs:integer">11</value>
+            </InfoItem>
+          </Object>
+        </Object>
+      </Objects>
+    </msg>
+  </write>
+</omiEnvelope>
+			</textarea>
+		</div>
+		<div>
+		    <h3>Response:</h3>
+			<textarea class="response" rows=30 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="10" version="1.0">
+  <response>
+    <result>
+      <return returnCode="200"/>
+    </result>
+  </response>
+</omiEnvelope>
+			</textarea>
+		</div><div>
+		    <h3>Request:</h3>
+			<textarea class="request" rows=30 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="10000">
+  <read msgformat="odf" >
+    <requestID>3</requestID>
+  </read>
+</omiEnvelope>
+			</textarea>
+		</div><div>
+		    <h3>Response:</h3>
+			<textarea class="response" rows=30 cols=100 style="border: none;" readonly wait=2>
+<?xml version="1.0"?>
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="10" version="1.0">
+  <response>
+    <result msgformat="odf" >
+      <return returnCode="200"/>
+      <requestID>3</requestID>
+      <msg>
+        <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
+          <Object>
+            <id>NewObject2</id>
+            <Object>
+              <id>SubObject1</id>
+              <InfoItem name="Sensor1">
+              </InfoItem>
+            </Object>
+          </Object>
+        </Objects>
+      </msg>
+    </result>
+  </response>
+</omiEnvelope>
+			</textarea>
+		</div><div>
+		    <h3>Request:</h3>
+			<textarea class="request" rows=30 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="0">
+  <cancel>
+    <requestID>3</requestID>
+  </cancel>
+</omiEnvelope>
+			</textarea>
+		</div>
+		<div>
+		    <h3>Response:</h3>
+			<textarea class="response" rows=30 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="10" version="1.0">
+  <response>
+    <result>
+      <return returnCode="200"/>
+    </result>
+  </response>
+</omiEnvelope>
+			</textarea>
+		</div>
+	</div>
+	</article>
+	<article class="sequential-test">
+	    <h2> Normal inteval subscription</h2>
+	    <div >
+		<p class="description">
+		Subscription with interval of 1 and with a callback address.
+		</p>
+	    </div>
+	    <div class="msg-sequence">
+		<div>
+		    <h3>Request:</h3>
+			<textarea class="request" rows=30 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="10000">
+  <read msgformat="odf" interval="1" callback="http://callbackAddress.com:5432">
+    <msg >
+      <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
+        <Object>
+          <id>Object1</id>
+          <InfoItem name="Sensor1"/>
+          <Object>
+            <id>SubObject1</id>
+          </Object>
+        </Object>
+      </Objects>
+    </msg>
+  </read>
+</omiEnvelope>
+			</textarea>
+		</div>
+		<div>
+		    <h3>Response:</h3>
+			<textarea class="response" rows=30 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="10" version="1.0">
+  <response>
+    <result>
+      <return description="Successfully started subscription" returnCode="200"/>
+      <requestID>4</requestID>
+    </result>
+  </response>
+</omiEnvelope>
+			</textarea>
+		</div>
+		<div>
+		    <h3>Response to callback:</h3>
+			<textarea class="callback" rows=30 cols=100 style="border: none;" readonly wait=2>
+<?xml version="1.0"?>
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="1" version="1.0">
+  <response>
+    <result msgformat="odf" >
+      <return returnCode="200"/>
+      <requestID>4</requestID>
+      <msg>
+        <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
+          <Object type="TypeOne">
+            <id idType="TypeTwo">Object1</id>
+            <InfoItem name="Sensor1">
+              <value  type="xs:integer">10</value>
+            </InfoItem>
+            <Object type="TypeOne">
+              <id idType="TypeTwo">SubObject1</id>
+              <InfoItem name="Sensor1">
+                <value  type="xs:integer">10</value>
+              </InfoItem>
+            </Object>
+          </Object>
+        </Objects>
+      </msg>
+    </result>
+  </response>
+</omiEnvelope>
+			</textarea>
+		</div>
+		<div>
+		    <h3>Response to callback:</h3>
+			<textarea class="callback" rows=30 cols=100 style="border: none;" readonly wait=2>
+<?xml version="1.0"?>
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="1" version="1.0">
+  <response>
+    <result msgformat="odf" >
+      <return returnCode="200"/>
+      <requestID>4</requestID>
+      <msg>
+        <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
+          <Object type="TypeOne">
+            <id idType="TypeTwo">Object1</id>
+            <InfoItem name="Sensor1">
+              <value  type="xs:integer">10</value>
+            </InfoItem>
+            <Object type="TypeOne">
+              <id idType="TypeTwo">SubObject1</id>
+              <InfoItem name="Sensor1">
+                <value  type="xs:integer">10</value>
+              </InfoItem>
+            </Object>
+          </Object>
+        </Objects>
+      </msg>
+    </result>
+  </response>
+</omiEnvelope>
+			</textarea>
+		</div>
+		<div>
+		    <h3>Request:</h3>
+			<textarea class="request" rows=30 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="0">
+  <cancel>
+    <requestID>4</requestID>
+  </cancel>
+</omiEnvelope>
+			</textarea>
+		</div>
+		<div>
+		    <h3>Response:</h3>
+			<textarea class="response" rows=30 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="10" version="1.0">
+  <response>
+    <result>
+      <return returnCode="200"/>
+    </result>
+  </response>
+</omiEnvelope>
+			</textarea>
+		</div>
+	    </div>
+	</article>
+	<article class="sequential-test">
+	    <h2> Normal event subscription</h2>
+	    <div >
+		<p class="description">
+		Subscription with interval of -1 and  with a callback address.
+		</p>
+	    </div>
+	    <div class="msg-sequence">
+		<div>
+		    <h3>Request:</h3>
+			<textarea class="request" rows=30 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="10000">
+  <read msgformat="odf" interval="-1" callback="http://callbackAddress.com:5432">
+    <msg >
+      <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
+        <Object>
+          <id>Object1</id>
+          <InfoItem name="Sensor1"/>
+          <Object>
+            <id>SubObject1</id>
+          </Object>
+        </Object>
+      </Objects>
+    </msg>
+  </read>
+</omiEnvelope>
+			</textarea>
+		</div>
+		<div>
+		    <h3>Response:</h3>
+			<textarea class="response" rows=30 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="10" version="1.0">
+  <response>
+    <result>
+      <return description="Successfully started subscription" returnCode="200"/>
+      <requestID>5</requestID>
+    </result>
+  </response>
+</omiEnvelope>
+			</textarea>
+		</div>
+		<div>
+		    <h3>Request:</h3>
+			<textarea class="request" rows=30 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="10000">
+  <write msgformat="odf" >
+    <msg >
+      <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
+        <Object>
+          <id>Object1</id>
+          <InfoItem name="Sensor1">
+            <value type="xs:integer">11</value>
+          </InfoItem>
+          <Object>
+            <id>SubObject1</id>
+            <InfoItem name="Sensor1">
+              <value type="xs:integer">11</value>
+            </InfoItem>
+          </Object>
+        </Object>
+      </Objects>
+    </msg>
+  </write>
+</omiEnvelope>
+			</textarea>
+		</div>
+		<div>
+		    <h3>Response:</h3>
+			<textarea class="response" rows=30 cols=100 style="border: none;" readonly wait=2>
+<?xml version="1.0"?>
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="10" version="1.0">
+  <response>
+    <result>
+      <return returnCode="200"/>
+    </result>
+  </response>
+</omiEnvelope>
+			</textarea>
+		</div>
+		<div>
+		    <h3>Response to callback:</h3>
+			<textarea class="callback" rows=30 cols=100 style="border: none;" readonly wait=4>
+<?xml version="1.0"?>
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="9997" version="1.0">
+  <response>
+    <result msgformat="odf" >
+      <return returnCode="200"/>
+      <requestID>5</requestID>
+      <msg>
+        <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
+          <Object type="TypeOne">
+            <id idType="TypeTwo">Object1</id>
+            <InfoItem name="Sensor1">
+              <value unixTime="11" type="xs:integer">11</value>
+            </InfoItem>
+            <Object type="TypeOne">
+              <id idType="TypeTwo">SubObject1</id>
+              <InfoItem name="Sensor1">
+                <value unixTime="11" type="xs:integer">11</value>
+              </InfoItem>
+            </Object>
+          </Object>
+        </Objects>
+      </msg>
+    </result>
+  </response>
+</omiEnvelope>
+			</textarea>
+		</div>
+		<div>
+		    <h3>Request:</h3>
+			<textarea class="request" rows=30 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="0">
+  <cancel>
+    <requestID>5</requestID>
+  </cancel>
+</omiEnvelope>
+			</textarea>
+		</div>
+		<div>
+		    <h3>Response:</h3>
+			<textarea class="response" rows=30 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="10" version="1.0">
+  <response>
+    <result>
+      <return returnCode="200"/>
+    </result>
+  </response>
+</omiEnvelope>
+			</textarea>
+		</div>
+	</div>
+	</article>
+<article class="sequential-test">
+	    <h2> -2 interval subscription</h2>
+	    <div >
+		<p class="description">
+		Subscription with interval of -2 and  with a callback address.
+		</p>
+	    </div>
+	    <div class="msg-sequence">
+		<div>
+		    <h3>Request:</h3>
+			<textarea class="request" rows=30 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="10000">
+  <read msgformat="odf" interval="-2" callback="http://callbackAddress.com:5432">
+    <msg >
+      <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
+        <Object>
+          <id>NewObject</id>
+          <Object>
+            <id>SubObject1</id>
+          </Object>
+        </Object>
+      </Objects>
+    </msg>
+  </read>
+</omiEnvelope>
+			</textarea>
+		</div>
+		<div>
+		    <h3>Response:</h3>
+			<textarea class="response" rows=30 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="10" version="1.0">
+  <response>
+    <result>
+      <return description="Successfully started subscription" returnCode="200"/>
+      <requestID>6</requestID>
+    </result>
+  </response>
+</omiEnvelope>
+			</textarea>
+		</div>
+		<div>
+		    <h3>Request:</h3>
+			<textarea class="request" rows=30 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="10000">
+  <write msgformat="odf" >
+    <msg >
+      <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
+        <Object type="NewType1">
+          <id idType="NewType">NewObject</id>
+          <InfoItem name="Sensor1">
+            <value unixtime="10" type="xs:integer">12</value>
+          </InfoItem>
+          <Object>
+            <id>SubObject1</id>
+            <InfoItem name="Sensor1">
+              <value unixtime="10" type="xs:integer">12</value>
+            </InfoItem>
+          </Object>
+        </Object>
+      </Objects>
+    </msg>
+  </write>
+</omiEnvelope>
+			</textarea>
+		</div>
+		<div>
+		    <h3>Response:</h3>
+			<textarea class="response" rows=30 cols=100 style="border: none;" readonly wait=2>
+<?xml version="1.0"?>
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="10" version="1.0">
+  <response>
+    <result>
+      <return returnCode="200"/>
+    </result>
+  </response>
+</omiEnvelope>
+			</textarea>
+		</div>
+		<div>
+		    <h3>Response to callback:</h3>
+			<textarea class="callback" rows=30 cols=100 style="border: none;" readonly wait=4>
+<?xml version="1.0"?>
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="9997" version="1.0">
+  <response>
+    <result msgformat="odf" >
+      <return returnCode="200"/>
+      <requestID>6</requestID>
+      <msg>
+        <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
+          <Object>
+            <id>NewObject</id>
+            <Object>
+              <id>SubObject1</id>
+              <InfoItem name="Sensor1">
+                <value unixTime="10" type="xs:integer">12</value>
+              </InfoItem>
+            </Object>
+          </Object>
+        </Objects>
+      </msg>
+    </result>
+  </response>
+</omiEnvelope>
+			</textarea>
+		</div><div>
+		    <h3>Request:</h3>
+			<textarea class="request" rows=30 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="10000">
+  <write msgformat="odf" >
+    <msg >
+      <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
+        <Object type="NewType1">
+          <id idType="NewType">NewObject</id>
+          <InfoItem name="Sensor1">
+            <value unixtime="11" type="xs:integer">13</value>
+          </InfoItem>
+          <Object>
+            <id>SubObject1</id>
+            <InfoItem name="Sensor1">
+              <value unixtime="11" type="xs:integer">13</value>
+            </InfoItem>
+            <Object>
+            <id>SubObject2</id>
+            <InfoItem name="Sensor2">
+              <value unixtime="11" type="xs:integer">13</value>
+            </InfoItem>
+            </Object>
+          </Object>
+        </Object>
+      </Objects>
+    </msg>
+  </write>
+</omiEnvelope>
+			</textarea>
+		</div>
+		<div>
+		    <h3>Response:</h3>
+			<textarea class="response" rows=30 cols=100 style="border: none;" readonly wait=2>
+<?xml version="1.0"?>
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="10" version="1.0">
+  <response>
+    <result>
+      <return returnCode="200"/>
+    </result>
+  </response>
+</omiEnvelope>
+			</textarea>
+		</div>
+		<div>
+		    <h3>Response to callback:</h3>
+			<textarea class="callback" rows=30 cols=100 style="border: none;" readonly wait=4>
+<?xml version="1.0"?>
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="9993" version="1.0">
+  <response>
+    <result msgformat="odf" >
+      <return returnCode="200"/>
+      <requestID>6</requestID>
+      <msg>
+        <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
+          <Object type="NewType1">
+            <id idType="NewType">NewObject</id>
+            <Object>
+              <id>SubObject1</id>
+              <Object>
+                <id>SubObject2</id>
+                  <InfoItem name="Sensor2">
+                  <value type="xs:integer">13</value>
+                </InfoItem>
+              </Object>
+            </Object>
+          </Object>
+        </Objects>
+      </msg>
+    </result>
+  </response>
+</omiEnvelope>
+			</textarea>
+		</div>
+		<div>
+		    <h3>Request:</h3>
+			<textarea class="request" rows=30 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="0">
+  <cancel>
+    <requestID>6</requestID>
+  </cancel>
+</omiEnvelope>
+			</textarea>
+		</div>
+		<div>
+		    <h3>Response:</h3>
+			<textarea class="response" rows=30 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="10" version="1.0">
+  <response>
+    <result>
+      <return returnCode="200"/>
+    </result>
+  </response>
+</omiEnvelope>
+			</textarea>
+		</div>
+	</div>
+	</article>
+
+
+
+	<h1> Proprietary/unknown attributes </h1>
+	<article class="request-response single test"> 
+	    <h2> Write proprietary/unknown attributes with O-MI response </h2>
+	    <div><p class="description">
+    Use response as write request with O-MI and O-DF proprietary attributes
+    that are allowed by the standards. O-MI attributes should be ignored
+		</p>
+	    </div>
+	    <div>
+		<h3>Request:</h3>
+		    <textarea class="request" rows=20 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="10" version="1.0">
+  <response>
+    <result msgformat="odf" >
+      <return returnCode="200" unknownAttribute="hello" proprietaryReturnAttr="returnExample" />
+      <msg>
+        <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/">
+          <Object proprietaryObject="object2Attribute">
+            <id proprietaryIdAttr="id2Example">Object2</id>
+            <InfoItem name="Sensor1" proprietaryIItemAttr="infoItemExample">
+              <value unixTime="9" proprietaryValueAttr="valueExample">9</value>
+            </InfoItem>
+            <Object proprietaryObject="subObject2Attribute">
+              <id proprietaryIdAttr="id2Example">SubObject2</id>
+              <InfoItem name="Sensor1" proprietaryIItemAttr="sub2infoItemExample">
+                <value unixTime="9" proprietaryValueAttr="value2Example">9</value>
+              </InfoItem>
+            </Object>
+          </Object>
+        </Objects>
+      </msg>
+    </result>
+  </response>
+</omiEnvelope>
+		</textarea>
+	    </div>
+	    <div>
+		<h3>Response:</h3>
+		    <textarea  class="response" rows=30 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="10" version="1.0">
+  <response>
+    <result>
+      <return returnCode="200"/>
+    </result>
+  </response>
+</omiEnvelope>
+		</textarea>
+	    </div>
+	</article>
+
+	<article class="request-response single test"> 
+	    <h2> Read proprietary O-DF attributes </h2>
+	    <div><p class="description">
+        Should return currently saved proprietary attributes.
+        As of writing, value attributes are ignored by the default DB implementation.
+		</p>
+	    </div>
+	    <div>
+		<h3>Request:</h3>
+		    <textarea  class="request" rows=20 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="0">
+  <read msgformat="odf" >
+    <msg >
+      <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
+        <Object>
+          <id>Object2</id>
+        </Object>
+      </Objects>
+    </msg>
+  </read>
+</omiEnvelope>
+		</textarea>
+	    </div>
+	    <div>
+		<h3>Response:</h3>
+		    <textarea class="response" rows=30 cols=100 style="border: none;" readonly>
+<omiEnvelope ttl="10" version="1.0" xmlns="http://www.opengroup.org/xsd/omi/1.0/">
+  <response>
+    <result msgformat="odf">
+      <return returnCode="200">
+      </return>
+      <msg>
+        <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/">
+          <Object proprietaryObject="object2Attribute">
+            <id proprietaryIdAttr="id2Example">Object2</id>
+            <InfoItem name="Sensor1" proprietaryIItemAttr="infoItemExample">
+              <value unixTime="9" dateTime="1970-01-01T02:00:09.000+02:00">9</value>
+            </InfoItem>
+            <Object proprietaryObject="subObject2Attribute">
+              <id proprietaryIdAttr="id2Example">SubObject2</id>
+              <InfoItem name="Sensor1" proprietaryIItemAttr="sub2infoItemExample">
+                <value unixTime="9" dateTime="1970-01-01T02:00:09.000+02:00">9</value>
+              </InfoItem>
+            </Object>
+          </Object>
+        </Objects>
+      </msg>
+    </result>
+  </response>
+</omiEnvelope>
+      </textarea>
+    </div>
+  </article>
+    </body>
+</html>

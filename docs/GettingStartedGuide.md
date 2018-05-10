@@ -67,4 +67,4 @@ Adding custom jar file for agents is possible in bin/deploy this file is priorit
 
 Configuration
 =============
-Configuration settings for the program are read from [application.conf](O-MI Node/src/main/resources/application.conf).
+Configuration settings for the program are read from [application.conf](O-MI-Node/src/main/resources/application.conf).

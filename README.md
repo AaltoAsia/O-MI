@@ -139,7 +139,7 @@ Extra commands from plugins and other
     - `sbt debian:packageBin`: create release debian package (requires `dpkg` program installed)
     - See native packager docs for configuring other packages. Our sbt configuration is in ./build.sbt.
 - We use sbt-scoverage:
-    - `sbt clean coverage test coverageReport`: calculate test coverage and generate reports in `O-MI Node/target/scala-2.11/scoverage-report/`   
+    - `sbt clean coverage test coverageReport`: calculate test coverage and generate reports in `O-MI-Node/target/scala-2.11/scoverage-report/`   
 - We also have some extra commands for convenience:
     - `sbt systemTest`: run only system tests (the used requests and responses can be found in `ImplementationDetails.html`)
     - `sbt release`: create release tar and zip packages

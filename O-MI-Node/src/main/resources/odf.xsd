@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- edited by Kary Fr�mling (Aalto University) -->
+<!-- Root Data Model Schema -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns="http://www.opengroup.org/xsd/odf/1.0/" targetNamespace="http://www.opengroup.org/xsd/odf/1.0/" elementFormDefault="qualified" attributeFormDefault="unqualified" version="1.0">
+	<xs:element name="Objects" type="ObjectsType">
+		<xs:annotation>
+			<xs:documentation>Data Model Root Element</xs:documentation>
+		</xs:annotation>
+	</xs:element>
+	<xs:complexType name="ObjectsType">
+		<xs:sequence>
+			<xs:element name="Object" type="ObjectType" minOccurs="0" maxOccurs="unbounded"/>
+		</xs:sequence>
+		<xs:attribute name="version" type="xs:string" use="optional">
+			<xs:annotation>
+				<xs:documentation>Schema version used.</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:anyAttribute processContents="lax">
+			<xs:annotation>
+				<xs:documentation>Proprietary or extended attributes.</xs:documentation>
+			</xs:annotation>
+		</xs:anyAttribute>
+	</xs:complexType>
+	<xs:complexType name="ObjectType">
+		<xs:sequence>
+			<xs:element name="id" type="QlmIDType" minOccurs="1" maxOccurs="unbounded"/>
+			<xs:element name="description" type="DescriptionType" minOccurs="0" maxOccurs="unbounded"/>
+			<xs:element name="InfoItem" type="InfoItemType" minOccurs="0" maxOccurs="unbounded"/>
+			<xs:element name="Object" type="ObjectType" minOccurs="0" maxOccurs="unbounded"/>
+		</xs:sequence>
+		<xs:attribute name="type" type="xs:string" use="optional"/>
+		<xs:anyAttribute processContents="lax">
+			<xs:annotation>
+				<xs:documentation>Proprietary or extended attributes.</xs:documentation>
+			</xs:annotation>
+		</xs:anyAttribute>
+	</xs:complexType>
+	<xs:complexType name="InfoItemType">
+		<xs:sequence>
+			<xs:element name="name" type="QlmIDType" minOccurs="0" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>Optional list of other names for the same InfoItem.</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="description" type="DescriptionType" minOccurs="0" maxOccurs="unbounded"/>
+			<xs:element name="MetaData" type="MetaDataType" minOccurs="0" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>Meta-data about the InfoItem, such as "latency", "unit" etc.</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="value" type="ValueType" minOccurs="0" maxOccurs="unbounded"/>
+		</xs:sequence>
+		<xs:attribute name="name" type="xs:string" use="required">
+			<xs:annotation>
+				<xs:documentation>Name of InfoItem, such as "PowerConsumption", "Diameter" or similar.</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="type" type="xs:string" use="optional">
+			<xs:annotation>
+				<xs:documentation>Type definition for the InfoItem, such as "http://schema.org/latitude". From Version 2.0 onwards.</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:anyAttribute processContents="lax">
+			<xs:annotation>
+				<xs:documentation>Proprietary or extended attributes.</xs:documentation>
+			</xs:annotation>
+		</xs:anyAttribute>
+	</xs:complexType>
+	<xs:complexType name="MetaDataType">
+		<xs:sequence>
+			<xs:element name="InfoItem" type="InfoItemType" minOccurs="0" maxOccurs="unbounded"/>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="DescriptionType">
+		<xs:annotation>
+			<xs:documentation>String with some"human-readable" text.</xs:documentation>
+		</xs:annotation>
+		<xs:simpleContent>
+			<xs:extension base="xs:string">
+				<xs:attribute name="lang" type="xs:string" use="optional">
+					<xs:annotation>
+						<xs:documentation>Language of "description" text.</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:anyAttribute processContents="lax">
+					<xs:annotation>
+						<xs:documentation>Proprietary or extended attributes.</xs:documentation>
+					</xs:annotation>
+				</xs:anyAttribute>
+			</xs:extension>
+		</xs:simpleContent>
+	</xs:complexType>
+	<xs:complexType name="QlmIDType">
+		<xs:simpleContent>
+			<xs:extension base="xs:string">
+				<xs:attribute name="idType" type="xs:string" use="optional">
+					<xs:annotation>
+						<xs:documentation>Text identifying the ID schema.</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="tagType" type="xs:string" use="optional">
+					<xs:annotation>
+						<xs:documentation>Text identifying the ID Tag media type. </xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="startDate" type="xs:dateTime" use="optional">
+					<xs:annotation>
+						<xs:documentation>Start of validity for the ID</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="endDate" type="xs:dateTime" use="optional">
+					<xs:annotation>
+						<xs:documentation>End of validity for the ID</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:anyAttribute processContents="lax">
+					<xs:annotation>
+						<xs:documentation>Proprietary attributes.</xs:documentation>
+					</xs:annotation>
+				</xs:anyAttribute>
+			</xs:extension>
+		</xs:simpleContent>
+	</xs:complexType>
+	<xs:complexType name="ValueType" mixed="true">
+		<xs:sequence>
+			<xs:element ref="Objects" minOccurs="0" maxOccurs="1"/>
+		</xs:sequence>
+		<xs:attribute name="type" type="xs:string" use="optional" default="xs:string"/>
+		<xs:attribute name="dateTime" type="xs:dateTime" use="optional"/>
+		<xs:attribute name="unixTime" type="xs:long" use="optional"/>
+    <xs:anyAttribute processContents="lax">
+      <xs:annotation>
+        <xs:documentation>Proprietary attributes.</xs:documentation>
+      </xs:annotation>
+    </xs:anyAttribute>
+	</xs:complexType>
+</xs:schema>

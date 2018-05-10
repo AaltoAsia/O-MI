@@ -1,0 +1,378 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.8	//
+D	webclient/js/formlogic.coffee	/^    requestID = (maybeRequestID.bind (idNode) ->$/;"	f
+Maybe	webclient/js/Maybe.js	/^  Maybe = function(value) {$/;"	f
+Maybe.all	webclient/js/Maybe.js	/^  Maybe.all = function() {$/;"	f
+Maybe.flatten	webclient/js/Maybe.js	/^  Maybe.flatten = function(arrOfMaybes) {$/;"	f
+Maybe.fromArray	webclient/js/Maybe.js	/^  Maybe.fromArray = function(arr) {$/;"	f
+None	webclient/js/Maybe.coffee	/^None = Object.create(maybeProto)$/;"	v
+None.exists	webclient/js/Maybe.js	/^  None.exists = function(f) {$/;"	f
+None.forall	webclient/js/Maybe.js	/^  None.forall = function(f) {$/;"	f
+None.get	webclient/js/Maybe.js	/^  None.get = function() {$/;"	f
+None.getOrElse	webclient/js/Maybe.js	/^  None.getOrElse = function(x) {$/;"	f
+None.toArray	webclient/js/Maybe.js	/^  None.toArray = function() {$/;"	f
+None.toString	webclient/js/Maybe.js	/^  None.toString = function() {$/;"	f
+Note	webclient/js/Maybe.coffee	/^Note: scala chose to name fmap 'map' and bind 'flatMap'$/;"	p
+OdfToJstree	webclient/js/formlogic.coffee	/^  my.OdfToJstree = genData = (xmlNode, parentPath) ->$/;"	f
+Some	webclient/js/Maybe.js	/^  Some = function(value) {$/;"	f
+URLHighlightOverlay	webclient/js/initialize.coffee	/^  URLHighlightOverlay =$/;"	v
+__isMaybe	webclient/js/Maybe.coffee	/^  __isMaybe: true$/;"	p
+__isMaybe	webclient/js/Maybe.js	/^    __isMaybe: true$/;"	p	class:maybeProto
+a	webclient/js/initialize.coffee	/^    a = s.replace(',', '.')$/;"	v
+addHistory	webclient/js/formlogic.js	/^      addHistory = function(requestID, pathValues, returnCodes) {$/;"	f
+addOdfTreeNode	webclient/js/initialize.coffee	/^  my.addOdfTreeNode = (parent, path, name, treeTypeName, callback=null) ->$/;"	f
+addPathToOdf	webclient/js/requests.coffee	/^  my.addPathToOdf = (odfTreeNode, odfObjects) ->$/;"	f
+addValueToAll	webclient/js/requests.js	/^    addValueToAll = function(doc) {$/;"	f
+addValueWhenWrite	webclient/js/requests.js	/^    addValueWhenWrite = function(odfInfoItem, values) {$/;"	f
+afterJquery	webclient/js/initialize.coffee	/^    my.afterJquery = (fn) -> fn()$/;"	f
+afterJquery	webclient/js/initialize.coffee	/^  my.afterJquery = (fn) -> afterWaits.push fn$/;"	f
+afterWaits	webclient/js/initialize.coffee	/^  afterWaits = []$/;"	v
+alert	webclient/js/Maybe.coffee	/^  alert: () -> alert @toString()$/;"	f
+alert	webclient/js/Maybe.coffee	/^  alert: () -> alert @toString()$/;"	p
+alert	webclient/js/Maybe.js	/^    alert: function() {$/;"	m	class:maybeProto
+all	webclient/js/Maybe.coffee	/^Maybe.all = (args...) -> (f) ->$/;"	f
+animatedShowRow	webclient/js/initialize.coffee	/^  my.animatedShowRow = (jqueryElem, insertFunction=null, callback=null) ->$/;"	f
+arr	webclient/js/newInfoItemForm.coffee	/^    arr = []$/;"	v
+bind	webclient/js/Maybe.coffee	/^sp.bind = (f) -> f(@__v)$/;"	f
+buildOdfTree	webclient/js/formlogic.coffee	/^  my.buildOdfTree = (objectsNode) ->$/;"	f
+buildOdfTreeStr	webclient/js/formlogic.coffee	/^  my.buildOdfTreeStr = (responseString) ->$/;"	f
+child	webclient/js/formlogic.coffee	/^      child = tree[key]$/;"	v
+children	webclient/js/initialize.coffee	/^            children: true$/;"	p
+clearResponse	webclient/js/formlogic.coffee	/^  my.clearResponse = (doneCallback) ->$/;"	f
+cloneAbove	webclient/js/initialize.coffee	/^  my.cloneAbove = (target, callback) ->$/;"	f
+cloneElem	webclient/js/formlogic.js	/^      cloneElem = function(target, callback) {$/;"	f
+cloneElem	webclient/js/initialize.coffee	/^  my.cloneElem = (target, callback) ->$/;"	f
+closetime	webclient/js/formlogic.coffee	/^        closetime = 1500 # ms to close Objects jstree$/;"	v
+confirmOverwrite	webclient/js/requests.coffee	/^  my.confirmOverwrite = (oldVal, newVal) ->$/;"	f
+container	webclient/js/formlogic.coffee	/^              container: consts.callbackResponseHistoryModal$/;"	p
+contentType	webclient/js/formlogic.coffee	/^      contentType: "text\/xml"$/;"	p
+createHistory	webclient/js/formlogic.js	/^      createHistory = function(requestID) {$/;"	f
+createOdf	webclient/js/omi.js	/^    createOdf = function(elem, doc) {$/;"	f
+createOdfDescription	webclient/js/omi.coffee	/^  my.createOdfDescription = (doc, text) ->$/;"	f
+createOdfInfoItem	webclient/js/omi.coffee	/^  my.createOdfInfoItem = (doc, name, values=[], description=null) ->$/;"	f
+createOdfMetaData	webclient/js/omi.coffee	/^  my.createOdfMetaData = (doc) ->$/;"	f
+createOdfObject	webclient/js/omi.coffee	/^  my.createOdfObject = (doc, id) ->$/;"	f
+createOdfObjects	webclient/js/omi.coffee	/^  my.createOdfObjects = (doc) ->$/;"	f
+createOdfValue	webclient/js/omi.coffee	/^  my.createOdfValue = (doc, value=null, valueType=null, valueTime=null) ->$/;"	f
+createOmi	webclient/js/omi.coffee	/^  my.createOmi = (elem, doc) ->$/;"	f
+createShortenedPath	webclient/js/formlogic.js	/^      createShortenedPath = function(path) {$/;"	f
+createWebSocket	webclient/js/formlogic.coffee	/^  my.createWebSocket = (onopen, onclose, onmessage, onerror) -> # Should socket be created automaticly for my or $/;"	f
+createdElem	webclient/js/omi.coffee	/^    createdElem = createOdf "Object", doc$/;"	v
+currentObjectsHead	webclient/js/requests.coffee	/^          currentObjectsHead = o.evaluateXPath(req, '\/\/odf:Objects')[0]$/;"	v
+currentOdfNode	webclient/js/requests.coffee	/^        currentOdfNode = odfElem$/;"	v
+currentOdfNode	webclient/js/requests.coffee	/^    currentOdfNode = odfObjects$/;"	v
+currentParams	webclient/js/requests.coffee	/^      currentParams = omiRequestObject$/;"	v
+currentParams	webclient/js/requests.coffee	/^  currentParams = my.defaults.empty()$/;"	v
+currentReq	webclient/js/requests.coffee	/^          currentReq = WebOmi.omi.evaluateXPath($/;"	v
+data	webclient/js/formlogic.coffee	/^      data: request$/;"	p
+dataType	webclient/js/formlogic.coffee	/^      dataType: "text"$/;"	p
+description	webclient/js/newInfoItemForm.coffee	/^          description: v.nonEmpty metaObj.metadatadescription$/;"	p
+e	webclient/js/Maybe.coffee	/^Maybe = (value) ->$/;"	f
+e	webclient/js/Maybe.coffee	/^Some = (value) ->$/;"	f
+e	webclient/js/formlogic.coffee	/^      onclose = () ->$/;"	f
+e	webclient/js/formlogic.coffee	/^    insertToTrie = (root, string) ->$/;"	f
+e	webclient/js/formlogic.coffee	/^    update = (sub) ->$/;"	f
+e	webclient/js/initialize.coffee	/^    createNode = (particle, odfName, treeTypeName, defaultId) ->$/;"	f
+e	webclient/js/newInfoItemForm.coffee	/^      duplicateTime = findDuplicate(values.map((val) -> val.time))$/;"	f
+e	webclient/js/newInfoItemForm.coffee	/^  cloneAbove = (target, callback) ->$/;"	f
+e	webclient/js/newInfoItemForm.coffee	/^  findDuplicate = (arr) ->$/;"	f
+e	webclient/js/requests.coffee	/^  addValueWhenWrite = (odfInfoItem, values=[{value:"0"}]) ->$/;"	f
+e	webclient/js/requests.coffee	/^  maybeInsertBefore = (parent, beforeTarget, insertElem) ->$/;"	f
+equals	webclient/js/initialize.coffee	/^  validators.equals = (y) -> (x) ->$/;"	f
+error	webclient/js/formlogic.coffee	/^      error: (response) ->$/;"	f
+error	webclient/js/formlogic.coffee	/^      error: (response) ->$/;"	p
+evaluateXPath	webclient/js/omi.coffee	/^  my.evaluateXPath = (elem, xpath) ->$/;"	f
+existingIDs	webclient/js/requests.coffee	/^            existingIDs = o.evaluateXPath doc, "\/\/omi:requestID"$/;"	v
+exists	webclient/js/Maybe.coffee	/^None.exists = (f) -> false$/;"	f
+f	webclient/js/newInfoItemForm.coffee	/^  updateOdf = (newInfoItem) ->$/;"	f
+f	webclient/js/omi.coffee	/^  createOdf = (elem, doc) ->$/;"	f
+flash	webclient/js/initialize.coffee	/^  my.flash = (jqueryElem) ->$/;"	f
+flatten	webclient/js/Maybe.coffee	/^Maybe.flatten = (arrOfMaybes) ->$/;"	f
+fmap	webclient/js/Maybe.coffee	/^None.fmap = None.bind = None.join = () -> None #nice and toxic!$/;"	f
+fmap	webclient/js/Maybe.coffee	/^sp.fmap = (f) -> Maybe(f(@__v))$/;"	f
+forall	webclient/js/Maybe.coffee	/^None.forall = (f) -> true$/;"	f
+forceLoadParams	webclient/js/requests.coffee	/^  my.forceLoadParams = (omiRequestObject, useOldDoc=false) ->$/;"	f
+formLogicExt	webclient/js/formlogic.js	/^  formLogicExt = function($, WebOmi) {$/;"	f
+format	webclient/js/newInfoItemForm.coffee	/^        format: 'X' # NOTE: Current version of datetimepicker does not support unixtime$/;"	p
+fromArray	webclient/js/Maybe.coffee	/^Maybe.fromArray = (arr) ->$/;"	f
+generate	webclient/js/requests.coffee	/^  my.generate = ->$/;"	f
+get	webclient/js/Maybe.coffee	/^None.get = () -> throw "called get on none!"$/;"	f
+getCurrentParams	webclient/js/requests.coffee	/^  my.getCurrentParams = -> $.extend {}, currentParams$/;"	f
+getObjectChildren	webclient/js/omi.coffee	/^  my.getObjectChildren = (xmlNode) ->$/;"	f
+getOdfChild	webclient/js/omi.coffee	/^  my.getOdfChild = (odfId, odfNode) ->$/;"	f
+getOdfId	webclient/js/omi.coffee	/^  my.getOdfId = (xmlNode) ->$/;"	f
+getOrElse	webclient/js/Maybe.coffee	/^None.getOrElse = (x) -> x$/;"	f
+getOrElse	webclient/js/Maybe.coffee	/^sp.getOrElse = sp.get = () -> @__v$/;"	f
+getPath	webclient/js/formlogic.js	/^      getPath = function(xmlNode) {$/;"	f
+getPathValues	webclient/js/formlogic.js	/^      getPathValues = function(infoitemXmlNode) {$/;"	f
+getRequest	webclient/js/formlogic.coffee	/^  my.getRequest = () ->$/;"	f
+getRequestOdf	webclient/js/formlogic.coffee	/^  my.getRequestOdf = () ->$/;"	f
+getShortenedPath	webclient/js/formlogic.js	/^      getShortenedPath = function(tree, path, shortening) {$/;"	f
+greaterThan	webclient/js/initialize.coffee	/^  validators.greaterThan = (y) -> (x) ->$/;"	f
+greaterThanEq	webclient/js/initialize.coffee	/^  validators.greaterThanEq = (y) -> (x) ->$/;"	f
+h	webclient/js/formlogic.coffee	/^    createShortenedPath = (path) ->$/;"	f
+h	webclient/js/formlogic.coffee	/^    getPath = (xmlNode) ->$/;"	f
+h	webclient/js/formlogic.coffee	/^    getShortenedPath = (tree, path, shortening=false) ->$/;"	f
+handleSubscriptionHistory	webclient/js/formlogic.coffee	/^  my.handleSubscriptionHistory = (responseString) ->$/;"	f
+handleWSMessage	webclient/js/formlogic.coffee	/^  my.handleWSMessage = (message) ->$/;"	f
+hasOdfChildren	webclient/js/omi.coffee	/^  my.hasOdfChildren = (odfNode) ->$/;"	f
+head	webclient/js/omi.coffee	/^        head = my.evaluateXPath(xmlNode, '.\/odf:id')[0]$/;"	v
+htmlformat	webclient/js/formlogic.js	/^      htmlformat = function(pathValues) {$/;"	f
+httpSend	webclient/js/formlogic.coffee	/^  my.httpSend = (callback) ->$/;"	f
+id	webclient/js/formlogic.coffee	/^      id = omi.getOdfId(xmlNode)$/;"	v
+id	webclient/js/initialize.coffee	/^            id: "Objects"$/;"	p
+idElem	webclient/js/omi.coffee	/^    idElem      = createOdf "id", doc$/;"	v
+idesc	webclient/js/initialize.coffee	/^window.idesc = (myId) -> myId.replace( \/( )\/g, "_" )$/;"	f
+info	webclient/js/requests.coffee	/^            info =$/;"	v
+infoItemName	webclient/js/formlogic.coffee	/^        infoItemName: infoItemName$/;"	p
+infoitemData	webclient/js/newInfoItemForm.coffee	/^        infoitemData = readValues()$/;"	v
+insertToTrie	webclient/js/formlogic.js	/^      insertToTrie = function(root, string) {$/;"	f
+integer	webclient/js/initialize.coffee	/^  validators.integer  = (x) ->$/;"	f
+interval	webclient/js/requests.coffee	/^      interval: 5$/;"	p
+isReadReq	webclient/js/formlogic.coffee	/^          isReadReq = switch reqName$/;"	v
+isRequestIdReq	webclient/js/formlogic.coffee	/^          isRequestIdReq = switch reqName$/;"	v
+join	webclient/js/Maybe.coffee	/^sp.join = () -> if @__v.__isMaybe? then @__v else throw "already flat!"$/;"	f
+jqesc	webclient/js/initialize.coffee	/^window.jqesc = (mySel) -> '#' + mySel.replace( \/(\\[|\\]|!|"|#|\\$|%|&|\\'|\\(|\\)|\\*|\\+|\\,|\\.|\\\/|\\:|\\;|\\?|@)\/g, "\\\\$1" ).replace( \/( )\/g, "_" )$/;"	f
+keepAliveScheduler	webclient/js/formlogic.coffee	/^      my.keepAliveScheduler = window.setInterval (() -> my.wsSend ""), 30000$/;"	f
+keys	webclient/js/formlogic.coffee	/^      keys = Object.keys tree$/;"	v
+l	webclient/js/requests.coffee	/^  addValueToAll = (doc) ->$/;"	f
+l	webclient/js/requests.coffee	/^  removeValueFromAll = (doc) ->$/;"	f
+lastOdfElem	webclient/js/requests.coffee	/^        lastOdfElem = maybeChild$/;"	v
+lastOdfElem	webclient/js/requests.coffee	/^    lastOdfElem = odfObjects$/;"	v
+lineNumbers	webclient/js/initialize.coffee	/^    lineNumbers: true$/;"	p
+lineWrapping	webclient/js/initialize.coffee	/^    lineWrapping: true$/;"	p
+locale	webclient/js/initialize.coffee	/^      locale: language$/;"	p
+log	webclient/js/Maybe.coffee	/^  log: () -> console.log @toString()$/;"	f
+log	webclient/js/Maybe.coffee	/^  log: () -> console.log @toString()$/;"	p
+log	webclient/js/Maybe.js	/^    log: function() {$/;"	m	class:maybeProto
+m	webclient/js/formlogic.coffee	/^    cloneElem = (target, callback) ->$/;"	f
+m	webclient/js/newInfoItemForm.coffee	/^  resetInfoItemForm = ->$/;"	f
+maybeCallback	webclient/js/formlogic.coffee	/^        maybeCallback = Maybe verbXml.attributes.callback$/;"	v
+maybeChild	webclient/js/requests.coffee	/^      maybeChild = o.getOdfChild(id, lastOdfElem)$/;"	v
+maybeId	webclient/js/omi.coffee	/^      maybeId = my.getOdfId(child)$/;"	v
+maybeInsertBefore	webclient/js/requests.js	/^    maybeInsertBefore = function(parent, beforeTarget, insertElem) {$/;"	f
+maybeParsedXml	webclient/js/formlogic.coffee	/^      maybeParsedXml = Maybe omi.parseXml(request)$/;"	v
+maybeProto	webclient/js/Maybe.coffee	/^maybeProto = {$/;"	v
+maybeValues	webclient/js/requests.coffee	/^                  maybeValues =[{value:"VALUE_PLACEHOLDER"}]$/;"	v
+maybeVerbXml	webclient/js/formlogic.coffee	/^      maybeVerbXml =$/;"	v
+mementoTime	webclient/js/initialize.coffee	/^            mementoTime = @ref.data "DateTimePicker"$/;"	v
+meta	webclient/js/requests.coffee	/^            meta = o.createOdfMetaData odfDoc$/;"	v
+metas	webclient/js/newInfoItemForm.coffee	/^      metas =$/;"	v
+mode	webclient/js/initialize.coffee	/^    mode: "text\/xml"$/;"	p
+modifyRequest	webclient/js/formlogic.coffee	/^  my.modifyRequest = (callback) ->$/;"	f
+moveHistoryHeaders	webclient/js/formlogic.js	/^      moveHistoryHeaders = function(latestDom) {$/;"	f
+msg	webclient/js/requests.coffee	/^            msg = o.evaluateXPath(req, "\/\/omi:msg")[0]$/;"	v
+msg	webclient/js/requests.coffee	/^          msg = o.createOmi "msg", doc$/;"	v
+my	webclient/js/formlogic.coffee	/^  my = WebOmi.formLogic = {}$/;"	v
+my	webclient/js/omi.coffee	/^  my = WebOmi.omi = {}$/;"	v
+my	webclient/js/requests.coffee	/^  my = WebOmi.requests = {}$/;"	v
+my.addPathToOdf	webclient/js/requests.js	/^    my.addPathToOdf = function(odfTreeNode, odfObjects) {$/;"	f
+my.buildOdfTree	webclient/js/formlogic.js	/^    my.buildOdfTree = function(objectsNode) {$/;"	f
+my.buildOdfTreeStr	webclient/js/formlogic.js	/^    my.buildOdfTreeStr = function(responseString) {$/;"	f
+my.clearResponse	webclient/js/formlogic.js	/^    my.clearResponse = function(doneCallback) {$/;"	f
+my.confirmOverwrite	webclient/js/requests.js	/^    my.confirmOverwrite = function(oldVal, newVal) {$/;"	f
+my.createOdfDescription	webclient/js/omi.js	/^    my.createOdfDescription = function(doc, text) {$/;"	f
+my.createOdfInfoItem	webclient/js/omi.js	/^    my.createOdfInfoItem = function(doc, name, values, description) {$/;"	f
+my.createOdfMetaData	webclient/js/omi.js	/^    my.createOdfMetaData = function(doc) {$/;"	f
+my.createOdfObject	webclient/js/omi.js	/^    my.createOdfObject = function(doc, id) {$/;"	f
+my.createOdfObjects	webclient/js/omi.js	/^    my.createOdfObjects = function(doc) {$/;"	f
+my.createOdfValue	webclient/js/omi.js	/^    my.createOdfValue = function(doc, value, valueType, valueTime) {$/;"	f
+my.createOmi	webclient/js/omi.js	/^    my.createOmi = function(elem, doc) {$/;"	f
+my.createWebSocket	webclient/js/formlogic.js	/^    my.createWebSocket = function(onopen, onclose, onmessage, onerror) {$/;"	f
+my.defaults.cancel	webclient/js/requests.js	/^    my.defaults.cancel = function() {$/;"	f
+my.defaults.empty	webclient/js/requests.js	/^    my.defaults.empty = function() {$/;"	f
+my.defaults.poll	webclient/js/requests.js	/^    my.defaults.poll = function() {$/;"	f
+my.defaults.read	webclient/js/requests.js	/^    my.defaults.read = function() {$/;"	f
+my.defaults.readAll	webclient/js/requests.js	/^    my.defaults.readAll = function() {$/;"	f
+my.defaults.subscription	webclient/js/requests.js	/^    my.defaults.subscription = function() {$/;"	f
+my.defaults.write	webclient/js/requests.js	/^    my.defaults.write = function() {$/;"	f
+my.evaluateXPath	webclient/js/omi.js	/^    my.evaluateXPath = function(elem, xpath) {$/;"	f
+my.forceLoadParams	webclient/js/requests.js	/^    my.forceLoadParams = function(omiRequestObject, useOldDoc) {$/;"	f
+my.generate	webclient/js/requests.js	/^    my.generate = function() {$/;"	f
+my.getCurrentParams	webclient/js/requests.js	/^    my.getCurrentParams = function() {$/;"	f
+my.getObjectChildren	webclient/js/omi.js	/^    my.getObjectChildren = function(xmlNode) {$/;"	f
+my.getOdfChild	webclient/js/omi.js	/^    my.getOdfChild = function(odfId, odfNode) {$/;"	f
+my.getOdfId	webclient/js/omi.js	/^    my.getOdfId = function(xmlNode) {$/;"	f
+my.getRequest	webclient/js/formlogic.js	/^    my.getRequest = function() {$/;"	f
+my.getRequestOdf	webclient/js/formlogic.js	/^    my.getRequestOdf = function() {$/;"	f
+my.handleSubscriptionHistory	webclient/js/formlogic.js	/^    my.handleSubscriptionHistory = function(responseString) {$/;"	f
+my.handleWSMessage	webclient/js/formlogic.js	/^    my.handleWSMessage = function(message) {$/;"	f
+my.hasOdfChildren	webclient/js/omi.js	/^    my.hasOdfChildren = function(odfNode) {$/;"	f
+my.httpSend	webclient/js/formlogic.js	/^    my.httpSend = function(callback) {$/;"	f
+my.modifyRequest	webclient/js/formlogic.js	/^    my.modifyRequest = function(callback) {$/;"	f
+my.nsResolver	webclient/js/omi.js	/^    my.nsResolver = function(name) {$/;"	f
+my.parseXml	webclient/js/omi.js	/^    my.parseXml = function(responseString) {$/;"	f
+my.readAll	webclient/js/requests.js	/^    my.readAll = function(fastForward) {$/;"	f
+my.removePathFromOdf	webclient/js/requests.js	/^    my.removePathFromOdf = function(odfTreeNode, odfObjects) {$/;"	f
+my.send	webclient/js/formlogic.js	/^    my.send = function(callback) {$/;"	f
+my.setRequest	webclient/js/formlogic.js	/^    my.setRequest = function(xml) {$/;"	f
+my.setResponse	webclient/js/formlogic.js	/^    my.setResponse = function(xml, doneCallback) {$/;"	f
+my.startKeepAlive	webclient/js/formlogic.js	/^    my.startKeepAlive = function() {$/;"	f
+my.stopKeepAlive	webclient/js/formlogic.js	/^    my.stopKeepAlive = function() {$/;"	f
+my.updateHistoryCounter	webclient/js/formlogic.js	/^    my.updateHistoryCounter = function(toZero) {$/;"	f
+my.wsSend	webclient/js/formlogic.js	/^    my.wsSend = function(request, callback) {$/;"	f
+n	webclient/js/formlogic.coffee	/^      onopen = () ->$/;"	f
+n	webclient/js/newInfoItemForm.coffee	/^  notifyErrorOn = (jqElement, errorMsg) ->$/;"	f
+name	webclient/js/formlogic.coffee	/^        name = WebOmi.omi.getOdfId(xmlNode) # FIXME: get$/;"	v
+name	webclient/js/initialize.coffee	/^        name =$/;"	v
+name	webclient/js/requests.js	/^      name: {$/;"	p	class:my.params
+newHasMsg	webclient/js/formlogic.coffee	/^            newHasMsg = requests.defaults[reqName]().msg$/;"	v
+newHistory	webclient/js/formlogic.coffee	/^          newHistory = createHistory requestID$/;"	v
+newId	webclient/js/requests.coffee	/^                  newId = o.createOmi "requestID", doc$/;"	v
+newReq	webclient/js/requests.coffee	/^          newReq = WebOmi.omi.createOmi reqName, doc$/;"	v
+nonEmpty	webclient/js/initialize.coffee	/^  validators.nonEmpty = (s) ->$/;"	f
+nsResolver	webclient/js/omi.coffee	/^  my.nsResolver = (name) ->$/;"	f
+number	webclient/js/initialize.coffee	/^  validators.number   = (s) ->$/;"	f
+o	webclient/js/requests.coffee	/^        o = WebOmi.omi$/;"	v
+o	webclient/js/requests.coffee	/^      o = WebOmi.omi$/;"	v
+o	webclient/js/requests.coffee	/^    o = WebOmi.omi$/;"	v
+object	webclient/js/requests.coffee	/^            object = o.createOdfObject odfDoc, id$/;"	v
+objects	webclient/js/requests.coffee	/^            objects = o.createOdfObjects req$/;"	v
+objectsArr	webclient/js/formlogic.coffee	/^    objectsArr = omi.evaluateXPath parsed, "\/\/odf:Objects"$/;"	v
+obs	webclient/js/requests.coffee	/^          obs = o.createOdfObjects doc$/;"	v
+obss	webclient/js/requests.coffee	/^          obss = WebOmi.omi.evaluateXPath(doc, "\/\/odf:Objects")$/;"	v
+odf	webclient/js/omi.js	/^      odf: "http:\/\/www.opengroup.org\/xsd\/odf\/1.0\/"$/;"	p	class:my.ns
+odf	webclient/js/requests.coffee	/^          currentParams.odf = currentParams.odf.filter (p) -> p != path$/;"	f
+odfObjects	webclient/js/requests.coffee	/^          odfObjects = o.evaluateXPath(req, '\/\/odf:Objects')[0]$/;"	v
+odfTreeNode	webclient/js/requests.coffee	/^            odfTreeNode = $ jqesc path$/;"	v
+odfTreeNode	webclient/js/requests.coffee	/^          odfTreeNode = $ jqesc path$/;"	v
+odfTreeNode	webclient/js/requests.coffee	/^        odfTreeNode = $ jqesc path$/;"	v
+odfVal	webclient/js/omi.coffee	/^    odfVal = createOdf "value", doc$/;"	v
+omi	webclient/js/formlogic.coffee	/^      omi = WebOmi.omi$/;"	v
+omi	webclient/js/formlogic.coffee	/^    omi = WebOmi.omi$/;"	v
+omi	webclient/js/omi.js	/^      omi: "http:\/\/www.opengroup.org\/xsd\/omi\/1.0\/",$/;"	p	class:my.ns
+omiExt	webclient/js/omi.js	/^  omiExt = function(WebOmi) {$/;"	f
+onclose	webclient/js/formlogic.coffee	/^    socket.onclose = () -> onclose$/;"	f
+onclose	webclient/js/formlogic.js	/^        onclose = function() {$/;"	f
+onerror	webclient/js/formlogic.js	/^        onerror = function(error) {$/;"	f
+onopen	webclient/js/formlogic.js	/^        onopen = function() {$/;"	f
+or	webclient/js/initialize.coffee	/^  validators.or = (vs...) -> (c) ->$/;"	f
+p	webclient/js/Maybe.coffee	/^  step = (args, arr) -> switch args.length$/;"	f
+p	webclient/js/initialize.coffee	/^    requestTip = (selector, text) ->$/;"	f
+parent	webclient/js/initialize.coffee	/^            parent: "#"$/;"	p
+parseXml	webclient/js/omi.coffee	/^  my.parseXml = (responseString) ->$/;"	f
+path	webclient/js/formlogic.coffee	/^        path: path$/;"	p
+pathObject	webclient/js/formlogic.coffee	/^        pathObject: pathObject.join '\/'$/;"	p
+pathPrefixTrie	webclient/js/formlogic.coffee	/^    pathPrefixTrie = {}$/;"	v
+placement	webclient/js/newInfoItemForm.coffee	/^        placement: "top"$/;"	p
+processData	webclient/js/formlogic.coffee	/^      processData: false$/;"	p
+q	webclient/js/formlogic.coffee	/^        isSubscriptionReq = maybeCallback.exists((c) -> c.value is "0") and$/;"	f
+r	webclient/js/formlogic.coffee	/^      onerror = (error) ->$/;"	f
+r	webclient/js/formlogic.coffee	/^    makeRequestUpdater = (input) ->$/;"	f
+r	webclient/js/newInfoItemForm.coffee	/^  createTimestampPicker = (dom) ->$/;"	f
+r	webclient/js/requests.coffee	/^  updateSetterForAttr = (name, attrParentXPath) ->$/;"	f
+readAll	webclient/js/requests.coffee	/^  my.readAll = (fastForward) ->$/;"	f
+readAll	webclient/js/requests.js	/^      readAll: "<omiEnvelope xmlns=\\"http:\/\/www.opengroup.org\/xsd\/omi\/1.0\/\\" version=\\"1.0\\" ttl=\\"0\\">\\n  <read msgformat=\\"odf\\">\\n    <msg>\\n      <Objects xmlns=\\"http:\/\/www.opengroup.org\/xsd\/odf\/1.0\/\\"><\/Objects>\\n    <\/msg>\\n  <\/read>\\n<\/omiEnvelope>",$/;"	p	class:my.xmls
+receivedCount	webclient/js/formlogic.js	/^              receivedCount: 1,$/;"	p	class:my.callbackSubscriptions
+receivedCount	webclient/js/formlogic.js	/^          receivedCount: 1,$/;"	p	class:my.callbackSubscriptions
+ref	webclient/js/initialize.coffee	/^            @ref.data "DateTimePicker"$/;"	e
+ref	webclient/js/initialize.coffee	/^            @ref.on "dp.change", =>$/;"	e
+ref	webclient/js/initialize.coffee	/^          @ref.jstree().get_selected[0]$/;"	e
+ref	webclient/js/initialize.coffee	/^        @ref.on "input", =>  # =>: preserving this$/;"	e
+removePathFromOdf	webclient/js/requests.coffee	/^  my.removePathFromOdf = (odfTreeNode, odfObjects) ->$/;"	f
+removeValueFromAll	webclient/js/requests.js	/^    removeValueFromAll = function(doc) {$/;"	f
+req	webclient/js/formlogic.coffee	/^    req = my.getRequest() # RemoveMe$/;"	v
+requestDoc	webclient/js/initialize.coffee	/^      requestDoc: # Maybe xml dom document$/;"	p
+requestDoc	webclient/js/requests.coffee	/^    requestDoc: null  # Maybe xml dom document$/;"	p
+requestID	webclient/js/initialize.coffee	/^      requestID: # Maybe int$/;"	p
+requestID	webclient/js/requests.coffee	/^    requestID: # Maybe Int$/;"	p
+requestID	webclient/js/requests.coffee	/^    requestID: null  # Maybe int$/;"	p
+requestsExt	webclient/js/requests.js	/^  requestsExt = function(WebOmi) {$/;"	f
+res	webclient/js/initialize.coffee	/^      res = v c$/;"	v
+response	webclient/js/formlogic.coffee	/^    response = message.data$/;"	v
+responseList	webclient/js/formlogic.coffee	/^      responseList =$/;"	v
+responses	webclient/js/formlogic.js	/^              responses: [responseString]$/;"	p	class:my.callbackSubscriptions
+responses	webclient/js/formlogic.js	/^          responses: [responseString]$/;"	p	class:my.callbackSubscriptions
+results	webclient/js/newInfoItemForm.coffee	/^    results = {}$/;"	v
+returnStatus	webclient/js/formlogic.js	/^      returnStatus = function(count, returnCodes) {$/;"	f
+s	webclient/js/formlogic.coffee	/^      pathVals = $ $(pathVals).map -> this.toArray()$/;"	f
+s	webclient/js/formlogic.coffee	/^    getPathValues = (infoitemXmlNode) ->$/;"	f
+s	webclient/js/formlogic.coffee	/^    moveHistoryHeaders = (latestDom) ->$/;"	f
+s	webclient/js/formlogic.coffee	/^    returnStatus = ( count, returnCodes ) ->$/;"	f
+s	webclient/js/newInfoItemForm.coffee	/^        duplicateInputs = $("input[name='valuetime']").filter((_, e) -> $(e).val() == duplicateTime)$/;"	f
+s	webclient/js/newInfoItemForm.coffee	/^  getGroups = (ofWhat, requiredField) ->$/;"	f
+s	webclient/js/newInfoItemForm.coffee	/^  readValues = ->$/;"	f
+send	webclient/js/formlogic.coffee	/^  my.send = (callback) ->$/;"	f
+serverUrl	webclient/js/initialize.coffee	/^        serverUrl = my.serverUrl.val()$/;"	v
+serverUrl	webclient/js/initialize.coffee	/^        serverUrl = serverUrl$/;"	v
+set	webclient/js/newInfoItemForm.coffee	/^    set = {}$/;"	v
+setRequest	webclient/js/formlogic.coffee	/^  my.setRequest = (xml) ->$/;"	f
+setResponse	webclient/js/formlogic.coffee	/^  my.setResponse = (xml, doneCallback) ->$/;"	f
+shortPath	webclient/js/formlogic.coffee	/^        shortPath: -> createShortenedPath path$/;"	f
+shortPath	webclient/js/formlogic.coffee	/^        shortPath: -> createShortenedPath path$/;"	p
+siblingValue	webclient/js/requests.coffee	/^              siblingValue = beforMetas$/;"	v
+siblingValue	webclient/js/requests.coffee	/^              siblingValue = beforObjects$/;"	v
+siblingValue	webclient/js/requests.coffee	/^              siblingValue = beforValues$/;"	v
+sideBySide	webclient/js/newInfoItemForm.coffee	/^        sideBySide: true$/;"	p
+socket.onclose	webclient/js/formlogic.js	/^      socket.onclose = function() {$/;"	f
+some	webclient/js/Maybe.coffee	/^  some = Object.create(someProto)$/;"	v
+sp	webclient/js/Maybe.coffee	/^sp = someProto = Object.create(maybeProto)$/;"	v
+sp.bind	webclient/js/Maybe.js	/^  sp.bind = function(f) {$/;"	f
+sp.fmap	webclient/js/Maybe.js	/^  sp.fmap = function(f) {$/;"	f
+sp.join	webclient/js/Maybe.js	/^  sp.join = function() {$/;"	f
+sp.toArray	webclient/js/Maybe.js	/^  sp.toArray = function() {$/;"	f
+sp.toString	webclient/js/Maybe.js	/^  sp.toString = function() {$/;"	f
+startKeepAlive	webclient/js/formlogic.coffee	/^  my.startKeepAlive = ->$/;"	f
+state	webclient/js/initialize.coffee	/^            state: {opened : false}$/;"	p
+step	webclient/js/Maybe.js	/^    step = function(args, arr) {$/;"	f
+stopKeepAlive	webclient/js/formlogic.coffee	/^  my.stopKeepAlive = ->$/;"	f
+stringValue	webclient/js/formlogic.coffee	/^        stringValue: value.textContent.trim()$/;"	p
+success	webclient/js/formlogic.coffee	/^      success: (response) ->$/;"	f
+success	webclient/js/formlogic.coffee	/^      success: (response) ->$/;"	p
+sum	webclient/js/formlogic.coffee	/^    sum = 0$/;"	v
+t	webclient/js/formlogic.coffee	/^    htmlformat = (pathValues) ->$/;"	f
+t	webclient/js/formlogic.coffee	/^formLogicExt = ($, WebOmi) ->$/;"	f
+t	webclient/js/initialize.coffee	/^    basicInput = (selector, validator=util.validators.nonEmpty) ->$/;"	f
+t	webclient/js/initialize.coffee	/^constsExt = ($, parent, util) ->$/;"	f
+t	webclient/js/initialize.coffee	/^utilExt = ($, parent) ->$/;"	f
+t	webclient/js/omi.coffee	/^omiExt = (WebOmi) ->$/;"	f
+t	webclient/js/requests.coffee	/^requestsExt = (WebOmi) ->$/;"	f
+template	webclient/js/requests.js	/^      template: "<omiEnvelope xmlns=\\"http:\/\/www.opengroup.org\/xsd\/omi\/1.0\/\\" \\n    version=\\"1.0\\" ttl=\\"0\\">\\n  <read msgformat=\\"odf\\">\\n    <msg>\\n    <\/msg>\\n  <\/read>\\n<\/omiEnvelope>\\n"$/;"	p	class:my.xmls
+text	webclient/js/initialize.coffee	/^            text: "Objects"$/;"	p
+textElem	webclient/js/omi.coffee	/^      textElem = doc.createTextNode text$/;"	v
+textElem	webclient/js/omi.coffee	/^    textElem    = doc.createTextNode id$/;"	v
+that	webclient/js/initialize.coffee	/^        that = this$/;"	v
+title	webclient/js/formlogic.coffee	/^              title: pathValue.path$/;"	p
+title	webclient/js/formlogic.coffee	/^              title: pathValue.value.attributes.dateTime.value$/;"	p
+title	webclient/js/formlogic.coffee	/^          title: "click to show the XML"$/;"	p
+title	webclient/js/newInfoItemForm.coffee	/^        title: errorMsg$/;"	p
+toArray	webclient/js/Maybe.coffee	/^None.toArray = () -> []$/;"	f
+toArray	webclient/js/Maybe.coffee	/^sp.toArray = () -> [@__v]$/;"	f
+toString	webclient/js/Maybe.coffee	/^None.toString = () -> "None"$/;"	f
+toString	webclient/js/Maybe.coffee	/^sp.toString = () -> "Some(#{@__v})"$/;"	f
+token	webclient/js/initialize.coffee	/^    token: (stream, state) ->$/;"	f
+token	webclient/js/initialize.coffee	/^    token: (stream, state) ->$/;"	p
+tree	webclient/js/initialize.coffee	/^          tree = @ref.jstree()$/;"	v
+type	webclient/js/formlogic.coffee	/^      type: "POST"$/;"	p
+type	webclient/js/initialize.coffee	/^            type: "objects"$/;"	p
+u	webclient/js/initialize.coffee	/^  openOdfContextmenu = (target) ->$/;"	f
+update	webclient/js/formlogic.js	/^      update = function(sub) {$/;"	f
+updateHistoryCounter	webclient/js/formlogic.coffee	/^  my.updateHistoryCounter = (toZero=false) ->$/;"	f
+updateSetterForAttr	webclient/js/requests.js	/^    updateSetterForAttr = function(name, attrParentXPath) {$/;"	f
+url	webclient/js/formlogic.coffee	/^      url: server$/;"	p
+url	webclient/js/initialize.coffee	/^  validators.url = (s) ->$/;"	f
+userSeenCount	webclient/js/formlogic.js	/^              userSeenCount: 0,$/;"	p	class:my.callbackSubscriptions
+userSeenCount	webclient/js/formlogic.js	/^          userSeenCount: 0,$/;"	p	class:my.callbackSubscriptions
+util	webclient/js/formlogic.coffee	/^    util = WebOmi.util$/;"	v
+v	webclient/js/initialize.coffee	/^    v = util.validators$/;"	v
+v	webclient/js/newInfoItemForm.coffee	/^      v = WebOmi.util.validators$/;"	v
+vAluetype	webclient/js/requests.coffee	/^                  vAluetype: metadata.type$/;"	p
+val	webclient/js/initialize.coffee	/^          val = @get()$/;"	v
+val	webclient/js/omi.coffee	/^      val = my.createOdfValue doc, value.value, value.type, value.time$/;"	v
+val	webclient/js/requests.coffee	/^        val = WebOmi.omi.createOdfValue doc, value.value, value.valuetype, value.valuetime$/;"	v
+vals	webclient/js/requests.coffee	/^    vals = WebOmi.omi.evaluateXPath doc, "\/\/odf:value"$/;"	v
+value	webclient/js/formlogic.coffee	/^        value: value$/;"	p
+value	webclient/js/newInfoItemForm.coffee	/^          value: valueObj.value$/;"	p
+value	webclient/js/newInfoItemForm.coffee	/^        value = {}$/;"	v
+value	webclient/js/requests.coffee	/^                  value:     metadata.value$/;"	p
+values	webclient/js/newInfoItemForm.coffee	/^      values =$/;"	v
+verb	webclient/js/formlogic.coffee	/^        verb = verbXml.tagName$/;"	v
+viewportMargin	webclient/js/initialize.coffee	/^    viewportMargin: 150$/;"	p
+wsSend	webclient/js/formlogic.coffee	/^  my.wsSend = (request,callback) ->$/;"	f
+xhr	webclient/js/initialize.coffee	/^        xhr = $.get$/;"	v
+y	webclient/js/formlogic.coffee	/^    addHistory = (requestID, pathValues, returnCodes) ->$/;"	f
+y	webclient/js/formlogic.coffee	/^    createHistory = (requestID) ->$/;"	f

@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <target>System.out</target>
+<!-- Filter for limiting messages to INFO level
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>INFO</level>
+        </filter>-->
+        <encoder>
+            <pattern>%date{ISO8601} %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>logs/omi.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
+            <fileNamePattern>logs\omi.%i.log</fileNamePattern>
+            <minIndex>1</minIndex>
+            <maxIndex>4</maxIndex>
+        </rollingPolicy>
+
+        <triggeringPolicy class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+            <maxFileSize>10MB</maxFileSize>
+        </triggeringPolicy>
+        <append>true</append>
+        <encoder>
+            <pattern>%date{ISO8601} %-5level %logger{0} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="ASYNC" class="ch.qos.logback.classic.AsyncAppender">
+        <appender-ref ref="FILE" />
+    </appender>
+
+
+<!-- Possible to edit levels of different loggers INFO level is currently set using filter
+    <logger name="akka" level="INFO" />
+    <logger name="slick" level="INFO" />
+    <logger name="com.zaxxer.hikari" level="INFO" />
+    <logger name="HikariPool" level="INFO" />
+    <logger name="com.typesafe.sslconfig" level="INFO" />
+    <logger name="spray.can" level="INFO" />
+    <logger name="akka.io.TcpListener" level="INFO" />
+
+    <logger name="agentSystem" level="DEBUG" />
+    <logger name="database" level="DEBUG" />
+    <logger name="accessControl" level="INFO" />
+    <logger name="responses" level="DEBUG" />
+-->
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="ASYNC"/>
+    </root>
+
+</configuration>
