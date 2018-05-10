@@ -12,7 +12,7 @@
  +    limitations under the License.                                              +
  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 
-package http
+package authorization
 
 import scala.collection.JavaConversions.collectionAsScalaIterable
 import scala.util.{Failure, Success}
@@ -22,9 +22,9 @@ import akka.http.scaladsl.server.Directive1
 import akka.http.scaladsl.server.Directives.optionalHeaderValue
 
 import types.OmiTypes._
-import http.Authorization.{UnauthorizedEx, AuthorizationExtension, CombinedTest, PermissionTest}
+import Authorization.{UnauthorizedEx, AuthorizationExtension, CombinedTest, PermissionTest}
+import http.OmiConfigExtension
 
-// TODO: maybe move to Authorization package
 
 
 /** EduPersonPrincipalName */

@@ -12,7 +12,7 @@
  +    limitations under the License.                                              +
  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 
-package http
+package authorization
 
 import java.lang.{Iterable => JavaIterable}
 
@@ -22,7 +22,7 @@ import scala.collection.mutable.Buffer
 import scala.util.{Failure, Success, Try}
 
 import database._
-import http.Authorization.{UnauthorizedEx, AuthorizationExtension, CombinedTest}
+import Authorization.{UnauthorizedEx, AuthorizationExtension, CombinedTest}
 import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.server.Directives.extract
 import types.OdfTypes._

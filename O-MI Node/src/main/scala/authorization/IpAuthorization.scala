@@ -12,7 +12,7 @@
 +    limitations under the License.                                              +
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 
-package http
+package authorization
 
 import java.net.InetAddress
 
@@ -20,12 +20,12 @@ import scala.collection.JavaConverters._
 import scala.util.{Success, Failure}
 
 import akka.http.scaladsl.model.RemoteAddress
-import http.Authorization.{UnauthorizedEx, AuthorizationExtension, CombinedTest, PermissionTest}
+import Authorization.{UnauthorizedEx, AuthorizationExtension, CombinedTest, PermissionTest}
 import akka.http.scaladsl.server.Directive1
 import akka.http.scaladsl.server.Directives.extractClientIP
 import types.OmiTypes._
+import http.OmiConfigExtension
 
-// TODO: maybe move to Authorization package
 
 /** Trait for checking, is connected client IP permitted to do input actions, an ExternalAgent or using Write request.
  * Tests against whitelisted ips and ip masks in configuration.

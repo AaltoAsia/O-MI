@@ -27,8 +27,9 @@ import akka.actor.{Cancellable, Props}
 import akka.io.{IO, Tcp}
 import akka.util.Timeout
 import org.slf4j.LoggerFactory
-import http.Authorization.ExtensibleAuthorization
-import http.{IpAuthorization, OmiConfig, OmiConfigExtension}
+import authorization.Authorization.ExtensibleAuthorization
+import authorization.IpAuthorization
+import http.{OmiConfig, OmiConfigExtension}
 import parsing.OdfParser
 import types.OdfTypes._
 import types.odf.{ OldTypeConverter, ImmutableODF}

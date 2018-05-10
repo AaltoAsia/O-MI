@@ -38,8 +38,9 @@ import akka.stream.scaladsl._
 import akka.stream._
 import akka.stream.ActorMaterializer
 import akka.http.scaladsl.model.ws
-import accessControl.AuthAPIService
-import http.Authorization._
+import authorization.AuthAPIService
+import authorization.Authorization._
+import authorization._
 import parsing.OmiParser
 import responses.{CallbackHandler, RESTHandler, RemoveSubscription, RequestHandler}
 import responses.RESTHandler.RESTRequest

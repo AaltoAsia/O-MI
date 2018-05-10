@@ -12,7 +12,7 @@
  +    limitations under the License.                                              +
  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 
-package http
+package authorization
 
 import scala.util.{Failure, Success, Try}
 
@@ -171,7 +171,7 @@ case class UnauthorizedEx(message: String = "Unauthorized") extends Exception(me
   //}
 
 }
-import http.Authorization._
+import Authorization._
 
 /** Dummy authorization, allows everything. Can be used for testing, disabling authorization
  *  temporarily and serves as an example of how to extend [[Authorization]] as a Stackable trait.
