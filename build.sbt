@@ -60,7 +60,7 @@ lazy val javadocSettings = inConfig(JavaDoc)(Defaults.configSettings) ++ Seq(
       "" + mod.name + "_" + sv.binary + "-" + mod.revision + "-javadoc.jar")
 )
 
-lazy val omiNode = (project in file("O-MI Node")).
+lazy val omiNode = (project in file("O-MI-Node")).
   //conf(JavaDoc).
   settings(
     (commonSettings("Backend") ++ 

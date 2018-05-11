@@ -22,9 +22,10 @@ import akka.io.{IO, Tcp}
 import akka.pattern.ask
 import akka.util.Timeout
 import com.typesafe.config.Config
-import http.Authorization.ExtensibleAuthorization
-import http.{IpAuthorization, OmiConfig, OmiConfigExtension}
 import org.slf4j.LoggerFactory
+import authorization.Authorization.ExtensibleAuthorization
+import authorization.IpAuthorization
+import http.{OmiConfig, OmiConfigExtension}
 import parsing.OdfParser
 import types.OmiTypes._
 import types._
