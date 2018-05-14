@@ -5,7 +5,7 @@ import java.lang.{Iterable => JavaIterable}
 import agentSystem.AgentEvents._
 import agentSystem.{AgentName, AgentResponsibilities}
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
-import responses.CallbackHandler
+import responses.{CLIHelperT, CallbackHandler}
 import types.OmiTypes._
 
 import scala.collection.mutable.{Map => MutableMap}
@@ -18,6 +18,7 @@ trait DBHandlerBase extends Actor
   protected implicit def singleStores: SingleStores
   protected implicit def callbackHandler: CallbackHandler
   protected implicit def analyticsStore: Option[ActorRef]
+  protected implicit def removeHandler: CLIHelperT
   protected def agentResponsibilities: AgentResponsibilities 
 }
 
@@ -26,13 +27,15 @@ object DBHandler{
     dbConnection: DB,
     singleStores: SingleStores,
     callbackHandler: CallbackHandler,
-    analyticsStore: Option[ActorRef]
+    analyticsStore: Option[ActorRef],
+    removeHandler: CLIHelperT
   ): Props = Props(
     new DBHandler(
       dbConnection,
       singleStores,
       callbackHandler,
-      analyticsStore
+      analyticsStore,
+      removeHandler
     )
   )
 }
@@ -42,10 +45,10 @@ class DBHandler(
   protected  val dbConnection: DB,
   protected  val singleStores: SingleStores,
   protected  val callbackHandler: CallbackHandler,
-  protected  val analyticsStore: Option[ActorRef]
-  
+  protected  val analyticsStore: Option[ActorRef],
+  protected  val removeHandler: CLIHelperT
   ) extends DBReadHandler
-  with DBWriteHandler
+  with DBWriteHandler with DBDeleteHandler
 {
   import context.dispatcher
   def receive: PartialFunction[Any, Unit] = {
@@ -61,6 +64,10 @@ class DBHandler(
     case read: ReadRequest => 
       respond(
         handleRead( read )
+      )
+    case delete: DeleteRequest =>
+      respond(
+        handleDelete(delete)
       )
   }
 

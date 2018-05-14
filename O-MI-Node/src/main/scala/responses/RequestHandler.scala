@@ -155,7 +155,13 @@ with CancelHandler
       case subscription: SubscriptionRequest => handleSubscription(subscription)
       case poll: PollRequest => handlePoll(poll)
       case cancel: CancelRequest => handleCancel(cancel)
-      case other => Future.failed(new Exception(s"Unexpected non-O-DF request: $other"))
+      case delete: DeleteRequest => {
+        implicit val to: Timeout = Timeout(delete.handleTTL)
+        (dbHandler ? delete).mapTo[ResponseRequest]
+      }
+      case other => {
+        log.warning(s"Unexpected non-O-DF request: $other")
+        Future.failed(new Exception(s"Unexpected non-O-DF request"))}
     }
   }
 
@@ -171,12 +177,12 @@ with CancelHandler
 
   private def askAgent( agentName: AgentName, request: OmiRequest ): Future[ResponseRequest]={
     agents.get(agentName) match {
-      case Some( ai: AgentInformation) if ai.running  =>  
+      case Some( ai: AgentInformation) if ai.running  =>
         implicit val to: Timeout = Timeout(request.handleTTL)
         val f = ai.actorRef ? request.withSenderInformation(ActorSenderInformation(self.path.name, self))
         f.mapTo[ResponseRequest]
 
-      case Some( ai: AgentInformation) if !ai.running  =>  
+      case Some( ai: AgentInformation) if !ai.running  =>
         Future.successful(
           ResponseRequest(
             Vector(
@@ -189,7 +195,7 @@ with CancelHandler
           )
         )
 
-      case None => 
+      case None =>
         Future.successful(
           ResponseRequest(
             Vector(
@@ -201,7 +207,7 @@ with CancelHandler
             )
           )
         )
-    } 
+    }
   }
   private def respond( futureResponse: Future[ResponseRequest] ) = {
     val senderRef = sender()
@@ -209,7 +215,7 @@ with CancelHandler
       case e: Exception =>
         Responses.InternalError(e)
         }.map{
-          response => 
+          response =>
             senderRef ! response
         }
   }

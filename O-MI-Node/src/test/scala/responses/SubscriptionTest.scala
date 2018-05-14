@@ -85,7 +85,8 @@ class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with Bef
      dbConnection,
      singleStores,
      callbackHandler,
-     analytics
+     analytics,
+     new CLIHelper(singleStores,dbConnection)
    ),
    "database-handler"
   )

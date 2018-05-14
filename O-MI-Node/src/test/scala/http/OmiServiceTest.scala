@@ -5,7 +5,6 @@ import java.net.InetAddress
 import scala.concurrent.Await
 import scala.concurrent.duration.DurationInt
 import scala.xml._
-
 import agentSystem.AgentSystem
 import akka.actor._
 import akka.http.scaladsl.model.RemoteAddress
@@ -17,7 +16,7 @@ import org.slf4j.LoggerFactory
 import org.specs2.matcher.XmlMatchers
 import org.specs2.mutable.Specification
 import org.specs2.specification.BeforeAfterAll
-import responses.{RequestHandler, SubscriptionManager, CallbackHandler}
+import responses.{CLIHelper, CallbackHandler, RequestHandler, SubscriptionManager}
 import akka.http.scaladsl.model.MediaTypes._
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport.defaultNodeSeqUnmarshaller
@@ -64,7 +63,8 @@ class OmiServiceTest
      dbConnection,
      singleStores,
      callbackHandler,
-     analytics
+     analytics,
+     new CLIHelper(singleStores,dbConnection)
    ),
    "database-handler"
   )
