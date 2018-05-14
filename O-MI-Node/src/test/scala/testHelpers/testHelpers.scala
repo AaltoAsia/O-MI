@@ -56,7 +56,8 @@ class TestOmiServer( config: Config )  extends OmiNode {
      dbConnection,
      singleStores,
      callbackHandler,
-     None
+     None,
+     new CLIHelper(singleStores,dbConnection)
    ),
    "database-handler"
   )
@@ -100,7 +101,7 @@ class TestOmiServer( config: Config )  extends OmiNode {
     "omi-node-cli-listener"
   )
 
-    implicit val httpExt = Http() 
+    implicit val httpExt: HttpExt = Http()
     // create omi service actor
     val omiService = new OmiServiceImpl(
       system,

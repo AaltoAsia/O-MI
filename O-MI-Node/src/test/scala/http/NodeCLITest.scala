@@ -76,8 +76,12 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
   class RemoveTester( path: Path)extends CLIHelperT{
     val getAllData: Future[Option[ODF]] = Future.failed(new Exception("not implemented"))
     def writeOdf(odf:ImmutableODF) = Unit
-    override def handlePathRemove(parentPath: Path): Boolean = { 
-      path == parentPath || path.isAncestorOf(parentPath)
+    override def handlePathRemove(parentPaths: Seq[Path]): Future[Seq[Int]] = {
+      if(path == parentPaths.head || path.isAncestorOf(parentPaths.head)){
+        Future.successful(Seq(1)) //???
+      } else {
+        Future.successful(Seq(0))
+      }
     }
   }
   def helpTest = new Actorstest(AS){
@@ -265,7 +269,7 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
       subscriptionManager
     ))
     val listener = listenerRef.underlyingActor
-    val correct: String  = s"Given path does not exist\r\n>" 
+    val correct: String  = s"Could not remove ${path+"ueaueo"}\r\n>"
     connection.send(listenerRef,strToMsg(s"remove $path" +"ueaueo"))
     connection.expectMsgType[Write].data.decodeString("UTF-8") must beEqualTo(correct) 
   }

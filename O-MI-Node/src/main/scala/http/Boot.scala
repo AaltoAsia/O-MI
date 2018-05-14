@@ -26,6 +26,7 @@ import akka.stream.ActorMaterializer
 import akka.util.Timeout
 import analytics.AnalyticsStore
 import org.slf4j.{Logger, LoggerFactory}
+import responses.{CLIHelper, CLIHelperT}
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext, Future}
@@ -100,7 +101,8 @@ class OmiServer extends OmiNode{
      dbConnection,
      singleStores,
      callbackHandler,
-     analytics.filter(_ => settings.enableWriteAnalytics)
+     analytics.filter(_ => settings.enableWriteAnalytics),
+     new CLIHelper(singleStores,dbConnection)
    ),
    "database-handler"
   )
