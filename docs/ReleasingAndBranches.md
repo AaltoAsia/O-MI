@@ -18,6 +18,11 @@ Releasing
   * requires dpkg binary installed
   * can be made with `sbt debian:packageBin`
   * result goes to `/target/universal`
+**Automatic releasing**
+
+7. Create an annotated git tag on latest commit: `git tag -a $(cat O-MI-Node/html/VERSION) HEAD`
+8. Push the tag to remote repository: `git push origin $(cat O-MI-Node/html/VERSION)`
+9. Travis will now create the release binaries and upload them to docker and GitHub.
 
 Branches
 ========
@@ -37,7 +42,7 @@ Configuration differences
 1. `development`
   * Agents enabled: *anything needed for testing agents*
 2. `master` - *Main releasing branch*
-  * Agents enabled: SmartHouse
+  * Agents enabled: None
   * External security module disabled
 3. `warp10integration`
   * Agents enabled: ExampleRoom(JavaRoomAgent)
