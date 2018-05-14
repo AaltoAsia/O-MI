@@ -214,9 +214,6 @@ class DatabaseConnection()(
   protected val system : ActorSystem,
   protected val singleStores : SingleStores,
   protected val settings : OmiConfigExtension
-
-//OLD DB:
-//) extends DBCachedReadWrite with DBBase with DB {
 ) extends OdfDatabase with DB {
 
   //val dc = DatabaseConfig.forConfig[JdbcProfile](dbConfigName)
