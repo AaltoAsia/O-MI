@@ -467,7 +467,7 @@ trait OdfDatabase extends Tables with DB with TrimmableDB{
             tableByNameExists(pv.name).flatMap {
               default: Boolean => 
                 if( default ) pv.schema.drop
-                else DBIO.successful()
+                else DBIO.successful(())
             }
         })
     }

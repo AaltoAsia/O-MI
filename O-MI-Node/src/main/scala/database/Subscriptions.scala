@@ -13,6 +13,7 @@
  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 
 package database
+import scala.language.postfixOps
 
 import java.net.InetAddress
 import java.sql.Timestamp

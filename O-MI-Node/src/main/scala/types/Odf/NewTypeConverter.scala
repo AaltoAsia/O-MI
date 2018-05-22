@@ -4,7 +4,7 @@ package odf
 import scala.collection.immutable.HashMap
 import types.OdfTypes._
 
-@deprecated( "Should refactor all OdfTypes usages to use new ODF types.")
+@deprecated( "Should refactor all OdfTypes usages to use new ODF types.", "O-MI-Node 0.11.0")
 object NewTypeConverter{
   def convertODF[M <: scala.collection.Map[Path,Node], S <: scala.collection.SortedSet[Path]](
     o_df: ODF

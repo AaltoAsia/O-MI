@@ -1,6 +1,8 @@
 package types
 package odf
 
+import scala.language.implicitConversions
+
 import scala.util.Try
 import scala.collection.{ Seq, Map }
 import scala.collection.immutable.{ HashMap, Map =>IMap}
