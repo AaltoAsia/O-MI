@@ -41,7 +41,7 @@ case class Partial(authorized: JavaIterable[Path], user: UserInfo) extends Autho
  * Wraps a new O-MI request that is potentially modified from the original to pass authorization.
  * Can be used instead of [[Partial]] to define partial authorization. 
  */
-case class Changed(authorizedRequest: RawRequestWrapper, user: UserInfo) extends AuthorizationResult
+case class Changed(authorizedRequest: RequestWrapper, user: UserInfo) extends AuthorizationResult
 
 /**
  * Implement one method of this interface and register the class through AuthApiProvider.

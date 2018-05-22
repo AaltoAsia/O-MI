@@ -33,7 +33,9 @@ object Dependencies {
   //"com.zaxxer"          % "HikariCP-java6" % "2.3.3" // XXX: manually updated dependency, slick had 2.0.1
   val h2           = "com.h2database"      % "h2"             % "1.4.192" //common
   val postgres     = "org.postgresql"      % "postgresql"      % "9.4.1211"
-  //val json4s       = "org.json4s"         %% "json4s-native"  % "3.3.0" //common
+  val json4s       = "org.json4s"         %% "json4s-native"   % "3.5.3" //common
+  val json4sAkka   = "de.heikoseeberger"  %% "akka-http-json4s" % "1.16.0" //common
+
 
   //etc
   val logback          = "ch.qos.logback" % "logback-classic" % "1.1.3"
@@ -81,7 +83,9 @@ object Dependencies {
     h2,
     postgres,
     stm,
-    sprayJson,//json4s,
+    sprayJson,
+    json4s,
+    json4sAkka,
     //scalaXML,
     commonsLang,
     prevaylerCore,
