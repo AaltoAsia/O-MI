@@ -26,6 +26,7 @@ import akka.stream.ActorMaterializer
 import akka.util.Timeout
 import analytics.AnalyticsStore
 import org.slf4j.{Logger, LoggerFactory}
+import responses.{CLIHelper, CLIHelperT}
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext, Future}
@@ -33,6 +34,10 @@ import scala.language.postfixOps
 import scala.util.{Failure, Success, Try}
 //import akka.http.WebBoot
 //import akka.http.javadsl.ServerBinding
+//
+import kamon.Kamon
+import kamon.influxdb.InfluxDBReporter
+import kamon.prometheus.PrometheusReporter
 
 import agentSystem._
 import database._
@@ -96,7 +101,8 @@ class OmiServer extends OmiNode{
      dbConnection,
      singleStores,
      callbackHandler,
-     analytics.filter(_ => settings.enableWriteAnalytics)
+     analytics.filter(_ => settings.enableWriteAnalytics),
+     new CLIHelper(singleStores,dbConnection)
    ),
    "database-handler"
   )
@@ -270,13 +276,13 @@ object Boot /*extends Starter */{// with App{
   val log: Logger = LoggerFactory.getLogger("OmiServiceTest")
 
   def main(args: Array[String]) : Unit= {
-    val p = Path("Objects\\"+"/O\\"+"/II")
-    log.info(p.toString())
     Try{
       val server: OmiServer = OmiServer()
       import server.system.dispatcher
       server.bindTCP()
       server.bindHTTP()
+      //Kamon.addReporter(new InfluxDBReporter())
+      Kamon.addReporter(new PrometheusReporter())
     }match {
       case Failure(ex)  =>  log.error( "Error during startup", ex)
       case Success(_) => log.info("Server started successfully")

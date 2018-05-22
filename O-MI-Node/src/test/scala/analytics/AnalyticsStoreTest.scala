@@ -20,27 +20,26 @@ import java.util.{Calendar, TimeZone}
 import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
 import scala.util.Try
-
 import agentSystem.AgentSystem
-import akka.actor.{Props, ActorSystem, ActorRef}
+import akka.actor.{ActorRef, ActorSystem, Props}
 import akka.http.scaladsl.model.RemoteAddress
 import akka.stream.ActorMaterializer
 import akka.pattern.ask
 import akka.testkit.{TestActorRef, TestKit, TestProbe}
 import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
-import database.{DBHandler, TestDB, OdfTree, SingleStores}
+import database.{DBHandler, OdfTree, SingleStores, TestDB}
 import http.OmiConfigExtension
 import org.prevayler.Transaction
 import org.specs2.mutable.Specification
 import org.specs2.matcher.XmlMatchers._
 import org.specs2.mock.Mockito
 import org.specs2.specification.AfterAll
-import responses.{CallbackHandler, RequestHandler, SubscriptionManager}
+import responses.{CLIHelper, CallbackHandler, RequestHandler, SubscriptionManager}
 import types.{OdfTypes, Path}
-import types.odf.{ OldTypeConverter}
+import types.odf.OldTypeConverter
 import types.OdfTypes._
-import types.OmiTypes.{ReadRequest, WriteRequest, ResponseRequest, UserInfo}
+import types.OmiTypes.{ReadRequest, ResponseRequest, UserInfo, WriteRequest}
 
 //Very basic test for testing that the analytics results are consistent every patch
 class AnalyticsStoreTest extends Specification with Mockito with AfterAll {
@@ -106,7 +105,8 @@ class AnalyticsStoreTest extends Specification with Mockito with AfterAll {
      dbConnection,
      singleStores,
      callbackHandler,
-     Some(analyticsStore)
+     Some(analyticsStore),
+     new CLIHelper(singleStores,dbConnection)
    ),
    "database-handler"
   )
