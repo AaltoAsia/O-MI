@@ -323,7 +323,7 @@ object ODFParser extends parsing.Parser[OdfParseResult] {
     validateId(qlmIdType.value).map{
       id: String =>
         QlmID(
-          id.replace("/","\\/"),
+          id,
           qlmIdType.idType,
           qlmIdType.tagType,
           qlmIdType.startDate.map{
