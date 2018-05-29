@@ -44,10 +44,8 @@ import OmiTypes.ResponseRequest
       normalized.toArray // make sure that it is Vector, hashcode problems with Seq (Array?)
     }
 
-    @deprecated("0.11.0","Easy to pass argument with wrong format where ids or names contains /. / used for seperating values")
     def this(pathStr: String) = this{
       (new Regex("([^\\\\/]|\\\\.)+")).findAllIn(pathStr).toVector.map(_.replaceAll("\\\\/","/")).filterNot( _ == "")
-      //(new Regex("(\\\\/|[^\\/])+")).findAllIn(pathStr).toVector.map(_.replaceAll("\\/","/")).filterNot( _ == "")
     }
 
     def this(path: Path) = this{
@@ -69,7 +67,6 @@ import OmiTypes.ResponseRequest
      * @param idStr String of id or name to be added to end of Path.
      * @return new path with added string at end.
      */
-    @deprecated("Use case is ambiguos. Joining with another string or adding new element. Use with other Path or odf.QlmID instead.", "0.9.2") 
     def /(idStr: String): Path = {
       Path(this.toSeq ++ Seq(idStr))
     }
@@ -111,7 +108,7 @@ import OmiTypes.ResponseRequest
      * Creates a path string which represents this path with '/' separators.
      * Representation doesn't start nor end with a '/'.
      */
-    override def toString: String = this.toSeq.map(pp => pp.replaceAll("/","\\\\/")).mkString("/")
+    override def toString: String = this.toSeq.map(pp => pp.replaceAll("/","""\\/""")).mkString("/")
     
   def isAncestorOf( that: Path): Boolean ={
     if( length < that.length ){

@@ -19,14 +19,14 @@ class PathTest extends mutable.Specification{
       Path( "Objects/Obj/test" ).toSeq === Vector("Objects","Obj","test") 
     }
     "parse \\/ correctly" in {
-      Path( "Objects/Test\\/Obj/test" ).toSeq === Vector("Objects","Test/Obj","test")
+      Path( """Objects/Test\/Obj/test""" ).toSeq === Vector("Objects","Test/Obj","test")
     }
     "print correctly without special character" in {
       val str =  "Objects/Obj/test"
       Path(str).toString === str
     }
     "print \\/ correctly" in {
-      val str =  "Objects/Test\\/Obj/test"
+      val str =  """Objects/Test\/Obj/test"""
       Path(str).toString === str
     }
   }
