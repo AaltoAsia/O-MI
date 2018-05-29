@@ -166,7 +166,7 @@ trait OmiService
           extractClientIP{ user =>
 
         // convert to our path type (we don't need very complicated functionality)
-        val pathStr = uriPath.split("/").map{ id => URLDecoder.decode( id, "UTF-8" ).replace("/","\\/") }.mkString("/")
+        val pathStr = uriPath.split("/").map{ id => URLDecoder.decode( id, "UTF-8" )}.toSeq
           
             val origPath = Path(pathStr)
             val path = origPath match {

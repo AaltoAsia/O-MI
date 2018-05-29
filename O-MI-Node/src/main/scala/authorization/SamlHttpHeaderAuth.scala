@@ -27,14 +27,14 @@ import http.OmiConfigExtension
 
 
 
-/** EduPersonPrincipalName */
+/** EduPersonPrincipalName, used as user identifier */
 case class Eppn(user: String)
 
 
 /**
  * SAML authorization using http headers got from some reverse-proxying server (e.g. nginx, apache)
  * preferably running on the same computer (for security reasons).
- * Authorize PermissiveRequests for all users who are specified by EPPN in config whitelist
+ * Authorizes PermissiveRequests for all users who are specified by EPPN in config whitelist
  * EPPNs are usually in format "username@organizationdomain"
  */
 trait SamlHttpHeaderAuth extends AuthorizationExtension {

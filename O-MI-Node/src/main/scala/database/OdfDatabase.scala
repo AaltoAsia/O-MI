@@ -29,7 +29,7 @@ trait OdfDatabase extends Tables with DB with TrimmableDB{
 
   protected val settings : OmiConfigExtension
   protected val singleStores : SingleStores
-  protected val log = LoggerFactory.getLogger("O-DF-database")//FIXME: Better name
+  protected val log = LoggerFactory.getLogger("O-DF-database")
   val pathToDBPath: TMap[Path, DBPath] = TMap()
 
   def initialize(): Unit = {
@@ -467,7 +467,7 @@ trait OdfDatabase extends Tables with DB with TrimmableDB{
             tableByNameExists(pv.name).flatMap {
               default: Boolean => 
                 if( default ) pv.schema.drop
-                else DBIO.successful()
+                else DBIO.successful(())
             }
         })
     }

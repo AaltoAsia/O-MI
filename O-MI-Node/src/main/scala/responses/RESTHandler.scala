@@ -108,15 +108,21 @@ object RESTHandler{
         val xmlReturn = singleStores.getSingle(path) map {
 
           case obj: Object =>
-            val (objs: Seq[xmlTypes.ObjectType],iis: Seq[xmlTypes.InfoItemType]) = (singleStores.hierarchyStore execute GetTree() ).getChilds( obj.path).collect{
+            val elems = (singleStores.hierarchyStore execute GetTree() ).getChilds( obj.path).collect{
               case cobj: Object => 
                 cobj.copy(descriptions = Set.empty).asObjectType( Vector.empty, Vector.empty )
               case ii: InfoItem =>
                 ii.copy(descriptions = Set.empty, values= Vector.empty, metaData = None ).asInfoItemType
-            }.partition{
-              case cobj: xmlTypes.ObjectType => true
-              case ii: xmlTypes.InfoItemType => false
             }
+            val objs = elems.collect{case cobj: xmlTypes.ObjectType => cobj}
+            val iis = elems.collect{case ii: xmlTypes.InfoItemType => ii}
+              //.partition{
+              
+              //case cobj: xmlTypes.ObjectType => true
+              
+              //case ii: xmlTypes.InfoItemType => false
+            
+              //}
             scalaxb.toXML[xmlTypes.ObjectType](
               obj.asObjectType(iis,objs), Some("odf"), Some("Object"), defaultScope
             ).headOption.getOrElse(
