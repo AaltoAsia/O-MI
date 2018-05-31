@@ -57,15 +57,7 @@ object Dependencies {
   //Java dependencies
   val gson         = "com.google.code.gson"         % "gson"         % "2.6.2"
   
-  //Monitoring with Kamon
-  val kamon = "io.kamon" %% "kamon-core" % "1.1.0"
-  val kamonInfluxReporter = "io.kamon" %% "kamon-influxdb" % "1.0.1"
-  val kamonAkka = "io.kamon" %% "kamon-akka-2.4" % "1.0.1" 
-  val kamonAkkaHTTP = "io.kamon" %% "kamon-akka-http-2.4" % "1.0.1" 
-  val kamonLogback = "io.kamon" %% "kamon-logback" % "1.0.0"
-  val kamonPrometheus = "io.kamon" %% "kamon-prometheus" % "1.0.0"
-
-  val commonDependencies: Seq[ModuleID] = Seq(
+    val commonDependencies: Seq[ModuleID] = Seq(
     akkaActor,
     akkaSlf4j,
     akkaStream,
@@ -86,12 +78,7 @@ object Dependencies {
     commonsLang,
     prevaylerCore,
     prevaylerFactory,
-    gson,
-    kamon,
-    kamonLogback,
-    kamonAkka,
-    kamonPrometheus,
-    kamonInfluxReporter
+    gson
   )
 
   //val servletDependencies: Seq[ModuleID] = Seq(
