@@ -114,7 +114,7 @@ class AgentSystem()(
           pathStr: String =>
             AgentResponsibility(
               name,
-              Path(pathStr.split("/").map { id => URLDecoder.decode(id, "UTF-8").replace("/", "\\/") }.mkString("/")),
+              Path(pathStr),
               RequestFilter(responsibilityConfig.getString(pathStr))
             )
         }.toVector
