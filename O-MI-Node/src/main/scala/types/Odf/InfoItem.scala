@@ -101,24 +101,18 @@ case class InfoItem(
   }*/
 
   def union( that: InfoItem ): InfoItem ={
-    val typeMatches = typeAttribute.forall {
-      typeStr: String =>
-        that.typeAttribute.forall {
-          otherTypeStr: String => typeStr == otherTypeStr
-        }
-    }
     val pathsMatches = path == that.path
-    assert( nameAttribute == that.nameAttribute && pathsMatches && typeMatches )
+    assert( nameAttribute == that.nameAttribute && pathsMatches )
     new InfoItem(
       nameAttribute,
       path,
-      typeAttribute,
+      optionUnion(this.typeAttribute, that.typeAttribute),
       QlmID.unionReduce(names ++ that.names).toVector,
       Description.unionReduce(descriptions ++ that.descriptions).toSet,
       values ++ that.values,
       (metaData, that.metaData) match{
         case (Some( md ), Some( omd )) => Some( md.union(omd) )
-        case (md,omd) => md.orElse(omd)
+        case (md,omd) => optionUnion(md,omd)
       },
       attributes ++ that.attributes
     )

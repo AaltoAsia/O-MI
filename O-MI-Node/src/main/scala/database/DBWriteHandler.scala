@@ -195,7 +195,7 @@ trait DBWriteHandler extends DBHandlerBase {
       ii.attributes.nonEmpty 
     }*/
 
-    log.debug(s"Static data with attributes:\n${odf.getNodes.filter( _.attributes.nonEmpty ).mkString("\n")}")
+    log.debug(s"Static data with attributes:\n${staticData.mkString("\n")}")
     val updatedStaticItems = staticData ++ newItems 
 
     // DB + Poll Subscriptions
