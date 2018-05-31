@@ -200,7 +200,7 @@ object ODFParser extends parsing.Parser[OdfParseResult] {
   ) : InfoItem  = { 
 
     // TODO: support many names from item.otherName
-    val nameAttribute = item.name.replace("/","\\/")
+    val nameAttribute = item.name
     val npath = path / validateId(nameAttribute).getOrElse(
       throw new IllegalArgumentException("No name on infoItem")
     )
@@ -323,7 +323,7 @@ object ODFParser extends parsing.Parser[OdfParseResult] {
     validateId(qlmIdType.value).map{
       id: String =>
         QlmID(
-          id.replace("/","\\/"),
+          id,
           qlmIdType.idType,
           qlmIdType.tagType,
           qlmIdType.startDate.map{

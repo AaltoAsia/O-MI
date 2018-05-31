@@ -243,6 +243,7 @@ class OdfTypesTest extends mutable.Specification{
       OdfPath( "Objects","Obj","II"),
       names =         Vector(QlmID( "II1" )),
       descriptions =  Set(Description("test", Some("English"))),
+      typeAttribute = Some("oldtype"),
       values =        Vector(Value( "test",testTime )),
       metaData =      Some(MetaData(Vector(InfoItem( "MD1", OdfPath( "Objects","Obj","II","MetaData","MD1"))))),
       attributes =    HashMap( "test1" -> "test" )
@@ -252,6 +253,7 @@ class OdfTypesTest extends mutable.Specification{
       OdfPath( "Objects","Obj","II"),
      names =         Vector(QlmID( "II2" )),
      descriptions =  Set(Description("test", Some("Finnish"))),
+     typeAttribute = Some("newtype"),
      values =        Vector(Value( 31,testTime )),
      metaData =      Some(MetaData(Vector(InfoItem( "MD2", OdfPath( "Objects","Obj","II","MetaData","MD2"))))),
      attributes =    HashMap( "test2" -> "test" )
@@ -261,6 +263,7 @@ class OdfTypesTest extends mutable.Specification{
       OdfPath( "Objects","Obj","II"),
      names =         Vector(QlmID("II2"),QlmID( "II1" )),
      descriptions =  Set(Description("test", Some("English")),Description("test", Some("Finnish"))),
+     typeAttribute = Some("newtype"),
      values =        Vector(Value( "test",testTime ),Value( 31,testTime )),
      metaData =      Some(MetaData(Vector(
      InfoItem( "MD1", OdfPath( "Objects","Obj","II","MetaData","MD1")),
@@ -291,7 +294,7 @@ class OdfTypesTest extends mutable.Specification{
     val correct = Object(
       Vector( QlmID( "O2" ), QlmID( "O1" ), QlmID( "Obj" )),
       OdfPath( "Objects","Obj" ),
-      Some( "test1 test2" ),
+      Some( "test2" ),
       Set(Description("test", Some("English")),Description("test", Some("Finnish"))),
       HashMap( "test1" -> "test", "test2" -> "test" )
     )

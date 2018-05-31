@@ -174,7 +174,7 @@ case class OdfQlmID(
         }.toSeq
 
     QlmIDType(
-      value.replace("\\/","/"),
+      value,
         (
           idTypeAttr ++ 
           tagTypeAttr ++ 
