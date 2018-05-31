@@ -4,13 +4,14 @@ package odf
 import scala.language.implicitConversions
 
 import scala.collection.{ Seq, Map }
-import scala.collection.immutable.HashMap 
+import scala.collection.immutable.{ HashMap, Map =>IMap}
 import parsing.xmlGen.scalaxb.DataRecord
 import parsing.xmlGen.xmlTypes.{ObjectsType, ObjectType}
 
+@SerialVersionUID(2921615916249400841L)  
 case class Objects(
-                    version: Option[String] = None,
-  attributes: Map[String,String] = HashMap.empty
+  version: Option[String] = None,
+  attributes: IMap[String,String] = HashMap.empty
 ) extends Node {
   val path: Path = new Path( "Objects")
   def hasStaticData: Boolean = attributes.nonEmpty 
@@ -51,7 +52,7 @@ case class Objects(
           else n
         case _ => optionUnion(this.version,that.version)
       },
-      attributes ++ that.attributes
+      attributeUnion(attributes, that.attributes)
     )
   }
   implicit def asObjectsType( objects: Seq[ObjectType]) : ObjectsType ={

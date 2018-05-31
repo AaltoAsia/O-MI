@@ -58,11 +58,9 @@ case class Object(
     Object(
       QlmID.unionReduce(ids ++ that.ids).toVector,
       path,
-      (typeAttribute, that.typeAttribute) match {
-        case (t, ot) => optionUnion(t,ot)
-      },
+      optionAttributeUnion(typeAttribute, that.typeAttribute),
       Description.unionReduce(descriptions ++ that.descriptions).toSet,
-      attributes ++ that.attributes
+      attributeUnion(attributes, that.attributes)
     )
     
   }

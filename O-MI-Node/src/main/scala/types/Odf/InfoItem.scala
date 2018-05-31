@@ -106,7 +106,7 @@ case class InfoItem(
     new InfoItem(
       nameAttribute,
       path,
-      optionUnion(this.typeAttribute, that.typeAttribute),
+      optionAttributeUnion(this.typeAttribute, that.typeAttribute),
       QlmID.unionReduce(names ++ that.names).toVector,
       Description.unionReduce(descriptions ++ that.descriptions).toSet,
       values ++ that.values,
@@ -114,7 +114,7 @@ case class InfoItem(
         case (Some( md ), Some( omd )) => Some( md.union(omd) )
         case (md,omd) => optionUnion(md,omd)
       },
-      attributes ++ that.attributes
+      attributeUnion(attributes, that.attributes)
     )
   }
   def createAncestors: Seq[Node] = {
