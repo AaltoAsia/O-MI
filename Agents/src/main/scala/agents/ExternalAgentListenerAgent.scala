@@ -15,28 +15,27 @@ package agents
 
 import java.net.InetSocketAddress
 
-import scala.collection.JavaConversions.iterableAsScalaIterable
-import scala.concurrent.duration._
-import scala.concurrent.Await
-import scala.util.{Failure, Success, Try}
+import agentSystem._
 import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, Props}
 import akka.http.scaladsl.model.RemoteAddress
-import akka.util.Timeout
-import akka.pattern.ask
-import akka.actor.{Cancellable, Props}
 import akka.io.{IO, Tcp}
+import akka.pattern.ask
 import akka.util.Timeout
+import com.typesafe.config.Config
 import org.slf4j.LoggerFactory
-import http.Authorization.ExtensibleAuthorization
-import http.{IpAuthorization, OmiConfig, OmiConfigExtension}
+import authorization.Authorization.ExtensibleAuthorization
+import authorization.IpAuthorization
+import http.{OmiConfig, OmiConfigExtension}
 import parsing.OdfParser
-import types.OdfTypes._
 import types.OmiTypes._
 import types._
-import agentSystem._
-import com.typesafe.config.Config
+import types.odf.{ImmutableODF, OldTypeConverter}
 
+import scala.collection.JavaConversions.iterableAsScalaIterable
+import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
+import scala.util.{Failure, Success}
 
 object  ExternalAgentListener extends PropsCreator{
   def props( config: Config, requestHandler: ActorRef, dbHandler: ActorRef ): Props = {
@@ -58,9 +57,9 @@ class ExternalAgentListener(
   } with ExtensibleAuthorization with IpAuthorization
 
   private val authorization = new ExtAgentAuthorization
-   implicit val timeout = config.getDuration("timeout", SECONDS).seconds
-   val port = config.getInt("port")
-   val interface = config.getString("interface")
+   implicit val timeout: FiniteDuration = config.getDuration("timeout", SECONDS).seconds
+   val port: Int = config.getInt("port")
+   val interface: AgentName = config.getString("interface")
   import Tcp._
   implicit def actorSystem : ActorSystem = context.system
 
@@ -77,7 +76,7 @@ class ExternalAgentListener(
   
   /** Partial function for handling received messages.
     */
-  override  def receive  = {
+  override  def receive: PartialFunction[Any, Unit] = {
     case Bound(localAddress) =>
       // TODO: do something?
       // It seems that this branch was not executed?
@@ -91,7 +90,7 @@ class ExternalAgentListener(
 
       // Code for ip address authorization check
       val user = RemoteAddress(remote)//remote.getAddress())
-      val requestForPermissionCheck = OmiTypes.WriteRequest(OdfObjects(), None, Duration.Inf)
+      val requestForPermissionCheck = OmiTypes.WriteRequest(ImmutableODF(), None, Duration.Inf)
 
       if( authorization.ipHasPermission(user)(requestForPermissionCheck).isSuccess ){
         log.info(s"Agent connected from $remote to $local")
@@ -167,8 +166,8 @@ class ExternalAgentHandler(
             log.warning(s"Malformed odf received from agent ${sender()}: ${errors.mkString("\n")}")
           case Right(odf) =>
             val ttl  = Duration(5,SECONDS)
-            implicit val timeout = Timeout(ttl)
-            val write = WriteRequest( odf, None,  Duration(5,SECONDS))
+            implicit val timeout: Timeout = Timeout(ttl)
+            val write = WriteRequest( OldTypeConverter.convertOdfObjects(odf), None,  Duration(5,SECONDS))
             val result = (requestHandler ? write).mapTo[ResponseRequest]
             result.onComplete{
               case Success( response: ResponseRequest )=>

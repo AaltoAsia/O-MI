@@ -24,7 +24,7 @@ public class ReplacePath {
     Path templatePath = currentPath.resolve("etc" + File.separator + "conf-standalone.conf");
     Path logPath = currentPath.resolve("etc" + File.separator + "log4j.properties");
     Path tokensPath = currentPath.resolve("etc" + File.separator + "initial.tokens");
-    Path confPath = currentPath.getParent().getParent().resolve("configs" + File.separator + "application.conf");
+    Path confPath = currentPath.getParent().getParent().resolve("conf" + File.separator + "application.conf");
     try{
       String template = new String(Files.readAllBytes(templatePath), charset);
       template = template.replaceAll("(?m)^standalone\\.home.*", "standalone.home = " + currentPath.toAbsolutePath().toString().replace('\\', '/'));

@@ -4,7 +4,7 @@ Download .zip or .tar file from [releases](https://github.com/AaltoAsia/O-MI/rel
 Exract the package. Now you should have something like this in the directory:
 * `bin/` -- contains startup scripts.
 * `conf/` -- contains application.conf
-* `configs/` -- contains config for InternalAgents.
+* `conf/` -- contains config for InternalAgents.
 * `html/` -- contains webclient.
 * `lib/` -- contains libraries used in project
 * `callbackTestServer.py`
@@ -67,4 +67,4 @@ Adding custom jar file for agents is possible in bin/deploy this file is priorit
 
 Configuration
 =============
-Configuration settings for the program are read from [application.conf](O-MI Node/src/main/resources/application.conf).
+Configuration settings for the program are read from [application.conf](O-MI-Node/src/main/resources/application.conf).

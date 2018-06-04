@@ -78,7 +78,7 @@ case class FreeReservation( path: Path, user: String, openLid: Boolean = false )
 }
 case class OpenLid( path: Path, user: String ) extends ParkingEvent{
 
-  def lidStatusPath = path / "Charger" / "LidStatus"
+  def lidStatusPath: Path = path / "Charger" / "LidStatus"
   def toOdf: OdfObject ={
     OdfObject(
       Vector( OdfQlmID( path.last )),

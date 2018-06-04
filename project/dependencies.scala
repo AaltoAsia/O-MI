@@ -4,15 +4,17 @@ import Keys._
 object Dependencies {
 
   //Akka 
-  val akkaV = "2.4.8"
+  val akkaV = "2.4.20"
+  val akkaHttpV = "10.0.11"
   val akkaActor    = "com.typesafe.akka" %% "akka-actor" % akkaV //
   val akkaSlf4j    = "com.typesafe.akka" %% "akka-slf4j" % akkaV
+  val akkaStream   = "com.typesafe.akka" %% "akka-stream" % akkaV
 
-  val http         = "com.typesafe.akka" %% "akka-http-core" % akkaV
-  val httpExperimnt= "com.typesafe.akka" %% "akka-http-experimental" % akkaV
-  val httpXml      = "com.typesafe.akka" %% "akka-http-xml-experimental" % akkaV
-  val sprayJson    = "com.typesafe.akka" %% "akka-http-spray-json-experimental" % akkaV 
-  val httpCors     = "ch.megard"         %% "akka-http-cors" % "0.1.2"
+  val http         = "com.typesafe.akka" %% "akka-http-core" % akkaHttpV
+  val httpExperimnt= "com.typesafe.akka" %% "akka-http" % akkaHttpV
+  val httpXml      = "com.typesafe.akka" %% "akka-http-xml" % akkaHttpV
+  val sprayJson    = "com.typesafe.akka" %% "akka-http-spray-json" % akkaHttpV 
+  val httpCors     = "ch.megard"         %% "akka-http-cors" % "0.2.2"
   //Test dependencies
   val specs2V = "3.7.2"
   val specs2       = "org.specs2"        %% "specs2-core"   % specs2V   % "test"
@@ -20,7 +22,7 @@ object Dependencies {
   val mockito	     = "org.specs2"        %% "specs2-mock"   % specs2V   % "test"
   val nuValidator  = "nu.validator"      % "htmlparser"     % "1.4.3"   % "test" //html5 parser for systemtests
   val akkaTestkit  = "com.typesafe.akka" %% "akka-testkit"  % akkaV     % "test"
-  val httpTestkit  = "com.typesafe.akka" %% "akka-http-testkit" % akkaV % "test"
+  val httpTestkit  = "com.typesafe.akka" %% "akka-http-testkit" % akkaHttpV % "test"
 
   //Slick
   val slickV = "3.1.1"
@@ -57,10 +59,19 @@ object Dependencies {
 
   //Java dependencies
   val gson         = "com.google.code.gson"         % "gson"         % "2.6.2"
+  
+  //Monitoring with Kamon
+  val kamon = "io.kamon" %% "kamon-core" % "1.1.0"
+  val kamonInfluxReporter = "io.kamon" %% "kamon-influxdb" % "1.0.1"
+  val kamonAkka = "io.kamon" %% "kamon-akka-2.4" % "1.0.1" 
+  val kamonAkkaHTTP = "io.kamon" %% "kamon-akka-http-2.4" % "1.0.1" 
+  val kamonLogback = "io.kamon" %% "kamon-logback" % "1.0.0"
+  val kamonPrometheus = "io.kamon" %% "kamon-prometheus" % "1.0.0"
 
   val commonDependencies: Seq[ModuleID] = Seq(
     akkaActor,
     akkaSlf4j,
+    akkaStream,
     logback,
     http,
     httpExperimnt,
@@ -80,7 +91,13 @@ object Dependencies {
     commonsio,
     prevaylerCore,
     prevaylerFactory,
-    gson)
+    gson,
+    kamon,
+    kamonLogback,
+    kamonAkka,
+    kamonPrometheus,
+    kamonInfluxReporter
+  )
 
   //val servletDependencies: Seq[ModuleID] = Seq(
   //  sprayServlet,

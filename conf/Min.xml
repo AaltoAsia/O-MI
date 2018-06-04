@@ -1,0 +1,24 @@
+<Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
+  <Object>
+    <id>TestObj</id>
+    <InfoItem name="Sens/or">
+      <MetaData>
+        <InfoItem name="Setting1">
+          <value type="xs:int">53</value>
+        </InfoItem>
+      </MetaData>
+      <value type="xs:int">53</value>
+    </InfoItem>
+    <Object>
+      <id>Sub/Obj</id>
+      <InfoItem name="Sensor">
+        <MetaData>
+          <InfoItem name="Setting1">
+            <value type="xs:int">53</value>
+          </InfoItem>
+        </MetaData>
+        <value type="xs:int">53</value>
+      </InfoItem>
+    </Object>
+  </Object>
+</Objects>

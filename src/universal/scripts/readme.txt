@@ -3,5 +3,8 @@ Simple Java program to configure paths and tokens when running the program. Comp
 build jar (commons compress and commons io dependency for handling uncompressing and downloading of database files):
 
 javac -cp commons-compress-1.12.jar:commons-io-2.5.jar *.java
+(for example: javac -cp /home/satsuma/.ivy2/cache/commons-io/commons-io/jars/commons-io-2.5.jar:/home/satsuma/.ivy2/cache/org.apache.commons/commons-compress/jars/commons-compress-1.12.jar *.java)
+
+
 jar cvf fixpaths.jar ReplacePath.class DownloadBinaries.class
 

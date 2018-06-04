@@ -2,7 +2,7 @@ O-MI Node Server
 [![Latest release](https://img.shields.io/github/release/AaltoAsia/O-MI.svg)](https://github.com/AaltoAsia/O-MI/releases/latest)
 [![Build Status](https://travis-ci.org/AaltoAsia/O-MI.svg?branch=master)](https://travis-ci.org/AaltoAsia/O-MI)
 [![Coverage Status](https://coveralls.io/repos/AaltoAsia/O-MI/badge.svg?branch=master&service=github)](https://coveralls.io/github/AaltoAsia/O-MI?branch=master)
-[![Codacy Badge](https://www.codacy.com/project/badge/9f49209c70e24c67bbc1826fde507518)](https://www.codacy.com/app/tkinnunen/O-MI)
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/9f49209c70e24c67bbc1826fde507518)](https://www.codacy.com/app/TK009/O-MI?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=AaltoAsia/O-MI&amp;utm_campaign=Badge_Grade)
 [![Join the chat at https://gitter.im/AaltoAsia/O-MI](https://badges.gitter.im/AaltoAsia/O-MI.svg)](https://gitter.im/AaltoAsia/O-MI?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 ==============
 
@@ -94,7 +94,7 @@ Setup development environment
 2. [Install sbt](http://www.scala-sbt.org/0.13/tutorial/Setup.html)
 3. (windows: logout, or put sbt into PATH yourself)
 4. Open a cmd or shell to the `O-MI` project directory
-5. Then run `sbt re-start` to compile and run the Node
+5. Then run `sbt` and in opened the ">" prompt run `re-start` to compile and run the Node
 6. Visit http://localhost:8080/ to see that it's working
 
 You can check the [Simple Build Tool cheat sheet](#simple-build-tool-cheat-sheet) section to learn more
@@ -139,7 +139,7 @@ Extra commands from plugins and other
     - `sbt debian:packageBin`: create release debian package (requires `dpkg` program installed)
     - See native packager docs for configuring other packages. Our sbt configuration is in ./build.sbt.
 - We use sbt-scoverage:
-    - `sbt clean coverage test coverageReport`: calculate test coverage and generate reports in `O-MI Node/target/scala-2.11/scoverage-report/`   
+    - `sbt clean coverage test coverageReport`: calculate test coverage and generate reports in `O-MI-Node/target/scala-2.11/scoverage-report/`   
 - We also have some extra commands for convenience:
     - `sbt systemTest`: run only system tests (the used requests and responses can be found in `ImplementationDetails.html`)
     - `sbt release`: create release tar and zip packages
@@ -182,3 +182,6 @@ This server supports the following extensions to O-MI v1.0:
   * During a websocket connection the server accepts requests as in normal http communication. Immediate responses are sent in the same order as the corresponding requests were received.
   * During a websocket connection callback can be set to `"0"` in an O-MI message to tell O-MI Node to use current websocket connection as the callback target.
   * Keep in mind that depending on client and server configuration, a websocket connection will timeout if there is long period of inactivity. (Default is usually 1 minute). No callbacks can be sent after a timeout occurs (as websockets are always initiated by a client).
+    - If your ws client library doesn't support the native ws ping, sending an empty websocket message is allowed for the purpose of keeping the connection alive and server will not send any special response for that.
+2. Delete operation
+  * Delete operation is currently an extension until it is released in O-MI standard version 2.0
