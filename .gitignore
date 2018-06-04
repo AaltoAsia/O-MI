@@ -87,5 +87,6 @@ release/
 O-MI-Node/html/api/
 html/api/
 benchResults/
+O-MI-Node/src/main/resources/application.conf
 
 

@@ -17,7 +17,7 @@ val windowsWarp10URL = "https://bintray.com/cityzendata/generic/download_file?fi
 
 def commonSettings(moduleName: String) = Seq(
   name := s"O-MI-$moduleName",
-  version := "0.12.0-warp10", // WARN: Release ver must be "x.y.z" (no dashes, '-')
+  version := "0.12.1-warp10", // WARN: Release ver must be "x.y.z" (no dashes, '-')
   scalaVersion := "2.11.8",
   scalacOptions := Seq("-unchecked", "-feature", "-deprecation", "-encoding", "utf8", "-Xlint"),
   scalacOptions in (Compile,doc) ++= Seq("-groups", "-deprecation", "-implicits", "-diagrams", "-diagrams-debug", "-encoding", "utf8"),
@@ -272,9 +272,6 @@ fi
       //linuxPackageMappings in Rpm := (linuxPackageMappings in Rpm).value.map{mapping => val filtered = mapping.mappings.toList.distinct;mapping.copy(mappings=filtered)},
       linuxPackageMappings in Rpm := configWithNoReplace((linuxPackageMappings in Rpm).value),
       debianPackageDependencies in Debian ++= Seq("java8-runtime", "bash (>= 2.05a-11)"),
-    //AspectJ Weaver with sbt-native-packager  
-    javaAgents  += "org.aspectj" % "aspectjweaver" % "1.8.13",
-    javaOptions in Universal += "-Dorg.aspectj.tracing.factory=default",
 
     /////////////////////////////////////////////////////////////
     //Prevent aggregation of following commands to sub projects//

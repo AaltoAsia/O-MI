@@ -44,7 +44,7 @@ case class MetaData(
       name: String =>
         (nameToII.get(name), that.nameToII.get(name)) match {
           case (Some(ii), Some(tii)) => Some(ii.union(tii))
-          case (ii, tii) => ii.orElse(tii)
+          case (ii, tii) => optionUnion(ii,tii)
         }
     }
     val iis = ((names -- intersectingNames).flatMap {

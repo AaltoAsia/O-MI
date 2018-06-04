@@ -10,7 +10,6 @@ import types.OmiTypes._
 import types.Path
 import types.odf._
 
-import scala.collection.immutable
 import scala.collection.mutable.{Map => MutableMap}
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -186,7 +185,7 @@ trait DBWriteHandler extends DBHandlerBase {
         case AttachEvent(item) => item
     }
 
-    val staticData: immutable.Seq[Node] = odf.valuesRemoved.nodesWithStaticData
+    val staticData = odf.valuesRemoved.nodesWithStaticData
     /*
       infoItems filter { 
       ii: InfoItem =>
@@ -197,8 +196,8 @@ trait DBWriteHandler extends DBHandlerBase {
       ii.attributes.nonEmpty 
     }*/
 
-    log.debug(s"Static data with attributes:\n${odf.getNodes.filter( _.attributes.nonEmpty ).mkString("\n")}")
-    val updatedStaticItems = staticData ++ newItems 
+    log.debug(s"Static data with attributes:\n${staticData.mkString("\n")}")
+    val updatedStaticItems = staticData ++ newItems
 
     // DB + Poll Subscriptions
     val infosToBeWrittenInDB: Seq[InfoItem] =

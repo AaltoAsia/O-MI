@@ -252,7 +252,6 @@ object ImmutableODF{
         } else {
           var toAdd = node
           while (!mutableHMap.contains(toAdd.path)) {
-            
             mutableHMap += toAdd.path -> toAdd
             toAdd = toAdd.createParent
           }

@@ -33,6 +33,7 @@ import database._
 import responses._
 import spray.json.JsArray
 import types.OmiTypes.{DefinedCallback, HTTPCallback}
+import types.odf._
 import types.Path
 import types.odf.{ODF, ODFParser, OdfParseResult}
 

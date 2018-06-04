@@ -29,7 +29,7 @@ case class Object(
       val pl = path.last
       id == pl
   }
-  def tmy =  s"Ids don't contain last id in path. ${path.last} not in (${idsToStr.mkString(",")})"
+  def tmy =  s"Ids don't contain last id in path. ${ path.last } not in (${idsToStr.mkString(",")})"
   assert( idTest, tmy)
   def update( that: Object ): Object ={
     val pathsMatches = path == that.path 
@@ -58,14 +58,9 @@ case class Object(
     Object(
       QlmID.unionReduce(ids ++ that.ids).toVector,
       path,
-      (typeAttribute, that.typeAttribute) match {
-        case (Some(t), Some(ot)) =>
-          if (t == ot) Some(t)
-          else Some(t + " " + ot)
-        case (t, ot) => t.orElse(ot)
-      },
+      optionAttributeUnion(typeAttribute, that.typeAttribute),
       Description.unionReduce(descriptions ++ that.descriptions).toSet,
-      attributes ++ that.attributes
+      attributeUnion(attributes, that.attributes)
     )
     
   }

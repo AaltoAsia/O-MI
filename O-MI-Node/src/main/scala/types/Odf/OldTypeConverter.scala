@@ -9,7 +9,7 @@ object OldTypeConverter{
     val objects = Objects(
       odfObjects.version
     )
-    val objs: Seq[Node] = odfObjects.objects.flatMap {
+    val objs = odfObjects.objects.flatMap {
       odfObject: OdfObject =>
         convertOdfObject(odfObject)
     }

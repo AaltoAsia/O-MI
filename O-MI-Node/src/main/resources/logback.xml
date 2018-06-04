@@ -43,13 +43,8 @@
     <logger name="spray.can" level="INFO" />
     <logger name="akka.io.TcpListener" level="INFO" />
 
-<<<<<<< HEAD:O-MI Node/src/main/resources/logback.xml
-    <logger name="akka" level="INFO" />
-    <logger name="agentSystem" level="INFO" />
-=======
     <logger name="agentSystem" level="DEBUG" />
     <logger name="database" level="DEBUG" />
->>>>>>> master:O-MI-Node/src/main/resources/logback.xml
     <logger name="accessControl" level="INFO" />
     <logger name="responses" level="DEBUG" />
 -->
