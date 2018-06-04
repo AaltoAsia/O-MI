@@ -10,7 +10,7 @@ import parsing.xmlGen.{odfDefaultScope, scalaxb, defaultScope}
 import types.Path._
 
 case class ImmutableODF private[odf] (
-  protected[odf] val nodes: ImmutableHashMap[Path,Node] 
+  protected[odf] val nodes: ImmutableHashMap[Path,Node]
 ) extends ODF{//[ImmutableHashMap[Path,Node],ImmutableTreeSet[Path]] {
 
   type M = ImmutableHashMap[Path,Node]
@@ -237,8 +237,6 @@ object ImmutableODF{
     sorted.foreach {
       node: Node =>
         if (mutableHMap.contains(node.path)) {
-          println("WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW")
-          println(node.path)
           (node, mutableHMap.get(node.path)) match {
             case (ii: InfoItem, Some(oii: InfoItem)) =>
               mutableHMap(ii.path) = ii.union(oii)

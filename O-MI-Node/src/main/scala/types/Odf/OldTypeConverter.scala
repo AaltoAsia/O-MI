@@ -13,10 +13,6 @@ object OldTypeConverter{
       odfObject: OdfObject =>
         convertOdfObject(odfObject)
     }
-    println("-|-|-|-|-|")
-    println(objects)
-    println("_|_|_|_|_|")
-    objs.foreach(println)
     ImmutableODF( Vector(objects) ++ objs )
   }
   def convertOdfObject( odfObject: OdfObject ): Seq[Node] ={
@@ -40,10 +36,6 @@ object OldTypeConverter{
 
     val iIs: Seq[InfoItem] = odfObject.infoItems.map{ iI => convertOdfInfoItem( iI )}
     val objects: Seq[Node] = odfObject.objects.flatMap{ iI => convertOdfObject( iI )}
-    println("ASDDDDDD")
-    iIs.foreach(println)
-    println("DASSSSSS")
-    objects.foreach(println)
     Vector(obj) ++ objects ++ iIs
   }
   def convertPath( p: types.Path ) : Path ={

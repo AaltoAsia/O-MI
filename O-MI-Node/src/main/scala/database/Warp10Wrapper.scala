@@ -41,7 +41,7 @@ import types.{ParseError, Path, Warp10ParseError}
 import types.OmiTypes.{OmiReturn, Returns}
 import Warp10JsonProtocol.Warp10JsonFormat
 import types.OdfTypes.OdfQlmID
-import types.odf.{ImmutableODF, InfoItem, MetaData, Node, ODF, Object, Objects, OldTypeConverter, Value}
+import types.odf.{ImmutableODF, InfoItem, MetaData, NewTypeConverter, Node, ODF, Object, Objects, OldTypeConverter, Value}
 
 //serializer and deserializer for warp10 json formats
 object Warp10JsonProtocol extends DefaultJsonProtocol {
@@ -52,6 +52,7 @@ object Warp10JsonProtocol extends DefaultJsonProtocol {
     def getObject(path: Path) : OdfObject = {
       val hTree = singleStores.hierarchyStore execute GetTree()
       hTree.get(path.init) match {
+        case Some(obj: Object) => NewTypeConverter.convertObject(obj)
         case Some(obj: OdfObject) => obj.copy(infoItems = OdfTreeCollection.empty,objects = OdfTreeCollection.empty)
         case _ => {
           val id = OdfTreeCollection(OdfQlmID(path.lastOption.getOrElse(
@@ -193,7 +194,6 @@ object Warp10JsonProtocol extends DefaultJsonProtocol {
               val path = Path(_path)
               val parentObj = getObject(path) //TODO what happens if not in hierarchystore
               val (infoItems, locations) = createInfoItems(path, _infoItems.unzip)
-
               (parentObj.copy(infoItems=infoItems), parentObj.copy(infoItems=locations))
             }
             case _ => throw new DeserializationException("No Path found when deserializing")
@@ -356,7 +356,7 @@ class Warp10Wrapper( settings: OmiConfigExtension with Warp10ConfigExtension )(i
          }
          contentFuture.flatMap {
            content =>
-             read(content, locations).map{n => println("----------");println(n);n.map(OldTypeConverter.convertOdfObjects(_))}
+             read(content, locations).map{n => n.map(OldTypeConverter.convertOdfObjects(_))}
          }
      }
    }
@@ -376,15 +376,11 @@ class Warp10Wrapper( settings: OmiConfigExtension with Warp10ConfigExtension )(i
         }.flatMap{
           case entity : HttpEntity.Strict =>
             //Ugly fix, for wrong/missing content type.
-            println("WARP10RESPONSE!==!=!=!=!=!=!=!=!=!=!=")
-            println(entity.data.decodeString("UTF8"))
             val ent = entity.copy(contentType = `application/json`)
             Unmarshal(ent).to[Seq[(OdfObject, OdfObject)]].map{
               case infos if infos.isEmpty=>
                 None
               case (infos) =>
-                println("INFOSSSSSSSSSSSSSSSSSSSSSSSS:")
-                infos.foreach(println)
                 Some(infos.collect{
                   case (info, location) if requiredLocations.contains(Path(info.path)) => info combine location
                   case (info, _ ) => info
@@ -396,7 +392,7 @@ class Warp10Wrapper( settings: OmiConfigExtension with Warp10ConfigExtension )(i
             log.error(t, "Failed to communicate to Warp 10.")
             log.debug(t.getStackTrace().mkString("\n"))
         }
-        formatedResponse.map{n => println("FORMATTEDRESPONSEEEEEEEEEEEE");println(n.get); n}
+        formatedResponse
 
  }
 
@@ -577,8 +573,6 @@ class Warp10Wrapper( settings: OmiConfigExtension with Warp10ConfigExtension )(i
 
           s"$resString"
       }
-    println("asldkajsldkjal")
-    println(s"$unixEpochTime/$parsedLoc $pathJS$labels $value\n")
     s"$unixEpochTime/$parsedLoc $pathJS$labels $value\n"
     //log.debug(s"sent message: $result")
 
