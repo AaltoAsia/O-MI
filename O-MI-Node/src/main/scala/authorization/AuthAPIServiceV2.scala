@@ -119,7 +119,7 @@ class AuthAPIServiceV2(
 
       authorizationRequest = Post(
         authorizationEndpoint,
-        AuthorizationRequest(authenticationResponse.userResult, odfRequest.requestVerb.head))
+        AuthorizationRequest(authenticationResponse.userResult, odfRequest.requestVerb.name.head.toString))
       authorizationResponse  <- sendAndReceiveAs[AuthorizationResponse](authorizationRequest)
 
       filteredRequest = filterODF(odfRequest, authorizationResponse)
