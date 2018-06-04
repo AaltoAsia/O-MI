@@ -65,6 +65,7 @@ sealed trait OmiRequest extends RequestWrapper with JavaOmiRequest{
       }
   def senderInformation: Option[SenderInformation]
   def withSenderInformation(ni:SenderInformation): OmiRequest
+  def requestVerb: RawRequestWrapper.MessageType
 }
 
 object OmiRequestType extends Enumeration{
@@ -198,27 +199,28 @@ object RawRequestWrapper {
 
   private def parseError(m: String) = throw new IllegalArgumentException("Pre-parsing: " + m)
 
-  sealed trait MessageType
+  sealed class MessageType(val name: String)
 
   object MessageType {
-    case object Write extends MessageType
-    case object Read extends MessageType
-    case object Cancel extends MessageType
-    case object Response extends MessageType
-    case object Delete extends MessageType
-    case object Call extends MessageType
+    case object Write extends MessageType("write")
+    case object Read extends MessageType("read")
+    case object Cancel extends MessageType("cancel")
+    case object Response extends MessageType("response")
+    case object Delete extends MessageType("delete")
+    case object Call extends MessageType("call")
     def apply(xmlTagLabel: String): MessageType =
       xmlTagLabel match {
-        case "write"  => Write
-        case "read"   => Read
-        case "cancel" => Cancel
-        case "response" => Response
-        case "delete" => Delete
-        case "call" => Call
+        case Write.name  => Write
+        case Read.name   => Read
+        case Cancel.name => Cancel
+        case Response.name => Response
+        case Delete.name => Delete
+        case Call.name   => Call
         case _ => parseError("read, write, cancel, call or delete  element not found!")
       }
   }
 }
+import RawRequestWrapper.MessageType
 
 /**
   * Trait for subscription like classes. Offers a common interface for subscription types.
@@ -292,6 +294,8 @@ case class ReadRequest(
   def replaceOdf( nOdf: ODF ): ReadRequest = copy(odf = nOdf)
 
   def withSenderInformation(si:SenderInformation):OmiRequest = this.copy( senderInformation = Some(si))
+
+  val requestVerb = MessageType.Read
 }
 
 /**
@@ -327,6 +331,7 @@ case class PollRequest(
   )
   implicit def asOmiEnvelope : xmlTypes.OmiEnvelopeType= requestToEnvelope(asReadRequest, ttlAsSeconds)
   def withSenderInformation(si:SenderInformation):OmiRequest = this.copy( senderInformation = Some(si))
+  val requestVerb = MessageType.Read
 }
 
 /**
@@ -370,6 +375,7 @@ case class SubscriptionRequest(
   implicit def asOmiEnvelope : xmlTypes.OmiEnvelopeType= requestToEnvelope(asReadRequest, ttlAsSeconds)
   def withSenderInformation(si:SenderInformation):OmiRequest = this.copy( senderInformation = Some(si))
   def replaceOdf( nOdf: ODF ): SubscriptionRequest = copy(odf = nOdf)
+  val requestVerb = MessageType.Read
 }
 
 
@@ -411,6 +417,7 @@ case class WriteRequest(
   implicit def asOmiEnvelope : xmlTypes.OmiEnvelopeType = requestToEnvelope(asWriteRequest, ttlAsSeconds)
   def replaceOdf( nOdf: ODF ): WriteRequest = copy(odf = nOdf)
   def withSenderInformation(si:SenderInformation):OmiRequest = this.copy( senderInformation = Some(si))
+  val requestVerb = MessageType.Write
 }
 
 case class CallRequest(
@@ -448,6 +455,7 @@ case class CallRequest(
   implicit def asOmiEnvelope : xmlTypes.OmiEnvelopeType = requestToEnvelope(asCallRequest, ttlAsSeconds)
   def replaceOdf( nOdf: ODF ): CallRequest = copy(odf = nOdf)
   def withSenderInformation(si:SenderInformation):OmiRequest = this.copy( senderInformation = Some(si))
+  val requestVerb = MessageType.Call
 }
 
 case class DeleteRequest(
@@ -485,6 +493,7 @@ case class DeleteRequest(
   implicit def asOmiEnvelope : xmlTypes.OmiEnvelopeType = requestToEnvelope(asDeleteRequest, ttlAsSeconds)
   def replaceOdf( nOdf: ODF ): DeleteRequest = copy(odf = nOdf)
   def withSenderInformation(si:SenderInformation):OmiRequest = this.copy( senderInformation = Some(si))
+  val requestVerb = MessageType.Delete
 }
 /**
  * Cancel request, for cancelling subscription.
@@ -513,6 +522,7 @@ case class CancelRequest(
 
   implicit def asOmiEnvelope : xmlTypes.OmiEnvelopeType = requestToEnvelope(asCancelRequest, ttlAsSeconds)
   def withSenderInformation(si:SenderInformation):OmiRequest = this.copy( senderInformation = Some(si))
+  val requestVerb = MessageType.Cancel
 }
 
 trait JavaResponseRequest{
@@ -592,6 +602,7 @@ class ResponseRequest(
       ttl
     )
   }
+  val requestVerb = MessageType.Response
 } 
 
 
