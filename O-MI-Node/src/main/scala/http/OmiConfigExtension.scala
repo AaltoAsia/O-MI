@@ -125,10 +125,13 @@ class OmiConfigExtension( val config: Config) extends Extension
   val externalAuthUseHttps: Boolean = authAPIServiceV1.getBoolean("use-https")
 
   // External AuthAPIService V2
-  val authAPIServiceV2: Config = config getConfig "omi-service.authAPI.v2"
-  val enableAuthAPIServiceV2: Boolean = authAPIServiceV2.getBoolean("enable")
-  val authAPIServiceAuthenticationEndpoint: Uri = testUri(authAPIServiceV2.getString("authentication.url"))
-  val authAPIServiceAuthorizationEndpoint: Uri = testUri(authAPIServiceV2.getString("authorization.url"))
+  object AuthApiV2 {
+    val authAPIServiceV2: Config = config getConfig "omi-service.authAPI.v2"
+    val enable: Boolean = authAPIServiceV2.getBoolean("enable")
+    val authenticationEndpoint: Uri = testUri(authAPIServiceV2.getString("authentication.url"))
+    val omiHttpHeadersToAuthentication: Set[String] = authAPIServiceV2.getStringList("authentication.copy-request-headers").toSet
+    val authorizationEndpoint: Uri = testUri(authAPIServiceV2.getString("authorization.url"))
+  }
   //val userInfoFromRequestHeaders: Map[String,String] = authAPIServiceV2.getObject("userinfo-from-request-headers")
   //
   //TODO

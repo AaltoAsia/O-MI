@@ -63,7 +63,11 @@ case class AuthenticationResponse(
   userid: Option[String],
   user: Option[String],
   isadmin: Option[Boolean]
-)
+) {
+  def userResult: String = (email orElse userid orElse user).getOrElse("default")
+}
+
+case class AuthorizationRequest(username: String, request: String)
 
 /**
   * Version 2 of AuthAPI service. It provides functionality of the internal AuthAPI interface to external authorization services.
@@ -75,6 +79,7 @@ class AuthAPIServiceV2(
     protected implicit val system : ActorSystem,
     protected implicit val materializer : ActorMaterializer
   ) extends AuthApi with AuthApiJsonSupport {
+  import settings.AuthApiV2._
 
   val timeout = 3.seconds
 
@@ -105,12 +110,16 @@ class AuthAPIServiceV2(
     val odfTree = hierarchyStore execute GetTree()
 
     val authenticationRequest = Get(
-      settings.authAPIServiceAuthenticationEndpoint.copy(rawQueryString=httpRequest.uri.rawQueryString)
-    ).withHeaders(httpRequest.headers)
-    val authorizationRequest = Get(settings.authAPIServiceAuthorizationEndpoint)
+      authenticationEndpoint.copy(rawQueryString=httpRequest.uri.rawQueryString)
+    ).withHeaders(httpRequest.headers.filter(omiHttpHeadersToAuthentication contains _.lowercaseName))
+
 
     val resultF = for { 
       authenticationResponse <- sendAndReceiveAs[AuthenticationResponse](authenticationRequest)
+
+      authorizationRequest = Post(
+        authorizationEndpoint,
+        AuthorizationRequest(authenticationResponse.userResult, ""))
       authorizationResponse  <- sendAndReceiveAs[AuthorizationResponse](authorizationRequest)
 
       filteredRequest = filterODF(odfRequest, authorizationResponse)

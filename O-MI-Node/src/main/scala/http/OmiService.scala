@@ -86,7 +86,7 @@ class OmiServiceImpl(
   }
 
   //example auth API service code in java directory of the project
-  if(settings.enableAuthAPIServiceV2){
+  if(settings.AuthApiV2.enable){
     log.info("External Authorization module enabled")
     log.info(s"External Authorization port ${settings.externalAuthorizationPort}")
     log.info(s"External Authorization useHttps ${settings.externalAuthUseHttps}")
