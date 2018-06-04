@@ -18,18 +18,32 @@ import java.lang
 import java.util.concurrent.TimeUnit
 import java.net.{InetAddress, URLDecoder}
 
+import scala.language.postfixOps
 import scala.collection.JavaConversions._
 import scala.concurrent.duration._
 import scala.util.Try
 import scala.language.implicitConversions
 import agentSystem.AgentSystemConfigExtension
 import akka.actor.{ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
+import akka.http.scaladsl.model.Uri
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigException._
 import types.Path
 
 class OmiConfigExtension( val config: Config) extends Extension 
   with AgentSystemConfigExtension {
+
+  /**
+    * Throws exceptions if invalid url, returns the input parameter if success
+    */
+  private def testUri(address: String): Uri = {
+    val uri = Uri(address)
+    val hostAddress = uri.authority.host.address
+    // Test address validity (throws exceptions when invalid)
+    val ipAddress = InetAddress.getByName(hostAddress)
+
+    uri
+  }
 
   val callbackAuthorizationEnabled: Boolean = config.getBoolean("omi-service.callback-authorization-enabled")
   /**
@@ -74,31 +88,65 @@ class OmiConfigExtension( val config: Config) extends Extension
   //val cliPort: Int = config.getInt("omi-service.agent-cli-port")
 
   /** analytics settings */
-  val enableAnalytics: Boolean = config.getBoolean("analytics.enableAnalytics")
-  val analyticsMaxHistoryLength: Int = config.getInt("analytics.maxHistoryLength")
-  val updateInterval: FiniteDuration = config.getDuration("analytics.updateInterval")
+  val analyticsConf: Config = 
+    Try(config getConfig "omi-service.analytics") orElse
+    Try(config getConfig "analytics") get
 
-  val enableReadAnalytics: Boolean = config.getBoolean("analytics.read.enableAnalytics")
-  val enableWriteAnalytics: Boolean =config.getBoolean("analytics.write.enableAnalytics")
-  val enableUserAnalytics: Boolean = config.getBoolean("analytics.user.enableAnalytics")
+  val enableAnalytics: Boolean = analyticsConf.getBoolean("enableAnalytics")
+  val analyticsMaxHistoryLength: Int = analyticsConf.getInt("maxHistoryLength")
+  val updateInterval: FiniteDuration = analyticsConf.getDuration("updateInterval")
 
-  val numReadSampleWindowLength: FiniteDuration = config.getDuration("analytics.read.windowLength")
-  val readAvgIntervalSampleSize: Int = config.getInt("analytics.read.intervalSampleSize")
-  val numberReadsInfoName: String = config.getString("analytics.read.numberOfReadsInfoItemName")
-  val averageReadIAnfoName: String = config.getString("analytics.read.averageReadIntervalInfoItemName")
+  val enableReadAnalytics: Boolean = analyticsConf.getBoolean("read.enableAnalytics")
+  val enableWriteAnalytics: Boolean =analyticsConf.getBoolean("write.enableAnalytics")
+  val enableUserAnalytics: Boolean = analyticsConf.getBoolean("user.enableAnalytics")
 
-  val numWriteSampleWindowLength: FiniteDuration = config.getDuration("analytics.write.windowLength")
-  val writeAvgIntervalSampleSize: Int = config.getInt("analytics.write.intervalSampleSize")
-  val numberWritesInfoName: String = config.getString("analytics.write.numberOfWritesInfoItemName")
-  val averageWriteInfoName: String = config.getString("analytics.write.averageWriteIntervalInfoItemName")
+  val numReadSampleWindowLength: FiniteDuration = analyticsConf.getDuration("read.windowLength")
+  val readAvgIntervalSampleSize: Int = analyticsConf.getInt("read.intervalSampleSize")
+  val numberReadsInfoName: String = analyticsConf.getString("read.numberOfReadsInfoItemName")
+  val averageReadIAnfoName: String = analyticsConf.getString("read.averageReadIntervalInfoItemName")
 
-  val numUniqueUserSampleWindowLength: FiniteDuration = config.getDuration("analytics.user.windowLength")
-  val numberUsersInfoName: String = config.getString("analytics.user.averageNumberOfUsersInfoItemName")
+  val numWriteSampleWindowLength: FiniteDuration = analyticsConf.getDuration("write.windowLength")
+  val writeAvgIntervalSampleSize: Int = analyticsConf.getInt("write.intervalSampleSize")
+  val numberWritesInfoName: String = analyticsConf.getString("write.numberOfWritesInfoItemName")
+  val averageWriteInfoName: String = analyticsConf.getString("write.averageWriteIntervalInfoItemName")
+
+  val numUniqueUserSampleWindowLength: FiniteDuration = analyticsConf.getDuration("user.windowLength")
+  val numberUsersInfoName: String = analyticsConf.getString("user.averageNumberOfUsersInfoItemName")
+
   // Authorization
-  //External API
-  val enableExternalAuthorization: Boolean = config.getBoolean("omi-service.authorization.enable-external-authorization-service")
-  val externalAuthorizationPort: Int = config.getInt("omi-service.authorization.authorization-service-port")
-  val externalAuthUseHttps: Boolean = config.getBoolean("omi-service.authorization.use-https")
+  // Old External AuthAPIService V1
+  val authAPIServiceV1: Config =
+    Try(config getConfig "omi-service.authorization") orElse
+    Try(config getConfig "omi-service.authAPI.v1") get
+
+  val enableExternalAuthorization: Boolean = authAPIServiceV1.getBoolean("enable-external-authorization-service")
+  val enableAuthAPIServiceV1: Boolean = authAPIServiceV1.getBoolean("enable-external-authorization-service")
+  val externalAuthorizationPort: Int = authAPIServiceV1.getInt("authorization-service-port")
+  val externalAuthUseHttps: Boolean = authAPIServiceV1.getBoolean("use-https")
+
+  // External AuthAPIService V2
+  val authAPIServiceV2: Config = config getConfig "omi-service.authAPI.v2"
+  val enableAuthAPIServiceV2: Boolean = authAPIServiceV2.getBoolean("enable")
+  val authAPIServiceAuthenticationEndpoint: Uri = testUri(authAPIServiceV2.getString("authentication.url"))
+  val authAPIServiceAuthorizationEndpoint: Uri = testUri(authAPIServiceV2.getString("authorization.url"))
+  //val userInfoFromRequestHeaders: Map[String,String] = authAPIServiceV2.getObject("userinfo-from-request-headers")
+  //
+  //TODO
+  // earlier lines override conflicting later ones
+  // store-from-request = {
+  //   headers.cookie.jwt_token = authtoken
+  //   auth.bearer = authtoken
+  // }
+  // put-to-authentication-request = {
+  //   query.auth-token = authtoken
+  // }
+  // store-from-authentication-response = {
+  //   email = username
+  //   username = username
+  // }
+  // put-to-authorization-request = {
+  //   username = user
+  // }
 
   //IP
   val inputWhiteListUsers: Vector[String]= config.getStringList("omi-service.input-whitelist-users").toVector

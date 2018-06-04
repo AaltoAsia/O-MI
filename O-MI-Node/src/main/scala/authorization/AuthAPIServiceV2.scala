@@ -26,6 +26,7 @@ import database.OdfTree
 import types.odf._
 import types.Path
 import types.OmiTypes.{OmiRequest, OdfRequest, UserInfo}
+import http.OmiConfigExtension
 
 trait AuthApiJsonSupport extends Json4sSupport {
   // Serialize None to null?
@@ -55,20 +56,24 @@ trait AuthApiJsonSupport extends Json4sSupport {
 case class AuthorizationResponse(allow: List[Path], deny: List[Path])
 
 /**
-  * API response class for validating user credentials from external service.
+  * API response class for validating user credentials from external service. Includes all usual keynames.
   */
-case class AuthenticationResponse(email: Option[String], isadmin: Option[Boolean])
+case class AuthenticationResponse(
+  email: Option[String],
+  userid: Option[String],
+  user: Option[String],
+  isadmin: Option[Boolean]
+)
 
 /**
   * Version 2 of AuthAPI service. It provides functionality of the internal AuthAPI interface to external authorization services.
   * This V2 has different interface to allow easier partial authorization by having "deny" rules in addition to "allow" rules.
   */
-class AuthAPIServiceV2(hierarchyStore: Prevayler[OdfTree],
+class AuthAPIServiceV2(
+    val hierarchyStore: Prevayler[OdfTree],
+    val settings : OmiConfigExtension,
     protected implicit val system : ActorSystem,
     protected implicit val materializer : ActorMaterializer
-  )(
-    protected val authenticationUrl: String,
-    protected val authorizationUrl: String
   ) extends AuthApi with AuthApiJsonSupport {
 
   val timeout = 3.seconds
@@ -99,8 +104,10 @@ class AuthAPIServiceV2(hierarchyStore: Prevayler[OdfTree],
   protected def isAuthorizedForOdfRequest(httpRequest: HttpRequest, odfRequest: OdfRequest): AuthorizationResult = {
     val odfTree = hierarchyStore execute GetTree()
 
-    val authenticationRequest = Get("derp") // TODO
-    val authorizationRequest = Get("derp") // TODO
+    val authenticationRequest = Get(
+      settings.authAPIServiceAuthenticationEndpoint.copy(rawQueryString=httpRequest.uri.rawQueryString)
+    ).withHeaders(httpRequest.headers)
+    val authorizationRequest = Get(settings.authAPIServiceAuthorizationEndpoint)
 
     val resultF = for { 
       authenticationResponse <- sendAndReceiveAs[AuthenticationResponse](authenticationRequest)
@@ -119,7 +126,7 @@ class AuthAPIServiceV2(hierarchyStore: Prevayler[OdfTree],
   override def isAuthorizedForRequest(httpRequest: HttpRequest, omiRequest: OmiRequest): AuthorizationResult = {
     omiRequest match {
       case o: OdfRequest => isAuthorizedForOdfRequest(httpRequest, o)
-      case _ => Unauthorized() // TODO: Cancel, Poll?
+      case _ => Authorized(UserInfo(None)) // TODO: Cancel, Poll?
     }
 
     //return one of:
