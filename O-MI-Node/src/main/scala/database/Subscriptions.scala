@@ -13,6 +13,7 @@
  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 
 package database
+import scala.language.postfixOps
 
 import java.net.InetAddress
 import java.sql.Timestamp
@@ -219,7 +220,6 @@ object CustomJsonProtocol extends DefaultJsonProtocol {
       JsString(callback),
       JsArray(paths: Vector[JsString]),
       JsNull) if interval.toLong == -1 || interval.toLong == -2 => { //EventSub
-        println(interval.toLong)
         if (interval.toLong == -1) {
           (NormalEventSub(id.toLong,
             paths.map(p => Path(p.value)),

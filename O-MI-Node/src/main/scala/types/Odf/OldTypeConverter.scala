@@ -3,7 +3,7 @@ package odf
 
 import types.OdfTypes._
 
-@deprecated( "Should refactor all OdfTypes usages to use new ODF types.")
+@deprecated( "Should refactor all OdfTypes usages to use new ODF types.", "O-MI-Node 0.11.0")
 object OldTypeConverter{
   def convertOdfObjects( odfObjects: OdfObjects ): ImmutableODF ={
     val objects = Objects(

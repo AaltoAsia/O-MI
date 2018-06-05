@@ -32,6 +32,7 @@ import types.Path
 import types.Path._
 
 import scala.collection.immutable
+import scala.language.postfixOps
 
 object InfluxDBJsonProtocol extends DefaultJsonProtocol {
 
@@ -169,7 +170,7 @@ class InfluxDBImplementation(
             val valueStr: String= value.value match {
               case odf: ImmutableODF => throw new Exception("Having O-DF inside value with InfluxDB is not supported.") 
               case str: String => s""""${str.replace("\"","\\\"")}""""
-              case num: Numeric[Any] => s"$num" //XXX: may cause issues...
+              case num: Numeric[_] => s"$num" //XXX: may cause issues...
               case bool: Boolean => bool.toString
               case any: Any => s""""${any.toString.replace("\"","\\\"")}""""
             }
@@ -189,7 +190,7 @@ class InfluxDBImplementation(
             if (databases.contains(config.databaseName)) {
               //Everything okay
               log.info(s"Database ${config.databaseName} found from InfluxDB at address ${config.address}")
-              Future.successful()
+              Future.successful(())
             } else {
               //Create or error
               log.warning(s"Database ${config.databaseName} not found from InfluxDB at address ${config.address}")
@@ -197,7 +198,7 @@ class InfluxDBImplementation(
               sendQuery(s"create database ${config.databaseName} ").flatMap {
                 case response@HttpResponse(status, headers, _entity, protocol) if status.isSuccess =>
                   log.info(s"Database ${config.databaseName} created seccessfully to InfluxDB at address ${config.address}")
-                  Future.successful()
+                  Future.successful(())
                 case response@HttpResponse(status, headers, _entity, protocol) if status.isFailure =>
                   _entity.toStrict(10.seconds).flatMap { stricted =>
                     Unmarshal(stricted).to[String].map {

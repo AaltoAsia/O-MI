@@ -138,13 +138,13 @@ trait Tables extends DBBase{
         case ( None, Some(n), None, None) => oldestC(n)
         case ( None, None, Some(begin), None) => afterC(begin)
         case ( None, None, None, Some(end)) => beforeC(end)
-        case ( None, None, Some(begin), Some(end)) => betweenC(begin,end)
-        case ( Some(n), None, Some(begin), None) => newestAfterC(n,begin)
-        case ( Some(n), None, None, Some(end)) => newestBeforeC(n,end)
-        case ( Some(n), None, Some(begin), Some(end)) => newestBetweenC(n,begin,end)
-        case ( None, Some(n), Some(begin), None) => oldestAfterC(n,begin)
-        case ( None, Some(n), None, Some(end)) => oldestBeforeC(n,end)
-        case ( None, Some(n), Some(begin), Some(end)) => oldestBetweenC(n,begin,end)
+        case ( None, None, Some(begin), Some(end)) => betweenC((begin,end))
+        case ( Some(n), None, Some(begin), None) => newestAfterC((n,begin))
+        case ( Some(n), None, None, Some(end)) => newestBeforeC((n,end))
+        case ( Some(n), None, Some(begin), Some(end)) => newestBetweenC((n,begin,end))
+        case ( None, Some(n), Some(begin), None) => oldestAfterC((n,begin))
+        case ( None, Some(n), None, Some(end)) => oldestBeforeC((n,end))
+        case ( None, Some(n), Some(begin), Some(end)) => oldestBetweenC((n,begin,end))
       }
       compiledQuery.result
     }

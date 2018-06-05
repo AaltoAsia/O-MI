@@ -124,7 +124,7 @@ object OdfParser extends Parser[OdfParseResult] {
 private[this] def validateId(stringId: String): Option[String] = {
   stringId.trim match{ 
     case "" => None 
-    case trimmedName: String => Some(trimmedName.replace( "/", "\\/"))
+    case trimmedName: String => Some(trimmedName)
   }
 }
 private[this] def validateId(optionId: Option[String]): Option[String] = for {
