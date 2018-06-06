@@ -125,7 +125,7 @@ class OmiConfigExtension( val config: Config) extends Extension
   val externalAuthUseHttps: Boolean = authAPIServiceV1.getBoolean("use-https")
 
   // External AuthAPIService V2
-  object AuthApiV2 {
+  case object AuthApiV2 {
     val authAPIServiceV2: Config = config getConfig "omi-service.authAPI.v2"
     val enable: Boolean = authAPIServiceV2.getBoolean("enable")
     val authenticationEndpoint: Uri = testUri(authAPIServiceV2.getString("authentication.url"))

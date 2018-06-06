@@ -79,7 +79,7 @@ class OmiServiceImpl(
 
   //example auth API service code in java directory of the project
   if(settings.enableExternalAuthorization){
-    log.info("External Authorization module enabled")
+    log.info("External Auth API v1 module enabled")
     log.info(s"External Authorization port ${settings.externalAuthorizationPort}")
     log.info(s"External Authorization useHttps ${settings.externalAuthUseHttps}")
     registerApi(new AuthAPIService(settings.externalAuthUseHttps,settings.externalAuthorizationPort))
@@ -87,9 +87,8 @@ class OmiServiceImpl(
 
   //example auth API service code in java directory of the project
   if(settings.AuthApiV2.enable){
-    log.info("External Authorization module enabled")
-    log.info(s"External Authorization port ${settings.externalAuthorizationPort}")
-    log.info(s"External Authorization useHttps ${settings.externalAuthUseHttps}")
+    log.info("External Auth API v2 modules enabled")
+    log.info(s"External Auth API settings ${settings.AuthApiV2}")
     registerApi(new AuthAPIServiceV2(singleStores.hierarchyStore, settings, system, materializer))
   }
 

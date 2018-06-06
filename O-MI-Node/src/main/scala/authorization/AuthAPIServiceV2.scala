@@ -4,22 +4,23 @@ import scala.concurrent.{Future,Await}
 import scala.concurrent.duration._
 
 import org.prevayler._
-import akka.util.Timeout
+import akka.util.{Timeout, ByteString}
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.pattern.ask
 import akka.http.scaladsl.{ Http, HttpExt}
-import akka.http.scaladsl.model._
 //import akka.http.scaladsl.model.headers.{Authorization, GenericHttpCredentials}
-import akka.http.scaladsl.client._
-import akka.http.scaladsl.client.RequestBuilding._
+import akka.http.scaladsl.model.{HttpRequest, HttpResponse, StatusCodes, HttpEntity}
+import akka.http.scaladsl.model.ContentTypes._
+import akka.http.scaladsl.client.RequestBuilding.{Post,Get}
+import akka.http.scaladsl.unmarshalling.Unmarshal
+import akka.http.scaladsl.marshalling.Marshal
 import de.heikoseeberger.akkahttpjson4s.Json4sSupport
-import org.json4s.{DefaultFormats, Formats}
-import org.json4s._
+import org.json4s.{DefaultFormats, Formats,CustomSerializer, JString}
 import org.json4s.native
 import agentSystem._
-import akka.http.scaladsl.unmarshalling.Unmarshal
-import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport._
+import org.slf4j.{Logger, LoggerFactory}
+
 
 import database.GetTree
 import database.OdfTree
@@ -40,9 +41,9 @@ trait AuthApiJsonSupport extends Json4sSupport {
       , { case p => JString(p.toString)  }
       )
   )
-  implicit val serialization = native.Serialization
+  implicit val jsonSerialization = org.json4s.native.Serialization
   implicit val json4sFormats: Formats = DefaultFormats + new PathSerializer // + new NoneSerializer
-
+  implicit def jsonMarshaller[T <: AnyRef] = marshaller[T](jsonSerialization, json4sFormats)
 }
 
 /**
@@ -81,16 +82,30 @@ class AuthAPIServiceV2(
   ) extends AuthApi with AuthApiJsonSupport {
   import settings.AuthApiV2._
 
+
+  protected val log = LoggerFactory.getLogger(classOf[AuthAPIServiceV2])
+
   val timeout = 3.seconds
 
   import system.dispatcher
   protected val httpExtension: HttpExt = Http(system)
 
 
-  def sendAndReceiveAs[T: Manifest](httpRequest: HttpRequest): Future[T] =
-        httpExtension.singleRequest(httpRequest)
-          .flatMap{(response: HttpResponse) => unmarshaller[T].apply(response.entity)}
+  // No error response handling
+  //def sendAndReceiveAs[T: Manifest](httpRequest: HttpRequest): Future[T] =
+  //      httpExtension.singleRequest(httpRequest)
+  //        .flatMap{(response: HttpResponse) => unmarshaller[T].apply(response.entity)}
 
+
+  def sendAndReceiveAs[T: Manifest](httpRequest: HttpRequest): Future[T] =
+    sendAndReceive(httpRequest, response => unmarshaller[T].apply(response.entity))
+
+  private def sendAndReceive[T](request: HttpRequest, f: HttpResponse => Future[T]): Future[T] =
+    httpExtension.singleRequest(request)
+      .flatMap { response =>
+        if (response.status.isSuccess || response.status == StatusCodes.NotFound) f(response)
+        else Future.failed(new Exception(s"Request failed. Response was: $response"))
+      }
 
   def filterODF(originalRequest: OdfRequest, filters: AuthorizationResponse): Option[OmiRequest] = {
 
@@ -106,6 +121,13 @@ class AuthAPIServiceV2(
     case Some(req) => Changed(req, _)
   }
 
+  // This temporary implementation because of problems with json4s serializing case class AuthorizationRequest
+  private def authorizationJson(a:String, b:String) =
+    ByteString(
+      "{\"username\": \""+a+
+      "\", \"request\" :\""+b+"\"}"
+      )
+
   protected def isAuthorizedForOdfRequest(httpRequest: HttpRequest, odfRequest: OdfRequest): AuthorizationResult = {
     val odfTree = hierarchyStore execute GetTree()
 
@@ -117,16 +139,36 @@ class AuthAPIServiceV2(
     val resultF = for { 
       authenticationResponse <- sendAndReceiveAs[AuthenticationResponse](authenticationRequest)
 
+
+      // This temporary implementation because of problems with json4s serializing case class AuthorizationRequest
       authorizationRequest = Post(
         authorizationEndpoint,
-        AuthorizationRequest(authenticationResponse.userResult, odfRequest.requestVerb.name.head.toString))
-      authorizationResponse  <- sendAndReceiveAs[AuthorizationResponse](authorizationRequest)
+          HttpEntity.Strict(`application/json`,
+            authorizationJson(authenticationResponse.userResult,odfRequest.requestVerb.name.head.toString)
+          )
+      )
+      //authorizationRequest = Post(
+      //  authorizationEndpoint,
+      //    AuthorizationRequest(authenticationResponse.userResult,odfRequest.requestVerb.name.head.toString)
+      //  )
+      //)
+
+      _ <- Future.successful{
+        log.debug(s"Authentication call successfull: $authenticationResponse")
+        log.debug(s"AuthorizationRequest: $authorizationRequest")
+      }
+
+      authorizationResponse <- sendAndReceiveAs[AuthorizationResponse](authorizationRequest)
+
+      _ <- Future.successful(log.debug(s"Authorization call successfull: ${authorizationResponse.toString.take(160)}..."))
 
       filteredRequest = filterODF(odfRequest, authorizationResponse)
 
       user = UserInfo(name=authenticationResponse.email)
 
     } yield optionToAuthResult(filteredRequest)(user)
+
+    resultF.failed.map(log debug _.getMessage)
     
     Await.result(resultF, timeout)
   }
