@@ -175,14 +175,13 @@ object CustomJsonProtocol extends DefaultJsonProtocol {
       JsArray(data: Vector[JsObject])) => {
         val subData: Seq[(Path, List[Value[Any]])] = data.map(_.getFields("path", "values") match {
           case Seq(JsString(path), JsArray(values: Vector[JsObject])) => (Path(path), values
-            .map(_.getFields("value", "typeValue", "timeStamp", "attributes") match {
+            .map(_.getFields("value", "typeValue", "timeStamp") match {
               case Seq(JsString(value),
               JsString(typeValue),
-              JsNumber(timeStamp),
-              JsObject(attributes: Map[String, JsString])) => Value(value,
+              JsNumber(timeStamp)
+              ) => Value(value,
                 typeValue,
-                new Timestamp(timeStamp.toLong),
-                attributes.map { case (key, jsvalue) => (key, jsvalue.value) }(breakOut))
+                new Timestamp(timeStamp.toLong))
             }).toList)
         })
         if (interval.toLong == -1) { //normal poll sub
@@ -268,8 +267,7 @@ object CustomJsonProtocol extends DefaultJsonProtocol {
                 JsObject(
                   "value" -> JsString(v.value.toString),
                   "typeValue" -> JsString(v.typeAttribute),
-                  "timeStamp" -> JsNumber(v.timestamp.getTime),
-                  "attributes" -> JsObject(v.attributes.mapValues(a => JsString(a)).toMap)
+                  "timeStamp" -> JsNumber(v.timestamp.getTime)
                 )
               ).toVector
             )

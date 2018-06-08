@@ -259,8 +259,7 @@ object ODFParser extends parsing.Parser[OdfParseResult] {
           }.map( _.as[xmlTypes.ObjectsType] ).head //XXX: head used should not have multiple Objects
         ODFValue(
           parseObjects(objectsTypes,requestProcessTime),//.asXML.toString,
-          timeSolver(valueType, requestProcessTime),
-          parseAttributes( valueType.attributes -- Vector("@type", "@dateTime", "@unixTime") )
+          timeSolver(valueType, requestProcessTime)
         )
     }
     typeValue match {

@@ -135,7 +135,7 @@ class ODFAgent(
           nval.value match{
             case oldValue: Int => 
               Value(oldValue + (Random.nextGaussian*oldValue*0.10), nts )
-            case v => Value(v, nts, nval.attributes )
+            case v => Value(v, nts)
           }
     }
   }

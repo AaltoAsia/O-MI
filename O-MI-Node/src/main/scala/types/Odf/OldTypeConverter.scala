@@ -82,15 +82,13 @@ object OldTypeConverter{
       case odfObjects: OdfObjects =>
       Value(
         convertOdfObjects( odfObjects ),
-        odfValue.timestamp,
-        odfValue.attributes
+        odfValue.timestamp
       )
       case other: Any =>
       Value(
         odfValue.value,
         odfValue.typeValue,
-        odfValue.timestamp,
-        odfValue.attributes
+        odfValue.timestamp
       )
     }
   }

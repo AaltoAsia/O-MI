@@ -72,6 +72,9 @@ lazy val omiNode = (project in file("O-MI-Node")).
       //cleanFiles <++= baseDirectory {_ * "*.db" get},
       target in (Compile, doc) := baseDirectory.value / "html" / "api",
       target in (JavaDoc, doc) := baseDirectory.value / "html" / "api" / "java",
+      PB.targets in Compile := Seq(
+        scalapb.gen() -> (sourceManaged in Compile).value
+        ),
       //Revolver.settings,
       libraryDependencies ++= commonDependencies ++ testDependencies)): _*)
 
@@ -132,6 +135,7 @@ lazy val root = (project in file(".")).
         val file =  (baseDirectory in Compile in omiNode).value / "html" / "VERSION"
         IO.write(file, s"${version.value}")
         Seq(file)},
+
 
     ///////////////////////////////////////////////////////////////////////
     //Configure program to read application.conf from the right direction//

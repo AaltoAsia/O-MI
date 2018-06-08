@@ -132,7 +132,6 @@ sealed trait OdfValue[+T]{
   def value:                T
   def typeValue:            String 
   def timestamp:            Timestamp
-  def attributes:           HashMap[String, String]
   def valueAsDataRecord: DataRecord[Any] //= DataRecord(value)
   /** Method to convert to scalaxb generated class. */
   implicit def asValueType : ValueType = {
@@ -144,7 +143,7 @@ sealed trait OdfValue[+T]{
       "@type" -> DataRecord(typeValue),
       "@unixTime" -> DataRecord(timestamp.getTime() / 1000),
       "@dateTime" -> DataRecord(timestampToXML(timestamp))
-    ) ++ attributes.mapValues(DataRecord(_))
+    )
     )
   }
   def isNumeral : Boolean = typeValue match {
@@ -193,35 +192,34 @@ sealed trait OdfValue[+T]{
     }*/
     def valueAsDataRecord: DataRecord[ObjectsType] = DataRecord(None, Some("Objects"),value.asObjectsType)
   } 
-  final case class OdfIntValue(value: Int, timestamp: Timestamp, attributes: HashMap[String, String]) extends OdfValue[Int]{
+  final case class OdfIntValue(value: Int, timestamp: Timestamp) extends OdfValue[Int]{
     def typeValue:            String = "xs:int"
     def valueAsDataRecord = DataRecord(value)
   } 
-  final case class  OdfLongValue(value: Long, timestamp: Timestamp, attributes: HashMap[String, String]) extends OdfValue[Long]{
+  final case class  OdfLongValue(value: Long, timestamp: Timestamp) extends OdfValue[Long]{
     def typeValue:            String = "xs:long"
     def valueAsDataRecord = DataRecord(value)
   } 
-  final case class  OdfShortValue(value: Short, timestamp: Timestamp, attributes: HashMap[String, String]) extends OdfValue[Short]{
+  final case class  OdfShortValue(value: Short, timestamp: Timestamp) extends OdfValue[Short]{
     def typeValue:            String = "xs:short"
     def valueAsDataRecord = DataRecord(value)
   } 
-  final case class  OdfFloatValue(value: Float, timestamp: Timestamp, attributes: HashMap[String, String]) extends OdfValue[Float]{
+  final case class  OdfFloatValue(value: Float, timestamp: Timestamp) extends OdfValue[Float]{
     def typeValue:            String = "xs:float"
     def valueAsDataRecord = DataRecord(value)
   } 
-  final case class  OdfDoubleValue(value: Double, timestamp: Timestamp, attributes: HashMap[String, String]) extends OdfValue[Double]{
+  final case class  OdfDoubleValue(value: Double, timestamp: Timestamp) extends OdfValue[Double]{
     def typeValue:            String = "xs:double"
     def valueAsDataRecord = DataRecord(value)
   } 
-  final case class  OdfBooleanValue(value: Boolean, timestamp: Timestamp, attributes: HashMap[String, String]) extends OdfValue[Boolean]{
+  final case class  OdfBooleanValue(value: Boolean, timestamp: Timestamp) extends OdfValue[Boolean]{
     def typeValue:            String = "xs:boolean"
     def valueAsDataRecord = DataRecord(value)
   } 
   final case class  OdfStringPresentedValue(
     value: String,
     timestamp: Timestamp,
-    typeValue : String = "xs:string",
-    attributes: HashMap[String, String]  
+    typeValue : String = "xs:string"
   ) extends OdfValue[String]{
     def valueAsDataRecord = DataRecord(value)
   }
@@ -229,26 +227,21 @@ sealed trait OdfValue[+T]{
 object OdfValue{
   def apply(
     value: Any,
-    timestamp: Timestamp,
-    attributes: HashMap[String, String]
+    timestamp: Timestamp
   ) : OdfValue[Any] = {
     value match {
-      case odf: OdfObjects => OdfObjectsValue(odf, timestamp, attributes)
-      case s: Short => OdfShortValue(s, timestamp, attributes)
-      case i: Int   => OdfIntValue(i, timestamp, attributes)
-      case l: Long  => OdfLongValue(l, timestamp, attributes)
-      case f: Float => OdfFloatValue(f, timestamp, attributes)
-      case d: Double => OdfDoubleValue(d, timestamp, attributes)
-      case b: Boolean => OdfBooleanValue(b, timestamp, attributes)
-      case s: String => OdfStringPresentedValue(s, timestamp, attributes = attributes)
-      case a: Any => OdfStringPresentedValue(a.toString, timestamp, attributes = attributes)
+      case odf: OdfObjects => OdfObjectsValue(odf, timestamp)
+      case s: Short => OdfShortValue(s, timestamp)
+      case i: Int   => OdfIntValue(i, timestamp)
+      case l: Long  => OdfLongValue(l, timestamp)
+      case f: Float => OdfFloatValue(f, timestamp)
+      case d: Double => OdfDoubleValue(d, timestamp)
+      case b: Boolean => OdfBooleanValue(b, timestamp)
+      case s: String => OdfStringPresentedValue(s, timestamp)
+      case a: Any => OdfStringPresentedValue(a.toString, timestamp)
     }
   }
-  def apply(
-    value: Any,
-    timestamp: Timestamp
-  ) : OdfValue[Any] = apply(value,timestamp,HashMap.empty[String,String])
-  
+
   def apply(
     value: String,
     typeValue: String,
@@ -266,25 +259,25 @@ object OdfValue{
               OdfObjectsValue(odf,timestamp, attributes)
           }
         case "xs:float" =>
-          OdfFloatValue(value.toFloat, timestamp, attributes)
+          OdfFloatValue(value.toFloat, timestamp)
         case "xs:double" =>
-          OdfDoubleValue(value.toDouble, timestamp, attributes)
+          OdfDoubleValue(value.toDouble, timestamp)
         case "xs:short" =>
-          OdfShortValue(value.toShort, timestamp, attributes)
+          OdfShortValue(value.toShort, timestamp)
         case "xs:int" =>
-          OdfIntValue(value.toInt, timestamp, attributes)
+          OdfIntValue(value.toInt, timestamp)
         case "xs:long" =>
-          OdfLongValue(value.toLong, timestamp, attributes)
+          OdfLongValue(value.toLong, timestamp)
         case "xs:boolean" =>
-          OdfBooleanValue(value.toBoolean, timestamp, attributes)
+          OdfBooleanValue(value.toBoolean, timestamp)
         case str: String  =>
-          OdfStringPresentedValue(value, timestamp,str, attributes)
+          OdfStringPresentedValue(value, timestamp,str)
       }
     }
     create match {
       case Success(_value) => _value
       case Failure(_) =>
-        OdfStringPresentedValue(value, timestamp, attributes = attributes)
+        OdfStringPresentedValue(value, timestamp)
     }
       
   }

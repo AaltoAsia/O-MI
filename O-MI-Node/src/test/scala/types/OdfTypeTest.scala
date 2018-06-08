@@ -377,9 +377,9 @@ class OdfTypesTest extends mutable.Specification{
         ),
         descriptions = testingDescription,
         values = Vector(
-          Value( 93, testTime, testingAttributes ), 
+          Value( 93, testTime),
           Value( "51.9", "xs:float", testTime ), 
-          Value( "51.9", testTime, testingAttributes)
+          Value( "51.9", testTime)
         ),
         metaData = Some(MetaData(
           Vector(

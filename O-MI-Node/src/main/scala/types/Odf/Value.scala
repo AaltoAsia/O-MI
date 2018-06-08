@@ -2,6 +2,7 @@ package types
 package odf
 import java.sql.Timestamp
 
+import database.journal.PersistentValue
 import parsing.xmlGen._
 import parsing.xmlGen.scalaxb.XMLStandardTypes._
 import parsing.xmlGen.scalaxb._
@@ -15,7 +16,6 @@ trait Value[+V]{
   val value:V
   val typeAttribute: String
   val timestamp: Timestamp
-  val attributes: Map[String,String]
 
   def valueAsDataRecord: DataRecord[Any] //= DataRecord(value) 
   implicit def asValueType : ValueType = {
@@ -27,19 +27,19 @@ trait Value[+V]{
       "@type" -> DataRecord(typeAttribute),
       "@unixTime" -> DataRecord(timestamp.getTime() / 1000),
       "@dateTime" -> DataRecord(timestampToXML(timestamp))
-    ) ++ attributesToDataRecord( attributes )
+    )
     )
   }
   def asOdfValue: types.OdfTypes.OdfValue[Any] = {
-    types.OdfTypes.OdfValue( value, timestamp, HashMap( attributes.toSeq:_*) )
+    types.OdfTypes.OdfValue( value, timestamp)
   }
-  def retime(newTimestamp: Timestamp): Value[V] 
+  def retime(newTimestamp: Timestamp): Value[V]
+ // def persist = PersistentValue(timestamp.getTime,typeAttribute,attributes,PersistentValue.do)
 }
 
 case class ODFValue(
                      value: ODF,
-  timestamp: Timestamp,
-  attributes: Map[String,String]
+  timestamp: Timestamp
 ) extends Value[ODF] {
   final val typeAttribute: String = "odf"
   def valueAsDataRecord: DataRecord[ObjectsType] = DataRecord(None, Some("Objects"),value.asObjectsType)
@@ -48,8 +48,7 @@ case class ODFValue(
 
 case class StringValue(
                         value: String,
-  timestamp: Timestamp,
-  attributes: Map[String,String]
+  timestamp: Timestamp
 ) extends Value[String] {
   final val typeAttribute: String = "xs:string"
   def valueAsDataRecord: DataRecord[Any] = DataRecord(value) 
@@ -58,8 +57,7 @@ case class StringValue(
 
 case class IntValue(
                      value: Int,
-  timestamp: Timestamp,
-  attributes: Map[String,String]
+  timestamp: Timestamp
 ) extends Value[Int] {
   final val typeAttribute: String = "xs:int"
   def valueAsDataRecord: DataRecord[Any] = DataRecord(value) 
@@ -68,8 +66,7 @@ case class IntValue(
 
 case class LongValue(
                       value: Long,
-  timestamp: Timestamp,
-  attributes: Map[String,String]
+  timestamp: Timestamp
 ) extends Value[Long] {
   final val typeAttribute: String = "xs:long"
   def valueAsDataRecord: DataRecord[Any] = DataRecord(value) 
@@ -78,8 +75,7 @@ case class LongValue(
 
 case class ShortValue(
                        value: Short,
-  timestamp: Timestamp,
-  attributes: Map[String,String]
+  timestamp: Timestamp
 ) extends Value[Short] {
   final val typeAttribute: String = "xs:short"
   def valueAsDataRecord: DataRecord[Any] = DataRecord(value) 
@@ -88,8 +84,7 @@ case class ShortValue(
 
 case class FloatValue(
                        value: Float,
-  timestamp: Timestamp,
-  attributes: Map[String,String]
+  timestamp: Timestamp
 ) extends Value[Float] {
   final val typeAttribute: String = "xs:float"
   def valueAsDataRecord: DataRecord[Any] = DataRecord(value) 
@@ -98,8 +93,7 @@ case class FloatValue(
 
 case class DoubleValue(
                         value: Double,
-  timestamp: Timestamp,
-  attributes: Map[String,String]
+  timestamp: Timestamp
 ) extends Value[Double] {
   final val typeAttribute: String = "xs:double"
   def valueAsDataRecord: DataRecord[Any] = DataRecord(value) 
@@ -108,8 +102,7 @@ case class DoubleValue(
 
 case class BooleanValue(
                          value: Boolean,
-  timestamp: Timestamp,
-  attributes: Map[String,String]
+  timestamp: Timestamp
 ) extends Value[Boolean] {
   final val typeAttribute: String = "xs:boolean"
   def valueAsDataRecord: DataRecord[Any] = DataRecord(value) 
@@ -119,8 +112,7 @@ case class BooleanValue(
 case class StringPresentedValue(
                                  value: String,
   timestamp: Timestamp,
-  typeAttribute: String = "xs:string",
-  attributes: Map[String,String]
+  typeAttribute: String = "xs:string"
 ) extends Value[String] {
   def valueAsDataRecord: DataRecord[Any] = DataRecord(value) 
   def retime(newTimestamp: Timestamp) =  this.copy( timestamp = newTimestamp)
@@ -129,76 +121,69 @@ case class StringPresentedValue(
 object Value{
   def apply(
     value: Any,
-    timestamp: Timestamp,
-    attributes: Map[String, String]
+    timestamp: Timestamp
   ) : Value[Any] = {
     value match {
       case odf: ODF => //[scala.collection.Map[Path,Node],scala.collection.SortedSet[Path]] => 
-        ODFValue(odf.immutable, timestamp, attributes)
-      case s: Short => ShortValue(s, timestamp, attributes)
-      case i: Int   => IntValue(i, timestamp, attributes)
-      case l: Long  => LongValue(l, timestamp, attributes)
-      case f: Float => FloatValue(f, timestamp, attributes)
-      case d: Double => DoubleValue(d, timestamp, attributes)
-      case b: Boolean => BooleanValue(b, timestamp, attributes)
-      case s: String => StringPresentedValue(s, timestamp, attributes = attributes)
-      case a: Any => StringPresentedValue(a.toString, timestamp, attributes = attributes)
+        ODFValue(odf.immutable, timestamp)
+      case s: Short => ShortValue(s, timestamp)
+      case i: Int   => IntValue(i, timestamp)
+      case l: Long  => LongValue(l, timestamp)
+      case f: Float => FloatValue(f, timestamp)
+      case d: Double => DoubleValue(d, timestamp)
+      case b: Boolean => BooleanValue(b, timestamp)
+      case s: String => StringPresentedValue(s, timestamp)
+      case a: Any => StringPresentedValue(a.toString, timestamp)
     }
   }
-  def apply(
-    value: Any,
-    timestamp: Timestamp
-  ) : Value[Any] = apply(value,timestamp,HashMap.empty[String,String])
-  
+
   def apply(
     value: Any,
     typeValue: String,
-    timestamp: Timestamp,
-    attributes: Map[String, String] = HashMap.empty
+    timestamp: Timestamp
   ) : Value[Any] = {
     value match {
       case odf: ODF => //[scala.collection.Map[Path,Node],scala.collection.SortedSet[Path]] => 
-        ODFValue(odf.immutable, timestamp, attributes)
-      case s: Short => ShortValue(s, timestamp, attributes)
-      case i: Int   => IntValue(i, timestamp, attributes)
-      case l: Long  => LongValue(l, timestamp, attributes)
-      case f: Float => FloatValue(f, timestamp, attributes)
-      case d: Double => DoubleValue(d, timestamp, attributes)
-      case b: Boolean => BooleanValue(b, timestamp, attributes)
-      case s: String => applyFromString( s, typeValue, timestamp, attributes ) 
-      case a: Any => StringPresentedValue(a.toString, timestamp, typeValue,attributes = attributes)
+        ODFValue(odf.immutable, timestamp)
+      case s: Short => ShortValue(s, timestamp)
+      case i: Int   => IntValue(i, timestamp)
+      case l: Long  => LongValue(l, timestamp)
+      case f: Float => FloatValue(f, timestamp)
+      case d: Double => DoubleValue(d, timestamp)
+      case b: Boolean => BooleanValue(b, timestamp)
+      case s: String => applyFromString( s, typeValue, timestamp)
+      case a: Any => StringPresentedValue(a.toString, timestamp, typeValue)
     }
   }
   def applyFromString(
     value: String,
     typeValue: String,
-    timestamp: Timestamp,
-    attributes: Map[String, String] = HashMap.empty
+    timestamp: Timestamp
   ) : Value[Any] = {
     val create = Try{
       typeValue match {
         case "xs:float" =>
-          FloatValue(value.toFloat, timestamp, attributes)
+          FloatValue(value.toFloat, timestamp)
         case "xs:double" =>
-          DoubleValue(value.toDouble, timestamp, attributes)
+          DoubleValue(value.toDouble, timestamp)
         case "xs:short" =>
-          ShortValue(value.toShort, timestamp, attributes)
+          ShortValue(value.toShort, timestamp)
         case "xs:int" =>
-          IntValue(value.toInt, timestamp, attributes)
+          IntValue(value.toInt, timestamp)
         case "xs:long" =>
-          LongValue(value.toLong, timestamp, attributes)
+          LongValue(value.toLong, timestamp)
         case "xs:boolean" =>
-          BooleanValue(value.toBoolean, timestamp, attributes)
+          BooleanValue(value.toBoolean, timestamp)
         case str: String  =>
-          StringPresentedValue(value, timestamp,str, attributes)
+          StringPresentedValue(value, timestamp,str)
       }
     }
     create match {
       case Success(_value) => _value
       case Failure( _: Exception) =>
-        StringPresentedValue(value, timestamp, attributes = attributes)
+        StringPresentedValue(value, timestamp)
       case Failure( _: Throwable) =>
-        StringPresentedValue(value, timestamp, attributes = attributes)
+        StringPresentedValue(value, timestamp)
     }
       
   }

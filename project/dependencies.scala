@@ -38,6 +38,7 @@ object Dependencies {
 
   //etc
   val logback          = "ch.qos.logback" % "logback-classic" % "1.1.3"
+  val scalaProto       = "com.thesamet.scalapb" %% "scalapb-runtime" % scalapb.compiler.Version.scalapbVersion % "protobuf"
   val prevaylerV = "2.6"
   val prevaylerCore    = "org.prevayler"  % "prevayler-core"   % prevaylerV
   val prevaylerFactory = "org.prevayler"  % "prevayler-factory"% prevaylerV
@@ -80,6 +81,7 @@ object Dependencies {
     commonsLang,
     prevaylerCore,
     prevaylerFactory,
+    scalaProto,
     gson
   )
 

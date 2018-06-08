@@ -93,11 +93,11 @@ object NewTypeConverter{
   def convertValue( value: Value[Any] ): OdfValue[Any] = {
     value.value match {
       case o: ODF => //[scala.collection.Map[Path,Node],scala.collection.SortedSet[Path] ] =>
-        OdfValue( convertODF(o),  value.timestamp, HashMap( value.attributes.toSeq:_*) )
+        OdfValue( convertODF(o),  value.timestamp)
       case str: String =>
-        OdfValue(str, value.typeAttribute, value.timestamp, HashMap( value.attributes.toSeq:_*) )
+        OdfValue(str, value.typeAttribute, value.timestamp)
       case o: Any =>
-        OdfValue(o, value.timestamp, HashMap( value.attributes.toSeq:_*) )
+        OdfValue(o, value.timestamp)
     }
   }
 
