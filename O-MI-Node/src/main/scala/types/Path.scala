@@ -107,6 +107,7 @@ import OmiTypes.ResponseRequest
     /**
      * Creates a path string which represents this path with '/' separators.
      * Representation doesn't start nor end with a '/'.
+      * !!DO NOT MODIFY, THIS IS SERIALIZABLE!!
      */
     override def toString: String = this.toSeq.map(pp => pp.replaceAll("/","""\\/""")).mkString("/")
     
@@ -140,7 +141,6 @@ import OmiTypes.ResponseRequest
     */
   object Path {
 
-    @deprecated("0.11.0","Easy to pass argument with wrong format where ids or names contains /. / used for seperating values")
     def apply(pathStr: String): Path ={
       new Path(pathStr)
     }

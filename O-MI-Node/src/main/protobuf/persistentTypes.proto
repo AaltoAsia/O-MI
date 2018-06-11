@@ -14,15 +14,11 @@ message PersistentValue {
     uint64 timeStamp = 1;
     string typeName = 2;
     oneof value_type{
-        double doubleValue = 3;
-        sint64 longValue = 4;
-        bool boolValue = 5;
-        string stringValue = 6;
-
-
-
+        double protoDoubleValue = 3;
+        sint64 protoLongValue = 4;
+        bool protoBoolValue = 5;
+        string protoStringValue = 6;
     };
-    map<string,string> attributes = 7;
 }
 
 message WriteLatest {

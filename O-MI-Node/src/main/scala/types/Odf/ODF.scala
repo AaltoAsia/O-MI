@@ -158,7 +158,7 @@ trait ODF//[M <: Map[Path,Node], S<: SortedSet[Path] ]
     val xml  = scalaxb.toXML[ObjectsType](asObjectsType, None, Some("Objects"), odfDefaultScope)
     xml//.asInstanceOf[Elem] % new UnprefixedAttribute("xmlns","odf.xsd", Node.NoAttributes)
   }
-  override def toString: String ={
+  override def toString: String = {
     "ODF{\n" +
     nodes.map{
       case (p, node) => 

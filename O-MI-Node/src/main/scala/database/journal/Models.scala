@@ -13,7 +13,11 @@ object Models {
 
   case class WriteCommand(paths: Map[Path,ODFValue]) extends PersistentCommand
 
+  case class EraseSensorData(path: Path) extends PersistentCommand
+
   case class SingleReadCommand(path: Path) extends Command
+  case class MultipleReadCommand(paths: Seq[Path]) extends Command
+
 
   case object ReadAllCommand extends Command
   /**
