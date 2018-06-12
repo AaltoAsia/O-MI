@@ -21,6 +21,11 @@ message PersistentValue {
     };
 }
 
+message EraseData {
+    option (scalapb.message).extends = "database.journal.Models.Event";
+    string path = 1;
+}
+
 message WriteLatest {
     option (scalapb.message).extends = "database.journal.Models.Event";
     map<string, PersistentValue> values = 1;
