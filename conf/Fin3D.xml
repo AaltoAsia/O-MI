@@ -1,33 +1,33 @@
 <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" prefix="schema http://www.schema.org/">
   <Object type="list">
     <id>ManufacturingSites</id>
-    <!-- List of houses -->
+    <!-- List of sites -->
     <Object type="ManufacturingSite">
-      <id>SiteA</id>
+      <id>K2</id>
       <Object type="schema:GeoCoordinates">
-        <id>geo</id>
-        <InfoItem name="latitude">
-          <value type="xs:double">60.1841814</value>
+        <id>Location</id>
+        <InfoItem name="latitude" type="schema:latitude">
+          <value type="xs:double">60.1878561</value>
         </InfoItem>
-        <InfoItem name="longitude">
-          <value type="xs:double">24.8288542</value>
+        <InfoItem name="longitude" type="schema:longitude">
+          <value type="xs:double">24.8230409</value>
         </InfoItem>
         <Object type="schema:PostalAddress">
           <id>address</id>
-          <InfoItem name="addressCountry">
+          <InfoItem name="addressCountry" type="schema:addressCountry">
             <value type="xs:double">Finland</value>
           </InfoItem>
-          <InfoItem name="addressLocality">
+          <InfoItem name="addressLocality" type="schema:addressLocality">
             <value type="xs:double">Otaniemi</value>
           </InfoItem>
-          <InfoItem name="addressRegion">
+          <InfoItem name="addressRegion" type="schema:addressRegion">
             <value type="xs:double">Espoo</value>
           </InfoItem>
-          <InfoItem name="postalCode">
+          <InfoItem name="postalCode" type="schema:postalCode">
             <value type="xs:double">02150</value>
           </InfoItem>
-          <InfoItem name="streetAddress">
-            <value type="xs:double">Otaniementie 9</value>
+          <InfoItem name="streetAddress" type="schema:streetAddress">
+            <value type="xs:double">Puumiehenkuja 3</value>
           </InfoItem>
         </Object>
       </Object>
@@ -38,7 +38,7 @@
           <id>RoomName</id>
           <!-- List of sensors for room enviroment -->
           <InfoItem name="Temperature">
-            <value type="xs:double">60.0</value>
+            <value type="xs:double">22.0</value>
           </InfoItem>
         </Object>
       </Object>
@@ -49,7 +49,7 @@
     <!-- list of machines -->
     <Object>
       <id>ExampleMachine</id>
-      <InfoItem name="Location"><!-- Preference to site and room--> 
+      <InfoItem name="Location"><!-- reference to site and room--> 
         <value type="xs:string">SiteA/RoomA</value>
       </InfoItem>
       <Object>
@@ -67,7 +67,7 @@
     </Object>
     <Object>
       <id>Ultimaker 3</id>
-      <InfoItem name="Location"><!-- Preference to site and room--> 
+      <InfoItem name="Location"><!-- reference to site and room--> 
         <value type="xs:string">SiteA/RoomA</value>
       </InfoItem>
       <InfoItem name="fan_speed">
@@ -158,26 +158,48 @@
     <id>Jobs</id>
       <Object>
         <id>JobUUID1</id><!-- Could be the same as jobnumber-->
-        <InfoItem name="JobNumber">
-          <value type="xs:integer">533573</value>
-        </InfoItem>
-        <InfoItem name="PartID">
-          <value type="xs:integer">A</value>
-        </InfoItem>
-        <InfoItem name="UsedMachine">
-          <value type="xs:string">3DPrinter1</value>
+        <InfoItem name="PartModel">
+          <value type="xs:string">A</value>
         </InfoItem>
         <!-- Start and end should be used for getting historial data from
-             machine. -->
+         machine. Could be based on status changes
         <InfoItem name="StartTime">
           <value type="xs:date">2018-02-19T14:00:00.0+2:00</value>
         </InfoItem>
         <InfoItem name="EndTime">
           <value type="xs:date">2018-02-19T14:00:00.0+2:00</value>
         </InfoItem>
+        -->
         <InfoItem name="Status">
           <value type="xs:status">Done</value>
         </InfoItem>
+        <InfoItem name="CurrentPhase">
+          <value type="xs:status">3D Printer</value>
+        </InfoItem>
+        <Object>
+          <id>Phases</id>
+          <Object>
+            <id>3D Printer</id>
+            <InfoItem name="UsedMachine">
+              <value type="xs:string">Ultimaker 3</value>
+            </InfoItem>
+            <!-- Start and end should be used for getting historial data from
+             machine. Could be based on status changes
+            <InfoItem name="StartTime">
+              <value type="xs:date">2018-02-19T14:00:00.0+2:00</value>
+            </InfoItem>
+            <InfoItem name="EndTime">
+              <value type="xs:date">2018-02-19T14:00:00.0+2:00</value>
+            </InfoItem>
+             -->
+            <InfoItem name="Status">
+              <value type="xs:status">Done</value>
+            </InfoItem>
+            <Object>
+              <id>Measurements</id>
+            </Object>
+          </Object>
+        </Object>
       </Object>
   </Object>
 </Objects>
