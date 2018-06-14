@@ -5,11 +5,11 @@ import "scalapb/scalapb.proto";
 
 option (scalapb.options) = {
   package_name: "database.journal"
-  flat_package:  true
+  flat_package: true
 };
 package database.journal;
 
-
+//LATEST STORE
 message PersistentValue {
     uint64 timeStamp = 1;
     string typeName = 2;
@@ -21,7 +21,7 @@ message PersistentValue {
     };
 }
 
-message EraseData {
+message ErasePath {
     option (scalapb.message).extends = "database.journal.Models.Event";
     string path = 1;
 }
@@ -30,3 +30,59 @@ message WriteLatest {
     option (scalapb.message).extends = "database.journal.Models.Event";
     map<string, PersistentValue> values = 1;
 }
+message PObject{
+    string path = 1;
+    string typeName = 2;
+    repeated PQlmid ids =3;
+    repeated PDescription descriptions = 4;
+    map<string, string> attributes = 5;
+
+}
+message PObjects{
+    string path = 1;
+    string version = 2;
+    map<string, string> attributes = 3;
+
+}
+message PTimestamp {
+    uint64 time = 1;
+}
+message PQlmid{
+    string id = 1;
+    string idType = 2;
+    string tagType = 3;
+    PTimestamp startTime = 4;
+    PTimestamp endTime = 5;
+    map<string,string> attirbutes = 6;
+}
+
+message PDescription{
+    string text = 1;
+    string lang = 2;
+}
+
+message PMetaData{
+    repeated PInfoItem infoItems = 1;
+}
+message PInfoItem{
+    string path = 1;
+    string typeName = 2;
+    repeated PQlmid names = 3;
+    repeated PDescription descriptions =4;
+    PMetaData metadata = 5;
+    map<string, string> attributes = 6;
+}
+//HIERARCHY STORE
+message PersistentNode {
+    oneof node_type{
+        PObjects objs=2;
+        PObject obj=3;
+        PInfoItem ii=4;
+    }
+}
+
+message Union {
+    option (scalapb.message).extends = "database.journal.Models.Event";
+    map<string, PersistentNode> another = 1;
+}
+

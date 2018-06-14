@@ -39,8 +39,11 @@ class LatestStore extends PersistentActor with ActorLogging {
       case other => throw new Exception(s"Error while deserializing value: $other")
     }).toOption
   }
-  def updateState(evnt: Event): Unit = evnt match {
+
+  def updateState(event: Event): Unit = event match {
     case WriteLatest(values) => state = state ++ values
+    case ErasePath(path) => state = state - path
+
     //case SingleWriteEvent(p, v) => state = state.updated(Path(p),v)
     //case WriteEvent(paths) => state = state ++ paths
   }
@@ -54,18 +57,25 @@ class LatestStore extends PersistentActor with ActorLogging {
 
     case SingleWriteCommand(p, v) =>{
       persist(WriteLatest(Map(p.toString->v.persist))){ event =>
-        updateState(event)
-        if(lastSequenceNr % snapshotInterval == 0 && lastSequenceNr != 0){
-          saveSnapshot(state)
-        }
+        sender() ! updateState(event)
+       // if(lastSequenceNr % snapshotInterval == 0 && lastSequenceNr != 0){
+       //   saveSnapshot(state)
+       // }
       }
     }
+
     case WriteCommand(paths) => {
       persist(WriteLatest(paths.map{ case (path, value) => path.toString -> value.persist})){ event =>
       //  persist(WriteLatest(paths.mapValues(_.persist))){ event =>
-        updateState(event)
+        sender() ! updateState(event)
         //TODO:snapshots
 
+      }
+    }
+
+    case ErasePathCommand(path) => {
+      persist(ErasePath(path.toString)) { event =>
+        sender() ! updateState(event)
       }
     }
 

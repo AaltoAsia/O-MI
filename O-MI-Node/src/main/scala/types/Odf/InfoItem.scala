@@ -1,9 +1,10 @@
 package types
 package odf
 
-import scala.collection.{ Seq, Map }
-import scala.collection.immutable.{ HashMap, Map =>IMap}
+import database.journal.PersistentNode
 
+import scala.collection.{Map, Seq}
+import scala.collection.immutable.{HashMap, Map => IMap}
 import parsing.xmlGen.scalaxb.DataRecord
 import parsing.xmlGen.xmlTypes.InfoItemType
 
@@ -236,4 +237,6 @@ case class InfoItem(
       attributes = attributes ++ to.attributes
     )
   }
+
+  def persist: PersistentNode = ???//PersistentNode(path = path.toString,attributes = attributes)
 }

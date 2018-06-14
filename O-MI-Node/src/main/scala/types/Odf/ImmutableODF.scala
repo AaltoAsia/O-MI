@@ -10,7 +10,7 @@ import parsing.xmlGen.{odfDefaultScope, scalaxb, defaultScope}
 import types.Path._
 
 case class ImmutableODF private[odf] (
-  protected[odf] val nodes: ImmutableHashMap[Path,Node] 
+  val nodes: ImmutableHashMap[Path,Node]
 ) extends ODF{//[ImmutableHashMap[Path,Node],ImmutableTreeSet[Path]] {
 
   type M = ImmutableHashMap[Path,Node]

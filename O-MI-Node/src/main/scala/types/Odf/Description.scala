@@ -11,7 +11,7 @@ object Description{
 
   def empty: Description = Description("")
 }
-case class  Description(
+case class Description(
                          text: String,
   language: Option[String] = None
 ) {
