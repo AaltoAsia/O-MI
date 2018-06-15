@@ -30,6 +30,16 @@ message WriteLatest {
     option (scalapb.message).extends = "database.journal.Models.Event";
     map<string, PersistentValue> values = 1;
 }
+
+//HIERARCHY STORE
+message PersistentNode {
+    oneof node_type{
+        PObjects objs=2;
+        PObject obj=3;
+        PInfoItem ii=4;
+    }
+}
+
 message PObject{
     string path = 1;
     string typeName = 2;
@@ -72,17 +82,84 @@ message PInfoItem{
     PMetaData metadata = 5;
     map<string, string> attributes = 6;
 }
-//HIERARCHY STORE
-message PersistentNode {
-    oneof node_type{
-        PObjects objs=2;
-        PObject obj=3;
-        PInfoItem ii=4;
-    }
-}
-
 message Union {
     option (scalapb.message).extends = "database.journal.Models.Event";
     map<string, PersistentNode> another = 1;
 }
 
+// Sub store
+message PCallback {
+    string uri = 1;
+}
+message PPollNormalEventSub {
+    option (scalapb.message).extends = "database.journal.Models.PersistentSub";
+    fixed64 id = 1;
+    uint64 endTime = 2;
+    uint64 lastPolled = 3;
+    uint64 startTime = 4;
+    repeated string paths = 5;
+
+}
+message PPollNewEventSub{
+    option (scalapb.message).extends = "database.journal.Models.PersistentSub";
+    fixed64 id = 1;
+    uint64 endTime = 2;
+    uint64 lastPolled = 3;
+    uint64 startTime = 4;
+    repeated string paths = 5;
+
+}
+message PPollIntervalSub {
+    option (scalapb.message).extends = "database.journal.Models.PersistentSub";
+    fixed64 id = 1;
+    uint64 endTime = 2;
+    uint64 intervalSeconds = 3;
+    uint64 lastPolled = 4;
+    uint64 startTime = 5;
+    repeated string paths = 6;
+
+}
+message PIntervalSub {
+    option (scalapb.message).extends = "database.journal.Models.PersistentSub";
+    fixed64 id = 1;
+    repeated string paths = 2;
+    uint64 endTime = 3;
+    PCallback callback = 4;
+    uint64 intervalSeconds = 5;
+    uint64 startTime = 6;
+}
+message PNormalEventSub {
+    option (scalapb.message).extends = "database.journal.Models.PersistentSub";
+    fixed64 id = 1;
+    repeated string paths = 2;
+    uint64 endTime = 3;
+    PCallback callback = 4;
+}
+message PNewEventSub {
+    option (scalapb.message).extends = "database.journal.Models.PersistentSub";
+    fixed64 id = 1;
+    repeated string paths = 2;
+    uint64 endTime = 3;
+    PCallback callback = 4;
+}
+
+message PAddSub {
+    option (scalapb.message).extends = "database.journal.Models.Event";
+    oneof subType {
+        PPollNormalEventSub ppollEvent = 1;
+        PPollNewEventSub ppollNewEvent = 2;
+        PPollIntervalSub ppollInterval = 3;
+        PIntervalSub pintervalSub = 4;
+        PNormalEventSub peventSub = 5;
+        PNewEventSub pnewEventSub = 6;
+    }
+}
+
+message PRemoveSub {
+    option (scalapb.message).extends = "database.journal.Models.Event";
+    fixed64 id = 1;
+}
+message PPollSub {
+    option (scalapb.message).extends = "database.journal.Models.Event";
+    fixed64 id = 1;
+}

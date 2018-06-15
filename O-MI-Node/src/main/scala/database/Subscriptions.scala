@@ -14,7 +14,6 @@
 
 package database
 import scala.language.postfixOps
-
 import java.net.InetAddress
 import java.sql.Timestamp
 import java.util.Date
@@ -29,6 +28,9 @@ import spray.json.{DefaultJsonProtocol, JsArray, JsNull, JsNumber, JsObject, JsS
 import types._
 import types.odf._
 import types.OmiTypes._
+import journal.Models.PersistentSub
+import journal.{PPollNormalEventSub, PPollNewEventSub,PNewEventSub,PIntervalSub,PNormalEventSub,PPollIntervalSub}
+
 import collection.breakOut
 import scala.util.parsing.json.JSONObject
 import scala.concurrent.duration._
@@ -37,6 +39,7 @@ sealed trait SavedSub {
   val id: Long
   val endTime: Date
   val paths: Vector[Path]
+  def persist(): PersistentSub
 }
 
 trait NotNewEventSub extends PolledSub
@@ -60,7 +63,9 @@ case class PollNormalEventSub(
                                lastPolled: Timestamp,
                                startTime: Timestamp,
                                paths: Vector[Path]
-                             ) extends PolledEventSub with NotNewEventSub
+                             ) extends PolledEventSub with NotNewEventSub {
+  def persist() = PPollNormalEventSub(id,endTime.getTime,lastPolled.getTime,startTime.getTime,paths.map(_.toString))
+}
 
 case class PollNewEventSub(
                             id: Long,
@@ -68,7 +73,9 @@ case class PollNewEventSub(
                             lastPolled: Timestamp,
                             startTime: Timestamp,
                             paths: Vector[Path]
-                          ) extends PolledEventSub
+                          ) extends PolledEventSub {
+  def persist() = PPollNewEventSub(id,endTime.getTime,lastPolled.getTime,startTime.getTime,paths.map(_.toString))
+}
 
 case class PollIntervalSub(
                             id: Long,
@@ -77,7 +84,9 @@ case class PollIntervalSub(
                             lastPolled: Timestamp,
                             startTime: Timestamp,
                             paths: Vector[Path]
-                          ) extends NotNewEventSub
+                          ) extends NotNewEventSub {
+  def persist() = PPollIntervalSub(id,endTime.getTime,interval.toSeconds,lastPolled.getTime,startTime.getTime,paths.map(_.toString))
+}
 
 case class IntervalSub(
                         id: Long,
@@ -86,14 +95,18 @@ case class IntervalSub(
                         callback: DefinedCallback,
                         interval: FiniteDuration,
                         startTime: Timestamp
-                      ) extends SavedSub
+                      ) extends SavedSub {
+  def persist() = PIntervalSub(id,paths.map(_.toString),endTime.getTime,callback.persist(),interval.toSeconds, startTime.getTime)
+}
 
 case class NormalEventSub(
                            id: Long,
                            paths: Vector[Path],
                            endTime: Timestamp,
                            callback: DefinedCallback
-                         ) extends EventSub
+                         ) extends EventSub {
+  def persist() = PNormalEventSub(id, paths.map(_.toString), endTime.getTime,callback.persist())
+}
 
 //startTime: Duration) extends SavedSub
 
@@ -102,7 +115,9 @@ case class NewEventSub(
                         paths: Vector[Path],
                         endTime: Timestamp,
                         callback: DefinedCallback
-                      ) extends EventSub
+                      ) extends EventSub {
+  def persist() = PNewEventSub(id,paths.map(_.toString), endTime.getTime,callback.persist())
+}
 
 sealed trait EventSub extends SavedSub {
   val paths: Vector[Path]
