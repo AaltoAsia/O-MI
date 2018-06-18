@@ -155,7 +155,15 @@ message PAddSub {
     }
 }
 
-message PRemoveSub {
+message PRemoveEventSub {
+    option (scalapb.message).extends = "database.journal.Models.Event";
+    fixed64 id = 1;
+}
+message PRemoveIntervalSub {
+    option (scalapb.message).extends = "database.journal.Models.Event";
+    fixed64 id = 1;
+}
+message PRemovePollSub {
     option (scalapb.message).extends = "database.journal.Models.Event";
     fixed64 id = 1;
 }

@@ -8,7 +8,10 @@ import akka.actor.ActorLogging
 import akka.persistence.{PersistentActor, SnapshotOffer}
 import database.journal.Models._
 import database.{GetAllEventSubs => _, GetAllIntervalSubs => _, GetAllPollSubs => _, _}
+import types.OmiTypes.HTTPCallback
 import types.Path
+
+import scala.concurrent.duration._
 
 class SubStore extends PersistentActor with ActorLogging {
 
@@ -47,11 +50,80 @@ class SubStore extends PersistentActor with ActorLogging {
   }
 
 
-  def updateState(event: PersistentMessage) = event match {
+  def updateState(event: PersistentMessage): Any = event match {
     case e: Event => e match {
-      case PAddSub(subType) =>
-      case PRemoveSub(id) =>
-      case PPollSub(id) =>
+      case PAddSub(subType) => subType match {
+        case PpollEvent(PPollNormalEventSub(id,endTime,lastPolled,startTime,paths)) =>
+          addPollSub(
+            PollNormalEventSub(
+              id,
+              new Timestamp(endTime),
+              new Timestamp(lastPolled),
+              new Timestamp(startTime),
+              paths.map(p => Path(p)).toVector
+            )
+          )
+        case PpollNewEvent(PPollNewEventSub(id,endTime,lastPolled,startTime,paths)) =>
+          addPollSub(
+            PollNewEventSub(
+              id,
+              new Timestamp(endTime),
+              new Timestamp(lastPolled),
+              new Timestamp(startTime),
+              paths.map(p => Path(p)).toVector
+            )
+          )
+        case PpollInterval(PPollIntervalSub(id,endTime,intervalSeconds,lastPolled,startTime,paths)) =>
+          addPollSub(
+            PollIntervalSub(
+              id,
+              new Timestamp(endTime),
+              intervalSeconds seconds,
+              new Timestamp(lastPolled),
+              new Timestamp(startTime),
+              paths.map(p => Path(p)).toVector
+            )
+          )
+        case PeventSub(PNormalEventSub(id,paths,endTime,callback)) =>
+          callback.foreach{cb =>
+            addEventSub(
+              NormalEventSub(
+                id,
+                paths.map(p=> Path(p)).toVector,
+                new Timestamp(endTime),
+                HTTPCallback(cb.uri)
+              )
+            )
+          }
+        case PnewEventSub(PNewEventSub(id,paths,endTime,callback)) =>
+          callback.foreach{cb =>
+            addEventSub(
+              NewEventSub(
+                id,
+                paths.map(p => Path(p)).toVector,
+                new Timestamp(endTime),
+                HTTPCallback(cb.uri)
+              )
+            )
+          }
+        case PintervalSub(PIntervalSub(id,paths,endTime,callback,intervalSeconds,startTime)) =>
+          callback.foreach{cb =>
+            addIntervalSub(
+              IntervalSub(
+                id,
+                paths.map(p=> Path(p)).toVector,
+                new Timestamp(endTime),
+                HTTPCallback(cb.uri),
+                intervalSeconds seconds,
+                new Timestamp(startTime)
+              )
+            )
+          }
+      }
+      case PRemoveIntervalSub(id) => updateState(Models.RemoveIntervalSub(id))
+      case PRemoveEventSub(id) => updateState(Models.RemoveEventSub(id))
+      case PRemovePollSub(id) => updateState(Models.RemovePollSub(id))
+      case PPollSub(id) => updateState(Models.PollSubCommand(id))
     }
     case p: PersistentCommand => p match {
       case Models.AddEventSub(es) => es match {
@@ -59,11 +131,19 @@ class SubStore extends PersistentActor with ActorLogging {
           val persisted = ne.persist()
           if(persisted.callback.isEmpty){
             addEventSub(ne)
+          } else {
+            persist(PAddSub(PeventSub(persisted))) { event =>
+              addEventSub(ne)
+            }
           }
         case ne: NewEventSub =>
           val persisted = ne.persist()
           if(persisted.callback.isEmpty){
             addEventSub(ne)
+          } else {
+            persist(PAddSub(PnewEventSub(persisted))) { event =>
+              addEventSub(ne)
+            }
           }
       }
       case Models.AddIntervalSub(is) => {
@@ -155,15 +235,15 @@ class SubStore extends PersistentActor with ActorLogging {
     case aPollS @ Models.AddPollSub(pollsub: PolledSub) =>
       sender() ! updateState(aPollS)
     case rIntervalS @ Models.RemoveIntervalSub(id:Long) =>
-      persist(PRemoveSub(id)){event =>
+      persist(PRemoveIntervalSub(id)){event =>
         sender() ! updateState(rIntervalS)
       }
     case rEventS @ Models.RemoveEventSub(id:Long) =>
-      persist(PRemoveSub(id)){event =>
+      persist(PRemoveEventSub(id)){event =>
         sender() ! updateState(rEventS)
       }
     case rPollS @ Models.RemovePollSub(id:Long) =>
-      persist(PRemoveSub(id)){event =>
+      persist(PRemovePollSub(id)){event =>
         sender() ! updateState(rPollS)
       }
     case pollS @ Models.PollSubCommand(id: Long) =>
