@@ -171,3 +171,32 @@ message PPollSub {
     option (scalapb.message).extends = "database.journal.Models.Event";
     fixed64 id = 1;
 }
+
+//PollDataStore
+message PValueList {
+    repeated PersistentValue values = 1;
+}
+message PPathToData {
+    map<string, PValueList> paths = 1;
+}
+message PPollData {
+    map<fixed64,PPathToData> subs = 1;
+}
+message PAddPollData {
+    option (scalapb.message).extends = "database.journal.Models.Event";
+    fixed64 id = 1;
+    string path = 2;
+    PersistentValue value = 3;
+}
+message PPollEventSubscription {
+    option (scalapb.message).extends = "database.journal.Models.Event";
+    fixed64 id = 1;
+}
+message PPollIntervalSubscription {
+    option (scalapb.message).extends = "database.journal.Models.Event";
+    fixed64 id = 1;
+}
+message PRemovePollSubData {
+    option (scalapb.message).extends = "database.journal.Models.Event";
+    fixed64 id = 1;
+}

@@ -73,6 +73,18 @@ object Models {
 
   case class GetNewEventSubsForPath(path: Path) extends Command
 
+  //PollData
+  case class AddPollData(subId: Long, path: Path, value: ODFValue) extends PersistentCommand
+
+  case class PollEventSubscription(subId: Long) extends PersistentCommand
+
+  case class PollIntervalSubscription(subId: Long) extends PersistentCommand
+
+  case class RemovePollSubData(subId: Long) extends PersistentCommand
+
+  case class CheckSubscriptionData(subId: Long) extends Command
+
+
 
   def buildInfoItemFromProtobuf(pinfo: PInfoItem): InfoItem = {
     val path = Path(pinfo.path)
