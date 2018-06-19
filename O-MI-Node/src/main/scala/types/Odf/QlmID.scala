@@ -1,10 +1,11 @@
 package types
 package odf
 
-import scala.collection.{ Seq, Map }
+import scala.collection.{Map, Seq}
 import scala.collection.immutable.HashMap
-
 import java.sql.Timestamp
+
+import database.journal.{PQlmid, PTimestamp}
 import parsing.xmlGen.xmlTypes.QlmIDType
 import parsing.xmlGen.scalaxb.DataRecord
 
@@ -66,4 +67,5 @@ case class QlmID(
         ).toMap ++ attributesToDataRecord( attributes )
     )
   }
+  def persist: PQlmid = PQlmid(id,idType.getOrElse(""),tagType.getOrElse(""),startDate.map(time => PTimestamp(time.getTime)),endDate.map(time=> PTimestamp(time.getTime)),attributes.toMap)
 }

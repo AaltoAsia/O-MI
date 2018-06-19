@@ -9,9 +9,9 @@ import types.odf.Value
 class PollDataStore extends PersistentActor with ActorLogging {
   def persistenceId: String = "polldatastore-id"
 
-  var state: Map[Long,Map[String,Seq[PersistentValue]]] = Map()
+  var state: Map[Long,Map[String,Seq[PPersistentValue]]] = Map()
 
-  def mergeValues(a: Map[String, Seq[PersistentValue]], b: Map[String,Seq[PersistentValue]]):Map[String,Seq[PersistentValue]] = {
+  def mergeValues(a: Map[String, Seq[PPersistentValue]], b: Map[String,Seq[PPersistentValue]]):Map[String,Seq[PPersistentValue]] = {
     merge(a,b){ case (v1,v2o) =>
       v2o.map(v2 => v1 ++ v2).getOrElse(v1)
     }
@@ -23,7 +23,7 @@ class PollDataStore extends PersistentActor with ActorLogging {
     case PPollEventSubscription(id) =>
       val data = state.get(id)
       state -= id
-      data.getOrElse(Map.empty[String,Seq[PersistentValue]])
+      data.getOrElse(Map.empty[String,Seq[PPersistentValue]])
     case PPollIntervalSubscription(id) =>
       val oldVal = state.get(id)
       state -= id
@@ -38,7 +38,7 @@ class PollDataStore extends PersistentActor with ActorLogging {
           old
         }
 
-        case None => Map.empty[String,Seq[PersistentValue]]
+        case None => Map.empty[String,Seq[PPersistentValue]]
       }
     case PRemovePollSubData(id) =>
       state -= id
@@ -47,7 +47,7 @@ class PollDataStore extends PersistentActor with ActorLogging {
 
   def receiveRecover: Receive = {
     case event: Event => updateState(event)
-    case SnapshotOffer(_, snapshot: Any) => ???
+    case SnapshotOffer(_, snapshot: PPollData) => state = snapshot.subs.mapValues(_.paths.mapValues(_.values))
   }
 
   def receiveCommand: Receive = {
@@ -68,7 +68,7 @@ class PollDataStore extends PersistentActor with ActorLogging {
         updateState(event)
       }
     case CheckSubscriptionData(id) =>
-      sender() ! state.getOrElse(id,Map.empty[String,Seq[PersistentValue]])
+      sender() ! state.getOrElse(id,Map.empty[String,Seq[PPersistentValue]])
   }
 
 }

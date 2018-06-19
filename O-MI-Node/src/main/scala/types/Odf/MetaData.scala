@@ -1,7 +1,9 @@
 package types
 package odf
 
-import scala.collection.immutable.{ Set, HashSet }
+import database.journal.PMetaData
+
+import scala.collection.immutable.{HashSet, Set}
 import parsing.xmlGen.xmlTypes.MetaDataType
 
 object MetaData{
@@ -60,4 +62,6 @@ case class MetaData(
     )
   }
   implicit def asMetaDataType : MetaDataType = MetaDataType( infoItems.map(_.asInfoItemType) )
+
+  def persist(): PMetaData = PMetaData(infoItems.flatMap(_.persist.ii))
 }

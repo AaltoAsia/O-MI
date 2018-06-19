@@ -1,7 +1,7 @@
 package types
 package odf
 
-import database.journal.PersistentNode
+import database.journal.PPersistentNode
 
 import scala.collection.Seq
 
@@ -11,5 +11,5 @@ trait Node{
   def attributes: Map[String,String]
   def path: Path
   def hasStaticData: Boolean
-  def persist: PersistentNode// = PersistentNode(path.toString,attributes)
+  def persist: PPersistentNode.NodeType// = PersistentNode(path.toString,attributes)
 }

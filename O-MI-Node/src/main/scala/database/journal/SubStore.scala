@@ -222,11 +222,52 @@ class SubStore extends PersistentActor with ActorLogging {
     }
   }
 
+
+
+  def recoverEventSubs(eSubs: Map[String,PEventSubs]): Map[Path,Seq[EventSub]] = {
+    eSubs.map{case (key,value) => Path(key) -> value.esubs.collect{
+      case PEventSub(PEventSub.Eventsub.Nes(PNormalEventSub(id,paths,endTime,Some(cb)))) =>
+        NormalEventSub(id,paths.map(Path(_)).toVector, new Timestamp(endTime),HTTPCallback(cb.uri))
+      case PEventSub(PEventSub.Eventsub.News(PNewEventSub(id,paths,endTime,Some(cb)))) =>
+        NewEventSub(id,paths.map(Path(_)).toVector, new Timestamp(endTime),HTTPCallback(cb.uri))
+    }
+    }
+  }
+
+  def recoverIdToSub(its: Map[Long, PPolledSub]): Map[Long, PolledSub] = {
+    its.mapValues(ps => ps.polledsub match {
+      case PPolledSub.Polledsub.Pnes(PPollNormalEventSub(id,endTime,lastPolled,startTime,paths)) =>
+        PollNormalEventSub(id,new Timestamp(endTime), new Timestamp(lastPolled), new Timestamp(startTime), paths.map(Path(_)).toVector)
+      case PPolledSub.Polledsub.Pnews(PPollNewEventSub(id,endTime,lastPolled,startTime,paths)) =>
+        PollNewEventSub(id,new Timestamp(endTime), new Timestamp(lastPolled), new Timestamp(startTime), paths.map(Path(_)).toVector)
+      case PPolledSub.Polledsub.Pints(PPollIntervalSub(id,endTime,interval,lastPolled,starTime,paths)) =>
+        PollIntervalSub(id,new Timestamp(endTime),interval seconds, new Timestamp(lastPolled),new Timestamp(starTime),paths.map(Path(_)).toVector)
+    }
+    )
+  }
+
+  def recoverPathToSub(pts: Map[String, PSubIds]): Map[Path,Set[Long]] = {
+    pts.map{case (key,value) => Path(key) -> value.ids.toSet }
+  }
+
+  def recoverIntervalSubs(ints: Map[Long, PIntervalSub]):Map[Long,IntervalSub] = {
+    ints.collect{
+      case (id, PIntervalSub(subId,paths,endTime,Some(cb),interval,starttime)) =>
+        id -> IntervalSub(subId,paths.map(Path(_)).toVector,new Timestamp(endTime),HTTPCallback(cb.uri),interval seconds, new Timestamp(starttime))
+    }
+  }
+
   def receiveRecover: Receive = {
     case event: Event => updateState(event)
-    case SnapshotOffer(_, snapshot: Any) => ???
+    case SnapshotOffer(_, snapshot: PSubStoreState) =>{
+      eventSubs = recoverEventSubs(snapshot.eventSubs)
+      idToSub = recoverIdToSub(snapshot.idToSub)
+      pathToSubs = recoverPathToSub(snapshot.pathToSubs)
+      intervalSubs = recoverIntervalSubs(snapshot.intervalSubs)
+    }
   }
   def receiveCommand: Receive = {
+
 
     case aEventS @ Models.AddEventSub(eventSub: EventSub) =>
       sender() ! updateState(aEventS)

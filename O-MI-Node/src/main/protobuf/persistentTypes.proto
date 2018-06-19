@@ -10,7 +10,7 @@ option (scalapb.options) = {
 package database.journal;
 
 //LATEST STORE
-message PersistentValue {
+message PPersistentValue {
     uint64 timeStamp = 1;
     string typeName = 2;
     oneof value_type{
@@ -21,18 +21,18 @@ message PersistentValue {
     };
 }
 
-message ErasePath {
+message PErasePath {
     option (scalapb.message).extends = "database.journal.Models.Event";
     string path = 1;
 }
 
-message WriteLatest {
+message PWriteLatest {
     option (scalapb.message).extends = "database.journal.Models.Event";
-    map<string, PersistentValue> values = 1;
+    map<string, PPersistentValue> values = 1;
 }
 
 //HIERARCHY STORE
-message PersistentNode {
+message PPersistentNode {
     oneof node_type{
         PObjects objs=2;
         PObject obj=3;
@@ -40,7 +40,7 @@ message PersistentNode {
     }
 }
 
-message PObject{
+message PObject {
     string path = 1;
     string typeName = 2;
     repeated PQlmid ids =3;
@@ -48,7 +48,7 @@ message PObject{
     map<string, string> attributes = 5;
 
 }
-message PObjects{
+message PObjects {
     string path = 1;
     string version = 2;
     map<string, string> attributes = 3;
@@ -57,7 +57,7 @@ message PObjects{
 message PTimestamp {
     uint64 time = 1;
 }
-message PQlmid{
+message PQlmid {
     string id = 1;
     string idType = 2;
     string tagType = 3;
@@ -66,15 +66,15 @@ message PQlmid{
     map<string,string> attirbutes = 6;
 }
 
-message PDescription{
+message PDescription {
     string text = 1;
     string lang = 2;
 }
 
-message PMetaData{
+message PMetaData {
     repeated PInfoItem infoItems = 1;
 }
-message PInfoItem{
+message PInfoItem {
     string path = 1;
     string typeName = 2;
     repeated PQlmid names = 3;
@@ -82,12 +82,40 @@ message PInfoItem{
     PMetaData metadata = 5;
     map<string, string> attributes = 6;
 }
-message Union {
+message PUnion {
     option (scalapb.message).extends = "database.journal.Models.Event";
-    map<string, PersistentNode> another = 1;
+    map<string, PPersistentNode> another = 1;
 }
 
 // Sub store
+
+message PEventSub {
+    oneof eventsub {
+        PNormalEventSub nes = 1;
+        PNewEventSub news = 2;
+
+    }
+}
+message PEventSubs {
+    repeated PEventSub esubs = 1;
+}
+
+message PPolledSub {
+    oneof polledsub{
+        PPollNormalEventSub  pnes = 1;
+        PPollNewEventSub pnews = 2;
+        PPollIntervalSub pints = 3;
+    }
+}
+message PSubIds {
+    repeated fixed64 ids = 1;
+}
+message PSubStoreState {
+    map<string, PEventSubs> eventSubs = 1;
+    map<fixed64, PPolledSub> idToSub = 2;
+    map<string, PSubIds> pathToSubs = 3;
+    map<fixed64, PIntervalSub> intervalSubs =4;
+}
 message PCallback {
     string uri = 1;
 }
@@ -100,7 +128,7 @@ message PPollNormalEventSub {
     repeated string paths = 5;
 
 }
-message PPollNewEventSub{
+message PPollNewEventSub {
     option (scalapb.message).extends = "database.journal.Models.PersistentSub";
     fixed64 id = 1;
     uint64 endTime = 2;
@@ -174,7 +202,7 @@ message PPollSub {
 
 //PollDataStore
 message PValueList {
-    repeated PersistentValue values = 1;
+    repeated PPersistentValue values = 1;
 }
 message PPathToData {
     map<string, PValueList> paths = 1;
@@ -186,7 +214,7 @@ message PAddPollData {
     option (scalapb.message).extends = "database.journal.Models.Event";
     fixed64 id = 1;
     string path = 2;
-    PersistentValue value = 3;
+    PPersistentValue value = 3;
 }
 message PPollEventSubscription {
     option (scalapb.message).extends = "database.journal.Models.Event";

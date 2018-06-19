@@ -15,10 +15,10 @@ import scala.util.Try
 
 class LatestStore extends PersistentActor with ActorLogging {
   def persistenceId = "lateststore-id"
-  var state: Map[String, PersistentValue] = Map()
+  var state: Map[String, PPersistentValue] = Map()
 
   //implicit def pathToString(path: Path): String = path.toString
-  def asValue(pv: PersistentValue): Option[Value[Any]] ={
+  def asValue(pv: PPersistentValue): Option[Value[Any]] ={
     Try(pv.typeName match {
       case "xs:float" if pv.valueType.isProtoDoubleValue =>
         FloatValue(pv.getProtoDoubleValue.toFloat, new Timestamp(pv.timeStamp))
@@ -41,8 +41,8 @@ class LatestStore extends PersistentActor with ActorLogging {
   }
 
   def updateState(event: Event): Unit = event match {
-    case WriteLatest(values) => state = state ++ values
-    case ErasePath(path) => state = state - path
+    case PWriteLatest(values) => state = state ++ values
+    case PErasePath(path) => state = state - path
 
     //case SingleWriteEvent(p, v) => state = state.updated(Path(p),v)
     //case WriteEvent(paths) => state = state ++ paths
@@ -50,13 +50,13 @@ class LatestStore extends PersistentActor with ActorLogging {
   def receiveRecover: Receive = {
     case evnt: Event => updateState(evnt)
     //case e: SingleWriteEvent => updateState(e)
-    case SnapshotOffer(_,snapshot: Map[String,PersistentValue]) => state = snapshot
+    case SnapshotOffer(_,snapshot: PWriteLatest) => state = snapshot.values
   }
   val snapshotInterval = 100
   def receiveCommand: Receive = {
 
     case SingleWriteCommand(p, v) =>{
-      persist(WriteLatest(Map(p.toString->v.persist))){ event =>
+      persist(PWriteLatest(Map(p.toString->v.persist))){ event =>
         sender() ! updateState(event)
        // if(lastSequenceNr % snapshotInterval == 0 && lastSequenceNr != 0){
        //   saveSnapshot(state)
@@ -65,7 +65,7 @@ class LatestStore extends PersistentActor with ActorLogging {
     }
 
     case WriteCommand(paths) => {
-      persist(WriteLatest(paths.map{ case (path, value) => path.toString -> value.persist})){ event =>
+      persist(PWriteLatest(paths.map{ case (path, value) => path.toString -> value.persist})){ event =>
       //  persist(WriteLatest(paths.mapValues(_.persist))){ event =>
         sender() ! updateState(event)
         //TODO:snapshots
@@ -74,7 +74,7 @@ class LatestStore extends PersistentActor with ActorLogging {
     }
 
     case ErasePathCommand(path) => {
-      persist(ErasePath(path.toString)) { event =>
+      persist(PErasePath(path.toString)) { event =>
         sender() ! updateState(event)
       }
     }

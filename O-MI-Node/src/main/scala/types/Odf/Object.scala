@@ -1,7 +1,8 @@
 package types
 package odf
 
-import database.journal.PersistentNode
+import database.journal.PPersistentNode.NodeType.Obj
+import database.journal.{PObject, PPersistentNode}
 
 import scala.language.implicitConversions
 import scala.util.Try
@@ -139,5 +140,5 @@ case class Object(
     )
   }
 
-  def persist: PersistentNode = ??? //PersistentNode(isObject = true, path = path.toString, attributes = attributes)
+  def persist: PPersistentNode.NodeType = Obj(PObject(path.toString,typeAttribute.getOrElse(""),ids.map(_.persist),descriptions.map(_.persist()).toSeq,attributes))
 }

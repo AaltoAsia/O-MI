@@ -3,7 +3,7 @@ package database.journal
 import java.sql.Timestamp
 
 import database.{EventSub, IntervalSub, PollSub, PolledSub}
-import database.journal.PersistentNode.NodeType.{Ii, Obj, Objs}
+import database.journal.PPersistentNode.NodeType.{Ii, Obj, Objs}
 import types.Path
 import types.odf.{Description, ImmutableODF, InfoItem, MetaData, ODFValue, Object, Objects, QlmID}
 
@@ -16,9 +16,8 @@ object Models {
     * Event classes are located in O-MI-Node/target/scala-2.11/src_managed/main/database.journal/
     */
   trait Event extends PersistentMessage
-
+  //trait PersistentNode
   trait PersistentSub extends PersistentMessage
-
   sealed trait Command
 
   //PersistentCommands are classes that need to be serialized
@@ -128,7 +127,7 @@ object Models {
     )
   }
 
-  def buildImmutableOdfFromProtobuf(in: Map[String, PersistentNode]): ImmutableODF = {
+  def buildImmutableOdfFromProtobuf(in: Map[String, PPersistentNode]): ImmutableODF = {
     ImmutableODF(
       in.map { case (k, v) =>
         v.nodeType match {

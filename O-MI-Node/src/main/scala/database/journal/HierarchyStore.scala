@@ -5,7 +5,7 @@ import java.sql.Timestamp
 import akka.actor.ActorLogging
 import akka.persistence.{PersistentActor, SnapshotOffer}
 import database.journal.Models._
-import database.journal.PersistentNode.NodeType.{Ii, Obj, Objs}
+import database.journal.PPersistentNode.NodeType.{Ii, Obj, Objs}
 import types.Path
 import types.odf._
 class HierarchyStore extends PersistentActor with ActorLogging {
@@ -35,8 +35,8 @@ class HierarchyStore extends PersistentActor with ActorLogging {
 
   def updateState(event: PersistentMessage) = event match {
     case e: Event => e match {
-      case Union(another) => state = state.union(buildImmutableOdfFromProtobuf(another)).valuesRemoved.immutable
-      case ErasePath(path) => state = state.removePath(Path(path)).immutable
+      case PUnion(another) => state = state.union(buildImmutableOdfFromProtobuf(another)).valuesRemoved.immutable
+      case PErasePath(path) => state = state.removePath(Path(path)).immutable
 
     }
     case p: PersistentCommand => p match {
@@ -47,16 +47,16 @@ class HierarchyStore extends PersistentActor with ActorLogging {
   }
   def receiveRecover: Receive = {
     case event: Event => updateState(event)
-    case SnapshotOffer(_,snapshot:Map[String,PersistentNode]) => state = buildImmutableOdfFromProtobuf(snapshot)
+    case SnapshotOffer(_,snapshot:PUnion) => state = buildImmutableOdfFromProtobuf(snapshot.another)
   }
 
   def receiveCommand: Receive = {
     case union @ UnionCommand(other) =>
-      persist(Union(other.nodes.map{case (k,v)=> k.toString -> v.persist})){ event =>
+      persist(PUnion(other.nodes.map{case (k,v)=> k.toString -> PPersistentNode(v.persist)})){ event =>
         sender() ! updateState(union)
       }
     case erase @ ErasePathCommand(path) =>
-      persist(ErasePath(path.toString)){event =>
+      persist(PErasePath(path.toString)){event =>
         sender() ! updateState(erase)
       }
     case GetTree =>

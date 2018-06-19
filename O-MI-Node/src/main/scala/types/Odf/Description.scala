@@ -1,6 +1,7 @@
 package types
 package odf
 
+import database.journal.PDescription
 import parsing.xmlGen.scalaxb.DataRecord
 import parsing.xmlGen.xmlTypes._
 object Description{
@@ -24,7 +25,7 @@ case class Description(
     )
   }
 
-  implicit def asDescriptionType : DescriptionType ={
+  implicit def asDescriptionType : DescriptionType = {
     DescriptionType(
       text, 
       language.fold(Map.empty[String, DataRecord[Any]]){
@@ -32,5 +33,7 @@ case class Description(
       }
     )
   }
+
+  def persist(): PDescription = PDescription(text,language.getOrElse(""))
 
 }

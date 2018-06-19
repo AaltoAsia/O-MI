@@ -1,7 +1,8 @@
 package types
 package odf
 
-import database.journal.PersistentNode
+import database.journal.PPersistentNode.NodeType.Ii
+import database.journal.{PInfoItem, PPersistentNode}
 
 import scala.collection.{Map, Seq}
 import scala.collection.immutable.{HashMap, Map => IMap}
@@ -238,5 +239,5 @@ case class InfoItem(
     )
   }
 
-  def persist: PersistentNode = ???//PersistentNode(path = path.toString,attributes = attributes)
+  def persist: PPersistentNode.NodeType = Ii(PInfoItem(path.toString,typeAttribute.getOrElse(""),names.map(_.persist),descriptions.map(_.persist).toSeq,metaData.map(_.persist()),attributes))
 }
