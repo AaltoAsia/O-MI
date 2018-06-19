@@ -15,6 +15,7 @@ object ParkingFacility{
     val maxHs = obj.get( obj.path / "maxParkingHours" ).collect{ case ii: OdfInfoItem => getStringFromInfoItem(ii) }.flatten
     val geo = obj.get( obj.path / "geo" ).collect{ case obj: OdfObject => GPSCoordinates(obj) }
     val ohs = obj.get( obj.path / "openingHoursSpecification" ).collect{ case obj: OdfObject => OpeningHoursSpecification(obj) }
+    val capas = obj.get( obj.path / "Capacities" ).collect{ case obj: OdfObject => Capacity(obj) }.toVector
     val pSpaces = obj.get( obj.path / "ParkingSpaces" ).collect{ 
       case obj: OdfObject => 
       obj.objects.map{ 
@@ -28,7 +29,8 @@ object ParkingFacility{
       geo,
       pSpaces,
       maxHs,
-      ohs
+      ohs,
+      capas
     )
   }
 }

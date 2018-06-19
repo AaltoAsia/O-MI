@@ -83,54 +83,64 @@ class ParkingAgent(
   //Path to object containing all parking lots.
   val parkingLotsPath: Path = configStringToPath("parkingFacilitiesPath")
 
+  case class ParkingSpaceStatus( path: Path, user: Option[String], free: Boolean)
+  val parkingSpaceStatuses: MutableMap[Path,ParkingSpaceStatus] = MutableHashMap()
+  
   //File used to populate node with initial state
-  val startStateFile =  new File(config.getString("initialStateFile"))
-  val initialODF: OdfObjects = if( startStateFile.exists() && startStateFile.canRead() ){
-    val xml = XML.loadFile(startStateFile)
-    OdfParser.parse( xml) match {
-      case Left( errors : Seq[ParseError]) =>
-        val msg = errors.mkString("\n")
-        log.warning(s"Odf has errors, $name could not be configured.")
-        log.debug(msg)
-        throw ParseError.combineErrors( errors )
-      case Right(odf) => odf
+  {
+    val startStateFile =  new File(config.getString("initialStateFile"))
+    val initialODF: OdfObjects = if( startStateFile.exists() && startStateFile.canRead() ){
+      val xml = XML.loadFile(startStateFile)
+      OdfParser.parse( xml) match {
+        case Left( errors : Seq[ParseError]) =>
+          val msg = errors.mkString("\n")
+          log.warning(s"Odf has errors, $name could not be configured.")
+          log.debug(msg)
+          throw ParseError.combineErrors( errors )
+        case Right(odf) => odf
+      }
+    } else if( !startStateFile.exists() ){
+      throw AgentConfigurationException(s"Could not get initial state for $name. File $startStateFile do not exists.")
+    } else {
+      throw  AgentConfigurationException(s"Could not get initial state for $name. Could not read file $startStateFile.")
     }
-  } else if( !startStateFile.exists() ){
-    throw AgentConfigurationException(s"Could not get initial state for $name. File $startStateFile do not exists.")
-  } else {
-    throw  AgentConfigurationException(s"Could not get initial state for $name. Could not read file $startStateFile.")
+
+    
+    val initialWrite: Future[ResponseRequest] = writeToDB( WriteRequest(OldTypeConverter.convertOdfObjects(initialODF)) )
+
+    initialWrite.recover{
+      case e: Exception => 
+        throw new Exception(s"Could not set initial state for $name. Initial write to DB failed.", e)
+      
+    }.flatMap{
+      case response: ResponseRequest => 
+        response.results.foreach{
+          case result: OmiResult =>
+            result.returnValue match {
+              case succ: Returns.ReturnTypes.Successful =>
+                log.info( s"Successfully initialized state for $name" )
+              case other =>
+                log.warning( s"Could not set initial state for $name. Got result:$result.")
+                throw new Exception( s"Could not set initial state for $name. Got following result from DB: $result.")
+            }
+        }
+        val initialisationStatus: Future[Unit] = updateParkingSpaceStatuses 
+        initialisationStatus.recover{
+          case e: Exception =>
+            log.error(e.getMessage)
+            context.stop(self)
+        }
+    }
   }
 
   val findParkingPath: Path = servicePath / "FindParking"
-  
-  case class ParkingSpaceStatus( path: Path, user: Option[String], free: Boolean)
-  val parkingSpaceStatuses: MutableMap[Path,ParkingSpaceStatus] = MutableHashMap()
-  val initialWrite: Future[ResponseRequest] = writeToDB( WriteRequest(OldTypeConverter.convertOdfObjects(initialODF)) )
-
-  initialWrite.recover{
-    case e: Exception => 
-      throw new Exception(s"Could not set initial state for $name. Initial write to DB failed.", e)
-    
-  }.flatMap{
-    case response: ResponseRequest => 
-      response.results.foreach{
-        case result: OmiResult =>
-          result.returnValue match {
-            case succ: Returns.ReturnTypes.Successful =>
-              log.info( s"Successfully initialized state for $name" )
-            case other =>
-              log.warning( s"Could not set initial state for $name. Got result:$result.")
-              throw new Exception( s"Could not set initial state for $name. Got following result from DB: $result.")
-          }
-      }
-      val initialisationStatus: Future[Unit] = updateParkingSpaceStatuses 
-      initialisationStatus.recover{
-        case e: Exception =>
-          log.error(e.getMessage)
-          context.stop(self)
-      }
-  }
-
+  val parameterPath =  Path("Objects","Parameters")
+  val destinationParameterPath: Path = parameterPath / "Destination"
+  val vehicleParameterPath: Path = parameterPath / "Vehicle"
+  val arrivalTimeParameterPath: Path = parameterPath / "ArrivalTime"
+  val distanceFromDestinationParameterPath: Path = parameterPath / "DistanceFromDestination"
+  val validForUserGroupParameterPath: Path = parameterPath / "ParkingUserGroup"
+  val chargerParameterPath: Path = parameterPath / "Charger"
 
   override protected def handleWrite(write: WriteRequest) : Future[ResponseRequest] = {
     def plugMeasureUpdate( plug: PowerPlug): Boolean =  plug.currentInA.nonEmpty || plug.powerInkW.nonEmpty || plug.voltageInV.nonEmpty
@@ -478,13 +488,6 @@ class ParkingAgent(
     charger: Option[Charger],
     arrivalTime: Option[String]
   )
-  val parameterPath =  Path("Objects","Parameters")
-  val destinationParameterPath: Path = parameterPath / "Destination"
-  val vehicleParameterPath: Path = parameterPath / "Vehicle"
-  val arrivalTimeParameterPath: Path = parameterPath / "ArrivalTime"
-  val distanceFromDestinationParameterPath: Path = parameterPath / "DistanceFromDestination"
-  val validForUserGroupParameterPath: Path = parameterPath / "ParkingUserGroup"
-  val chargerParameterPath: Path = parameterPath / "Charger"
   private def updateParkingSpaceStatuses: Future[Unit] ={
     getCurrentParkingFacilities.map{
       case currentPFs: Seq[ParkingFacility] =>
@@ -499,7 +502,7 @@ class ParkingAgent(
           }
           parkingSpaceStatuses ++= entries
           //log.debug( parkingSpaceStatuses.mkString("\n") ) 
-        } else {throw new Exception( "No parking facilities found from db.")}
+        } //else {throw new Exception( "No parking facilities found from db.")}
     }
   }
 
