@@ -20,7 +20,7 @@ import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.Future
 import http.OmiConfigExtension
 import com.typesafe.config.{Config, ConfigFactory}
-import akka.actor.{ActorRef, ActorSystem}
+import akka.actor.{ActorRef, ActorSystem, Props}
 import org.slf4j.{Logger, LoggerFactory}
 import org.prevayler.{Prevayler, PrevaylerFactory}
 import parsing.xmlGen.xmlTypes.MetaDataType
@@ -85,8 +85,9 @@ case class AttachEvent(override val infoItem: InfoItem) extends ChangeEvent(info
 /**
  * Contains all stores that requires only one instance for interfacing
  */
-class SingleStores(protected val settings: OmiConfigExtension) {
+class SingleStores(protected val settings: OmiConfigExtension)(implicit val system: ActorSystem) {
   private[this] def createPrevayler[P](in: P, name: String) = {
+
     if(settings.writeToDisk) {
       val journalFileSizeLimit = settings.maxJournalSizeBytes
       val factory = new PrevaylerFactory[P]()
@@ -109,11 +110,17 @@ class SingleStores(protected val settings: OmiConfigExtension) {
   /** List of all prevayler directories. Currently used for removing unnecessary files in these directories */
   val prevaylerDirectories: ArrayBuffer[File] = ArrayBuffer[File]()
 
-  val latestStore: Prevayler[LatestValues] = createPrevayler(LatestValues.empty, "latestStore")
-  val hierarchyStore: Prevayler[OdfTree] = createPrevayler(OdfTree.empty, "hierarchyStore")
-  val subStore: Prevayler[Subs] = createPrevayler(Subs.empty,"subscriptionStore")
-  val pollDataPrevayler: Prevayler[PollSubData] = createPrevayler(PollSubData.empty, "pollDataPrevayler")
-  subStore execute RemoveWebsocketSubs()
+  val latesStore: ActorRef = system.actorOf(Props[journal.LatestStore])
+  val hierarchyStore: ActorRef = system.actorOf(Props[journal.HierarchyStore])
+  val subStore: ActorRef = system.actorOf(Props[journal.SubStore])
+  val pollDataPrevayler: ActorRef = system.actorOf(Props[journal.PollDataStore])
+
+  //val latestStore: Prevayler[LatestValues] = createPrevayler(LatestValues.empty, "latestStore")
+  //val hierarchyStore: Prevayler[OdfTree] = createPrevayler(OdfTree.empty, "hierarchyStore")
+  //val subStore: Prevayler[Subs] = createPrevayler(Subs.empty,"subscriptionStore")
+  //val pollDataPrevayler: Prevayler[PollSubData] = createPrevayler(PollSubData.empty, "pollDataPrevayler")
+
+  // ???subStore execute RemoveWebsocketSubs()
 
   def buildODFFromValues(items: Seq[(Path,Value[Any])]): ODF = {
     ImmutableODF(items map { case (path, value) =>
