@@ -281,17 +281,18 @@ public class AuthAPIService implements AuthApi {
     //    return  AuthApi$class.isAuthorizedForType(this, httpRequest, isWrite, paths);
     //}
 
+    /*
     public AuthorizationResult isAuthorizedForRequest(HttpRequest httpRequest,
                                    OmiRequest omiRequest) {
-        return AuthApi$class.isAuthorizedForRequest(this, httpRequest, omiRequest);
+        return AuthApi.isAuthorizedForRequest(this, httpRequest, omiRequest);
     }
 
     public AuthorizationResult isAuthorizedForRawRequest(HttpRequest httpRequest,
                                    String request) {
         logger.debug("isAuthorizedForRawRequest EXECUTED!");
         //System.out.println("isAuthorizedForRawRequest EXECUTED!");
-        return AuthApi$class.isAuthorizedForRawRequest(this, httpRequest, request);
-    }
+        return AuthApi.isAuthorizedForRawRequest(this, httpRequest, request);
+    }*/
 
 //    // TODO: FIXME: needs xml escaping and creating the O-MI request to transfer it
 //    public AuthorizationResult isAuthorizedForRawRequest(HttpRequest httpRequest,
