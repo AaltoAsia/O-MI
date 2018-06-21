@@ -21,8 +21,9 @@ import akka.http.scaladsl.marshalling.Marshal
 import de.heikoseeberger.akkahttpjson4s.Json4sSupport
 import org.json4s.{DefaultFormats, Formats,CustomSerializer, JString, JObject}
 import org.json4s.native.JsonMethods._
-import org.json4s.native
+import org.json4s.native.{Serialization => JsonSerialization}
 import org.json4s.JsonDSL._
+import org.json4s._
 import agentSystem._
 import org.slf4j.{Logger, LoggerFactory}
 import com.typesafe.config.{Config, ConfigObject}
@@ -35,34 +36,61 @@ import types.Path
 import types.OmiTypes.{OmiRequest, OdfRequest, UserInfo, RawRequestWrapper}
 import http.OmiConfigExtension
 
-trait Hngh {
-  protected implicit val materializer: ActorMaterializer
-  protected def bodyString(http: HttpMessage)(implicit t: Timeout): String =
-    Await.result(Unmarshal(http.entity).to[String], t.duration)
-}
 
-trait AuthApiJsonSupport extends Json4sSupport {
-  // Serialize None to null?
-  //class NoneSerializer extends CustomSerializer[Option[_]](format =>
-  //    ( { case JNull => None  }
-  //    , { case None => JNull  }
-  //    )
-  //)
-  class PathSerializer extends CustomSerializer[Path](format =>
-      ( { case JString(s) => Path(s)  }
-      , { case p => JString(p.toString)  }
-      )
-  )
-  implicit val jsonSerialization = native.Serialization
-  implicit val json4sFormats: Formats = DefaultFormats + new PathSerializer // + new NoneSerializer
-  implicit def jsonMarshaller[T <: AnyRef] = marshaller[T](jsonSerialization, json4sFormats)
-}
 
 
 /**
   * API response class for getting the permission data from external service.
   */
 case class AuthorizationResponse(allow: List[Path], deny: List[Path])
+
+
+
+trait AuthApiJsonSupport {
+  //class PathSerializer extends CustomSerializer[Path](format =>
+  //    ( { case JString(s) => Path(s)  }
+  //    , { case p => JString(p.toString)  }
+  //    )
+  //)
+  //implicit val jsonSerialization = JsonSerialization
+  //implicit val json4sFormats: Formats = DefaultFormats + new PathSerializer // + new NoneSerializer
+  //implicit def jsonMarshaller[T <: AnyRef] = marshaller[T](jsonSerialization, json4sFormats)
+  
+  protected implicit val materializer: ActorMaterializer
+  protected val httpExtension: HttpExt
+  protected implicit val system : ActorSystem
+  import system.dispatcher
+
+  protected def bodyStringF(http: HttpMessage): Future[String] =
+    Unmarshal(http.entity).to[String]
+
+  protected def bodyString(http: HttpMessage)(implicit t: Timeout): String =
+    Await.result(Unmarshal(http.entity).to[String], t.duration)
+
+  protected def sendAndReceiveAsAuthorizationResponse(httpRequest: HttpRequest)(implicit t: Timeout): Future[AuthorizationResponse] =
+    httpExtension.singleRequest(httpRequest)
+      .flatMap { response =>
+        if (response.status.isSuccess) {
+          bodyStringF(response) map {(str) =>
+            val json = parse(str) //.extract[AuthorizationResponse] doesnt work for some reason
+            val allow = for {
+              JObject(contents) <- json
+              JField("allowed", JArray(list)) <- contents
+              JString(pathStr) <- list
+            } yield Path(pathStr)
+            val deny  = for {
+              JObject(contents) <- json
+              JField("denied", JArray(list)) <- contents
+              JString(pathStr) <- list
+            } yield Path(pathStr)
+
+            AuthorizationResponse(allow, deny)
+          }
+        } else Future.failed(new Exception(s"Request failed. Response was: $response"))
+      }
+}
+
+
 
 
 /**
@@ -74,7 +102,7 @@ class AuthAPIServiceV2(
     val settings : OmiConfigExtension,
     protected implicit val system : ActorSystem,
     protected override implicit val materializer : ActorMaterializer
-  ) extends AuthApi with AuthApiJsonSupport with Hngh{
+  ) extends AuthApi with AuthApiJsonSupport {
   import settings.AuthApiV2._
 
 
@@ -84,23 +112,6 @@ class AuthAPIServiceV2(
   import system.dispatcher
   protected val httpExtension: HttpExt = Http(system)
 
-
-  // No error response handling
-  //def sendAndReceiveAs[T: Manifest](httpRequest: HttpRequest): Future[T] =
-  //      httpExtension.singleRequest(httpRequest)
-  //        .flatMap{(response: HttpResponse) => unmarshaller[T].apply(response.entity)}
-
-
-  def sendAndReceiveAs[T: Manifest](httpRequest: HttpRequest): Future[T] =
-    sendAndReceive(httpRequest, response => unmarshaller[T].apply(response.entity))
-
-  private def sendAndReceive[T](request: HttpRequest, f: HttpResponse => Future[T]): Future[T] =
-    httpExtension.singleRequest(request)
-      .flatMap { response =>
-        //if (response.status.isSuccess || response.status == StatusCodes.NotFound) f(response)
-        if (response.status.isSuccess) f(response)
-        else Future.failed(new Exception(s"Request failed. Response was: $response"))
-      }
 
   def filterODF(originalRequest: OdfRequest, filters: AuthorizationResponse): Option[OmiRequest] = {
 
@@ -236,7 +247,7 @@ class AuthAPIServiceV2(
         log.debug(s"AuthorizationRequest: $authorizationRequest")
       }
 
-      authorizationResponse <- sendAndReceiveAs[AuthorizationResponse](authorizationRequest)
+      authorizationResponse <- sendAndReceiveAsAuthorizationResponse(authorizationRequest)
 
       _ <- Future.successful(log.debug(s"Authorization call successfull: ${authorizationResponse.toString.take(160)}..."))
 
