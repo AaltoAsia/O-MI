@@ -15,28 +15,18 @@
 
 package responses
 
-import scala.util.{Success, Failure }
-import scala.collection.mutable.{Map => MutableMap}
-import scala.concurrent.duration._
-import scala.concurrent.{ExecutionContext, Future, TimeoutException}
-import scala.xml.NodeSeq
-
-import akka.actor.{ActorSystem, ActorRef, Actor, ActorLogging, Props}
+import agentSystem.AgentEvents._
+import agentSystem.{AgentName, AgentResponsibilities}
+import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.pattern.ask
 import akka.util.Timeout
-import akka.event.{LogSource, Logging, LoggingAdapter}
-
-import analytics.AnalyticsStore
-import database._
+import http.OmiConfigExtension
 import types.OmiTypes._
-import http.{ActorSystemContext, Actors, OmiConfigExtension }
-import http.ContextConversion._
+
+import scala.collection.mutable.{Map => MutableMap}
+import scala.concurrent.Future
 import scala.language.implicitConversions
-import CallbackHandler._
-import agentSystem.AgentResponsibilities
-import agentSystem.AgentResponsibilities._
-import agentSystem.AgentName
-import agentSystem.AgentEvents._
+import scala.util.{Failure, Success}
 
 object RequestHandler{
   def props(
@@ -165,7 +155,13 @@ with CancelHandler
       case subscription: SubscriptionRequest => handleSubscription(subscription)
       case poll: PollRequest => handlePoll(poll)
       case cancel: CancelRequest => handleCancel(cancel)
-      case other => Future.failed(new Exception(s"Unexpected non-O-DF request: $other"))
+      case delete: DeleteRequest => {
+        implicit val to: Timeout = Timeout(delete.handleTTL)
+        (dbHandler ? delete).mapTo[ResponseRequest]
+      }
+      case other => {
+        log.warning(s"Unexpected non-O-DF request: $other")
+        Future.failed(new Exception(s"Unexpected non-O-DF request"))}
     }
   }
 
@@ -181,12 +177,12 @@ with CancelHandler
 
   private def askAgent( agentName: AgentName, request: OmiRequest ): Future[ResponseRequest]={
     agents.get(agentName) match {
-      case Some( ai: AgentInformation) if ai.running  =>  
+      case Some( ai: AgentInformation) if ai.running  =>
         implicit val to: Timeout = Timeout(request.handleTTL)
         val f = ai.actorRef ? request.withSenderInformation(ActorSenderInformation(self.path.name, self))
         f.mapTo[ResponseRequest]
 
-      case Some( ai: AgentInformation) if !ai.running  =>  
+      case Some( ai: AgentInformation) if !ai.running  =>
         Future.successful(
           ResponseRequest(
             Vector(
@@ -199,7 +195,7 @@ with CancelHandler
           )
         )
 
-      case None => 
+      case None =>
         Future.successful(
           ResponseRequest(
             Vector(
@@ -211,7 +207,7 @@ with CancelHandler
             )
           )
         )
-    } 
+    }
   }
   private def respond( futureResponse: Future[ResponseRequest] ) = {
     val senderRef = sender()
@@ -219,7 +215,7 @@ with CancelHandler
       case e: Exception =>
         Responses.InternalError(e)
         }.map{
-          response => 
+          response =>
             senderRef ! response
         }
   }

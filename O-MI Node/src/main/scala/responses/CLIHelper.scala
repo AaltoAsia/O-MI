@@ -26,7 +26,7 @@ import types._
 import http.{ActorSystemContext, OmiServer}
 
 trait CLIHelperT{
-  def handlePathRemove(parentPath: Path): Boolean
+  def handlePathRemove(parentPathS: Seq[Path]): Future[Seq[Int]]
   def getAllData(): Future[Option[ODF]]
   def writeOdf(odf: ImmutableODF): Unit
   }
@@ -37,34 +37,41 @@ class CLIHelper(val singleStores: SingleStores, dbConnection: DB )(implicit syst
     }
   protected val log: LoggingAdapter = Logging( system, this)
 
-  def handlePathRemove(parentPath: Path): Boolean = {
+  def handlePathRemove(parentPaths: Seq[Path]): Future[Seq[Int]] = {
     val odf = singleStores.hierarchyStore execute GetTree()
-    val nodeO = odf.get(parentPath)
-    nodeO match {
-      case Some(node) => {
+    Future.sequence(parentPaths.map { parentPath =>
+      val nodeO = odf.get(parentPath)
+      nodeO match {
+        case Some(node) => {
 
-        val leafs = odf.getSubTreePaths(node.path)
+          val leafs = odf.getPaths.filter {
+            p: Path =>
+              node.path.isAncestorOf(p)
+          }
 
-        singleStores.hierarchyStore execute TreeRemovePath(parentPath)
+          singleStores.hierarchyStore execute TreeRemovePath(parentPath)
 
-        leafs.foreach{path =>
-          log.info(s"removing $path")
-          singleStores.latestStore execute EraseSensorData(path)
+          leafs.foreach { path =>
+            log.info(s"removing $path")
+            singleStores.latestStore execute EraseSensorData(path)
+          }
+
+          val dbRemoveFuture: Future[Int] = dbConnection.remove(parentPath).map(_.length)
+
+          dbRemoveFuture.onComplete {
+            case Success(res) => log.info(s"Database successfully deleted $res nodes")
+            case Failure(error) => log.error(error, s"Failure when trying to remove $parentPath")
+          }
+
+          dbRemoveFuture
+
         }
-
-        val dbRemoveFuture: Future[Int] = dbConnection.remove(parentPath).map( _.length )
-
-        dbRemoveFuture.onComplete{
-          case Success(res) => log.info(s"Database successfully deleted $res nodes")
-          case Failure(error) => log.error(error, s"Failure when trying to remove $parentPath")
-        }
-
-        true
-
+        case None => Future.successful(0)
       }
-      case None => false
-    }
+    })
   }
+
+
 
   /**
     * method of getting all the data available from hierarchystore and dagabase, includes all metadata and descriptions

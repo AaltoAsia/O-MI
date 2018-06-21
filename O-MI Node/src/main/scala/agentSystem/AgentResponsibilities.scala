@@ -71,9 +71,9 @@ class AgentResponsibilities(){
         }
     }.map{
       case (Some(agentName),paths:Set[Path]) =>
-        Some(agentName) -> odf.getUpTreeAsODF(paths.toVector)
+        Some(agentName) -> odf.selectUpTree(paths.toVector)
       case ( None, paths:Set[Path] ) =>
-        None -> odf.getUpTreeAsODF(paths.toVector)
+        None -> odf.selectUpTree(paths.toVector)
     }.mapValues(_odf =>
       request.replaceOdf(_odf))
   }

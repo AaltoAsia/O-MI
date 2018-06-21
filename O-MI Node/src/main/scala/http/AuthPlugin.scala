@@ -134,7 +134,7 @@ trait AuthApiProvider extends AuthorizationExtension {
             paths <- Option(maybePaths) // paths might be null
 
             // Rebuild the request having only `paths`
-            pathTrees = currentTree.getSubTreeAsODF(paths.toVector)
+            pathTrees = currentTree.selectSubTree(paths.toVector)
             /*paths collect {
               case path: Path =>              // filter nulls out
                 currentTree.getSubTreeAsODF(paths) match { // figure out is it InfoItem or Object

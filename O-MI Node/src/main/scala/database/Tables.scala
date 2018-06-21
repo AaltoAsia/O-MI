@@ -49,9 +49,10 @@ case class TimedValue(
 
 trait Tables extends DBBase{
   import dc.driver.api._
-  
+  type DBSIOro[Result] = DBIOAction[Seq[Result],Streaming[Result],Effect.Read] 
   type DBIOro[Result] = DBIOAction[Result, NoStream, Effect.Read]
   type DBIOwo[Result] = DBIOAction[Result, NoStream, Effect.Write]
+  type DBIOsw[Result] = DBIOAction[Result, NoStream, Effect.Schema with Effect.Write]
   type ReadWrite = Effect with Effect.Write with Effect.Read with Effect.Transactional
   type DBIOrw[Result] = DBIOAction[Result, NoStream, ReadWrite]
   implicit lazy val pathColumnType = MappedColumnType.base[Path, String](
@@ -73,30 +74,30 @@ trait Tables extends DBBase{
   }
   class StoredPath extends TableQuery[PathsTable](new PathsTable(_)){
     import dc.driver.api._
-    def getByPath( path: Path) = getByPathCQ(path).result
-    def getByID( id: Long ) = getByIDCQ(id).result
-    def getByIDs( ids: Seq[Long] ) = getByIDsQ(ids).result
-    def getByPaths( paths: Seq[Path] ) = getByPathsQ( paths ).result
-    def currentPaths = currentPathsQ.result
+    def selectByPath( path: Path): DBSIOro[DBPath] = selectByPathCQ(path).result
+    def selectByID( id: Long ): DBSIOro[DBPath]  = selectByIDCQ(id).result
+    def selectByIDs( ids: Seq[Long] ): DBSIOro[DBPath] = selectByIDsQ(ids).result
+    def selectByPaths( paths: Seq[Path] ): DBSIOro[DBPath]= selectByPathsQ( paths ).result
+    def currentPaths: DBSIOro[Path] = currentPathsQ.result
 
-    def add( dbPaths: Seq[DBPath] ) = {
+    def add( dbPaths: Seq[DBPath] ): DBIOwo[Seq[Long]] = {
       insertQ( dbPaths.distinct )
     }
-    def removeByIDs( ids: Seq[Long] ) = getByIDsQ( ids ).delete
-    def removeByPaths( paths: Seq[Path] ) = getByPathsQ( paths ).delete
-    def getInfoItems = infoItemsCQ.result
+    def removeByIDs( ids: Seq[Long] ): DBIOwo[Int]  = selectByIDsQ( ids ).delete
+    def removeByPaths( paths: Seq[Path] ): DBIOwo[Int]= selectByPathsQ( paths ).delete
+    def selectAllInfoItems:  DBSIOro[DBPath]  = infoItemsCQ.result
 
     protected  lazy val infoItemsCQ = Compiled( infoItemsQ )
     protected  def infoItemsQ = this.filter{ dbp => dbp.isInfoItem }
 
     protected def currentPathsQ = this.map{ row => row.path}
-    protected def getByIDsQ( ids: Seq[Long] ) = this.filter{ row => row.id inSet( ids ) }
-    protected def getByPathsQ( paths: Seq[Path] ) = this.filter{ row => row.path inSet( paths ) }
-    protected lazy val getByIDCQ = Compiled( getByIDQ _ )
-    protected def getByIDQ( id: Rep[Long] ) = this.filter{ row => row.id === id  }
+    protected def selectByIDsQ( ids: Seq[Long] ) = this.filter{ row => row.id inSet( ids ) }
+    protected def selectByPathsQ( paths: Seq[Path] ) = this.filter{ row => row.path inSet( paths ) }
+    protected lazy val selectByIDCQ = Compiled( selectByIDQ _ )
+    protected def selectByIDQ( id: Rep[Long] ) = this.filter{ row => row.id === id  }
 
-    protected lazy val getByPathCQ = Compiled( getByPathQ _ )
-    protected def getByPathQ( path: Rep[Path] ) = this.filter{ row => row.path === path  }
+    protected lazy val selectByPathCQ = Compiled( selectByPathQ _ )
+    protected def selectByPathQ( path: Rep[Path] ) = this.filter{ row => row.path === path  }
     protected def insertQ( dbPaths: Seq[DBPath] ) = (this returning this.map{ dbp => dbp.id }) ++= dbPaths.distinct
   }
 
@@ -115,21 +116,21 @@ trait Tables extends DBBase{
       )
     }
   class PathValues( val path: Path, val pathID: Long ) extends TableQuery[TimedValuesTable]({tag: Tag => new TimedValuesTable(path, pathID,tag)}){
-    def name = s"PATH_${pathID.toString}"
+    val name: String = s"PATH_${pathID.toString}"
     import dc.driver.api._
-    def removeValuesBefore( end: Timestamp) = before(end).delete
-    def trimToNNewestValues( n: Long ) = selectAllExpectNNewestValuesCQ( n ).result.flatMap{
+    def removeValuesBefore( end: Timestamp): DBIOwo[Int] = before(end).delete
+    def trimToNNewestValues( n: Long ): DBIOrw[Int] = selectAllExpectNNewestValuesCQ( n ).result.flatMap{
       values: Seq[TimedValue] =>
         val ids = values.map(_.id).flatten
         this.filter(_.id inSet(ids)).delete
     }
-    def add( values: Seq[TimedValue] ) = this ++= values.distinct
-    def getNBetween(
+    def add( values: Seq[TimedValue] ): DBIOwo[Option[Int]]  = this ++= values.distinct
+    def selectNBetween(
       beginO: Option[Timestamp],
       endO: Option[Timestamp],
       newestO: Option[Int],
       oldestO: Option[Int]
-    )  ={
+    ): DBSIOro[TimedValue]  ={
       val compiledQuery = (newestO, oldestO, beginO, endO) match{
         case ( None, None, None, None) => newestC(1)
         case ( Some(_), Some(_), _, _ ) => throw new Exception("Can not query oldest and newest values at same time.")
@@ -177,14 +178,14 @@ trait Tables extends DBBase{
     protected lazy val selectAllExpectNNewestValuesCQ = Compiled( selectAllExpectNNewestValuesQ _ )
   }
   val valueTables: MutableMap[Path, PathValues] = new MutableHashMap()
-  val pathsTable = new StoredPath()
-  def namesOfCurrentTables = MTable.getTables.map{ 
+  val pathsTable: StoredPath = new StoredPath()
+  def namesOfCurrentTables: DBIOro[Vector[String]] = MTable.getTables.map{ 
     mts => 
     mts.map{ 
       mt => mt.name.name
     }
   }
-  def tableByNameExists( name: String ) = namesOfCurrentTables.map {
+  def tableByNameExists( name: String ) : DBIOro[Boolean]= namesOfCurrentTables.map {
     names: Seq[String] =>
       names.contains(name)
   } 

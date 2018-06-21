@@ -14,43 +14,38 @@
 
 package http
 
-import java.net.{InetAddress, URI, URL, URLDecoder}
+import java.net.{InetAddress, URI, URLDecoder}
 import java.nio.file.{Files, Paths}
 import java.util.Date
 
-import scala.concurrent.duration._
-import scala.concurrent.{ExecutionContext, Future, Promise, TimeoutException}
-import scala.util.{Failure, Success, Try}
-import scala.xml.{NodeSeq, XML}
-import analytics.{AddRead, AddUser, AnalyticsStore}
-import org.slf4j.LoggerFactory
-import akka.util.{ByteString, Timeout}
-import akka.NotUsed
+import accessControl.AuthAPIService
 import akka.actor.{ActorRef, ActorSystem}
-import akka.pattern.ask
 import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport
 import akka.http.scaladsl.marshalling.PredefinedToResponseMarshallers._
 import akka.http.scaladsl.marshalling.{Marshaller, ToEntityMarshaller, ToResponseMarshallable}
-import akka.http.scaladsl.model._
-import akka.http.scaladsl.server.{Directive0, RequestContext, Route}
+import akka.http.scaladsl.model.{ws, _}
 import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.server.Route
+import akka.pattern.ask
+import akka.stream.{ActorMaterializer, _}
 import akka.stream.scaladsl._
-import akka.stream._
-import akka.stream.ActorMaterializer
-import akka.http.scaladsl.model.ws
-import accessControl.AuthAPIService
+import akka.util.Timeout
+import analytics.{AddRead, AddUser}
+import database.{GetTree, SingleStores}
 import http.Authorization._
-import parsing.OmiParser
-import responses.{CallbackHandler, RESTHandler, RemoveSubscription, RequestHandler}
-import responses.RESTHandler.RESTRequest
+import org.slf4j.LoggerFactory
 import responses.CallbackHandler._
+import responses.{CallbackHandler, RESTHandler, RemoveSubscription}
+import types.OmiTypes.Callback._
 import types.OmiTypes._
 import types.odf._
-import types.OmiTypes.Callback._
 import types.{ParseError, Path}
-import database.{GetTree, SingleStores}
 
 import scala.compat.java8.OptionConverters._
+import scala.concurrent.duration._
+import scala.concurrent.{Future, Promise, TimeoutException}
+import scala.util.{Failure, Success, Try}
+import scala.xml.NodeSeq
 
 trait OmiServiceAuthorization
   extends ExtensibleAuthorization

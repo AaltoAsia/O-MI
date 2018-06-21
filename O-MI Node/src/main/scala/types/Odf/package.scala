@@ -1,18 +1,12 @@
 package types 
 import java.lang.{Iterable => JavaIterable}
-import java.util.GregorianCalendar
-import javax.xml.datatype.XMLGregorianCalendar
-import javax.xml.datatype.DatatypeFactory
 import java.sql.Timestamp
+import java.util.GregorianCalendar
+import javax.xml.datatype.{DatatypeFactory, XMLGregorianCalendar}
 
-import scala.collection.immutable.{ 
-  HashMap => ImmutableHashMap,
-  TreeSet => ImmutableTreeSet
-}
-
-import parsing.xmlGen.xmlTypes
 import parsing.xmlGen.scalaxb._
-import types.ParseError
+
+import scala.collection.immutable.{HashMap => ImmutableHashMap, TreeSet => ImmutableTreeSet}
 
 package object odf {
   type OdfParseResult = Either[JavaIterable[ParseError], ImmutableODF]

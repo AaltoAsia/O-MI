@@ -2,22 +2,18 @@ package database
 
 import java.util.Date
 
+import analytics.{AddRead, AddUser}
+
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-import akka.actor.{Actor, ActorRef, ActorSystem, ActorLogging}
-import analytics.{AddUser, AddRead, AnalyticsStore}
-
 //import scala.collection.JavaConverters._ //JavaConverters provide explicit conversion methods
 //import scala.collection.JavaConversions.asJavaIterator
-import scala.xml.{NodeSeq, PrettyPrinter}
 //import akka.http.StatusCode
 
-import types.odf.{ NewTypeConverter, ImmutableODF, ODF, OldTypeConverter }
 import types.OmiTypes._
-import types.odf._
 import types.Path
-import types.Path._
+import types.odf.{ImmutableODF, ODF, _}
 
 trait DBReadHandler extends DBHandlerBase{
   /** Method for handling ReadRequest.
@@ -99,7 +95,7 @@ trait DBReadHandler extends DBHandlerBase{
              }
 
              val notFound = requestsPaths.filterNot { path => foundOdfAsPaths.contains(path) }.toSet.toSeq
-             def notFoundOdf =requestedODF.getSubTreeAsODF(notFound)
+             def notFoundOdf =requestedODF.selectSubTree(notFound)
              val found = if( metaCombined.getPaths.exists(p => p != Path("Objects") )) Some( Results.Read(metaCombined) ) else None
              val nfResults = if (notFound.nonEmpty) Vector(Results.NotFoundPaths(notFoundOdf)) 
              else Vector.empty

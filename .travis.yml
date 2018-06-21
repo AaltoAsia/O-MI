@@ -9,7 +9,7 @@ addons:
 language: scala
 before_install:
   - sudo apt-get -qq update
-  -sudo apt-get install -y graphviz rpm
+  - sudo apt-get install -y graphviz rpm
 services:
   - docker
 jdk:
@@ -38,7 +38,7 @@ script:
 after_success:
   - sbt "project omiNode" coverageReport coveralls codacyCoverage
 before_deploy:
-  - sbt release debian:packageBin
+  - sbt release
 deploy:
   - provider: releases
     api_key:
@@ -47,6 +47,7 @@ deploy:
       - target/universal/o-mi-node-${TRAVIS_TAG}.zip
       - target/universal/o-mi-node-${TRAVIS_TAG}.tgz
       - target/O-MI-Node_${TRAVIS_TAG}_all.deb
+      - target/rpm/RPMS/noarch/o-mi-node-${TRAVIS_TAG}-1.noarch.rpm
     draft: true
     skip_cleanup: true
     overwrite: true

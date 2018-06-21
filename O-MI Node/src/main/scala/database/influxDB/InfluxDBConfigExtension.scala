@@ -1,17 +1,12 @@
 package database
 package influxDB
 
-import java.util.concurrent.TimeUnit
-
-import scala.collection.JavaConversions._
-import scala.concurrent.duration._
-import scala.util.{Success, Failure, Try}
-
 import akka.actor.{ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
 import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.model.Uri._
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigException
+import com.typesafe.config.{Config, ConfigException}
+
+import scala.util.Try
 
 class InfluxDBConfigExtension( config: Config) extends Extension {
   //Warp10 tokens and address

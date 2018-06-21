@@ -21,7 +21,6 @@ import java.util.Date
 import scala.annotation.meta.field
 import scala.collection.immutable.{HashMap, SortedSet}
 import scala.collection.mutable
-import scala.concurrent.duration.{Duration, FiniteDuration}
 import akka.actor.Cancellable
 import akka.http.scaladsl.model.Uri
 import org.prevayler._

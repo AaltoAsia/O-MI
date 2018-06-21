@@ -2,29 +2,15 @@ package database
 
 import java.lang.{Iterable => JavaIterable}
 
-
-
-import scala.collection.immutable.IndexedSeq
-import scala.collection.mutable.{Map => MutableMap}
-import scala.collection.immutable.Map
-import scala.concurrent.duration._
-import scala.concurrent.{Future, Promise, ExecutionContext}
-import scala.util.{Failure, Success, Try}
-import scala.xml.XML
-
-import akka.actor.{Actor, ActorRef, ActorSystem, ActorLogging, Props}
-import akka.pattern.ask
-import akka.util.Timeout
-import database._
-import responses.CallbackHandler
-import responses.CallbackHandler._
-import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
-import types.OdfTypes._
-import types.OmiTypes._
-import types.Path
-import analytics.{AddWrite, AnalyticsStore}
-import agentSystem.{AgentName, AgentResponsibilities}
 import agentSystem.AgentEvents._
+import agentSystem.{AgentName, AgentResponsibilities}
+import akka.actor.{Actor, ActorLogging, ActorRef, Props}
+import responses.{CLIHelperT, CallbackHandler}
+import types.OmiTypes._
+
+import scala.collection.mutable.{Map => MutableMap}
+import scala.concurrent.Future
+import scala.util.{Failure, Success}
 
 trait DBHandlerBase extends Actor 
   with ActorLogging{
@@ -32,6 +18,7 @@ trait DBHandlerBase extends Actor
   protected implicit def singleStores: SingleStores
   protected implicit def callbackHandler: CallbackHandler
   protected implicit def analyticsStore: Option[ActorRef]
+  protected implicit def removeHandler: CLIHelperT
   protected def agentResponsibilities: AgentResponsibilities 
 }
 
@@ -40,13 +27,15 @@ object DBHandler{
     dbConnection: DB,
     singleStores: SingleStores,
     callbackHandler: CallbackHandler,
-    analyticsStore: Option[ActorRef]
+    analyticsStore: Option[ActorRef],
+    removeHandler: CLIHelperT
   ): Props = Props(
     new DBHandler(
       dbConnection,
       singleStores,
       callbackHandler,
-      analyticsStore
+      analyticsStore,
+      removeHandler
     )
   )
 }
@@ -56,12 +45,12 @@ class DBHandler(
   protected  val dbConnection: DB,
   protected  val singleStores: SingleStores,
   protected  val callbackHandler: CallbackHandler,
-  protected  val analyticsStore: Option[ActorRef]
-  
+  protected  val analyticsStore: Option[ActorRef],
+  protected  val removeHandler: CLIHelperT
   ) extends DBReadHandler
-  with DBWriteHandler
+  with DBWriteHandler with DBDeleteHandler
 {
-  import context.{system, dispatcher}
+  import context.dispatcher
   def receive: PartialFunction[Any, Unit] = {
     case na: NewAgent => addAgent(na)
     case na: AgentStopped => agentStopped(na.agentName)
@@ -75,6 +64,10 @@ class DBHandler(
     case read: ReadRequest => 
       respond(
         handleRead( read )
+      )
+    case delete: DeleteRequest =>
+      respond(
+        handleDelete(delete)
       )
   }
 

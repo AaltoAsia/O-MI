@@ -21,13 +21,12 @@ import javax.xml.parsers.SAXParserFactory
 import javax.xml.transform.stream.StreamSource
 import javax.xml.validation.{Schema, SchemaFactory, Validator}
 
+import org.xml.sax.SAXException
+import types.{ParseError, SchemaError}
+
 import scala.util.{Failure, Success, Try}
 import scala.xml.factory.XMLLoader
-import scala.xml.{Elem, Node, XML, NamespaceBinding}
-import akka.http.scaladsl.model.RemoteAddress
-import org.xml.sax.SAXException
-import types.{SchemaError,ParseError}
-import types.OmiTypes.UserInfo
+import scala.xml.{Elem, NamespaceBinding, Node, XML}
 
 /**
  * Parser trait that parsers inherit,
