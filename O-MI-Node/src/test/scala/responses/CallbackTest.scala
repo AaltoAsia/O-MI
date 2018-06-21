@@ -9,7 +9,6 @@ import database.SingleStores
 import http.{OmiConfigExtension, OmiService, OmiConfig}
 import org.specs2.Specification
 import org.specs2.mock.Mockito
-import org.specs2.specification.ExecutionEnvironment
 import types.OdfTypes.OdfObjects
 import types.OmiTypes.{RawCallback, ReadRequest, UserInfo}
 import types.odf.OldTypeConverter

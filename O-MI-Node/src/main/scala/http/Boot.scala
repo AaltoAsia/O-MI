@@ -35,9 +35,6 @@ import scala.util.{Failure, Success, Try}
 //import akka.http.WebBoot
 //import akka.http.javadsl.ServerBinding
 //
-import kamon.Kamon
-import kamon.influxdb.InfluxDBReporter
-import kamon.prometheus.PrometheusReporter
 
 import agentSystem._
 import database._
@@ -281,8 +278,6 @@ object Boot /*extends Starter */{// with App{
       import server.system.dispatcher
       server.bindTCP()
       server.bindHTTP()
-      //Kamon.addReporter(new InfluxDBReporter())
-      Kamon.addReporter(new PrometheusReporter())
     }match {
       case Failure(ex)  =>  log.error( "Error during startup", ex)
       case Success(_) => log.info("Server started successfully")

@@ -15,7 +15,7 @@ services:
 jdk:
   - oraclejdk8
 scala:
-  - 2.11.8
+  - 2.12.6
 notifications:
   flowdock:
     - 8fa39d3ba829b0083c135134658d0ac2
@@ -26,7 +26,7 @@ branches:
     - master
     - development
     - travis
-    - /^\d+\.\d+\.\d+[.\- ].*$/
+    - /^\d+\.\d+\.\d+([.\- ].*)?$/
 cache:
   directories:
     - "$HOME/.ivy2/cache"
@@ -53,9 +53,7 @@ deploy:
     overwrite: true
     on:
       tags: true
-      all_branches: true
   - provider: script
     script: bash docker_push
     on:
       tags: true
-      all_branches: true

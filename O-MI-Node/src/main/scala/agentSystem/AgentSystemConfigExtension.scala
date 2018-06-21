@@ -1,8 +1,9 @@
 package agentSystem
 
+import java.lang.{Iterable => JIterable}
 import java.util.concurrent.TimeUnit
 
-import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
 import scala.concurrent.duration._
 import scala.util.{Success, Failure, Try}
 
@@ -21,9 +22,7 @@ trait AgentSystemConfigExtension  extends Extension {
   val agentConfigurations: Seq[AgentConfigEntry] = {
     
     Try{
-      iterableAsScalaIterable(
-        config.getConfigList("agent-system.internal-agents")
-      ).toVector 
+        config.getConfigList("agent-system.internal-agents").asScala.toVector
     } match {
       case Success(internalAgents) =>
         internalAgents.flatMap {
@@ -44,26 +43,6 @@ trait AgentSystemConfigExtension  extends Extension {
     }
   }
 }
-//
-//agent-system {
-//  starting-timeout = 10 seconds
-//  internal-agents = [
-//    {
-//      name = "agent"
-//      language = "scala"
-//      class = "agents."
-//      ??? = {
-//        "path" = "rwp"
-//        ...
-//      }
-//    },
-//    ...
-//  ]
-//
-//  ]
-//}
-//
-//
 
 class AgentConfig (
   val name: AgentName,

@@ -2,9 +2,9 @@ addSbtPlugin("io.spray" % "sbt-revolver" % "0.9.1")
 
 addSbtPlugin("com.typesafe.sbteclipse" % "sbteclipse-plugin" % "5.1.0")
 
-addSbtPlugin("org.scoverage" % "sbt-scoverage" % "1.3.5")
+addSbtPlugin("org.scoverage" % "sbt-scoverage" % "1.5.1")
 
-addSbtPlugin("org.scoverage" % "sbt-coveralls" % "1.1.0")
+addSbtPlugin("org.scoverage" % "sbt-coveralls" % "1.2.5")
 
 addSbtPlugin("org.scala-sbt.plugins" % "sbt-onejar" % "0.8")
 
