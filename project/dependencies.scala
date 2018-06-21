@@ -16,7 +16,7 @@ object Dependencies {
   val sprayJson    = "com.typesafe.akka" %% "akka-http-spray-json" % akkaHttpV 
   val httpCors     = "ch.megard"         %% "akka-http-cors" % "0.2.2"
   //Test dependencies
-  val specs2V = "3.7.2"
+  val specs2V = "4.3.0"
   val specs2       = "org.specs2"        %% "specs2-core"   % specs2V   % "test"
   val specs2match  = "org.specs2"        %% "specs2-matcher-extra" % specs2V % "test"
   val mockito	     = "org.specs2"        %% "specs2-mock"   % specs2V   % "test"
@@ -25,7 +25,7 @@ object Dependencies {
   val httpTestkit  = "com.typesafe.akka" %% "akka-http-testkit" % akkaHttpV % "test"
 
   //Slick
-  val slickV = "3.1.1"
+  val slickV = "3.2.3"
   val slick        = "com.typesafe.slick" %% "slick" % slickV //common
   val slickCodegen = "com.typesafe.slick" %% "slick-codegen"  % slickV //common
   val hikariCP     = "com.typesafe.slick" %% "slick-hikaricp" % slickV
@@ -42,7 +42,6 @@ object Dependencies {
   val prevaylerV = "2.6"
   val prevaylerCore    = "org.prevayler"  % "prevayler-core"   % prevaylerV
   val prevaylerFactory = "org.prevayler"  % "prevayler-factory"% prevaylerV
-  val scalameter = "com.storm-enroute" %% "scalameter" % "0.7"
 
 
 
@@ -59,15 +58,7 @@ object Dependencies {
   //Java dependencies
   val gson         = "com.google.code.gson"         % "gson"         % "2.6.2"
   
-  //Monitoring with Kamon
-  val kamon = "io.kamon" %% "kamon-core" % "1.1.0"
-  val kamonInfluxReporter = "io.kamon" %% "kamon-influxdb" % "1.0.1"
-  val kamonAkka = "io.kamon" %% "kamon-akka-2.4" % "1.0.1" 
-  val kamonAkkaHTTP = "io.kamon" %% "kamon-akka-http-2.4" % "1.0.1" 
-  val kamonLogback = "io.kamon" %% "kamon-logback" % "1.0.0"
-  val kamonPrometheus = "io.kamon" %% "kamon-prometheus" % "1.0.0"
-
-  val commonDependencies: Seq[ModuleID] = Seq(
+    val commonDependencies: Seq[ModuleID] = Seq(
     akkaActor,
     akkaSlf4j,
     akkaStream,
@@ -90,12 +81,7 @@ object Dependencies {
     commonsLang,
     prevaylerCore,
     prevaylerFactory,
-    gson,
-    kamon,
-    kamonLogback,
-    kamonAkka,
-    kamonPrometheus,
-    kamonInfluxReporter
+    gson
   )
 
   //val servletDependencies: Seq[ModuleID] = Seq(
@@ -108,8 +94,7 @@ object Dependencies {
     mockito,
     nuValidator,
     akkaTestkit,
-    httpTestkit,
-    scalameter
+    httpTestkit
   )
 
 }

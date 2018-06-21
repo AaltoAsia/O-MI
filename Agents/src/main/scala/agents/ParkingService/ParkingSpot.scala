@@ -7,7 +7,6 @@ import types.OdfTypes._
 import types._
 
 
-//TODO: 'Rename' to UserGroup
 object UserGroup extends Enumeration{
   type UserGroup = Value
   val Carsharing, DisabledPerson, Taxi, Women, Inhabitants, Families, Unknown = Value   

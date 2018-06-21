@@ -1,6 +1,7 @@
 package testHelpers
 import scala.language.postfixOps
 
+import scala.util.Try
 import scala.concurrent.{Promise, Future, Await}
 import scala.concurrent.duration._
 import scala.xml.{SAXParser, Node, PrettyPrinter, XML}
@@ -336,3 +337,15 @@ trait Specs2Interface extends TestFrameworkInterface {
     throw new FailureException(Failure(msg, stackTrace = fixedTrace))
   }
 }
+
+/* XXX: Check Throwable type and message without using withThrowable, that
+ * causes compiler to assertion error from typer. Issue is caused by combination
+ * of depencies and could not be reproduced with only Specs2.
+ *
+class TesterTest extends Specification 
+{
+    "test" >> {
+      val t = Try{ throw new java.lang.IllegalArgumentException("test")}
+      t must beFailedTry.withThrowable[java.lang.IllegalArgumentException]("test")
+    }
+}*/
