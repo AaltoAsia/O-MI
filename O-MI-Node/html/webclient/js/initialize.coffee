@@ -413,6 +413,7 @@ constsExt = ($, parent, util) ->
     requestTip "#poll", "Request and empty buffered data for callbackless subscription."
     requestTip "#cancel", "Cancel and remove an active subscription."
     requestTip "#write", "Write new data to the server. NOTE: Right click the above odf tree to create new elements."
+    requestTip "#delete", "Delete an O-DF subtree or a single InfoItem."
 
 
 
