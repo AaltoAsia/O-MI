@@ -338,7 +338,7 @@ trait OmiService
           // check the error code for logging
           val statusO = response.results.map { result => result.returnValue.returnCode }
           if (statusO exists (_ != "200")) {
-            log.warn(s"Error code $statusO with following request:\n$requestString")
+            log.debug(s"Error code $statusO with received request")
           }
 
           response.asXML // return

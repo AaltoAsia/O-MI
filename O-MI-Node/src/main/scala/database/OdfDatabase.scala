@@ -365,7 +365,7 @@ trait OdfDatabase extends Tables with DB with TrimmableDB{
     }
   }
 
-  def remove(path: Path): Future[Seq[Int]] ={
+  def nremove(path: Path): Future[Seq[Int]] ={
     val actionsO: Option[DBIOsw[Int]] = pathToDBPath.single.get(path).collect{
       case  DBPath(Some(id), p, true) =>
           valueTables.get(path).map{

@@ -52,14 +52,14 @@ class CLIHelper(val singleStores: SingleStores, dbConnection: DB )(implicit syst
           singleStores.hierarchyStore execute TreeRemovePath(parentPath)
 
           leafs.foreach { path =>
-            log.info(s"removing $path")
+            log.debug(s"removing $path")
             singleStores.latestStore execute EraseSensorData(path)
           }
 
           val dbRemoveFuture: Future[Int] = dbConnection.remove(parentPath).map(_.length)
 
           dbRemoveFuture.onComplete {
-            case Success(res) => log.info(s"Database successfully deleted $res nodes")
+            case Success(res) => log.debug(s"Database successfully deleted $res nodes")
             case Failure(error) => log.error(error, s"Failure when trying to remove $parentPath")
           }
 
