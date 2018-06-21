@@ -19,10 +19,10 @@ import java.util.concurrent.TimeUnit
 import java.net.{InetAddress, URLDecoder}
 
 import scala.language.postfixOps
+import scala.language.implicitConversions
 import scala.collection.JavaConversions._
 import scala.concurrent.duration._
 import scala.util.Try
-import scala.language.implicitConversions
 import agentSystem.AgentSystemConfigExtension
 import akka.actor.{ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
 import akka.http.scaladsl.model.Uri
@@ -131,6 +131,22 @@ class OmiConfigExtension( val config: Config) extends Extension
     val authenticationEndpoint: Uri = testUri(authAPIServiceV2.getString("authentication.url"))
     val omiHttpHeadersToAuthentication: Set[String] = authAPIServiceV2.getStringList("authentication.copy-request-headers").toSet
     val authorizationEndpoint: Uri = testUri(authAPIServiceV2.getString("authorization.url"))
+
+    type ParameterExtraction = Map[String,Map[String,String]]
+
+    def mapmap(c: Config): ParameterExtraction = {
+      c.root().keys.map{(key) =>
+        val innerConfig = c.getConfig(key)
+        key.toLowerCase -> innerConfig.root().keys.map(
+          (key2) => key2.toLowerCase -> innerConfig.getString(key2).toLowerCase).toMap
+      }.toMap
+    }
+
+    val parameters: Config = authAPIServiceV2.getConfig("parameters") 
+    val parametersFromRequest: ParameterExtraction = mapmap(parameters.getConfig("fromRequest")) 
+    val parametersFromAuthentication: ParameterExtraction = mapmap(parameters.getConfig("fromAuthentication")) 
+    val parametersToAuthentication: ParameterExtraction = mapmap(parameters.getConfig("toAuthentication")) 
+    val parametersToAuthorization: ParameterExtraction = mapmap(parameters.getConfig("toAuthorization")) 
   }
   //val userInfoFromRequestHeaders: Map[String,String] = authAPIServiceV2.getObject("userinfo-from-request-headers")
   //

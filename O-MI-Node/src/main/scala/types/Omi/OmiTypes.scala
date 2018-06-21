@@ -55,14 +55,6 @@ sealed trait OmiRequest extends RequestWrapper with JavaOmiRequest{
   def parsed: OmiParseResult = Right(asJavaIterable(collection.Iterable(this)))
   def unwrapped: Try[OmiRequest] = Success(this)
   def rawRequest: String = asXML.toString
-  final def handleTTL : FiniteDuration = if( ttl.isFinite ) {
-        if(ttl.toSeconds != 0)
-          FiniteDuration(ttl.toSeconds, SECONDS)
-        else
-          FiniteDuration(2,MINUTES)
-      } else {
-        FiniteDuration(Int.MaxValue,MILLISECONDS)
-      }
   def senderInformation: Option[SenderInformation]
   def withSenderInformation(ni:SenderInformation): OmiRequest
   def requestVerb: RawRequestWrapper.MessageType
@@ -128,6 +120,14 @@ sealed trait RequestWrapper {
     case finite : FiniteDuration => finite.toSeconds
     case infinite : Duration.Infinite => -1
   }
+  final def handleTTL : FiniteDuration = if( ttl.isFinite ) {
+        if(ttl.toSeconds != 0)
+          FiniteDuration(ttl.toSeconds, SECONDS)
+        else
+          FiniteDuration(2,MINUTES)
+      } else {
+        FiniteDuration(Int.MaxValue,MILLISECONDS)
+      }
 }
 
 /**
@@ -141,6 +141,17 @@ class RawRequestWrapper(val rawRequest: String, private val user0: UserInfo) ext
   user = user0
 
 
+  class Element(private val ev: EvElemStart) {
+    val pre = ev.pre
+    val label = ev.label
+    val scope = ev.scope
+    def attr(key: String): Option[String] = for {
+      nodeSeqAttr <- ev.attrs.get(key)
+      head <- nodeSeqAttr.headOption
+    } yield head.text
+
+  }
+
   private val parseSingle: () => EvElemStart = {
     val src = io.Source.fromString(rawRequest)
     val er = new XMLEventReader(src)
@@ -153,17 +164,15 @@ class RawRequestWrapper(val rawRequest: String, private val user0: UserInfo) ext
     }
   }
   // NOTE: Order is important
-  val omiEnvelope: EvElemStart = parseSingle()
-  val omiVerb: EvElemStart = parseSingle()
+  val omiEnvelope: Element = new Element(parseSingle())
+  val omiVerb: Element = new Element(parseSingle())
 
   require(omiEnvelope.label == "omiEnvelope", "Pre-parsing: omiEnvelope not found!")
 
-  val ttl: Duration = (for {
-      ttlNodeSeq <- Option(omiEnvelope.attrs("ttl"))
-      head <- ttlNodeSeq.headOption
-      ttl = parsing.OmiParser.parseTTL(head.text.toDouble)
-    } yield ttl
-  ) getOrElse parseError("couldn't parse ttl")
+  val ttl: Duration = 
+      omiEnvelope.attr("ttl")
+      .map{(ttlStr) => parsing.OmiParser.parseTTL(ttlStr.toDouble)}
+      .getOrElse(parseError("couldn't parse ttl"))
 
   /**
    * The verb of the O-MI message (read, write, cancel, response)
@@ -171,13 +180,15 @@ class RawRequestWrapper(val rawRequest: String, private val user0: UserInfo) ext
   val messageType: MessageType = MessageType(omiVerb.label)
 
   /**
+    * The msgformat attribute of O-MI as in the verb element
+    */
+  val msgFormat: Option[String] = omiVerb.attr("msgformat")
+
+  /**
    * Gets the verb of the O-MI message
    */
-  val callback: Option[Callback] = for {
-      callbackNodeSeq <- Option(omiEnvelope.attrs("callback"))
-      head <- callbackNodeSeq.headOption
-      callback = RawCallback(head.text)
-    } yield callback
+  val callback: Option[Callback] =
+    omiEnvelope.attr("callback").map(RawCallback.apply)
   
   /**
    * Get the parsed request. Message is parsed only once because of laziness.
