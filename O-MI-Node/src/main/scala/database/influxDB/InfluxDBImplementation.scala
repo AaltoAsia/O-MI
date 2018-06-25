@@ -33,9 +33,14 @@ import types.Path._
 
 import scala.collection.immutable
 import scala.language.postfixOps
+import journal.Models.GetTree
+import journal.Models.MultipleReadCommand
+import journal.Models.ErasePathCommand
+import akka.pattern.ask
+import akka.util.Timeout
 
 object InfluxDBJsonProtocol extends DefaultJsonProtocol {
-
+  implicit val timeout: Timeout = 2 minutes
     def getSeries(json: spray.json.JsValue): immutable.Seq[JsValue] = json match{
       case obj: JsObject =>
         obj.getFields("results").collect{
@@ -154,6 +159,7 @@ class InfluxDBImplementation(
   }
 
 
+  implicit val timeout: Timeout = 2 minutes
   protected val writeAddress: Uri = config.writeAddress //Get from config
   log.info(s"Write address of InfluxDB instance $writeAddress")
   protected val readAddress: Uri = config.queryAddress //Get from config
@@ -286,44 +292,78 @@ class InfluxDBImplementation(
     if( oldestO.nonEmpty ){
       Future.failed( new Exception("Oldest attribute is not allowed with InfluxDB."))
     } else {
-      val cachedODF = singleStores.hierarchyStore execute GetTree()
-      val requestedODF = cachedODF.select(requestODF)
-      val requestedIIs = requestedODF.getInfoItems
-      if( beginO.isEmpty && endO.isEmpty && newestO.isEmpty ){
-        val pathToValue = singleStores.latestStore execute LookupSensorDatas( requestedIIs.map( _.path ).toVector) 
-        val odfWithValues = ImmutableODF(pathToValue.map{
-          case ( path: Path, value: Value[Any]) => InfoItem( path.last, path, values = Vector( value))
-        })
-        Future{ Some(requestedODF.union(odfWithValues).immutable) }
-      } else {
-        lazy val filteringClause ={
-          val whereClause = ( beginO, endO ) match{
-            case (Some( begin), Some(end)) => s"WHERE time >= '${begin.toString}' AND time <= '${end.toString}'"
-            case (None, Some(end)) => s"WHERE time <= '${end.toString}'"
-            case (Some( begin), None) => s"WHERE time >= '${begin.toString}'"
-            case (None, None) => ""
-          }
-          val limitClause = newestO.map{
-            n: Int =>
-              s"LIMIT $n"
-          }.getOrElse{
-            if( beginO.isEmpty && endO.isEmpty ) "LIMIT 1" else ""
-          }
-         s"$whereClause ORDER BY time DESC $limitClause"
-        }
+      for{
+        cachedODF <- (singleStores.hierarchyStore ? GetTree).mapTo[ImmutableODF]
+        requestedODF: ODF = cachedODF.select(requestODF)
+        requestedIIs: Seq[InfoItem] = requestedODF.getInfoItems
+        res:Option[ODF] <- (beginO, endO, newestO) match {
+          case (None,None,None) => (singleStores.latestStore ? MultipleReadCommand(requestedIIs.map(_.path)))
+            .mapTo[Seq[(Path,Option[Value[Any]])]]
+            .map(pathToValue =>Some(ImmutableODF(
+              pathToValue.map{
+                case ( path: Path, value: Value[Any]) => InfoItem( path.last, path, values = Vector( value))})
+              .union(requestedODF)))
+          case (bO, eO, nO) => {
+            lazy val whereClause = (bO,eO) match {
+              case (Some( begin), Some(end)) => s"WHERE time >= '${begin.toString}' AND time <= '${end.toString}'"
+              case (None, Some(end)) => s"WHERE time <= '${end.toString}'"
+              case (Some( begin), None) => s"WHERE time >= '${begin.toString}'"
+              case (None, None) => ""
+            }
+            lazy val limitClause = newestO.map{
+              n: Int =>
+                s"LIMIT $n"
+            }.getOrElse{
+              if( beginO.isEmpty && endO.isEmpty ) "LIMIT 1" else ""
+            }
+            lazy val filteringClause: String = s"$whereClause ORDER BY time DESC $limitClause"
 
-        //XXX: What about Objects/ read all?
-        if( requestedIIs.nonEmpty ){
-          val iiQueries = getNBetweenInfoItemsQueryString(requestedIIs, filteringClause)
-          read( iiQueries, requestedODF )
-          } else Future{
-            Some( requestedODF.immutable )
+            if(requestedIIs.nonEmpty){
+              val iiQueries = getNBetweenInfoItemsQueryString(requestedIIs, filteringClause)
+              read( iiQueries, requestedODF )
+            } else Future.successful(Some(requestedODF.immutable))
           }
-      }
+
+        }
+      } yield res
+      //val cachedODF = singleStores.hierarchyStore execute GetTree()
+      //val requestedODF = cachedODF.select(requestODF)
+      //val requestedIIs = requestedODF.getInfoItems
+      //if( beginO.isEmpty && endO.isEmpty && newestO.isEmpty ){
+      //  val pathToValue = singleStores.latestStore execute LookupSensorDatas( requestedIIs.map( _.path ).toVector)
+      //  val odfWithValues = ImmutableODF(pathToValue.map{
+      //    case ( path: Path, value: Value[Any]) => InfoItem( path.last, path, values = Vector( value))
+      //  })
+      //  Future{ Some(requestedODF.union(odfWithValues).immutable) }
+      //} else {
+      //  lazy val filteringClause ={
+      //    val whereClause = ( beginO, endO ) match{
+      //      case (Some( begin), Some(end)) => s"WHERE time >= '${begin.toString}' AND time <= '${end.toString}'"
+      //      case (None, Some(end)) => s"WHERE time <= '${end.toString}'"
+      //      case (Some( begin), None) => s"WHERE time >= '${begin.toString}'"
+      //      case (None, None) => ""
+      //    }
+      //    val limitClause = newestO.map{
+      //      n: Int =>
+      //        s"LIMIT $n"
+      //    }.getOrElse{
+      //      if( beginO.isEmpty && endO.isEmpty ) "LIMIT 1" else ""
+      //    }
+      //   s"$whereClause ORDER BY time DESC $limitClause"
+      //  }
+
+      //  //XXX: What about Objects/ read all?
+      //  if( requestedIIs.nonEmpty ){
+      //    val iiQueries = getNBetweenInfoItemsQueryString(requestedIIs, filteringClause)
+      //    read( iiQueries, requestedODF )
+      //    } else Future{
+      //      Some( requestedODF.immutable )
+      //    }
+      //}
 
     }
   }
-   private def read(content : String, requestedODF: ODF) = {
+   private def read(content : String, requestedODF: ODF): Future[Option[ImmutableODF]] = {
      val httpEntity = FormData( ("q", content)).toEntity( HttpCharsets.`UTF-8` )
      val request = RequestBuilding.Post(readAddress, httpEntity).withHeaders(AcceptHeader("application/json"))
      log.debug( s"Sending following request\n${content.toString}")
@@ -375,31 +415,58 @@ class InfluxDBImplementation(
    //TODO: Escape all odd parts
    def pathToMeasurementName(path: Path ): String = path.toString.replace("=","\\=").replace(",","\\,")
    def remove( path: Path ): Future[Seq[Int]] ={
-      val cachedODF = singleStores.hierarchyStore execute GetTree()
-      val removedIIs = cachedODF.selectSubTree(Vector(path)).getInfoItems
-      val query = "q=" + removedIIs.map {
-        ii: InfoItem =>
-          val mName = pathToMeasurementName(ii.path)
-          s"""DROP MEASUREMENT "$mName""""
-      }.mkString(";")
-
-     val request = RequestBuilding.Post(readAddress, query).withHeaders(AcceptHeader("application/json"))
-     val responseF : Future[HttpResponse] = httpExt.singleRequest(request)//httpHandler(request)
-     responseF.flatMap{
-       case HttpResponse( status, headers, entity, protocol ) if status.isSuccess =>
-         Future{
-           singleStores.hierarchyStore execute TreeRemovePath( path)
-           removedIIs.map {
-             ii: InfoItem => 1
+     for {
+       cachedODF <- (singleStores.hierarchyStore ? GetTree).mapTo[ImmutableODF]
+       removedIIs: Seq[InfoItem] = cachedODF.selectSubTree(Vector(path)).getInfoItems
+       query = "q=" + removedIIs.map {
+         ii: InfoItem =>
+           val mName = pathToMeasurementName(ii.path)
+           s"""DROP MEASUREMENT "$mName""""
+       }.mkString(";")
+       request: HttpRequest = RequestBuilding.Post(readAddress, query).withHeaders(AcceptHeader("application/json"))
+       response: HttpResponse <- httpExt.singleRequest(request)//httpHandler(request)
+       res <- response match {
+         case HttpResponse( status, headers, entity, protocol ) if status.isSuccess =>
+           {
+             (singleStores.hierarchyStore ? ErasePathCommand( path)).map(_=>
+             removedIIs.map {
+               ii: InfoItem => 1
+             })
            }
-         }
-       case HttpResponse( status, headers, entity, protocol ) if status.isFailure =>
-         Unmarshal(entity).to[String].map{
-           str =>
-             log.warning(s"Remove returned $status with:\n $str")
-             throw new Exception( str)
-         }
-     }
+         case HttpResponse( status, headers, entity, protocol ) if status.isFailure =>
+           Unmarshal(entity).to[String].map{
+             str =>
+               log.warning(s"Remove returned $status with:\n $str")
+               throw new Exception( str)
+           }
+       }
+
+     } yield res
+    //  val cachedODF = (singleStores.hierarchyStore ? GetTree).mapTo[ImmutableODF]
+    //  val removedIIs = cachedODF.selectSubTree(Vector(path)).getInfoItems
+    //  val query = "q=" + removedIIs.map {
+    //    ii: InfoItem =>
+    //      val mName = pathToMeasurementName(ii.path)
+    //      s"""DROP MEASUREMENT "$mName""""
+    //  }.mkString(";")
+
+    // val request = RequestBuilding.Post(readAddress, query).withHeaders(AcceptHeader("application/json"))
+    // val responseF : Future[HttpResponse] = httpExt.singleRequest(request)//httpHandler(request)
+    // responseF.flatMap{
+    //   case HttpResponse( status, headers, entity, protocol ) if status.isSuccess =>
+    //     Future{
+    //       singleStores.hierarchyStore execute TreeRemovePath( path)
+    //       removedIIs.map {
+    //         ii: InfoItem => 1
+    //       }
+    //     }
+    //   case HttpResponse( status, headers, entity, protocol ) if status.isFailure =>
+    //     Unmarshal(entity).to[String].map{
+    //       str =>
+    //         log.warning(s"Remove returned $status with:\n $str")
+    //         throw new Exception( str)
+    //     }
+    // }
    }
 
 }

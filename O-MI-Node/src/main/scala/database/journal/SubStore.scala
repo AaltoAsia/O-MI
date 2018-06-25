@@ -6,8 +6,8 @@ import java.util.Date
 import PAddSub.SubType._
 import akka.actor.ActorLogging
 import akka.persistence.{PersistentActor, SnapshotOffer}
-import database.journal.Models._
-import database.{GetAllEventSubs => _, GetAllIntervalSubs => _, GetAllPollSubs => _, _}
+import database._
+import _root_.database.journal.Models._
 import types.OmiTypes.HTTPCallback
 import types.Path
 
@@ -292,15 +292,17 @@ class SubStore extends PersistentActor with ActorLogging {
         sender() ! updateState(pollS)
       }
     case Models.LookupEventSubs(path:Path) =>
-      sender() ! path.getParentsAndSelf
+      val resp: Seq[NormalEventSub] = path.getParentsAndSelf
         .flatMap(p => eventSubs.get(p))
         .flatten.collect{ case ns: NormalEventSub => ns }
         .toVector
+      sender() ! resp
     case Models.LookupNewEventSubs(path:Path) =>
-      sender() ! path.getParentsAndSelf
+      val resp: Seq[NewEventSub] = path.getParentsAndSelf
         .flatMap(p => eventSubs.get(p))
         .flatten.collect{ case ns: NewEventSub => ns }
         .toVector
+      sender() ! resp
     case Models.GetAllEventSubs =>
       sender() ! eventSubs.values.flatten.toSet
     case Models.GetAllIntervalSubs =>
@@ -310,14 +312,17 @@ class SubStore extends PersistentActor with ActorLogging {
     case Models.GetIntervalSub(id:Long) =>
       sender() ! intervalSubs.get(id)
     case Models.GetSubsForPath(path:Path) =>
-      val ids = path.inits.flatMap(path => pathToSubs.get(path)).toSet.flatten
-      sender() ! ids.map(idToSub(_)).collect{
+      val ids: Set[NotNewEventSub] = path.inits.flatMap(path => pathToSubs.get(path)).toSet.flatten.map(idToSub(_)).collect{
         case events: PollNormalEventSub => events
         case intervals: PollIntervalSub => intervals
       }
+      sender() ! ids
     case Models.GetNewEventSubsForPath(path:Path) =>
-      val ids = path.inits.flatMap(path => pathToSubs.get(path)).toSet.flatten
-      sender() ! ids.map(idToSub(_)).collect{case news: PollNewEventSub => news}
+      val ids: Set[PollNewEventSub] = path.inits
+        .flatMap(path => pathToSubs.get(path)).toSet
+        .flatten
+        .map(idToSub(_)).collect{case news: PollNewEventSub => news}
+      sender() ! ids
   }
 
 }

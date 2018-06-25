@@ -21,6 +21,7 @@ import scala.concurrent.Future
 import http.OmiConfigExtension
 import com.typesafe.config.{Config, ConfigFactory}
 import akka.actor.{ActorRef, ActorSystem, Props}
+import akka.util.Timeout
 import org.slf4j.{Logger, LoggerFactory}
 import org.prevayler.{Prevayler, PrevaylerFactory}
 import parsing.xmlGen.xmlTypes.MetaDataType
@@ -34,7 +35,11 @@ import types.OdfTypes._
 import types.odf._
 import types.OmiTypes.OmiReturn
 import types.Path
-
+import journal.Models.GetTree
+import journal.Models.SingleReadCommand
+import journal.Models.MultipleReadCommand
+import akka.pattern.ask
+import scala.concurrent.duration._
 
 package object database {
 
@@ -86,8 +91,10 @@ case class AttachEvent(override val infoItem: InfoItem) extends ChangeEvent(info
  * Contains all stores that requires only one instance for interfacing
  */
 class SingleStores(protected val settings: OmiConfigExtension)(implicit val system: ActorSystem) {
-  private[this] def createPrevayler[P](in: P, name: String) = {
 
+  implicit val timeout: Timeout = 2 minutes
+  import system.dispatcher
+  private[this] def createPrevayler[P](in: P, name: String) = {
     if(settings.writeToDisk) {
       val journalFileSizeLimit = settings.maxJournalSizeBytes
       val factory = new PrevaylerFactory[P]()
@@ -110,7 +117,7 @@ class SingleStores(protected val settings: OmiConfigExtension)(implicit val syst
   /** List of all prevayler directories. Currently used for removing unnecessary files in these directories */
   val prevaylerDirectories: ArrayBuffer[File] = ArrayBuffer[File]()
 
-  val latesStore: ActorRef = system.actorOf(Props[journal.LatestStore])
+  val latestStore: ActorRef = system.actorOf(Props[journal.LatestStore])
   val hierarchyStore: ActorRef = system.actorOf(Props[journal.HierarchyStore])
   val subStore: ActorRef = system.actorOf(Props[journal.SubStore])
   val pollDataPrevayler: ActorRef = system.actorOf(Props[journal.PollDataStore])
@@ -176,39 +183,44 @@ class SingleStores(protected val settings: OmiConfigExtension)(implicit val syst
   }
 
 
-  def getMetaData(path: Path) : Option[MetaData] = {
-    (hierarchyStore execute GetTree()).get(path).collect{
+  def getMetaData(path: Path) : Future[Option[MetaData]] = {
+    (hierarchyStore ? GetTree).mapTo[ImmutableODF].map(_.get(path).collect{
       case ii: InfoItem if ii.metaData.nonEmpty => ii.metaData
-    }.flatten
+    }.flatten)
   }
 
-  def getSingle(path: Path) : Option[Node] ={
-    val tree = (hierarchyStore execute GetTree())
-      tree.get(path).map{
-      case info : InfoItem => 
-        latestStore execute LookupSensorData(path) match {
+  def getSingle(path: Path) : Future[Option[Node]] ={
+    val ftree = (hierarchyStore ? GetTree).mapTo[ImmutableODF]
+    ftree.flatMap(tree => tree.get(path).map{
+      case info : InfoItem =>
+        (latestStore ? SingleReadCommand(path)).mapTo[Option[Value[Any]]].map{
           case Some(value) =>
             InfoItem(path.last, path, values = Vector(value), attributes = info.attributes )
-          case None => 
+          case None =>
             info
         }
-          case objs : Objects => objs 
-            //objs.copy(objects = objs.objects map (o => OdfObject(o.id, o.path,typeValue = o.typeValue)))
-          case obj : Object => obj 
-            /*
-            val (ciis,cobjs) = tree.getChilds(obj.path).map{
-              case childObj: Object => childObj.copy( descriptions = Vector.empty) 
-              case childII: InfoItem => childII.copy( descriptions = Vector.empty, metaData = None) 
-            }.partition{
-              case childObj: Object => true 
-              case childII: InfoItem => false
-            }
-            obj.copy(
-              objects = obj.objects map (o => OdfObject(o.id, o.path, typeValue = o.typeValue)),
-              infoItems = obj.infoItems map (i => InfoItem(i.path, attributes = i.attributes)),
-              typeValue = obj.typeValue
-            )*/
+      case objs : Objects => Future.successful(objs)
+      //objs.copy(objects = objs.objects map (o => OdfObject(o.id, o.path,typeValue = o.typeValue)))
+      case obj : Object => Future.successful(obj)
+    } match {
+      case Some(f) => f.map(Some(_))
+      case None => Future.successful(None)
     }
+      /*
+      val (ciis,cobjs) = tree.getChilds(obj.path).map{
+        case childObj: Object => childObj.copy( descriptions = Vector.empty)
+        case childII: InfoItem => childII.copy( descriptions = Vector.empty, metaData = None)
+      }.partition{
+        case childObj: Object => true
+        case childII: InfoItem => false
+      }
+      obj.copy(
+        objects = obj.objects map (o => OdfObject(o.id, o.path, typeValue = o.typeValue)),
+        infoItems = obj.infoItems map (i => InfoItem(i.path, attributes = i.attributes)),
+        typeValue = obj.typeValue
+      )*/
+
+    )
   } 
 }
 
@@ -252,6 +264,7 @@ class DatabaseConnection()(
 
 class StubDB(val singleStores: SingleStores) extends DB{
   import scala.concurrent.ExecutionContext.Implicits.global
+  implicit val timeout: Timeout = 2 minutes
   def initialize(): Unit = Unit;
 
   /**
@@ -272,37 +285,37 @@ class StubDB(val singleStores: SingleStores) extends DB{
     * @return Combined results in a O-DF tree
     */
   def getNBetween(requests: Iterable[Node], begin: Option[Timestamp], end: Option[Timestamp], newest: Option[Int], oldest: Option[Int]): Future[Option[ODF]] = {
-    readLatestFromCache(
-      requests.map{
-        node => node.path
-      }.toSeq
-    )
+    readLatestFromCache(requests.map{
+            node => node.path
+          }.toSeq).map(Some(_))
   }
 
-  def readLatestFromCache( requestedOdf: ODF ): Future[Option[ImmutableODF]] ={
+  def readLatestFromCache( requestedOdf: ODF ): Future[ImmutableODF] ={
     readLatestFromCache(requestedOdf.getLeafPaths.toSeq)
   }
-  def readLatestFromCache( leafPaths: Seq[Path]): Future[Option[ImmutableODF]] =Future{
+  def readLatestFromCache( leafPaths: Seq[Path]): Future[ImmutableODF] = {
     // NOTE: Might go off sync with tree or values if the request is large,
     // but it shouldn't be a big problem
-    val  p2iis = (singleStores.hierarchyStore execute GetTree()).getInfoItems.collect{
+    val  fp2iis = (singleStores.hierarchyStore ? GetTree).mapTo[ImmutableODF].map(_.getInfoItems.collect{
       case ii: InfoItem if leafPaths.exists{ path: Path => path.isAncestorOf( ii.path) || path == ii.path} =>
         ii.path -> ii
-    }.toMap
-
-    val pathToValue = singleStores.latestStore execute LookupSensorDatas( p2iis.keys.toVector)
-    val objectsWithValues = ImmutableODF(pathToValue.flatMap{
-      case ( path: Path, value: Value[Any]) =>
-        p2iis.get(path).map{
-          ii: InfoItem =>
-            ii.copy(
-              names = Vector.empty,
-              descriptions = Set.empty,
-              metaData = None,
-              values = Vector( value)
-            )}
-    }.toVector)
-    Some(objectsWithValues)
+    }.toMap)
+    val objectsWithValues: Future[ImmutableODF] = for {
+      p2iis <- fp2iis
+      pathToValue <- (singleStores.latestStore ? MultipleReadCommand( p2iis.keys.toVector)).mapTo[Seq[(Path,Option[Value[Any]])]]
+      objectsWithValues = ImmutableODF(pathToValue.flatMap{
+        case ( path: Path, value: Value[Any]) =>
+          p2iis.get(path).map{
+            ii: InfoItem =>
+              ii.copy(
+                names = Vector.empty,
+                descriptions = Set.empty,
+                metaData = None,
+                values = Vector( value)
+              )}
+      }.toVector)
+    }yield objectsWithValues
+    objectsWithValues
   }
   /**
     * Used to set many values efficiently to the database.

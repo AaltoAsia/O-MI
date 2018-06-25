@@ -2,7 +2,7 @@ package database
 
 import java.util.Date
 
-import analytics.{AddRead, AddUser}
+import akka.util.Timeout
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -14,8 +14,12 @@ import scala.concurrent.Future
 import types.OmiTypes._
 import types.Path
 import types.odf.{ImmutableODF, ODF, _}
+import journal.Models.GetTree
+import akka.pattern.ask
+import scala.concurrent.duration._
 
 trait DBReadHandler extends DBHandlerBase{
+  implicit val timeout: Timeout = 2 minutes
   /** Method for handling ReadRequest.
     * @param read request
     * @return (xml response, HTTP status code)
@@ -54,7 +58,7 @@ trait DBReadHandler extends DBHandlerBase{
 
          // NOTE: Might go off sync with tree or values if the request is large,
          // but it shouldn't be a big problem
-         val metadataTree = singleStores.hierarchyStore execute GetTree()
+         val fmetadataTree: Future[ImmutableODF] = (singleStores.hierarchyStore ? GetTree).mapTo[ImmutableODF]
 
          //Find nodes from the request that HAVE METADATA OR DESCRIPTION REQUEST
          def odfWithMetaDataRequest: ODF = ImmutableODF(requestedODF.getNodes.collect {
@@ -68,42 +72,28 @@ trait DBReadHandler extends DBHandlerBase{
              obj
          })
 
-         val odfWithMetaData = metadataTree.readTo( requestedODF).valuesRemoved 
+         val fodfWithMetaData: Future[ODF] = fmetadataTree.map(_.readTo( requestedODF).valuesRemoved)
           
-         val resultF = odfWithValuesO.map {
+         val resultF = odfWithValuesO.flatMap {
            case Some(odfWithValues) =>
              //Select requested O-DF from metadataTree and remove MetaDatas and descriptions
-             /*
-             val odfWithValuesAndAttributes = metadataTree.mutable
-               .metaDatasRemoved
-               .descriptionsRemoved
-               .intersection( odfWithValues.valuesRemoved )
-               .union( odfWithValues )
-               */
-
-
-             val metaCombined  = odfWithMetaData.union(odfWithValues)
+             val fmetaCombined: Future[ODF] = fodfWithMetaData.map(_.union(odfWithValues))
              val requestsPaths = leafs.map { _.path }
              val foundOdfAsPaths = odfWithValues.getPaths
-             //handle analytics
-             analyticsStore.foreach{ store =>
-               val reqTime: Long = new Date().getTime()
-               foundOdfAsPaths.foreach(path => {
-                 store ! AddRead(path, reqTime)
-                 store ! AddUser(path, read.user.remoteAddress.map(_.hashCode()), reqTime)
-               })
-             }
 
              val notFound = requestsPaths.filterNot { path => foundOdfAsPaths.contains(path) }.toSet.toSeq
              def notFoundOdf =requestedODF.selectSubTree(notFound)
-             val found = if( metaCombined.getPaths.exists(p => p != Path("Objects") )) Some( Results.Read(metaCombined) ) else None
-             val nfResults = if (notFound.nonEmpty) Vector(Results.NotFoundPaths(notFoundOdf)) 
+             val ffound = fmetaCombined.map{
+               case odf if odf.getPaths.exists(p => p != Path("Objects") ) => Some(Results.Read(odf))
+               case _ => None
+             }
+             val nfResults = if (notFound.nonEmpty) Vector(Results.NotFoundPaths(notFoundOdf))
              else Vector.empty
-             val omiResults = nfResults ++ found.toVector
+             val fomiResults = ffound.map(found => nfResults ++ found.toVector)
 
-             ResponseRequest( omiResults )
+             fomiResults.map(omiResults => ResponseRequest( omiResults ))
            case None =>
-             ResponseRequest( Vector(Results.NotFoundPaths(requestedODF) ) )
+             Future.successful(ResponseRequest( Vector(Results.NotFoundPaths(requestedODF) ) ))
          }
          resultF
      }

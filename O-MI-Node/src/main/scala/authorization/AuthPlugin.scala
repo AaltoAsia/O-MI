@@ -20,16 +20,20 @@ import scala.collection.JavaConversions.{asJavaIterable, iterableAsScalaIterable
 import scala.collection.mutable
 import scala.collection.mutable.Buffer
 import scala.util.{Failure, Success, Try}
-
 import database._
-import Authorization.{UnauthorizedEx, AuthorizationExtension, CombinedTest}
+import Authorization.{AuthorizationExtension, CombinedTest, UnauthorizedEx}
 import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.server.Directives.extract
 import types.OdfTypes._
-import types.odf.{OldTypeConverter}
+import types.odf.{ImmutableODF, OldTypeConverter}
 import types.OmiTypes._
 import types.Path
+import akka.pattern.ask
+import akka.util.Timeout
+import journal.Models.GetTree
 
+import scala.concurrent.duration._
+import scala.concurrent.Await
 
 sealed trait AuthorizationResult{
   def user: UserInfo
@@ -98,8 +102,7 @@ trait AuthApiProvider extends AuthorizationExtension {
   val singleStores: SingleStores
 
   private[this] val authorizationSystems: mutable.Buffer[AuthApi] = mutable.Buffer()
-
-
+  implicit val timeout: Timeout = 2 minutes
   /**
    * Register authorization system that tells if the request is authorized.
    * Registration should be done once.
@@ -113,7 +116,7 @@ trait AuthApiProvider extends AuthorizationExtension {
     extract {context => context.request} map {(httpRequest: HttpRequest) => (orgOmiRequest: RequestWrapper) =>
 
       // for checking if path is infoitem or object
-      val currentTree = singleStores.hierarchyStore execute GetTree()
+      val currentTree = Await.result((singleStores.hierarchyStore ? GetTree).mapTo[ImmutableODF], 2 minutes)
 
       // helper function
       def convertToWrapper: Try[AuthorizationResult] => Try[RequestWrapper] = {
@@ -131,8 +134,7 @@ trait AuthApiProvider extends AuthorizationExtension {
         case Success(Partial(maybePaths,user0)) => {
           orgOmiRequest.user = user0
           val newOdfOpt = for {
-            paths <- Option(maybePaths) // paths might be null
-
+            paths: JavaIterable[Path] <- Option(maybePaths) // paths might be null
             // Rebuild the request having only `paths`
             pathTrees = currentTree.selectSubTree(paths.toVector)
             /*paths collect {

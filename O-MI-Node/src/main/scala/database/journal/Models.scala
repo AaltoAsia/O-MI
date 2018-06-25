@@ -5,7 +5,7 @@ import java.sql.Timestamp
 import database.{EventSub, IntervalSub, PollSub, PolledSub}
 import database.journal.PPersistentNode.NodeType.{Ii, Obj, Objs}
 import types.Path
-import types.odf.{Description, ImmutableODF, InfoItem, MetaData, ODFValue, Object, Objects, QlmID}
+import types.odf.{Description, ImmutableODF, InfoItem, MetaData, ODFValue, Object, Objects, QlmID, Value}
 
 object Models {
 
@@ -24,7 +24,7 @@ object Models {
   sealed trait PersistentCommand extends Command with PersistentMessage
 
   //Latest store
-  case class SingleWriteCommand(path: Path, value: ODFValue) extends PersistentCommand
+  case class SingleWriteCommand(path: Path, value: Value[Any]) extends PersistentCommand
 
   case class WriteCommand(paths: Map[Path, ODFValue]) extends PersistentCommand
 
@@ -73,7 +73,7 @@ object Models {
   case class GetNewEventSubsForPath(path: Path) extends Command
 
   //PollData
-  case class AddPollData(subId: Long, path: Path, value: ODFValue) extends PersistentCommand
+  case class AddPollData(subId: Long, path: Path, value: Value[Any]) extends PersistentCommand
 
   case class PollEventSubscription(subId: Long) extends PersistentCommand
 

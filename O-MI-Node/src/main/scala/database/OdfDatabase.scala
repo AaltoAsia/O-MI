@@ -2,14 +2,15 @@ package database
 
 import java.sql.Timestamp
 
-import scala.util.{Try, Success, Failure}
+import akka.util.Timeout
+
+import scala.util.{Failure, Success, Try}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
 import scala.concurrent.stm._
-import scala.collection.mutable.{ Map => MutableMap, HashMap => MutableHashMap}
+import scala.collection.mutable.{HashMap => MutableHashMap, Map => MutableMap}
 import scala.language.postfixOps
-
 import org.slf4j.LoggerFactory
 //import slick.driver.H2Driver.api._
 import slick.jdbc.meta.MTable
@@ -23,7 +24,9 @@ import http.OmiConfigExtension
 import types.odf._
 import types.OmiTypes._
 import types.Path
-
+import akka.pattern.ask
+import journal.Models.GetTree
+import journal.Models.MultipleReadCommand
 trait OdfDatabase extends Tables with DB with TrimmableDB{
   import dc.driver.api._
 
@@ -31,6 +34,7 @@ trait OdfDatabase extends Tables with DB with TrimmableDB{
   protected val singleStores : SingleStores
   protected val log = LoggerFactory.getLogger("O-DF-database")
   val pathToDBPath: TMap[Path, DBPath] = TMap()
+  implicit val timeout: Timeout = 2 minutes
 
   def initialize(): Unit = {
     val findTables = db.run(namesOfCurrentTables)
@@ -495,28 +499,44 @@ trait OdfDatabase extends Tables with DB with TrimmableDB{
   def readLatestFromCache( requestedOdf: ODF ): Future[Option[ImmutableODF]] ={
     readLatestFromCache(requestedOdf.getLeafPaths.toSeq)
   }
-  def readLatestFromCache( leafPaths: Seq[Path]): Future[Option[ImmutableODF]] =Future{
+  def readLatestFromCache( leafPaths: Seq[Path]): Future[Option[ImmutableODF]] = {
     // NOTE: Might go off sync with tree or values if the request is large,
     // but it shouldn't be a big problem
-    val  p2iis = (singleStores.hierarchyStore execute GetTree()).getInfoItems.collect{
+    val  p2iisF: Future[Map[Path, InfoItem]] = (singleStores.hierarchyStore ? GetTree).mapTo[ImmutableODF].map(_.getInfoItems.collect{
       case ii: InfoItem if leafPaths.exists{ path: Path => path.isAncestorOf( ii.path) || path == ii.path} =>
         ii.path -> ii
-    }.toMap
+    }.toMap)
 
-    val pathToValue = singleStores.latestStore execute LookupSensorDatas( p2iis.keys.toVector)
-    val objectsWithValues = ImmutableODF(pathToValue.flatMap{
-      case ( path: Path, value: Value[Any]) => 
-        p2iis.get(path).map{
-          ii: InfoItem =>
-            ii.copy(
-              names = Vector.empty,
-              descriptions = Set.empty,
-              metaData = None,
-              values = Vector( value)
-            )}
-    }.toVector)
+    for {
+      p2iis <- p2iisF
+      pathToValue <- (singleStores.latestStore ? MultipleReadCommand(p2iis.keys.toSeq)).mapTo[Seq[(Path,Option[Value[Any]])]]
+      objectsWithValues = Some(ImmutableODF(pathToValue.flatMap{ //why option??
+        case ( path: Path, value: Value[Any]) =>
+          p2iis.get(path).map{
+            ii: InfoItem =>
+              ii.copy(
+                names = Vector.empty,
+                descriptions = Set.empty,
+                metaData = None,
+                values = Vector( value)
+              )}
+      }.toVector))
+    } yield objectsWithValues
 
-    Some(objectsWithValues)
+    //val pathToValue = singleStores.latestStore execute LookupSensorDatas( p2iis.keys.toVector)
+    //val objectsWithValues = ImmutableODF(pathToValue.flatMap{
+    //  case ( path: Path, value: Value[Any]) =>
+    //    p2iis.get(path).map{
+    //      ii: InfoItem =>
+    //        ii.copy(
+    //          names = Vector.empty,
+    //          descriptions = Set.empty,
+    //          metaData = None,
+    //          values = Vector( value)
+    //        )}
+    //}.toVector)
+
+   // Some(objectsWithValues)
 }
 
 }
