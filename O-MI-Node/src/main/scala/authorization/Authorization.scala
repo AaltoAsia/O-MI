@@ -20,6 +20,7 @@ import akka.http.scaladsl.server._
 import akka.http.scaladsl.server.util.Tupler._
 import org.slf4j.{Logger, LoggerFactory}
 import types.OmiTypes._
+import http.OmiConfigExtension
 
 import scala.util.{Failure, Success, Try}
 
@@ -181,18 +182,22 @@ trait AllowAllAuthorization extends AuthorizationExtension {
 
 
 /** Allows non PermissiveRequest to all users (currently read, subs, cancel,
- *  but not write and response). Intended to be used as a last catch-all test (due to logging).
+ *  but not write and response). Intended to be used as a last catch-all test
+ *  (due to logging), but before [[LogUnauthorized]].
+ *
+ *  New in version 0.12.3(or larger?): Configuration for the request types that
+ *  are allowed for all.
  */
-trait AllowNonPermissiveToAll extends AuthorizationExtension {
+trait AllowConfiguredTypesForAll extends AuthorizationExtension {
+  val settings: OmiConfigExtension
+
   abstract override def makePermissionTestFunction: CombinedTest = combineWithPrevious(
     super.makePermissionTestFunction,
     provide{(wrap: RequestWrapper) =>
-      wrap.unwrapped flatMap {
-        case r: PermissiveRequest =>
-          Failure(UnauthorizedEx())
-        case r: OmiRequest =>
-          Success((r, r.user))
-      }
+      if (settings.allowedRequestTypes contains wrap.requestVerb)
+        Success((wrap, wrap.user))
+      else
+        Failure(UnauthorizedEx())
     }
   )
 }

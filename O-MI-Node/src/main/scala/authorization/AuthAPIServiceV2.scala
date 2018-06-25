@@ -218,7 +218,7 @@ class AuthAPIServiceV2(
     log.debug(s"request body ${bodyString(httpRequest)}")
     log.debug(s"message body ${bodyString(httpRequest: HttpMessage)}")
 
-    val requestType = (rawOmiRequest.messageType match {
+    val requestType = (rawOmiRequest.requestVerb match {
       case RawRequestWrapper.MessageType.Response => RawRequestWrapper.MessageType.Write
       case x => x
     }).name

@@ -57,7 +57,6 @@ sealed trait OmiRequest extends RequestWrapper with JavaOmiRequest{
   def rawRequest: String = asXML.toString
   def senderInformation: Option[SenderInformation]
   def withSenderInformation(ni:SenderInformation): OmiRequest
-  def requestVerb: RawRequestWrapper.MessageType
 }
 
 object OmiRequestType extends Enumeration{
@@ -116,6 +115,7 @@ sealed trait RequestWrapper {
   def ttl: Duration
   def parsed: OmiParseResult
   def unwrapped: Try[OmiRequest]
+  def requestVerb: RawRequestWrapper.MessageType
   def ttlAsSeconds : Long = ttl match {
     case finite : FiniteDuration => finite.toSeconds
     case infinite : Duration.Infinite => -1
@@ -177,7 +177,7 @@ class RawRequestWrapper(val rawRequest: String, private val user0: UserInfo) ext
   /**
    * The verb of the O-MI message (read, write, cancel, response)
    */
-  val messageType: MessageType = MessageType(omiVerb.label)
+  val requestVerb: MessageType = MessageType(omiVerb.label)
 
   /**
     * The msgformat attribute of O-MI as in the verb element
@@ -227,7 +227,7 @@ object RawRequestWrapper {
         case Response.name => Response
         case Delete.name => Delete
         case Call.name   => Call
-        case _ => parseError("read, write, cancel, call or delete  element not found!")
+        case _ => parseError("read, write, cancel, response, call or delete element not found!")
       }
   }
 }

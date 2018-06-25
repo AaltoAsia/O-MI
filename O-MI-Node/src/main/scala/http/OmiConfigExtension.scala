@@ -29,6 +29,7 @@ import akka.http.scaladsl.model.Uri
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigException._
 import types.Path
+import types.OmiTypes.RawRequestWrapper.MessageType
 
 class OmiConfigExtension( val config: Config) extends Extension 
   with AgentSystemConfigExtension {
@@ -114,6 +115,9 @@ class OmiConfigExtension( val config: Config) extends Extension
   val numberUsersInfoName: String = analyticsConf.getString("user.averageNumberOfUsersInfoItemName")
 
   // Authorization
+  val allowedRequestTypes = config.getStringList("omi-service.allowRequestTypesForAll")
+    .map((x) => MessageType(x.toLowerCase)).toSet
+
   // Old External AuthAPIService V1
   val authAPIServiceV1: Config =
     Try(config getConfig "omi-service.authorization") orElse
