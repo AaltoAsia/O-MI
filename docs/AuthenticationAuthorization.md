@@ -39,7 +39,7 @@ O-MI Authentication and Authorization reference implementations
 
 These are examples on how to use Auth API v2 of O-MI Node. They might be secure enough for production use, but use with care. Either of them can be replaced by other software by adjusting the configuration approprietly or implementing a wrapper to fix any larger protocol differences.
 
-### Local User DB Authorization with JWT
+### Local User DB, username and password Authentication with JWT session
 
 Start with this to test how the modules work.
 
