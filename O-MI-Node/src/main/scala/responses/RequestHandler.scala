@@ -32,14 +32,12 @@ object RequestHandler{
   def props(
     subscriptionManager : ActorRef,
     dbHandler : ActorRef,
-    settings: OmiConfigExtension,
-    analyticsStore: Option[ActorRef]
+    settings: OmiConfigExtension
     ): Props = Props(
       new RequestHandler(
         subscriptionManager,
         dbHandler,
-        settings,
-        analyticsStore
+        settings
       )
     )
 
@@ -48,8 +46,7 @@ object RequestHandler{
 class RequestHandler(
   protected val subscriptionManager : ActorRef,
   protected val dbHandler : ActorRef,
-  protected val settings: OmiConfigExtension,
-  protected val analyticsStore: Option[ActorRef]
+  protected val settings: OmiConfigExtension
 ) extends Actor with ActorLogging
 with SubscriptionHandler
 with PollHandler

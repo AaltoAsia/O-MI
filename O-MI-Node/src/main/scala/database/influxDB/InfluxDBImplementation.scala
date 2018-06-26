@@ -310,7 +310,7 @@ class InfluxDBImplementation(
               case (Some( begin), None) => s"WHERE time >= '${begin.toString}'"
               case (None, None) => ""
             }
-            lazy val limitClause = newestO.map{
+            lazy val limitClause = nO.map{
               n: Int =>
                 s"LIMIT $n"
             }.getOrElse{
@@ -321,11 +321,12 @@ class InfluxDBImplementation(
             if(requestedIIs.nonEmpty){
               val iiQueries = getNBetweenInfoItemsQueryString(requestedIIs, filteringClause)
               read( iiQueries, requestedODF )
-            } else Future.successful(Some(requestedODF.immutable))
+            } else Future.successful(Some(requestedODF))
           }
 
         }
-      } yield res
+        response = res.map(_.immutable)
+      } yield response
       //val cachedODF = singleStores.hierarchyStore execute GetTree()
       //val requestedODF = cachedODF.select(requestODF)
       //val requestedIIs = requestedODF.getInfoItems

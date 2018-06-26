@@ -16,6 +16,7 @@
 package http
 
 import java.io.{BufferedWriter, File, FileWriter}
+import java.lang
 import java.net.InetSocketAddress
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -31,7 +32,7 @@ import database._
 import responses._
 import spray.json.JsArray
 import types.odf._
-import types.Path
+import types.{ParseError, Path}
 
 import scala.io.Source
 import scala.util.{Failure, Success, Try}
@@ -348,7 +349,7 @@ import spray.json._
 
   private def restoreDatabase(filePath: String) = {
     val parsed: OdfParseResult = ODFParser.parse(new File(filePath))
-    parsed.right.map(removeHandler.writeOdf(_))
+    val temp = parsed.right.map(odf  => Await.ready(removeHandler.writeOdf(odf), 5 minutes))
     "Done\n"
   }
 

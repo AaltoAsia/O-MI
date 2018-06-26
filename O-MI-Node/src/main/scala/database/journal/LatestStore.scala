@@ -18,27 +18,6 @@ class LatestStore extends PersistentActor with ActorLogging {
   var state: Map[String, PPersistentValue] = Map()
 
   //implicit def pathToString(path: Path): String = path.toString
-  def asValue(pv: PPersistentValue): Option[Value[Any]] ={
-    Try(pv.typeName match {
-      case "xs:float" if pv.valueType.isProtoDoubleValue =>
-        FloatValue(pv.getProtoDoubleValue.toFloat, new Timestamp(pv.timeStamp))
-      case "xs:double" if pv.valueType.isProtoDoubleValue =>
-        DoubleValue(pv.getProtoDoubleValue, new Timestamp(pv.timeStamp))
-      case "xs:short" if pv.valueType.isProtoLongValue =>
-        ShortValue(pv.getProtoLongValue.toShort, new Timestamp(pv.timeStamp))
-      case "xs:int" if pv.valueType.isProtoLongValue =>
-        IntValue(pv.getProtoLongValue.toInt, new Timestamp(pv.timeStamp))
-      case "xs:long" if pv.valueType.isProtoLongValue =>
-        LongValue(pv.getProtoLongValue, new Timestamp(pv.timeStamp))
-      case "xs:boolean" if pv.valueType.isProtoBoolValue =>
-        BooleanValue(pv.getProtoBoolValue, new Timestamp(pv.timeStamp))
-      case "odf" if pv.valueType.isProtoStringValue =>
-        ODFValue(ODFParser.parse(pv.getProtoStringValue).right.get, new Timestamp(pv.timeStamp))
-      case str: String if pv.valueType.isProtoStringValue =>
-        StringValue(pv.getProtoStringValue, new Timestamp(pv.timeStamp))
-      case other => throw new Exception(s"Error while deserializing value: $other")
-    }).toOption
-  }
 
   def updateState(event: Event): Unit = event match {
     case PWriteLatest(values) => state = state ++ values

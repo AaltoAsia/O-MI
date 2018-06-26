@@ -102,7 +102,7 @@ trait AuthApiProvider extends AuthorizationExtension {
   val singleStores: SingleStores
 
   private[this] val authorizationSystems: mutable.Buffer[AuthApi] = mutable.Buffer()
-  implicit val timeout: Timeout = 2 minutes
+  implicit private val timeout: Timeout = 2 minutes
   /**
    * Register authorization system that tells if the request is authorized.
    * Registration should be done once.

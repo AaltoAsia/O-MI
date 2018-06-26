@@ -14,6 +14,7 @@
 
 package http
 
+import java.lang
 import java.net.{InetAddress, URI, URLDecoder}
 import java.nio.file.{Files, Paths}
 import java.util.Date
@@ -33,8 +34,7 @@ import authorization.Authorization._
 import authorization._
 import parsing.OmiParser
 import akka.util.Timeout
-import analytics.{AddRead, AddUser}
-import database.{GetTree, SingleStores}
+import database.SingleStores
 import org.slf4j.LoggerFactory
 import responses.CallbackHandler._
 import responses.{CallbackHandler, RESTHandler, RemoveSubscription}
@@ -48,6 +48,7 @@ import scala.concurrent.duration._
 import scala.concurrent.{Future, Promise, TimeoutException}
 import scala.util.{Failure, Success, Try}
 import scala.xml.NodeSeq
+import database.journal.Models.GetTree
 
 trait OmiServiceAuthorization
   extends ExtensibleAuthorization
@@ -69,8 +70,7 @@ class OmiServiceImpl(
   val settings : OmiConfigExtension,
   val singleStores : SingleStores,
   protected val requestHandler : ActorRef,
-  protected val callbackHandler : CallbackHandler,
-  protected val analytics: Option[ActorRef]
+  protected val callbackHandler : CallbackHandler
   )
      extends {
        // Early initializer needed (-- still doesn't seem to work)
@@ -99,13 +99,12 @@ trait OmiService
      {
 
 
+
   protected def log: org.slf4j.Logger
   protected def requestHandler : ActorRef
   protected def callbackHandler : CallbackHandler
   protected val system : ActorSystem
-  protected val analytics: Option[ActorRef]
   import system.dispatcher
-
   //Get the files from the html directory; http://localhost:8080/html/form.html
   //this version words with 'sbt run' and 're-start' as well as the packaged version
   val staticHtml: Route = if(Files.exists(Paths.get("./html"))){
@@ -167,7 +166,8 @@ trait OmiService
 
         // convert to our path type (we don't need very complicated functionality)
         val pathStr = uriPath.split("/").map{ id => URLDecoder.decode( id, "UTF-8" )}.toSeq
-          
+            implicit val timeout: Timeout = Timeout(2 minutes)
+
             val origPath = Path(pathStr)
             val path = origPath match {
               case _path if _path.lastOption.exists(List("value", "MetaData", "description","id", "name").contains(_)) =>
@@ -175,85 +175,86 @@ trait OmiService
               case _path => _path
             }
 
-            val asReadRequest = (singleStores.hierarchyStore execute GetTree()).get(path).map{ 
+            val asReadRequestF: Future[Option[ReadRequest]] = (singleStores.hierarchyStore ? GetTree).mapTo[ImmutableODF].map(_.get(path).map{
               n: Node => ImmutableODF(Vector(n))
             }.map{
               p => 
                 ReadRequest(p,user0 = UserInfo(remoteAddress = Some(user)))
-            }
+            })
 
-              asReadRequest match {
+             val response: Future[ToResponseMarshallable] = asReadRequestF.flatMap{
                 case Some(readReq) =>
                   hasPermissionTest(readReq) match {
                   case Success(_) => {
 
-                    analytics.foreach{ ref =>
-                      val tt= new Date().getTime()
-                      ref ! AddRead(path, tt)
-                      ref ! AddUser(path, readReq.user.remoteAddress.map(_.hashCode()), tt)
-                    }
-                    RESTHandler.handle(origPath)(singleStores) match {
+                    RESTHandler.handle(origPath)(singleStores).map {
                       case Some(Left(value)) =>
-                        complete(value)
+                          HttpResponse(entity = HttpEntity(value))
                       case Some(Right(xmlData)) =>
-                        complete(xmlData)
-                      case None =>            {
+                          ToResponseMarshallable(xmlData)(fromToEntityMarshaller(StatusCodes.OK)(xmlCT))
+                      case None => {
                         log.debug(s"Url Discovery fail: org: [$pathStr] parsed: [$origPath]")
 
                         // TODO: Clean this code
-                        complete(
-                          ToResponseMarshallable(
+                        ToResponseMarshallable(
                             <error>No object found</error>
                           )(
                             fromToEntityMarshaller(StatusCodes.NotFound)(xmlCT)
                           )
-                        )
                       }
                     }
                   }
                   case Failure(e: UnauthorizedEx) => // Unauthorized
-                    complete(
-                      ToResponseMarshallable(
+                      Future.successful(ToResponseMarshallable(
                         <error>No object found</error>
                       )(
                       fromToEntityMarshaller(StatusCodes.Unauthorized)(xmlCT)
                       )
-                    )
+                      )
 
                   case Failure(pe: ParseError) =>
-                    val errorResponse = Responses.ParseErrors(Vector(pe))
-                    Future.successful(errorResponse)
                     log.debug(s"Url Discovery fail: org: [$pathStr] parsed: [$origPath]")
 
                         // TODO: Clean this code
-                        complete(
-                          ToResponseMarshallable(
+                          Future.successful(
+                            ToResponseMarshallable(
                             <error>No object found</error>
                           )(
                             fromToEntityMarshaller(StatusCodes.NotFound)(xmlCT)
                           )
-                        )
+                          )
                   case Failure(ex) =>
-                    complete(
-                      ToResponseMarshallable(
+                      Future.successful(
+                        ToResponseMarshallable(
                         <error>Internal Server Error</error>
                       )(
                       fromToEntityMarshaller(StatusCodes.InternalServerError)(xmlCT)
                       )
-                    )
+                      )
                 }
                 case None =>
                   log.debug(s"Url Discovery fail: org: [$pathStr] parsed: [$origPath]")
 
                         // TODO: Clean this code
-                        complete(
-                          ToResponseMarshallable(
+                          Future.successful(
+                            ToResponseMarshallable(
                             <error>No object found</error>
                           )(
                             fromToEntityMarshaller(StatusCodes.NotFound)(xmlCT)
                           )
-                        )
+                          )
               }
+            onComplete(response){
+              case Success(resp) => complete(resp)
+              case Failure(ex) => {
+                log.error("Failure while creating response",ex)
+                complete(ToResponseMarshallable(
+                  <error>Internal Server Error</error>
+                )(
+                  fromToEntityMarshaller(StatusCodes.InternalServerError)(xmlCT)
+                ))
+              }
+            }
           }
 
         }

@@ -24,7 +24,6 @@ import akka.io.{IO, Tcp}
 import akka.pattern.ask
 import akka.stream.ActorMaterializer
 import akka.util.Timeout
-import analytics.AnalyticsStore
 import org.slf4j.{Logger, LoggerFactory}
 import responses.{CLIHelper, CLIHelperT}
 
@@ -81,24 +80,23 @@ class OmiServer extends OmiNode{
   )*/
 
   val callbackHandler: CallbackHandler = new CallbackHandler(settings)( system, materializer)
-  val analytics: Option[ActorRef] =
-    if(settings.enableAnalytics)
-      Some(
-        system.actorOf(AnalyticsStore.props(
-          singleStores,
-        settings
+ // val analytics: Option[ActorRef] =
+ //   if(settings.enableAnalytics)
+ //     Some(
+ //       system.actorOf(AnalyticsStore.props(
+ //         singleStores,
+ //       settings
 
-        )
-      )
-      )
-    else None
+ //       )
+ //     )
+ //     )
+ //   else None
 
   val dbHandler: ActorRef = system.actorOf(
    DBHandler.props(
      dbConnection,
      singleStores,
      callbackHandler,
-     analytics.filter(_ => settings.enableWriteAnalytics),
      new CLIHelper(singleStores,dbConnection)
    ),
    "database-handler"
@@ -118,15 +116,13 @@ class OmiServer extends OmiNode{
     RequestHandler.props(
       subscriptionManager,
       dbHandler,
-      settings,
-      analytics.filter(_ => settings.enableReadAnalytics)
+      settings
     ),
     "request-handler"
   )
 
   val agentSystem: ActorRef = system.actorOf(
    AgentSystem.props(
-     analytics.filter(_ => settings.enableWriteAnalytics),
      dbHandler,
      requestHandler,
      settings
@@ -157,8 +153,7 @@ class OmiServer extends OmiNode{
     settings,
     singleStores,
     requestHandler,
-    callbackHandler,
-    analytics
+    callbackHandler
   )
 
 

@@ -17,7 +17,6 @@ trait DBHandlerBase extends Actor
   protected implicit def dbConnection: DB
   protected implicit def singleStores: SingleStores
   protected implicit def callbackHandler: CallbackHandler
-  protected implicit def analyticsStore: Option[ActorRef]
   protected implicit def removeHandler: CLIHelperT
   protected def agentResponsibilities: AgentResponsibilities 
 }
@@ -27,14 +26,12 @@ object DBHandler{
     dbConnection: DB,
     singleStores: SingleStores,
     callbackHandler: CallbackHandler,
-    analyticsStore: Option[ActorRef],
     removeHandler: CLIHelperT
   ): Props = Props(
     new DBHandler(
       dbConnection,
       singleStores,
       callbackHandler,
-      analyticsStore,
       removeHandler
     )
   )
@@ -45,7 +42,6 @@ class DBHandler(
   protected  val dbConnection: DB,
   protected  val singleStores: SingleStores,
   protected  val callbackHandler: CallbackHandler,
-  protected  val analyticsStore: Option[ActorRef],
   protected  val removeHandler: CLIHelperT
   ) extends DBReadHandler
   with DBWriteHandler with DBDeleteHandler

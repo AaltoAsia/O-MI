@@ -38,7 +38,7 @@ object AgentEvents {
   case class NewAgent( agentName: AgentName, actorRef: ActorRef, responsibilities: Seq[AgentResponsibility] )
 }
 object AgentSystem {
-  def props(analyticsStore: Option[ActorRef],
+  def props(
     dbHandler: ActorRef,
     requestHandler: ActorRef,
     settings: AgentSystemConfigExtension

@@ -2,10 +2,12 @@ package database.journal
 
 import java.sql.Timestamp
 
-import database.{EventSub, IntervalSub, PollSub, PolledSub}
+import database.{EventSub, IntervalSub, PolledSub}
 import database.journal.PPersistentNode.NodeType.{Ii, Obj, Objs}
 import types.Path
-import types.odf.{Description, ImmutableODF, InfoItem, MetaData, ODFValue, Object, Objects, QlmID, Value}
+import types.odf.{BooleanValue, Description, DoubleValue, FloatValue, ImmutableODF, InfoItem, IntValue, LongValue, MetaData, ODFParser, ODFValue, Object, Objects, QlmID, ShortValue, StringValue, Value}
+
+import scala.util.Try
 
 object Models {
 
@@ -26,7 +28,7 @@ object Models {
   //Latest store
   case class SingleWriteCommand(path: Path, value: Value[Any]) extends PersistentCommand
 
-  case class WriteCommand(paths: Map[Path, ODFValue]) extends PersistentCommand
+  case class WriteCommand(paths: Map[Path, Value[Any]]) extends PersistentCommand
 
   case class ErasePathCommand(path: Path) extends PersistentCommand
 
@@ -152,6 +154,28 @@ object Models {
     merge(a, b) { case (v1, v2) =>
       v2.map(subs => subs ++ v1).getOrElse(v1)
     }
+  }
+
+  def asValue(pv: PPersistentValue): Option[Value[Any]] ={
+    Try(pv.typeName match {
+      case "xs:float" if pv.valueType.isProtoDoubleValue =>
+        FloatValue(pv.getProtoDoubleValue.toFloat, new Timestamp(pv.timeStamp))
+      case "xs:double" if pv.valueType.isProtoDoubleValue =>
+        DoubleValue(pv.getProtoDoubleValue, new Timestamp(pv.timeStamp))
+      case "xs:short" if pv.valueType.isProtoLongValue =>
+        ShortValue(pv.getProtoLongValue.toShort, new Timestamp(pv.timeStamp))
+      case "xs:int" if pv.valueType.isProtoLongValue =>
+        IntValue(pv.getProtoLongValue.toInt, new Timestamp(pv.timeStamp))
+      case "xs:long" if pv.valueType.isProtoLongValue =>
+        LongValue(pv.getProtoLongValue, new Timestamp(pv.timeStamp))
+      case "xs:boolean" if pv.valueType.isProtoBoolValue =>
+        BooleanValue(pv.getProtoBoolValue, new Timestamp(pv.timeStamp))
+      case "odf" if pv.valueType.isProtoStringValue =>
+        ODFValue(ODFParser.parse(pv.getProtoStringValue).right.get, new Timestamp(pv.timeStamp))
+      case str: String if pv.valueType.isProtoStringValue =>
+        StringValue(pv.getProtoStringValue, new Timestamp(pv.timeStamp))
+      case other => throw new Exception(s"Error while deserializing value: $other")
+    }).toOption
   }
 }
 

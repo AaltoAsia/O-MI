@@ -304,11 +304,14 @@ class SubStore extends PersistentActor with ActorLogging {
         .toVector
       sender() ! resp
     case Models.GetAllEventSubs =>
-      sender() ! eventSubs.values.flatten.toSet
+      val result: Set[EventSub] = eventSubs.values.flatten.toSet
+      sender() ! result
     case Models.GetAllIntervalSubs =>
-      sender() ! intervalSubs.values.toSet
+      val result: Set[IntervalSub] = intervalSubs.values.toSet
+      sender() ! result
     case Models.GetAllPollSubs =>
-      sender() ! idToSub.values.toSet
+      val result: Set[PolledSub] = idToSub.values.toSet
+      sender() ! result
     case Models.GetIntervalSub(id:Long) =>
       sender() ! intervalSubs.get(id)
     case Models.GetSubsForPath(path:Path) =>

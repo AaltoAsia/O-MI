@@ -24,13 +24,18 @@ import database._
 import types.odf._
 import types._
 import http.{ActorSystemContext, OmiServer}
+import journal.Models.{ErasePathCommand, GetTree, UnionCommand, WriteCommand}
+import akka.pattern.ask
+import akka.util.Timeout
+import scala.concurrent.duration._
 
 trait CLIHelperT{
   def handlePathRemove(parentPathS: Seq[Path]): Future[Seq[Int]]
   def getAllData(): Future[Option[ODF]]
-  def writeOdf(odf: ImmutableODF): Unit
+  def writeOdf(odf: ImmutableODF): Future[Unit]
   }
 class CLIHelper(val singleStores: SingleStores, dbConnection: DB )(implicit system: ActorSystem) extends CLIHelperT{
+  implicit val timeout: Timeout = Timeout(2 minutes)
 
   implicit val logSource: LogSource[CLIHelper]= new LogSource[CLIHelper] {
       def genString( handler:  CLIHelper): String = handler.toString
@@ -38,23 +43,22 @@ class CLIHelper(val singleStores: SingleStores, dbConnection: DB )(implicit syst
   protected val log: LoggingAdapter = Logging( system, this)
 
   def handlePathRemove(parentPaths: Seq[Path]): Future[Seq[Int]] = {
-    val odf = singleStores.hierarchyStore execute GetTree()
+    val odfF = (singleStores.hierarchyStore ? GetTree).mapTo[ImmutableODF]
+
     Future.sequence(parentPaths.map { parentPath =>
-      val nodeO = odf.get(parentPath)
-      nodeO match {
+      val nodeO = odfF.map(_.get(parentPath))
+      nodeO.flatMap {
         case Some(node) => {
 
-          val leafs = odf.getPaths.filter {
+          val leafs = odfF.map(_.getPaths.filter {
             p: Path =>
               node.path.isAncestorOf(p)
-          }
-
-          singleStores.hierarchyStore execute TreeRemovePath(parentPath)
-
-          leafs.foreach { path =>
+          }.foreach{path =>
             log.info(s"removing $path")
-            singleStores.latestStore execute EraseSensorData(path)
-          }
+            singleStores.latestStore ! ErasePathCommand(path)
+          })
+
+          singleStores.hierarchyStore ! ErasePathCommand(parentPath)
 
           val dbRemoveFuture: Future[Int] = dbConnection.remove(parentPath).map(_.length)
 
@@ -74,30 +78,31 @@ class CLIHelper(val singleStores: SingleStores, dbConnection: DB )(implicit syst
 
 
   /**
-    * method of getting all the data available from hierarchystore and dagabase, includes all metadata and descriptions
+    * method of getting all the data available from hierarchystore and database, includes all metadata and descriptions
     *
-    * method in this class because it has viisbility to singleStores and Database
+    * method in this class because it has visibility to singleStores and Database
     * @return
     */
   def getAllData(): Future[Option[ODF]] = {
-    val odf: ODF = singleStores.hierarchyStore execute GetTree()
-    val leafs = odf.getLeafs
-    dbConnection.getNBetween(leafs,None,None,Some(100),None).map{
-      o : Option[ODF]=>
-      o.map(_.union(odf))
-    }
+    val odfF: Future[ImmutableODF] = (singleStores.hierarchyStore ? GetTree).mapTo[ImmutableODF]
+    for{
+      odf <- odfF
+      leafs = odf.getLeafs
+      o: Option[ODF] <- dbConnection.getNBetween(leafs,None,None,Some(100),None)
+      res = o.map(_.union(odf))
+    } yield res
   }
 
-  def writeOdf(odf: ImmutableODF): Unit = {
+  def writeOdf(odf: ImmutableODF): Future[Unit] = {
     val infoItems: Seq[InfoItem] = odf.getInfoItems
-    dbConnection.writeMany(infoItems)
-    singleStores.hierarchyStore execute Union(odf.immutable)
-    val latestValues: Seq[(Path, Value[Any])] =
-      infoItems.collect{
-        case ii: InfoItem if ii.values.nonEmpty => (ii.path, ii.values.maxBy(_.timestamp.getTime()))
-      }
-    latestValues.foreach(pv => singleStores.latestStore execute SetSensorData(pv._1,pv._2))
-
+    for{
+      dbc <- dbConnection.writeMany(infoItems)
+      ret <- (singleStores.hierarchyStore ? UnionCommand(odf.immutable))
+      latestValues: Map[Path, Value[Any]] = infoItems.collect{
+        case ii: InfoItem if ii.values.nonEmpty => ii.path -> ii.values.maxBy(_.timestamp.getTime())
+      }.toMap//.map(pv => singleStores.latestStore ? SetSensorData(pv._1,pv._2))
+      res <- (singleStores.latestStore ? WriteCommand(latestValues)).mapTo[Unit]
+    } yield res
   }
 
 }
