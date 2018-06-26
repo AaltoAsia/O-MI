@@ -43,7 +43,7 @@ import types.OmiTypes.{ReadRequest, ResponseRequest, UserInfo, WriteRequest}
 
 //Very basic test for testing that the analytics results are consistent every patch
 class AnalyticsStoreTest extends Specification with Mockito with AfterAll {
-  implicit val system = testHelpers.Actortest.createAs()
+  implicit val system = testHelpers.Actorstest.createAs()
   def afterAll = {
     dbConnection.dropDB()
     Await.ready(system.terminate(), 2 seconds)

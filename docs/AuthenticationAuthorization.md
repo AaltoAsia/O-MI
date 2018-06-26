@@ -1,6 +1,18 @@
 Authentication and Authorization guide
 ======================================
 
+Permanently allowed request types
+---------------------------------
+
+This is used to set the default permissions for all incoming requests regardless of any user information.
+
+Currently it is only possible to allow by O-MI request type with this setting.
+
+This setting is intended for testing the node or, for example, allowing "read" and "cancel"
+requests when all data in the db is open data.
+
+1. Set `allowRequestTypesForAll` in [configuration](https://github.com/AaltoAsia/O-MI#configuration-location)
+
 Ip Authorization
 ----------------
 
