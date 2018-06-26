@@ -21,10 +21,10 @@ O-MI Auth API v2
 
 This can be used to setup external authentication and authorization services (word *external* means a separate process that can run on the same or other computer). O-MI Node first contacts authentication service and then authorization service, after that it filters the request.
 
-The Authentication and Authorization APIs are quite flexible and are controlled by [configuration](https://github.com/AaltoAsia/O-MI#configuration) options in object `omi-service.authAPI.v2`.
+The Authentication and Authorization APIs are quite flexible and are controlled by [configuration](https://github.com/AaltoAsia/O-MI#configuration) options in object `omi-service.authAPI.v2`. Only fixed format is the last step, which is the response of Authorization service: It must have json object in the body that has two lists of paths, `"allow"` and `"deny"`. These lists are used to filter the incoming O-DF with following set operations: <O-DF> intersect <allow> difference <deny>. The filtered O-DF is used in the request instead of the original and the request processing will continue.
 
 The input for authentication service can be passed by several configurable ways (option `omi-service.authAPI.v2.parameters.fromRequest`):
-* omiEnvelope attribute, for example `<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="0" token="eyJ0eXAiOiJKV1Q...">`
+* omiEnvelope attribute, for example `<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="0" token="eyJ0eXAiOiJKV1Q...">`, This is the recommended way to ensure functionality even when using other transport protocols.
 * The `Authorization` http header
 * Other http headers
 * Uri query parameters
