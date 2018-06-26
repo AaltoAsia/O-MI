@@ -164,9 +164,9 @@ class TypesTest extends Specification {
 
   import RawRequestWrapper.MessageType._
 
-  def pRead     = newRawRequestWrapper(xmlReadFinite).messageType mustEqual Read
-  def pWrite    = newRawRequestWrapper(xmlWrite).messageType mustEqual Write
-  def pCancel   = newRawRequestWrapper(xmlCancel).messageType mustEqual Cancel
-  def pResponse = newRawRequestWrapper(xmlResponse).messageType mustEqual Response
+  def pRead     = newRawRequestWrapper(xmlReadFinite).requestVerb mustEqual Read
+  def pWrite    = newRawRequestWrapper(xmlWrite).requestVerb mustEqual Write
+  def pCancel   = newRawRequestWrapper(xmlCancel).requestVerb mustEqual Cancel
+  def pResponse = newRawRequestWrapper(xmlResponse).requestVerb mustEqual Response
 
 }
