@@ -120,13 +120,6 @@ class TestOmiServer( config: Config )  extends OmiNode {
 
 }
 
-class Actorstest(system: ActorSystem) extends TestKit(system) with Scope with After with ImplicitSender {
-
-  def after = {
-    //TestKit.shutdownActorSystem(system)
-    system.terminate
-  }
-}
 
 class SystemTestCallbackServer(destination: ActorRef, interface: String, port: Int){
 
@@ -276,14 +269,25 @@ class WsTestCallbackServer(destination: ActorRef, interface: String, port: Int)(
   }
 }
 
-abstract class Actors(val as: ActorSystem = ActorSystem("testsystem", ConfigFactory.parseString("""
-  akka.loggers = ["akka.testkit.TestEventListener"]
-  """)))extends TestKit(as) with After with Scope {
+import akka.testkit.TestEventListener
+
+class SilentTestEventListener extends TestEventListener {
+    override def print(event: Any): Unit = ()
+}
+
+
+abstract class Actorstest (
+  val as: ActorSystem = Actorstest.createAs()) extends TestKit(as) with After with Scope with ImplicitSender {
   //def after = system.shutdown()
   def after = {
     //TestKit.shutdownActorSystem(system)
     system.terminate
   }
+}
+object Actorstest  {
+  def createAs() = ActorSystem("testsystem", ConfigFactory.parseString("""
+    akka.loggers = ["testHelpers.SilentTestEventListener", "akka.event.slf4j.Slf4jLogger"]
+    """).withFallback(ConfigFactory.load()))
 }
 
 class SubscriptionHandlerTestActor extends Actor {

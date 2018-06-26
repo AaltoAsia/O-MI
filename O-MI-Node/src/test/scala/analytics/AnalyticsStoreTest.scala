@@ -43,14 +43,7 @@ import types.OmiTypes.{ReadRequest, ResponseRequest, UserInfo, WriteRequest}
 
 //Very basic test for testing that the analytics results are consistent every patch
 class AnalyticsStoreTest extends Specification with Mockito with AfterAll {
-  implicit val system = ActorSystem("AnalyticsStoreTest", ConfigFactory.parseString(
-    """
-            akka.loggers = ["akka.testkit.TestEventListener"]
-            akka.stdout-loglevel = INFO
-            akka.loglevel = WARNING
-            akka.log-dead-letters-during-shutdown = off
-            akka.jvm-exit-on-fatal-error = off
-    """))
+  implicit val system = testHelpers.Actortest.createAs()
   def afterAll = {
     dbConnection.dropDB()
     Await.ready(system.terminate(), 2 seconds)
