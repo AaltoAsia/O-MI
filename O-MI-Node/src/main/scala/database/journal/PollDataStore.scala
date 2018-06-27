@@ -74,7 +74,11 @@ class PollDataStore extends PersistentActor with ActorLogging {
         updateState(event)
       }
     case CheckSubscriptionData(id) =>
-      sender() ! state.getOrElse(id,Map.empty[String,Seq[PPersistentValue]])
+      val response: Map[Path, Seq[Value[Any]]] =
+        state.get(id)
+          .map(pv => pv.map{case (k,v) => Path(k) -> v.flatMap(asValue(_))})
+          .getOrElse(Map.empty[Path, Seq[Value[Any]]])
+      sender() ! response
   }
 
 }

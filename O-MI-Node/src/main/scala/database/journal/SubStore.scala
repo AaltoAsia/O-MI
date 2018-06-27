@@ -120,10 +120,41 @@ class SubStore extends PersistentActor with ActorLogging {
             )
           }
       }
-      case PRemoveIntervalSub(id) => updateState(Models.RemoveIntervalSub(id))
-      case PRemoveEventSub(id) => updateState(Models.RemoveEventSub(id))
-      case PRemovePollSub(id) => updateState(Models.RemovePollSub(id))
-      case PPollSub(id) => updateState(Models.PollSubCommand(id))
+      case PRemoveIntervalSub(id) => {
+        intervalSubs = intervalSubs - id
+      }
+      case PRemoveEventSub(id) => {
+          val newStore: Map[Path, Seq[EventSub]] =
+            eventSubs
+              .mapValues(subs => subs.filterNot(_.id == id)) //remove values that contain id
+              .filterNot{case (_, subs) => subs.isEmpty } //remove keys with empty values
+          eventSubs = newStore
+      }
+      case PRemovePollSub(id) => {
+        idToSub.get(id).foreach{
+          case pSub: PolledSub => {
+            idToSub = idToSub - id
+            pSub.paths.foreach{ path =>
+              pathToSubs(path) match {
+                case ids if ids.size <= 1 => pathToSubs = pathToSubs - path
+                case ids => pathToSubs = pathToSubs.updated(path, ids - id)
+              }
+            }
+          }
+        }
+      }
+      case PPollSub(id) => {
+        idToSub.get(id).foreach {
+          //Update the lastPolled timestamp
+          case polledEvent: PollNormalEventSub =>
+            idToSub = idToSub + (id -> polledEvent.copy(lastPolled = new Timestamp(new Date().getTime)))
+          case polledNewEvent: PollNewEventSub =>
+            idToSub = idToSub + (id -> polledNewEvent.copy(lastPolled = new Timestamp(new Date().getTime)))
+          case pollInterval: PollIntervalSub =>
+            idToSub = idToSub + (id -> pollInterval.copy(lastPolled = new Timestamp(new Date().getTime)))
+        }
+      }
+
     }
     case p: PersistentCommand => p match {
       case Models.AddEventSub(es) => es match {
@@ -170,54 +201,6 @@ class SubStore extends PersistentActor with ActorLogging {
             addPollSub(ps)
           }
 
-      }
-      case Models.RemoveIntervalSub(id) => {
-        val target = intervalSubs.get(id)
-        target.fold(false){ sub =>
-          intervalSubs = intervalSubs - id
-          true
-        }
-      }
-      case Models.RemoveEventSub(id: Long) => {
-        if(eventSubs.values.exists(_.exists(_.id == id))){
-          val newStore: Map[Path, Seq[EventSub]] =
-            eventSubs
-              .mapValues(subs => subs.filterNot(_.id == id)) //remove values that contain id
-              .filterNot{case (_, subs) => subs.isEmpty } //remove keys with empty values
-          eventSubs = newStore
-          true
-        } else{
-          false
-        }
-
-      }
-      case Models.RemovePollSub(id: Long) => {
-        idToSub.get(id) match {
-          case Some(pSub) => {
-            idToSub = idToSub - id
-            pSub.paths.foreach{ path =>
-              pathToSubs(path) match {
-                case ids if ids.size <= 1 => pathToSubs = pathToSubs - path
-                case ids => pathToSubs = pathToSubs.updated(path, ids - id)
-              }
-            }
-            true
-          }
-          case None => false
-        }
-      }
-      case Models.PollSubCommand(id:Long) => {
-        val sub = idToSub.get(id)
-        sub.foreach {
-          //Update the lastPolled timestamp
-          case polledEvent: PollNormalEventSub =>
-            idToSub = idToSub + (id -> polledEvent.copy(lastPolled = new Timestamp(new Date().getTime)))
-          case polledNewEvent: PollNewEventSub =>
-            idToSub = idToSub + (id -> polledNewEvent.copy(lastPolled = new Timestamp(new Date().getTime)))
-          case pollInterval: PollIntervalSub =>
-            idToSub = idToSub + (id -> pollInterval.copy(lastPolled = new Timestamp(new Date().getTime)))
-        }
-        sub
       }
     }
   }
@@ -266,6 +249,34 @@ class SubStore extends PersistentActor with ActorLogging {
       intervalSubs = recoverIntervalSubs(snapshot.intervalSubs)
     }
   }
+
+  def pollSub(pps: PPollSub): Option[PolledSub] = {
+    val sub = idToSub.get(pps.id)
+    updateState(pps)
+    sub
+  }
+
+
+  def removeSub(rsub: PRemovePollSub): Boolean = {
+    val result = idToSub.contains(rsub.id)
+    if(result)
+      updateState(rsub)
+    result
+  }
+  def removeSub(rsub: PRemoveEventSub): Boolean = {
+    val result = eventSubs.values.exists(_.exists(_.id==rsub.id))
+    if(result)
+      updateState(rsub)
+    result
+  }
+  def removeSub(rsub: PRemoveIntervalSub): Boolean = {
+    val result = intervalSubs.contains(rsub.id)
+    if(result)
+      updateState(rsub)
+    result
+
+  }
+
   def receiveCommand: Receive = {
 
 
@@ -277,19 +288,19 @@ class SubStore extends PersistentActor with ActorLogging {
       sender() ! updateState(aPollS)
     case rIntervalS @ Models.RemoveIntervalSub(id:Long) =>
       persist(PRemoveIntervalSub(id)){event =>
-        sender() ! updateState(rIntervalS)
+        sender() ! removeSub(event)
       }
     case rEventS @ Models.RemoveEventSub(id:Long) =>
       persist(PRemoveEventSub(id)){event =>
-        sender() ! updateState(rEventS)
+        sender() ! removeSub(event)
       }
     case rPollS @ Models.RemovePollSub(id:Long) =>
       persist(PRemovePollSub(id)){event =>
-        sender() ! updateState(rPollS)
+        sender() ! removeSub(event)
       }
     case pollS @ Models.PollSubCommand(id: Long) =>
       persist(PPollSub(id)){ event =>
-        sender() ! updateState(pollS)
+        sender() ! pollSub(event)
       }
     case Models.LookupEventSubs(path:Path) =>
       val resp: Seq[NormalEventSub] = path.getParentsAndSelf

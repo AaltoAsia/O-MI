@@ -147,7 +147,7 @@ object Subs {
 //                        idToData: collection.mutable.HashMap[Long, collection.mutable.HashMap[Path, List[Value[Any]]]])
 
 case class SubData(
-                    pathData: HashMap[Path, List[Value[Any]]]
+                    pathData: Map[Path, Seq[Value[Any]]]
                   )
 
 //object PollSubData {
