@@ -187,7 +187,7 @@
         <Object type="list">
           <id>Capacities</id>
           <Object type="mv:Capacity">
-            <id>PersonWithDisabledParkingPermitCapacity</id>
+            <id>PersonsWithDisabledParkingPermitCapacity</id>
             <InfoItem name="maximumValue" type="mv:maximumValue">
               <value type="xs:short">2</value>
             </InfoItem>
@@ -195,7 +195,7 @@
               <value type="xs:short">2</value>
             </InfoItem>
             <InfoItem name="validForUserGroup" type="mv:validForUserGroup">
-              <value type="mv:UserGroup">mv:PersonWithDisabledParkingPermit</value>
+              <value type="mv:UserGroup">mv:PersonsWithDisabledParkingPermit</value>
             </InfoItem>
             <InfoItem name="validForVehicle" type="mv:validForVehicle">
               <value type="mv:Vehicle">mv:Car</value>
@@ -295,12 +295,12 @@
             </InfoItem>
           </Object>
           <Object type="mv:ParkingSpace">
-            <id>CarSpacePersonWithDisabledParkingPermit1</id>
+            <id>CarSpacePersonsWithDisabledParkingPermit1</id>
             <InfoItem name="available">
               <value type="xs:boolean">true</value>
             </InfoItem>
             <InfoItem name="validForUserGroup" type="mv:validForUserGroup">
-              <value type="mv:UserGroup">mv:PersonWithDisabledParkingPermit</value>
+              <value type="mv:UserGroup">mv:PersonsWithDisabledParkingPermit</value>
             </InfoItem>
             <InfoItem name="validForVehicle" type="mv:validForVehicle">
               <value>Car</value>
@@ -316,12 +316,12 @@
             </InfoItem>
           </Object>
           <Object type="mv:ParkingSpace">
-            <id>CarSpacePersonWithDisabledParkingPermit2</id>
+            <id>CarSpacePersonsWithDisabledParkingPermit2</id>
             <InfoItem name="available">
               <value type="xs:boolean">true</value>
             </InfoItem>
             <InfoItem name="validForUserGroup" type="mv:validForUserGroup">
-              <value type="mv:UserGroup">mv:PersonWithDisabledParkingPermit</value>
+              <value type="mv:UserGroup">mv:PersonsWithDisabledParkingPermit</value>
             </InfoItem>
             <InfoItem name="validForVehicle" type="mv:validForVehicle">
               <value>Car</value>
