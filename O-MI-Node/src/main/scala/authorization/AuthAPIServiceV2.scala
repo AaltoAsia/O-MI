@@ -229,21 +229,31 @@ class AuthAPIServiceV2(
 
     val copiedHeaders = httpRequest.headers.filter(omiHttpHeadersToAuthentication contains _.lowercaseName)
 
-    val authenticationRequest = createRequest(Get, authenticationEndpoint, parametersToAuthentication, vars)
-      .mapHeaders(_ ++ copiedHeaders)
-
-    log.debug(s"AuthenticationRequest: $authenticationRequest")
 
     val resultF = for { 
-      authenticationResponse <- httpExtension.singleRequest(authenticationRequest)
 
-      authenticationResult = vars ++ extractToMap(authenticationResponse, None, parametersFromAuthentication)
+      authenticationResult <-
+        if (authenticationEndpoint.isEmpty) {
+          Future.successful(vars)
+        } else {
+
+          val authenticationRequest = createRequest(Get, authenticationEndpoint, parametersToAuthentication, vars)
+            .mapHeaders(_ ++ copiedHeaders)
+
+          log.debug(s"AuthenticationRequest: $authenticationRequest")
+
+          httpExtension.singleRequest(authenticationRequest) map {authenticationResponse =>
+
+            log.debug(s"Authentication call successful: $authenticationResponse")
+
+            vars ++ extractToMap(authenticationResponse, None, parametersFromAuthentication)
+          }
+        }
 
       authorizationRequest = createRequest(
         Post, authorizationEndpoint, parametersToAuthorization, authenticationResult)
 
       _ <- Future.successful{
-        log.debug(s"Authentication call successfull: $authenticationResponse")
         log.debug(s"AuthorizationRequest: $authorizationRequest")
       }
 
