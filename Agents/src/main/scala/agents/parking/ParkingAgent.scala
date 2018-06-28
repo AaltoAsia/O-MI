@@ -450,7 +450,8 @@ class ParkingAgent(
                         }
                     }.filter{
                       case (path: Path, ps: ParkingSpace) =>
-                        val validVehicle = ps.validForVehicle.exists{ 
+                        log.debug( "Checking " + ps.id )
+                        lazy val validVehicle = ps.validForVehicle.exists{ 
                           vt: VehicleType =>
                             vehicle.forall{
                               v =>
@@ -464,23 +465,26 @@ class ParkingAgent(
                                   v.width.forall{ vl =>  ps.width.forall{ pl => vl <= pl }} && 
                                   v.height.forall{ vl =>  ps.height.forall{ pl => vl <= pl }}  
                                 }
+                                log.debug(s"vehicle $typeCheck $dimensionCheck")
                                 typeCheck && dimensionCheck
                             }
                         } 
-                        val correctUserGroup = (ps.validUserGroups.isEmpty || ps.validUserGroups.exists{
+                        lazy val correctUserGroup = (ps.validUserGroups.isEmpty || ps.validUserGroups.exists{
                           pug => userGroup.contains(pug)
                         }) 
-                        val validCharger = (charger.isEmpty || {
+                        lazy val validCharger = (charger.isEmpty || {
                           ps.charger.exists{
                             pchar =>
                               charger.forall{
                                 char =>
+                                  val correctChar =
                                   char.brand.forall( pchar.brand.contains(_))&&
                                   char.model.forall( pchar.model.contains(_))&&
                                   char.currentType.forall( pchar.currentType.contains(_))&&
                                   char.threePhasedCurrentAvailable.forall( pchar.threePhasedCurrentAvailable.contains(_))&&
-                                  char.isFastChargeCapable.forall(pchar.isFastChargeCapable.contains(_)) &&
-                                  (char.plugs.isEmpty || char.plugs.exists{
+                                  char.isFastChargeCapable.forall(pchar.isFastChargeCapable.contains(_)) 
+
+                                  val correctPlug = (char.plugs.isEmpty || char.plugs.exists{
                                     plug =>
                                       pchar.plugs.exists{
                                         pplug => 
@@ -491,10 +495,13 @@ class ParkingAgent(
 
                                       }
                                   })
+                                  log.debug( s"Charger $correctChar Plug $correctPlug")
+                                  correctChar && correctPlug
                               }
 
                           }
                         })
+                        log.debug(s"PS checks $validVehicle && $correctUserGroup && $validCharger" )
                         validVehicle && correctUserGroup && validCharger
                     }.flatMap{
                       case (path: Path, ps: ParkingSpace ) =>

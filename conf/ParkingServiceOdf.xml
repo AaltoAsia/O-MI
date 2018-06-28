@@ -51,6 +51,9 @@
                   <InfoItem name="model" type="mv:model" required="false">
                     <value>ExampleI</value>
                   </InfoItem>
+                  <InfoItem name="currentType" type="mv:CurrentType" required="false">
+                    <value type="xs:string">AC</value>
+                  </InfoItem>
                   <InfoItem name="threePhasedCurrentAvailable" type="mv:threePhasedCurrentAvailable" required="false">
                     <value type="xs:boolean">true</value>
                   </InfoItem>
@@ -61,8 +64,11 @@
                     <id>Plugs</id>
                     <Object type="mv:Plug" required="false">
                       <id>Plug</id>
-                      <InfoItem name="PlugType" type="mv:PlugType" required="false">
-                        <value type="xs:string">Schuko Plug</value>
+                      <InfoItem name="plugType" type="mv:plugType" required="false">
+                        <value type="mv:plugType">Schuko Plug</value>
+                      </InfoItem>
+                      <InfoItem name="currentType" type="mv:currentType" required="false">
+                        <value type="xs:string">AC</value>
                       </InfoItem>
                       <InfoItem name="threePhasedCurrentAvailable" type="mv:threePhasedCurrentAvailable" required="false">
                         <value type="xs:boolean">true</value>
@@ -157,7 +163,7 @@
                               <InfoItem name="currentType" type="mv:currentType"/>
                               <InfoItem name="powerInkW" type="mv:powerInkW"/>
                               <InfoItem name="voltageInV" type="mv:voltageInV"/>
-                              <InfoItem name="plugType" type="mv:PlugType"/>
+                              <InfoItem name="plugType" type="mv:plugType"/>
                               <InfoItem name="threePhasedCurrentAvailable" type="mv:threePhasedCurrentAvailable"/>
                               <InfoItem name="isFastChargeCapable" type="mv:isFastChargeCapable"/>
                             </Object>
@@ -383,8 +389,8 @@
                 <id>Plugs</id>
                 <Object type="mv:Plug">
                   <id>Plug</id>
-                  <InfoItem name="plugType" type="mv:PlugType">
-                    <value>Schuko Plug</value>
+                  <InfoItem name="plugType" type="mv:plugType">
+                    <value type="mv:PlugType">Schuko Plug</value>
                   </InfoItem>
                   <InfoItem name="currentInA" type="mv:currentInA">
                     <value type="xs:double">1</value>

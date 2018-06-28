@@ -37,12 +37,12 @@ case class Plug(
         typeAttribute = Some(Plug.mvType)
       )
     ) ++ plugType.map{ m => 
-      val nII = "PlugType"
+      val nII = "plugType"
       InfoItem( 
         nII,
         path / nII,
         typeAttribute = Some(s"mv:$nII"),
-        values = Vector( StringValue( m, currentTimestamp, Map() ))
+        values = Vector( Value( m, "mv:PlugType", currentTimestamp, Map() ))
       )
     } ++ currentInA.map{ m => 
       val nII = "currentInA"
@@ -104,7 +104,7 @@ object Plug{
         case Some(obj: Object) if obj.typeAttribute.contains(mvType) =>
           Plug(
             obj.path.last,
-            getStringOption("PlugType",path,odf),
+            getStringOption("plugType",path,odf),
             getDoubleOption("currentInA",path,odf),
             getStringOption("currentType",path,odf),
             getDoubleOption("powerInkW",path,odf),
