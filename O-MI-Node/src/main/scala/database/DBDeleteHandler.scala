@@ -11,7 +11,6 @@ trait DBDeleteHandler extends DBHandlerBase {
 
   def handleDelete(delete: DeleteRequest): Future[ResponseRequest] = {
     val leafs = delete.odf.getLeafPaths.toSeq
-    leafs.foreach(path => log.info(path.toString))
     val removeFuture = removeHandler.handlePathRemove(leafs)
     removeFuture.map(res => ResponseRequest(Vector(Results.Success(description = Some(s"Successfully deleted ${res.sum} items")))))
   }
