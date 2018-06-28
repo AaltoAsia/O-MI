@@ -28,6 +28,7 @@ import akka.actor.{ActorSystem, ExtendedActorSystem, Extension, ExtensionId, Ext
 import akka.http.scaladsl.model.Uri
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigException._
+import akka.http.scaladsl.client.RequestBuilding.{RequestBuilder,Post,Get,Patch,Put,Head,Options}
 import types.Path
 import types.OmiTypes.RawRequestWrapper.MessageType
 
@@ -151,6 +152,19 @@ class OmiConfigExtension( val config: Config) extends Extension
     val parametersFromAuthentication: ParameterExtraction = mapmap(parameters.getConfig("fromAuthentication")) 
     val parametersToAuthentication: ParameterExtraction = mapmap(parameters.getConfig("toAuthentication")) 
     val parametersToAuthorization: ParameterExtraction = mapmap(parameters.getConfig("toAuthorization")) 
+
+    def toRequestBuilder(method: String) = method.toLowerCase match {
+      case "get" => Get
+      case "post" => Post
+      case "patch" => Patch
+      case "put" => Put
+      case "head" => Head
+      case "options" => Options
+      case x => throw new MatchError(s"Invalid http method in configuration: $x")
+    }
+
+    val authenticationMethod: RequestBuilder = toRequestBuilder(authAPIServiceV2.getString("authentication.method"))
+    val authorizationMethod: RequestBuilder = toRequestBuilder(authAPIServiceV2.getString("authorization.method"))
   }
   //val userInfoFromRequestHeaders: Map[String,String] = authAPIServiceV2.getObject("userinfo-from-request-headers")
   //

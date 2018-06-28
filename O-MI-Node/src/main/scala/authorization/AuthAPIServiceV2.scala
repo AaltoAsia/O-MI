@@ -15,7 +15,7 @@ import akka.http.scaladsl.{ Http, HttpExt}
 //import akka.http.scaladsl.model.headers.{Authorization, GenericHttpCredentials}
 import akka.http.scaladsl.model.{HttpMessage, HttpRequest, HttpResponse, StatusCodes, HttpEntity, headers, Uri}
 import akka.http.scaladsl.model.ContentTypes._
-import akka.http.scaladsl.client.RequestBuilding.{RequestBuilder,Post,Get}
+import akka.http.scaladsl.client.RequestBuilding.RequestBuilder
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.http.scaladsl.marshalling.Marshal
 import de.heikoseeberger.akkahttpjson4s.Json4sSupport
@@ -237,7 +237,7 @@ class AuthAPIServiceV2(
           Future.successful(vars)
         } else {
 
-          val authenticationRequest = createRequest(Get, authenticationEndpoint, parametersToAuthentication, vars)
+          val authenticationRequest = createRequest(authenticationMethod, authenticationEndpoint, parametersToAuthentication, vars)
             .mapHeaders(_ ++ copiedHeaders)
 
           log.debug(s"AuthenticationRequest: $authenticationRequest")
@@ -251,7 +251,7 @@ class AuthAPIServiceV2(
         }
 
       authorizationRequest = createRequest(
-        Post, authorizationEndpoint, parametersToAuthorization, authenticationResult)
+        authorizationMethod, authorizationEndpoint, parametersToAuthorization, authenticationResult)
 
       _ <- Future.successful{
         log.debug(s"AuthorizationRequest: $authorizationRequest")
