@@ -21,7 +21,6 @@ object Models {
   //trait PersistentNode
   trait PersistentSub extends PersistentMessage
   sealed trait Command
-
   //PersistentCommands are classes that need to be serialized
   sealed trait PersistentCommand extends Command with PersistentMessage
 
@@ -85,7 +84,7 @@ object Models {
 
   case class CheckSubscriptionData(subId: Long) extends Command
 
-
+  case class SaveSnapshot(msg: Option[String] = None) extends Command
 
   def buildInfoItemFromProtobuf(pinfo: PInfoItem): InfoItem = {
     val path = Path(pinfo.path)

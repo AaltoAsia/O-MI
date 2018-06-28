@@ -19,11 +19,11 @@ import java.io.{File, FilenameFilter}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
-
 import akka.actor._
 import akka.dispatch.{BoundedMessageQueueSemantics, RequiresMessageQueue}
 import org.prevayler.Prevayler
 import http.OmiConfigExtension
+import journal.Models.SaveSnapshot
 
 object SingleStoresMaintainer{
   def props(
@@ -50,9 +50,9 @@ with RequiresMessageQueue[BoundedMessageQueueSemantics]
     log.info("using transient prevayler, taking snapshots is not in use.")
   }
   protected def takeSnapshot: FiniteDuration = {
-    def trySnapshot[T](p: Prevayler[T], errorName: String): Unit = {
+    def trySnapshot(p: ActorRef, errorName: String): Unit = {
       Try[Unit]{
-        p.takeSnapshot() // returns snapshot File
+        p ! SaveSnapshot() // returns snapshot File
       }.recover{case a : Throwable => log.error(a,s"Failed to take Snapshot of $errorName")}
     }
 

@@ -31,7 +31,6 @@ import scala.collection.immutable
 trait DBWriteHandler extends DBHandlerBase {
 
   //, dispatcher}
-  implicit val timeout: Timeout = 2 minutes
   private def sendEventCallback(esub: EventSub, infoItems: Seq[InfoItem]): Unit = {
     val odf = ImmutableODF(infoItems)
     esub match {

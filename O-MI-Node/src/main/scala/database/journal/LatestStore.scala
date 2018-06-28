@@ -33,6 +33,7 @@ class LatestStore extends PersistentActor with ActorLogging {
   }
   val snapshotInterval = 100
   def receiveCommand: Receive = {
+    case SaveSnapshot(msg) => saveSnapshot(PWriteLatest(state))
 
     case SingleWriteCommand(p, v) =>{
       persist(PWriteLatest(Map(p.toString->v.persist))){ event =>

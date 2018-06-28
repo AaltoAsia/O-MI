@@ -51,6 +51,7 @@ class HierarchyStore extends PersistentActor with ActorLogging {
   }
 
   def receiveCommand: Receive = {
+    case SaveSnapshot(msg) => saveSnapshot(PUnion(state.nodes.map{case(k,v) => k.toString -> PPersistentNode(v.persist)}))
     case union @ UnionCommand(other) =>
       persist(PUnion(other.nodes.map{case (k,v)=> k.toString -> PPersistentNode(v.persist)})){ event =>
         sender() ! updateState(union)

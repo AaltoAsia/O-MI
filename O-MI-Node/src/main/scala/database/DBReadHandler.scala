@@ -19,7 +19,6 @@ import akka.pattern.ask
 import scala.concurrent.duration._
 
 trait DBReadHandler extends DBHandlerBase{
-  implicit val timeout: Timeout = 2 minutes
   /** Method for handling ReadRequest.
     * @param read request
     * @return (xml response, HTTP status code)

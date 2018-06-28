@@ -278,16 +278,17 @@ class SubscriptionManager(
         ii: InfoItem =>
           ii.path -> Vector[Value[Any]]()
       }.toMap[Path,Seq[Value[Any]]] ++ intervalData
-      pollDatas: Map[Path, Seq[Value[Any]]] <- Future.sequence(combinedWithPaths.map{
+      pollDatas <- Future.sequence(combinedWithPaths.map{
         case ( path: Path, values: Seq[Value[Any]] ) if values.nonEmpty =>
           values.lastOption match {
             case Some(last) =>
               log.info(s"Found previous values for intervalsubscription: $last")
               Future.successful(path, values :+ last.retime(new Timestamp(pollTime)))
+
             case None =>
               val msg = s"Found previous values for intervalsubscription, but lastOption is None, should not be possible."
               log.error(msg)
-              throw new Exception(msg)
+              Future.failed(new Exception(msg))
           }
         case ( path: Path, values: Seq[Value[Any]]) if values.isEmpty =>
           log.info(s"No values found for path: $path in Interval subscription poll for sub id ${pollInterval.id}")
@@ -341,7 +342,7 @@ class SubscriptionManager(
     val pollTime: Long = System.currentTimeMillis()
     val subF: Future[Option[PolledSub]] = (singleStores.subStore ? PollSubCommand(id)).mapTo[Option[PolledSub]]
     for{
-      sub <- subF
+      sub: Option[PolledSub] <- subF
       res: Option[ODF] <- sub match{
         case Some(ps:PolledSub) => {
           log.debug(s"Polling subscription with id: ${ps.id}")
@@ -354,7 +355,7 @@ class SubscriptionManager(
               case pollInterval: PollIntervalSub => handlePollInterval(pollInterval, pollTime, odfTree)
             }
             res: ODF = subValues.union(emptyTree)
-          } yield res
+          } yield Some(res)
           //pollSubscription method removes the data from database and returns the requested data
         }
         case None => Future.successful(None)
@@ -418,7 +419,7 @@ class SubscriptionManager(
           }
           ret
         }
-        case None => Future.successful(Unit)
+        case None => Future.successful()
       }
     } yield res
   }
@@ -459,7 +460,7 @@ class SubscriptionManager(
     val allSubsF = getAllSubs()
     for {
       AllSubscriptions(intervals,events,polls) <- allSubsF
-      res: Set[(SavedSub, Option[SubData])] <- Future.sequence((intervals ++ events ++ polls).collect{
+      res: Seq[(SavedSub, Option[SubData])] <- Future.sequence((intervals ++ events ++ polls).collect{
         case e: EventSub => Future.successful((e, None))
         case i: IntervalSub => Future.successful((i, None))
         case pe: PolledEventSub => {
@@ -472,8 +473,8 @@ class SubscriptionManager(
           (pi,
             Some(SubData(data))))
         }
-      })
-    } yield res.toSeq
+      }.toSeq)
+    } yield res
   }
 
   private def getSub(id: Long): Future[Option[SavedSub]] = {
@@ -494,8 +495,7 @@ class SubscriptionManager(
    * @param subscription SubscriptionRequest of the subscription to add
    * @return Subscription Id within Try monad if adding fails this is a Failure, otherwise Success(id)
    */
-  private def subscribe(subscription: SubscriptionRequest): Future[Try[Long]] = {
-    Try {
+  private def subscribe(subscription: SubscriptionRequest): Future[Long] = {
       val allSubsF = getAllSubs()
       val allIdsF: Future[Set[Long]] = allSubsF.map(allSubs => (allSubs.events ++ allSubs.intervals ++ allSubs.polls).map(_.id))
       def getNewId(): Future[Long] = {
@@ -511,7 +511,7 @@ class SubscriptionManager(
       val currentTimestamp = new Timestamp(currentTime)
       val subscribedOdf = NewTypeConverter.convertODF( subscription.odf )
 
-      val subId = subscription.callback match {
+      val subId: Future[Long] = subscription.callback match {
         case cb@Some(callback: RawCallback) =>
           throw RawCallbackFound(s"Tried to subscribe with RawCallback: ${callback.address}")
         case cb@Some(callback: DefinedCallback) => subscription.interval match {
@@ -653,8 +653,8 @@ class SubscriptionManager(
           }
         }
       }
+    subId
     }
-  }
 
   /**
    * Helper method to get the Timestamp for removing the subscription

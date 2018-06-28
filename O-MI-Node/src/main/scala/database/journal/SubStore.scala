@@ -216,6 +216,14 @@ class SubStore extends PersistentActor with ActorLogging {
     }
     }
   }
+  def persistEventsubs(peSubs: Map[Path,Seq[EventSub]]): Map[String,PEventSubs] = {
+    peSubs.map{
+      case(key,values) => key.toString -> PEventSubs(values.map{
+        case nes: NormalEventSub => PEventSub(PEventSub.Eventsub.Nes(nes.persist()))
+        case news: NewEventSub => PEventSub(PEventSub.Eventsub.News(news.persist()))
+      })
+    }
+  }
 
   def recoverIdToSub(its: Map[Long, PPolledSub]): Map[Long, PolledSub] = {
     its.mapValues(ps => ps.polledsub match {
@@ -228,16 +236,29 @@ class SubStore extends PersistentActor with ActorLogging {
     }
     )
   }
+  def persistIdToSub(pits: Map[Long,PolledSub]): Map[Long,PPolledSub] = {
+    pits.mapValues(ps => ps match{
+      case pnes: PollNormalEventSub => PPolledSub(PPolledSub.Polledsub.Pnes(pnes.persist()))
+      case pnews: PollNewEventSub => PPolledSub(PPolledSub.Polledsub.Pnews(pnews.persist()))
+      case pints: PollIntervalSub => PPolledSub(PPolledSub.Polledsub.Pints(pints.persist()))
+    })
+  }
 
   def recoverPathToSub(pts: Map[String, PSubIds]): Map[Path,Set[Long]] = {
     pts.map{case (key,value) => Path(key) -> value.ids.toSet }
   }
+  def persistPathToSub(ppts: Map[Path,Set[Long]]): Map[String,PSubIds] = {
+    ppts.map{ case (key,values) => key.toString -> PSubIds(values.toSeq)}
+  }
 
-  def recoverIntervalSubs(ints: Map[Long, PIntervalSub]):Map[Long,IntervalSub] = {
+  def recoverIntervalSubs(ints: Map[Long, PIntervalSub]): Map[Long,IntervalSub] = {
     ints.collect{
       case (id, PIntervalSub(subId,paths,endTime,Some(cb),interval,starttime)) =>
         id -> IntervalSub(subId,paths.map(Path(_)).toVector,new Timestamp(endTime),HTTPCallback(cb.uri),interval seconds, new Timestamp(starttime))
     }
+  }
+  def persistIntervalSubs(pints: Map[Long,IntervalSub]): Map[Long,PIntervalSub] = {
+    pints.mapValues(_.persist())
   }
 
   def receiveRecover: Receive = {
@@ -278,6 +299,12 @@ class SubStore extends PersistentActor with ActorLogging {
   }
 
   def receiveCommand: Receive = {
+    case SaveSnapshot(msg) => saveSnapshot(
+      PSubStoreState(
+        persistEventsubs(eventSubs),
+        persistIdToSub(idToSub),
+        persistPathToSub(pathToSubs),
+        persistIntervalSubs(intervalSubs)))
 
 
     case aEventS @ Models.AddEventSub(eventSub: EventSub) =>
