@@ -328,11 +328,9 @@ class ParkingAgent(
                           val distance : Double = getDoubleOption( "DistanceFromDestination", parameterPath, odf).getOrElse(1000.0)
                           val userGroup = getStringOption( "UserGroup",parameterPath, odf).map{
                             str => 
-                              log.info( s"UserGroup $str" )
                               str.split(",").map{
                                 subStr => 
                                 val ug = UserGroup(subStr)
-                                log.info( ug.toString)
                                 ug
                               }
                           }.toSeq.flatten.flatten
@@ -351,8 +349,23 @@ class ParkingAgent(
 
                               }
                           }
+                          val charger = odf.get( chargerParamPath).map{
+                            case ii: InfoItem =>
+                              return Future{
+                                Responses.InvalidRequest( Some(s"Found ${ii.path} InfoItem from input when Object is expected. Refer to O-DF guidelines stored in MetaData."))
+                              }
+                            case obj: Object => 
+                              Charger.parseOdf( obj.path, odf) match{
+                                case Success(v: Charger) => v
+                                case Failure(e) =>
+                                  return Future{
+                                    Responses.InvalidRequest( Some(s"Incorrect Charger parameter format. ${e.getMessage}"))
+                                  }
+                              }
+
+                          }
                           log.info("FindParking parameters parsed")
-                          findParking(destination,distance,vehicle,userGroup)
+                          findParking(destination,distance,vehicle,userGroup,charger)
                       }
                   }.getOrElse{
                       Future{
@@ -361,14 +374,6 @@ class ParkingAgent(
                   }
                   /*
                   val charging = getBooleanOption( "wantCharging", obj.path, odf)
-                  val charger = odf.get( obj.path / "Charger").map{
-                    case ii: InfoItem =>
-                      return Future{
-                        Responses.InvalidRequest( Some(s"Found ${ii.path} InfoItem from input when Object is expected. Refer to O-DF guidelines stored in MetaData."))
-                      }
-                    case obj: Object => 
-                      Charger.parseOdf( obj.path, odf)
-                  }
                   */
 
             }.getOrElse{
@@ -393,7 +398,7 @@ class ParkingAgent(
     }
   }
 
-  def findParking(destination: GeoCoordinates, maxDistance: Double, vehicle: Option[Vehicle], userGroup: Seq[UserGroup]):Future[ResponseRequest] ={
+  def findParking(destination: GeoCoordinates, maxDistance: Double, vehicle: Option[Vehicle], userGroup: Seq[UserGroup], charger: Option[Charger]):Future[ResponseRequest] ={
       val radius: Double = 6371e3
       val deltaR = maxDistance / radius 
       val latP: Set[Path]  = latitudePFIndex.keySet.dropWhile{
@@ -435,8 +440,6 @@ class ParkingAgent(
                 result.odf.map{
                   odf => 
                     log.info( "Found Successfull result with ODF")
-                    log.info( "Filter with: " + userGroup.mkString("\n"))
-                    //TODO: Filter with Charger/Plug parameters
                     val correctParkingSpaces = odf.nodesWithType("mv:ParkingSpace").collect{
                       case obj: Object =>
                         ParkingSpace.parseOdf(obj.path, odf.immutable) match {
@@ -447,14 +450,14 @@ class ParkingAgent(
                         }
                     }.filter{
                       case (path: Path, ps: ParkingSpace) =>
-                        ps.validForVehicle.exists{ 
+                        val validVehicle = ps.validForVehicle.exists{ 
                           vt: VehicleType =>
                             vehicle.forall{
                               v =>
                                 val typeCheck = {
                                   v.vehicleType == vt ||
                                   v.vehicleType == VehicleType.Vehicle ||
-                                  (v.vehicleType == VehicleType.ElectricVehicle && vt == Car)
+                                  (v.vehicleType == VehicleType.ElectricVehicle && vt == VehicleType.Car)
                                 }
                                 val dimensionCheck ={
                                   v.length.forall{ vl =>  ps.length.forall{ pl => vl <= pl }} && 
@@ -463,9 +466,36 @@ class ParkingAgent(
                                 }
                                 typeCheck && dimensionCheck
                             }
-                        } && (ps.validUserGroups.isEmpty || ps.validUserGroups.exists{
+                        } 
+                        val correctUserGroup = (ps.validUserGroups.isEmpty || ps.validUserGroups.exists{
                           pug => userGroup.contains(pug)
+                        }) 
+                        val validCharger = (charger.isEmpty || {
+                          ps.charger.exists{
+                            pchar =>
+                              charger.forall{
+                                char =>
+                                  char.brand.forall( pchar.brand.contains(_))&&
+                                  char.model.forall( pchar.model.contains(_))&&
+                                  char.currentType.forall( pchar.currentType.contains(_))&&
+                                  char.threePhasedCurrentAvailable.forall( pchar.threePhasedCurrentAvailable.contains(_))&&
+                                  char.isFastChargeCapable.forall(pchar.isFastChargeCapable.contains(_)) &&
+                                  (char.plugs.isEmpty || char.plugs.exists{
+                                    plug =>
+                                      pchar.plugs.exists{
+                                        pplug => 
+                                          plug.plugType.forall( pplug.plugType.contains(_)) &&
+                                          plug.currentType.forall( pplug.currentType.contains(_))&&
+                                          plug.threePhasedCurrentAvailable.forall( pplug.threePhasedCurrentAvailable.contains(_))&&
+                                          plug.isFastChargeCapable.forall(pplug.isFastChargeCapable.contains(_))
+
+                                      }
+                                  })
+                              }
+
+                          }
                         })
+                        validVehicle && correctUserGroup && validCharger
                     }.flatMap{
                       case (path: Path, ps: ParkingSpace ) =>
                         ps.toOdf(path.getParent)
@@ -499,7 +529,6 @@ class ParkingAgent(
                         odf.nodesWithType("mv:RealTimeCapacity")
                       ).map(_.path)
                     val nOdf = odf.removePaths(removedPaths.toSeq).union(correctNodes)
-                    log.info("Filtered ODF contains: "  +nOdf.getPaths.mkString("\n"))
                     nOdf
                 }
             }.fold(ImmutableODF()){
