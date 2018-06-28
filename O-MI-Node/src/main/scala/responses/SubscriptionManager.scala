@@ -36,7 +36,7 @@ import types._
 import akka.pattern.ask
 import akka.util.Timeout
 import journal.Models._
-
+import akka.pattern.pipe
 import scala.annotation.tailrec
 import scala.collection.immutable
 
@@ -152,15 +152,15 @@ class SubscriptionManager(
   //TODO FIX handleIntervals() //when server restarts
 
   def receive: PartialFunction[Any, Unit] = {
-    case NewSubscription(subscription) => sender() ! subscribe(subscription)
+    case NewSubscription(subscription) => subscribe(subscription).pipeTo(sender())
     case HandleIntervals(id) => handleIntervals(id)
-    case RemoveSubscription(id) => sender () ! removeSubscription(id)
+    case RemoveSubscription(id) => removeSubscription(id).pipeTo(sender())
     case SubscriptionTimeout(id) => removeSubscription(id)
-    case PollSubscription(id) => sender() ! pollSubscription(id)
-    case ListSubsCmd() => sender() ! getAllSubs()
-    case GetSubsWithPollData() => sender() ! getSubsWithPollData()
-    case SubInfoCmd(id) => sender() ! getSub(id)
-    case LoadSubs(subs: Seq[(SavedSub, Option[SubData])]) => sender() ! loadSub(subs)
+    case PollSubscription(id) => pollSubscription(id).pipeTo(sender())
+    case ListSubsCmd() => getAllSubs().pipeTo(sender())
+    case GetSubsWithPollData() => getSubsWithPollData().pipeTo(sender())
+    case SubInfoCmd(id) => getSub(id).pipeTo(sender())
+    case LoadSubs(subs: Seq[(SavedSub, Option[SubData])]) => loadSub(subs).pipeTo(sender())
   }
 
   /**
@@ -380,9 +380,9 @@ class SubscriptionManager(
           val ret: Future[Unit] = for {
             hTree: ImmutableODF <- (singleStores.hierarchyStore ? GetTree).mapTo[ImmutableODF]
             subedTree: ODF =  hTree.selectSubTree(iSub.paths).metaDatasRemoved.descriptionsRemoved
-            datas: Seq[(Path, Option[Value[Any]])] <-
+            datas: Seq[(Path, Value[Any])] <-
             (singleStores.latestStore ? MultipleReadCommand(subedTree.getInfoItems.map(_.path)))
-              .mapTo[Seq[(Path,Option[Value[Any]])]]
+              .mapTo[Seq[(Path,Value[Any])]]
 
             odfWithValues = subedTree.union(
               ImmutableODF(datas.map{

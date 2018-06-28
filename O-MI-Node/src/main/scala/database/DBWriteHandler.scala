@@ -245,10 +245,15 @@ trait DBWriteHandler extends DBHandlerBase {
 
         log.debug("Update cache...")
         for{
-          updatedStaticItems <- updatedStaticItemsF
-          if updatedStaticItems.nonEmpty
-          updateTree:ImmutableODF = ImmutableODF(updatedStaticItems)
-          updatedCache <- (singleStores.hierarchyStore ? UnionCommand(updateTree))
+          updatedStaticItemsO: Option[Seq[Node]] <- updatedStaticItemsF.map(nodes => if (nodes.nonEmpty) Some(nodes) else None)
+          updatedCache <- updatedStaticItemsO match {
+            case Some(nodes) =>{
+              val updateTree:ImmutableODF = ImmutableODF(nodes)
+              (singleStores.hierarchyStore ? UnionCommand(updateTree))
+
+            }
+            case None => Future.successful()
+          }
           triggeringEvents <- ftriggeringEvents
           latestF <- Future.sequence(triggeringEvents.flatMap(iie =>
             iie.infoItem.values.headOption

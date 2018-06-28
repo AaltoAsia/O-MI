@@ -49,13 +49,12 @@ trait SubscriptionHandler {
     val ttl = subscription.handleTTL
     implicit val timeout: Timeout = Timeout(10.seconds) // NOTE: ttl will timeout from elsewhere
     val subFuture: Future[OmiResult] = (subscriptionManager ? NewSubscription(subscription))
-      .mapTo[Try[Long]]
+      .mapTo[Long]
       .map{
-        case Success(id: Long) if _subscription.interval != subscription.interval =>
+        case id: Long if _subscription.interval != subscription.interval =>
           Results.Subscription(id,Some(subscription.interval))
-        case Success(id: Long) =>
+        case id: Long =>
           Results.Subscription(id)
-        case Failure(ex) => throw ex
       }.recoverWith{
       case e: IllegalArgumentException => Future.successful(Results.InvalidRequest(Some(e.getMessage())))
       case e : Throwable => Future.failed(new RuntimeException(s"Error when trying to create subscription: ${e.getMessage}", e))

@@ -298,7 +298,7 @@ class InfluxDBImplementation(
         requestedIIs: Seq[InfoItem] = requestedODF.getInfoItems
         res:Option[ODF] <- (beginO, endO, newestO) match {
           case (None,None,None) => (singleStores.latestStore ? MultipleReadCommand(requestedIIs.map(_.path)))
-            .mapTo[Seq[(Path,Option[Value[Any]])]]
+            .mapTo[Seq[(Path,Value[Any])]]
             .map(pathToValue =>Some(ImmutableODF(
               pathToValue.map{
                 case ( path: Path, value: Value[Any]) => InfoItem( path.last, path, values = Vector( value))})

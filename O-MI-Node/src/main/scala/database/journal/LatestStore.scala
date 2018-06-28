@@ -64,7 +64,13 @@ class LatestStore extends PersistentActor with ActorLogging {
       sender() ! resp
     }
     case MultipleReadCommand(paths) => {
-      val resp: Seq[(Path, Option[Value[Any]])] = paths.map(path=> path -> state.get(path.toString).flatMap(asValue))
+      val resp: Seq[(Path, Value[Any])] = paths.flatMap{ path =>
+        (for {
+          persistentValue <- state.get(path.toString)
+          value <- asValue(persistentValue)
+        } yield path -> value).toSeq
+      }
+     // val resp: Seq[(Path, Value[Any])] = paths.flatMap(path=> state.get(path.toString).map(value => path -> asValue(value)).toSeq)
       sender() ! resp
     }
     case ReadAllCommand => {

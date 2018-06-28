@@ -302,7 +302,7 @@ class StubDB(val singleStores: SingleStores) extends DB{
     }.toMap)
     val objectsWithValues: Future[ImmutableODF] = for {
       p2iis <- fp2iis
-      pathToValue <- (singleStores.latestStore ? MultipleReadCommand( p2iis.keys.toVector)).mapTo[Seq[(Path,Option[Value[Any]])]]
+      pathToValue: Seq[(Path, Value[Any])] <- (singleStores.latestStore ? MultipleReadCommand( p2iis.keys.toVector)).mapTo[Seq[(Path,Value[Any])]]
       objectsWithValues = ImmutableODF(pathToValue.flatMap{
         case ( path: Path, value: Value[Any]) =>
           p2iis.get(path).map{

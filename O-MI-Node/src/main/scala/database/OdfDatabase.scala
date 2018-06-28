@@ -509,9 +509,9 @@ trait OdfDatabase extends Tables with DB with TrimmableDB{
 
     for {
       p2iis <- p2iisF
-      pathToValue <- (singleStores.latestStore ? MultipleReadCommand(p2iis.keys.toSeq)).mapTo[Seq[(Path,Option[Value[Any]])]]
+      pathToValue: Seq[(Path, Value[Any])] <- (singleStores.latestStore ? MultipleReadCommand(p2iis.keys.toSeq)).mapTo[Seq[(Path,Value[Any])]]
       objectsWithValues = Some(ImmutableODF(pathToValue.flatMap{ //why option??
-        case ( path: Path, value: Value[Any]) =>
+        case ( path: Path, value) =>
           p2iis.get(path).map{
             ii: InfoItem =>
               ii.copy(
