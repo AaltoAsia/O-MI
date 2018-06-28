@@ -12,7 +12,7 @@ import org.specs2.mutable._
 import org.specs2.specification.BeforeAfterAll
 import org.specs2.matcher.XmlMatchers._
 import org.specs2.matcher._
-import testHelpers.Actors
+import testHelpers.Actorstest
 import types.OdfTypes.{OdfInfoItem, OdfValue}
 
 import scala.concurrent.{Future, Await}
@@ -49,15 +49,7 @@ case class SubscriptionRequest(
 
  */
 class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with BeforeAfterAll {
-  implicit val system = ActorSystem("SubscriptionTest-core", ConfigFactory.parseString(
-    """
-            akka.loggers = ["akka.testkit.TestEventListener"]
-            akka.stdout-loglevel = INFO
-            akka.loglevel = WARNING
-            akka.log-dead-letters-during-shutdown = off
-            akka.jvm-exit-on-fatal-error = off
-            """))
-
+  implicit val system = testHelpers.Actorstest.createAs()
   implicit val materializer: ActorMaterializer = ActorMaterializer()(system)
       val conf = ConfigFactory.load("testconfig")
   implicit val settings = new OmiConfigExtension(
@@ -173,7 +165,7 @@ class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with Bef
       rIDs must be size(16) and check
     }
 
-    "fail when trying to use invalid interval" in new Actors {
+    "fail when trying to use invalid interval" in new Actorstest {
       //val actor = system.actorOf(Props(new SubscriptionHandler))
 
       val dur = -5

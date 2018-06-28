@@ -17,14 +17,6 @@ import scala.concurrent.duration._
 
 class InternalAgentLoaderTest(implicit ee: ExecutionEnv) extends Specification { 
   
-  def logTestActorSystem =ActorSystem(
-    "startstop",
-    ConfigFactory.load(
-      ConfigFactory.parseString(
-        """
-        akka.loggers = ["akka.testkit.TestEventListener"]
-        """).withFallback(ConfigFactory.load()))
-  )
   "InternalAgentLoader should " >> { 
     "log warnings when loading fails when " >> {
       "agent's class is not found" >> missingAgentTest
@@ -45,7 +37,7 @@ class InternalAgentLoaderTest(implicit ee: ExecutionEnv) extends Specification {
     "store successfully started agents to agents " >> skipped("random failures") //successfulAgents 
   }
 
- def missingAgentTest      = new Actorstest(logTestActorSystem){
+ def missingAgentTest      = new Actorstest(){
    val classname = "unexisting"
    val exception = new java.lang.ClassNotFoundException(classname)
    val configStr =
@@ -65,7 +57,7 @@ class InternalAgentLoaderTest(implicit ee: ExecutionEnv) extends Specification {
    )
    logWarningTest(new AgentSystemSettings(config), warnings )
  }
- def missingObjectTest     = new Actorstest(logTestActorSystem){
+ def missingObjectTest     = new Actorstest(){
    val classname = "agentSystem.CompanionlessAgent"
    val exception = new java.lang.ClassNotFoundException(classname+"$")
    val configStr =
@@ -86,7 +78,7 @@ class InternalAgentLoaderTest(implicit ee: ExecutionEnv) extends Specification {
    val asce =new AgentSystemSettings(config)
    logWarningTest( asce, warnings )
  }
- def unimplementedIATest   = new Actorstest(logTestActorSystem){
+ def unimplementedIATest   = new Actorstest(){
    val classname = "agentSystem.WrongInterfaceAgent"
    val configStr =
    s"""
@@ -106,7 +98,7 @@ class InternalAgentLoaderTest(implicit ee: ExecutionEnv) extends Specification {
    val asce =new AgentSystemSettings(config)
    logWarningTest( asce, warnings )
  }
- def unimplementedPCTest   = new Actorstest(logTestActorSystem){
+ def unimplementedPCTest   = new Actorstest(){
    val classname = "agentSystem.NotPropsCreatorAgent"
    val configStr =
    s"""
@@ -126,7 +118,7 @@ class InternalAgentLoaderTest(implicit ee: ExecutionEnv) extends Specification {
    )
    logWarningTest(new AgentSystemSettings(config), warnings )
  }
- def wrongPropsTest       = new Actorstest(logTestActorSystem){
+ def wrongPropsTest       = new Actorstest(){
    val classname = "agentSystem.WrongPropsAgent"
    val created = "agentSystem.FFAgent"
    val configStr =
@@ -148,10 +140,10 @@ class InternalAgentLoaderTest(implicit ee: ExecutionEnv) extends Specification {
   after
  }
 
- def oddObjectTest        = new Actorstest(logTestActorSystem){
+ def oddObjectTest        = new Actorstest(){
   after
  }
- def propsTest            = new Actorstest(logTestActorSystem){
+ def propsTest            = new Actorstest(){
    val exception : Throwable =  new Exception("Test failure.") 
    val classname = "agentSystem.FailurePropsAgent"
    val configStr =
@@ -172,7 +164,7 @@ class InternalAgentLoaderTest(implicit ee: ExecutionEnv) extends Specification {
    logWarningTest(new AgentSystemSettings(config), warnings )
  }
  
- def startTest = new Actorstest(logTestActorSystem/*ActorSystem()*/){
+ def startTest = new Actorstest(/*ActorSystem()*/){
    val exception : Throwable =  StartFailed("Test failure.",None) 
    val classname = "agentSystem.FFAgent"
    val configStr =

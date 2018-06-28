@@ -260,8 +260,8 @@ object OdfValue{
         case "odf" =>
           val result = OdfParser.parse(value)
           result match {
-            case Left( pes: Iterable[ParseError]) =>
-              throw pes.head
+            case Left( pes ) => // pes : Iterable[ParseError]
+              throw pes.iterator.next
             case Right( odf: OdfObjects) =>
               OdfObjectsValue(odf,timestamp, attributes)
           }

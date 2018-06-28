@@ -31,7 +31,6 @@ import akka.stream.scaladsl._
 import authorization.AuthAPIService
 import authorization.Authorization._
 import authorization._
-import parsing.OmiParser
 import akka.util.Timeout
 import analytics.{AddRead, AddUser}
 import database.{GetTree, SingleStores}
@@ -54,7 +53,7 @@ trait OmiServiceAuthorization
      with LogPermissiveRequestBeginning // Log Permissive requests
      with IpAuthorization         // Write and Response requests for configured server IPs
      with SamlHttpHeaderAuth      // Write and Response requests for configured saml eduPersons
-     with AllowNonPermissiveToAll // basic requests: Read, Sub, Cancel
+     with AllowConfiguredTypesForAll // allow basic requests: Read, Sub, Cancel
      with AuthApiProvider         // Easier java api for authorization
      with LogUnauthorized         // Log everything else
 
@@ -79,12 +78,18 @@ class OmiServiceImpl(
 
   //example auth API service code in java directory of the project
   if(settings.enableExternalAuthorization){
-    log.info("External Authorization module enabled")
+    log.info("External Auth API v1 module enabled")
     log.info(s"External Authorization port ${settings.externalAuthorizationPort}")
     log.info(s"External Authorization useHttps ${settings.externalAuthUseHttps}")
     registerApi(new AuthAPIService(settings.externalAuthUseHttps,settings.externalAuthorizationPort))
   }
 
+  //example auth API service code in java directory of the project
+  if(settings.AuthApiV2.enable){
+    log.info("External Auth API v2 modules enabled")
+    log.info(s"External Auth API settings ${settings.AuthApiV2}")
+    registerApi(new AuthAPIServiceV2(singleStores.hierarchyStore, settings, system, materializer))
+  }
 
 }
 

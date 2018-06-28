@@ -55,14 +55,6 @@ sealed trait OmiRequest extends RequestWrapper with JavaOmiRequest{
   def parsed: OmiParseResult = Right(asJavaIterable(collection.Iterable(this)))
   def unwrapped: Try[OmiRequest] = Success(this)
   def rawRequest: String = asXML.toString
-  final def handleTTL : FiniteDuration = if( ttl.isFinite ) {
-        if(ttl.toSeconds != 0)
-          FiniteDuration(ttl.toSeconds, SECONDS)
-        else
-          FiniteDuration(2,MINUTES)
-      } else {
-        FiniteDuration(Int.MaxValue,MILLISECONDS)
-      }
   def senderInformation: Option[SenderInformation]
   def withSenderInformation(ni:SenderInformation): OmiRequest
 }
@@ -123,10 +115,19 @@ sealed trait RequestWrapper {
   def ttl: Duration
   def parsed: OmiParseResult
   def unwrapped: Try[OmiRequest]
+  def requestVerb: RawRequestWrapper.MessageType
   def ttlAsSeconds : Long = ttl match {
     case finite : FiniteDuration => finite.toSeconds
     case infinite : Duration.Infinite => -1
   }
+  final def handleTTL : FiniteDuration = if( ttl.isFinite ) {
+        if(ttl.toSeconds != 0)
+          FiniteDuration(ttl.toSeconds, SECONDS)
+        else
+          FiniteDuration(2,MINUTES)
+      } else {
+        FiniteDuration(Int.MaxValue,MILLISECONDS)
+      }
 }
 
 /**
@@ -140,6 +141,17 @@ class RawRequestWrapper(val rawRequest: String, private val user0: UserInfo) ext
   user = user0
 
 
+  class Element(private val ev: EvElemStart) {
+    val pre = ev.pre
+    val label = ev.label
+    val scope = ev.scope
+    def attr(key: String): Option[String] = for {
+      nodeSeqAttr <- ev.attrs.get(key)
+      head <- nodeSeqAttr.headOption
+    } yield head.text
+
+  }
+
   private val parseSingle: () => EvElemStart = {
     val src = io.Source.fromString(rawRequest)
     val er = new XMLEventReader(src)
@@ -152,31 +164,31 @@ class RawRequestWrapper(val rawRequest: String, private val user0: UserInfo) ext
     }
   }
   // NOTE: Order is important
-  val omiEnvelope: EvElemStart = parseSingle()
-  val omiVerb: EvElemStart = parseSingle()
+  val omiEnvelope: Element = new Element(parseSingle())
+  val omiVerb: Element = new Element(parseSingle())
 
   require(omiEnvelope.label == "omiEnvelope", "Pre-parsing: omiEnvelope not found!")
 
-  val ttl: Duration = (for {
-      ttlNodeSeq <- Option(omiEnvelope.attrs("ttl"))
-      head <- ttlNodeSeq.headOption
-      ttl = parsing.OmiParser.parseTTL(head.text.toDouble)
-    } yield ttl
-  ) getOrElse parseError("couldn't parse ttl")
+  val ttl: Duration = 
+      omiEnvelope.attr("ttl")
+      .map{(ttlStr) => parsing.OmiParser.parseTTL(ttlStr.toDouble)}
+      .getOrElse(parseError("couldn't parse ttl"))
 
   /**
    * The verb of the O-MI message (read, write, cancel, response)
    */
-  val messageType: MessageType = MessageType(omiVerb.label)
+  val requestVerb: MessageType = MessageType(omiVerb.label)
+
+  /**
+    * The msgformat attribute of O-MI as in the verb element
+    */
+  val msgFormat: Option[String] = omiVerb.attr("msgformat")
 
   /**
    * Gets the verb of the O-MI message
    */
-  val callback: Option[Callback] = for {
-      callbackNodeSeq <- Option(omiEnvelope.attrs("callback"))
-      head <- callbackNodeSeq.headOption
-      callback = RawCallback(head.text)
-    } yield callback
+  val callback: Option[Callback] =
+    omiEnvelope.attr("callback").map(RawCallback.apply)
   
   /**
    * Get the parsed request. Message is parsed only once because of laziness.
@@ -198,27 +210,28 @@ object RawRequestWrapper {
 
   private def parseError(m: String) = throw new IllegalArgumentException("Pre-parsing: " + m)
 
-  sealed trait MessageType
+  sealed class MessageType(val name: String)
 
   object MessageType {
-    case object Write extends MessageType
-    case object Read extends MessageType
-    case object Cancel extends MessageType
-    case object Response extends MessageType
-    case object Delete extends MessageType
-    case object Call extends MessageType
+    case object Write extends MessageType("write")
+    case object Read extends MessageType("read")
+    case object Cancel extends MessageType("cancel")
+    case object Response extends MessageType("response")
+    case object Delete extends MessageType("delete")
+    case object Call extends MessageType("call")
     def apply(xmlTagLabel: String): MessageType =
       xmlTagLabel match {
-        case "write"  => Write
-        case "read"   => Read
-        case "cancel" => Cancel
-        case "response" => Response
-        case "delete" => Delete
-        case "call" => Call
-        case _ => parseError("read, write, cancel, call or delete  element not found!")
+        case Write.name  => Write
+        case Read.name   => Read
+        case Cancel.name => Cancel
+        case Response.name => Response
+        case Delete.name => Delete
+        case Call.name   => Call
+        case _ => parseError("read, write, cancel, response, call or delete element not found!")
       }
   }
 }
+import RawRequestWrapper.MessageType
 
 /**
   * Trait for subscription like classes. Offers a common interface for subscription types.
@@ -292,6 +305,8 @@ case class ReadRequest(
   def replaceOdf( nOdf: ODF ): ReadRequest = copy(odf = nOdf)
 
   def withSenderInformation(si:SenderInformation):OmiRequest = this.copy( senderInformation = Some(si))
+
+  val requestVerb = MessageType.Read
 }
 
 /**
@@ -327,6 +342,7 @@ case class PollRequest(
   )
   implicit def asOmiEnvelope : xmlTypes.OmiEnvelopeType= requestToEnvelope(asReadRequest, ttlAsSeconds)
   def withSenderInformation(si:SenderInformation):OmiRequest = this.copy( senderInformation = Some(si))
+  val requestVerb = MessageType.Read
 }
 
 /**
@@ -370,6 +386,7 @@ case class SubscriptionRequest(
   implicit def asOmiEnvelope : xmlTypes.OmiEnvelopeType= requestToEnvelope(asReadRequest, ttlAsSeconds)
   def withSenderInformation(si:SenderInformation):OmiRequest = this.copy( senderInformation = Some(si))
   def replaceOdf( nOdf: ODF ): SubscriptionRequest = copy(odf = nOdf)
+  val requestVerb = MessageType.Read
 }
 
 
@@ -411,6 +428,7 @@ case class WriteRequest(
   implicit def asOmiEnvelope : xmlTypes.OmiEnvelopeType = requestToEnvelope(asWriteRequest, ttlAsSeconds)
   def replaceOdf( nOdf: ODF ): WriteRequest = copy(odf = nOdf)
   def withSenderInformation(si:SenderInformation):OmiRequest = this.copy( senderInformation = Some(si))
+  val requestVerb = MessageType.Write
 }
 
 case class CallRequest(
@@ -448,6 +466,7 @@ case class CallRequest(
   implicit def asOmiEnvelope : xmlTypes.OmiEnvelopeType = requestToEnvelope(asCallRequest, ttlAsSeconds)
   def replaceOdf( nOdf: ODF ): CallRequest = copy(odf = nOdf)
   def withSenderInformation(si:SenderInformation):OmiRequest = this.copy( senderInformation = Some(si))
+  val requestVerb = MessageType.Call
 }
 
 case class DeleteRequest(
@@ -485,6 +504,7 @@ case class DeleteRequest(
   implicit def asOmiEnvelope : xmlTypes.OmiEnvelopeType = requestToEnvelope(asDeleteRequest, ttlAsSeconds)
   def replaceOdf( nOdf: ODF ): DeleteRequest = copy(odf = nOdf)
   def withSenderInformation(si:SenderInformation):OmiRequest = this.copy( senderInformation = Some(si))
+  val requestVerb = MessageType.Delete
 }
 /**
  * Cancel request, for cancelling subscription.
@@ -513,6 +533,7 @@ case class CancelRequest(
 
   implicit def asOmiEnvelope : xmlTypes.OmiEnvelopeType = requestToEnvelope(asCancelRequest, ttlAsSeconds)
   def withSenderInformation(si:SenderInformation):OmiRequest = this.copy( senderInformation = Some(si))
+  val requestVerb = MessageType.Cancel
 }
 
 trait JavaResponseRequest{
@@ -592,6 +613,7 @@ class ResponseRequest(
       ttl
     )
   }
+  val requestVerb = MessageType.Response
 } 
 
 
