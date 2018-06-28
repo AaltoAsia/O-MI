@@ -186,36 +186,40 @@ class AuthAPIServiceV2(
     val query = Uri.Query((
       for {
         (key, variable) <- mapGet("query").toSeq
-        value <- variables.get(variable).orElse(Some(variable)).toSeq
+        value <- variables.get(variable).toSeq
       } yield key -> value
     ): _*)
     val uri = baseUri.withQuery(query)
 
     val extraHeaders = (for {
       (key, variable) <- mapGet("headers").toSeq
-      value <- variables.get(variable).orElse(Some(variable)).toSeq // default to variable for adding static headers
-    } yield headers.RawHeader(key, value)) :+
-      headers.Cookie(
-        (for {
-          (key, variable) <- mapGet("cookies").toSeq
-          value <- variables.get(variable).orElse(Some(variable)).toSeq // default to variable for adding static headers
-        } yield key -> value
-      ):_*)
+      value <- variables.get(variable).toSeq
+    } yield headers.RawHeader(key, value))
+
+    val cookies = {
+      val cookiePairs = for {
+        (key, variable) <- mapGet("cookies").toSeq
+        value <- variables.get(variable).toSeq
+      } yield key -> value
+
+      if (cookiePairs.nonEmpty) Seq(headers.Cookie(cookiePairs:_*))
+      else Seq.empty
+    }
  
 
     val authHeader = for {
       (key, variable) <- mapGet("authorizationheader").headOption.toSeq
-      value <- variables.get(variable).orElse(Some(variable)).toSeq
+      value <- variables.get(variable).toSeq
     } yield headers.RawHeader("Authorization", s"$key $value")
 
     val entity = (for {
       (key, variable) <- mapGet("jsonbody").toSeq
-      value <- variables.get(variable).orElse(Some(variable)).toSeq // default to variable for adding static values
+      value <- variables.get(variable).toSeq
     } yield (key -> value)).foldLeft(JObject()){
       (a: JObject, b: (String,String)) => a ~ b
     }
 
-    val req = base(uri).withHeaders((extraHeaders ++ authHeader):_*)
+    val req = base(uri).withHeaders((extraHeaders ++ authHeader ++ cookies):_*)
 
     if (entity.obj.nonEmpty)
       req.withEntity(
@@ -237,9 +241,10 @@ class AuthAPIServiceV2(
       case x => x
     }).name
 
-    val vars = extractToMap(httpRequest, Some(rawOmiRequest), parametersFromRequest) + 
+    val vars = extractToMap(httpRequest, Some(rawOmiRequest), parametersFromRequest) +
       ("requesttypechar" -> requestType.head.toString) +
-      ("requesttype" -> requestType)
+      ("requesttype" -> requestType) ++
+      parametersConstants
 
     val copiedHeaders = httpRequest.headers.filter(omiHttpHeadersToAuthentication contains _.lowercaseName)
 

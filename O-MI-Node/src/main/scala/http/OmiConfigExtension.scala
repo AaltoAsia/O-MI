@@ -139,11 +139,14 @@ class OmiConfigExtension( val config: Config) extends Extension
 
     type ParameterExtraction = Map[String,Map[String,String]]
 
+    def cmap(c: Config): Map[String,String] = 
+      c.root().keys.map(
+          (key) => key.toLowerCase -> c.getString(key).toLowerCase).toMap
+
     def mapmap(c: Config): ParameterExtraction = {
       c.root().keys.map{(key) =>
         val innerConfig = c.getConfig(key)
-        key.toLowerCase -> innerConfig.root().keys.map(
-          (key2) => key2.toLowerCase -> innerConfig.getString(key2).toLowerCase).toMap
+        key.toLowerCase -> cmap(innerConfig)
       }.toMap
     }
 
@@ -152,6 +155,7 @@ class OmiConfigExtension( val config: Config) extends Extension
     val parametersFromAuthentication: ParameterExtraction = mapmap(parameters.getConfig("fromAuthentication")) 
     val parametersToAuthentication: ParameterExtraction = mapmap(parameters.getConfig("toAuthentication")) 
     val parametersToAuthorization: ParameterExtraction = mapmap(parameters.getConfig("toAuthorization")) 
+    val parametersConstants: Map[String,String] = cmap(parameters.getConfig("constants"))
 
     def toRequestBuilder(method: String) = method.toLowerCase match {
       case "get" => Get
