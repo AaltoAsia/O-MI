@@ -147,6 +147,14 @@ class AuthAPIServiceV2(
           case _ => None
         }
 
+      case "cookie" =>
+        httpMessage match {
+          case r: HttpRequest => r.cookies.find(_.name == from).map(_.value)
+          case r: HttpResponse => r.headers.collect {
+            case c: headers.`Set-Cookie` if c.cookie.name == from => c.cookie.value
+          }.headOption
+        }
+
       case "jsonbody" => Try[String] {
         val json = parse(bodyString(httpMessage))
         val searchResult = json \\ from
@@ -183,10 +191,16 @@ class AuthAPIServiceV2(
     ): _*)
     val uri = baseUri.withQuery(query)
 
-    val extraHeaders = for {
+    val extraHeaders = (for {
       (key, variable) <- mapGet("headers").toSeq
       value <- variables.get(variable).orElse(Some(variable)).toSeq // default to variable for adding static headers
-    } yield headers.RawHeader(key, value)
+    } yield headers.RawHeader(key, value)) :+
+      headers.Cookie(
+        (for {
+          (key, variable) <- mapGet("cookies").toSeq
+          value <- variables.get(variable).orElse(Some(variable)).toSeq // default to variable for adding static headers
+        } yield key -> value
+      ):_*)
  
 
     val authHeader = for {
