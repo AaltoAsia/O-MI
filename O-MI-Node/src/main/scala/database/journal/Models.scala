@@ -172,7 +172,7 @@ object Models {
       case "odf" if pv.valueType.isProtoStringValue =>
         ODFValue(ODFParser.parse(pv.getProtoStringValue).right.get, new Timestamp(pv.timeStamp))
       case str: String if pv.valueType.isProtoStringValue =>
-        StringValue(pv.getProtoStringValue, new Timestamp(pv.timeStamp))
+        Value(pv.getProtoStringValue,pv.typeName, new Timestamp(pv.timeStamp))
       case other => throw new Exception(s"Error while deserializing value: $other")
     }).toOption
   }

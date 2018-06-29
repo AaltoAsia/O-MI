@@ -24,6 +24,9 @@ import akka.stream._
 import akka.stream.ActorMaterializer
 import testHelpers.Specs2Interface
 import types._
+import akka.pattern.ask
+import akka.util.Timeout
+import journal.Models.ErasePathCommand
 
 class OmiServiceTest
   extends {
@@ -63,7 +66,6 @@ class OmiServiceTest
      dbConnection,
      singleStores,
      callbackHandler,
-     analytics,
      new CLIHelper(singleStores,dbConnection)
    ),
    "database-handler"
@@ -72,14 +74,12 @@ class OmiServiceTest
     RequestHandler.props(
       subscriptionManager,
       dbHandler,
-      settings,
-      analytics
+      settings
     ),
     "RequestHandler"
   )
    val agentSystem = system.actorOf(
     AgentSystem.props(
-      analytics,
       dbHandler,
       requestHandler,
       settings
@@ -100,7 +100,7 @@ class OmiServiceTest
   }
   def afterAll = {
     dbConnection.destroy()
-    singleStores.hierarchyStore execute TreeRemovePath(types.Path("Objects"))
+    Await.ready((singleStores.hierarchyStore.?(ErasePathCommand(types.Path("Objects")))(new Timeout( 5 seconds))),10 seconds)
     system.terminate()
     //XXX: DID NOT WORK
     //Await.ready(system.terminate(), 10 seconds)

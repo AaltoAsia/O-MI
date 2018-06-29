@@ -3,13 +3,13 @@ import java.text.SimpleDateFormat
 import java.util.TimeZone
 
 import akka.http.scaladsl.model.ContentTypes
+
 import scala.concurrent._
 import scala.concurrent.duration._
 import scala.util.Try
 import scala.xml._
-
 import agentSystem.AgentSystem
-import akka.actor.{ActorRef, Props, ActorSystem}
+import akka.actor.{ActorRef, ActorSystem, Props}
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.client.RequestBuilding
 import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport._
@@ -23,8 +23,10 @@ import database._
 import org.specs2.concurrent.ExecutionEnv
 import org.specs2.mutable._
 import org.specs2.specification.BeforeAfterAll
-import responses.{RequestHandler, SubscriptionManager, CallbackHandler}
+import responses.{CallbackHandler, RequestHandler, SubscriptionManager}
 import testHelpers._
+import akka.pattern.ask
+import journal.Models.ErasePathCommand
 
 class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAfterAll {
 
@@ -38,7 +40,7 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
   import omiServer.{ singleStores, dbConnection, system, materializer}
   // TODO: better cleaning after tests
   def beforeAll() = {
-    singleStores.hierarchyStore execute TreeRemovePath(types.Path("/Objects"))
+    Await.ready((singleStores.hierarchyStore ? ErasePathCommand(types.Path("/Objects")))(new Timeout(20 seconds)), 20 seconds)
   }
   sequential
 
@@ -120,7 +122,7 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
     }
     Await.ready(future, 2 seconds)
     dbConnection.destroy()
-    singleStores.hierarchyStore execute TreeRemovePath(types.Path("/Objects"))
+    Await.ready((singleStores.hierarchyStore ? ErasePathCommand(types.Path("/Objects")))(new Timeout(20 seconds)), 20 seconds)
   }
   def getPostRequest(in: String): HttpRequest = {
     val tmp = RequestBuilding.Post("http://localhost:8080/", in)

@@ -513,7 +513,7 @@ class SubscriptionManager(
 
       val subId: Future[Long] = subscription.callback match {
         case cb@Some(callback: RawCallback) =>
-          throw RawCallbackFound(s"Tried to subscribe with RawCallback: ${callback.address}")
+          Future.failed(RawCallbackFound(s"Tried to subscribe with RawCallback: ${callback.address}"))
         case cb@Some(callback: DefinedCallback) => subscription.interval match {
           case Duration(-1, duration.SECONDS) => {
             //normal event subscription

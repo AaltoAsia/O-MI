@@ -5,7 +5,7 @@ import akka.util.Timeout
 import akka.testkit.EventFilter
 import akka.pattern.ask
 import akka.stream.{ActorMaterializer, Materializer}
-import akka.testkit.TestEvent.{UnMute, Mute}
+import akka.testkit.TestEvent.{Mute, UnMute}
 import org.specs2.concurrent.ExecutionEnv
 import org.specs2.execute.Result
 import org.specs2.mutable._
@@ -14,8 +14,9 @@ import org.specs2.matcher.XmlMatchers._
 import org.specs2.matcher._
 import testHelpers.Actors
 import types.OdfTypes.{OdfInfoItem, OdfValue}
+import types.odf.ImmutableODF
 
-import scala.concurrent.{Future, Await}
+import scala.concurrent.{Await, Future}
 import scala.util.Try
 
 //import responses.Common._
@@ -30,6 +31,8 @@ import types.OdfTypes._
 import types.odf.{OldTypeConverter, NewTypeConverter}
 import types._
 import http.{ OmiConfig, OmiConfigExtension }
+import journal.Models.ErasePathCommand
+import journal.Models.GetTree
 
 import scala.collection.JavaConversions.{asJavaIterable, seqAsJavaList}
 import scala.concurrent.duration._
@@ -85,14 +88,12 @@ class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with Bef
      dbConnection,
      singleStores,
      callbackHandler,
-     analytics,
      new CLIHelper(singleStores,dbConnection)
    ),
    "database-handler"
   )
    val agentSystem = system.actorOf(
     AgentSystem.props(
-      analytics,
       dbHandler,
       requestHandler,
       settings
@@ -103,8 +104,7 @@ class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with Bef
     RequestHandler.props(
       subscriptionManager,
       dbHandler,
-      settings,
-      analytics
+      settings
     ),
     "RequestHandler"
   )
@@ -139,7 +139,7 @@ class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with Bef
   def afterAll = {
     //system.eventStream.publish(UnMute(EventFilter.debug(),EventFilter.info(), EventFilter.warning()))
     cleanAndShutdown()
-    singleStores.hierarchyStore execute TreeRemovePath(types.Path("Objects"))
+    Await.ready((singleStores.hierarchyStore ? ErasePathCommand(types.Path("Objects")))(new Timeout(5 seconds)), 10 seconds)
   }
 
   /////////////////////////////////////////////////////////////////////////////
@@ -330,8 +330,9 @@ class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with Bef
   }
 
   def addSub(ttl: Long, interval: Long, paths: Seq[Path], callback: String = "") = {
-    val hTree = singleStores.hierarchyStore execute GetTree()
     val basePath = Path("Objects","SubscriptionTest")
+    val odfF = (singleStores.hierarchyStore ? GetTree)(new Timeout(2 minutes)).mapTo[ImmutableODF]
+    val hTree: ImmutableODF = Await.result(odfF,Duration.Inf)
     val p = hTree.selectSubTree( paths.map( basePath / _ ) )
     val req = SubscriptionRequest( interval seconds, p, None, None, None, ttl seconds)
     implicit val timeout : Timeout = req.handleTTL
@@ -340,7 +341,6 @@ class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with Bef
 
 
   def addSubForObject(ttl: Long, interval: Long, path: String, callback: String = "") = {
-    val hTree = singleStores.hierarchyStore execute GetTree()
     val pp = Path("Objects","SubscriptionTest")
     val odf = OdfTypes.createAncestors(OdfObject(OdfTreeCollection(OdfQlmID(path)),pp / path))
     val req = SubscriptionRequest( interval seconds,  OldTypeConverter.convertOdfObjects(odf), None, None, None, ttl seconds)

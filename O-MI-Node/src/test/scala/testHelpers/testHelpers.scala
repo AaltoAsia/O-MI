@@ -56,7 +56,6 @@ class TestOmiServer( config: Config )  extends OmiNode {
      dbConnection,
      singleStores,
      callbackHandler,
-     None,
      new CLIHelper(singleStores,dbConnection)
    ),
    "database-handler"
@@ -73,14 +72,12 @@ class TestOmiServer( config: Config )  extends OmiNode {
     RequestHandler.props(
       subscriptionManager,
       dbHandler,
-      settings,
-      None
+      settings
     ),
     "request-handler"
   )
   val agentSystem = system.actorOf(
    AgentSystem.props(
-     None,
      dbHandler,
      requestHandler,
      settings
@@ -110,8 +107,7 @@ class TestOmiServer( config: Config )  extends OmiNode {
       settings,
       singleStores,
       requestHandler,
-      callbackHandler,
-      None //analytics
+      callbackHandler
     )
 
 

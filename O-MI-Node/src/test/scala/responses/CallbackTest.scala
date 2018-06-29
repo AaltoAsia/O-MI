@@ -32,7 +32,6 @@ Request with callback
     override protected def requestHandler: ActorRef = ???
     override val callbackHandler: CallbackHandler = mock[CallbackHandler]
     override protected val system: ActorSystem = ActorSystem()
-    override protected val analytics: Option[ActorRef] = None
     override val singleStores: SingleStores = mock[SingleStores]
 
     override protected implicit def materializer: ActorMaterializer = ???
