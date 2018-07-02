@@ -141,7 +141,7 @@ class OmiConfigExtension( val config: Config) extends Extension
 
     def cmap(c: Config): Map[String,String] = 
       c.root().keys.map(
-          (key) => key.toLowerCase -> c.getString(key).toLowerCase).toMap
+          (key) => key -> c.getString(key)).toMap
 
     def mapmap(c: Config): ParameterExtraction = {
       c.root().keys.map{(key) =>

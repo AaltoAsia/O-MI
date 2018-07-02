@@ -6,14 +6,14 @@ import scala.util.Try
 import scala.language.implicitConversions
 import scala.collection.JavaConversions._
 
-import org.prevayler._
+import org.prevayler.Prevayler
 import akka.util.{Timeout, ByteString}
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.pattern.ask
 import akka.http.scaladsl.{ Http, HttpExt}
 //import akka.http.scaladsl.model.headers.{Authorization, GenericHttpCredentials}
-import akka.http.scaladsl.model.{HttpMessage, HttpRequest, HttpResponse, StatusCodes, HttpEntity, headers, Uri}
+import akka.http.scaladsl.model.{HttpMessage, HttpRequest, HttpResponse, StatusCodes, HttpEntity, headers, Uri, FormData}
 import akka.http.scaladsl.model.ContentTypes._
 import akka.http.scaladsl.client.RequestBuilding.RequestBuilder
 import akka.http.scaladsl.unmarshalling.Unmarshal
@@ -114,8 +114,10 @@ class AuthAPIServiceV2(
 
 
   def filterODF(originalRequest: OdfRequest, filters: AuthorizationResponse): Option[OmiRequest] = {
+    val odfTree = hierarchyStore execute GetTree()
 
-    val allowOdf = originalRequest.odf selectSubTree filters.allow
+    val requestedTree = odfTree selectSubTree originalRequest.odf.getPaths
+    val allowOdf = requestedTree selectSubTree filters.allow
     val filteredOdf = allowOdf removePaths filters.deny
 
     if (filteredOdf.isEmpty) None
@@ -183,12 +185,13 @@ class AuthAPIServiceV2(
     def mapGet(context: String): Map[String,String] =
       confObject.get(context).getOrElse(Map.empty)
 
-    val query = Uri.Query((
-      for {
-        (key, variable) <- mapGet("query").toSeq
-        value <- variables.get(variable).toSeq
-      } yield key -> value
-    ): _*)
+    def keyValues(context: String): Seq[(String,String)] = for {
+      (key, variable) <- mapGet(context).toSeq
+      value <- variables.get(variable).toSeq
+    } yield key -> value
+    
+
+    val query = Uri.Query(keyValues("query"): _*)
     val uri = baseUri.withQuery(query)
 
     val extraHeaders = (for {
@@ -197,39 +200,36 @@ class AuthAPIServiceV2(
     } yield headers.RawHeader(key, value))
 
     val cookies = {
-      val cookiePairs = for {
-        (key, variable) <- mapGet("cookies").toSeq
-        value <- variables.get(variable).toSeq
-      } yield key -> value
-
+      val cookiePairs = keyValues("cookies")
       if (cookiePairs.nonEmpty) Seq(headers.Cookie(cookiePairs:_*))
       else Seq.empty
     }
  
-
     val authHeader = for {
       (key, variable) <- mapGet("authorizationheader").headOption.toSeq
       value <- variables.get(variable).toSeq
     } yield headers.RawHeader("Authorization", s"$key $value")
 
-    val entity = (for {
-      (key, variable) <- mapGet("jsonbody").toSeq
-      value <- variables.get(variable).toSeq
-    } yield (key -> value)).foldLeft(JObject()){
+    val json = keyValues("jsonbody").foldLeft(JObject()){
       (a: JObject, b: (String,String)) => a ~ b
     }
+    
+    val formdataQuery = Uri.Query(keyValues("form-urlencoded"): _*)
 
     val req = base(uri).withHeaders((extraHeaders ++ authHeader ++ cookies):_*)
 
-    if (entity.obj.nonEmpty)
+    if (json.obj.nonEmpty)
       req.withEntity(
-        HttpEntity.Strict(`application/json`, ByteString(compact(render(entity))))
+        HttpEntity.Strict(`application/json`, ByteString(compact(render(json))))
       )
+    else if (formdataQuery.nonEmpty)
+      req.withEntity(
+          FormData(formdataQuery).toEntity
+        )
     else req
   }
 
   protected def isAuthorizedForOdfRequest(httpRequest: HttpRequest, rawOmiRequest: RawRequestWrapper): AuthorizationResult = {
-    val odfTree = hierarchyStore execute GetTree()
 
     implicit val timeout = Timeout(rawOmiRequest.handleTTL)
 
@@ -242,8 +242,8 @@ class AuthAPIServiceV2(
     }).name
 
     val vars = extractToMap(httpRequest, Some(rawOmiRequest), parametersFromRequest) +
-      ("requesttypechar" -> requestType.head.toString) +
-      ("requesttype" -> requestType) ++
+      ("requestTypeChar" -> requestType.head.toString) +
+      ("requestType" -> requestType) ++
       parametersConstants
 
     val copiedHeaders = httpRequest.headers.filter(omiHttpHeadersToAuthentication contains _.lowercaseName)
