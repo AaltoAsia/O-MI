@@ -89,5 +89,6 @@ O-MI-Node/html/api/
 html/api/
 benchResults/
 O-MI-Node/src/main/resources/application.conf
-
-
+O-MI-Node/src/main/resources/logback-test.xml
+private/
+*.err

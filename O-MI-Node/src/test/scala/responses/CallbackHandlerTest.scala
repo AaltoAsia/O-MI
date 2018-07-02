@@ -10,7 +10,7 @@ import org.specs2.concurrent.ExecutionEnv
 import org.specs2.mutable._
 import com.typesafe.config.ConfigFactory
 import http.OmiConfigExtension
-import testHelpers.{Actors, SystemTestCallbackServer}
+import testHelpers.{Actorstest, SystemTestCallbackServer}
 import types.OmiTypes._
 
 
@@ -20,7 +20,7 @@ class CallbackHandlerTest(implicit ee: ExecutionEnv) extends Specification {
 
   "CallbackHandler" should {
 
-    "Send callback to the correct address" in new Actors {
+    "Send callback to the correct address" in new Actorstest {
       val port = 20003
       val probe = initCallbackServer(port)
       val ttl = Duration(2, "seconds")
@@ -37,7 +37,7 @@ class CallbackHandlerTest(implicit ee: ExecutionEnv) extends Specification {
       probe.expectMsg(ttl, Option(msg.asXML))
     }
 
-    "Try to keep sending message until ttl is over" in skipped(new Actors {
+    "Try to keep sending message until ttl is over" in skipped(new Actorstest {
       val port = 20004
       val ttl = Duration(10, "seconds")
       val msg  = Responses.Success( ttl = ttl)

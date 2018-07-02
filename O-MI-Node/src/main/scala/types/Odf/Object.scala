@@ -11,6 +11,34 @@ import scala.collection.immutable.{HashMap, Map => IMap}
 import parsing.xmlGen.scalaxb.DataRecord
 import parsing.xmlGen.xmlTypes.{InfoItemType, ObjectType}
 
+object Object{
+  def apply(
+    path: Path 
+  ): Object = Object(
+    Vector(QlmID( path.last)),
+    path
+  )
+  def apply(
+    path: Path, 
+    typeAttribute: Option[String]
+  ): Object = Object(
+    Vector(QlmID( path.last)),
+    path,
+    typeAttribute
+  )
+  def apply(
+    path: Path, 
+    typeAttribute: Option[String],
+    descriptions: Set[Description],
+    attributes: IMap[String,String] 
+  ): Object = Object(
+    Vector(QlmID( path.last)),
+    path,
+    typeAttribute,
+    descriptions,
+    attributes
+  )
+}
 case class Object(
   val ids: Vector[QlmID],
   val path: Path,

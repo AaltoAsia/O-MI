@@ -51,6 +51,9 @@
                   <InfoItem name="model" type="mv:model" required="false">
                     <value>ExampleI</value>
                   </InfoItem>
+                  <InfoItem name="currentType" type="mv:CurrentType" required="false">
+                    <value type="xs:string">AC</value>
+                  </InfoItem>
                   <InfoItem name="threePhasedCurrentAvailable" type="mv:threePhasedCurrentAvailable" required="false">
                     <value type="xs:boolean">true</value>
                   </InfoItem>
@@ -61,8 +64,11 @@
                     <id>Plugs</id>
                     <Object type="mv:Plug" required="false">
                       <id>Plug</id>
-                      <InfoItem name="PlugType" type="mv:PlugType" required="false">
-                        <value type="xs:string">Schuko Plug</value>
+                      <InfoItem name="plugType" type="mv:plugType" required="false">
+                        <value type="mv:plugType">Schuko Plug</value>
+                      </InfoItem>
+                      <InfoItem name="currentType" type="mv:currentType" required="false">
+                        <value type="xs:string">AC</value>
                       </InfoItem>
                       <InfoItem name="threePhasedCurrentAvailable" type="mv:threePhasedCurrentAvailable" required="false">
                         <value type="xs:boolean">true</value>
@@ -157,7 +163,7 @@
                               <InfoItem name="currentType" type="mv:currentType"/>
                               <InfoItem name="powerInkW" type="mv:powerInkW"/>
                               <InfoItem name="voltageInV" type="mv:voltageInV"/>
-                              <InfoItem name="plugType" type="mv:PlugType"/>
+                              <InfoItem name="plugType" type="mv:plugType"/>
                               <InfoItem name="threePhasedCurrentAvailable" type="mv:threePhasedCurrentAvailable"/>
                               <InfoItem name="isFastChargeCapable" type="mv:isFastChargeCapable"/>
                             </Object>
@@ -187,7 +193,7 @@
         <Object type="list">
           <id>Capacities</id>
           <Object type="mv:Capacity">
-            <id>PersonWithDisabledParkingPermitCapacity</id>
+            <id>PersonsWithDisabledParkingPermitCapacity</id>
             <InfoItem name="maximumValue" type="mv:maximumValue">
               <value type="xs:short">2</value>
             </InfoItem>
@@ -195,7 +201,7 @@
               <value type="xs:short">2</value>
             </InfoItem>
             <InfoItem name="validForUserGroup" type="mv:validForUserGroup">
-              <value type="mv:UserGroup">mv:PersonWithDisabledParkingPermit</value>
+              <value type="mv:UserGroup">mv:PersonsWithDisabledParkingPermit</value>
             </InfoItem>
             <InfoItem name="validForVehicle" type="mv:validForVehicle">
               <value type="mv:Vehicle">mv:Car</value>
@@ -295,12 +301,12 @@
             </InfoItem>
           </Object>
           <Object type="mv:ParkingSpace">
-            <id>CarSpacePersonWithDisabledParkingPermit1</id>
+            <id>CarSpacePersonsWithDisabledParkingPermit1</id>
             <InfoItem name="available">
               <value type="xs:boolean">true</value>
             </InfoItem>
             <InfoItem name="validForUserGroup" type="mv:validForUserGroup">
-              <value type="mv:UserGroup">mv:PersonWithDisabledParkingPermit</value>
+              <value type="mv:UserGroup">mv:PersonsWithDisabledParkingPermit</value>
             </InfoItem>
             <InfoItem name="validForVehicle" type="mv:validForVehicle">
               <value>Car</value>
@@ -316,12 +322,12 @@
             </InfoItem>
           </Object>
           <Object type="mv:ParkingSpace">
-            <id>CarSpacePersonWithDisabledParkingPermit2</id>
+            <id>CarSpacePersonsWithDisabledParkingPermit2</id>
             <InfoItem name="available">
               <value type="xs:boolean">true</value>
             </InfoItem>
             <InfoItem name="validForUserGroup" type="mv:validForUserGroup">
-              <value type="mv:UserGroup">mv:PersonWithDisabledParkingPermit</value>
+              <value type="mv:UserGroup">mv:PersonsWithDisabledParkingPermit</value>
             </InfoItem>
             <InfoItem name="validForVehicle" type="mv:validForVehicle">
               <value>Car</value>
@@ -383,8 +389,8 @@
                 <id>Plugs</id>
                 <Object type="mv:Plug">
                   <id>Plug</id>
-                  <InfoItem name="plugType" type="mv:PlugType">
-                    <value>Schuko Plug</value>
+                  <InfoItem name="plugType" type="mv:plugType">
+                    <value type="mv:PlugType">Schuko Plug</value>
                   </InfoItem>
                   <InfoItem name="currentInA" type="mv:currentInA">
                     <value type="xs:double">1</value>

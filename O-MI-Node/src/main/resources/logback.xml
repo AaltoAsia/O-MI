@@ -34,7 +34,7 @@
     </appender>
 
 
-<!-- Possible to edit levels of different loggers INFO level is currently set using filter
+<!-- Recommended logger levels when changing "root" to DEBUG:
     <logger name="akka" level="INFO" />
     <logger name="slick" level="INFO" />
     <logger name="com.zaxxer.hikari" level="INFO" />
@@ -47,6 +47,7 @@
     <logger name="database" level="DEBUG" />
     <logger name="accessControl" level="INFO" />
     <logger name="responses" level="DEBUG" />
+		<logger name="authorization" level="DEBUG" />
 -->
     <root level="INFO">
         <appender-ref ref="CONSOLE"/>

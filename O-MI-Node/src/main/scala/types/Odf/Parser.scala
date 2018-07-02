@@ -262,7 +262,7 @@ object ODFParser extends parsing.Parser[OdfParseResult] {
           timeSolver(valueType, requestProcessTime)
         )
     }
-    typeValue match {
+    typeValue.toLowerCase match {
       case "odf:objects" =>  parseODFValue
       case "objects" =>  parseODFValue
       case "odf" =>  parseODFValue
@@ -277,9 +277,9 @@ object ODFParser extends parsing.Parser[OdfParseResult] {
         val xmlValue = valueType.mixed.map{
           case dr: xmlGen.scalaxb.DataRecord[_] => 
             xmlGen.scalaxb.DataRecord.toXML(dr,None,None,xmlGen.odfDefaultScope,typeAttribute = false)
-            }.foldLeft(NodeSeq.Empty){
-              case (res: NodeSeq, ns: NodeSeq) => res ++ ns
-            }
+        }.foldLeft(NodeSeq.Empty){
+          case (res: NodeSeq, ns: NodeSeq) => res ++ ns
+        }
         Value(
           xmlValue.toString,
           typeValue,

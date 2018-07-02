@@ -17,7 +17,7 @@ object Dependencies {
   val sprayJson    = "com.typesafe.akka" %% "akka-http-spray-json" % akkaHttpV 
   val httpCors     = "ch.megard"         %% "akka-http-cors" % "0.2.2"
   //Test dependencies
-  val specs2V = "3.7.2"
+  val specs2V = "4.3.0"
   val specs2       = "org.specs2"        %% "specs2-core"   % specs2V   % "test"
   val specs2match  = "org.specs2"        %% "specs2-matcher-extra" % specs2V % "test"
   val mockito	     = "org.specs2"        %% "specs2-mock"   % specs2V   % "test"
@@ -26,17 +26,19 @@ object Dependencies {
   val httpTestkit  = "com.typesafe.akka" %% "akka-http-testkit" % akkaHttpV % "test"
 
   //Slick
-  val slickV = "3.1.1"
+  val slickV = "3.2.3"
   val slick        = "com.typesafe.slick" %% "slick" % slickV //common
   val slickCodegen = "com.typesafe.slick" %% "slick-codegen"  % slickV //common
   val hikariCP     = "com.typesafe.slick" %% "slick-hikaricp" % slickV
   //val sqliteJdbc   = "org.xerial"          % "sqlite-jdbc"    % "3.7.2" //common
   //"com.zaxxer"          % "HikariCP-java6" % "2.3.3" // XXX: manually updated dependency, slick had 2.0.1
   val h2           = "com.h2database"      % "h2"             % "1.4.192" //common
-  val postgres     = "org.postgresql"      % "postgresql"     % "9.4.1211"
   val leveldb      = "org.iq80.leveldb"    % "leveldb"        % "0.9"
   val leveldbjni   = "org.fusesource.leveldbjni"   % "leveldbjni-all"   % "1.8"
   //val json4s       = "org.json4s"         %% "json4s-native"  % "3.3.0" //common
+  val postgres     = "org.postgresql"      % "postgresql"      % "9.4.1211"
+  val json4s       = "org.json4s"         %% "json4s-native"   % "3.5.3" //common
+  val json4sAkka   = "de.heikoseeberger"  %% "akka-http-json4s" % "1.16.0" //common
 
   //etc
   val logback          = "ch.qos.logback" % "logback-classic" % "1.1.3"
@@ -44,7 +46,6 @@ object Dependencies {
   val prevaylerV = "2.6"
   val prevaylerCore    = "org.prevayler"  % "prevayler-core"   % prevaylerV
   val prevaylerFactory = "org.prevayler"  % "prevayler-factory"% prevaylerV
-  val scalameter = "com.storm-enroute" %% "scalameter" % "0.7"
 
 
 
@@ -80,7 +81,9 @@ object Dependencies {
     leveldb,
     leveldbjni,
     stm,
-    sprayJson,//json4s,
+    sprayJson,
+    json4s,
+    json4sAkka,
     //scalaXML,
     commonsLang,
     prevaylerCore,
@@ -99,8 +102,7 @@ object Dependencies {
     mockito,
     nuValidator,
     akkaTestkit,
-    httpTestkit,
-    scalameter
+    httpTestkit
   )
 
 }

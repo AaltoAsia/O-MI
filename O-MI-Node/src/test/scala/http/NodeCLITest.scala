@@ -57,14 +57,6 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
   implicit val timeout = Timeout( 1.minutes )
   def timeoutDuration= 10.seconds
   def emptyConfig = ConfigFactory.empty()
-  def AS =ActorSystem(
-    "startstop",
-    ConfigFactory.load(
-      ConfigFactory.parseString(
-        """
-        akka.loggers = ["akka.testkit.TestEventListener"]
-        """).withFallback(ConfigFactory.load()))
-    )
   def strToMsg(str: String) = Received(ByteString(str))
   def decodeWriteStr( future : Future[Any] )(implicit system: ActorSystem) ={
     import system.dispatcher
@@ -84,7 +76,7 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
       }
     }
   }
-  def helpTest = new Actorstest(AS){
+  def helpTest = new Actorstest(){
     import system.dispatcher
     val agentsMap : MutableMap[AgentName,AgentInfo] = MutableMap.empty
     val requestHandler = TestActorRef( new TestDummyRequestHandler() )
@@ -110,7 +102,7 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
   def ignoreConnectedToAgentManager(connection: TestProbe ) : Unit ={
     connection.ignoreMsg{ case Write(data, ack) => data.decodeString("UTF-8") == s"CLI connected to AgentManager.\r\n>" }
   }
-  def listAgentsTest= new Actorstest(AS){
+  def listAgentsTest= new Actorstest(){
     import system.dispatcher
     val agents = Vector(
       AgentInfo( "test1", "testClass", emptyConfig, None, running = true, Nil, Java() ),
@@ -140,7 +132,7 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
     resF should beEqualTo( correct ).await( 0, timeoutDuration)
   }
 
-  def startAgentTest=  new Actorstest(AS){
+  def startAgentTest=  new Actorstest(){
 
     val name = "StartSuccess"
     val ref = system.actorOf( SSAgent.props(emptyConfig, requestHandler, dbHandler), name)
@@ -171,7 +163,7 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
     ( connection.expectMsgType[Write].data.decodeString("UTF-8") must beEqualTo(s">") ) and (
     connection.expectMsgType[Write].data.decodeString("UTF-8") must beEqualTo(s"Agent $name started.\r\n>") )
   }
-  def stopAgentTest= new Actorstest(AS){
+  def stopAgentTest= new Actorstest(){
     val name = "StartSuccess"
     val ref = system.actorOf( SSAgent.props(emptyConfig, requestHandler, dbHandler), name)
     val clazz = "agentSystem.SSAgent"
@@ -200,7 +192,7 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
     ( connection.expectMsgType[Write].data.decodeString("UTF-8") must beEqualTo(s">") ) and (
     connection.expectMsgType[Write].data.decodeString("UTF-8") must beEqualTo(s"Agent $name stopped.\r\n>") )
   }
-  def unknownCmdTest = new Actorstest(AS){
+  def unknownCmdTest = new Actorstest(){
     import system.dispatcher
     val agentsMap: MutableMap[AgentName, AgentInfo] = MutableMap.empty
     val requestHandler = TestActorRef( new TestDummyRequestHandler() )
@@ -224,7 +216,7 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
     connection.expectMsgType[Write].data.decodeString("UTF-8") must beEqualTo(correct)
 
   }
-  def removePathTest= new Actorstest(AS){
+  def removePathTest= new Actorstest(){
     import system.dispatcher
     val agentsMap: MutableMap[AgentName, AgentInfo] = MutableMap.empty
     val requestHandler = TestActorRef( new TestDummyRequestHandler() )
@@ -249,7 +241,7 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
     connection.send(listenerRef,strToMsg(s"remove $path"))
     connection.expectMsgType[Write].data.decodeString("UTF-8") must beEqualTo(correct)
   }
-  def removeUnexistingPathTest= new Actorstest(AS){
+  def removeUnexistingPathTest= new Actorstest(){
     import system.dispatcher
     val agentsMap: MutableMap[AgentName, AgentInfo] = MutableMap.empty
     val requestHandler = TestActorRef( new TestDummyRequestHandler() )
@@ -274,7 +266,7 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
     connection.expectMsgType[Write].data.decodeString("UTF-8") must beEqualTo(correct) 
   }
 
-  def listSubsTest= new Actorstest(AS){
+  def listSubsTest= new Actorstest(){
     import system.dispatcher
     val startTime = new Timestamp( new Date().getTime() )
     val endTime = new Timestamp( new Date().getTime() + 1.hours.toMillis )
@@ -326,7 +318,7 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
       resF should beEqualTo(correct ).await( 0, timeoutDuration)
   }
 
-  def removeSubTest= new Actorstest(AS){
+  def removeSubTest= new Actorstest(){
     import system.dispatcher
     val id = 13
     val agentsMap: MutableMap[AgentName, AgentInfo] = MutableMap.empty
@@ -355,7 +347,7 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
     resF should beEqualTo(correct ).await( 0, timeoutDuration)
   }
 
-  def removeUnexistingSubTest= new Actorstest(AS){
+  def removeUnexistingSubTest= new Actorstest(){
     import system.dispatcher
     val id = 13
     val agentsMap: MutableMap[AgentName, AgentInfo] = MutableMap.empty
@@ -500,7 +492,7 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
       val correct: String  = s"Subscription with id $id not found.\r\n>" 
       showSubTestBase(None,correct)
   }
-  def showSubTestBase( sub: Option[SavedSub], correctOut: String ) = new Actorstest(AS){
+  def showSubTestBase( sub: Option[SavedSub], correctOut: String ) = new Actorstest(){
     implicit val is = system
     val correct = correctOut
     val remote = new InetSocketAddress("Tester",22)

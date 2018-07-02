@@ -45,7 +45,7 @@ case class Partial(authorized: JavaIterable[Path], user: UserInfo) extends Autho
  * Wraps a new O-MI request that is potentially modified from the original to pass authorization.
  * Can be used instead of [[Partial]] to define partial authorization. 
  */
-case class Changed(authorizedRequest: RawRequestWrapper, user: UserInfo) extends AuthorizationResult
+case class Changed(authorizedRequest: RequestWrapper, user: UserInfo) extends AuthorizationResult
 
 /**
  * Implement one method of this interface and register the class through AuthApiProvider.
@@ -123,7 +123,6 @@ trait AuthApiProvider extends AuthorizationExtension {
         case Success(Unauthorized(user0)) => Failure(UnauthorizedEx())
         case Success(Authorized(user0)) => {
           orgOmiRequest.user = user0.copy(remoteAddress = orgOmiRequest.user.remoteAddress)
-          log.debug(s"GOT USER:\nRemote: ${orgOmiRequest.user.remoteAddress.getOrElse("Empty")}\nName: ${orgOmiRequest.user.name.getOrElse("Empty")}")
           Success(orgOmiRequest)
         }
         case Success(Changed(reqWrapper,user0)) => {
@@ -164,7 +163,7 @@ trait AuthApiProvider extends AuthorizationExtension {
           }
         }
         case f @ Failure(exception) =>
-          log.error("Error while running AuthPlugins. => Unauthorized, trying next plugin", exception)
+          log.debug("Error while running AuthPlugins. => Unauthorized, trying next plugin", exception)
           Failure(UnauthorizedEx())
       }
 
@@ -182,6 +181,7 @@ trait AuthApiProvider extends AuthorizationExtension {
                 Try{nextAuthApi.isAuthorizedForRequest(httpRequest, omiReq)}
               )
             }
+
 
           // Choose optimal test order
           orgOmiRequest match {

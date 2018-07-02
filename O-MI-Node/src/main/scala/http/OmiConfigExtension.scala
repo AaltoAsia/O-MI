@@ -18,18 +18,34 @@ import java.lang
 import java.util.concurrent.TimeUnit
 import java.net.{InetAddress, URLDecoder}
 
+import scala.language.postfixOps
+import scala.language.implicitConversions
 import scala.collection.JavaConversions._
 import scala.concurrent.duration._
 import scala.util.Try
-import scala.language.implicitConversions
 import agentSystem.AgentSystemConfigExtension
 import akka.actor.{ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
+import akka.http.scaladsl.model.Uri
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigException._
+import akka.http.scaladsl.client.RequestBuilding.{RequestBuilder,Post,Get,Patch,Put,Head,Options}
 import types.Path
+import types.OmiTypes.RawRequestWrapper.MessageType
 
 class OmiConfigExtension( val config: Config) extends Extension 
   with AgentSystemConfigExtension {
+
+  /**
+    * Throws exceptions if invalid url, returns the input parameter if success
+    */
+  private def testUri(address: String): Uri = {
+    val uri = Uri(address)
+    val hostAddress = uri.authority.host.address
+    // Test address validity (throws exceptions when invalid)
+    val ipAddress = InetAddress.getByName(hostAddress)
+
+    uri
+  }
 
   val callbackAuthorizationEnabled: Boolean = config.getBoolean("omi-service.callback-authorization-enabled")
   /**
@@ -74,10 +90,78 @@ class OmiConfigExtension( val config: Config) extends Extension
   //val cliPort: Int = config.getInt("omi-service.agent-cli-port")
 
   // Authorization
-  //External API
-  val enableExternalAuthorization: Boolean = config.getBoolean("omi-service.authorization.enable-external-authorization-service")
-  val externalAuthorizationPort: Int = config.getInt("omi-service.authorization.authorization-service-port")
-  val externalAuthUseHttps: Boolean = config.getBoolean("omi-service.authorization.use-https")
+  val allowedRequestTypes = config.getStringList("omi-service.allowRequestTypesForAll")
+    .map((x) => MessageType(x.toLowerCase)).toSet
+
+  // Old External AuthAPIService V1
+  val authAPIServiceV1: Config =
+    Try(config getConfig "omi-service.authorization") orElse
+    Try(config getConfig "omi-service.authAPI.v1") get
+
+  val enableExternalAuthorization: Boolean = authAPIServiceV1.getBoolean("enable-external-authorization-service")
+  val enableAuthAPIServiceV1: Boolean = authAPIServiceV1.getBoolean("enable-external-authorization-service")
+  val externalAuthorizationPort: Int = authAPIServiceV1.getInt("authorization-service-port")
+  val externalAuthUseHttps: Boolean = authAPIServiceV1.getBoolean("use-https")
+
+  // External AuthAPIService V2
+  case object AuthApiV2 {
+    val authAPIServiceV2: Config = config getConfig "omi-service.authAPI.v2"
+    val enable: Boolean = authAPIServiceV2.getBoolean("enable")
+    val authenticationEndpoint: Uri = testUri(authAPIServiceV2.getString("authentication.url"))
+    val omiHttpHeadersToAuthentication: Set[String] = authAPIServiceV2.getStringList("authentication.copy-request-headers").toSet
+    val authorizationEndpoint: Uri = testUri(authAPIServiceV2.getString("authorization.url"))
+
+    type ParameterExtraction = Map[String,Map[String,String]]
+
+    def cmap(c: Config): Map[String,String] = 
+      c.root().keys.map(
+          (key) => key -> c.getString(key)).toMap
+
+    def mapmap(c: Config): ParameterExtraction = {
+      c.root().keys.map{(key) =>
+        val innerConfig = c.getConfig(key)
+        key.toLowerCase -> cmap(innerConfig)
+      }.toMap
+    }
+
+    val parameters: Config = authAPIServiceV2.getConfig("parameters") 
+    val parametersFromRequest: ParameterExtraction = mapmap(parameters.getConfig("fromRequest")) 
+    val parametersFromAuthentication: ParameterExtraction = mapmap(parameters.getConfig("fromAuthentication")) 
+    val parametersToAuthentication: ParameterExtraction = mapmap(parameters.getConfig("toAuthentication")) 
+    val parametersToAuthorization: ParameterExtraction = mapmap(parameters.getConfig("toAuthorization")) 
+    val parametersConstants: Map[String,String] = cmap(parameters.getConfig("constants"))
+
+    def toRequestBuilder(method: String) = method.toLowerCase match {
+      case "get" => Get
+      case "post" => Post
+      case "patch" => Patch
+      case "put" => Put
+      case "head" => Head
+      case "options" => Options
+      case x => throw new MatchError(s"Invalid http method in configuration: $x")
+    }
+
+    val authenticationMethod: RequestBuilder = toRequestBuilder(authAPIServiceV2.getString("authentication.method"))
+    val authorizationMethod: RequestBuilder = toRequestBuilder(authAPIServiceV2.getString("authorization.method"))
+  }
+  //val userInfoFromRequestHeaders: Map[String,String] = authAPIServiceV2.getObject("userinfo-from-request-headers")
+  //
+  //TODO
+  // earlier lines override conflicting later ones
+  // store-from-request = {
+  //   headers.cookie.jwt_token = authtoken
+  //   auth.bearer = authtoken
+  // }
+  // put-to-authentication-request = {
+  //   query.auth-token = authtoken
+  // }
+  // store-from-authentication-response = {
+  //   email = username
+  //   username = username
+  // }
+  // put-to-authorization-request = {
+  //   username = user
+  // }
 
   //IP
   val inputWhiteListUsers: Vector[String]= config.getStringList("omi-service.input-whitelist-users").toVector
