@@ -578,7 +578,7 @@ class SubscriptionManager(
           case dur: Duration => {
             val msg = s"Duration $dur is unsupported"
             log.error(msg)
-            throw new Exception(msg)
+            Future.failed(new Exception(msg))
           }
         }
         case None => {
@@ -647,12 +647,16 @@ class SubscriptionManager(
             }
             case dur: Duration => {
               log.error(s"Duration $dur is unsupported")
-              throw new Exception(s"Duration $dur is unsupported")
+              Future.failed(new Exception(s"Duration $dur is unsupported"))
             }
 
           }
         }
       }
+    subId.foreach(id => subscription.ttl match {
+      case dur: FiniteDuration => ttlScheduler.scheduleOnce(dur, self, SubscriptionTimeout(id))
+      case _ =>
+    })
     subId
     }
 

@@ -318,7 +318,7 @@ class CallbackHandler(
         } else {
           val msg = s"connection to  WebSocket callback: $uri failed: ${upgrade.response.status}"
           log.warning(msg)
-            throw new Exception(msg)
+            Future.failed(new Exception(msg))
         }
     }
 

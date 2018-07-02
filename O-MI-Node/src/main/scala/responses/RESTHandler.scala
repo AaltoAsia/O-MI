@@ -153,7 +153,7 @@ object RESTHandler{
               )).map(Right(_))
             )
           case None => Future.successful(None)
-          case other => throw new Exception(s"Invalid type found in rest response handler: ${other}")
+          case other => Future.failed(new Exception(s"Invalid type found in rest response handler: ${other}"))
         })
       }
     }

@@ -186,7 +186,7 @@ class SystemTestCallbackServer(destination: ActorRef, interface: String, port: I
       Future.successful(Done)
     }
     else{
-      throw new RuntimeException(s"Websocket connection failed ${upgrade.response.status}")
+      Future.failed(new RuntimeException(s"Websocket connection failed ${upgrade.response.status}"))
     }
   }
 

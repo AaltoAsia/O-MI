@@ -358,7 +358,7 @@ trait OmiService
       }
       case ex: Throwable => { // Catch fatal errors for logging
         log.error("Fatal server error", ex)
-        throw ex
+        Future.failed(ex)
       }
     }
   }

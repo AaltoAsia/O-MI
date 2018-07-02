@@ -156,8 +156,8 @@ trait AuthApiProvider extends AuthorizationExtension {
                 case r: ResponseRequest     => Success(r.copy(results =
                   OdfTreeCollection(r.results.head.copy(odf = Some(nODF))) // TODO: make better copy logic?
                 ))
-                case r: AnyRef => throw new NotImplementedError(
-                  s"Partial authorization granted for ${maybePaths.mkString(", ")}, BUT request '${r.getClass.getSimpleName}' not yet implemented in O-MI node.")
+                case r: AnyRef => Failure(new NotImplementedError(
+                  s"Partial authorization granted for ${maybePaths.mkString(", ")}, BUT request '${r.getClass.getSimpleName}' not yet implemented in O-MI node."))
               }
             case _ => Failure(UnauthorizedEx())
           }

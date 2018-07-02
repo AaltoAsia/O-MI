@@ -59,7 +59,7 @@ class PollDataStore extends PersistentActor with ActorLogging {
   def receiveCommand: Receive = {
     case AddPollData(subId,path,value) =>
       persist(PAddPollData(subId,path.toString, Some(value.persist))){ event =>
-        updateState(event)
+        sender() ! updateState(event)
       }
     case PollEventSubscription(id) =>
       persist(PPollEventSubscription(id)){event =>
