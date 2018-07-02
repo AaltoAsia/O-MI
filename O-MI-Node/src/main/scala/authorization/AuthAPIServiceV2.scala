@@ -114,8 +114,10 @@ class AuthAPIServiceV2(
 
 
   def filterODF(originalRequest: OdfRequest, filters: AuthorizationResponse): Option[OmiRequest] = {
+    val odfTree = hierarchyStore execute GetTree()
 
-    val allowOdf = originalRequest.odf selectSubTree filters.allow
+    val requestedTree = odfTree selectSubTree originalRequest.odf.getPaths
+    val allowOdf = requestedTree selectSubTree filters.allow
     val filteredOdf = allowOdf removePaths filters.deny
 
     if (filteredOdf.isEmpty) None
@@ -228,7 +230,6 @@ class AuthAPIServiceV2(
   }
 
   protected def isAuthorizedForOdfRequest(httpRequest: HttpRequest, rawOmiRequest: RawRequestWrapper): AuthorizationResult = {
-    val odfTree = hierarchyStore execute GetTree()
 
     implicit val timeout = Timeout(rawOmiRequest.handleTTL)
 
