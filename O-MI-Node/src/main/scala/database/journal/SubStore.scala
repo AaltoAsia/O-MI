@@ -23,7 +23,7 @@ class SubStore extends PersistentActor with ActorLogging {
   var intervalSubs: Map[Long,IntervalSub] = Map()
 
   def addPollSub(ps: PolledSub) = {
-    if(ps.endTime.before(new Date())){
+    if(ps.endTime.after(new Date())){
       idToSub = idToSub + (ps.id -> ps)
 
       //update mapping from path to Ids
@@ -36,14 +36,14 @@ class SubStore extends PersistentActor with ActorLogging {
     }
   }
   def addIntervalSub(is: IntervalSub) = {
-    if(is.endTime.before(new Date())){
+    if(is.endTime.after(new Date())){
       intervalSubs = intervalSubs.updated(is.id, is)//) intervalSub//TODO check this
     }
   }
 
 
   def addEventSub(es: EventSub) = {
-    if(es.endTime.before(new Date())) {
+    if(es.endTime.after(new Date())) {
       val newSubs: Map[Path, Seq[EventSub]] = Map(es.paths.map(n => n -> Seq(es)): _*)
       eventSubs = mergeSubs(eventSubs,newSubs)
     }
@@ -308,7 +308,8 @@ class SubStore extends PersistentActor with ActorLogging {
 
 
     case aEventS @ Models.AddEventSub(eventSub: EventSub) =>
-      sender() ! updateState(aEventS)
+      val res = updateState(aEventS)
+      sender() ! res
     case aIntervalS @ Models.AddIntervalSub(intervalSub: IntervalSub) =>
       sender() ! updateState(aIntervalS)
     case aPollS @ Models.AddPollSub(pollsub: PolledSub) =>

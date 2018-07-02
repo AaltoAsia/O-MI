@@ -71,7 +71,7 @@ class PollDataStore extends PersistentActor with ActorLogging {
       }
     case RemovePollSubData(id) =>
       persist(PRemovePollSubData(id)){ event =>
-        updateState(event)
+        sender() ! updateState(event)
       }
     case CheckSubscriptionData(id) =>
       val response: Map[Path, Seq[Value[Any]]] =
