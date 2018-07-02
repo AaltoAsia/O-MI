@@ -26,16 +26,16 @@ case class OpeningHoursSpecification(
         "opens",
         path / "opens",
         typeAttribute = Some( "schema:opens" ),
-        values = Vector( StringValue( str, currentTimestamp, Map())) 
+        values = Vector( StringValue( str, currentTimestamp))
       )
-    }.toSeq ++ 
+    }.toSeq ++
     closes.map{
-      str: String => 
+      str: String =>
       InfoItem(
         "closes",
         path / "closes",
         typeAttribute = Some( "schema:closes" ),
-        values = Vector( StringValue( str, currentTimestamp, Map())) 
+        values = Vector( StringValue( str, currentTimestamp))
       )
     }.toSeq ++ 
     dayOfWeek.map{
@@ -44,7 +44,7 @@ case class OpeningHoursSpecification(
         "String",
         path / "String",
         typeAttribute = Some("schema:DayOfWeek"),
-        values = Vector( StringValue( str, currentTimestamp, Map())) 
+        values = Vector( StringValue( str, currentTimestamp))
       )
     }.toSeq  
   }

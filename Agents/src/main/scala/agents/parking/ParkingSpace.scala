@@ -56,7 +56,7 @@ case class ParkingSpace(
         nII,
         path / nII,
         typeAttribute = Some(s"mv:$nII"),
-        values = Vector( LongValue( mph, currentTimestamp, Map() ))
+        values = Vector( LongValue( mph, currentTimestamp ))
       )
     }.toSeq ++ height.map{ h => 
       val nII = "vehicleHeighLimitInM"
@@ -64,7 +64,7 @@ case class ParkingSpace(
         nII,
         path / nII,
         typeAttribute = Some(s"mv:$nII"),
-        values = Vector( DoubleValue( h, currentTimestamp, Map() ))
+        values = Vector( DoubleValue( h, currentTimestamp ))
       )
     }.toSeq ++ width.map{ w => 
       val nII = "vehicleWidthLimitInM"
@@ -72,7 +72,7 @@ case class ParkingSpace(
         nII,
         path / nII,
         typeAttribute = Some(s"mv:$nII"),
-        values = Vector( DoubleValue( w, currentTimestamp, Map() ))
+        values = Vector( DoubleValue( w, currentTimestamp ))
       )
     }.toSeq ++ length.map{ l => 
       val nII = "vehicleLengthLimitInM"
@@ -80,7 +80,7 @@ case class ParkingSpace(
         nII,
         path / nII,
         typeAttribute = Some(s"mv:$nII"),
-        values = Vector( DoubleValue( l, currentTimestamp, Map() ))
+        values = Vector( DoubleValue( l, currentTimestamp ))
       )
     }.toSeq ++ available.map{ a => 
       val nII = "available"
@@ -88,7 +88,7 @@ case class ParkingSpace(
         nII,
         path / nII,
         typeAttribute = Some(s"mv:$nII"),
-        values = Vector( BooleanValue( a, currentTimestamp, Map() ))
+        values = Vector( BooleanValue( a, currentTimestamp ))
       )
     }.toSeq ++ user.map{ u => 
       val nII = "user"
@@ -96,7 +96,7 @@ case class ParkingSpace(
         nII,
         path / nII,
         typeAttribute = Some(s"mv:$nII"),
-        values = Vector( StringValue( u, currentTimestamp, Map() ))
+        values = Vector( StringValue( u, currentTimestamp ))
       )
     }.toSeq ++ 
     geo.map( g => g.toOdf( path )).toSeq.flatten ++ 

@@ -33,13 +33,13 @@ case class GeoCoordinates(
         "latitude",
         path / "latitude",
         typeAttribute = Some( "schema:latitude" ),
-        values = Vector( DoubleValue( latitude, currentTimestamp, Map())) 
+        values = Vector( DoubleValue( latitude, currentTimestamp))
       ),
       InfoItem(
         "longitude",
         path / "longitude",
         typeAttribute = Some( "schema:longitude" ),
-        values = Vector( DoubleValue( longitude, currentTimestamp, Map())) 
+        values = Vector( DoubleValue( longitude, currentTimestamp))
       )
     )  
   }

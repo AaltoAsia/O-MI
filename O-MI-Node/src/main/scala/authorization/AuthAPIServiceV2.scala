@@ -1,17 +1,17 @@
 package authorization
 
-import scala.concurrent.{Future,Await}
+import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
 import scala.util.Try
 import scala.language.implicitConversions
 import scala.collection.JavaConversions._
-
 import org.prevayler.Prevayler
-import akka.util.{Timeout, ByteString}
-import akka.actor.ActorSystem
+import akka.util.{ByteString, Timeout}
+import akka.actor.{ActorRef, ActorSystem}
 import akka.stream.ActorMaterializer
 import akka.pattern.ask
-import akka.http.scaladsl.{ Http, HttpExt}
+import akka.http.scaladsl.{Http, HttpExt}
+import database.journal.Models.GetTree
 //import akka.http.scaladsl.model.headers.{Authorization, GenericHttpCredentials}
 import akka.http.scaladsl.model.{HttpMessage, HttpRequest, HttpResponse, StatusCodes, HttpEntity, headers, Uri, FormData}
 import akka.http.scaladsl.model.ContentTypes._
@@ -27,10 +27,8 @@ import org.json4s._
 import agentSystem._
 import org.slf4j.{Logger, LoggerFactory}
 import com.typesafe.config.{Config, ConfigObject}
+import akka.pattern.ask
 
-
-import database.GetTree
-import database.OdfTree
 import types.odf._
 import types.Path
 import types.OmiTypes.{OmiRequest, OdfRequest, UserInfo, RawRequestWrapper}
@@ -98,7 +96,7 @@ trait AuthApiJsonSupport {
   * This V2 has different interface to allow easier partial authorization by having "deny" rules in addition to "allow" rules.
   */
 class AuthAPIServiceV2(
-    val hierarchyStore: Prevayler[OdfTree],
+    val hierarchyStore: ActorRef,
     val settings : OmiConfigExtension,
     protected implicit val system : ActorSystem,
     protected override implicit val materializer : ActorMaterializer
@@ -113,15 +111,17 @@ class AuthAPIServiceV2(
   protected val httpExtension: HttpExt = Http(system)
 
 
-  def filterODF(originalRequest: OdfRequest, filters: AuthorizationResponse): Option[OmiRequest] = {
-    val odfTree = hierarchyStore execute GetTree()
-
+  def filterODF(originalRequest: OdfRequest, filters: AuthorizationResponse): Future[Option[OmiRequest]] = {
+    implicit val timeout = new Timeout(2 minutes)
+    val odfTreeF: Future[ImmutableODF] = (hierarchyStore ? GetTree).mapTo[ImmutableODF]
+    odfTreeF.map{odfTree =>
     val requestedTree = odfTree selectSubTree originalRequest.odf.getPaths
     val allowOdf = requestedTree selectSubTree filters.allow
     val filteredOdf = allowOdf removePaths filters.deny
 
     if (filteredOdf.isEmpty) None
     else Some(originalRequest replaceOdf filteredOdf)
+    }
   }
 
   def optionToAuthResult: Option[OmiRequest] => (UserInfo => AuthorizationResult) = {
@@ -286,7 +286,7 @@ class AuthAPIServiceV2(
         case _ => throw new Error("impossible")
       }
 
-      filteredRequest = filterODF(odfRequest, authorizationResponse)
+      filteredRequest <- filterODF(odfRequest, authorizationResponse)
 
       user = UserInfo(name=authenticationResult.get("username"))
 

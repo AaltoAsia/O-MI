@@ -26,7 +26,7 @@ case class PostalAddress(
         "addressCountry",
         path / "addressCountry",
         typeAttribute = Some( "schema:addressCountry" ),
-        values = Vector( StringValue( c, currentTimestamp, Map())) 
+        values = Vector( StringValue( c, currentTimestamp))
       )
     }.toSeq ++ 
     locality.map{ l =>
@@ -34,7 +34,7 @@ case class PostalAddress(
         "addressLocality",
         path / "addressLocality",
         typeAttribute = Some( "schema:addressLocality" ),
-        values = Vector( StringValue( l, currentTimestamp, Map())) 
+        values = Vector( StringValue( l, currentTimestamp))
       )
     }.toSeq ++ 
     region.map{ r =>
@@ -42,7 +42,7 @@ case class PostalAddress(
         "addressRegion",
         path / "addressRegion",
         typeAttribute = Some( "schema:addressRegion" ),
-        values = Vector( StringValue( r, currentTimestamp, Map())) 
+        values = Vector( StringValue( r, currentTimestamp))
       )
     }.toSeq ++ 
     streetAddress.map{ sa =>
@@ -50,7 +50,7 @@ case class PostalAddress(
         "streetAddress",
         path / "streetAddress",
         typeAttribute = Some( "schema:streetAddress" ),
-        values = Vector( StringValue( sa, currentTimestamp, Map())) 
+        values = Vector( StringValue( sa, currentTimestamp))
       )
     }.toSeq ++ 
     postCode.map{ pc =>
@@ -58,7 +58,7 @@ case class PostalAddress(
         "postCode",
         path / "postCode",
         typeAttribute = Some( "schema:postCode" ),
-        values = Vector( StringValue( pc, currentTimestamp, Map())) 
+        values = Vector( StringValue( pc, currentTimestamp))
       )
     }
   }
