@@ -69,7 +69,7 @@ class OmiServer extends OmiNode{
       )( system, singleStores )
     case "WARP10" => ???
 
-    case default => new StubDB(singleStores)
+    case default => new StubDB(singleStores,system,settings)
   }
 /*
   val dbConnection: DB = new influxdb.InfluxDBImplementation(

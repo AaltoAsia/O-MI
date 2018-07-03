@@ -239,5 +239,5 @@ case class InfoItem(
     )
   }
 
-  def persist: PPersistentNode.NodeType = Ii(PInfoItem(path.toString,typeAttribute.getOrElse(""),names.map(_.persist),descriptions.map(_.persist).toSeq,metaData.map(_.persist()),attributes))
+  def persist: PPersistentNode.NodeType = Ii(PInfoItem(typeAttribute.getOrElse(""),names.map(_.persist),descriptions.map(_.persist).toSeq,metaData.map(_.persist()),attributes))
 }

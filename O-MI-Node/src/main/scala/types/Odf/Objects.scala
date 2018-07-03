@@ -72,5 +72,5 @@ case class Objects(
     )
   }
 
-  def persist: PPersistentNode.NodeType = Objs(PObjects(path.toString,version.getOrElse(""),attributes))
+  def persist: PPersistentNode.NodeType = Objs(PObjects(version.getOrElse(""),attributes))
 }

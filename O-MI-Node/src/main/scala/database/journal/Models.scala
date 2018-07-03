@@ -86,15 +86,15 @@ object Models {
 
   case class SaveSnapshot(msg: Option[String] = None) extends Command
 
-  def buildInfoItemFromProtobuf(pinfo: PInfoItem): InfoItem = {
-    val path = Path(pinfo.path)
+  def buildInfoItemFromProtobuf(_path: String, pinfo: PInfoItem): InfoItem = {
+    val path: Path = Path(_path)
     InfoItem(
       path.last,
       path,
       Option(pinfo.typeName).filter(_.nonEmpty),
       pinfo.names.map(id => buildQlmIDFromProtobuf(id)).toVector,
       pinfo.descriptions.map(d => Description(d.text, Option(d.lang).filter(_.nonEmpty))).toSet,
-      metaData = pinfo.metadata.map(md => MetaData(md.infoItems.map(pi => buildInfoItemFromProtobuf(pi)).toVector)),
+      metaData = pinfo.metadata.map(md => MetaData(md.infoItems.map{case (p,ii) => buildInfoItemFromProtobuf(p, ii)}.toVector)),
       attributes = pinfo.attributes
     )
   }
@@ -110,10 +110,10 @@ object Models {
     )
   }
 
-  def buildObjectFromProtobuf(pobj: PObject): Object = {
+  def buildObjectFromProtobuf(path: String, pobj: PObject): Object = {
     Object(
       pobj.ids.map(id => buildQlmIDFromProtobuf(id)).toVector,
-      Path(pobj.path),
+      Path(path),
       Option(pobj.typeName).filter(_.nonEmpty),
       pobj.descriptions.map(d => Description(d.text, Option(d.lang).filter(_.nonEmpty))).toSet,
       pobj.attributes
@@ -133,9 +133,9 @@ object Models {
       in.map { case (k, v) =>
         v.nodeType match {
           case Ii(pinfo) =>
-            buildInfoItemFromProtobuf(pinfo)
+            buildInfoItemFromProtobuf(k, pinfo)
           case Obj(pobject) =>
-            buildObjectFromProtobuf(pobject)
+            buildObjectFromProtobuf(k, pobject)
           case Objs(pobjects) =>
             buildObjectsFromProtobuf(pobjects)
 

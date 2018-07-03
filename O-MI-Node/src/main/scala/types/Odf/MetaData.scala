@@ -63,5 +63,7 @@ case class MetaData(
   }
   implicit def asMetaDataType : MetaDataType = MetaDataType( infoItems.map(_.asInfoItemType) )
 
-  def persist(): PMetaData = PMetaData(infoItems.flatMap(_.persist.ii))
+  def persist(): PMetaData = PMetaData(infoItems.map(ii => ii.path.toString -> ii.persist.ii).collect {
+    case (ipath, Some(infoi)) => ipath -> infoi
+  }.toMap)
 }

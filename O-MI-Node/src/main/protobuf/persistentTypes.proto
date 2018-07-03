@@ -41,17 +41,15 @@ message PPersistentNode {
 }
 
 message PObject {
-    string path = 1;
-    string typeName = 2;
-    repeated PQlmid ids =3;
-    repeated PDescription descriptions = 4;
-    map<string, string> attributes = 5;
+    string typeName = 1;
+    repeated PQlmid ids =2;
+    repeated PDescription descriptions = 3;
+    map<string, string> attributes = 4;
 
 }
 message PObjects {
-    string path = 1;
-    string version = 2;
-    map<string, string> attributes = 3;
+    string version = 1;
+    map<string, string> attributes = 2;
 
 }
 message PTimestamp {
@@ -72,15 +70,14 @@ message PDescription {
 }
 
 message PMetaData {
-    repeated PInfoItem infoItems = 1;
+    map<string, PInfoItem> infoItems = 1;
 }
 message PInfoItem {
-    string path = 1;
-    string typeName = 2;
-    repeated PQlmid names = 3;
-    repeated PDescription descriptions =4;
-    PMetaData metadata = 5;
-    map<string, string> attributes = 6;
+    string typeName = 1;
+    repeated PQlmid names = 2;
+    repeated PDescription descriptions =3;
+    PMetaData metadata = 4;
+    map<string, string> attributes = 5;
 }
 message PUnion {
     option (scalapb.message).extends = "database.journal.Models.Event";

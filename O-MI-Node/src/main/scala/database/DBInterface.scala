@@ -262,10 +262,13 @@ class DatabaseConnection()(
   }
 }
 
-class StubDB(val singleStores: SingleStores) extends DB{
+class StubDB(val singleStores: SingleStores, val system: ActorSystem, val settings: OmiConfigExtension) extends DB{
   import scala.concurrent.ExecutionContext.Implicits.global
   implicit val timeout: Timeout = 2 minutes
   def initialize(): Unit = Unit;
+
+  val dbmaintainer: ActorRef = system.actorOf(SingleStoresMaintainer.props(singleStores,settings))
+
 
   /**
     * Used to get result values with given constrains in parallel if possible.
@@ -437,6 +440,6 @@ trait DB {
    */
   def remove(path: Path): Future[Seq[Int]]
 }
-trait TrimmableDB{
+trait TrimmableDB {
   def trimDB(): Future[Seq[Int]]
 }

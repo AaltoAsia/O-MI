@@ -168,5 +168,5 @@ case class Object(
     )
   }
 
-  def persist: PPersistentNode.NodeType = Obj(PObject(path.toString,typeAttribute.getOrElse(""),ids.map(_.persist),descriptions.map(_.persist()).toSeq,attributes))
+  def persist: PPersistentNode.NodeType = Obj(PObject(typeAttribute.getOrElse(""),ids.map(_.persist),descriptions.map(_.persist()).toSeq,attributes))
 }
