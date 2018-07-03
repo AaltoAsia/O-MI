@@ -15,7 +15,7 @@ import scala.concurrent.duration._
 
 class SubStore extends PersistentActor with ActorLogging {
 
-  def persistenceId: String = "substore-id"
+  def persistenceId: String = "substore"
 
   var eventSubs:Map[Path,Seq[EventSub]] = Map()
   var idToSub: Map[Long, PolledSub] = Map()
@@ -299,7 +299,7 @@ class SubStore extends PersistentActor with ActorLogging {
   }
 
   def receiveCommand: Receive = {
-    case SaveSnapshot(msg) => saveSnapshot(
+    case SaveSnapshot(msg) => sender() ! saveSnapshot(
       PSubStoreState(
         persistEventsubs(eventSubs),
         persistIdToSub(idToSub),

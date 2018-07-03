@@ -53,10 +53,8 @@ extends SingleStoresMaintainer(singleStores, settings)
       val numDel = dbConnection.trimDB()
     numDel.map(n=>log.debug(s"DELETE returned ${n.sum}"))}
     case TakeSnapshot                   => 
-      val snapshotDur: FiniteDuration = takeSnapshot
-      log.info(s"Taking Snapshot took $snapshotDur")
-      cleanPrevayler()
-    
+      takeSnapshot.map(res => cleanPrevayler())
+
     case _ => log.warning("Unknown message received.")
 
   }

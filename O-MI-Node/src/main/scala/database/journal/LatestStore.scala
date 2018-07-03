@@ -14,7 +14,7 @@ import scala.util.Try
 
 
 class LatestStore extends PersistentActor with ActorLogging {
-  def persistenceId = "lateststore-id"
+  def persistenceId = "lateststore"
   var state: Map[String, PPersistentValue] = Map()
 
   //implicit def pathToString(path: Path): String = path.toString
@@ -33,7 +33,7 @@ class LatestStore extends PersistentActor with ActorLogging {
   }
   val snapshotInterval = 100
   def receiveCommand: Receive = {
-    case SaveSnapshot(msg) => saveSnapshot(PWriteLatest(state))
+    case SaveSnapshot(msg) => sender() ! saveSnapshot(PWriteLatest(state))
 
     case SingleWriteCommand(p, v) =>{
       persist(PWriteLatest(Map(p.toString->v.persist))){ event =>

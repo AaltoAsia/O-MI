@@ -2,12 +2,13 @@ package database.journal
 
 import akka.actor.ActorLogging
 import akka.persistence.{PersistentActor, SnapshotOffer}
+import database.SingleStoresMaintainer
 import database.journal.Models._
 import types.Path
 import types.odf.Value
 
 class PollDataStore extends PersistentActor with ActorLogging {
-  def persistenceId: String = "polldatastore-id"
+  def persistenceId: String = "polldatastore"
 
   var state: Map[Long,Map[String,Seq[PPersistentValue]]] = Map()
 
@@ -57,6 +58,8 @@ class PollDataStore extends PersistentActor with ActorLogging {
   }
 
   def receiveCommand: Receive = {
+    case SaveSnapshot(msg) => sender() ! saveSnapshot(
+      PPollData(state.mapValues(pmap => PPathToData(pmap.mapValues(values => PValueList(values))))))
     case AddPollData(subId,path,value) =>
       persist(PAddPollData(subId,path.toString, Some(value.persist))){ event =>
         sender() ! updateState(event)

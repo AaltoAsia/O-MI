@@ -24,6 +24,10 @@ import akka.dispatch.{BoundedMessageQueueSemantics, RequiresMessageQueue}
 import org.prevayler.Prevayler
 import http.OmiConfigExtension
 import journal.Models.SaveSnapshot
+import akka.pattern.ask
+import akka.util.Timeout
+
+import scala.concurrent.{Await, Future}
 
 object SingleStoresMaintainer{
   def props(
@@ -42,6 +46,7 @@ with RequiresMessageQueue[BoundedMessageQueueSemantics]
 
   protected val scheduler: Scheduler = context.system.scheduler
   protected val snapshotInterval: FiniteDuration = settings.snapshotInterval
+  implicit val timeout: Timeout = 2 minutes
   case object TakeSnapshot
   if( settings.writeToDisk){
     log.info(s"scheduling prevayler snapshot every $snapshotInterval")
@@ -49,24 +54,43 @@ with RequiresMessageQueue[BoundedMessageQueueSemantics]
   } else {
     log.info("using transient prevayler, taking snapshots is not in use.")
   }
-  protected def takeSnapshot: FiniteDuration = {
-    def trySnapshot(p: ActorRef, errorName: String): Unit = {
-      Try[Unit]{
-        p ! SaveSnapshot() // returns snapshot File
-      }.recover{case a : Throwable => log.error(a,s"Failed to take Snapshot of $errorName")}
+  protected def takeSnapshot: Future[Unit] = {
+    val start: FiniteDuration  = Duration(System.currentTimeMillis(),MILLISECONDS)
+    def trySnapshot(p: ActorRef, errorName: String): Future[Unit] = {
+      val start: FiniteDuration  = Duration(System.currentTimeMillis(),MILLISECONDS)
+
+        val snapshotF = (p ? SaveSnapshot()).mapTo[Unit]
+        snapshotF.onComplete{
+          case Success(s) =>{
+            val end : FiniteDuration = Duration(System.currentTimeMillis(),MILLISECONDS)
+            val duration : FiniteDuration = end - start
+            log.debug(s"Taking Snapshot for $errorName took $duration")
+          }
+          case Failure(ex) => log.error(ex,s"Failed to take Snapshot of $errorName")}
+      snapshotF
     }
 
     log.info("Taking prevayler snapshot")
-    val start: FiniteDuration  = Duration(System.currentTimeMillis(),MILLISECONDS)
 
-    trySnapshot(singleStores.latestStore, "latestStore")
-    trySnapshot(singleStores.hierarchyStore, "hierarchyStore")
-    trySnapshot(singleStores.subStore, "subStore")
-    trySnapshot(singleStores.pollDataPrevayler, "pollData")
-
-    val end : FiniteDuration = Duration(System.currentTimeMillis(),MILLISECONDS)
-    val duration : FiniteDuration = end - start
-    duration
+    val latF = trySnapshot(singleStores.latestStore, "latestStore")
+    val hieF = trySnapshot(singleStores.hierarchyStore, "hierarchyStore")
+    val subF = trySnapshot(singleStores.subStore, "subStore")
+    val datF = trySnapshot(singleStores.pollDataPrevayler, "pollData")
+    val res = for{
+     lat <- latF
+     hie <- hieF
+     sub <- subF
+     dat <- datF
+    } yield dat
+    res.onComplete{
+      case Success(s) => {
+        val end : FiniteDuration = Duration(System.currentTimeMillis(),MILLISECONDS)
+        val duration : FiniteDuration = end - start
+        log.info(s"Taking Snapshot took $duration")
+      }
+      case Failure(ex) => log.error(ex, "Taking snapshot failed")
+    }
+    res
   }
 
   protected def cleanPrevayler(): Unit = {
@@ -104,9 +128,7 @@ with RequiresMessageQueue[BoundedMessageQueueSemantics]
    */
   override def receive: Actor.Receive = {
     case TakeSnapshot                   => {
-      val snapshotDur: FiniteDuration = takeSnapshot
-      log.info(s"Taking Snapshot took $snapshotDur")
-      cleanPrevayler()
+      takeSnapshot.map(ts => cleanPrevayler())
     }
   }
 }
