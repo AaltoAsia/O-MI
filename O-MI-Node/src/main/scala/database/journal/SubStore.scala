@@ -237,11 +237,11 @@ class SubStore extends PersistentActor with ActorLogging {
     )
   }
   def persistIdToSub(pits: Map[Long,PolledSub]): Map[Long,PPolledSub] = {
-    pits.mapValues(ps => ps match{
+    pits.mapValues {
       case pnes: PollNormalEventSub => PPolledSub(PPolledSub.Polledsub.Pnes(pnes.persist()))
       case pnews: PollNewEventSub => PPolledSub(PPolledSub.Polledsub.Pnews(pnews.persist()))
       case pints: PollIntervalSub => PPolledSub(PPolledSub.Polledsub.Pints(pints.persist()))
-    })
+    }
   }
 
   def recoverPathToSub(pts: Map[String, PSubIds]): Map[Path,Set[Long]] = {

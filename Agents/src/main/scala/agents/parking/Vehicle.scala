@@ -1,6 +1,6 @@
 package agents.parking
 
-import scala.util.{Try}
+import scala.util.Try
 
 import types.odf._
 import types._

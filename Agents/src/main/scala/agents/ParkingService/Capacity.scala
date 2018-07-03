@@ -9,11 +9,11 @@ import Capacity._
 import UserGroup._
 import VehicleType._
 case class Capacity(
-  val name: String,
-  val currentCapacity: Option[Long],
-  val totalCapacity: Option[Long],
-  val validForVehicle: Option[VehicleType],
-  val usergroup: Option[UserGroup]
+                     name: String,
+  currentCapacity: Option[Long],
+  totalCapacity: Option[Long],
+  validForVehicle: Option[VehicleType],
+  usergroup: Option[UserGroup]
 ){
 
   def toOdf( parentPath: Path ): OdfObject = {

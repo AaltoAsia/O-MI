@@ -110,7 +110,7 @@ object RESTHandler{
         } map( Right.apply _ ))
 
       case RESTNodeReq(path) => {
-        singleStores.getSingle(path).flatMap(_ match {
+        singleStores.getSingle(path).flatMap {
 
           case Some(obj: Object) =>
             for {
@@ -123,7 +123,7 @@ object RESTHandler{
               }
               objs = elems.collect { case cobj: xmlTypes.ObjectType => cobj }
               iis = elems.collect { case ii: xmlTypes.InfoItemType => ii }
-              res: Option[Either[String,NodeSeq]] = Some(scalaxb.toXML[xmlTypes.ObjectType](
+              res: Option[Either[String, NodeSeq]] = Some(scalaxb.toXML[xmlTypes.ObjectType](
                 obj.asObjectType(iis, objs), Some("odf"), Some("Object"), defaultScope
               ).headOption.getOrElse(
                 <error>Could not create from odf.Object</error>
@@ -154,7 +154,7 @@ object RESTHandler{
             )
           case None => Future.successful(None)
           case other => Future.failed(new Exception(s"Invalid type found in rest response handler: ${other}"))
-        })
+        }
       }
     }
   }

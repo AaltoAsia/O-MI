@@ -3,7 +3,7 @@ package odf
 import java.sql.Timestamp
 
 import database.journal.PPersistentValue.ValueTypeOneof.{ProtoBoolValue, ProtoDoubleValue, ProtoLongValue, ProtoStringValue}
-import database.journal.{PPersistentValue}
+import database.journal.PPersistentValue
 import parsing.xmlGen._
 import parsing.xmlGen.scalaxb.XMLStandardTypes._
 import parsing.xmlGen.scalaxb._
@@ -55,7 +55,7 @@ case class ODFValue(
 ) extends Value[ODF] {
   final val typeAttribute: String = "odf"
   def valueAsDataRecord: DataRecord[ObjectsType] = DataRecord(None, Some("Objects"),value.asObjectsType)
-  def retime(newTimestamp: Timestamp) =  this.copy( timestamp = newTimestamp)
+  def retime(newTimestamp: Timestamp): ODFValue =  this.copy( timestamp = newTimestamp)
 }
 
 case class StringValue(
@@ -64,7 +64,7 @@ case class StringValue(
 ) extends Value[String] {
   final val typeAttribute: String = "xs:string"
   def valueAsDataRecord: DataRecord[Any] = DataRecord(value) 
-  def retime(newTimestamp: Timestamp) =  this.copy( timestamp = newTimestamp)
+  def retime(newTimestamp: Timestamp): StringValue =  this.copy( timestamp = newTimestamp)
 }
 
 case class IntValue(
@@ -73,7 +73,7 @@ case class IntValue(
 ) extends Value[Int] {
   final val typeAttribute: String = "xs:int"
   def valueAsDataRecord: DataRecord[Any] = DataRecord(value) 
-  def retime(newTimestamp: Timestamp) =  this.copy( timestamp = newTimestamp)
+  def retime(newTimestamp: Timestamp): IntValue =  this.copy( timestamp = newTimestamp)
 }
 
 case class LongValue(
@@ -82,7 +82,7 @@ case class LongValue(
 ) extends Value[Long] {
   final val typeAttribute: String = "xs:long"
   def valueAsDataRecord: DataRecord[Any] = DataRecord(value) 
-  def retime(newTimestamp: Timestamp) =  this.copy( timestamp = newTimestamp)
+  def retime(newTimestamp: Timestamp): LongValue =  this.copy( timestamp = newTimestamp)
 }
 
 case class ShortValue(
@@ -91,7 +91,7 @@ case class ShortValue(
 ) extends Value[Short] {
   final val typeAttribute: String = "xs:short"
   def valueAsDataRecord: DataRecord[Any] = DataRecord(value) 
-  def retime(newTimestamp: Timestamp) =  this.copy( timestamp = newTimestamp)
+  def retime(newTimestamp: Timestamp): ShortValue =  this.copy( timestamp = newTimestamp)
 }
 
 case class FloatValue(
@@ -100,7 +100,7 @@ case class FloatValue(
 ) extends Value[Float] {
   final val typeAttribute: String = "xs:float"
   def valueAsDataRecord: DataRecord[Any] = DataRecord(value) 
-  def retime(newTimestamp: Timestamp) =  this.copy( timestamp = newTimestamp)
+  def retime(newTimestamp: Timestamp): FloatValue =  this.copy( timestamp = newTimestamp)
 }
 
 case class DoubleValue(
@@ -109,7 +109,7 @@ case class DoubleValue(
 ) extends Value[Double] {
   final val typeAttribute: String = "xs:double"
   def valueAsDataRecord: DataRecord[Any] = DataRecord(value) 
-  def retime(newTimestamp: Timestamp) =  this.copy( timestamp = newTimestamp)
+  def retime(newTimestamp: Timestamp): DoubleValue =  this.copy( timestamp = newTimestamp)
 }
 
 case class BooleanValue(
@@ -118,7 +118,7 @@ case class BooleanValue(
 ) extends Value[Boolean] {
   final val typeAttribute: String = "xs:boolean"
   def valueAsDataRecord: DataRecord[Any] = DataRecord(value) 
-  def retime(newTimestamp: Timestamp) =  this.copy( timestamp = newTimestamp)
+  def retime(newTimestamp: Timestamp): BooleanValue =  this.copy( timestamp = newTimestamp)
 }
 
 case class StringPresentedValue(
@@ -127,7 +127,7 @@ case class StringPresentedValue(
   typeAttribute: String = "xs:string"
 ) extends Value[String] {
   def valueAsDataRecord: DataRecord[Any] = DataRecord(value) 
-  def retime(newTimestamp: Timestamp) =  this.copy( timestamp = newTimestamp)
+  def retime(newTimestamp: Timestamp): StringPresentedValue =  this.copy( timestamp = newTimestamp)
 }
 
 object Value{

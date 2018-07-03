@@ -20,12 +20,12 @@ object QlmID{
 }
 
 case class QlmID(
- val id: String,
- val idType: Option[String] =  None,
- val tagType: Option[String] =  None,
- val startDate: Option[Timestamp] =  None,
- val endDate: Option[Timestamp] =  None,
- val attributes: Map[String,String] =  HashMap.empty
+                  id: String,
+ idType: Option[String] =  None,
+ tagType: Option[String] =  None,
+ startDate: Option[Timestamp] =  None,
+ endDate: Option[Timestamp] =  None,
+ attributes: Map[String,String] =  HashMap.empty
 ) {
   def union( other: QlmID ) : QlmID ={
     assert( id == other.id )

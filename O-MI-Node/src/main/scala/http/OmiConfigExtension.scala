@@ -90,7 +90,7 @@ class OmiConfigExtension( val config: Config) extends Extension
   //val cliPort: Int = config.getInt("omi-service.agent-cli-port")
 
   // Authorization
-  val allowedRequestTypes = config.getStringList("omi-service.allowRequestTypesForAll")
+  val allowedRequestTypes: Set[MessageType] = config.getStringList("omi-service.allowRequestTypesForAll")
     .map((x) => MessageType(x.toLowerCase)).toSet
 
   // Old External AuthAPIService V1

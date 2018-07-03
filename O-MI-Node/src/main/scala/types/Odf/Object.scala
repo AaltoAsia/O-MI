@@ -40,20 +40,20 @@ object Object{
   )
 }
 case class Object(
-  val ids: Vector[QlmID],
-  val path: Path,
-  val typeAttribute: Option[String] = None,
-  val descriptions: Set[Description] = Set.empty,
-  val attributes: IMap[String,String] = HashMap.empty
+                   ids: Vector[QlmID],
+  path: Path,
+  typeAttribute: Option[String] = None,
+  descriptions: Set[Description] = Set.empty,
+  attributes: IMap[String,String] = HashMap.empty
 ) extends Node with Unionable[Object] {
   assert( ids.nonEmpty, "Object doesn't have any ids.")
   assert( path.length > 1, "Length of path of Object is not greater than 1 (Objects/).")
-  def idsToStr() = ids.toList.map{ 
+  def idsToStr(): Vector[String] = ids.toList.map{
     id: QlmID => 
       id.id
   }.toVector
 
-  def idTest = idsToStr.exists{
+  def idTest: Boolean = idsToStr.exists{
     id: String => 
       val pl = path.last
       id == pl

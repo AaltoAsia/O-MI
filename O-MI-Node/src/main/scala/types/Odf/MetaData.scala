@@ -13,8 +13,8 @@ object MetaData{
 case class MetaData(
                      infoItems: Vector[InfoItem] = Vector.empty
 ) extends Unionable[MetaData] {
-  def isEmpty = infoItems.isEmpty
-  def nonEmpty = infoItems.nonEmpty
+  def isEmpty: Boolean = infoItems.isEmpty
+  def nonEmpty: Boolean = infoItems.nonEmpty
   lazy val nameToII: Map[String, InfoItem] = infoItems.map{ ii => ii.nameAttribute ->ii }.toMap
   lazy val names: Set[String] = infoItems.map{ ii => ii.nameAttribute }.toSet
   def update( that: MetaData ): MetaData ={

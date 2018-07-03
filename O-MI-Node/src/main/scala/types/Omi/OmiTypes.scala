@@ -262,7 +262,7 @@ case class ReadRequest(
   ttl: Duration = 10.seconds,
   private val user0: UserInfo = UserInfo(),
   senderInformation: Option[SenderInformation] = None,
-  val ttlLimit: Option[Timestamp] = None
+  ttlLimit: Option[Timestamp] = None
 ) extends OmiRequest  with OdfRequest{
   user = user0
  // def this(
@@ -318,7 +318,7 @@ case class PollRequest(
   ttl: Duration = 10.seconds,
   private val user0: UserInfo = UserInfo(),
   senderInformation: Option[SenderInformation] = None,
-  val ttlLimit: Option[Timestamp] = None
+  ttlLimit: Option[Timestamp] = None
 ) extends OmiRequest {
 
   user = user0
@@ -357,7 +357,7 @@ case class SubscriptionRequest(
   ttl: Duration = 10.seconds,
   private val user0: UserInfo = UserInfo(),
   senderInformation: Option[SenderInformation] = None,
-  val ttlLimit: Option[Timestamp] = None
+  ttlLimit: Option[Timestamp] = None
 ) extends OmiRequest with SubLike with OdfRequest{
   user = user0
   def withCallback: Option[Callback] => SubscriptionRequest = cb => this.copy(callback = cb)
@@ -399,7 +399,7 @@ case class WriteRequest(
   ttl: Duration = 10.seconds,
   private val user0: UserInfo = UserInfo(),
   senderInformation: Option[SenderInformation] = None,
-  val ttlLimit: Option[Timestamp] = None
+  ttlLimit: Option[Timestamp] = None
 ) extends OmiRequest with OdfRequest with PermissiveRequest{
 
   user = user0
@@ -437,7 +437,7 @@ case class CallRequest(
   ttl: Duration = 10.seconds,
   private val user0: UserInfo = UserInfo(),
   senderInformation: Option[SenderInformation] = None,
-  val ttlLimit: Option[Timestamp] = None
+  ttlLimit: Option[Timestamp] = None
 ) extends OmiRequest with OdfRequest with PermissiveRequest {
   user = user0
 
@@ -475,7 +475,7 @@ case class DeleteRequest(
   ttl: Duration = 10.seconds,
   private val user0: UserInfo = UserInfo(),
   senderInformation: Option[SenderInformation] = None,
-  val ttlLimit: Option[Timestamp] = None
+  ttlLimit: Option[Timestamp] = None
 ) extends OmiRequest with OdfRequest with PermissiveRequest{
   user = user0
 
@@ -514,7 +514,7 @@ case class CancelRequest(
   ttl: Duration = 10.seconds,
   private val user0: UserInfo = UserInfo(),
   senderInformation: Option[SenderInformation] = None,
-  val ttlLimit: Option[Timestamp] = None
+  ttlLimit: Option[Timestamp] = None
 ) extends OmiRequest {
   user = user0
   def timeTTLLimit( begin: Timestamp = currentTimestamp ): OmiRequest ={

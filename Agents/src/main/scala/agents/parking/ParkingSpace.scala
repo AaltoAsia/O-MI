@@ -8,17 +8,17 @@ import UserGroup._
 import VehicleType._
 
 case class ParkingSpace(
-  val id: String,
-  val validForVehicle: Seq[VehicleType],
-  val validUserGroups: Seq[UserGroup],
-  val geo: Option[GeoCoordinates],
-  val maximumParkingHours: Option[Long],
-  val available: Option[Boolean],
-  val user: Option[String],
-  val charger: Option[Charger],
-  val height: Option[Double],
-  val length: Option[Double],
-  val width: Option[Double]
+                         id: String,
+  validForVehicle: Seq[VehicleType],
+  validUserGroups: Seq[UserGroup],
+  geo: Option[GeoCoordinates],
+  maximumParkingHours: Option[Long],
+  available: Option[Boolean],
+  user: Option[String],
+  charger: Option[Charger],
+  height: Option[Double],
+  length: Option[Double],
+  width: Option[Double]
  ) extends Dimensions{
    def update( other: ParkingSpace ): ParkingSpace= {
      require( id == other.id )

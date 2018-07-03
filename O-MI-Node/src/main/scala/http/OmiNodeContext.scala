@@ -8,7 +8,7 @@ import akka.stream.{ActorMaterializer, Materializer}
 import akka.http.scaladsl.HttpExt
 
 import responses.CallbackHandler
-import database.{SingleStores}
+import database.SingleStores
 
 
 trait Actors {

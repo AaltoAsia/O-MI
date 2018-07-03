@@ -9,12 +9,12 @@ import UserGroup._
 import VehicleType._
 
 case class ParkingCapacity(
-  val name: String,
-  val maximum: Option[Long],
-  val current: Option[Long],
-  val validForVehicle: Seq[VehicleType],
-  val validUserGroup: Seq[UserGroup],
-  val maximumParkingHours: Option[Long]
+                            name: String,
+  maximum: Option[Long],
+  current: Option[Long],
+  validForVehicle: Seq[VehicleType],
+  validUserGroup: Seq[UserGroup],
+  maximumParkingHours: Option[Long]
 ){
   def toOdf(parentPath: Path): Seq[Node] ={
     val path: Path= parentPath / name

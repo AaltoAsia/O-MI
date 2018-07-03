@@ -1,13 +1,13 @@
 package agents.parking
 
 import scala.math
-import scala.util.{Try}
+import scala.util.Try
 import types.odf._
 import types._
 
 case class GeoCoordinates(
-  val latitude: Double,
-  val longitude: Double
+                           latitude: Double,
+  longitude: Double
 ){
   def distanceTo( other: GeoCoordinates): Double= { 
     val radius: Double = 6371e3

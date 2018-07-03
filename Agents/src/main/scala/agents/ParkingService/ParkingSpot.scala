@@ -37,15 +37,15 @@ import UserGroup._
 import VehicleType._
 
 case class ParkingSpace(
-  val name: String,
-  val validForUserGroup: Option[UserGroup],
-  val validForVehicle: Option[VehicleType],
-  val available: Option[Boolean],
-  val user: Option[String],
-  val charger: Option[Charger],
-  val maxHeight: Option[Double],
-  val maxLength: Option[Double],
-  val maxWidth: Option[Double]
+                         name: String,
+  validForUserGroup: Option[UserGroup],
+  validForVehicle: Option[VehicleType],
+  available: Option[Boolean],
+  user: Option[String],
+  charger: Option[Charger],
+  maxHeight: Option[Double],
+  maxLength: Option[Double],
+  maxWidth: Option[Double]
 ){
   def validDimensions( vehicle: Vehicle ): Boolean ={
     lazy val dimensionCheck = {
@@ -56,7 +56,7 @@ case class ParkingSpace(
 
     validForVehicle.contains( vehicle.vehicleType ) || dimensionCheck
   }
-  def toOdf( parentPath: Path ) ={
+  def toOdf( parentPath: Path ): OdfObject ={
     val spotPath = parentPath / name
     val availableII = available.map{
       b: Boolean =>

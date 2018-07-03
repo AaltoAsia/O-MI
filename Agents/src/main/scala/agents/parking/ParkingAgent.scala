@@ -6,7 +6,7 @@ import java.io.File
 import scala.xml.XML
 import scala.util.control.NonFatal
 import scala.util.{ Success, Failure }
-import scala.collection.mutable.{ SortedMap}
+import scala.collection.mutable.SortedMap
 import scala.concurrent.Future
 import scala.collection.JavaConverters._
 
