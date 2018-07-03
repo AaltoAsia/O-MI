@@ -80,7 +80,7 @@ Start with this to test how the modules work.
 6. Open shell
     1. Install httpie or use some other http client `sudo apt-get install httpie`
     2. Add your email address as username `http POST :8001/v1/add-user username=your@test.email`
-    3. Add allow write rule to your user (automatically created group) `http POST :8001/v1/set-rules group=your@user.email_USERGROUP rules:='[{"path":"Objects","request":"wcd","allow":true}]'`
+    3. Add allow write rule to your user (automatically created group) `http POST :8001/v1/set-permissions group=your@user.email_USERGROUP permissions:='[{"path":"Objects","request":"wcd","allow":true}]'`
 7. Go back to O-MI Node webclient and send again. You should see returnCode=200.
  
 
