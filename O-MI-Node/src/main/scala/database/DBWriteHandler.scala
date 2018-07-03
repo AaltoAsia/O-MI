@@ -150,8 +150,13 @@ trait DBWriteHandler extends DBHandlerBase {
     val odf =write.odf
     // save only changed values
     log.debug("Check old values")
+    val (leafII,leafObjects) = odf.getLeafs.partition{
+      case ii: InfoItem => true
+      case obj: Object => false
+    } 
+    val leafInfoItems = leafII.collect{ case ii: InfoItem => ii }
     val pathValueOldValueTuples = for {
-      info <- odf.getInfoItems.toSeq
+      info <- leafInfoItems
       path = info.path
       oldValueOpt = singleStores.latestStore execute LookupSensorData(path)
       value <- info.values
@@ -180,11 +185,11 @@ trait DBWriteHandler extends DBHandlerBase {
 
     // Save new/changed stuff to transactional in-memory singleStores and then DB
 
-    val newItems = triggeringEvents collect {
+    val newItems = triggeringEvents collect{
         case AttachEvent(item) => item
     }
 
-    val staticData = odf.valuesRemoved.nodesWithStaticData
+    val staticData = odf.valuesRemoved.getNodes.collect{ case obj: Object => obj }
     /*
       infoItems filter { 
       ii: InfoItem =>
@@ -199,17 +204,17 @@ trait DBWriteHandler extends DBHandlerBase {
     val updatedStaticItems = staticData ++ newItems 
 
     // DB + Poll Subscriptions
-    val infosToBeWrittenInDB: Seq[InfoItem] =
+    val infosToBeWrittenInDB: Seq[Node] = leafObjects ++ 
       triggeringEvents //InfoItems contain single value
-      .map(_.infoItem) //map type to OdfInfoItem
-      .groupBy(_.path) //combine same paths
-      .flatMap{
-        case (path: Path, iis: Vector[InfoItem]) => //flatMap to remove None values
-        iis.reduceOption(_.union(_)) //Combine infoitems with same paths to single infoitem
-      }(collection.breakOut) // breakOut to correct collection type
+        .map(_.infoItem) //map type to OdfInfoItem
+        .groupBy(_.path) //combine same paths
+        .flatMap{
+          case (path: Path, iis: Vector[InfoItem]) => //flatMap to remove None values
+            iis.reduceOption(_.union(_)) //Combine infoitems with same paths to single infoitem
+        }(collection.breakOut) // breakOut to correct collection type
 
     log.debug("Writing infoitems to db")
-    val dbWriteFuture = dbConnection.writeMany(infosToBeWrittenInDB)
+    val dbWriteFuture = dbConnection.writeMany(ImmutableODF(infosToBeWrittenInDB))
 
     dbWriteFuture.onFailure{
       case t: Throwable => log.error(t, "Error when writing values for paths $paths")
@@ -228,13 +233,13 @@ trait DBWriteHandler extends DBHandlerBase {
           singleStores.hierarchyStore execute Union(updateTree)
         }
         log.debug(s"Triggering ${triggeringEvents.length} events.")
-        triggeringEvents.foreach(
-          iie =>
-            iie.infoItem.values.headOption.map(
-              newValue=>
-                singleStores.latestStore execute SetSensorData(iie.infoItem.path, newValue)
-            )
+    triggeringEvents.foreach(
+      iie =>
+        iie.infoItem.values.headOption.map(
+          newValue=>
+            singleStores.latestStore execute SetSensorData(iie.infoItem.path, newValue)
         )
+    )
     }
 
     writeFuture.onFailure{

@@ -84,7 +84,7 @@ trait DBReadHandler extends DBHandlerBase{
 
              val metaCombined  = odfWithMetaData.union(odfWithValues)
              val requestsPaths = leafs.map { _.path }
-             val foundOdfAsPaths = odfWithValues.getPaths
+             val foundOdfAsPaths = metaCombined.getPaths
              //handle analytics
              analyticsStore.foreach{ store =>
                val reqTime: Long = new Date().getTime()

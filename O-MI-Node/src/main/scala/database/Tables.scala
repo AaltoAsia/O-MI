@@ -35,7 +35,7 @@ trait DBBase{
 }
 
 case class DBPath(
-                   id: Option[Long],
+  id: Option[Long],
   path: Path,
   isInfoItem: Boolean
 )

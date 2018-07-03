@@ -411,6 +411,9 @@ trait DB {
    */
   def writeMany(data: Seq[InfoItem]): Future[OmiReturn]
 
+  def writeMany(odf: ImmutableODF): Future[OmiReturn] = {
+    writeMany(odf.getNodes.collect{ case ii: InfoItem => ii} )
+  }
   /**
    * Used to remove given path and all its descendants from the database.
    * @param path Parent path to be removed.
