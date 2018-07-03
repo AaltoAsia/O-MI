@@ -1,20 +1,14 @@
 package database
 package influxDB
 
-import java.net.URLEncoder
 import java.sql.Timestamp
-import java.text.DecimalFormat
-import java.util.Date
 
 import scala.math.Numeric
-import scala.annotation.tailrec
-import scala.collection.immutable.HashMap
 import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
-import scala.util.{Failure, Success, Try}
+import scala.util.{Try}
 import akka.actor.ActorSystem
 import akka.event.LoggingAdapter
-import akka.event.slf4j.Logger
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.client.RequestBuilding
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
@@ -24,8 +18,6 @@ import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.unmarshalling._
 import akka.stream.{ActorMaterializer, Materializer}
 import spray.json._
-import database._
-import http.OmiConfigExtension
 import types.odf._
 import types.OmiTypes._
 import types.Path
@@ -244,7 +236,7 @@ class InfluxDBImplementation(
     val request = RequestBuilding.Post(writeAddress, valuesAsString)//.withHeaders()
     val response = httpExt.singleRequest(request)
 
-    response.onFailure{
+    response.failed.foreach{
       case t : Throwable =>
         log.warning(request.toString)
         log.error(t, "Failed to communicate to InfluxDB")
@@ -350,7 +342,7 @@ class InfluxDBImplementation(
          }
 
      }
-     formatedResponse.onFailure{
+     formatedResponse.failed.foreach{
        case t: Throwable =>
          log.error(t,
            "Failed to communicate to InfluxDB.")
@@ -363,7 +355,6 @@ class InfluxDBImplementation(
      iis: Iterable[InfoItem],
      filteringClause: String 
    ): String= {
-     val iisGroupedByParents = iis.groupBy{ ii => ii.path.getParent } 
      val queries = iis.map {
        ii: InfoItem =>
          val measurementName = pathToMeasurementName(ii.path)

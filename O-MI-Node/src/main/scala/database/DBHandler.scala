@@ -1,7 +1,5 @@
 package database
 
-import java.lang.{Iterable => JavaIterable}
-
 import agentSystem.AgentEvents._
 import agentSystem.{AgentName, AgentResponsibilities}
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}

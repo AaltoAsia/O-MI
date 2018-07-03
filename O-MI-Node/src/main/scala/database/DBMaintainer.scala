@@ -14,15 +14,11 @@
 
 package database
 
-import java.io.{File, FilenameFilter}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
-import scala.util.{Failure, Success, Try}
 
 import akka.actor._
-import akka.dispatch.{BoundedMessageQueueSemantics, RequiresMessageQueue}
-import org.prevayler.Prevayler
 import http.OmiConfigExtension
 
 object DBMaintainer{

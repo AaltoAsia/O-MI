@@ -19,10 +19,8 @@ import java.net.InetAddress
 import java.sql.Timestamp
 import java.util.Date
 
-import scala.annotation.meta.field
-import scala.collection.immutable.{HashMap, SortedSet}
+import scala.collection.immutable.{HashMap}
 import scala.collection.mutable
-import akka.actor.Cancellable
 import akka.http.scaladsl.model.Uri
 import org.prevayler._
 import spray.json.{DefaultJsonProtocol, JsArray, JsNull, JsNumber, JsObject, JsString, JsValue, RootJsonFormat}
@@ -30,7 +28,6 @@ import types._
 import types.odf._
 import types.OmiTypes._
 import collection.breakOut
-import scala.util.parsing.json.JSONObject
 import scala.concurrent.duration._
 
 sealed trait SavedSub {
