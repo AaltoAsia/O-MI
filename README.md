@@ -159,8 +159,14 @@ Configuration
 Basic configuration
 -------------------
 
-See [application.conf](https://github.com/AaltoAsia/O-MI/blob/master/O-MI%20Node/src/main/resources/application.conf)
+See [reference.conf](https://github.com/AaltoAsia/O-MI/blob/master/O-MI-Node/src/main/resources/reference.conf)
 for the defaults and configuration documentation.
+
+### Configuration Location
+
+* In package releases: `/etc/o-mi-node/application.conf`
+* In tar and zip releases: `./conf/application.conf`
+* In development environment: `./O-MI-Node/src/main/resources/application.conf` (create a new file if not found)
 
 
 Library Config
