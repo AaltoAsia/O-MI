@@ -56,9 +56,9 @@ These are examples on how to use Auth API v2 of O-MI Node. They might be secure 
 Start with this to test how the modules work.
 
 **Versions used:**
-* O-MI Node: 0.12.1 unreleased 2018-06-21 9a3601d1c025d2a6ee6c0dfaa00eed825a45d942
-* O-MI Authentication: unreleased 2018-06-21 d67ffe3fd4f3f8534dac3e508b7bdccb091912d3
-* O-MI Authorization: unreleased 2018-06-21 47464faeb854d7d627da76ff11aa6c5c7a3491c1
+* O-MI Node: 0.13.0 2018-07-03
+* O-MI Authentication: unreleased cde1b7d 2018-07-03
+* O-MI Authorization: unreleased e988081 2018-07-03
 
 **Instructions:**
 1. Install [Authentication module](https://github.com/AaltoAsia/O-MI-Authentication)
