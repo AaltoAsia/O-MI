@@ -129,7 +129,8 @@ class OmiConfigExtension( val config: Config) extends Extension
     val parametersFromAuthentication: ParameterExtraction = mapmap(parameters.getConfig("fromAuthentication")) 
     val parametersToAuthentication: ParameterExtraction = mapmap(parameters.getConfig("toAuthentication")) 
     val parametersToAuthorization: ParameterExtraction = mapmap(parameters.getConfig("toAuthorization")) 
-    val parametersConstants: Map[String,String] = cmap(parameters.getConfig("constants"))
+    val parametersConstants: Map[String,String] = cmap(parameters.getConfig("initial"))
+    val parametersSkipOnEmpty: Seq[String] = parameters.getStringList("skipAuthenticationOnEmpty").toSeq
 
     def toRequestBuilder(method: String) = method.toLowerCase match {
       case "get" => Get

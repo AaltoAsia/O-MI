@@ -72,26 +72,6 @@ class ParkingAgent(
     } else {
       throw  AgentConfigurationException(s"Could not get initial state for $name. Could not read file $startStateFile.")
     }
-    def populateIndexes: Future[ResponseRequest] ={
-      readFromDB(ReadRequest(odf = ImmutableODF(Seq(Object(parkingFacilitiesPath))))).map{
-        response: ResponseRequest => 
-          response.results.foreach{
-            case result: OmiResult =>
-              result.returnValue match {
-                case succ: Returns.ReturnTypes.Successful =>
-                  result.odf.foreach{
-                    odf =>
-                      updateIndexesAndCapacities(odf,response)
-                  }
-                  case other =>
-
-
-              }
-          }
-          response
-      }
-    }
-
     
     val initialWrite: Future[ResponseRequest] = writeToDB( WriteRequest(initialODF) ).flatMap{
       writeResponse: ResponseRequest =>
@@ -100,7 +80,7 @@ class ParkingAgent(
         }
         if( wfails.nonEmpty) Future{ writeResponse }
         else{
-          readFromDB(ReadRequest(odf = ImmutableODF(Seq(Object(parkingFacilitiesPath))))).map{
+          readFromDB(ReadRequest(odf = ImmutableODF(Seq(Object(servicePath))))).map{
             response: ResponseRequest => 
               val (success,fails) = response.results.partition{
                 result => result.returnValue.returnCode.startsWith("2")
@@ -326,6 +306,7 @@ class ParkingAgent(
                           Future{ Responses.InternalError( e ) }
                         case Success( destination: GeoCoordinates) =>
                           val distance : Double = getDoubleOption( "DistanceFromDestination", parameterPath, odf).getOrElse(1000.0)
+                          val wantCharging : Option[Boolean] = getBooleanOption( "wantCharging", parameterPath, odf)
                           val userGroup = getStringOption( "UserGroup",parameterPath, odf).map{
                             str => 
                               str.split(",").map{
@@ -365,7 +346,7 @@ class ParkingAgent(
 
                           }
                           log.info("FindParking parameters parsed")
-                          findParking(destination,distance,vehicle,userGroup,charger)
+                          findParking(destination,distance,vehicle,userGroup,charger,wantCharging)
                       }
                   }.getOrElse{
                       Future{
@@ -398,7 +379,7 @@ class ParkingAgent(
     }
   }
 
-  def findParking(destination: GeoCoordinates, maxDistance: Double, vehicle: Option[Vehicle], userGroup: Seq[UserGroup], charger: Option[Charger]):Future[ResponseRequest] ={
+  def findParking(destination: GeoCoordinates, maxDistance: Double, vehicle: Option[Vehicle], userGroup: Seq[UserGroup], charger: Option[Charger], wantCharging: Option[Boolean]):Future[ResponseRequest] ={
       val radius: Double = 6371e3
       val deltaR = maxDistance / radius 
       val latP: Set[Path]  = latitudePFIndex.keySet.dropWhile{
@@ -458,7 +439,7 @@ class ParkingAgent(
                                 val typeCheck = {
                                   v.vehicleType == vt ||
                                   v.vehicleType == VehicleType.Vehicle ||
-                                  (v.vehicleType == VehicleType.ElectricVehicle && vt == VehicleType.Car)
+                                  (v.vehicleType == VehicleType.ElectricVehicle && vt == VehicleType.Car && wantCharging.forall( !_ ))
                                 }
                                 val dimensionCheck ={
                                   v.length.forall{ vl =>  ps.length.forall{ pl => vl <= pl }} && 
@@ -472,7 +453,10 @@ class ParkingAgent(
                         lazy val correctUserGroup = (ps.validUserGroups.isEmpty || ps.validUserGroups.exists{
                           pug => userGroup.contains(pug)
                         }) 
-                        lazy val validCharger = (charger.isEmpty || {
+                        lazy val validCharger = {
+                          (charger.isEmpty && wantCharging.forall( !_) ) || 
+                          (
+                            ( wantCharging.exists(b => b) || charger.nonEmpty ) && 
                           ps.charger.exists{
                             pchar =>
                               charger.forall{
@@ -500,7 +484,8 @@ class ParkingAgent(
                               }
 
                           }
-                        })
+                        )
+                      }
                         log.debug(s"PS checks $validVehicle && $correctUserGroup && $validCharger" )
                         validVehicle && correctUserGroup && validCharger
                     }.flatMap{

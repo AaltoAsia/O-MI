@@ -233,9 +233,6 @@ class AuthAPIServiceV2(
 
     implicit val timeout = Timeout(rawOmiRequest.handleTTL)
 
-    log.debug(s"request body ${bodyString(httpRequest)}")
-    log.debug(s"message body ${bodyString(httpRequest: HttpMessage)}")
-
     val requestType = (rawOmiRequest.requestVerb match {
       case RawRequestWrapper.MessageType.Response => RawRequestWrapper.MessageType.Write
       case x => x
@@ -252,7 +249,7 @@ class AuthAPIServiceV2(
     val resultF = for { 
 
       authenticationResult <-
-        if (authenticationEndpoint.isEmpty) {
+        if (authenticationEndpoint.isEmpty || parametersSkipOnEmpty.forall(vars.get(_).getOrElse("").isEmpty)) {
           Future.successful(vars)
         } else {
 

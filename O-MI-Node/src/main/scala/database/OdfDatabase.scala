@@ -129,6 +129,10 @@ trait OdfDatabase extends Tables with DB with TrimmableDB{
     }
     Await.result( initialization, 1 minutes)
   }
+  override def writeMany(odf: ImmutableODF): Future[OmiReturn] = {
+    log.debug("Writing many...")
+    writeWithDBIOs(odf)
+  }
 
   def writeMany(data: Seq[InfoItem]): Future[OmiReturn] = {
     log.debug("Writing many...")
@@ -151,10 +155,10 @@ trait OdfDatabase extends Tables with DB with TrimmableDB{
           newDbPath
       }
     }
-  if (ret.isInfoItem != isInfoItem)
-    throw new IllegalArgumentException(
-      s"$path has Object/InfoItem conflict; Request has ${if (isInfoItem) "InfoItem" else "Object"} "+
-    s"while DB has ${if (ret.isInfoItem) "InfoItem" else "Object"}")
+    if (ret.isInfoItem != isInfoItem)
+      throw new IllegalArgumentException(
+        s"$path has Object/InfoItem conflict; Request has ${if (isInfoItem) "InfoItem" else "Object"} "+
+      s"while DB has ${if (ret.isInfoItem) "InfoItem" else "Object"}")
     else ret
   }
   private def reserveNewPaths(nodes: Set[Node]): Map[Path,DBPath] = {

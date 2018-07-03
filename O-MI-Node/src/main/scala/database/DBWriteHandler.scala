@@ -172,8 +172,13 @@ trait DBWriteHandler extends DBHandlerBase {
     val odf =write.odf
     // save only changed values
     log.debug("Check old values")
+    val (leafII,leafObjects) = odf.getLeafs.partition{
+      case ii: InfoItem => true
+      case obj: Object => false
+    } 
+    val leafInfoItems = leafII.collect{ case ii: InfoItem => ii }
     val pathValueOldValueTuples = for {
-      info <- odf.getInfoItems.toSeq
+      info <- leafInfoItems
       path = info.path
       oldValueOpt = (singleStores.latestStore ? SingleReadCommand(path)).mapTo[Option[Value[Any]]]
       value <- info.values
@@ -205,7 +210,7 @@ trait DBWriteHandler extends DBHandlerBase {
         case AttachEvent(item) => item
     })
 
-    val staticData = odf.valuesRemoved.nodesWithStaticData
+    val staticData = odf.valuesRemoved.getNodes.collect{ case obj: Object => obj }
     /*
       infoItems filter { 
       ii: InfoItem =>
@@ -232,7 +237,7 @@ trait DBWriteHandler extends DBHandlerBase {
 
     log.debug("Writing infoitems to db")
     val dbWriteFuture = infosToBeWrittenInDBF.flatMap(
-      infosToBeWrittenInDB => dbConnection.writeMany(infosToBeWrittenInDB))
+      infosToBeWrittenInDB => dbConnection.writeMany(ImmutableODF(infosToBeWrittenInDB)))
 
     dbWriteFuture.onFailure{
       case t: Throwable => log.error(t, "Error when writing values for paths $paths")
@@ -260,17 +265,6 @@ trait DBWriteHandler extends DBHandlerBase {
               .map(newValue => (singleStores.latestStore ? SingleWriteCommand(iie.infoItem.path, newValue)))))
 
         } yield latestF
-        /*unionF.flatMap(_ =>
-        ftriggeringEvents.foreach { triggeringEvents =>
-          log.debug(s"Triggering ${triggeringEvents.length} events.")
-          triggeringEvents.foreach(
-            iie =>
-              iie.infoItem.values.headOption.map(
-                newValue =>
-                  (singleStores.latestStore ? SingleWriteCommand(iie.infoItem.path, newValue))
-              )
-          )
-        })*/
     }
 
     writeFuture.onFailure{

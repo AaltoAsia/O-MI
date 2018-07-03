@@ -72,25 +72,28 @@ trait DBReadHandler extends DBHandlerBase{
          })
 
          val fodfWithMetaData: Future[ODF] = fmetadataTree.map(_.readTo( requestedODF).valuesRemoved)
-          
+
          val resultF = odfWithValuesO.flatMap {
            case Some(odfWithValues) =>
              //Select requested O-DF from metadataTree and remove MetaDatas and descriptions
              val fmetaCombined: Future[ODF] = fodfWithMetaData.map(_.union(odfWithValues))
-             val requestsPaths = leafs.map { _.path }
-             val foundOdfAsPaths = odfWithValues.getPaths
+             for {
+               metaCombined <- fmetaCombined
+               requestsPaths = leafs.map { _.path }
+               foundOdfAsPaths = metaCombined.getPaths
+               notFound = requestsPaths.filterNot { path => foundOdfAsPaths.contains(path) }.toSet.toSeq
+               found = metaCombined match {
+                 case odf if odf.getPaths.exists(p => p != Path("Objects") ) => Some(Results.Read(odf))
+                 case _ => None
+               }
+               nfResults = if (notFound.nonEmpty) {
+                 val notFoundOdf = requestedODF.selectSubTree(notFound)
+                 Vector(Results.NotFoundPaths(notFoundOdf))
+               } else Vector.empty
+               omiResults = nfResults ++ found.toVector
 
-             val notFound = requestsPaths.filterNot { path => foundOdfAsPaths.contains(path) }.toSet.toSeq
-             def notFoundOdf =requestedODF.selectSubTree(notFound)
-             val ffound = fmetaCombined.map{
-               case odf if odf.getPaths.exists(p => p != Path("Objects") ) => Some(Results.Read(odf))
-               case _ => None
-             }
-             val nfResults = if (notFound.nonEmpty) Vector(Results.NotFoundPaths(notFoundOdf))
-             else Vector.empty
-             val fomiResults = ffound.map(found => nfResults ++ found.toVector)
+             } yield ResponseRequest(omiResults)
 
-             fomiResults.map(omiResults => ResponseRequest( omiResults ))
            case None =>
              Future.successful(ResponseRequest( Vector(Results.NotFoundPaths(requestedODF) ) ))
          }
