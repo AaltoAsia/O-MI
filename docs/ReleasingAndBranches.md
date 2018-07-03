@@ -6,10 +6,12 @@ Releasing
 -------------------
 
 1. Check that configuration is right (see below)
-  * `O-MI-Node/src/main/resources/reference.conf`
-  * remove excess logging in code (and in `O-MI-Node/src/main/resources/logback.xml`)
+    * `O-MI-Node/src/main/resources/reference.conf`
+    * remove excess logging in code (and in `O-MI-Node/src/main/resources/logback.xml`)
 2. Change version number in `/build.sbt` only
-3. Check that tests succeed: `sbt test`
+3. Merge master->development: `git pull origin master` (contains usually readme/docs changes)
+4. Check that tests succeed: `sbt test`
+5. Merge development->master `git checkout master && git merge development`
 
 **Automatic release packages:**
 ----------------------
