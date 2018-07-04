@@ -31,7 +31,6 @@ import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 
 object RESTHandler {
-  implicit val timeout: Timeout = 2 minutes
 
   sealed trait RESTRequest {
     def path: Path
@@ -66,7 +65,7 @@ object RESTHandler {
     * @param orgPath The path as String, elements split by a slash "/"
     * @return Some if found, Left(string) if it was a value and Right(xml.Node) if it was other found object.
     */
-  def handle(orgPath: Path)(implicit singleStores: SingleStores): Future[Option[Either[String, xml.NodeSeq]]] = {
+  def handle(orgPath: Path)(implicit singleStores: SingleStores, timeout: Timeout): Future[Option[Either[String, xml.NodeSeq]]] = {
     handle(RESTRequest(orgPath))
   }
 
@@ -76,7 +75,7 @@ object RESTHandler {
     *
     * @return Some if found, Left(string) if it was a value and Right(xml.Node) if it was other found object.
     */
-  def handle(request: RESTRequest)(implicit singleStores: SingleStores): Future[Option[Either[String, xml.NodeSeq]]] = {
+  def handle(request: RESTRequest)(implicit singleStores: SingleStores, timeout: Timeout): Future[Option[Either[String, xml.NodeSeq]]] = {
     request match {
       case RESTValue(path) =>
         (singleStores.latestStore ? SingleReadCommand(path)).mapTo[Option[Value[Any]]]

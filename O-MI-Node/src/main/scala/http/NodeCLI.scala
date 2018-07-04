@@ -105,7 +105,7 @@ class OmiNodeCLI(
   """
   val ip: AgentName = sourceAddress.toString
 
-  val commandTimeout: FiniteDuration = 1.minute
+  val commandTimeout: FiniteDuration = Duration.fromNanos(context.system.settings.config.getDuration("omi-service.journal-ask-timeout").toNanos)
   implicit val timeout: Timeout = commandTimeout
 
   override def preStart: Unit = {

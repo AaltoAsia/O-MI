@@ -16,6 +16,8 @@
 
 package responses
 
+import java.util.concurrent.TimeUnit
+
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
@@ -28,6 +30,7 @@ import http.{ActorSystemContext, OmiServer}
 import journal.Models.{ErasePathCommand, GetTree, UnionCommand, WriteCommand}
 import akka.pattern.ask
 import akka.util.Timeout
+
 import scala.concurrent.duration._
 
 trait CLIHelperT {
@@ -39,7 +42,8 @@ trait CLIHelperT {
 }
 
 class CLIHelper(val singleStores: SingleStores, dbConnection: DB)(implicit system: ActorSystem) extends CLIHelperT {
-  implicit val timeout: Timeout = Timeout(2 minutes)
+  implicit val timeout: Timeout = system.settings.config
+    .getDuration("omi-service.journal-ask-timeout",TimeUnit.MILLISECONDS).milliseconds
 
   implicit val logSource: LogSource[CLIHelper] = new LogSource[CLIHelper] {
     def genString(handler: CLIHelper): String = handler.toString

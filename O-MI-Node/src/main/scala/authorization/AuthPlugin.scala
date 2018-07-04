@@ -114,7 +114,6 @@ trait AuthApiProvider extends AuthorizationExtension {
   val singleStores: SingleStores
 
   private[this] val authorizationSystems: mutable.Buffer[AuthApi] = mutable.Buffer()
-  implicit private val timeout: Timeout = 2 minutes
 
   /**
     * Register authorization system that tells if the request is authorized.
@@ -128,7 +127,7 @@ trait AuthApiProvider extends AuthorizationExtension {
     super.makePermissionTestFunction,
     extract { context => context.request } map { (httpRequest: HttpRequest) =>
       (orgOmiRequest: RequestWrapper) =>
-
+        implicit val timeout: Timeout = orgOmiRequest.handleTTL
         // for checking if path is infoitem or object
         val currentTree = Await.result((singleStores.hierarchyStore ? GetTree).mapTo[ImmutableODF], 2 minutes)
 
