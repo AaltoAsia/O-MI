@@ -4,22 +4,16 @@ import java.sql.Timestamp
 
 import akka.util.Timeout
 
-import scala.util.{Failure, Success, Try}
+import scala.util.{Success, Failure}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
 import scala.concurrent.stm._
-import scala.collection.mutable.{HashMap => MutableHashMap, Map => MutableMap}
 import scala.language.postfixOps
 import org.slf4j.LoggerFactory
-//import slick.driver.H2Driver.api._
+
 import slick.jdbc.meta.MTable
 
-import slick.backend.DatabaseConfig
-//import slick.driver.H2Driver.api._
-import slick.driver.JdbcProfile
-import slick.lifted.{Index, ForeignKeyQuery, ProvenShape}
-//import scala.collection.JavaConversions.iterableAsScalaIterable
 import http.OmiConfigExtension
 import types.odf._
 import types.OmiTypes._
@@ -28,7 +22,7 @@ import akka.pattern.ask
 import journal.Models.GetTree
 import journal.Models.MultipleReadCommand
 trait OdfDatabase extends Tables with DB with TrimmableDB{
-  import dc.driver.api._
+  import dc.profile.api._
 
   protected val settings : OmiConfigExtension
   protected val singleStores : SingleStores

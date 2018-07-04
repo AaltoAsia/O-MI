@@ -2,26 +2,16 @@ package database
 
 import java.sql.Timestamp
 
-import scala.util.{Try, Success, Failure}
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration._
-import scala.concurrent.{Await, Future}
-import scala.concurrent.stm._
 import scala.collection.mutable.{ Map => MutableMap, HashMap => MutableHashMap}
-import scala.language.postfixOps
 
-import org.slf4j.LoggerFactory
-//import slick.driver.H2Driver.api._
 import slick.jdbc.meta.MTable
 
-import slick.backend.DatabaseConfig
+import slick.basic.DatabaseConfig
 //import slick.driver.H2Driver.api._
-import slick.driver.JdbcProfile
-import slick.lifted.{Index, ForeignKeyQuery, ProvenShape}
+import slick.jdbc.JdbcProfile
+import slick.lifted.{Index, ProvenShape}
 //import scala.collection.JavaConversions.iterableAsScalaIterable
-import http.OmiConfigExtension
-import types.odf._
-import types.OmiTypes._
 import types.Path
 
 /**
@@ -29,7 +19,7 @@ import types.Path
  */
 trait DBBase{
   val dc : DatabaseConfig[JdbcProfile] //= DatabaseConfig.forConfig[JdbcProfile](database.dbConfigName)
-  import dc.driver.api._
+  import dc.profile.api._
   val db: Database
   //protected[this] val db: Database
 }
@@ -48,7 +38,7 @@ case class TimedValue(
 )
 
 trait Tables extends DBBase{
-  import dc.driver.api._
+  import dc.profile.api._
   type DBSIOro[Result] = DBIOAction[Seq[Result],Streaming[Result],Effect.Read] 
   type DBIOro[Result] = DBIOAction[Result, NoStream, Effect.Read]
   type DBIOwo[Result] = DBIOAction[Result, NoStream, Effect.Write]
@@ -61,7 +51,7 @@ trait Tables extends DBBase{
     )
 
   class PathsTable( tag: Tag ) extends Table[DBPath](tag, "PATHSTABLE"){
-    import dc.driver.api._
+    import dc.profile.api._
     def id: Rep[Long] = column[Long]("PATHID", O.PrimaryKey, O.AutoInc)
     def path: Rep[Path] = column[Path]("PATH")  
     def isInfoItem: Rep[Boolean] = column[Boolean]( "ISINFOITEM" )
@@ -73,7 +63,7 @@ trait Tables extends DBBase{
     )
   }
   class StoredPath extends TableQuery[PathsTable](new PathsTable(_)){
-    import dc.driver.api._
+    import dc.profile.api._
     def selectByPath( path: Path): DBSIOro[DBPath] = selectByPathCQ(path).result
     def selectByID( id: Long ): DBSIOro[DBPath]  = selectByIDCQ(id).result
     def selectByIDs( ids: Seq[Long] ): DBSIOro[DBPath] = selectByIDsQ(ids).result
@@ -104,7 +94,7 @@ trait Tables extends DBBase{
   class TimedValuesTable(val path: Path, val pathID:Long, tag: Tag) extends Table[TimedValue](
     tag, s"PATH_${pathID.toString}"){
 
-      import dc.driver.api._
+      import dc.profile.api._
       def id: Rep[Long] = column[Long]("VALUEID", O.PrimaryKey, O.AutoInc)
       def timestamp: Rep[Timestamp] = column[Timestamp]( "TIME", O.SqlType("TIMESTAMP(3)"))
       def value: Rep[String] = column[String]("VALUE")
@@ -117,7 +107,7 @@ trait Tables extends DBBase{
     }
   class PathValues( val path: Path, val pathID: Long ) extends TableQuery[TimedValuesTable]({tag: Tag => new TimedValuesTable(path, pathID,tag)}){
     val name: String = s"PATH_${pathID.toString}"
-    import dc.driver.api._
+    import dc.profile.api._
     def removeValuesBefore( end: Timestamp): DBIOwo[Int] = before(end).delete
     def trimToNNewestValues( n: Long ): DBIOrw[Int] = selectAllExpectNNewestValuesCQ( n ).result.flatMap{
       values: Seq[TimedValue] =>

@@ -13,10 +13,9 @@ import scala.concurrent.Future
 
 import types.OmiTypes._
 import types.Path
-import types.odf.{ImmutableODF, ODF, _}
+import types.odf.{ImmutableODF, ODF}
 import journal.Models.GetTree
 import akka.pattern.ask
-import scala.concurrent.duration._
 
 trait DBReadHandler extends DBHandlerBase{
   /** Method for handling ReadRequest.
@@ -59,17 +58,6 @@ trait DBReadHandler extends DBHandlerBase{
          // but it shouldn't be a big problem
          val fmetadataTree: Future[ImmutableODF] = (singleStores.hierarchyStore ? GetTree).mapTo[ImmutableODF]
 
-         //Find nodes from the request that HAVE METADATA OR DESCRIPTION REQUEST
-         def odfWithMetaDataRequest: ODF = ImmutableODF(requestedODF.getNodes.collect {
-           case ii: InfoItem
-           if ii.hasStaticData => 
-             log.debug(ii.toString)
-             ii.copy(values = OdfCollection())
-           case obj: Object 
-             if obj.hasStaticData =>
-             log.debug(obj.toString)
-             obj
-         })
 
          val fodfWithMetaData: Future[ODF] = fmetadataTree.map(_.readTo( requestedODF).valuesRemoved)
 

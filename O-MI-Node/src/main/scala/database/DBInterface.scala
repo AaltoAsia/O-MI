@@ -24,14 +24,9 @@ import akka.actor.{ActorRef, ActorSystem, Props}
 import akka.util.Timeout
 import org.slf4j.{Logger, LoggerFactory}
 import org.prevayler.{Prevayler, PrevaylerFactory}
-import parsing.xmlGen.xmlTypes.MetaDataType
-import slick.backend.DatabaseConfig
-import slick.jdbc.meta.MSchema
+import slick.basic.DatabaseConfig
 import types.OmiTypes.ReturnCode
-//import slick.driver.H2Driver.api._
-import slick.driver.JdbcProfile
-import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
-import types.OdfTypes._
+import slick.jdbc.JdbcProfile
 import types.odf._
 import types.OmiTypes.OmiReturn
 import types.Path
@@ -252,7 +247,7 @@ class DatabaseConnection()(
      db.close()
 
      // Try to remove the db file
-     val confUrl = slick.util.GlobalConfig.driverConfig(dbConfigName).getString("url")
+     val confUrl = slick.util.GlobalConfig.profileConfig(dbConfigName).getString("url")
      // XXX: trusting string operations
      val dbPath = confUrl.split(":").lastOption.getOrElse("")
 
@@ -365,17 +360,13 @@ slick-config {
   protected val system : ActorSystem,
   protected val singleStores : SingleStores,
   protected val settings : OmiConfigExtension
-//OLD DB:
-//) extends DBCachedReadWrite with DB {
 ) extends OdfDatabase with DB {
 
   override protected val log: Logger = LoggerFactory.getLogger("TestDB")
   log.debug("Creating TestDB: " + name)
   override val dc = DatabaseConfig.forConfig[JdbcProfile](configName,config)
-  import dc.driver.api._
   val db = dc.db
-   // Database.forURL(url, driver = driver,
-   // keepAliveConnection=true)
+
   initialize()
 
   val dbmaintainer: ActorRef = if( useMaintainer) { system.actorOf(DBMaintainer.props(

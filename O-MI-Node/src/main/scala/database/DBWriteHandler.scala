@@ -1,7 +1,5 @@
 package database
 
-import java.lang.{Iterable => JavaIterable}
-
 import parsing.xmlGen._
 import responses.CallbackHandler._
 import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
@@ -9,7 +7,6 @@ import types.OmiTypes._
 import types.Path
 import types.odf._
 
-import scala.collection.mutable.{Map => MutableMap}
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.Try
@@ -30,7 +27,6 @@ import journal.Models.LookupEventSubs
 import scala.collection.immutable
 trait DBWriteHandler extends DBHandlerBase {
 
-  //, dispatcher}
   private def sendEventCallback(esub: EventSub, infoItems: Seq[InfoItem]): Unit = {
     val odf = ImmutableODF(infoItems)
     esub match {
@@ -175,6 +171,7 @@ trait DBWriteHandler extends DBHandlerBase {
     val (leafII,leafObjects) = odf.getLeafs.partition{
       case ii: InfoItem => true
       case obj: Object => false
+      case obj: Objects => false
     } 
     val leafInfoItems = leafII.collect{ case ii: InfoItem => ii }
     val pathValueOldValueTuples = for {
@@ -210,7 +207,7 @@ trait DBWriteHandler extends DBHandlerBase {
         case AttachEvent(item) => item
     })
 
-    val staticData = odf.valuesRemoved.getNodes.collect{ case obj: Object => obj }
+    val staticData = odf.valuesRemoved.nodesWithStaticData
     /*
       infoItems filter { 
       ii: InfoItem =>
@@ -222,7 +219,7 @@ trait DBWriteHandler extends DBHandlerBase {
     }*/
 
     log.debug(s"Static data with attributes:\n${staticData.mkString("\n")}")
-    val updatedStaticItemsF = fnewItems.map(newItems =>  staticData ++ newItems)
+    val updatedStaticItemsF = fnewItems.map(newItems =>  staticData ++ newItems ++ leafObjects)
 
     // DB + Poll Subscriptions
     val infosToBeWrittenInDBF: Future[Seq[InfoItem]] =
