@@ -544,7 +544,7 @@ trait WebSocketOMISupport { self: OmiService =>
             }
             ids.foreach{ 
               id =>
-                subscriptionManager ! RemoveSubscription(id)
+                subscriptionManager ! RemoveSubscription(id, 2 minutes )
             }
         }
       }

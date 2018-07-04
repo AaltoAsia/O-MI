@@ -28,7 +28,6 @@ trait OdfDatabase extends Tables with DB with TrimmableDB{
   protected val singleStores : SingleStores
   protected val log = LoggerFactory.getLogger("O-DF-database")
   val pathToDBPath: TMap[Path, DBPath] = TMap()
-  implicit val timeout: Timeout = 2 minutes
 
   def initialize(): Unit = {
     val findTables = db.run(namesOfCurrentTables)
@@ -308,7 +307,7 @@ trait OdfDatabase extends Tables with DB with TrimmableDB{
     endO: Option[Timestamp],
     newestO: Option[Int],
     oldestO: Option[Int]
-  ): Future[Option[ODF]] = {
+  )(implicit timeout: Timeout): Future[Option[ODF]] = {
     if( beginO.isEmpty && endO.isEmpty &&  newestO.isEmpty && oldestO.isEmpty ){
       readLatestFromCache( 
         nodes.map{ 
@@ -367,7 +366,7 @@ trait OdfDatabase extends Tables with DB with TrimmableDB{
     }
   }
 
-  def remove(path: Path): Future[Seq[Int]] ={
+  def remove(path: Path)(implicit timeout: Timeout): Future[Seq[Int]] ={
     val actionsO: Option[DBIOsw[Int]] = pathToDBPath.single.get(path).collect{
       case  DBPath(Some(id), p, true) =>
           valueTables.get(path).map{
@@ -494,10 +493,10 @@ trait OdfDatabase extends Tables with DB with TrimmableDB{
     }
   }
 
-  def readLatestFromCache( requestedOdf: ODF ): Future[Option[ImmutableODF]] ={
+  def readLatestFromCache( requestedOdf: ODF )(implicit timeout: Timeout): Future[Option[ImmutableODF]] ={
     readLatestFromCache(requestedOdf.getLeafPaths.toSeq)
   }
-  def readLatestFromCache( leafPaths: Seq[Path]): Future[Option[ImmutableODF]] = {
+  def readLatestFromCache( leafPaths: Seq[Path])(implicit timeout: Timeout): Future[Option[ImmutableODF]] = {
     // NOTE: Might go off sync with tree or values if the request is large,
     // but it shouldn't be a big problem
     val  p2iisF: Future[Map[Path, InfoItem]] = (singleStores.hierarchyStore ? GetTree).mapTo[ImmutableODF].map(_.getInfoItems.collect{

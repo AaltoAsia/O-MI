@@ -55,7 +55,7 @@ case class NewSubscription(subscription: SubscriptionRequest)
  * Remove subscription event
  * @param id Id of the subscription to remove
  */
-case class RemoveSubscription(id: Long)
+case class RemoveSubscription(id: RequestID, ttl: FiniteDuration)
 
 /**
  * Remove subscription event, used for removing subscrpitions when ttl is over
@@ -78,7 +78,7 @@ case class LoadSubs(subs: Seq[(SavedSub, Option[SubData])])
  * Event for polling pollable subscriptions
  * @param id Id of the subscription to poll
  */
-case class PollSubscription(id: Long)
+case class PollSubscription(id: RequestID, ttl: FiniteDuration)
 
 object SubscriptionManager{
   def props(
@@ -108,12 +108,12 @@ class SubscriptionManager(
   val ttlScheduler = new SubscriptionScheduler
   val intervalScheduler: Scheduler = context.system.scheduler
   val intervalMap: ConcurrentHashMap[Long, Cancellable] = new ConcurrentHashMap
-  implicit val timeout: Timeout = 2 minutes
   /**
    * Schedule remove operation for subscriptions that are in prevayler stores,
    * only run at startup
    */
   private[this] def scheduleTtls(): Future[Unit] = {
+    implicit val timeout: Timeout = new Timeout(2 minutes)
     log.debug("Scheduling removesubscriptions for the first time...")
     //interval subs
     val intervalSubsF = (singleStores.subStore ? GetAllIntervalSubs).mapTo[Set[IntervalSub]]
@@ -154,12 +154,12 @@ class SubscriptionManager(
   def receive: PartialFunction[Any, Unit] = {
     case NewSubscription(subscription) => subscribe(subscription).pipeTo(sender())
     case HandleIntervals(id) => handleIntervals(id)
-    case RemoveSubscription(id) => removeSubscription(id).pipeTo(sender())
-    case SubscriptionTimeout(id) => removeSubscription(id)
-    case PollSubscription(id) => pollSubscription(id).pipeTo(sender())
-    case ListSubsCmd() => getAllSubs().pipeTo(sender())
-    case GetSubsWithPollData() => getSubsWithPollData().pipeTo(sender())
-    case SubInfoCmd(id) => getSub(id).pipeTo(sender())
+    case RemoveSubscription(id, ttl) => removeSubscription(id)(ttl).pipeTo(sender())
+    case SubscriptionTimeout(id) => removeSubscription(id)(1 minute)
+    case PollSubscription(id, ttl) => pollSubscription(id)(ttl).pipeTo(sender())
+    case ListSubsCmd(ttl) => getAllSubs()(ttl).pipeTo(sender())
+    case GetSubsWithPollData(ttl) => getSubsWithPollData()(ttl).pipeTo(sender())
+    case SubInfoCmd(id,ttl) => getSub(id)(ttl).pipeTo(sender())
     case LoadSubs(subs: Seq[(SavedSub, Option[SubData])]) => loadSub(subs).pipeTo(sender())
   }
 
@@ -169,6 +169,7 @@ class SubscriptionManager(
     * @param subs list of subs and optional poll subscription data
     */
   private def loadSub(subs: Seq[(SavedSub, Option[SubData])]): Future[Unit] = {
+    implicit val timeout: Timeout = 2 minutes
     val allSubsF: Future[AllSubscriptions] = getAllSubs()
     val existingIds: Future[Set[Long]] = allSubsF.map(allSubs=> (allSubs.polls ++ allSubs.intervals ++ allSubs.events).map(_.id))
     for{
@@ -219,7 +220,7 @@ class SubscriptionManager(
 
 
 
-  private def handlePollEvent(pollEvent: PolledEventSub): Future[ImmutableODF] = {
+  private def handlePollEvent(pollEvent: PolledEventSub)(implicit timeout: Timeout): Future[ImmutableODF] = {
     log.debug(s"Creating response message for Polled Event Subscription")
     val eventDataF: Future[Map[Path, Seq[Value[Any]]]] =
       (singleStores.pollDataPrevayler ? PollEventSubscription(pollEvent.id)).mapTo[Map[Path,Seq[Value[Any]]]]
@@ -265,7 +266,7 @@ class SubscriptionManager(
     } else None
   }
 
-  private def handlePollInterval(pollInterval: PollIntervalSub, pollTime: Long, odf: ODF): Future[ImmutableODF] = {
+  private def handlePollInterval(pollInterval: PollIntervalSub, pollTime: Long, odf: ODF)(implicit timeout: Timeout): Future[ImmutableODF] = {
 
     log.info(s"Creating response message for Polled Interval Subscription")
 
@@ -338,7 +339,7 @@ class SubscriptionManager(
    * @param id id of subscription to poll
    * @return
    */
-  private def pollSubscription(id: Long): Future[Option[ODF]] = {
+  private def pollSubscription(id: Long)(implicit timeout: Timeout): Future[Option[ODF]] = {
     val pollTime: Long = System.currentTimeMillis()
     val subF: Future[Option[PolledSub]] = (singleStores.subStore ? PollSubCommand(id)).mapTo[Option[PolledSub]]
     for{
@@ -368,7 +369,7 @@ class SubscriptionManager(
    */
   private def handleIntervals(id: Long): Future[Unit] = {
     //TODO add error messages from requesthandler
-
+    implicit val timeout: Timeout = new Timeout(1 minute)
     log.debug(s"handling interval sub with id: $id")
     val currentTime = System.currentTimeMillis()
     val intervalSubscriptionOptionF: Future[Option[IntervalSub]] = (singleStores.subStore ? GetIntervalSub(id)).mapTo[Option[IntervalSub]]
@@ -430,7 +431,7 @@ class SubscriptionManager(
    * @param id Id of the subscription to remove
    * @return Boolean indicating if the removing was successful
    */
-  private def removeSubscription(id: Long): Future[Boolean] = {
+  private def removeSubscription(id: Long)(implicit timeout: Timeout): Future[Boolean] = {
     Option(intervalMap.get(id)).foreach(_.cancel())
 
     lazy val removePS = (singleStores.subStore ? RemovePollSub(id)).mapTo[Boolean]
@@ -444,7 +445,7 @@ class SubscriptionManager(
     ret
   }
 
-  private def getAllSubs(): Future[AllSubscriptions] = {
+  private def getAllSubs()(implicit timeout: Timeout): Future[AllSubscriptions] = {
     log.info("getting list of all subscriptions")
     val intervalSubsF = (singleStores.subStore ? GetAllIntervalSubs).mapTo[Set[IntervalSub]]
     val eventSubsF = (singleStores.subStore ? GetAllEventSubs).mapTo[Set[EventSub]]
@@ -456,7 +457,7 @@ class SubscriptionManager(
     } yield AllSubscriptions(intervalSubs, eventSubs, pollSubs)
   }
 
-  private def getSubsWithPollData(): Future[Seq[(SavedSub, Option[SubData])]] = {
+  private def getSubsWithPollData()(implicit timeout: Timeout): Future[Seq[(SavedSub, Option[SubData])]] = {
     val allSubsF = getAllSubs()
     for {
       AllSubscriptions(intervals,events,polls) <- allSubsF
@@ -477,7 +478,7 @@ class SubscriptionManager(
     } yield res
   }
 
-  private def getSub(id: Long): Future[Option[SavedSub]] = {
+  private def getSub(id: Long)(implicit timeout: Timeout): Future[Option[SavedSub]] = {
     val intervalSubsF = (singleStores.subStore ? GetAllIntervalSubs).mapTo[Set[IntervalSub]]
     val eventSubsF = (singleStores.subStore ? GetAllEventSubs).mapTo[Set[EventSub]]
     val pollSubsF = (singleStores.subStore ? GetAllPollSubs).mapTo[Set[PolledSub]]
@@ -496,6 +497,7 @@ class SubscriptionManager(
    * @return Subscription Id within Try monad if adding fails this is a Failure, otherwise Success(id)
    */
   private def subscribe(subscription: SubscriptionRequest): Future[Long] = {
+    implicit val timeout: Timeout = subscription.handleTTL
       val allSubsF = getAllSubs()
       val allIdsF: Future[Set[Long]] = allSubsF.map(allSubs => (allSubs.events ++ allSubs.intervals ++ allSubs.polls).map(_.id))
       def getNewId(): Future[Long] = {

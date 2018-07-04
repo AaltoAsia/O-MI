@@ -43,12 +43,12 @@ trait PollHandler extends Actor with ActorLogging{
     */
   def handlePoll(poll: PollRequest): Future[ResponseRequest] = {
     val ttl = poll.handleTTL
-    implicit val timeout: Timeout = Timeout(ttl)
+    implicit val timeout: Timeout = ttl
     val time = new Date().getTime
     val resultsFut =
       Future.sequence(poll.requestIDs.map { id : RequestID=>
 
-      val objectsF: Future[Option[ODF] ] = (subscriptionManager ? PollSubscription(id)).mapTo[Option[ODF]]
+      val objectsF: Future[Option[ODF] ] = (subscriptionManager ? PollSubscription(id, ttl)).mapTo[Option[ODF]]
       objectsF.recoverWith{
         case NonFatal(e) =>
           log.error( e.getMessage)

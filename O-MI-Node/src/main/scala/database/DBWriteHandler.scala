@@ -27,22 +27,21 @@ import journal.Models.LookupEventSubs
 import scala.collection.immutable
 trait DBWriteHandler extends DBHandlerBase {
 
-  private def sendEventCallback(esub: EventSub, infoItems: Seq[InfoItem]): Unit = {
+  private def sendEventCallback(esub: EventSub, infoItems: Seq[InfoItem])(implicit timeout: Timeout): Unit = {
     val odf = ImmutableODF(infoItems)
     esub match {
       case ne: NewEventSub =>
         log.debug(s"NEWEVENTSUB iis: ${infoItems.mkString("\n")}")
         log.debug(s"NEWEVENTSUB get nodes: ${odf.getNodes.mkString("\n")}")
-      case _ => 
+      case _ =>
     }
     sendEventCallback(esub,
       odf
     )
   }
 
-  private def sendEventCallback(esub: EventSub, odfWithoutTypes: ImmutableODF) : Unit = {
+  private def sendEventCallback(esub: EventSub, odfWithoutTypes: ImmutableODF)(implicit timeout: Timeout) : Unit = {
     log.debug("Sending event callbacks")
-    implicit val timeout: Timeout = 2 minutes
     val id = esub.id
     val callbackAddr = esub.callback
     val fhTree: Future[ImmutableODF] = (singleStores.hierarchyStore ? GetTree).mapTo[ImmutableODF]
@@ -84,7 +83,7 @@ trait DBWriteHandler extends DBHandlerBase {
     }
   }
 
-  private def processEvents(events: Seq[InfoItemEvent]): Unit = {
+  private def processEvents(events: Seq[InfoItemEvent])(implicit timeout: Timeout): Unit = {
     log.debug("Processing events...")
 
     val esubListsF: Future[Seq[(EventSub, InfoItem)]] = Future.sequence(events.collect{//: Seq[(EventSub, InfoItem)] = events.collect{
@@ -132,7 +131,7 @@ trait DBWriteHandler extends DBHandlerBase {
    * @param oldValueOpt
    * @return returns Sequence of SubValues to be added to database
    */
-  private def handlePollData(path: Path, newValue: Value[Any], oldValueOpt: Option[Value[Any]]) = {
+  private def handlePollData(path: Path, newValue: Value[Any], oldValueOpt: Option[Value[Any]])(implicit timeout: Timeout) = {
     //log.debug(s"Handling poll data... for $path")
     //TODO: Do this for multiple paths at the same time
     val relatedPollSubsF: Future[Set[NotNewEventSub]] = (singleStores.subStore ? GetSubsForPath(path)).mapTo[Set[NotNewEventSub]]
@@ -168,6 +167,7 @@ trait DBWriteHandler extends DBHandlerBase {
     val odf =write.odf
     // save only changed values
     log.debug("Check old values")
+    implicit val timeout: Timeout = write.handleTTL
     val (leafII,leafObjects) = odf.getLeafs.partition{
       case ii: InfoItem => true
       case obj: Object => false

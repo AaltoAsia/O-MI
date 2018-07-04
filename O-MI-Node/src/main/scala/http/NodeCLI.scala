@@ -45,9 +45,9 @@ object CLICmds
   case class StartAgentCmd(agent: String)
   case class StopAgentCmd(agent: String)
   case class ListAgentsCmd()
-  case class ListSubsCmd()
-  case class GetSubsWithPollData()
-  case class SubInfoCmd(id: Long)
+  case class ListSubsCmd(ttl: FiniteDuration)
+  case class GetSubsWithPollData(ttl: FiniteDuration)
+  case class SubInfoCmd(id: Long, ttl: FiniteDuration)
   case class RemovePath(path: String)
 }
 
@@ -93,9 +93,9 @@ class OmiNodeCLI(
   restore <filename for subs> <filename for odf>
   """
   val ip: AgentName = sourceAddress.toString
-  implicit val timeout : Timeout = 1.minute
 
   val commandTimeout: FiniteDuration = 1.minute
+  implicit val timeout : Timeout = commandTimeout
 
   override def preStart: Unit ={
     val connectToManager = (agentSystem ? NewCLI(ip,self)).mapTo[Boolean]
@@ -173,7 +173,7 @@ class OmiNodeCLI(
   } 
   private def listSubs(): String = {
     log.info(s"Got list subs command from $ip")
-    val result = (subscriptionManager ? ListSubsCmd())
+    val result = (subscriptionManager ? ListSubsCmd(commandTimeout))
       .map{
         case AllSubscriptions(intervals: Set[IntervalSub],
           events: Set[EventSub],
@@ -190,7 +190,7 @@ class OmiNodeCLI(
   }
   private def subInfo(id: Long): String = {
     log.info(s"Got sub info command from $ip")
-    val result = (subscriptionManager ? SubInfoCmd(id)).mapTo[Option[SavedSub]] 
+    val result = (subscriptionManager ? SubInfoCmd(id, commandTimeout)).mapTo[Option[SavedSub]]
       .map{
         case Some(intervalSub: IntervalSub) =>
           s"Started: ${intervalSub.startTime}\r\n" +
@@ -257,7 +257,7 @@ class OmiNodeCLI(
       val id = pathOrId.toInt
       log.info(s"Removing subscription with id: $id")
 
-      val result = (subscriptionManager ? RemoveSubscription(id))
+      val result = (subscriptionManager ? RemoveSubscription(id,commandTimeout ))
         .map{
           case true =>
             s"Removed subscription with $id successfully.\r\n>"
@@ -306,7 +306,7 @@ import spray.json._
 
 
   private def backupSubscriptions(filePath: String): Future[Unit] = {
-    val allSubscriptions: Future[List[(SavedSub, Option[SubData])]] = (subscriptionManager ? GetSubsWithPollData()).mapTo[List[(SavedSub, Option[SubData])]]
+    val allSubscriptions: Future[List[(SavedSub, Option[SubData])]] = (subscriptionManager ? GetSubsWithPollData(commandTimeout)).mapTo[List[(SavedSub, Option[SubData])]]
 
     allSubscriptions.map(allSubs => {
       val file = new File(filePath)

@@ -14,7 +14,6 @@ import scala.concurrent.duration._
 
 trait DBHandlerBase extends Actor 
   with ActorLogging{
-  implicit val timeout: Timeout = 2 minutes //for akka ask
   protected implicit def dbConnection: DB
   protected implicit def singleStores: SingleStores
   protected implicit def callbackHandler: CallbackHandler

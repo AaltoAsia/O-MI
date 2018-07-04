@@ -87,7 +87,6 @@ case class AttachEvent(override val infoItem: InfoItem) extends ChangeEvent(info
  */
 class SingleStores(protected val settings: OmiConfigExtension)(implicit val system: ActorSystem) {
 
-  implicit val timeout: Timeout = 2 minutes
   import system.dispatcher
   private[this] def createPrevayler[P](in: P, name: String) = {
     if(settings.writeToDisk) {
@@ -178,13 +177,13 @@ class SingleStores(protected val settings: OmiConfigExtension)(implicit val syst
   }
 
 
-  def getMetaData(path: Path) : Future[Option[MetaData]] = {
+  def getMetaData(path: Path)(implicit timeout: Timeout) : Future[Option[MetaData]] = {
     (hierarchyStore ? GetTree).mapTo[ImmutableODF].map(_.get(path).collect{
       case ii: InfoItem if ii.metaData.nonEmpty => ii.metaData
     }.flatten)
   }
 
-  def getSingle(path: Path) : Future[Option[Node]] ={
+  def getSingle(path: Path)(implicit timeout: Timeout) : Future[Option[Node]] ={
     val ftree = (hierarchyStore ? GetTree).mapTo[ImmutableODF]
     ftree.flatMap(tree => tree.get(path).map{
       case info : InfoItem =>
@@ -259,7 +258,6 @@ class DatabaseConnection()(
 
 class StubDB(val singleStores: SingleStores, val system: ActorSystem, val settings: OmiConfigExtension) extends DB{
   import scala.concurrent.ExecutionContext.Implicits.global
-  implicit val timeout: Timeout = 2 minutes
   def initialize(): Unit = Unit;
 
   val dbmaintainer: ActorRef = system.actorOf(SingleStoresMaintainer.props(singleStores,settings))
@@ -282,16 +280,16 @@ class StubDB(val singleStores: SingleStores, val system: ActorSystem, val settin
     * @param oldest   number of values to be returned from end
     * @return Combined results in a O-DF tree
     */
-  def getNBetween(requests: Iterable[Node], begin: Option[Timestamp], end: Option[Timestamp], newest: Option[Int], oldest: Option[Int]): Future[Option[ODF]] = {
+  def getNBetween(requests: Iterable[Node], begin: Option[Timestamp], end: Option[Timestamp], newest: Option[Int], oldest: Option[Int])(implicit timeout: Timeout): Future[Option[ODF]] = {
     readLatestFromCache(requests.map{
             node => node.path
           }.toSeq).map(Some(_))
   }
 
-  def readLatestFromCache( requestedOdf: ODF ): Future[ImmutableODF] ={
+  def readLatestFromCache( requestedOdf: ODF )(implicit timeout: Timeout): Future[ImmutableODF] ={
     readLatestFromCache(requestedOdf.getLeafPaths.toSeq)
   }
-  def readLatestFromCache( leafPaths: Seq[Path]): Future[ImmutableODF] = {
+  def readLatestFromCache( leafPaths: Seq[Path])(implicit timeout: Timeout): Future[ImmutableODF] = {
     // NOTE: Might go off sync with tree or values if the request is large,
     // but it shouldn't be a big problem
     val  fp2iis = (singleStores.hierarchyStore ? GetTree).mapTo[ImmutableODF].map(_.getInfoItems.collect{
@@ -329,7 +327,7 @@ class StubDB(val singleStores: SingleStores, val system: ActorSystem, val settin
     *
     * @param path Parent path to be removed.
     */
-  def remove(path: Path): Future[Seq[Int]] = Future.successful(Seq())
+  def remove(path: Path)(implicit timeout: Timeout): Future[Seq[Int]] = Future.successful(Seq())
 }
 
 
@@ -417,7 +415,7 @@ trait DB {
     begin: Option[Timestamp],
     end: Option[Timestamp],
     newest: Option[Int],
-    oldest: Option[Int]): Future[Option[ODF]]
+    oldest: Option[Int])(implicit timeout: Timeout): Future[Option[ODF]]
 
   /**
    * Used to set many values efficiently to the database.
@@ -432,7 +430,7 @@ trait DB {
    * Used to remove given path and all its descendants from the database.
    * @param path Parent path to be removed.
    */
-  def remove(path: Path): Future[Seq[Int]]
+  def remove(path: Path)(implicit timeout: Timeout): Future[Seq[Int]]
 }
 trait TrimmableDB {
   def trimDB(): Future[Seq[Int]]

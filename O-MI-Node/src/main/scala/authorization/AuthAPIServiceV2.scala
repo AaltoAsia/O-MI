@@ -112,7 +112,7 @@ class AuthAPIServiceV2(
 
 
   def filterODF(originalRequest: OdfRequest, filters: AuthorizationResponse): Future[Option[OmiRequest]] = {
-    implicit val timeout = new Timeout(2 minutes)
+    implicit val timeout: Timeout = originalRequest.handleTTL
     val odfTreeF: Future[ImmutableODF] = (hierarchyStore ? GetTree).mapTo[ImmutableODF]
     odfTreeF.map{odfTree =>
     val requestedTree = odfTree selectSubTree originalRequest.odf.getPaths

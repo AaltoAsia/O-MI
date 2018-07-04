@@ -32,7 +32,6 @@ import akka.pattern.ask
 import akka.util.Timeout
 
 object InfluxDBJsonProtocol extends DefaultJsonProtocol {
-  implicit val timeout: Timeout = 2 minutes
     def getSeries(json: spray.json.JsValue): immutable.Seq[JsValue] = json match{
       case obj: JsObject =>
         obj.getFields("results").collect{
@@ -151,7 +150,6 @@ class InfluxDBImplementation(
   }
 
 
-  implicit val timeout: Timeout = 2 minutes
   protected val writeAddress: Uri = config.writeAddress //Get from config
   log.info(s"Write address of InfluxDB instance $writeAddress")
   protected val readAddress: Uri = config.queryAddress //Get from config
@@ -264,7 +262,7 @@ class InfluxDBImplementation(
     begin: Option[Timestamp],
     end: Option[Timestamp],
     newest: Option[Int],
-    oldest: Option[Int]): Future[Option[ODF]]={
+    oldest: Option[Int])(implicit timeout: Timeout): Future[Option[ODF]]={
       val iODF = ImmutableODF(nodes) 
       getNBetweenNewTypes( iODF, begin, end, newest, oldest)
   }
@@ -280,7 +278,7 @@ class InfluxDBImplementation(
     endO: Option[Timestamp],
     newestO: Option[Int],
     oldestO: Option[Int]
-  ): Future[Option[ImmutableODF]] = {
+  )(implicit timeout: Timeout): Future[Option[ImmutableODF]] = {
     if( oldestO.nonEmpty ){
       Future.failed( new Exception("Oldest attribute is not allowed with InfluxDB."))
     } else {
@@ -406,7 +404,7 @@ class InfluxDBImplementation(
    }
    //TODO: Escape all odd parts
    def pathToMeasurementName(path: Path ): String = path.toString.replace("=","\\=").replace(",","\\,")
-   def remove( path: Path ): Future[Seq[Int]] ={
+   def remove( path: Path )(implicit timeout: Timeout): Future[Seq[Int]] ={
      for {
        cachedODF <- (singleStores.hierarchyStore ? GetTree).mapTo[ImmutableODF]
        removedIIs: Seq[InfoItem] = cachedODF.selectSubTree(Vector(path)).getInfoItems

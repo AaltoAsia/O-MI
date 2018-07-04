@@ -298,7 +298,7 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
       val agentSystem = TestActorRef( new TestManager(agentsMap,dbHandler,requestHandler)) 
       val subscriptionManager = TestActorRef( new Actor{
         def receive = {
-          case ListSubsCmd() => sender() ! AllSubscriptions(intervalSubs, eventSubs, pollSubs)
+          case ListSubsCmd(ttl) => sender() ! AllSubscriptions(intervalSubs, eventSubs, pollSubs)
         }
 
       })
@@ -327,7 +327,7 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
     val agentSystem = TestActorRef( new TestManager(agentsMap,dbHandler,requestHandler)) 
     val subscriptionManager = TestActorRef( new Actor{
       def receive = {
-        case RemoveSubscription(di) => sender() ! true
+        case RemoveSubscription(di,ttl) => sender() ! true
       }
 
     })
@@ -356,7 +356,7 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
     val agentSystem = TestActorRef( new TestManager(agentsMap,dbHandler,requestHandler)) 
     val subscriptionManager = TestActorRef( new Actor{
       def receive = {
-        case RemoveSubscription(di) => sender() ! false
+        case RemoveSubscription(di,ttl) => sender() ! false
       }
 
     })
@@ -503,7 +503,7 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification{
     val removeHandler = new RemoveTester( Path("objects/aue" ) )
     val subscriptionManager = TestActorRef( new Actor{
       def receive = {
-        case SubInfoCmd(id) => sender() ! sub
+        case SubInfoCmd(id,ttl) => sender() ! sub
       }
     })
     val connection = TestActorRef( new DummyRemote(remote.toString()))

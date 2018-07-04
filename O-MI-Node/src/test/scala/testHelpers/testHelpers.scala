@@ -288,7 +288,7 @@ object Actorstest  {
 
 class SubscriptionHandlerTestActor extends Actor {
   def receive = {
-    case RemoveSubscription(x) => {
+    case RemoveSubscription(x, ttl) => {
       if (x <= 10) {
         sender() ! true
       } else {

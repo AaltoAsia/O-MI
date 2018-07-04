@@ -47,7 +47,7 @@ trait SubscriptionHandler {
       case s : SubscriptionRequest=> s
     }
     val ttl = subscription.handleTTL
-    implicit val timeout: Timeout = Timeout(10.seconds) // NOTE: ttl will timeout from elsewhere
+    implicit val timeout: Timeout = ttl // NOTE: ttl will timeout from elsewhere
     val subFuture: Future[OmiResult] = (subscriptionManager ? NewSubscription(subscription))
       .mapTo[Long]
       .map{
