@@ -1,13 +1,20 @@
 syntax = "proto3";
 
 import "scalapb/scalapb.proto";
-//import "google/protobuf/warppers.proto";
 
 option (scalapb.options) = {
   package_name: "database.journal"
   flat_package: true
 };
 package database.journal;
+//Typenames are prefixed by P to mean Persistent(Serializable), for example PObject is serializable Object
+//fixed64 integer does not use variable length encoding
+//Maps can't have other Maps as value
+
+//"option (scalapb.message).extends = "database.journal.Models.Event";"
+//  means that the "extends Event" is appended to class definition in scala code
+//flat_package: When true scalapb will not append the protofile base name to the package name
+
 
 //LATEST STORE
 message PPersistentValue {
@@ -88,6 +95,8 @@ message PUnion {
 
 message PEventSub {
     oneof eventsub {
+        //NormalEventSub means interval -1
+        //NewEventSub means interval -2
         PNormalEventSub nes = 1;
         PNewEventSub news = 2;
 
@@ -99,6 +108,8 @@ message PEventSubs {
 
 message PPolledSub {
     oneof polledsub{
+        //NormalEventSub means interval -1
+        //NewEventSub means interval -2
         PPollNormalEventSub  pnes = 1;
         PPollNewEventSub pnews = 2;
         PPollIntervalSub pints = 3;
