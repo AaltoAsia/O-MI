@@ -18,9 +18,12 @@ object Models {
     * Event classes are located in O-MI-Node/target/scala-2.11/src_managed/main/database.journal/
     */
   trait Event extends PersistentMessage
+
   //trait PersistentNode
   trait PersistentSub extends PersistentMessage
+
   sealed trait Command
+
   //PersistentCommands are classes that need to be serialized
   sealed trait PersistentCommand extends Command with PersistentMessage
 
@@ -94,7 +97,8 @@ object Models {
       Option(pinfo.typeName).filter(_.nonEmpty),
       pinfo.names.map(id => buildQlmIDFromProtobuf(id)).toVector,
       pinfo.descriptions.map(d => Description(d.text, Option(d.lang).filter(_.nonEmpty))).toSet,
-      metaData = pinfo.metadata.map(md => MetaData(md.infoItems.map{case (p,ii) => buildInfoItemFromProtobuf(p, ii)}.toVector)),
+      metaData = pinfo.metadata
+        .map(md => MetaData(md.infoItems.map { case (p, ii) => buildInfoItemFromProtobuf(p, ii) }.toVector)),
       attributes = pinfo.attributes
     )
   }
@@ -155,7 +159,7 @@ object Models {
     }
   }
 
-  def asValue(pv: PPersistentValue): Option[Value[Any]] ={
+  def asValue(pv: PPersistentValue): Option[Value[Any]] = {
     Try(pv.typeName match {
       case "xs:float" if pv.valueType.isProtoDoubleValue =>
         FloatValue(pv.getProtoDoubleValue.toFloat, new Timestamp(pv.timeStamp))
@@ -172,7 +176,7 @@ object Models {
       case "odf" if pv.valueType.isProtoStringValue =>
         ODFValue(ODFParser.parse(pv.getProtoStringValue).right.get, new Timestamp(pv.timeStamp))
       case str: String if pv.valueType.isProtoStringValue =>
-        Value(pv.getProtoStringValue,pv.typeName, new Timestamp(pv.timeStamp))
+        Value(pv.getProtoStringValue, pv.typeName, new Timestamp(pv.timeStamp))
       case other => throw new Exception(s"Error while deserializing value: $other")
     }).toOption
   }

@@ -1,7 +1,8 @@
 package types
 package odf
 
-import scala.collection.{ Seq, Map }
+import scala.collection.{Seq, Map}
+
 /*
 case class Path(
   val path: collection.immutable.Seq[String]

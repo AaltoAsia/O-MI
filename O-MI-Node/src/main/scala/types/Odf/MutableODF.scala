@@ -1,22 +1,25 @@
 package types
 package odf
 
-import scala.collection.{ Seq, Map, SortedSet }
-import scala.collection.immutable.{TreeSet => ImmutableTreeSet, HashMap => ImmutableHashMap }
-import scala.collection.mutable.{TreeSet => MutableTreeSet, HashMap => MutableHashMap }
+import scala.collection.{Seq, Map, SortedSet}
+import scala.collection.immutable.{TreeSet => ImmutableTreeSet, HashMap => ImmutableHashMap}
+import scala.collection.mutable.{TreeSet => MutableTreeSet, HashMap => MutableHashMap}
 import scala.xml.NodeSeq
 import parsing.xmlGen.xmlTypes.{ObjectsType, ObjectType}
 import parsing.xmlGen.{odfDefaultScope, scalaxb, defaultScope}
 import types.Path._
 
 class MutableODF private[odf](
-  protected[odf] val nodes: MutableHashMap[Path,Node] = MutableHashMap.empty
-) extends ODF{//[MutableHashMap[Path,Node],MutableTreeSet[Path]] {
-  type M = MutableHashMap[Path,Node]
+                               protected[odf] val nodes: MutableHashMap[Path, Node] = MutableHashMap.empty
+                             ) extends ODF {
+  //[MutableHashMap[Path,Node],MutableTreeSet[Path]] {
+  type M = MutableHashMap[Path, Node]
   type S = MutableTreeSet[Path]
-  protected[odf] val paths: MutableTreeSet[Path] = MutableTreeSet( nodes.keys.toSeq:_* )(PathOrdering)
-  def readTo(to: ODF) : ODF = MutableODF(readToNodes(to))
-  def update[TM <: Map[Path,Node], TS <: SortedSet[Path]]( that: ODF ): ODF ={
+  protected[odf] val paths: MutableTreeSet[Path] = MutableTreeSet(nodes.keys.toSeq: _*)(PathOrdering)
+
+  def readTo(to: ODF): ODF = MutableODF(readToNodes(to))
+
+  def update[TM <: Map[Path, Node], TS <: SortedSet[Path]](that: ODF): ODF = {
     nodes.mapValues {
       node: Node =>
         (node, that.get(node.path)) match {
@@ -27,42 +30,43 @@ class MutableODF private[odf](
           case (n, Some(a)) => throw new Exception("Missmatching types in ODF when updating.")
         }
     }
-   this
+    this
   }
 
-  def select( that: ODF ): ODF ={
+  def select(that: ODF): ODF = {
     MutableODF(
-    paths.filter{
-      path: Path => 
-        that.paths.contains( path ) || that.getLeafPaths.exists{
-          ancestorPath: Path => 
-            ancestorPath.isAncestorOf( path) 
-        } 
-    }.flatMap{
-      path: Path => 
-        this.nodes.get( path )
-    }.toVector )
-  } 
-
-
-  def selectUpTree( pathsToGet: Seq[Path]): ODF = {
-    MutableODF(
-      paths.filter{
-        ancestorPath: Path =>
-          pathsToGet.exists{
-            path: Path => 
-              path == ancestorPath ||
+      paths.filter {
+        path: Path =>
+          that.paths.contains(path) || that.getLeafPaths.exists {
+            ancestorPath: Path =>
               ancestorPath.isAncestorOf(path)
           }
-      }.flatMap{
+      }.flatMap {
+        path: Path =>
+          this.nodes.get(path)
+      }.toVector)
+  }
+
+
+  def selectUpTree(pathsToGet: Seq[Path]): ODF = {
+    MutableODF(
+      paths.filter {
+        ancestorPath: Path =>
+          pathsToGet.exists {
+            path: Path =>
+              path == ancestorPath ||
+                ancestorPath.isAncestorOf(path)
+          }
+      }.flatMap {
         path: Path =>
           nodes.get(path)
       }.toVector
     )
   }
-  def union[TM <: Map[Path,Node], TS <: SortedSet[Path]]( that: ODF ): ODF = {
-    val pathIntersection: SortedSet[Path] = this.paths.intersect( that.paths)
-    val thatOnlyNodes: Set[Node] = (that.paths -- pathIntersection ).flatMap {
+
+  def union[TM <: Map[Path, Node], TS <: SortedSet[Path]](that: ODF): ODF = {
+    val pathIntersection: SortedSet[Path] = this.paths.intersect(that.paths)
+    val thatOnlyNodes: Set[Node] = (that.paths -- pathIntersection).flatMap {
       p: Path =>
         that.nodes.get(p)
     }.toSet
@@ -87,62 +91,68 @@ class MutableODF private[odf](
     }.toSet
     val allPaths = paths ++ that.paths
     val allNodes = thatOnlyNodes ++ intersectingNodes
-    this.nodes ++= allNodes.map{ node => node.path -> node }
+    this.nodes ++= allNodes.map { node => node.path -> node }
     this
   }
-  def removePaths( removedPaths: Seq[Path]) : ODF = {
-    val subtrees = paths.filter{
+
+  def removePaths(removedPaths: Seq[Path]): ODF = {
+    val subtrees = paths.filter {
       p =>
         removedPaths.contains(p) ||
-        removedPaths.exists(_.isAncestorOf(p))
+          removedPaths.exists(_.isAncestorOf(p))
     }.toSet
     this.nodes --= subtrees
     this.paths --= subtrees
     this
-  } 
-  def immutable: ImmutableODF = ImmutableODF( 
-      this.nodes.values.toVector
-  )
-  //Should be this? or create a copy?
-  def mutable: MutableODF = MutableODF( 
-      this.nodes.values.toVector
+  }
+
+  def immutable: ImmutableODF = ImmutableODF(
+    this.nodes.values.toVector
   )
 
-  def valuesRemoved : ODF ={
-    this.nodes.mapValues{
-      case ii: InfoItem => ii.copy( values = Vector() )
-      case obj: Object => obj 
-      case obj: Objects => obj
-    }
-    this
-  }
-  def descriptionsRemoved: ODF = {
-    this.nodes.mapValues{
-      case ii: InfoItem => ii.copy( descriptions = Set.empty )
-      case obj: Object => obj.copy( descriptions = Set.empty )
-      case obj: Objects => obj
-    }
-    this
-  }
-  def metaDatasRemoved: ODF ={
-    this.nodes.mapValues{
-      case ii: InfoItem => ii.copy( metaData = None )
+  //Should be this? or create a copy?
+  def mutable: MutableODF = MutableODF(
+    this.nodes.values.toVector
+  )
+
+  def valuesRemoved: ODF = {
+    this.nodes.mapValues {
+      case ii: InfoItem => ii.copy(values = Vector())
       case obj: Object => obj
       case obj: Objects => obj
     }
-  this
+    this
   }
-  def attributesRemoved: ODF={
-    this.nodes.mapValues{
-      case ii: InfoItem => ii.copy( typeAttribute = None, attributes = ImmutableHashMap() )
-      case obj: Object => obj.copy( typeAttribute = None, attributes = ImmutableHashMap() )
-      case obj: Objects => obj.copy( attributes = ImmutableHashMap() )
+
+  def descriptionsRemoved: ODF = {
+    this.nodes.mapValues {
+      case ii: InfoItem => ii.copy(descriptions = Set.empty)
+      case obj: Object => obj.copy(descriptions = Set.empty)
+      case obj: Objects => obj
     }
-  this
+    this
   }
-  
-  def removePath( path: Path) : ODF ={
-    val subtreeP = paths.filter{
+
+  def metaDatasRemoved: ODF = {
+    this.nodes.mapValues {
+      case ii: InfoItem => ii.copy(metaData = None)
+      case obj: Object => obj
+      case obj: Objects => obj
+    }
+    this
+  }
+
+  def attributesRemoved: ODF = {
+    this.nodes.mapValues {
+      case ii: InfoItem => ii.copy(typeAttribute = None, attributes = ImmutableHashMap())
+      case obj: Object => obj.copy(typeAttribute = None, attributes = ImmutableHashMap())
+      case obj: Objects => obj.copy(attributes = ImmutableHashMap())
+    }
+    this
+  }
+
+  def removePath(path: Path): ODF = {
+    val subtreeP = paths.filter {
       p =>
         path.isAncestorOf(p) || p == path
     }.toSet
@@ -152,39 +162,39 @@ class MutableODF private[odf](
   }
 
 
-  def add( node: Node) : ODF ={
-    if( !nodes.contains( node.path ) ){
-      nodes( node.path) = node
+  def add(node: Node): ODF = {
+    if (!nodes.contains(node.path)) {
+      nodes(node.path) = node
       paths += node.path
-      if( !nodes.contains(node.path.init) ){
-        this.add( node.createParent )
+      if (!nodes.contains(node.path.init)) {
+        this.add(node.createParent)
       }
     } else {
-      (nodes.get(node.path), node ) match{
-        case (Some(old:Object), obj: Object ) =>
-          nodes( node.path) = old.union(obj)
-        case (Some(old:Objects), objs: Objects ) =>
-          nodes( node.path) = old.union(objs)
-        case (Some(old:InfoItem), iI: InfoItem ) => 
-          nodes( node.path) = old.union(iI)
-        case (old, n ) => 
+      (nodes.get(node.path), node) match {
+        case (Some(old: Object), obj: Object) =>
+          nodes(node.path) = old.union(obj)
+        case (Some(old: Objects), objs: Objects) =>
+          nodes(node.path) = old.union(objs)
+        case (Some(old: InfoItem), iI: InfoItem) =>
+          nodes(node.path) = old.union(iI)
+        case (old, n) =>
           throw new Exception(
-            "Found two different types in same Path when tried to add a new node" 
+            "Found two different types in same Path when tried to add a new node"
           )
       }
     }
     this
   }
-  
-  def addNodes( nodesToAdd: Seq[Node] ) : ODF ={
+
+  def addNodes(nodesToAdd: Seq[Node]): ODF = {
     nodesToAdd.foreach {
       node: Node =>
         this.add(node)
     }
     this
   }
-  
-  def selectSubTree( pathsToGet: Seq[Path]): ODF = {
+
+  def selectSubTree(pathsToGet: Seq[Path]): ODF = {
     MutableODF(
       nodes.values.filter {
         node: Node =>
@@ -196,23 +206,24 @@ class MutableODF private[odf](
     )
   }
 
-  override def equals( that: Any ) : Boolean ={
-    that match{
+  override def equals(that: Any): Boolean = {
+    that match {
       case another: ODF =>
         (paths equals another.paths) && (nodes equals another.nodes)
       case _: Any =>
         false
     }
   }
+
   override lazy val hashCode: Int = this.nodes.hashCode
 }
 
-object MutableODF{
+object MutableODF {
   def apply(
-      _nodes: Iterable[Node]  = Vector.empty
-  ) : MutableODF ={
-    val mutableHMap : MutableHashMap[Path,Node] = MutableHashMap.empty
-    val sorted = _nodes.toSeq.sortBy{ 
+             _nodes: Iterable[Node] = Vector.empty
+           ): MutableODF = {
+    val mutableHMap: MutableHashMap[Path, Node] = MutableHashMap.empty
+    val sorted = _nodes.toSeq.sortBy {
       n: Node => n.path
     }(PathOrdering)
     sorted.foreach {

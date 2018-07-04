@@ -34,11 +34,11 @@ import types.Path
   def toOdfInfoItem(path: Path, value: Value[Any]) = 
     OdfInfoItem(path, Iterable(value), description, metadataStr)
 }
- */ 
+ */
 
 /**
- * The latest values should be stored here. Contains only the latest value for each path.
- */
+  * The latest values should be stored here. Contains only the latest value for each path.
+  */
 //case class LatestValues(var allData: Map[Path, Value[Any]])
 //object LatestValues {
 //  type LatestStore = Prevayler[LatestValues]

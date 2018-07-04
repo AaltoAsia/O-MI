@@ -25,15 +25,15 @@ import parsing.xmlGen.xmlTypes._
 import types.OdfTypes.OdfTreeCollection._
 
 /** Class implementing OdfObject. */
-class  OdfObjectImpl(
-  id:                   OdfTreeCollection[OdfQlmID],
-  path:                 Path,
-  infoItems:            OdfTreeCollection[OdfInfoItem],
-  objects:              OdfTreeCollection[OdfObject],
-  description:          Option[OdfDescription] = None,
-  typeValue:            Option[String] = None,
-  attributes:           Map[String,String] = HashMap.empty
-) extends Serializable {
+class OdfObjectImpl(
+                     id: OdfTreeCollection[OdfQlmID],
+                     path: Path,
+                     infoItems: OdfTreeCollection[OdfInfoItem],
+                     objects: OdfTreeCollection[OdfObject],
+                     description: Option[OdfDescription] = None,
+                     typeValue: Option[String] = None,
+                     attributes: Map[String, String] = HashMap.empty
+                   ) extends Serializable {
   require(path.length > 1,
     s"OdfObject should have longer than one segment path (use OdfObjects for <Objects>): Path($path)")
 
@@ -48,35 +48,35 @@ class  OdfObjectImpl(
     val tmp: OdfTreeCollection[OdfQlmID] = id
     val tmp2: OdfTreeCollection[OdfQlmID] = another.id
     val idsWithDuplicate: Vector[OdfQlmID] = this.id ++ another.id
-    val ids: Seq[OdfQlmID]  = idsWithDuplicate.groupBy {
+    val ids: Seq[OdfQlmID] = idsWithDuplicate.groupBy {
       qlmId: OdfQlmID => qlmId.value
-    }.values.collect{
-        case Seq(single: OdfQlmID) => Seq(single)
-        case Seq( id: OdfQlmID, otherId: OdfQlmID) => 
-          if( id.unionable(otherId) ){
-            Seq(id.union(otherId))
-          } else Seq[OdfQlmID](id, otherId )
+    }.values.collect {
+      case Seq(single: OdfQlmID) => Seq(single)
+      case Seq(id: OdfQlmID, otherId: OdfQlmID) =>
+        if (id.unionable(otherId)) {
+          Seq(id.union(otherId))
+        } else Seq[OdfQlmID](id, otherId)
     }.toSeq.flatten
 
     OdfObject(
       ids,
-        //case Seq(QlmIDType(valueA, attributesA), QlmIDType(valueB, attributesB)) => //idTypeB, tagTypeB, startDateB, endDateB, attrB)) =>
-          //QlmIDType(valueB, attributesA ++ attributesB)},//,
-  //          unionOption(startDateB, startDateA) { case (b, a) =>
-  //            a compare b match {
-  //              case XMLConst.LESSER => a // a < b
-  //              case _ => b
-  //            }
-  //          },
-  //          unionOption(endDateB, endDateA) { case (b, a) =>
-  //            a compare b match {
-  //              case XMLConst.GREATER => a // a > b
-  //              case _ => b
+      //case Seq(QlmIDType(valueA, attributesA), QlmIDType(valueB, attributesB)) => //idTypeB, tagTypeB, startDateB, endDateB, attrB)) =>
+      //QlmIDType(valueB, attributesA ++ attributesB)},//,
+      //          unionOption(startDateB, startDateA) { case (b, a) =>
+      //            a compare b match {
+      //              case XMLConst.LESSER => a // a < b
+      //              case _ => b
+      //            }
+      //          },
+      //          unionOption(endDateB, endDateA) { case (b, a) =>
+      //            a compare b match {
+      //              case XMLConst.GREATER => a // a > b
+      //              case _ => b
 
-  //            }
-  //          },
-  //          attrA ++ attrB
-            path,
+      //            }
+      //          },
+      //          attrA ++ attrB
+      path,
       thisInfo.merged(thatInfo) { case ((k1, v1), (_, v2)) => (k1, v1.combine(v2)) }.values,
       thisObj.merged(thatObj) { case ((k1, v1), (_, v2)) => (k1, v1.combine(v2)) }.values,
       another.description orElse description,
@@ -86,26 +86,27 @@ class  OdfObjectImpl(
   }
 
   /**
-   * Does something similar to intersection. Note that this method should be called first on hierarchytree and then
-   * on the tree that should add the data. Another should be subset of this odfTree. Used to collect metadatas and
-   * descriptions from a read request.
-   * @param another another Object to merge with
-   * @return
-   */
+    * Does something similar to intersection. Note that this method should be called first on hierarchytree and then
+    * on the tree that should add the data. Another should be subset of this odfTree. Used to collect metadatas and
+    * descriptions from a read request.
+    *
+    * @param another another Object to merge with
+    * @return
+    */
   def intersect(another: OdfObject): Option[OdfObject] = {
-    sharedAndUniques[Option[OdfObject]]( another: OdfObject){(
-      uniqueInfos: Seq[OdfInfoItem],
-      anotherUniqueInfos: Seq[OdfInfoItem],
-      sharedInfos: Map[Path, Seq[OdfInfoItem]],
-      uniqueObjs: Seq[OdfObject],
-      anotherUniqueObjs: Seq[OdfObject],
-      sharedObjs: Map[Path, Seq[OdfObject]]
-      )=>
+    sharedAndUniques[Option[OdfObject]](another: OdfObject) { (
+                                                                uniqueInfos: Seq[OdfInfoItem],
+                                                                anotherUniqueInfos: Seq[OdfInfoItem],
+                                                                sharedInfos: Map[Path, Seq[OdfInfoItem]],
+                                                                uniqueObjs: Seq[OdfObject],
+                                                                anotherUniqueObjs: Seq[OdfObject],
+                                                                sharedObjs: Map[Path, Seq[OdfObject]]
+                                                              ) =>
 
-    val sharedInfosOut = sharedInfos.flatMap{
+      val sharedInfosOut = sharedInfos.flatMap {
         case (path: Path, sobj: Seq[OdfInfoItem]) =>
           assert(sobj.length == 2)
-          for{
+          for {
             head <- sobj.headOption
             last <- sobj.lastOption
             infoI = OdfInfoItem(
@@ -114,73 +115,75 @@ class  OdfObjectImpl(
               last.description.fold(last.description)(_ => head.description),
               last.metaData.fold(last.metaData)(_ => head.metaData),
               last.typeValue.orElse(head.typeValue),
-              head.attributes ++ last.attributes 
-              ) //use metadata and description from hierarchytree
+              head.attributes ++ last.attributes
+            ) //use metadata and description from hierarchytree
           } yield infoI
-    }
+      }
 
-    val sharedObjsOut = sharedObjs.flatMap{
+      val sharedObjsOut = sharedObjs.flatMap {
         case (path: Path, sobj: Seq[OdfObject]) =>
           assert(sobj.length == 2)
-          for{
+          for {
             head <- sobj.headOption
             last <- sobj.lastOption
-            res  <- head.intersect(last)
+            res <- head.intersect(last)
           } yield res
-    }
+      }
 
-    if(sharedInfosOut.isEmpty && sharedObjsOut.isEmpty && another.description.isEmpty && another.typeValue.isEmpty){
-      None
-    } else{
-      Option(
-        OdfObject(
-          id, //another.id should be set to empty
-          path,
-          sharedInfosOut,
-          sharedObjsOut,
-          //get description only if another has it too
-          another.description.fold(another.description)(_ => description),
-          another.typeValue orElse typeValue,
-          attributes ++ another.attributes 
+      if (sharedInfosOut.isEmpty && sharedObjsOut.isEmpty && another.description.isEmpty && another.typeValue.isEmpty) {
+        None
+      } else {
+        Option(
+          OdfObject(
+            id, //another.id should be set to empty
+            path,
+            sharedInfosOut,
+            sharedObjsOut,
+            //get description only if another has it too
+            another.description.fold(another.description)(_ => description),
+            another.typeValue orElse typeValue,
+            attributes ++ another.attributes
+          )
         )
-      )
+      }
     }
   }
-  }
-  /**
-   * Method for calculating the unique values to this object compared to the given object. This method calculates the
-   * relative component of given objects leafs in current object 'THIS \ THAT'
-   * @param another OdfObject to be removed from current Object
-   * @return
-   */
-  def --( another: OdfObject ): Option[OdfObject] = sharedAndUniques[Option[OdfObject]]( another: OdfObject){(
-      uniqueInfos : Seq[OdfInfoItem] ,
-      anotherUniqueInfos : Seq[OdfInfoItem] ,
-      sharedInfos : Map[Path, Seq[OdfInfoItem]],
-      uniqueObjs : Seq[OdfObject] ,
-      anotherUniqueObjs : Seq[OdfObject] ,
-      sharedObjs : Map[Path,Seq[OdfObject]]
-      ) =>
 
-      val uniquesAndShared = sharedObjs.flatMap{
-        case (path:Path, sobj: Seq[OdfObject]) =>
+  /**
+    * Method for calculating the unique values to this object compared to the given object. This method calculates the
+    * relative component of given objects leafs in current object 'THIS \ THAT'
+    *
+    * @param another OdfObject to be removed from current Object
+    * @return
+    */
+  def --(another: OdfObject): Option[OdfObject] = sharedAndUniques[Option[OdfObject]](another: OdfObject) { (
+                                                                                                              uniqueInfos: Seq[OdfInfoItem],
+                                                                                                              anotherUniqueInfos: Seq[OdfInfoItem],
+                                                                                                              sharedInfos: Map[Path, Seq[OdfInfoItem]],
+                                                                                                              uniqueObjs: Seq[OdfObject],
+                                                                                                              anotherUniqueObjs: Seq[OdfObject],
+                                                                                                              sharedObjs: Map[Path, Seq[OdfObject]]
+                                                                                                            ) =>
+
+    val uniquesAndShared = sharedObjs.flatMap {
+      case (path: Path, sobj: Seq[OdfObject]) =>
         assert(sobj.length == 2)
-        sobj.headOption match{
-          case Some( head ) =>
-            sobj.lastOption match{
+        sobj.headOption match {
+          case Some(head) =>
+            sobj.lastOption match {
               case Some(last) =>
                 head -- last
               case None =>
                 throw new Exception("No last found when combining OdfObject")
             }
-            case None =>
-              throw new Exception("No head found when combining OdfObject")
-          }
-      } ++ uniqueObjs
+          case None =>
+            throw new Exception("No head found when combining OdfObject")
+        }
+    } ++ uniqueObjs
 
-      if(uniqueInfos.isEmpty && uniquesAndShared.isEmpty){
-        None
-      } else {
+    if (uniqueInfos.isEmpty && uniquesAndShared.isEmpty) {
+      None
+    } else {
       Option(
         OdfObject(
           id, //TODO remove ids of another object?
@@ -189,22 +192,22 @@ class  OdfObjectImpl(
           uniquesAndShared,
           description,
           typeValue
-          )
         )
-      }
+      )
+    }
   }
 
   /** Method to convert to scalaxb generated class. */
-  private[this] def sharedAndUniques[A]( another: OdfObject )( 
+  private[this] def sharedAndUniques[A](another: OdfObject)(
     constructor: (
       Seq[OdfInfoItem],
-      Seq[OdfInfoItem],
-      Map[Path,Seq[OdfInfoItem]],
-      Seq[OdfObject],
-      Seq[OdfObject],
-      Map[Path,Seq[OdfObject]]) => A) = {
-    assert( path == another.path )
-    val uniqueInfos =  
+        Seq[OdfInfoItem],
+        Map[Path, Seq[OdfInfoItem]],
+        Seq[OdfObject],
+        Seq[OdfObject],
+        Map[Path, Seq[OdfObject]]) => A) = {
+    assert(path == another.path)
+    val uniqueInfos =
       infoItems.filterNot(
         obj => another.infoItems.exists(
           aobj => aobj.path == obj.path
@@ -215,14 +218,14 @@ class  OdfObjectImpl(
         obj => aobj.path == obj.path
       )
     )
-    
-    val sharedInfos = ( infoItems ++ another.infoItems ).filterNot(
-        obj => (uniqueInfos ++ anotherUniqueInfos).exists(
-          uobj => uobj.path == obj.path
-        )
-      ).groupBy(_.path)
 
-    val uniqueObjs =  
+    val sharedInfos = (infoItems ++ another.infoItems).filterNot(
+      obj => (uniqueInfos ++ anotherUniqueInfos).exists(
+        uobj => uobj.path == obj.path
+      )
+    ).groupBy(_.path)
+
+    val uniqueObjs =
       objects.filterNot(
         obj => another.objects.exists(
           aobj => aobj.path == obj.path
@@ -233,7 +236,7 @@ class  OdfObjectImpl(
         obj => aobj.path == obj.path
       )
     )
-    
+
     val sharedObjs = (objects ++ another.objects).filterNot(
       obj => (uniqueObjs ++ anotherUniqueObjs).exists(
         uobj => uobj.path == obj.path
@@ -241,7 +244,8 @@ class  OdfObjectImpl(
     ).groupBy(_.path)
     constructor(uniqueInfos, anotherUniqueInfos, sharedInfos, uniqueObjs, anotherUniqueObjs, sharedObjs)
   }
-  implicit def asObjectType : ObjectType = {
+
+  implicit def asObjectType: ObjectType = {
     require(path.length > 1, s"OdfObject should have longer than one segment path: $path")
     ObjectType(
       /*Seq( OdfQlmID(
@@ -249,7 +253,7 @@ class  OdfObjectImpl(
         attributes = Map.empty
       )),*/
       id.map(_.asQlmIDType), //
-      description.map( des => des.asDescription ).toSeq,
+      description.map(des => des.asDescription).toSeq,
       infoItems.map {
         info: OdfInfoItem =>
           info.asInfoItemType
@@ -259,8 +263,8 @@ class  OdfObjectImpl(
           subobj.asObjectType
       },
       attributes = Map.empty[String, DataRecord[Any]] ++
-        typeValue.map{ n => "@type" -> DataRecord(n) } ++
-        attributesToDataRecord( this.attributes )
+        typeValue.map { n => "@type" -> DataRecord(n) } ++
+        attributesToDataRecord(this.attributes)
     )
   }
 }

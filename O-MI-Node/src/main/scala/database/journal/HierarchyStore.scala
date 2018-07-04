@@ -8,6 +8,7 @@ import database.journal.Models._
 import database.journal.PPersistentNode.NodeType.{Ii, Obj, Objs}
 import types.Path
 import types.odf._
+
 class HierarchyStore extends PersistentActor with ActorLogging {
   def persistenceId = "hierarchystore"
 
@@ -45,19 +46,21 @@ class HierarchyStore extends PersistentActor with ActorLogging {
 
     }
   }
+
   def receiveRecover: Receive = {
     case event: Event => updateState(event)
-    case SnapshotOffer(_,snapshot:PUnion) => state = buildImmutableOdfFromProtobuf(snapshot.another)
+    case SnapshotOffer(_, snapshot: PUnion) => state = buildImmutableOdfFromProtobuf(snapshot.another)
   }
 
   def receiveCommand: Receive = {
-    case SaveSnapshot(msg) => sender() ! saveSnapshot(PUnion(state.nodes.map{case(k,v) => k.toString -> PPersistentNode(v.persist)}))
-    case union @ UnionCommand(other) =>
-      persist(PUnion(other.nodes.map{case (k,v)=> k.toString -> PPersistentNode(v.persist)})){ event =>
+    case SaveSnapshot(msg) => sender() !
+      saveSnapshot(PUnion(state.nodes.map { case (k, v) => k.toString -> PPersistentNode(v.persist) }))
+    case union@UnionCommand(other) =>
+      persist(PUnion(other.nodes.map { case (k, v) => k.toString -> PPersistentNode(v.persist) })) { event =>
         sender() ! updateState(union)
       }
-    case erase @ ErasePathCommand(path) =>
-      persist(PErasePath(path.toString)){event =>
+    case erase@ErasePathCommand(path) =>
+      persist(PErasePath(path.toString)) { event =>
         sender() ! updateState(erase)
       }
     case GetTree =>

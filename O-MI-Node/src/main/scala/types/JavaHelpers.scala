@@ -13,22 +13,26 @@
  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 
 package types
+
 import scala.collection.JavaConverters._
 import java.util.{GregorianCalendar, Dictionary}
 import scala.concurrent.{Future, ExecutionContext}
 import OmiTypes.ResponseRequest
 
-object JavaHelpers{
+object JavaHelpers {
 
- def mutableMapToImmutable[K,V]( mutable: scala.collection.mutable.Map[K,V] ) : scala.collection.immutable.Map[K,V] = mutable.toMap[K,V] 
- def requestIDsFromJava( requestIDs : java.lang.Iterable[java.lang.Long] ) : Vector[Long ]= {
+  def mutableMapToImmutable[K, V](mutable: scala.collection.mutable.Map[K, V]): scala.collection.immutable.Map[K, V] = mutable
+    .toMap[K, V]
+
+  def requestIDsFromJava(requestIDs: java.lang.Iterable[java.lang.Long]): Vector[Long] = {
     requestIDs.asScala.map(Long2long).toVector
- }
- 
- def formatWriteFuture( writeFuture: Future[java.lang.Object] ) : Future[ResponseRequest] ={
-   writeFuture.mapTo[ResponseRequest]
- }
-  def dictionaryToMap[K,V](dict: Dictionary[K,V] ): Map[K,V] ={
+  }
+
+  def formatWriteFuture(writeFuture: Future[java.lang.Object]): Future[ResponseRequest] = {
+    writeFuture.mapTo[ResponseRequest]
+  }
+
+  def dictionaryToMap[K, V](dict: Dictionary[K, V]): Map[K, V] = {
     dict.asScala.toMap
   }
 }

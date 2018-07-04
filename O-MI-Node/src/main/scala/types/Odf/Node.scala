@@ -5,11 +5,16 @@ import database.journal.PPersistentNode
 
 import scala.collection.Seq
 
-trait Node{
-  def createAncestors: Seq[Node] 
-  def createParent: Node 
-  def attributes: Map[String,String]
+trait Node {
+  def createAncestors: Seq[Node]
+
+  def createParent: Node
+
+  def attributes: Map[String, String]
+
   def path: Path
+
   def hasStaticData: Boolean
-  def persist: PPersistentNode.NodeType// = PersistentNode(path.toString,attributes)
+
+  def persist: PPersistentNode.NodeType // = PersistentNode(path.toString,attributes)
 }

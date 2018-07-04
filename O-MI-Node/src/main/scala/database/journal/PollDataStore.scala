@@ -10,17 +10,19 @@ import types.odf.Value
 class PollDataStore extends PersistentActor with ActorLogging {
   def persistenceId: String = "polldatastore"
 
-  var state: Map[Long,Map[String,Seq[PPersistentValue]]] = Map()
+  var state: Map[Long, Map[String, Seq[PPersistentValue]]] = Map()
 
-  def mergeValues(a: Map[String, Seq[PPersistentValue]], b: Map[String,Seq[PPersistentValue]]):Map[String,Seq[PPersistentValue]] = {
-    merge(a,b){ case (v1,v2o) =>
+  def mergeValues(a: Map[String, Seq[PPersistentValue]],
+                  b: Map[String, Seq[PPersistentValue]]): Map[String, Seq[PPersistentValue]] = {
+    merge(a, b) { case (v1, v2o) =>
       v2o.map(v2 => v1 ++ v2).getOrElse(v1)
     }
   }
+
   def updateState(event: Event) = event match {
-    case PAddPollData(id,path, Some(value)) =>
+    case PAddPollData(id, path, Some(value)) =>
       val newValue = Map(path -> Seq(value))
-      state += state.get(id).map(pv => (id -> mergeValues(pv,newValue))).getOrElse((id -> newValue))
+      state += state.get(id).map(pv => (id -> mergeValues(pv, newValue))).getOrElse((id -> newValue))
     case PPollEventSubscription(id) =>
       state -= id
     case PPollIntervalSubscription(id) =>
@@ -28,26 +30,27 @@ class PollDataStore extends PersistentActor with ActorLogging {
       state -= id
 
       oldVal.foreach(old => {
-          //add the empty sub as placeholder
-          //p.idToData += (subId -> mutable.HashMap.empty)
-          val newValues = old.mapValues(v => Seq(v.maxBy(_.timeStamp)))
-          //add latest value back to db
-          state += (id -> newValues)
-        })
+        //add the empty sub as placeholder
+        //p.idToData += (subId -> mutable.HashMap.empty)
+        val newValues = old.mapValues(v => Seq(v.maxBy(_.timeStamp)))
+        //add latest value back to db
+        state += (id -> newValues)
+      })
     case PRemovePollSubData(id) =>
       state -= id
     case other => log.warning(s"Unknown Event $other")
   }
 
-  def pollSubscription(event: PPollIntervalSubscription):Map[Path,Seq[Value[Any]]] = {
+  def pollSubscription(event: PPollIntervalSubscription): Map[Path, Seq[Value[Any]]] = {
     val resp: Map[Path, Seq[Value[Any]]] =
-      state.getOrElse(event.id, Map.empty).map{case (key, values) => Path(key) -> values.flatMap(asValue(_))}
+      state.getOrElse(event.id, Map.empty).map { case (key, values) => Path(key) -> values.flatMap(asValue(_)) }
     updateState(event)
     resp
   }
-  def pollSubscription(event: PPollEventSubscription):Map[Path,Seq[Value[Any]]] = {
+
+  def pollSubscription(event: PPollEventSubscription): Map[Path, Seq[Value[Any]]] = {
     val resp: Map[Path, Seq[Value[Any]]] =
-      state.getOrElse(event.id, Map.empty).map{case (key, values) => Path(key) -> values.flatMap(asValue(_))}
+      state.getOrElse(event.id, Map.empty).map { case (key, values) => Path(key) -> values.flatMap(asValue(_)) }
     updateState(event)
     resp
   }
@@ -60,26 +63,26 @@ class PollDataStore extends PersistentActor with ActorLogging {
   def receiveCommand: Receive = {
     case SaveSnapshot(msg) => sender() ! saveSnapshot(
       PPollData(state.mapValues(pmap => PPathToData(pmap.mapValues(values => PValueList(values))))))
-    case AddPollData(subId,path,value) =>
-      persist(PAddPollData(subId,path.toString, Some(value.persist))){ event =>
+    case AddPollData(subId, path, value) =>
+      persist(PAddPollData(subId, path.toString, Some(value.persist))) { event =>
         sender() ! updateState(event)
       }
     case PollEventSubscription(id) =>
-      persist(PPollEventSubscription(id)){event =>
+      persist(PPollEventSubscription(id)) { event =>
         sender() ! pollSubscription(event)
       }
     case PollIntervalSubscription(id) =>
-      persist(PPollIntervalSubscription(id)){event =>
+      persist(PPollIntervalSubscription(id)) { event =>
         sender() ! pollSubscription(event)
       }
     case RemovePollSubData(id) =>
-      persist(PRemovePollSubData(id)){ event =>
+      persist(PRemovePollSubData(id)) { event =>
         sender() ! updateState(event)
       }
     case CheckSubscriptionData(id) =>
       val response: Map[Path, Seq[Value[Any]]] =
         state.get(id)
-          .map(pv => pv.map{case (k,v) => Path(k) -> v.flatMap(asValue(_))})
+          .map(pv => pv.map { case (k, v) => Path(k) -> v.flatMap(asValue(_)) })
           .getOrElse(Map.empty[Path, Seq[Value[Any]]])
       sender() ! response
   }

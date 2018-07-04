@@ -1,3 +1,3 @@
 package database
 
-package object influxDB{}
+package object influxDB {}

@@ -29,44 +29,49 @@ import akka.util.Timeout
 
 import scala.concurrent.{Await, Future}
 
-object SingleStoresMaintainer{
+object SingleStoresMaintainer {
   def props(
-    singleStores : SingleStores,
-    settings : OmiConfigExtension
-  ) : Props = Props( new SingleStoresMaintainer( singleStores, settings) )
+             singleStores: SingleStores,
+             settings: OmiConfigExtension
+           ): Props = Props(new SingleStoresMaintainer(singleStores, settings))
 }
+
 class SingleStoresMaintainer(
-  protected val singleStores : SingleStores,
-  protected val settings : OmiConfigExtension
-)
-extends Actor
-with ActorLogging
-with RequiresMessageQueue[BoundedMessageQueueSemantics]
-{
+                              protected val singleStores: SingleStores,
+                              protected val settings: OmiConfigExtension
+                            )
+  extends Actor
+    with ActorLogging
+    with RequiresMessageQueue[BoundedMessageQueueSemantics] {
 
   protected val scheduler: Scheduler = context.system.scheduler
   protected val snapshotInterval: FiniteDuration = settings.snapshotInterval
   implicit val timeout: Timeout = 2 minutes
+
   case object TakeSnapshot
-  if( settings.writeToDisk){
+
+  if (settings.writeToDisk) {
     log.info(s"scheduling prevayler snapshot every $snapshotInterval")
     scheduler.schedule(snapshotInterval, snapshotInterval, self, TakeSnapshot)
   } else {
     log.info("using transient prevayler, taking snapshots is not in use.")
   }
-  protected def takeSnapshot: Future[Unit] = {
-    val start: FiniteDuration  = Duration(System.currentTimeMillis(),MILLISECONDS)
-    def trySnapshot(p: ActorRef, errorName: String): Future[Unit] = {
-      val start: FiniteDuration  = Duration(System.currentTimeMillis(),MILLISECONDS)
 
-        val snapshotF = (p ? SaveSnapshot()).mapTo[Unit]
-        snapshotF.onComplete{
-          case Success(s) =>{
-            val end : FiniteDuration = Duration(System.currentTimeMillis(),MILLISECONDS)
-            val duration : FiniteDuration = end - start
-            log.debug(s"Taking Snapshot for $errorName took $duration")
-          }
-          case Failure(ex) => log.error(ex,s"Failed to take Snapshot of $errorName")}
+  protected def takeSnapshot: Future[Unit] = {
+    val start: FiniteDuration = Duration(System.currentTimeMillis(), MILLISECONDS)
+
+    def trySnapshot(p: ActorRef, errorName: String): Future[Unit] = {
+      val start: FiniteDuration = Duration(System.currentTimeMillis(), MILLISECONDS)
+
+      val snapshotF = (p ? SaveSnapshot()).mapTo[Unit]
+      snapshotF.onComplete {
+        case Success(s) => {
+          val end: FiniteDuration = Duration(System.currentTimeMillis(), MILLISECONDS)
+          val duration: FiniteDuration = end - start
+          log.debug(s"Taking Snapshot for $errorName took $duration")
+        }
+        case Failure(ex) => log.error(ex, s"Failed to take Snapshot of $errorName")
+      }
       snapshotF
     }
 
@@ -76,16 +81,16 @@ with RequiresMessageQueue[BoundedMessageQueueSemantics]
     val hieF = trySnapshot(singleStores.hierarchyStore, "hierarchyStore")
     val subF = trySnapshot(singleStores.subStore, "subStore")
     val datF = trySnapshot(singleStores.pollDataPrevayler, "pollData")
-    val res = for{
-     lat <- latF
-     hie <- hieF
-     sub <- subF
-     dat <- datF
+    val res = for {
+      lat <- latF
+      hie <- hieF
+      sub <- subF
+      dat <- datF
     } yield dat
-    res.onComplete{
+    res.onComplete {
       case Success(s) => {
-        val end : FiniteDuration = Duration(System.currentTimeMillis(),MILLISECONDS)
-        val duration : FiniteDuration = end - start
+        val end: FiniteDuration = Duration(System.currentTimeMillis(), MILLISECONDS)
+        val duration: FiniteDuration = end - start
         log.info(s"Taking Snapshot took $duration")
       }
       case Failure(ex) => log.error(ex, "Taking snapshot failed")
@@ -98,7 +103,9 @@ with RequiresMessageQueue[BoundedMessageQueueSemantics]
     val dirs = singleStores.prevaylerDirectories
     for (dir <- dirs) {
       val prevaylerDir = new org.prevayler.implementation.PrevaylerDirectory(dir)
-      Try{prevaylerDir.necessaryFiles()} match {
+      Try {
+        prevaylerDir.necessaryFiles()
+      } match {
         case Failure(e) =>
           log.warning(s"Exception reading directory $dir for prevayler cleaning: $e")
         case Success(necessaryFiles) =>
@@ -108,12 +115,14 @@ with RequiresMessageQueue[BoundedMessageQueueSemantics]
 
           val extraFiles = allFiles filterNot (necessaryFiles contains _)
 
-          extraFiles foreach {file =>
-            Try{file.delete} match {
+          extraFiles foreach { file =>
+            Try {
+              file.delete
+            } match {
               case Success(true) => // noop
               case Success(false) =>
                 log.warning(s"File $file was listed unnecessary but couldn't be deleted")
-              case Failure(e) => 
+              case Failure(e) =>
                 log.warning(s"Exception when trying to delete unnecessary file $file: $e")
             }
           }
@@ -122,12 +131,13 @@ with RequiresMessageQueue[BoundedMessageQueueSemantics]
     }
 
   }
+
   /**
-   * Function for handling InputPusherCmds.
-   *
-   */
+    * Function for handling InputPusherCmds.
+    *
+    */
   override def receive: Actor.Receive = {
-    case TakeSnapshot                   => {
+    case TakeSnapshot => {
       takeSnapshot.map(ts => cleanPrevayler())
     }
   }

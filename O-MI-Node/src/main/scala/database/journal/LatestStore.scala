@@ -1,4 +1,5 @@
 package database.journal
+
 import java.sql.Timestamp
 
 import akka.actor.ActorLogging
@@ -15,6 +16,7 @@ import scala.util.Try
 
 class LatestStore extends PersistentActor with ActorLogging {
   def persistenceId = "lateststore"
+
   var state: Map[String, PPersistentValue] = Map()
 
   //implicit def pathToString(path: Path): String = path.toString
@@ -26,27 +28,30 @@ class LatestStore extends PersistentActor with ActorLogging {
     //case SingleWriteEvent(p, v) => state = state.updated(Path(p),v)
     //case WriteEvent(paths) => state = state ++ paths
   }
+
   def receiveRecover: Receive = {
     case evnt: Event => updateState(evnt)
     //case e: SingleWriteEvent => updateState(e)
-    case SnapshotOffer(_,snapshot: PWriteLatest) => state = snapshot.values
+    case SnapshotOffer(_, snapshot: PWriteLatest) => state = snapshot.values
   }
+
   val snapshotInterval = 100
+
   def receiveCommand: Receive = {
     case SaveSnapshot(msg) => sender() ! saveSnapshot(PWriteLatest(state))
 
-    case SingleWriteCommand(p, v) =>{
-      persist(PWriteLatest(Map(p.toString->v.persist))){ event =>
+    case SingleWriteCommand(p, v) => {
+      persist(PWriteLatest(Map(p.toString -> v.persist))) { event =>
         sender() ! updateState(event)
-       // if(lastSequenceNr % snapshotInterval == 0 && lastSequenceNr != 0){
-       //   saveSnapshot(state)
-       // }
+        // if(lastSequenceNr % snapshotInterval == 0 && lastSequenceNr != 0){
+        //   saveSnapshot(state)
+        // }
       }
     }
 
     case WriteCommand(paths) => {
-      persist(PWriteLatest(paths.map{ case (path, value) => path.toString -> value.persist})){ event =>
-      //  persist(WriteLatest(paths.mapValues(_.persist))){ event =>
+      persist(PWriteLatest(paths.map { case (path, value) => path.toString -> value.persist })) { event =>
+        //  persist(WriteLatest(paths.mapValues(_.persist))){ event =>
         sender() ! updateState(event)
         //TODO:snapshots
 
@@ -64,17 +69,17 @@ class LatestStore extends PersistentActor with ActorLogging {
       sender() ! resp
     }
     case MultipleReadCommand(paths) => {
-      val resp: Seq[(Path, Value[Any])] = paths.flatMap{ path =>
+      val resp: Seq[(Path, Value[Any])] = paths.flatMap { path =>
         (for {
           persistentValue <- state.get(path.toString)
           value <- asValue(persistentValue)
         } yield path -> value).toSeq
       }
-     // val resp: Seq[(Path, Value[Any])] = paths.flatMap(path=> state.get(path.toString).map(value => path -> asValue(value)).toSeq)
+      // val resp: Seq[(Path, Value[Any])] = paths.flatMap(path=> state.get(path.toString).map(value => path -> asValue(value)).toSeq)
       sender() ! resp
     }
     case ReadAllCommand => {
-      val resp: Map[Path, Value[Any]] = state.map{case (path, pValue) => Path(path) -> asValue(pValue).get}
+      val resp: Map[Path, Value[Any]] = state.map { case (path, pValue) => Path(path) -> asValue(pValue).get }
       sender() ! resp
     }
 

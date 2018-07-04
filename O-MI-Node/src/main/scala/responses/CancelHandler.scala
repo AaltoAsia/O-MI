@@ -32,13 +32,16 @@ import scala.xml.NodeSeq
 import akka.actor.ActorRef
 import akka.pattern.ask
 import akka.util.Timeout
-import http.{ActorSystemContext, Actors, Settings, OmiConfigExtension }
+import http.{ActorSystemContext, Actors, Settings, OmiConfigExtension}
 
 trait CancelHandler {
 
-  protected def subscriptionManager : ActorRef 
+  protected def subscriptionManager: ActorRef
+
   protected implicit val settings: OmiConfigExtension
+
   /** Method for handling CancelRequest.
+    *
     * @param cancel request
     * @return (xml response, HTTP status code) wrapped in a Future
     */
@@ -46,21 +49,21 @@ trait CancelHandler {
     implicit val timeout: Timeout = cancel.handleTTL // NOTE: ttl will timeout from elsewhere
     val jobs: Future[Seq[OmiResult]] = Future.sequence(cancel.requestIDs.map {
       id =>
-      (subscriptionManager ? RemoveSubscription(id, cancel.handleTTL )).mapTo[Boolean].map( res =>
-        if(res){
-          Results.Success()
-        }else{
-          Results.NotFoundRequestIDs(Vector(id))
+        (subscriptionManager ? RemoveSubscription(id, cancel.handleTTL)).mapTo[Boolean].map(res =>
+          if (res) {
+            Results.Success()
+          } else {
+            Results.NotFoundRequestIDs(Vector(id))
+          }
+        ).recoverWith {
+          case e: Throwable => {
+            val error = "Error when trying to cancel subscription: "
+            Future.successful(Results.InternalError(Some(error + e.toString)))
+          }
         }
-      ).recoverWith{
-        case e : Throwable => {
-          val error = "Error when trying to cancel subscription: "
-          Future.successful(Results.InternalError(Some(error + e.toString)))
-        }
-      }
     })
 
-    jobs.map{
+    jobs.map {
       results => ResponseRequest(Results.unionReduce(results.toVector))
     }
   }

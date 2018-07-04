@@ -29,38 +29,43 @@ import akka.pattern.ask
 import akka.util.Timeout
 import types.OmiTypes._
 import types._
-import http.{ActorSystemContext, Actors, Settings, OmiConfigExtension }
+import http.{ActorSystemContext, Actors, Settings, OmiConfigExtension}
 
 trait SubscriptionHandler {
 
-  protected def subscriptionManager : ActorRef
+  protected def subscriptionManager: ActorRef
+
   protected implicit val settings: OmiConfigExtension
+
   /** Method for handling SubscriptionRequest.
+    *
     * @param _subscription request
     * @return (xml response, HTTP status code)
     */
   def handleSubscription(_subscription: SubscriptionRequest): Future[ResponseRequest] = {
     //if interval is below allowed values, set it to minimum allowed value
     val subscription: SubscriptionRequest = _subscription match {
-      case SubscriptionRequest(  interval, _, _, _, _,  _, _, _, _) if interval < settings.minSubscriptionInterval && interval.toSeconds >= 0 =>
-        _subscription.copy(interval= settings.minSubscriptionInterval)
-      case s : SubscriptionRequest=> s
+      case SubscriptionRequest(interval, _, _, _, _, _, _, _, _) if interval < settings.minSubscriptionInterval &&
+        interval.toSeconds >= 0 =>
+        _subscription.copy(interval = settings.minSubscriptionInterval)
+      case s: SubscriptionRequest => s
     }
     val ttl = subscription.handleTTL
     implicit val timeout: Timeout = ttl // NOTE: ttl will timeout from elsewhere
     val subFuture: Future[OmiResult] = (subscriptionManager ? NewSubscription(subscription))
       .mapTo[Long]
-      .map{
+      .map {
         case id: Long if _subscription.interval != subscription.interval =>
-          Results.Subscription(id,Some(subscription.interval))
+          Results.Subscription(id, Some(subscription.interval))
         case id: Long =>
           Results.Subscription(id)
-      }.recoverWith{
+      }.recoverWith {
       case e: IllegalArgumentException => Future.successful(Results.InvalidRequest(Some(e.getMessage())))
-      case e : Throwable => Future.failed(new RuntimeException(s"Error when trying to create subscription: ${e.getMessage}", e))
+      case e: Throwable => Future
+        .failed(new RuntimeException(s"Error when trying to create subscription: ${e.getMessage}", e))
     }
-    subFuture.map{ results =>
-      ResponseRequest( Vector(results) )
+    subFuture.map { results =>
+      ResponseRequest(Vector(results))
     }
   }
 }

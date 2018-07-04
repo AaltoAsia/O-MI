@@ -24,15 +24,15 @@ class CallbackHandlerTest(implicit ee: ExecutionEnv) extends Specification {
       val port = 20003
       val probe = initCallbackServer(port)
       val ttl = Duration(2, "seconds")
-      val msg  = Responses.Success( ttl = ttl)
+      val msg = Responses.Success(ttl = ttl)
 
       val conf = ConfigFactory.load("testconfig")
       val settings = new OmiConfigExtension(
         conf
       )
       val materializer = ActorMaterializer()(system)
-      val callbackHandler = new CallbackHandler(settings)(system,materializer)
-      callbackHandler.sendCallback(HTTPCallback(Uri(s"http://localhost:$port")),msg)
+      val callbackHandler = new CallbackHandler(settings)(system, materializer)
+      callbackHandler.sendCallback(HTTPCallback(Uri(s"http://localhost:$port")), msg)
 
       probe.expectMsg(ttl, Option(msg.asXML))
     }
@@ -40,14 +40,14 @@ class CallbackHandlerTest(implicit ee: ExecutionEnv) extends Specification {
     "Try to keep sending message until ttl is over" in skipped(new Actorstest {
       val port = 20004
       val ttl = Duration(10, "seconds")
-      val msg  = Responses.Success( ttl = ttl)
+      val msg = Responses.Success(ttl = ttl)
 
       val conf = ConfigFactory.load("testconfig")
       val settings = new OmiConfigExtension(
         conf
       )
       val materializer = ActorMaterializer()(system)
-      val callbackHandler = new CallbackHandler(settings)(system,materializer)
+      val callbackHandler = new CallbackHandler(settings)(system, materializer)
       callbackHandler.sendCallback(HTTPCallback(Uri(s"http://localhost:$port")), msg)
 
       Thread.sleep(1000)
@@ -59,9 +59,9 @@ class CallbackHandlerTest(implicit ee: ExecutionEnv) extends Specification {
   }
 
   def initCallbackServer(port: Int)(implicit system: ActorSystem): TestProbe = {
-      implicit val timeout = Timeout(5 seconds)
-      val probe = TestProbe()
-      val testServer = new SystemTestCallbackServer(probe.ref, "localhost", port)
-      probe
+    implicit val timeout = Timeout(5 seconds)
+    val probe = TestProbe()
+    val testServer = new SystemTestCallbackServer(probe.ref, "localhost", port)
+    probe
   }
 }

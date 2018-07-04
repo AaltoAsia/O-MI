@@ -14,15 +14,15 @@ import types.Path
 import types.OmiTypes.OmiRequestType._
 
 
- 
-trait AgentSystemConfigExtension  extends Extension {
+trait AgentSystemConfigExtension extends Extension {
   def config: Config
 
-  val internalAgentsStartTimeout : FiniteDuration= config.getDuration("agent-system.starting-timeout", TimeUnit.SECONDS).seconds
+  val internalAgentsStartTimeout: FiniteDuration = config.getDuration("agent-system.starting-timeout", TimeUnit.SECONDS)
+    .seconds
   val agentConfigurations: Seq[AgentConfigEntry] = {
-    
-    Try{
-        config.getConfigList("agent-system.internal-agents").asScala.toVector
+
+    Try {
+      config.getConfigList("agent-system.internal-agents").asScala.toVector
     } match {
       case Success(internalAgents) =>
         internalAgents.flatMap {
@@ -36,7 +36,7 @@ trait AgentSystemConfigExtension  extends Extension {
                 None
             }
         }
-      case Failure(e: Missing) => 
+      case Failure(e: Missing) =>
         //println("Received missing from agent-system.internal-agents configuration")
         Vector.empty
       case Failure(e) => throw e
@@ -44,11 +44,11 @@ trait AgentSystemConfigExtension  extends Extension {
   }
 }
 
-class AgentConfig (
-  val name: AgentName,
-  val className: String,
-  val language: Language,
-  val requestToResponsiblePath: Map[OmiRequestType,Set[Path]],
-  val config: Config
-)
+class AgentConfig(
+                   val name: AgentName,
+                   val className: String,
+                   val language: Language,
+                   val requestToResponsiblePath: Map[OmiRequestType, Set[Path]],
+                   val config: Config
+                 )
 

@@ -14,6 +14,7 @@
  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 
 package responses
+
 import scala.xml.{NodeSeq, XML}
 import database._
 import parsing.xmlGen.{defaultScope, scalaxb, xmlTypes}
@@ -29,85 +30,102 @@ import scala.concurrent.duration._
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 
-object RESTHandler{
+object RESTHandler {
   implicit val timeout: Timeout = 2 minutes
 
-  sealed trait RESTRequest{def path: Path} // path is OdfNode path
-  case class RESTValue(path: Path)      extends RESTRequest
-  case class RESTMetaData(path: Path)   extends RESTRequest
-  case class RESTDescription(path: Path)extends RESTRequest
-  case class RESTObjId(path: Path)      extends RESTRequest
-  case class RESTInfoName(path: Path)   extends RESTRequest
-  case class RESTNodeReq(path: Path)    extends RESTRequest
+  sealed trait RESTRequest {
+    def path: Path
+  } // path is OdfNode path
+  case class RESTValue(path: Path) extends RESTRequest
 
-  object RESTRequest{
+  case class RESTMetaData(path: Path) extends RESTRequest
+
+  case class RESTDescription(path: Path) extends RESTRequest
+
+  case class RESTObjId(path: Path) extends RESTRequest
+
+  case class RESTInfoName(path: Path) extends RESTRequest
+
+  case class RESTNodeReq(path: Path) extends RESTRequest
+
+  object RESTRequest {
     def apply(path: Path): RESTRequest = path.lastOption match {
-      case attr @ Some("value")      => RESTValue(path.init)
-      case attr @ Some("MetaData")   => RESTMetaData(path.init)
-      case attr @ Some("description")=> RESTDescription(path.init)
-      case attr @ Some("id")         => RESTObjId(path.init)
-      case attr @ Some("name")       => RESTInfoName(path.init)
-      case _                         => RESTNodeReq(path)
+      case attr@Some("value") => RESTValue(path.init)
+      case attr@Some("MetaData") => RESTMetaData(path.init)
+      case attr@Some("description") => RESTDescription(path.init)
+      case attr@Some("id") => RESTObjId(path.init)
+      case attr@Some("name") => RESTInfoName(path.init)
+      case _ => RESTNodeReq(path)
     }
   }
+
   /**
-   * Generates ODF containing only children of the specified path's (with path as root)
-   * or if path ends with "value" it returns only that value.
-   *
-   * @param orgPath The path as String, elements split by a slash "/"
-   * @return Some if found, Left(string) if it was a value and Right(xml.Node) if it was other found object.
-   */
+    * Generates ODF containing only children of the specified path's (with path as root)
+    * or if path ends with "value" it returns only that value.
+    *
+    * @param orgPath The path as String, elements split by a slash "/"
+    * @return Some if found, Left(string) if it was a value and Right(xml.Node) if it was other found object.
+    */
   def handle(orgPath: Path)(implicit singleStores: SingleStores): Future[Option[Either[String, xml.NodeSeq]]] = {
-    handle( RESTRequest(orgPath) )
+    handle(RESTRequest(orgPath))
   }
+
   /**
-   * Generates ODF containing only children of the specified path's (with path as root)
-   * or if path ends with "value" it returns only that value.
-   *
-   * @return Some if found, Left(string) if it was a value and Right(xml.Node) if it was other found object.
-   */
+    * Generates ODF containing only children of the specified path's (with path as root)
+    * or if path ends with "value" it returns only that value.
+    *
+    * @return Some if found, Left(string) if it was a value and Right(xml.Node) if it was other found object.
+    */
   def handle(request: RESTRequest)(implicit singleStores: SingleStores): Future[Option[Either[String, xml.NodeSeq]]] = {
     request match {
       case RESTValue(path) =>
         (singleStores.latestStore ? SingleReadCommand(path)).mapTo[Option[Value[Any]]]
-          .map(_.map(value =>Left(value.value.toString)))
+          .map(_.map(value => Left(value.value.toString)))
 
       case RESTMetaData(path) =>
         singleStores.getMetaData(path).map(_.map { metaData =>
-          Right(scalaxb.toXML[xmlTypes.MetaDataType](metaData.asMetaDataType, Some("odf"), Some("MetaData"),defaultScope))
+          Right(scalaxb.toXML[xmlTypes.MetaDataType](metaData.asMetaDataType,
+            Some("odf"),
+            Some("MetaData"),
+            defaultScope))
         })
-      case RESTObjId(path) =>{  //should this query return the id as plain text or inside Object node?
-        singleStores.getSingle(path).map(node=> node.map{
+      case RESTObjId(path) => { //should this query return the id as plain text or inside Object node?
+        singleStores.getSingle(path).map(node => node.map {
           case obj: Object =>
             scalaxb.toXML[xmlTypes.ObjectType](
-              obj.asObjectType(Vector.empty,Vector.empty), Some("odf"), Some("Object"), defaultScope
+              obj.asObjectType(Vector.empty, Vector.empty), Some("odf"), Some("Object"), defaultScope
             ).headOption.getOrElse(
-              <error>Could not create from odf.Object </error>
+              <error>Could not create from odf.Object</error>
             )
           case objs: Objects => <error>Id query not supported for root Objects</error>
           case infoItem: InfoItem => <error>Id query not supported for InfoItem</error>
           case _ => <error>Matched default case. The impossible happened?</error>
-        }.map(Right(_)))}
+        }.map(Right(_)))
+      }
 
       case RESTInfoName(path) =>
-        Future.successful(Some(Right(<InfoItem xmlns="odf.xsd" name={path.last}><name>{path.last}</name></InfoItem>)))
-        // TODO: support for multiple name
+        Future.successful(Some(Right(<InfoItem xmlns="odf.xsd" name={path.last}>
+          <name>
+            {path.last}
+          </name>
+        </InfoItem>)))
+      // TODO: support for multiple name
       case RESTDescription(path) =>
         (singleStores.hierarchyStore ? GetTree).mapTo[ImmutableODF].map(_.get(path).flatMap {
-          case o: Object => Some(o.descriptions map(_.asDescriptionType))
+          case o: Object => Some(o.descriptions map (_.asDescriptionType))
           case ii: InfoItem => Some(ii.descriptions map (_.asDescriptionType))
           case n: Node => None
         } map {
           case descriptions: Set[xmlTypes.DescriptionType] =>
-            descriptions.map{
+            descriptions.map {
               case desc: xmlTypes.DescriptionType =>
                 scalaxb.toXML[xmlTypes.DescriptionType](
                   desc, Some("odf"), Some("description"), defaultScope
                 )
-            }.fold(xml.NodeSeq.Empty){
-              case (l:xml.NodeSeq, r:xml.NodeSeq) => l ++ r
+            }.fold(xml.NodeSeq.Empty) {
+              case (l: xml.NodeSeq, r: xml.NodeSeq) => l ++ r
             }
-        } map( Right.apply _ ))
+        } map (Right.apply _))
 
       case RESTNodeReq(path) => {
         singleStores.getSingle(path).flatMap {

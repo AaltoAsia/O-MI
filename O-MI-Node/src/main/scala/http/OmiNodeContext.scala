@@ -12,35 +12,40 @@ import database.SingleStores
 
 
 trait Actors {
-   val subscriptionManager: ActorRef
-   val agentSystem: ActorRef
-   val cliListener: ActorRef
+  val subscriptionManager: ActorRef
+  val agentSystem: ActorRef
+  val cliListener: ActorRef
 }
 
 trait Settings {
   implicit val settings: OmiConfigExtension
 }
 
-trait ActorSystemContext{
+trait ActorSystemContext {
   implicit val system: ActorSystem
+
   implicit def ec: ExecutionContext = system.dispatcher
-  implicit val materializer: ActorMaterializer 
+
+  implicit val materializer: ActorMaterializer
 }
 
 
-trait Callbacking{
-  implicit val callbackHandler : CallbackHandler
+trait Callbacking {
+  implicit val callbackHandler: CallbackHandler
 }
 
 trait OmiNodeContext
   extends ActorSystemContext
-  with    Actors
-  with    Settings
-  with    Callbacking
-{}
+    with Actors
+    with Settings
+    with Callbacking {}
+
 object ContextConversion {
   implicit def toExecutionContext(sys: ActorSystemContext): ExecutionContext = sys.system.dispatcher
-  implicit def toActorSystem(sys: ActorSystemContext) : ActorSystem = sys.system
-  implicit def toMaterializer(sys: ActorSystemContext) : Materializer = sys.materializer
-  implicit def toConfigExtension(se: Settings): OmiConfigExtension = se.settings 
+
+  implicit def toActorSystem(sys: ActorSystemContext): ActorSystem = sys.system
+
+  implicit def toMaterializer(sys: ActorSystemContext): Materializer = sys.materializer
+
+  implicit def toConfigExtension(se: Settings): OmiConfigExtension = se.settings
 }
