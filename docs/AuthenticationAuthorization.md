@@ -37,8 +37,9 @@ The Authentication and Authorization APIs are quite flexible and are controlled 
 
 The input for authentication service can be passed by several configurable ways (option `omi-service.authAPI.v2.parameters.fromRequest`):
 * omiEnvelope attribute, for example `<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="0" token="eyJ0eXAiOiJKV1Q...">`, This is the recommended way to ensure functionality even when using other transport protocols.
-* The `Authorization` http header
-* Other http headers
+* The `Authorization` HTTP header
+* HTTP Cookie
+* Other HTTP headers
 * Uri query parameters
 
 Continue reading below to know about already existing implementations of these APIs.
