@@ -187,7 +187,7 @@ case class ImmutableODF private[odf](
     case obj: Objects => obj
   }.toVector: _*))
 
-  def immutable: ImmutableODF = this.copy()
+  def immutable: ImmutableODF = this
 
   def mutable: MutableODF = MutableODF(
     nodes.values.toVector
