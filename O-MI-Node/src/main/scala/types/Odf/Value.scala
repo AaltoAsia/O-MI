@@ -11,7 +11,6 @@ import parsing.xmlGen.scalaxb._
 import parsing.xmlGen.xmlTypes.{ValueType, _}
 
 import scala.collection.immutable.HashMap
-import scala.collection.{Map, Seq}
 import scala.util.{Failure, Success, Try}
 
 trait Value[+V] {

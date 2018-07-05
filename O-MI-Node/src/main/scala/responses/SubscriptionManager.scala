@@ -16,20 +16,19 @@ package responses
 
 import java.sql.Timestamp
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.TimeUnit._
+import scala.language.postfixOps
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.{Await, Future, duration}
-import scala.util.{Random, Success, Try}
+import scala.concurrent.{duration,Future, Await}
+import scala.util.{Random, Success}
 import scala.concurrent.duration._
-import scala.collection.immutable.HashMap
 import akka.actor.{Actor, ActorLogging, Cancellable, Props, Scheduler}
 import database._
 import http.CLICmds.{GetSubsWithPollData, ListSubsCmd, SubInfoCmd}
 import http.OmiConfigExtension
 import responses.CallbackHandler.{CallbackFailure, MissingConnection}
 import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
-import types.odf.{ImmutableODF, InfoItem, NewTypeConverter, ODF, OldTypeConverter, Value}
+import types.odf.{ ODF, ImmutableODF, InfoItem, Value, NewTypeConverter}
 import types.OdfTypes._
 import types.OmiTypes._
 import types._
@@ -37,8 +36,6 @@ import akka.pattern.ask
 import akka.util.Timeout
 import journal.Models._
 import akka.pattern.pipe
-import scala.annotation.tailrec
-import scala.collection.immutable
 
 /**
   * Message for triggering handling of intervalsubscriptions
@@ -294,7 +291,8 @@ class SubscriptionManager(
           values.lastOption match {
             case Some(last) =>
               log.info(s"Found previous values for intervalsubscription: $last")
-              Future.successful(path, values :+ last.retime(new Timestamp(pollTime)))
+              val tuple: Tuple2[Path,Seq[Value[Any]]] = (path, values :+ last.retime(new Timestamp(pollTime)))
+              Future.successful[Tuple2[Path,Seq[Value[Any]]]](tuple)
 
             case None =>
               val msg = s"Found previous values for intervalsubscription, but lastOption is None, should not be possible."
@@ -381,7 +379,6 @@ class SubscriptionManager(
     //TODO add error messages from requesthandler
     implicit val timeout: Timeout = new Timeout(1 minute)
     log.debug(s"handling interval sub with id: $id")
-    val currentTime = System.currentTimeMillis()
     val intervalSubscriptionOptionF: Future[Option[IntervalSub]] = (singleStores.subStore ? GetIntervalSub(id))
       .mapTo[Option[IntervalSub]]
     for {
@@ -415,11 +412,11 @@ class SubscriptionManager(
               .sendCallback(iSub.callback, response) // FIXME: change resultXml to ResponseRequest(..., responseTTL)
 
           } yield callbackF
-          ret.onSuccess {
+          ret.foreach {
             case () =>
               log.debug(s"Callback sent; subscription id:${iSub.id} addr:${iSub.callback} interval:${iSub.interval}")
           }
-          ret.onFailure {
+          ret.failed.foreach {
             case fail@MissingConnection(callback) =>
               log.warning(
                 s"Callback failed; subscription id:${iSub.id} interval:${iSub.interval}  reason: ${
@@ -436,7 +433,7 @@ class SubscriptionManager(
           }
           ret
         }
-        case None => Future.successful()
+        case None => Future.successful[Unit]( (): Unit)
       }
     } yield res
   }

@@ -26,7 +26,6 @@ import akka.actor.ActorSystem
 import database._
 import types.odf._
 import types._
-import http.{ActorSystemContext, OmiServer}
 import journal.Models.{ErasePathCommand, GetTree, UnionCommand, WriteCommand}
 import akka.pattern.ask
 import akka.util.Timeout

@@ -1,7 +1,5 @@
 package database
 
-import java.util.Date
-
 import akka.util.Timeout
 
 import scala.concurrent.ExecutionContext.Implicits.global

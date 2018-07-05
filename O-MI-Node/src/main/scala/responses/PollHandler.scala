@@ -14,24 +14,16 @@
 
 package responses
 
-import java.util.Date
-
-import scala.collection.JavaConversions.iterableAsScalaIterable
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.control.NonFatal
-//import scala.collection.JavaConverters._ //JavaConverters provide explicit conversion methods
-//import scala.collection.JavaConversions.asJavaIterator
-import scala.xml.NodeSeq
-//import akka.http.StatusCode
 
 import akka.actor.{ActorRef, ActorLogging, Actor}
 import akka.pattern.ask
 import akka.util.Timeout
 import types.odf._
 import types.OmiTypes._
-import types._
-import http.{ActorSystemContext, Actors, Settings, OmiConfigExtension}
+import http.{OmiConfigExtension }
 
 trait PollHandler extends Actor with ActorLogging {
 
@@ -46,8 +38,7 @@ trait PollHandler extends Actor with ActorLogging {
     */
   def handlePoll(poll: PollRequest): Future[ResponseRequest] = {
     val ttl = poll.handleTTL
-    implicit val timeout: Timeout = ttl
-    val time = new Date().getTime
+    implicit val timeout: Timeout = Timeout(ttl)
     val resultsFut =
       Future.sequence(poll.requestIDs.map { id: RequestID =>
 
@@ -68,11 +59,6 @@ trait PollHandler extends Actor with ActorLogging {
             Results.Poll(id, objects)
           case None =>
             Results.NotFoundRequestIDs(Vector(id))
-          case Some(objects: OdfTypes.OdfObject) =>
-            Results.InternalError(Some("Wrong O-DF type when polled"))
-          //case Failure(e) =>
-          //  throw new RuntimeException(
-          //    s"Error when trying to poll subscription: ${e.getMessage}")
         }
       })
     val response = resultsFut.map(results =>

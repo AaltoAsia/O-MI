@@ -1,14 +1,12 @@
 package types
 package odf
 
-import java.util.{Set => JavaSet}
 
-import scala.collection.{Seq, Map, SortedSet}
-import scala.collection.immutable.{TreeSet => ImmutableTreeSet, HashMap => ImmutableHashMap}
-import scala.collection.mutable.{TreeSet => MutableTreeSet, HashMap => MutableHashMap}
+import scala.collection.{ Seq, Map, SortedSet }
+import scala.collection.immutable.{HashMap => ImmutableHashMap }
 import scala.xml.NodeSeq
 import parsing.xmlGen.xmlTypes.{ObjectsType, ObjectType}
-import parsing.xmlGen.{odfDefaultScope, scalaxb, defaultScope}
+import parsing.xmlGen.{odfDefaultScope, scalaxb}
 
 /** O-DF structure
   */
@@ -248,10 +246,12 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
                 if (ii.metaData.nonEmpty) Some(MetaData.empty) else None
               }
             )
-          case (Some(obj: Object), Some(toObj: Object)) => obj.readTo(toObj)
-          case (Some(ii: InfoItem), Some(toIi: InfoItem)) => ii.readTo(toIi)
-          case (Some(obj: Objects), Some(toObj: Objects)) => obj.readTo(toObj)
-          case (Some(f), Some(t)) => throw new Exception("Missmatching types in ODF when reading.")
+          case (Some(obj:Objects),None) => obj.copy()
+          case (Some(obj:Object),Some(toObj:Object)) => obj.readTo(toObj)
+          case (Some(ii:InfoItem),Some(toIi:InfoItem)) => ii.readTo(toIi)
+          case (Some(obj:Objects),Some(toObj:Objects)) => obj.readTo(toObj)
+          case (Some(f:Node), Some(t:Node)) => throw new Exception("Missmatching types in ODF when reading.")
+          case (Some(f:Node),None) => throw new Exception("Found unknown Node type.")
         }
     }
     wantedNodes

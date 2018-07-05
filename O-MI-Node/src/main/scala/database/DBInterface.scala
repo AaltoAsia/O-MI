@@ -23,7 +23,7 @@ import com.typesafe.config.{Config, ConfigFactory}
 import akka.actor.{ActorRef, ActorSystem, Props}
 import akka.util.Timeout
 import org.slf4j.{Logger, LoggerFactory}
-import org.prevayler.{Prevayler, PrevaylerFactory}
+import org.prevayler.{PrevaylerFactory}
 import slick.basic.DatabaseConfig
 import types.OmiTypes.ReturnCode
 import slick.jdbc.JdbcProfile
@@ -34,7 +34,6 @@ import journal.Models.GetTree
 import journal.Models.SingleReadCommand
 import journal.Models.MultipleReadCommand
 import akka.pattern.ask
-import scala.concurrent.duration._
 
 package object database {
 

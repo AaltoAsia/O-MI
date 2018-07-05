@@ -129,10 +129,5 @@
 		<xs:attribute name="type" type="xs:string" use="optional" default="xs:string"/>
 		<xs:attribute name="dateTime" type="xs:dateTime" use="optional"/>
 		<xs:attribute name="unixTime" type="xs:long" use="optional"/>
-    <xs:anyAttribute processContents="lax">
-      <xs:annotation>
-        <xs:documentation>Proprietary attributes.</xs:documentation>
-      </xs:annotation>
-    </xs:anyAttribute>
 	</xs:complexType>
 </xs:schema>

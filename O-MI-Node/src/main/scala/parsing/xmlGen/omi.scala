@@ -6,7 +6,6 @@ package xmlTypes
 import java.net.URI
 import javax.xml.datatype.XMLGregorianCalendar
 
-import scala.collection.immutable.HashMap
 
 case class OmiEnvelopeType(omienvelopetypeoption: scalaxb.DataRecord[xmlTypes.OmiEnvelopeTypeOption],
                            attributes: Map[String, scalaxb.DataRecord[Any]] = Map()) {

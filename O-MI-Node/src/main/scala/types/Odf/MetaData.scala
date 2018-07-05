@@ -2,8 +2,7 @@ package types
 package odf
 
 import database.journal.PMetaData
-
-import scala.collection.immutable.{HashSet, Set}
+import scala.collection.immutable.{ Set}
 import parsing.xmlGen.xmlTypes.MetaDataType
 
 object MetaData {

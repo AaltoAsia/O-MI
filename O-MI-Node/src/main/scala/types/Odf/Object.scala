@@ -4,10 +4,7 @@ package odf
 import database.journal.PPersistentNode.NodeType.Obj
 import database.journal.{PObject, PPersistentNode}
 
-import scala.language.implicitConversions
-import scala.util.Try
-import scala.collection.{Map, Seq}
-import scala.collection.immutable.{HashMap, Map => IMap}
+import scala.collection.immutable.{ HashMap, Map =>IMap}
 import parsing.xmlGen.scalaxb.DataRecord
 import parsing.xmlGen.xmlTypes.{InfoItemType, ObjectType}
 

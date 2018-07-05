@@ -3,9 +3,8 @@ package odf
 
 import database.journal.PPersistentNode.NodeType.Ii
 import database.journal.{PInfoItem, PPersistentNode}
+import scala.collection.immutable.{ HashMap, Map =>IMap}
 
-import scala.collection.{Map, Seq}
-import scala.collection.immutable.{HashMap, Map => IMap}
 import parsing.xmlGen.scalaxb.DataRecord
 import parsing.xmlGen.xmlTypes.InfoItemType
 

@@ -16,19 +16,18 @@ package http
 
 import java.lang
 import java.util.concurrent.TimeUnit
-import java.net.{InetAddress, URLDecoder}
+import java.net.{InetAddress}
 
 import scala.language.postfixOps
 import scala.language.implicitConversions
-import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
 import scala.concurrent.duration._
 import scala.util.Try
 import agentSystem.AgentSystemConfigExtension
 import akka.actor.{ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
 import akka.http.scaladsl.model.Uri
 import com.typesafe.config.Config
-import com.typesafe.config.ConfigException._
-import akka.http.scaladsl.client.RequestBuilding.{RequestBuilder, Post, Get, Patch, Put, Head, Options}
+import akka.http.scaladsl.client.RequestBuilding.{RequestBuilder,Post,Get,Patch,Put,Head,Options}
 import types.Path
 import types.OmiTypes.RawRequestWrapper.MessageType
 
@@ -42,7 +41,7 @@ class OmiConfigExtension(val config: Config) extends Extension
     val uri = Uri(address)
     val hostAddress = uri.authority.host.address
     // Test address validity (throws exceptions when invalid)
-    val ipAddress = InetAddress.getByName(hostAddress)
+    InetAddress.getByName(hostAddress)
 
     uri
   }
@@ -58,10 +57,10 @@ class OmiConfigExtension(val config: Config) extends Extension
   implicit def toFiniteDuration(dur: java.time.Duration): FiniteDuration = Duration.fromNanos(dur.toNanos)
 
   // Node special settings
-  val ports: Map[String, Int] = config.getObject("omi-service.ports").unwrapped().mapValues {
-    case port: java.lang.Integer => port.toInt
-    case port: java.lang.Object =>
-      throw new Exception("Configs omi-service.ports contain non integer values")
+  val ports : Map[String, Int]= config.getObject("omi-service.ports").unwrapped().asScala.toMap.mapValues{
+    case port : java.lang.Integer => port.toInt
+    case port : java.lang.Object => 
+      throw new Exception("Configs omi-service.ports contain non integer values") 
   }.toMap
   val webclientPort: Int = config.getInt("omi-service.ports.webclient")
   val externalAgentPort: Int = ports("external-agents")
@@ -90,7 +89,7 @@ class OmiConfigExtension(val config: Config) extends Extension
   val externalAgentInterface: String = config.getString("omi-service.external-agent-interface")
 
   // Authorization
-  val allowedRequestTypes: Set[MessageType] = config.getStringList("omi-service.allowRequestTypesForAll")
+  val allowedRequestTypes: Set[MessageType] = config.getStringList("omi-service.allowRequestTypesForAll").asScala.toSeq
     .map((x) => MessageType(x.toLowerCase)).toSet
 
   // Old External AuthAPIService V1
@@ -109,29 +108,31 @@ class OmiConfigExtension(val config: Config) extends Extension
     val enable: Boolean = authAPIServiceV2.getBoolean("enable")
     val authenticationEndpoint: Uri = testUri(authAPIServiceV2.getString("authentication.url"))
     val omiHttpHeadersToAuthentication: Set[String] = authAPIServiceV2
-      .getStringList("authentication.copy-request-headers").toSet
+      .getStringList("authentication.copy-request-headers").asScala.toSet
     val authorizationEndpoint: Uri = testUri(authAPIServiceV2.getString("authorization.url"))
 
     type ParameterExtraction = Map[String, Map[String, String]]
 
     def cmap(c: Config): Map[String, String] =
-      c.root().keys.map(
-        (key) => key -> c.getString(key)).toMap
+      c.root().keySet.asScala.toSet.map{
+        key:String => 
+          key -> c.getString(key)
+      }.toMap
 
     def mapmap(c: Config): ParameterExtraction = {
-      c.root().keys.map { (key) =>
+      c.root().keySet.asScala.toSet.map{
+        key: String =>
         val innerConfig = c.getConfig(key)
         key.toLowerCase -> cmap(innerConfig)
       }.toMap
     }
-
     val parameters: Config = authAPIServiceV2.getConfig("parameters")
     val parametersFromRequest: ParameterExtraction = mapmap(parameters.getConfig("fromRequest"))
     val parametersFromAuthentication: ParameterExtraction = mapmap(parameters.getConfig("fromAuthentication"))
     val parametersToAuthentication: ParameterExtraction = mapmap(parameters.getConfig("toAuthentication"))
     val parametersToAuthorization: ParameterExtraction = mapmap(parameters.getConfig("toAuthorization"))
     val parametersConstants: Map[String, String] = cmap(parameters.getConfig("initial"))
-    val parametersSkipOnEmpty: Seq[String] = parameters.getStringList("skipAuthenticationOnEmpty").toSeq
+    val parametersSkipOnEmpty: Seq[String] = parameters.getStringList("skipAuthenticationOnEmpty").asScala.toSeq
 
     def toRequestBuilder(method: String) = method.toLowerCase match {
       case "get" => Get
@@ -149,15 +150,15 @@ class OmiConfigExtension(val config: Config) extends Extension
 
 
   //IP
-  val inputWhiteListUsers: Vector[String] = config.getStringList("omi-service.input-whitelist-users").toVector
+  val inputWhiteListUsers: Vector[String] = config.getStringList("omi-service.input-whitelist-users").asScala.toVector
 
-  val inputWhiteListIps: Vector[Vector[Byte]] = config.getStringList("omi-service.input-whitelist-ips").map {
+  val inputWhiteListIps: Vector[Vector[Byte]] = config.getStringList("omi-service.input-whitelist-ips").asScala.toVector.map {
     s: String =>
       val ip = inetAddrToBytes(InetAddress.getByName(s))
       ip.toVector
   }.toVector
 
-  val inputWhiteListSubnets: Map[InetAddress, Int] = config.getStringList("omi-service.input-whitelist-subnets").map {
+  val inputWhiteListSubnets: Map[InetAddress, Int] = config.getStringList("omi-service.input-whitelist-subnets").asScala.toSeq.map{ 
     case (str: String) =>
       val parts = str.split("/")
       require(parts.length == 2)

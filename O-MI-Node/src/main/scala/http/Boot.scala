@@ -25,7 +25,7 @@ import akka.pattern.ask
 import akka.stream.ActorMaterializer
 import akka.util.Timeout
 import org.slf4j.{Logger, LoggerFactory}
-import responses.{CLIHelper, CLIHelperT}
+import responses.{CLIHelper}
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext, Future}
@@ -42,7 +42,6 @@ import http.OmiServer._
 import responses.{CallbackHandler, RequestHandler, SubscriptionManager}
 import types.OmiTypes.Returns.ReturnTypes._
 import types.OmiTypes._
-import types.Path
 import types.odf._
 
 class OmiServer extends OmiNode {
@@ -178,8 +177,8 @@ trait OmiNode {
 
   implicit val timeoutForBind: Timeout
 
-  def bindTCP()(implicit ec: ExecutionContext): Unit = {
-    IO(Tcp) ? Tcp.Bind(cliListener,
+  def bindTCP(): Unit= {
+    IO(Tcp)  ? Tcp.Bind(cliListener,
       new InetSocketAddress("localhost", settings.cliPort))
   }
 
@@ -189,8 +188,7 @@ trait OmiNode {
 
     val bindingFuture =
       httpExt.bindAndHandle(omiService.myRoute, settings.interface, settings.webclientPort)
-
-    bindingFuture.onFailure {
+    bindingFuture.failed.foreach {
       case ex: Exception =>
         system.log.error(ex, "Failed to bind to {}:{}!", settings.interface, settings.webclientPort)
 
@@ -198,8 +196,7 @@ trait OmiNode {
     bindingFuture
   }
 
-  def shutdown()(implicit ec: ExecutionContext): Future[akka.actor.Terminated] = {
-
+  def shutdown(): Future[akka.actor.Terminated] = {
     system.terminate()
   }
 
@@ -243,7 +240,7 @@ object OmiServer {
       implicit val timeout: Timeout = settings.journalTimeout
       val future: Future[ResponseRequest] = (requestHandler ? write).mapTo[ResponseRequest]
       system.log.info("Write started")
-      future.onSuccess {
+      future.foreach {
         case response: ResponseRequest =>
           Results.unionReduce(response.results).forall {
             result: OmiResult =>
@@ -258,8 +255,8 @@ object OmiServer {
           }
       }
 
-      future.onFailure {
-        case e: Throwable =>
+      future.failed.foreach{
+        case e: Throwable => 
           system.log.error(e, "O-MI InputPusher system not working; exception:")
       }
       Await.result(future, 60 seconds)

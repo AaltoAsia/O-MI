@@ -19,7 +19,7 @@ import scala.collection.immutable.HashMap
 import scala.xml.{NamespaceBinding, NodeSeq}
 import parsing.xmlGen.scalaxb.DataRecord
 import parsing.xmlGen.xmlTypes._
-import parsing.xmlGen.{defaultScope, odfDefaultScope, scalaxb}
+import parsing.xmlGen.{scalaxb}
 import types.OdfTypes.OdfTreeCollection._
 
 /** Class implementing OdfObjects. */

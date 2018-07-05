@@ -301,9 +301,9 @@ trait OdfDatabase extends Tables with DB with TrimmableDB {
         }
     }
     log.debug("Running writing actions...")
-    val future: Future[OmiReturn] = db.run(actions.transactionally)
-    future.onSuccess {
-      case default =>
+    val future:Future[OmiReturn] = db.run(actions.transactionally)
+    future.foreach{
+      case default => 
         log.debug("Writing finished.")
     }
     future
@@ -450,9 +450,9 @@ trait OdfDatabase extends Tables with DB with TrimmableDB {
     ).transactionally)
   }
 
-  def logPathsTables: Unit = {
+  def logPathsTables(): Unit = {
     val pathsLog = pathsTable.result.map {
-      dbPaths => log.debug(s"PATHSTABLE CONTAINS CURRENTLY:\n${dbPaths.mkString("\n")}")
+      dbPaths => log.debug(s"PATHSTABLE CONTAINS CURRENTLY:\n${dbPaths.mkString("\n")}") 
     }
     db.run(pathsLog)
   }
@@ -462,7 +462,7 @@ trait OdfDatabase extends Tables with DB with TrimmableDB {
     log.debug(s"CURRENTLY VALUE TABLES IN MAP:\n${tmp.mkString("\n")}")
   }
 
-  def logAllTables: Unit = {
+  def logAllTables(): Unit = {
     val tables = MTable.getTables.map {
       tables =>
         val names = tables.map(_.name.name)

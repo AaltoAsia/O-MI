@@ -15,8 +15,8 @@
 package types
 
 import scala.collection.JavaConverters._
-import java.util.{GregorianCalendar, Dictionary}
-import scala.concurrent.{Future, ExecutionContext}
+import java.util.{Dictionary}
+import scala.concurrent.{Future}
 import OmiTypes.ResponseRequest
 
 object JavaHelpers {

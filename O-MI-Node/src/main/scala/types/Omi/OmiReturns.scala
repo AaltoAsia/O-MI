@@ -2,7 +2,7 @@ package types
 package OmiTypes
 
 import parsing.xmlGen.scalaxb.DataRecord
-import types.OdfTypes.{OdfTreeCollection, OdfObjects}
+import types.OdfTypes.{ OdfTreeCollection }
 import parsing.xmlGen.xmlTypes
 
 object ReturnCode extends Enumeration {

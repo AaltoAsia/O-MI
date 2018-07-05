@@ -16,7 +16,6 @@
 package http
 
 import java.io.{BufferedWriter, File, FileWriter}
-import java.lang
 import java.net.InetSocketAddress
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -32,8 +31,9 @@ import database._
 import responses._
 import spray.json.JsArray
 import types.odf._
-import types.{ParseError, Path}
+import types.{Path}
 
+import scala.language.postfixOps
 import scala.io.Source
 import scala.util.{Failure, Success, Try}
 
@@ -110,13 +110,13 @@ class OmiNodeCLI(
 
   override def preStart: Unit = {
     val connectToManager = (agentSystem ? NewCLI(ip, self)).mapTo[Boolean]
-    connectToManager.onSuccess {
+    connectToManager.foreach{
       case _: Boolean =>
         send(connection)(s"CLI connected to AgentManager.\r\n>")
         log.info(s"$ip connected to AgentManager. Connection: $connection")
     }
-    connectToManager.onFailure {
-      case t: Throwable =>
+    connectToManager.failed.foreach{
+      case t: Throwable => 
         send(connection)(s"CLI failed connected to AgentManager. Caught: $t.\r\n>")
         log.info(s"$ip failed to connect to AgentManager. Caught: $t. Connection: $connection")
     }

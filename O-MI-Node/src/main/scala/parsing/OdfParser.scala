@@ -25,7 +25,7 @@ import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 import types.OdfTypes.{OdfQlmID => OdfOdfQlmID, _}
 import types._
 
-import scala.collection.JavaConversions.asJavaIterable
+import scala.collection.JavaConverters._
 import scala.collection.immutable.HashMap
 import scala.util.{Failure, Success, Try}
 import scala.xml.{Elem, NodeSeq}
@@ -70,7 +70,7 @@ object OdfParser extends Parser[OdfParseResult] {
   private def parseTry(parsed: Try[Elem]): OdfParseResult = {
     parsed match {
       case Success(root) => parse(root)
-      case Failure(f) => Left(Iterable(ScalaXMLError(f.getMessage)))
+      case Failure(f) => Left(Iterable(ScalaXMLError(f.getMessage)).asJava)
     }
   }
 
@@ -85,8 +85,8 @@ object OdfParser extends Parser[OdfParseResult] {
       case errors: Seq[ParseError] if errors.nonEmpty =>
         //println( root.toString )
 
-        Left(errors)
-      case empty: Seq[ParseError] if empty.isEmpty =>
+        Left(errors.toIterable.asJava) 
+      case empty : Seq[ParseError] if empty.isEmpty =>
 
         val requestProcessTime = currentTime()
 
@@ -94,9 +94,8 @@ object OdfParser extends Parser[OdfParseResult] {
           xmlGen.scalaxb.fromXML[ObjectsType](root)
         } match {
           case Failure(e) =>
-            //println( s"Exception: $e\nStackTrace:\n")
             e.printStackTrace()
-            Left(Iterable(ScalaxbError(e.getMessage)))
+            Left(Iterable(ScalaxbError(e.getMessage)).asJava)
 
           case Success(objects) =>
             Try {
@@ -104,9 +103,8 @@ object OdfParser extends Parser[OdfParseResult] {
             } match {
               case Success(odf) => Right(odf)
               case Failure(e) =>
-                //println( s"Exception: $e\nStackTrace:\n")
                 e.printStackTrace()
-                Left(Iterable(ODFParserError(e.getMessage)))
+                Left(Iterable(ODFParserError(e.getMessage)).asJava)
             }
         }
     }

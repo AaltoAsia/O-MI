@@ -4,8 +4,6 @@ import scala.collection.mutable.{Map => MutableMap}
 import scala.collection.immutable.{Map => ImmutableMap}
 
 import types.OmiTypes._
-import types.odf._
-import types.Path._
 import types.Path
 
 object AgentResponsibilities {
@@ -20,16 +18,22 @@ import AgentResponsibilities._
 class AgentResponsibilities() {
 
   val pathsToResponsible: MutableMap[Path, AgentResponsibility] = MutableMap.empty
-
-  def splitRequestToResponsible(request: OmiRequest): ImmutableMap[Option[AgentName], OmiRequest] = {
+  def splitRequestToResponsible( request: OdfRequest ) :ImmutableMap[Option[AgentName], OdfRequest] ={
     request match {
       case write: WriteRequest => splitCallAndWriteToResponsible(write)
       case call: CallRequest => splitCallAndWriteToResponsible(call)
-      case other: OmiRequest => ImmutableMap(None -> other)
+      case delete: DeleteRequest => splitReadAndDeleteToResponsible(delete)
+      case read: ReadRequest => splitReadAndDeleteToResponsible(read)
+      case other: OdfRequest =>ImmutableMap( None -> other)
     }
   }
+  def splitReadAndDeleteToResponsible( request: OdfRequest ) : ImmutableMap[Option[AgentName], OdfRequest] ={
+    def filter: RequestFilter => Boolean = createFilter(request)
+    val odf = request.odf
+    ???
+  }
 
-  def splitCallAndWriteToResponsible(request: OdfRequest): ImmutableMap[Option[AgentName], OdfRequest] = {
+  def splitCallAndWriteToResponsible( request: OdfRequest ) : ImmutableMap[Option[AgentName], OdfRequest] ={
     def filter: RequestFilter => Boolean = createFilter(request)
 
     val odf = request.odf
@@ -79,30 +83,35 @@ class AgentResponsibilities() {
         Some(agentName) -> odf.selectUpTree(paths.toVector)
       case (None, paths: Set[Path]) =>
         None -> odf.selectUpTree(paths.toVector)
-    }.mapValues(_odf =>
-      request.replaceOdf(_odf))
+    }.mapValues(_odf =>request.replaceOdf(_odf))
   }
 
   private def createFilter(request: OdfRequest): RequestFilter => Boolean = {
     val filter = request match {
       case write: WriteRequest =>
-        rf: RequestFilter =>
-          rf match {
-            case w: Write => true
-            case o: RequestFilter => false
-          }
-      case read: ReadRequest => ReadFilter
-        rf: RequestFilter =>
-          rf match {
-            case r: Read => true
-            case o: RequestFilter => false
-          }
-      case call: CallRequest => CallFilter
-        rf: RequestFilter =>
-          rf match {
-            case c: Call => true
-            case o: RequestFilter => false
-          }
+        rf: RequestFilter  => rf match{
+          case w: Write => true
+          case o: RequestFilter => false
+        } 
+      case call: CallRequest =>
+        rf: RequestFilter => rf match{
+          case c: Call => true
+          case o: RequestFilter => false
+        } 
+      case read: ReadRequest => 
+        rf: RequestFilter  => rf match{
+          case r: Read => true
+          case o: RequestFilter => false
+        } 
+      case delete: DeleteRequest => 
+        rf: RequestFilter  => rf match{
+          case r: Delete => true
+          case o: RequestFilter => false
+        } 
+      case other: OdfRequest => 
+        rf: RequestFilter  => rf match{
+          case o: RequestFilter => false
+        } 
     }
     filter
   }

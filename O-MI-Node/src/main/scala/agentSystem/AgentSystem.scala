@@ -14,8 +14,6 @@
 
 package agentSystem
 
-import java.net.URLDecoder
-
 import agentSystem.AgentResponsibilities._
 import akka.actor.SupervisorStrategy._
 import akka.actor.{Actor, ActorInitializationException, ActorLogging, ActorRef, OneForOneStrategy, Props, SupervisorStrategy, Terminated}
@@ -25,7 +23,7 @@ import com.typesafe.config.ConfigException._
 import http.CLICmds._
 import types.Path
 
-import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
 import scala.collection.mutable.{Map => MutableMap}
 import scala.concurrent.duration._
 import scala.language.postfixOps
@@ -122,7 +120,7 @@ object AgentConfigEntry {
 
     val responsibilities: Seq[AgentResponsibility] = Try {
       val responsibilityObj = agentConfig.getObject(s"responsible")
-      val pathStrings: Iterable[String] = responsibilityObj.keys
+      val pathStrings : Iterable[String] = responsibilityObj.keySet.asScala.toIterable
       val responsibilityConfig = responsibilityObj.toConfig()
       pathStrings.map {
         pathStr: String =>

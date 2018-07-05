@@ -20,21 +20,20 @@ import java.util.Date
 import scala.collection.mutable.{Map => MutableMap}
 import scala.concurrent._
 import scala.concurrent.duration._
-import scala.util.{Try, Success, Failure}
-import scala.xml.{XML, NodeSeq}
+import scala.util.{Try,Success,Failure}
+import scala.xml.{NodeSeq}
 
 import akka.actor.ActorSystem
 import akka.event.{LogSource, Logging, LoggingAdapter}
 import akka.http.scaladsl.{Http, HttpExt}
 import akka.http.scaladsl.client.RequestBuilding
-import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.ws._
 import akka.stream.scaladsl._
 import akka.stream._
 import types.OmiTypes._
 
-import http.{OmiConfigExtension, OmiNodeContext, Settings, ActorSystemContext, Actors}
+import http.{OmiConfigExtension}
 import CallbackHandler._
 
 object CallbackHandler {
@@ -101,7 +100,6 @@ class CallbackHandler(
       case _ => settings.callbackTimeout.toMillis
     }))
 
-    def newTTL = Duration(tryUntil.getTime - currentTimestamp.getTime, MILLISECONDS)
 
     val address = callback.uri
     val httpEntity = FormData(("msg", request.asXML.toString)).toEntity(HttpCharsets.`UTF-8`)
@@ -133,8 +131,8 @@ class CallbackHandler(
       tryUntil
     )(check)(trySend)
 
-    retry.onFailure {
-      case _: Throwable =>
+    retry.failed.foreach{
+      case _: Throwable=>
         system.log.warning(
           s"Failed to send POST request to $address after trying until ttl ended."
         )
@@ -274,7 +272,7 @@ class CallbackHandler(
           val uri = Uri(address)
           val hostAddress = uri.authority.host.address
           // Test address validity (throws exceptions when invalid)
-          val ipAddress = InetAddress.getByName(hostAddress)
+          InetAddress.getByName(hostAddress)
           val scheme = uri.scheme
           webSocketConnections.get(uri.toString).map {
             wsConnection => WSCallback(uri)
@@ -340,7 +338,7 @@ class CallbackHandler(
       .toMat(wsSink)(Keep.both)
       .run()
 
-    val connected = upgradeResponse.flatMap { upgrade =>
+    upgradeResponse.flatMap { upgrade =>
       if (upgrade.response.status == StatusCodes.OK) {
         log.info(s"Successfully connected WebSocket callback to $uri")
         Future.successful(akka.Done)

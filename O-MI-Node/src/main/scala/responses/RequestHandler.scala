@@ -25,7 +25,6 @@ import types.OmiTypes._
 
 import scala.collection.mutable.{Map => MutableMap}
 import scala.concurrent.Future
-import scala.language.implicitConversions
 import scala.util.{Failure, Success}
 
 object RequestHandler {
@@ -79,8 +78,18 @@ class RequestHandler(
     }
     responseFuture
   }
+  def handleWriteRequest( delete: DeleteRequest) : Future[ResponseRequest] = {
+   splitAndHandle(delete){
+     request: OdfRequest =>
+       implicit val to: Timeout = Timeout(request.handleTTL)
+       log.debug(s"Asking DBHandler to handle request parts that are not owned by an Agent.")
+       (dbHandler ? request).mapTo[ResponseRequest]
+   }
+    
+  }
 
-  def handleWriteRequest(write: WriteRequest): Future[ResponseRequest] = {
+  def handleWriteRequest( write: WriteRequest) : Future[ResponseRequest] = {
+    /*
     log.debug(s"RequestHandler handling write OdfRequest...")
     val responsibleToRequest = agentResponsibilities.splitRequestToResponsible(write)
     val responsesFromResponsible = responsibleToRequest.map {
@@ -111,13 +120,45 @@ class RequestHandler(
           Results.unionReduce(results.toVector)
         )
     }
-
+    */
+   splitAndHandle(write){
+     request: OdfRequest =>
+       implicit val to: Timeout = Timeout(request.handleTTL)
+       log.debug(s"Asking DBHandler to handle request parts that are not owned by an Agent.")
+       (dbHandler ? request).mapTo[ResponseRequest]
+   }
+  }
+  def splitAndHandle( request: OdfRequest )(f: OdfRequest => Future[ResponseRequest])  ={
+    val responsibleToRequest = agentResponsibilities.splitRequestToResponsible( request )
+    val fSeq = Future.sequence(
+      responsibleToRequest.map{
+        case (None, subrequest) =>  
+          f(subrequest)
+        case (Some(agentName), subrequest: OmiRequest) => 
+          log.debug(s"Asking responsible Agent $agentName to handle part of request.")
+          askAgent(agentName,subrequest)
+      }.map{
+        future: Future[ResponseRequest] =>
+          future.recover {
+            case e: Exception =>
+              Responses.InternalError(e)
+          }
+      }
+    )
+    fSeq.map {
+      responses =>
+        val results = responses.flatMap(response => response.results)
+        ResponseRequest(
+          Results.unionReduce(results.toVector)
+        )
+    }
   }
 
-  def handleCallRequest(call: CallRequest): Future[ResponseRequest] = {
-    log.debug(s"RequestHandler handling call OdfRequest...")
-
-    val responsibleToRequest = agentResponsibilities.splitRequestToResponsible(call)
+  def handleCallRequest( call: CallRequest) : Future[ResponseRequest] = {
+    /*
+     log.debug(s"RequestHandler handling call OdfRequest...")
+    
+    val responsibleToRequest = agentResponsibilities.splitRequestToResponsible( call )
     val fSeq = Future.sequence(
       responsibleToRequest.map {
         case (None, subrequest) =>
@@ -144,7 +185,14 @@ class RequestHandler(
         ResponseRequest(
           Results.unionReduce(results.toVector)
         )
-    }
+    }*/
+   splitAndHandle(call){
+     request: OdfRequest =>
+          Future.successful{
+            Responses.NotFound(
+              "Call request for path that do not have responsible agent for service.")
+          }
+   }
 
   }
 

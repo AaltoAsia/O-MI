@@ -7,12 +7,12 @@ import javax.xml.datatype.{DatatypeFactory, XMLGregorianCalendar}
 
 import parsing.xmlGen.scalaxb._
 
-import scala.collection.immutable.{Map => ImmutableMap, HashMap => ImmutableHashMap, TreeSet => ImmutableTreeSet}
+import scala.collection.immutable.{Map => ImmutableMap}
 import scala.collection.Map
 import scala.collection.JavaConverters._
 
 package object odf {
-  type OdfParseResult = Either[JavaIterable[ParseError], ImmutableODF]
+  type OdfParseResult = Either[JavaIterable[_ <:ParseError], ImmutableODF]
   type OdfCollection[T] = Vector[T]
 
   trait Unionable[T] {

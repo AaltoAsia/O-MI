@@ -15,19 +15,17 @@ package parsing
 
 import java.io.File
 import java.sql.Timestamp
-import javax.xml.transform.{Source, stream}
+import javax.xml.transform.{Source}
 import javax.xml.transform.stream.StreamSource
 
-import scala.collection.JavaConversions.{asJavaIterable, iterableAsScalaIterable}
+import scala.collection.JavaConverters._
 import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
-import scala.xml.{Elem, Node, NodeSeq, UnprefixedAttribute}
+import scala.xml.{Elem, Node}
 
-import akka.http.scaladsl.model.RemoteAddress
 import parsing.xmlGen.xmlTypes
 import types.odf._
 import types.OmiTypes._
-import types.OmiTypes.Callback._ // implicit: String => Callback
 import types.ParseError._
 import types._
 
@@ -182,7 +180,7 @@ object OmiParser extends Parser[OmiParseResult] {
         case Some(msg) => {
           val odfParseResult = parseMsg(msg, read.msgformat)
           odfParseResult match {
-            case Left(errors) => Left(errors)
+            case Left(errors)  => Left(errors.asScala.toVector)
             case Right(odf) =>
               read.interval match {
                 case None =>
@@ -230,7 +228,7 @@ object OmiParser extends Parser[OmiParseResult] {
         val odfParseResult = parseMsg(msg, write.msgformat)
         val callback = write.callback.map { addr => RawCallback(addr.toString) }
         odfParseResult match {
-          case Left(errors) => Left(errors)
+          case Left(errors)  => Left(errors.asScala.toVector)
           case Right(odf) =>
             Right(Iterable(
               WriteRequest(
@@ -251,7 +249,7 @@ object OmiParser extends Parser[OmiParseResult] {
         val odfParseResult = parseMsg(msg, call.msgformat)
         val callback = call.callback.map { addr => RawCallback(addr.toString) }
         odfParseResult match {
-          case Left(errors) => Left(errors)
+          case Left(errors)  => Left(errors.asScala.toVector)
           case Right(odf) =>
             Right(Iterable(
               CallRequest(
@@ -272,7 +270,7 @@ object OmiParser extends Parser[OmiParseResult] {
         val odfParseResult = parseMsg(msg, delete.msgformat)
         val callback = delete.callback.map { addr => RawCallback(addr.toString) }
         odfParseResult match {
-          case Left(errors) => Left(errors)
+          case Left(errors)  => Left(errors.asScala.toVector)
           case Right(odf) =>
             Right(Iterable(
               DeleteRequest(
@@ -304,16 +302,16 @@ object OmiParser extends Parser[OmiParseResult] {
                 result.returnValue.returnCode,
                 result.returnValue.description
               ),
-              OdfCollection(result.requestID.map(parseRequestID): _*),
-              result.msg.map {
-                msg: xmlGen.xmlTypes.MsgType =>
-                  //TODO: figure right type parameter
-                  val odfParseResult = parseMsg(msg, result.msgformat)
-                  odfParseResult match {
-                    case Left(errors) => throw combineErrors(iterableAsScalaIterable(errors))
-                    case Right(odf) => odf
-                  }
-              }
+            OdfCollection( result.requestID.map(parseRequestID) : _* ),
+            result.msg.map {
+              msg: xmlGen.xmlTypes.MsgType =>
+                //TODO: figure right type parameter
+                val odfParseResult = parseMsg(msg, result.msgformat)
+                odfParseResult match {
+                  case Left(errors) => throw combineErrors(errors.asScala.toVector)
+                  case Right(odf) => odf
+                }
+            }
             )
         }: _*)
         , ttl)
@@ -326,7 +324,7 @@ object OmiParser extends Parser[OmiParseResult] {
 
   private[this] def parseMsg(msg: xmlGen.xmlTypes.MsgType, format: Option[String]): OdfParseResult = {
     if (msg.mixed.isEmpty)
-      Left(Iterable(OMIParserError("Empty msg element.")))
+      Left(Iterable(OMIParserError("Empty msg element.")).asJava)
     else {
       val xmlMsg = xmlGen.scalaxb.toXML[xmlGen.xmlTypes.MsgType](msg, Some("omi.xsd"), Some("msg"), xmlGen.defaultScope)
 
@@ -343,12 +341,12 @@ object OmiParser extends Parser[OmiParseResult] {
           parseOdf(objects)
         case (Some("odf.xsd"), Some(objects)) =>
           parseOdf(objects)
-        case (Some("odf"), None) =>
-          Left(Iterable(OMIParserError("No Objects found in msg.")))
-        case (Some("odf.xsd"), None) =>
-          Left(Iterable(OMIParserError("No Objects found in msg.")))
-        case (None, _) => Left(Iterable(OMIParserError("Empty msg element.")))
-        case (Some(str), _) => Left(Iterable(OMIParserError("Unknown format for msg.")))
+        case (Some("odf"), None) => 
+          Left(Iterable(OMIParserError("No Objects found in msg.")).asJava)
+        case (Some("odf.xsd"), None) => 
+          Left(Iterable(OMIParserError("No Objects found in msg.")).asJava)
+        case (None,_) =>  Left(Iterable(OMIParserError("Empty msg element.")).asJava)
+        case (Some(str),_) =>  Left(Iterable(OMIParserError("Unknown format for msg.")).asJava)
       }
     }
   }

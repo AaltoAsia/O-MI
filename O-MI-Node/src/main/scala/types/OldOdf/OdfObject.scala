@@ -14,9 +14,6 @@
 package types
 package OdfTypes
 
-import java.sql.Timestamp
-import java.lang.{Iterable => JavaIterable}
-import javax.xml.datatype.{DatatypeConstants => XMLConst}
 
 import scala.collection.immutable.HashMap
 
@@ -45,8 +42,6 @@ class OdfObjectImpl(
     val thatInfo: HashMap[Path, OdfInfoItem] = HashMap(another.infoItems.map(ii => (ii.path, ii)): _*)
     val thisObj: HashMap[Path, OdfObject] = HashMap(objects.map(o => (o.path, o)): _*)
     val thatObj: HashMap[Path, OdfObject] = HashMap(another.objects.map(o => (o.path, o)): _*)
-    val tmp: OdfTreeCollection[OdfQlmID] = id
-    val tmp2: OdfTreeCollection[OdfQlmID] = another.id
     val idsWithDuplicate: Vector[OdfQlmID] = this.id ++ another.id
     val ids: Seq[OdfQlmID] = idsWithDuplicate.groupBy {
       qlmId: OdfQlmID => qlmId.value

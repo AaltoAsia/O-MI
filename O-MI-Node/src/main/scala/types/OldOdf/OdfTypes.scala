@@ -15,12 +15,10 @@ package types
 package OdfTypes
 
 import java.sql.Timestamp
-import java.lang.{Iterable => JavaIterable}
 
 import scala.collection.mutable.{Map => MutableMap}
 import scala.collection.immutable.HashMap
 import scala.collection.JavaConverters._
-import scala.language.existentials
 
 import parsing.xmlGen.scalaxb.DataRecord
 import parsing.xmlGen.xmlTypes._
