@@ -46,7 +46,7 @@ class SingleStoresMaintainer(
 
   protected val scheduler: Scheduler = context.system.scheduler
   protected val snapshotInterval: FiniteDuration = settings.snapshotInterval
-  implicit val timeout: Timeout = 2 minutes
+  implicit val timeout: Timeout = settings.journalTimeout
 
   case object TakeSnapshot
 

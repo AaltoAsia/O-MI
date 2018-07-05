@@ -174,7 +174,7 @@ trait OmiService
 
             // convert to our path type (we don't need very complicated functionality)
             val pathStr = uriPath.split("/").map { id => URLDecoder.decode(id, "UTF-8") }.toSeq
-            implicit val timeout: Timeout = Timeout(2 minutes)
+            implicit val timeout: Timeout = settings.journalTimeout
 
             val origPath = Path(pathStr)
             val path = origPath match {
@@ -197,7 +197,7 @@ trait OmiService
                 hasPermissionTest(readReq) match {
                   case Success(_) => {
 
-                    RESTHandler.handle(origPath)(singleStores).map {
+                    RESTHandler.handle(origPath)(singleStores,timeout).map {
                       case Some(Left(value)) =>
                         HttpResponse(entity = HttpEntity(value))
                       case Some(Right(xmlData)) =>

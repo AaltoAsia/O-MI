@@ -160,7 +160,7 @@ class SubscriptionManager(
     case NewSubscription(subscription) => subscribe(subscription).pipeTo(sender())
     case HandleIntervals(id) => handleIntervals(id)
     case RemoveSubscription(id, ttl) => removeSubscription(id)(ttl).pipeTo(sender())
-    case SubscriptionTimeout(id) => removeSubscription(id)(1 minute)
+    case SubscriptionTimeout(id) => removeSubscription(id)(settings.journalTimeout)
     case PollSubscription(id, ttl) => pollSubscription(id)(ttl).pipeTo(sender())
     case ListSubsCmd(ttl) => getAllSubs()(ttl).pipeTo(sender())
     case GetSubsWithPollData(ttl) => getSubsWithPollData()(ttl).pipeTo(sender())
@@ -174,7 +174,7 @@ class SubscriptionManager(
     * @param subs list of subs and optional poll subscription data
     */
   private def loadSub(subs: Seq[(SavedSub, Option[SubData])]): Future[Unit] = {
-    implicit val timeout: Timeout = 2 minutes
+    implicit val timeout: Timeout = settings.journalTimeout
     val allSubsF: Future[AllSubscriptions] = getAllSubs()
     val existingIds: Future[Set[Long]] = allSubsF
       .map(allSubs => (allSubs.polls ++ allSubs.intervals ++ allSubs.events).map(_.id))

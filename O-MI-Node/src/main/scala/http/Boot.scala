@@ -240,7 +240,7 @@ object OmiServer {
 
       val write = WriteRequest(odf, None, 60 seconds)
       system.log.info("Write created")
-      implicit val timeout: Timeout = Timeout(60 seconds)
+      implicit val timeout: Timeout = settings.journalTimeout
       val future: Future[ResponseRequest] = (requestHandler ? write).mapTo[ResponseRequest]
       system.log.info("Write started")
       future.onSuccess {
