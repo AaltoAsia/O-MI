@@ -14,14 +14,10 @@
 package types
 package OdfTypes
 
-import java.lang.{Iterable => JavaIterable}
 import java.sql.Timestamp
-import java.util.GregorianCalendar
-import javax.xml.datatype.DatatypeFactory
 
 import scala.collection.immutable.HashMap
 import scala.util.{Try, Success, Failure}
-import scala.xml.XML
 
 import parsing.OdfParser
 import parsing.xmlGen._

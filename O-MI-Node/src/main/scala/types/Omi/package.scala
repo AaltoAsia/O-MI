@@ -15,7 +15,6 @@
 package types
 
 
-import java.lang.{Iterable => JavaIterable}
 import java.sql.Timestamp
 import java.util.{Date, GregorianCalendar}
 import javax.xml.datatype.{DatatypeFactory, XMLGregorianCalendar}
@@ -24,8 +23,8 @@ import parsing.xmlGen._
 import parsing.xmlGen.scalaxb.DataRecord
 import parsing.xmlGen.xmlTypes._
 
-import scala.collection.JavaConversions
-import scala.language.existentials
+import scala.collection.JavaConverters._
+import scala.collection.Iterable
 import scala.xml.NodeSeq
 
 /**
@@ -65,7 +64,7 @@ package object OmiTypes {
   }
 
   def requestIDsFromJava(requestIDs: java.lang.Iterable[java.lang.Long]): Vector[Long] = {
-    JavaConversions.iterableAsScalaIterable(requestIDs).map(Long2long).toVector
+    requestIDs.asScala.map(Long2long).toVector
   }
 
   /** Wraps O-DF format to O-MI msg tag.

@@ -1,8 +1,6 @@
 package types
 package odf
 
-import scala.collection.mutable.{Map => MutableMap}
-import scala.collection.immutable.HashMap
 import scala.collection.JavaConverters._
 
 object OdfCollection {

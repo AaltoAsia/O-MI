@@ -20,9 +20,7 @@ import java.sql.Timestamp
 import java.util.Date
 
 import scala.collection.immutable.{HashMap}
-import scala.collection.mutable
 import akka.http.scaladsl.model.Uri
-import org.prevayler._
 import spray.json.{DefaultJsonProtocol, JsArray, JsNull, JsNumber, JsObject, JsString, JsValue, RootJsonFormat}
 import types._
 import types.odf._
@@ -169,7 +167,7 @@ object CustomJsonProtocol extends DefaultJsonProtocol {
     private def createCB(address: String): DefinedCallback = {
       val uri = Uri(address)
       val hostAddress = uri.authority.host.address()
-      val ipAddress = InetAddress.getByName(hostAddress)
+      InetAddress.getByName(hostAddress)
       val scheme = uri.scheme
       scheme match {
         case "http" => HTTPCallback(uri)

@@ -69,7 +69,7 @@ object Callback {
       val uri = Uri(address)
       val hostAddress = uri.authority.host.address
       // Test address validity (throws exceptions when invalid)
-      val ipAddress = InetAddress.getByName(hostAddress)
+      InetAddress.getByName(hostAddress)
       val scheme = uri.scheme
       val httpSchemas = Vector("http", "https")
       if (httpSchemas.contains(scheme))

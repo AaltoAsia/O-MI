@@ -3,7 +3,6 @@ package OmiTypes
 
 import scala.concurrent.duration._
 import types.odf._
-import OmiTypes._
 
 import scala.xml.NodeSeq
 

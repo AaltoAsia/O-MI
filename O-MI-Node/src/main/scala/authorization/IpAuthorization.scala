@@ -16,7 +16,6 @@ package authorization
 
 import java.net.InetAddress
 
-import scala.collection.JavaConverters._
 import scala.util.{Success, Failure}
 
 import akka.http.scaladsl.model.RemoteAddress

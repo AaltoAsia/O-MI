@@ -1,35 +1,28 @@
 package authorization
 
-import scala.concurrent.{Await, Future}
-import scala.concurrent.duration._
+import scala.concurrent.{Future,Await}
 import scala.util.Try
-import scala.language.implicitConversions
-import scala.collection.JavaConversions._
-import org.prevayler.Prevayler
+
 import akka.util.{ByteString, Timeout}
 import akka.actor.{ActorRef, ActorSystem}
 import akka.stream.ActorMaterializer
-import akka.pattern.ask
-import akka.http.scaladsl.{Http, HttpExt}
-import database.journal.Models.GetTree
-//import akka.http.scaladsl.model.headers.{Authorization, GenericHttpCredentials}
-import akka.http.scaladsl.model.{HttpMessage, HttpRequest, HttpResponse, StatusCodes, HttpEntity, headers, Uri, FormData}
+import akka.http.scaladsl.{ Http, HttpExt}
+import akka.http.scaladsl.model.{HttpMessage, HttpRequest, HttpResponse, HttpEntity, headers, Uri, FormData}
 import akka.http.scaladsl.model.ContentTypes._
 import akka.http.scaladsl.client.RequestBuilding.RequestBuilder
 import akka.http.scaladsl.unmarshalling.Unmarshal
-import akka.http.scaladsl.marshalling.Marshal
-import de.heikoseeberger.akkahttpjson4s.Json4sSupport
-import org.json4s.{DefaultFormats, Formats, CustomSerializer, JString, JObject}
+
+import org.json4s.{JString, JObject}
 import org.json4s.native.JsonMethods._
-import org.json4s.native.{Serialization => JsonSerialization}
 import org.json4s.JsonDSL._
 import org.json4s._
-import agentSystem._
-import org.slf4j.{Logger, LoggerFactory}
-import com.typesafe.config.{Config, ConfigObject}
 import akka.pattern.ask
 
 import types.odf._
+
+import org.slf4j.{LoggerFactory}
+
+import database.journal.Models.GetTree
 import types.Path
 import types.OmiTypes.{OmiRequest, OdfRequest, UserInfo, RawRequestWrapper}
 import http.OmiConfigExtension
@@ -310,7 +303,6 @@ class AuthAPIServiceV2(
   override def isAuthorizedForRawRequest(httpRequest: HttpRequest, rawRequest: String): AuthorizationResult = {
     val rawRequestWrapper = RawRequestWrapper(rawRequest, UserInfo())
 
-    import RawRequestWrapper.MessageType._
     if (rawRequestWrapper.msgFormat == Some("odf"))
       isAuthorizedForOdfRequest(httpRequest, rawRequestWrapper)
     else

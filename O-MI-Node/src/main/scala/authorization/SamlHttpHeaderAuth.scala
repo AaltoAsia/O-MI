@@ -14,7 +14,6 @@
 
 package authorization
 
-import scala.collection.JavaConversions.collectionAsScalaIterable
 import scala.util.{Failure, Success}
 
 import akka.http.scaladsl.model.HttpHeader

@@ -17,22 +17,15 @@
 package responses
 
 
-import scala.collection.JavaConversions.iterableAsScalaIterable
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import scala.concurrent.duration._
 
 import types.OmiTypes._
-import types._
-//import scala.collection.JavaConverters._ //JavaConverters provide explicit conversion methods
-//import scala.collection.JavaConversions.asJavaIterator
-import scala.xml.NodeSeq
-//import akka.http.StatusCode
 
 import akka.actor.ActorRef
 import akka.pattern.ask
 import akka.util.Timeout
-import http.{ActorSystemContext, Actors, Settings, OmiConfigExtension}
+import http.{OmiConfigExtension }
 
 trait CancelHandler {
 

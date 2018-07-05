@@ -25,9 +25,8 @@ import parsing.xmlGen.xmlTypes._
 import parsing.xmlGen.{omiDefaultScope, xmlTypes}
 import types.odf._
 
-import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
 import scala.concurrent.duration._
-import scala.language.existentials
 import scala.util.{Failure, Success, Try}
 import scala.xml.NodeSeq
 
@@ -61,7 +60,7 @@ sealed trait OmiRequest extends RequestWrapper with JavaOmiRequest {
 
   def timedout: Boolean = ttlLimit.map { ts => ts.before(currentTimestamp) }.getOrElse(false)
 
-  def parsed: OmiParseResult = Right(asJavaIterable(collection.Iterable(this)))
+  def parsed: OmiParseResult = Right(Iterable(this))
 
   def unwrapped: Try[OmiRequest] = Success(this)
 

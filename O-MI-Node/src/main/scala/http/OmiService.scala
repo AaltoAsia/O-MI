@@ -14,10 +14,9 @@
 
 package http
 
-import java.lang
 import java.net.{InetAddress, URI, URLDecoder}
 import java.nio.file.{Files, Paths}
-import java.util.Date
+import scala.language.postfixOps
 
 import akka.actor.{ActorRef, ActorSystem}
 import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport

@@ -3,14 +3,12 @@ package database
 import agentSystem.AgentEvents._
 import agentSystem.{AgentName, AgentResponsibilities}
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
-import akka.util.Timeout
 import responses.{CLIHelperT, CallbackHandler}
 import types.OmiTypes._
 
 import scala.collection.mutable.{Map => MutableMap}
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
-import scala.concurrent.duration._
 
 trait DBHandlerBase extends Actor
   with ActorLogging {

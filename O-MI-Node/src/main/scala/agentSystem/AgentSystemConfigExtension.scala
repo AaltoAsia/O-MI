@@ -1,6 +1,5 @@
 package agentSystem
 
-import java.lang.{Iterable => JIterable}
 import java.util.concurrent.TimeUnit
 
 import scala.collection.JavaConverters._

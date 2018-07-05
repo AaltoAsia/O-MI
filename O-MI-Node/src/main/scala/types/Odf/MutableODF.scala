@@ -1,12 +1,9 @@
 package types
 package odf
 
-import scala.collection.{Seq, Map, SortedSet}
-import scala.collection.immutable.{TreeSet => ImmutableTreeSet, HashMap => ImmutableHashMap}
-import scala.collection.mutable.{TreeSet => MutableTreeSet, HashMap => MutableHashMap}
-import scala.xml.NodeSeq
-import parsing.xmlGen.xmlTypes.{ObjectsType, ObjectType}
-import parsing.xmlGen.{odfDefaultScope, scalaxb, defaultScope}
+import scala.collection.{ Seq, Map, SortedSet }
+import scala.collection.immutable.{ HashMap => ImmutableHashMap }
+import scala.collection.mutable.{TreeSet => MutableTreeSet, HashMap => MutableHashMap }
 import types.Path._
 
 class MutableODF private[odf](
@@ -89,7 +86,6 @@ class MutableODF private[odf](
           case (t, o) => t.orElse(o)
         }
     }.toSet
-    val allPaths = paths ++ that.paths
     val allNodes = thatOnlyNodes ++ intersectingNodes
     this.nodes ++= allNodes.map { node => node.path -> node }
     this

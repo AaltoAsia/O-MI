@@ -24,14 +24,13 @@ import javax.xml.datatype.{DatatypeFactory, XMLGregorianCalendar}
 import parsing.xmlGen._
 import parsing.xmlGen.scalaxb.DataRecord
 
-import scala.language.existentials
 
 /**
   * Package containing classes presenting O-DF format internally and helper methods for them
   *
   */
 package object OdfTypes {
-  type OdfParseResult = Either[JavaIterable[ParseError], OdfObjects]
+  type OdfParseResult = Either[JavaIterable[_ <: ParseError], OdfObjects]
 
   /**
     * Collection type to be used as all children members in odf tree types

@@ -18,18 +18,12 @@ import java.net.URLClassLoader
 import java.util.jar.JarFile
 
 import scala.collection.JavaConverters._
-import scala.concurrent.Future
-import scala.concurrent.duration._
 import scala.language.postfixOps
 import scala.util.{Failure, Success, Try}
 
 import akka.actor.{Props, ActorRef}
-import akka.pattern.ask
-import akka.util.Timeout
 
 import com.typesafe.config.Config
-import AgentResponsibilities._
-import types.Path
 import AgentEvents._
 
 sealed trait InternalAgentLoadFailure {
@@ -55,8 +49,6 @@ final case class WrongPropsCreated(props: Props, classname: String) extends Inte
 })
 
 trait InternalAgentLoader extends BaseAgentSystem {
-
-  import context.dispatcher
 
   /** Classloader for loading classes in jars. */
   Thread.currentThread.setContextClassLoader(createClassLoader())
@@ -84,7 +76,6 @@ trait InternalAgentLoader extends BaseAgentSystem {
   protected[agentSystem] def loadAndStart(
                                            agentConfigEntry: AgentConfigEntry
                                          ): Unit = {
-    val classLoader = Thread.currentThread.getContextClassLoader
     val initialization: Try[AgentInfo] = agentConfigEntry.language match {
       case Some(Scala()) => scalaAgentInit(agentConfigEntry)
       case Some(Java()) => javaAgentInit(agentConfigEntry)
@@ -138,7 +129,6 @@ trait InternalAgentLoader extends BaseAgentSystem {
     val objectClazz = classLoader.loadClass(agentConfigEntry.classname + "$")
     val objectInterface = classOf[PropsCreator]
     val agentInterface = classOf[ScalaInternalAgent]
-    val responsibleInterface = classOf[ResponsibleScalaInternalAgent]
     actorClazz match {
       //case actorClass if responsibleInterface.isAssignableFrom(actorClass) =>
       case actorClass if agentInterface.isAssignableFrom(actorClass) =>
@@ -162,7 +152,6 @@ trait InternalAgentLoader extends BaseAgentSystem {
         }
       case clazz: Class[_] => throw InternalAgentNotImplemented(clazz)
     }
-
   }
 
   private def javaAgentInit(

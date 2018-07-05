@@ -14,6 +14,7 @@
 
 //package database
 
+/*
 import java.sql.Timestamp
 import java.util.Date
 
@@ -23,7 +24,7 @@ import org.prevayler._
 import types.odf._
 
 import types.Path
-
+*/
 // TODO: save the whole InfoItem
 /*case class LatestInfoItemData(
   val responsibleAgent: String,

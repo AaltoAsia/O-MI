@@ -15,18 +15,15 @@
 
 package responses
 
-import scala.xml.{NodeSeq, XML}
+import scala.xml.{NodeSeq}
 import database._
 import parsing.xmlGen.{defaultScope, scalaxb, xmlTypes}
 import types.odf.{ImmutableODF, InfoItem, Node, Object, Objects, Value}
 import types._
-import http.ActorSystemContext
 import journal.Models.{GetTree, SingleReadCommand}
 import akka.pattern.ask
 import akka.util.Timeout
 
-import scala.collection.immutable
-import scala.concurrent.duration._
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 

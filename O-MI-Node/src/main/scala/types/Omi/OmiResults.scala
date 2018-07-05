@@ -2,13 +2,12 @@ package types
 package OmiTypes
 
 import java.lang.{Iterable => JIterable}
-import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
 import scala.concurrent.duration._
 import parsing.xmlGen.scalaxb.DataRecord
-import parsing.xmlGen.{omiDefaultScope, scalaxb, xmlTypes}
+import parsing.xmlGen.{omiDefaultScope, xmlTypes}
 import types.odf._
 import parsing.xmlGen.xmlTypes._
-import scala.reflect.ClassTag
 import scala.util.Try
 
 trait JavaOmiResult {
@@ -26,9 +25,9 @@ class OmiResult(
                  val odf: Option[ODF] = None
                ) extends JavaOmiResult {
 
-  def requestIDsAsJava(): JIterable[RequestID] = asJavaIterable(requestIDs)
+  def requestIDsAsJava(): JIterable[RequestID] =requestIDs.asJava
 
-  def odfAsJava(): JIterable[ODF] = asJavaIterable(odf)
+  def odfAsJava(): JIterable[ODF] = odf.toSeq.asJava
 
   def copy(
             returnValue: OmiReturn = this.returnValue,

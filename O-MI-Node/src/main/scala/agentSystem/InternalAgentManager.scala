@@ -14,18 +14,10 @@
 package agentSystem
 
 import scala.concurrent.Future
-import scala.collection.mutable.{Map => MutableMap}
-import akka.actor.{ActorRef, Props, Terminated}
-import scala.util.{Try, Success, Failure}
-import akka.pattern.ask
+import akka.actor.{ActorRef}
 import http.CLICmds._
-import AgentResponsibilities._
-import AgentEvents._
 
-
-trait InternalAgentManager extends BaseAgentSystem with InternalAgentLoader {
-
-  import context.dispatcher
+trait InternalAgentManager extends BaseAgentSystem with InternalAgentLoader{
 
   protected def dbHandler: ActorRef
 

@@ -2,15 +2,12 @@ package parsing
 package xmlGen
 package scalaxb
 
-import scala.collection.immutable.HashMap
-import scala.xml.{Node, NodeSeq, NamespaceBinding, Elem, UnprefixedAttribute, PrefixedAttribute}
+import scala.xml.{Node, NodeSeq, NamespaceBinding, Elem}
 import javax.xml.datatype.XMLGregorianCalendar
 import javax.xml.namespace.QName
 import javax.xml.bind.DatatypeConverter
 
-import scala.language.postfixOps
 import scala.language.implicitConversions
-import scala.language.existentials
 
 object `package` {
 

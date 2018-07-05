@@ -21,13 +21,12 @@ import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
 import akka.actor._
 import akka.dispatch.{BoundedMessageQueueSemantics, RequiresMessageQueue}
-import org.prevayler.Prevayler
 import http.OmiConfigExtension
 import journal.Models.SaveSnapshot
 import akka.pattern.ask
 import akka.util.Timeout
 
-import scala.concurrent.{Await, Future}
+import scala.concurrent.{Future}
 
 object SingleStoresMaintainer {
   def props(

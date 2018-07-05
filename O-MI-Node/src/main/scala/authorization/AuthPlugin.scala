@@ -16,16 +16,16 @@ package authorization
 
 import java.lang.{Iterable => JavaIterable}
 
-import scala.collection.JavaConversions.{asJavaIterable, iterableAsScalaIterable}
+import scala.language.postfixOps
+import scala.collection.JavaConverters._
 import scala.collection.mutable
-import scala.collection.mutable.Buffer
 import scala.util.{Failure, Success, Try}
 import database._
 import Authorization.{AuthorizationExtension, CombinedTest, UnauthorizedEx}
 import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.server.Directives.extract
 import types.OdfTypes._
-import types.odf.{ImmutableODF, OldTypeConverter}
+import types.odf.{ImmutableODF}
 import types.OmiTypes._
 import types.Path
 import akka.pattern.ask
@@ -75,10 +75,10 @@ trait AuthApi {
 
         odfRequest match {
           case r: PermissiveRequest => // Write or Response
-            isAuthorizedForType(httpRequest, isWrite = true, paths)
+            isAuthorizedForType(httpRequest, isWrite = true, paths.asJava)
 
           case r: OdfRequest => // All else odf containing requests (reads)
-            isAuthorizedForType(httpRequest, isWrite = false, paths)
+            isAuthorizedForType(httpRequest, isWrite = false, paths.asJava)
 
         }
       case _ => Unauthorized()
@@ -148,7 +148,7 @@ trait AuthApiProvider extends AuthorizationExtension {
             val newOdfOpt = for {
               paths: JavaIterable[Path] <- Option(maybePaths) // paths might be null
               // Rebuild the request having only `paths`
-              pathTrees = currentTree.selectSubTree(paths.toVector)
+              pathTrees = currentTree.selectSubTree(paths.asScala.toVector)
               /*paths collect {
                 case path: Path =>              // filter nulls out
                   currentTree.getSubTreeAsODF(paths) match { // figure out is it InfoItem or Object
@@ -170,7 +170,7 @@ trait AuthApiProvider extends AuthorizationExtension {
                     OdfTreeCollection(r.results.head.copy(odf = Some(nODF))) // TODO: make better copy logic?
                   ))
                   case r: AnyRef => Failure(new NotImplementedError(
-                    s"Partial authorization granted for ${maybePaths.mkString(", ")}, BUT request '${
+                    s"Partial authorization granted for ${maybePaths.asScala.toSeq.mkString(", ")}, BUT request '${
                       r.getClass
                         .getSimpleName
                     }' not yet implemented in O-MI node."))

@@ -2,11 +2,10 @@ package types
 package odf
 
 import database.journal.{PObjects, PPersistentNode}
-import database.journal.PPersistentNode.NodeType.{Obj, Objs}
-
+import database.journal.PPersistentNode.NodeType.{Objs}
 import scala.language.implicitConversions
-import scala.collection.{Map, Seq}
-import scala.collection.immutable.{HashMap, Map => IMap}
+
+import scala.collection.immutable.{ HashMap, Map =>IMap}
 import parsing.xmlGen.scalaxb.DataRecord
 import parsing.xmlGen.xmlTypes.{ObjectType, ObjectsType}
 

@@ -13,24 +13,14 @@
  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 package agentSystem
 
-import scala.reflect.ClassTag
-import scala.util.{Success, Failure, Try}
-import scala.concurrent.{Future, ExecutionContext, TimeoutException, Promise}
+import scala.concurrent.{ Future, Promise }
 import akka.actor.{
-  Actor,
   ActorRef,
-  ActorLogging,
-  Props,
-  ActorInitializationException
+  ActorLogging
 }
-import akka.actor.Actor.Receive
 import akka.pattern.ask
 import akka.util.Timeout
-import com.typesafe.config.Config
-import types.OdfTypes._
 import types.OmiTypes._
-import types.Path
-
 /**
   * Commands that can be received from InternalAgentLoader.
   **/
@@ -125,7 +115,7 @@ trait ScalaInternalAgent extends InternalAgent with ActorLogging {
     msgFuture.map {
       any => senderRef ! any
     }
-    msgFuture.onFailure {
+    msgFuture.failed.foreach{
       case e: Exception =>
         log.error(e, s"RespondFuture caught: ")
     }

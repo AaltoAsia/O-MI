@@ -14,12 +14,7 @@
 
 package types
 
-import scala.collection.JavaConversions
 import scala.util.matching.Regex
-
-import scala.concurrent.{Future, ExecutionContext}
-import scala.util.{Failure, Success, Try}
-import OmiTypes.ResponseRequest
 
 /**
   * Path is a wrapper for Seq[String] representing path to an O-DF Object

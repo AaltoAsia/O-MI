@@ -19,12 +19,11 @@ import java.sql.Timestamp
 import javax.xml.transform.Source
 import javax.xml.transform.stream.StreamSource
 
-import scala.collection.JavaConversions.asJavaIterable
+import scala.collection.JavaConverters._
 import scala.collection.immutable.HashMap
 import scala.util.{Failure, Success, Try}
 import scala.xml.{NodeSeq, Elem}
 
-import akka.http.scaladsl.model.RemoteAddress
 import parsing.xmlGen
 import parsing.xmlGen._
 import parsing.xmlGen.scalaxb.DataRecord
@@ -33,11 +32,9 @@ import parsing.xmlGen.xmlTypes.{
   ObjectType,
   InfoItemType,
   ValueType,
-  DescriptionType,
   QlmIDType,
   MetaDataType
 }
-import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 import types._
 
 /** Parser for data in O-DF format */
@@ -80,7 +77,7 @@ object ODFParser extends parsing.Parser[OdfParseResult] {
   private def parseTry(parsed: Try[Elem]): OdfParseResult = {
     parsed match {
       case Success(root) => parse(root)
-      case Failure(f) => Left(Vector(ScalaXMLError(f.getMessage)))
+      case Failure(f) => Left(Vector(ScalaXMLError(f.getMessage)).asJava)
     }
   }
 
@@ -94,7 +91,7 @@ object ODFParser extends parsing.Parser[OdfParseResult] {
     schemaValidation(root) match {
       case errors: Seq[ParseError] if errors.nonEmpty =>
 
-        Left(errors)
+        Left(errors.asJava)
       case empty: Seq[ParseError] if empty.isEmpty =>
 
         val requestProcessTime = currentTime()
@@ -104,7 +101,7 @@ object ODFParser extends parsing.Parser[OdfParseResult] {
         } match {
           case Failure(e) =>
             e.printStackTrace()
-            Left(Vector(ScalaxbError(e.getMessage)))
+            Left(Vector(ScalaxbError(e.getMessage)).asJava)
 
           case Success(objects) =>
             Try {
@@ -113,7 +110,7 @@ object ODFParser extends parsing.Parser[OdfParseResult] {
               case Success(odf) => Right(odf)
               case Failure(e) =>
                 e.printStackTrace()
-                Left(Vector(ODFParserError(e.getMessage)))
+                Left(Vector(ODFParserError(e.getMessage)).asJava)
             }
         }
     }

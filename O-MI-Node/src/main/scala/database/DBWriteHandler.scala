@@ -24,7 +24,6 @@ import journal.Models.SingleWriteCommand
 import journal.Models.LookupNewEventSubs
 import journal.Models.LookupEventSubs
 
-import scala.collection.immutable
 
 trait DBWriteHandler extends DBHandlerBase {
 
@@ -69,11 +68,11 @@ trait DBWriteHandler extends DBHandlerBase {
     val callbackF: Future[Unit] = fresponseRequest
       .map(responseRequest => callbackHandler.sendCallback(esub.callback, responseRequest))
 
-    callbackF.onSuccess {
+    callbackF.foreach {
       case () =>
         log.debug(s"Callback sent; subscription id:$id addr:$callbackAddr interval:-1")
     }
-    callbackF.onFailure {
+    callbackF.failed.foreach{
       case fail@MissingConnection(callback) =>
         log.warning(
           s"Callback failed; subscription id:${esub.id}, reason: ${fail.toString}, subscription is removed.")
@@ -199,6 +198,9 @@ trait DBWriteHandler extends DBHandlerBase {
           handlePollData(path, oldValue, value))
     }) //Add values to pollsubs in this method
 
+    pollFuture.failed.foreach{
+      case t: Throwable => log.error(t, "Error when adding poll values to database")
+    }
 
     //pollFuture.onFailure{
     //  case t: Throwable => log.error(t, "Error when adding poll values to database")
@@ -250,7 +252,7 @@ trait DBWriteHandler extends DBHandlerBase {
     val dbWriteFuture = infosToBeWrittenInDBF.flatMap(
       infosToBeWrittenInDB => dbConnection.writeMany(ImmutableODF(infosToBeWrittenInDB)))
 
-    dbWriteFuture.onFailure {
+    dbWriteFuture.failed.foreach{
       case t: Throwable => log.error(t, "Error when writing values for paths $paths")
     }
 
@@ -269,7 +271,7 @@ trait DBWriteHandler extends DBHandlerBase {
               (singleStores.hierarchyStore ? UnionCommand(updateTree))
 
             }
-            case None => Future.successful()
+            case None => Future.successful[Unit]()
           }
           triggeringEvents <- ftriggeringEvents
           latestF <- Future.sequence(triggeringEvents.flatMap(iie =>
@@ -279,7 +281,7 @@ trait DBWriteHandler extends DBHandlerBase {
         } yield latestF
     }
 
-    writeFuture.onFailure {
+    writeFuture.failed.foreach{
       case t: Exception => log.error(t, "Error when trying to update hierarchy.")
       case t: Throwable => log.error(t, "Error when trying to update hierarchy.")
     }
