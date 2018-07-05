@@ -32,8 +32,7 @@ import journal.Models.ErasePathCommand
 class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAfterAll {
 
 
-  val conf = ConfigFactory.load("testconfig")
-  val omiServer = new TestOmiServer(conf)
+  val omiServer = new TestOmiServer()
 
   omiServer.bindTCP()
   val serverBinding = omiServer.bindHTTP()
