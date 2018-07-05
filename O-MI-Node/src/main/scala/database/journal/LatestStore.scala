@@ -39,6 +39,8 @@ class LatestStore extends PersistentActor with ActorLogging {
 
   def receiveCommand: Receive = {
     case SaveSnapshot(msg) => sender() ! saveSnapshot(PWriteLatest(state))
+    case SaveSnapshotSuccess(metadata)         ⇒ log.debug(metadata.toString)
+    case SaveSnapshotFailure(metadata, reason) ⇒ log.error(reason,  s"Save snapshot failure with: ${metadata.toString}")
 
     case SingleWriteCommand(p, v) => {
       persist(PWriteLatest(Map(p.toString -> v.persist))) { event =>

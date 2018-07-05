@@ -5,7 +5,7 @@ import java.util.Date
 
 import PAddSub.SubType._
 import akka.actor.ActorLogging
-import akka.persistence.{PersistentActor, SnapshotOffer}
+import akka.persistence.{PersistentActor, SaveSnapshotFailure, SaveSnapshotSuccess, SnapshotOffer}
 import database._
 import _root_.database.journal.Models._
 import types.OmiTypes.HTTPCallback
@@ -330,7 +330,8 @@ class SubStore extends PersistentActor with ActorLogging {
         persistIdToSub(idToSub),
         persistPathToSub(pathToSubs),
         persistIntervalSubs(intervalSubs)))
-
+    case SaveSnapshotSuccess(metadata)         ⇒ log.debug(metadata.toString)
+    case SaveSnapshotFailure(metadata, reason) ⇒ log.error(reason,  s"Save snapshot failure with: ${metadata.toString}")
 
     case aEventS@Models.AddEventSub(eventSub: EventSub) =>
       val res = updateState(aEventS)

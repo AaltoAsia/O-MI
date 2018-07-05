@@ -82,16 +82,12 @@ class OmiConfigExtension(val config: Config) extends Extension
 
   val snapshotInterval: FiniteDuration = config.getDuration("omi-service.snapshot-interval")
   /** fast journal databases paths */
-  val journalsDirectory: String = config.getString("journalDBs.directory")
   val writeToDisk: Boolean = config.getBoolean("journalDBs.write-to-disk")
   val maxJournalSizeBytes: lang.Long = config.getBytes("journalDBs.max-journal-filesize")
   // Listen interfaces and ports
 
   val interface: String = config.getString("omi-service.interface")
-  //val port: Int = config.getInt("omi-service.port")
   val externalAgentInterface: String = config.getString("omi-service.external-agent-interface")
-  //val externalAgentPort: Int = config.getInt("omi-service.external-agent-port")
-  //val cliPort: Int = config.getInt("omi-service.agent-cli-port")
 
   // Authorization
   val allowedRequestTypes: Set[MessageType] = config.getStringList("omi-service.allowRequestTypesForAll")
@@ -151,24 +147,6 @@ class OmiConfigExtension(val config: Config) extends Extension
     val authorizationMethod: RequestBuilder = toRequestBuilder(authAPIServiceV2.getString("authorization.method"))
   }
 
-  //val userInfoFromRequestHeaders: Map[String,String] = authAPIServiceV2.getObject("userinfo-from-request-headers")
-  //
-  //TODO
-  // earlier lines override conflicting later ones
-  // store-from-request = {
-  //   headers.cookie.jwt_token = authtoken
-  //   auth.bearer = authtoken
-  // }
-  // put-to-authentication-request = {
-  //   query.auth-token = authtoken
-  // }
-  // store-from-authentication-response = {
-  //   email = username
-  //   username = username
-  // }
-  // put-to-authorization-request = {
-  //   username = user
-  // }
 
   //IP
   val inputWhiteListUsers: Vector[String] = config.getStringList("omi-service.input-whitelist-users").toVector

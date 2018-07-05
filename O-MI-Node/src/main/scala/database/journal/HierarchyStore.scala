@@ -3,7 +3,7 @@ package database.journal
 import java.sql.Timestamp
 
 import akka.actor.ActorLogging
-import akka.persistence.{PersistentActor, SnapshotOffer}
+import akka.persistence.{PersistentActor, SaveSnapshotFailure, SaveSnapshotSuccess, SnapshotOffer}
 import database.journal.Models._
 import database.journal.PPersistentNode.NodeType.{Ii, Obj, Objs}
 import types.Path
@@ -55,6 +55,8 @@ class HierarchyStore extends PersistentActor with ActorLogging {
   def receiveCommand: Receive = {
     case SaveSnapshot(msg) => sender() !
       saveSnapshot(PUnion(state.nodes.map { case (k, v) => k.toString -> PPersistentNode(v.persist) }))
+    case SaveSnapshotSuccess(metadata)         ⇒ log.debug(metadata.toString)
+    case SaveSnapshotFailure(metadata, reason) ⇒ log.error(reason,  s"Save snapshot failure with: ${metadata.toString}")
     case union@UnionCommand(other) =>
       persist(PUnion(other.nodes.map { case (k, v) => k.toString -> PPersistentNode(v.persist) })) { event =>
         sender() ! updateState(union)

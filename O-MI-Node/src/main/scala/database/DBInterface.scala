@@ -97,24 +97,6 @@ class SingleStores(protected val settings: OmiConfigExtension)(implicit val syst
   import system.dispatcher
 
   private[this] def createPrevayler[P](in: P, name: String) = {
-    if (settings.writeToDisk) {
-      val journalFileSizeLimit = settings.maxJournalSizeBytes
-      val factory = new PrevaylerFactory[P]()
-
-      val directory = new File(settings.journalsDirectory ++ s"/$name")
-      prevaylerDirectories += directory
-
-      // Configure factory settings
-      // Change size threshold so we can remove the old journal files as we take snapshots.
-      // Otherwise it will continue to fill disk space
-      factory.configureJournalFileSizeThreshold(journalFileSizeLimit) // about 100M
-      factory.configurePrevalenceDirectory(directory.getAbsolutePath)
-      factory.configurePrevalentSystem(in)
-      // Create factory
-      factory.create()
-    } else {
-      PrevaylerFactory.createTransientPrevayler[P](in)
-    }
   }
 
   /** List of all prevayler directories. Currently used for removing unnecessary files in these directories */
@@ -124,13 +106,6 @@ class SingleStores(protected val settings: OmiConfigExtension)(implicit val syst
   val hierarchyStore: ActorRef = system.actorOf(Props[journal.HierarchyStore])
   val subStore: ActorRef = system.actorOf(Props[journal.SubStore])
   val pollDataPrevayler: ActorRef = system.actorOf(Props[journal.PollDataStore])
-
-  //val latestStore: Prevayler[LatestValues] = createPrevayler(LatestValues.empty, "latestStore")
-  //val hierarchyStore: Prevayler[OdfTree] = createPrevayler(OdfTree.empty, "hierarchyStore")
-  //val subStore: Prevayler[Subs] = createPrevayler(Subs.empty,"subscriptionStore")
-  //val pollDataPrevayler: Prevayler[PollSubData] = createPrevayler(PollSubData.empty, "pollDataPrevayler")
-
-  // ???subStore execute RemoveWebsocketSubs()
 
   def buildODFFromValues(items: Seq[(Path, Value[Any])]): ODF = {
     ImmutableODF(items map { case (path, value) =>
@@ -204,26 +179,11 @@ class SingleStores(protected val settings: OmiConfigExtension)(implicit val syst
             info
         }
       case objs: Objects => Future.successful(objs)
-      //objs.copy(objects = objs.objects map (o => OdfObject(o.id, o.path,typeValue = o.typeValue)))
       case obj: Object => Future.successful(obj)
     } match {
       case Some(f) => f.map(Some(_))
       case None => Future.successful(None)
     }
-      /*
-      val (ciis,cobjs) = tree.getChilds(obj.path).map{
-        case childObj: Object => childObj.copy( descriptions = Vector.empty)
-        case childII: InfoItem => childII.copy( descriptions = Vector.empty, metaData = None)
-      }.partition{
-        case childObj: Object => true
-        case childII: InfoItem => false
-      }
-      obj.copy(
-        objects = obj.objects map (o => OdfObject(o.id, o.path, typeValue = o.typeValue)),
-        infoItems = obj.infoItems map (i => InfoItem(i.path, attributes = i.attributes)),
-        typeValue = obj.typeValue
-      )*/
-
     )
   }
 }

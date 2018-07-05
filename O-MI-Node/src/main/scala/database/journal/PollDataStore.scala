@@ -1,7 +1,7 @@
 package database.journal
 
 import akka.actor.ActorLogging
-import akka.persistence.{PersistentActor, SnapshotOffer}
+import akka.persistence.{PersistentActor, SaveSnapshotFailure, SaveSnapshotSuccess, SnapshotOffer}
 import database.SingleStoresMaintainer
 import database.journal.Models._
 import types.Path
@@ -63,6 +63,9 @@ class PollDataStore extends PersistentActor with ActorLogging {
   def receiveCommand: Receive = {
     case SaveSnapshot(msg) => sender() ! saveSnapshot(
       PPollData(state.mapValues(pmap => PPathToData(pmap.mapValues(values => PValueList(values))))))
+    case SaveSnapshotSuccess(metadata)         ⇒ log.debug(metadata.toString)
+    case SaveSnapshotFailure(metadata, reason) ⇒ log.error(reason,  s"Save snapshot failure with: ${metadata.toString}")
+
     case AddPollData(subId, path, value) =>
       persist(PAddPollData(subId, path.toString, Some(value.persist))) { event =>
         sender() ! updateState(event)
