@@ -8,7 +8,7 @@ import database.journal.Models._
 import types.Path
 import types.odf._
 
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 
 //Event and Commands are separate in case there is need to develop further and add Event and Command handlers
@@ -17,13 +17,13 @@ import scala.util.Try
 class LatestStore extends PersistentActor with ActorLogging {
   def persistenceId = "lateststore"
 
-  var state: Map[String, PPersistentValue] = Map()
+  var state: Map[Path, Value[Any]] = Map()
 
   //implicit def pathToString(path: Path): String = path.toString
 
   def updateState(event: Event): Unit = event match {
-    case PWriteLatest(values) => state = state ++ values
-    case PErasePath(path) => state = state - path
+    case PWriteLatest(values) => state = state ++ values.map{case (path, value) => Path(path) -> asValue(value)}
+    case PErasePath(path) => state = state - Path(path)
 
     //case SingleWriteEvent(p, v) => state = state.updated(Path(p),v)
     //case WriteEvent(paths) => state = state ++ paths
@@ -32,13 +32,24 @@ class LatestStore extends PersistentActor with ActorLogging {
   def receiveRecover: Receive = {
     case evnt: Event => updateState(evnt)
     //case e: SingleWriteEvent => updateState(e)
-    case SnapshotOffer(_, snapshot: PWriteLatest) => state = snapshot.values
+    case SnapshotOffer(_, snapshot: PWriteLatest) => {
+      Try(state = snapshot.values.map{case (path, value) => Path(path) -> asValue(value)}) match{
+        case Success(s) =>
+        case Failure(ex) => log.error(ex, "Failure while writing snapshot")
+      }
+    }
   }
 
   val snapshotInterval = 100
 
   def receiveCommand: Receive = {
-    case SaveSnapshot(msg) => sender() ! saveSnapshot(PWriteLatest(state))
+    case SaveSnapshot(msg) => sender() ! saveSnapshot(
+      PWriteLatest(
+        state.map{
+          case (key,value) => key.toString -> value.persist
+        }
+      )
+    )
     case SaveSnapshotSuccess(metadata)         ⇒ log.debug(metadata.toString)
     case SaveSnapshotFailure(metadata, reason) ⇒ log.error(reason,  s"Save snapshot failure with: ${metadata.toString}")
 
@@ -67,21 +78,20 @@ class LatestStore extends PersistentActor with ActorLogging {
     }
 
     case SingleReadCommand(p) => {
-      val resp: Option[Value[Any]] = state.get(p.toString).flatMap(asValue)
+      val resp: Option[Value[Any]] = state.get(p)
       sender() ! resp
     }
     case MultipleReadCommand(paths) => {
       val resp: Seq[(Path, Value[Any])] = paths.flatMap { path =>
         (for {
-          persistentValue <- state.get(path.toString)
-          value <- asValue(persistentValue)
-        } yield path -> value).toSeq
+          value <- state.get(path)
+        } yield path -> value)
       }
       // val resp: Seq[(Path, Value[Any])] = paths.flatMap(path=> state.get(path.toString).map(value => path -> asValue(value)).toSeq)
       sender() ! resp
     }
     case ReadAllCommand => {
-      val resp: Map[Path, Value[Any]] = state.map { case (path, pValue) => Path(path) -> asValue(pValue).get }
+      val resp: Map[Path, Value[Any]] = state
       sender() ! resp
     }
 

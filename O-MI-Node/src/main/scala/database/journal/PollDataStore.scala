@@ -7,6 +7,8 @@ import database.journal.Models._
 import types.Path
 import types.odf.Value
 
+import scala.util.Try
+
 class PollDataStore extends PersistentActor with ActorLogging {
   def persistenceId: String = "polldatastore"
 
@@ -41,16 +43,16 @@ class PollDataStore extends PersistentActor with ActorLogging {
     case other => log.warning(s"Unknown Event $other")
   }
 
-  def pollSubscription(event: PPollIntervalSubscription): Map[Path, Seq[Value[Any]]] = {
+  def pollSubscription(event: PPollIntervalSubscription): Try[Map[Path, Seq[Value[Any]]]] = Try{
     val resp: Map[Path, Seq[Value[Any]]] =
-      state.getOrElse(event.id, Map.empty).map { case (key, values) => Path(key) -> values.flatMap(asValue(_)) }
+      state.getOrElse(event.id, Map.empty).map { case (key, values) => Path(key) -> values.map(asValue(_)) }
     updateState(event)
     resp
   }
 
-  def pollSubscription(event: PPollEventSubscription): Map[Path, Seq[Value[Any]]] = {
+  def pollSubscription(event: PPollEventSubscription): Try[Map[Path, Seq[Value[Any]]]] = Try{
     val resp: Map[Path, Seq[Value[Any]]] =
-      state.getOrElse(event.id, Map.empty).map { case (key, values) => Path(key) -> values.flatMap(asValue(_)) }
+      state.getOrElse(event.id, Map.empty).map { case (key, values) => Path(key) -> values.map(asValue(_)) }
     updateState(event)
     resp
   }
@@ -72,22 +74,25 @@ class PollDataStore extends PersistentActor with ActorLogging {
       }
     case PollEventSubscription(id) =>
       persist(PPollEventSubscription(id)) { event =>
-        sender() ! pollSubscription(event)
+        val resp: Try[Map[Path, Seq[Value[Any]]]] = pollSubscription(event)
+        sender() ! resp.getOrElse(akka.actor.Status.Failure(resp.failed.get))
       }
     case PollIntervalSubscription(id) =>
       persist(PPollIntervalSubscription(id)) { event =>
-        sender() ! pollSubscription(event)
+        val resp: Try[Map[Path, Seq[Value[Any]]]] = pollSubscription(event)
+        sender() ! resp.getOrElse(akka.actor.Status.Failure(resp.failed.get))
       }
     case RemovePollSubData(id) =>
       persist(PRemovePollSubData(id)) { event =>
         sender() ! updateState(event)
       }
     case CheckSubscriptionData(id) =>
-      val response: Map[Path, Seq[Value[Any]]] =
+      val response: Try[Map[Path, Seq[Value[Any]]]] = Try{
         state.get(id)
-          .map(pv => pv.map { case (k, v) => Path(k) -> v.flatMap(asValue(_)) })
+          .map(pv => pv.map { case (k, v) => Path(k) -> v.map(asValue(_)) })
           .getOrElse(Map.empty[Path, Seq[Value[Any]]])
-      sender() ! response
+      }
+      sender() ! response.getOrElse(akka.actor.Status.Failure(response.failed.get))
   }
 
 }

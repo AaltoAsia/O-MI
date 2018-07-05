@@ -159,8 +159,8 @@ object Models {
     }
   }
 
-  def asValue(pv: PPersistentValue): Option[Value[Any]] = {
-    Try(pv.typeName match {
+  def asValue(pv: PPersistentValue): Value[Any] = {
+    pv.typeName match {
       case "xs:float" if pv.valueType.isProtoDoubleValue =>
         FloatValue(pv.getProtoDoubleValue.toFloat, new Timestamp(pv.timeStamp))
       case "xs:double" if pv.valueType.isProtoDoubleValue =>
@@ -178,7 +178,7 @@ object Models {
       case str: String if pv.valueType.isProtoStringValue =>
         Value(pv.getProtoStringValue, pv.typeName, new Timestamp(pv.timeStamp))
       case other => throw new Exception(s"Error while deserializing value: $other")
-    }).toOption
+    }
   }
 }
 
