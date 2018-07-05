@@ -30,7 +30,7 @@ import types.OmiTypes._
 import types.OdfTypes._
 import types.odf.{OldTypeConverter, NewTypeConverter}
 import types._
-import http.{OmiConfig, OmiConfigExtension}
+import http.OmiConfig
 import journal.Models.ErasePathCommand
 import journal.Models.GetTree
 
@@ -54,10 +54,7 @@ case class SubscriptionRequest(
 class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with BeforeAfterAll {
   implicit val system = testHelpers.Actorstest.createAs()
   implicit val materializer: ActorMaterializer = ActorMaterializer()(system)
-  val conf = ConfigFactory.load("testconfig")
-  implicit val settings = new OmiConfigExtension(
-    conf
-  )
+  implicit val settings = OmiConfig(system)
   implicit val callbackHandler: CallbackHandler = new CallbackHandler(settings)(system, materializer)
   val analytics = None
 

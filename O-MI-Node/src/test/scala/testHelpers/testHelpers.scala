@@ -32,7 +32,8 @@ import agentSystem._
 import responses._
 import http._
 
-class TestOmiServer(config: Config) extends OmiNode {
+//class TestOmiServer(config: Config) extends OmiNode {
+class TestOmiServer() extends OmiNode {
 
   // we need an ActorSystem to host our application in
   implicit val system: ActorSystem = ActorSystem("on-core")
@@ -43,7 +44,7 @@ class TestOmiServer(config: Config) extends OmiNode {
   /**
     * Settings loaded by akka (typesafe config) and our OmiConfigExtension
     */
-  implicit val settings: OmiConfigExtension = new OmiConfigExtension(config)
+  implicit val settings: OmiConfigExtension = OmiConfig(system) //new OmiConfigExtension(config)
 
   implicit val singleStores = new SingleStores(settings)
   implicit val dbConnection = new TestDB("system-test")(

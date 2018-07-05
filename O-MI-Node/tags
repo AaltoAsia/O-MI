@@ -2045,7 +2045,7 @@ iiPaths	src/main/scala/database/OdfDatabase.scala	/^        val iiPaths = iis.ma
 iiQueries	src/main/scala/database/influxDB/InfluxDBImplementation.scala	/^              val iiQueries = getNBetweenInfoItemsQueryString(requestedIIs, filteringClause)$/;"	V
 iis	src/main/scala/database/influxDB/InfluxDBImplementation.scala	/^      val iis: Seq[InfoItem] = series.collect {$/;"	V
 iis	src/main/scala/types/Odf/MetaData.scala	/^    val iis = ((names -- intersectingNames).flatMap {$/;"	V
-immutable	src/main/scala/types/Odf/ImmutableODF.scala	/^  def immutable: ImmutableODF = this.copy()$/;"	m
+immutable	src/main/scala/types/Odf/ImmutableODF.scala	/^  def immutable: ImmutableODF = this$/;"	m
 immutable	src/main/scala/types/Odf/MutableODF.scala	/^  def immutable: ImmutableODF = ImmutableODF($/;"	m
 immutable	src/main/scala/types/Odf/ODF.scala	/^  def immutable: ImmutableODF$/;"	m
 in	src/test/scala/database/BackupTest.scala	/^      val in: (SavedSub, Option[SubData]) = (newEventSub, None)$/;"	V

@@ -9,7 +9,7 @@ import akka.http.scaladsl.model.Uri
 import org.specs2.concurrent.ExecutionEnv
 import org.specs2.mutable._
 import com.typesafe.config.ConfigFactory
-import http.OmiConfigExtension
+import http.OmiConfig
 import testHelpers.{Actorstest, SystemTestCallbackServer}
 import types.OmiTypes._
 
@@ -26,10 +26,8 @@ class CallbackHandlerTest(implicit ee: ExecutionEnv) extends Specification {
       val ttl = Duration(2, "seconds")
       val msg = Responses.Success(ttl = ttl)
 
-      val conf = ConfigFactory.load("testconfig")
-      val settings = new OmiConfigExtension(
-        conf
-      )
+      val settings = OmiConfig(system)
+
       val materializer = ActorMaterializer()(system)
       val callbackHandler = new CallbackHandler(settings)(system, materializer)
       callbackHandler.sendCallback(HTTPCallback(Uri(s"http://localhost:$port")), msg)
@@ -42,10 +40,7 @@ class CallbackHandlerTest(implicit ee: ExecutionEnv) extends Specification {
       val ttl = Duration(10, "seconds")
       val msg = Responses.Success(ttl = ttl)
 
-      val conf = ConfigFactory.load("testconfig")
-      val settings = new OmiConfigExtension(
-        conf
-      )
+      val settings = OmiConfig(system)
       val materializer = ActorMaterializer()(system)
       val callbackHandler = new CallbackHandler(settings)(system, materializer)
       callbackHandler.sendCallback(HTTPCallback(Uri(s"http://localhost:$port")), msg)
