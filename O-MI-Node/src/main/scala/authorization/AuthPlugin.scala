@@ -129,7 +129,7 @@ trait AuthApiProvider extends AuthorizationExtension {
       (orgOmiRequest: RequestWrapper) =>
         implicit val timeout: Timeout = orgOmiRequest.handleTTL
         // for checking if path is infoitem or object
-        val currentTree = Await.result((singleStores.hierarchyStore ? GetTree).mapTo[ImmutableODF], 2 minutes)
+        val currentTree = Await.result((singleStores.hierarchyStore ? GetTree).mapTo[ImmutableODF], orgOmiRequest.handleTTL)
 
         // helper function
         def convertToWrapper: Try[AuthorizationResult] => Try[RequestWrapper] = {
