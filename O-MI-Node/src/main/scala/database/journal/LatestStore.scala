@@ -8,6 +8,7 @@ import database.journal.Models._
 import types.Path
 import types.odf._
 
+import scala.concurrent.duration.Duration
 import scala.util.{Failure, Success, Try}
 
 
@@ -17,16 +18,17 @@ import scala.util.{Failure, Success, Try}
 class LatestStore extends PersistentActor with ActorLogging {
   def persistenceId = "lateststore"
 
+  val oldestSavedSnapshot: Long =
+    Duration(
+      context.system.settings.config.getDuration("omi-service.snapshot-delete-older").toMillis,
+      scala.concurrent.duration.MILLISECONDS).toMillis
   var state: Map[Path, Value[Any]] = Map()
 
-  //implicit def pathToString(path: Path): String = path.toString
 
   def updateState(event: Event): Unit = event match {
     case PWriteLatest(values) => state = state ++ values.map{case (path, value) => Path(path) -> asValue(value)}
     case PErasePath(path) => state = state - Path(path)
 
-    //case SingleWriteEvent(p, v) => state = state.updated(Path(p),v)
-    //case WriteEvent(paths) => state = state ++ paths
   }
 
   def receiveRecover: Receive = {
@@ -50,23 +52,25 @@ class LatestStore extends PersistentActor with ActorLogging {
         }
       )
     )
-    case SaveSnapshotSuccess(metadata)         ⇒ log.debug(metadata.toString)
+    case SaveSnapshotSuccess(metadata @ SnapshotMetadata(snapshotPersistenceId, sequenceNr, timestamp)) => {
+      log.debug(metadata.toString)
+      deleteSnapshots(SnapshotSelectionCriteria(maxTimestamp = timestamp - oldestSavedSnapshot ))
+    }
     case SaveSnapshotFailure(metadata, reason) ⇒ log.error(reason,  s"Save snapshot failure with: ${metadata.toString}")
+    case DeleteSnapshotsSuccess(crit) =>
+      log.debug(s"Snapshots successfully deleted for $persistenceId with criteria: $crit")
+    case DeleteSnapshotsFailure(crit, ex) =>
+      log.error(ex, s"Failed to delete old snapshots for $persistenceId with criteria: $crit")
 
     case SingleWriteCommand(p, v) => {
       persist(PWriteLatest(Map(p.toString -> v.persist))) { event =>
         sender() ! updateState(event)
-        // if(lastSequenceNr % snapshotInterval == 0 && lastSequenceNr != 0){
-        //   saveSnapshot(state)
-        // }
       }
     }
 
     case WriteCommand(paths) => {
       persist(PWriteLatest(paths.map { case (path, value) => path.toString -> value.persist })) { event =>
-        //  persist(WriteLatest(paths.mapValues(_.persist))){ event =>
         sender() ! updateState(event)
-        //TODO:snapshots
 
       }
     }
@@ -87,7 +91,6 @@ class LatestStore extends PersistentActor with ActorLogging {
           value <- state.get(path)
         } yield path -> value)
       }
-      // val resp: Seq[(Path, Value[Any])] = paths.flatMap(path=> state.get(path.toString).map(value => path -> asValue(value)).toSeq)
       sender() ! resp
     }
     case ReadAllCommand => {

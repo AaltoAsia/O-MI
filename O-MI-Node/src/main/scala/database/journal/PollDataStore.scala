@@ -1,16 +1,21 @@
 package database.journal
 
 import akka.actor.ActorLogging
-import akka.persistence.{PersistentActor, SaveSnapshotFailure, SaveSnapshotSuccess, SnapshotOffer}
+import akka.persistence._
 import database.SingleStoresMaintainer
 import database.journal.Models._
 import types.Path
 import types.odf.Value
 
+import scala.concurrent.duration.Duration
 import scala.util.Try
 
 class PollDataStore extends PersistentActor with ActorLogging {
   def persistenceId: String = "polldatastore"
+  val oldestSavedSnapshot: Long =
+    Duration(
+      context.system.settings.config.getDuration("omi-service.snapshot-delete-older").toMillis,
+      scala.concurrent.duration.MILLISECONDS).toMillis
 
   var state: Map[Long, Map[String, Seq[PPersistentValue]]] = Map()
 
@@ -65,8 +70,15 @@ class PollDataStore extends PersistentActor with ActorLogging {
   def receiveCommand: Receive = {
     case SaveSnapshot(msg) => sender() ! saveSnapshot(
       PPollData(state.mapValues(pmap => PPathToData(pmap.mapValues(values => PValueList(values))))))
-    case SaveSnapshotSuccess(metadata)         ⇒ log.debug(metadata.toString)
     case SaveSnapshotFailure(metadata, reason) ⇒ log.error(reason,  s"Save snapshot failure with: ${metadata.toString}")
+    case SaveSnapshotSuccess(metadata @ SnapshotMetadata(snapshotPersistenceId, sequenceNr, timestamp)) => {
+      log.debug(metadata.toString)
+      deleteSnapshots(SnapshotSelectionCriteria(maxTimestamp = timestamp - oldestSavedSnapshot ))
+    }
+    case DeleteSnapshotsSuccess(crit) =>
+      log.debug(s"Snapshots successfully deleted for $persistenceId with criteria: $crit")
+    case DeleteSnapshotsFailure(crit, ex) =>
+      log.error(ex, s"Failed to delete old snapshots for $persistenceId with criteria: $crit")
 
     case AddPollData(subId, path, value) =>
       persist(PAddPollData(subId, path.toString, Some(value.persist))) { event =>

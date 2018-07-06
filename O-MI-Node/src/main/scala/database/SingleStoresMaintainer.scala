@@ -56,7 +56,7 @@ class SingleStoresMaintainer(
     log.info("using transient prevayler, taking snapshots is not in use.")
   }
 
-  protected def takeSnapshot: Future[Unit] = {
+  protected def takeSnapshot: Future[Any] = {
     val start: FiniteDuration = Duration(System.currentTimeMillis(), MILLISECONDS)
 
     def trySnapshot(p: ActorRef, errorName: String): Future[Unit] = {
@@ -75,17 +75,12 @@ class SingleStoresMaintainer(
     }
 
     log.info("Taking prevayler snapshot")
-
-    val latF = trySnapshot(singleStores.latestStore, "latestStore")
-    val hieF = trySnapshot(singleStores.hierarchyStore, "hierarchyStore")
-    val subF = trySnapshot(singleStores.subStore, "subStore")
-    val datF = trySnapshot(singleStores.pollDataPrevayler, "pollData")
-    val res = for {
-      lat <- latF
-      hie <- hieF
-      sub <- subF
-      dat <- datF
-    } yield dat
+    val res: Future[Seq[Unit]] = Future.sequence(Seq(
+      trySnapshot(singleStores.latestStore, "latestStore"),
+      trySnapshot(singleStores.hierarchyStore, "hierarchyStore"),
+      trySnapshot(singleStores.subStore, "subStore"),
+      trySnapshot(singleStores.pollDataStore, "pollData"))
+    )
     res.onComplete {
       case Success(s) => {
         val end: FiniteDuration = Duration(System.currentTimeMillis(), MILLISECONDS)
@@ -97,39 +92,6 @@ class SingleStoresMaintainer(
     res
   }
 
-  protected def cleanPrevayler(): Unit = {
-    // remove unnecessary files (might otherwise grow until disk is full)
-    val dirs = singleStores.prevaylerDirectories
-    for (dir <- dirs) {
-      val prevaylerDir = new org.prevayler.implementation.PrevaylerDirectory(dir)
-      Try {
-        prevaylerDir.necessaryFiles()
-      } match {
-        case Failure(e) =>
-          log.warning(s"Exception reading directory $dir for prevayler cleaning: $e")
-        case Success(necessaryFiles) =>
-          val allFiles = dir.listFiles(new FilenameFilter {
-            def accept(dir: File, name: String): Boolean = (name endsWith ".journal") || (name endsWith ".snapshot")
-          })
-
-          val extraFiles = allFiles filterNot (necessaryFiles contains _)
-
-          extraFiles foreach { file =>
-            Try {
-              file.delete
-            } match {
-              case Success(true) => // noop
-              case Success(false) =>
-                log.warning(s"File $file was listed unnecessary but couldn't be deleted")
-              case Failure(e) =>
-                log.warning(s"Exception when trying to delete unnecessary file $file: $e")
-            }
-          }
-      }
-
-    }
-
-  }
 
   /**
     * Function for handling InputPusherCmds.
@@ -137,7 +99,7 @@ class SingleStoresMaintainer(
     */
   override def receive: Actor.Receive = {
     case TakeSnapshot => {
-      takeSnapshot.map(ts => cleanPrevayler())
+      takeSnapshot
     }
   }
 }

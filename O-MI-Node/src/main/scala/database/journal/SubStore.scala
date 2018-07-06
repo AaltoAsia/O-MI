@@ -5,7 +5,7 @@ import java.util.Date
 
 import PAddSub.SubType._
 import akka.actor.ActorLogging
-import akka.persistence.{PersistentActor, SaveSnapshotFailure, SaveSnapshotSuccess, SnapshotOffer}
+import akka.persistence._
 import database._
 import _root_.database.journal.Models._
 import types.OmiTypes.HTTPCallback
@@ -16,6 +16,10 @@ import scala.concurrent.duration._
 class SubStore extends PersistentActor with ActorLogging {
 
   def persistenceId: String = "substore"
+  val oldestSavedSnapshot: Long =
+    Duration(
+      context.system.settings.config.getDuration("omi-service.snapshot-delete-older").toMillis,
+      scala.concurrent.duration.MILLISECONDS).toMillis
 
   var eventSubs: Map[Path, Seq[EventSub]] = Map()
   var idToSub: Map[Long, PolledSub] = Map()
@@ -330,8 +334,15 @@ class SubStore extends PersistentActor with ActorLogging {
         persistIdToSub(idToSub),
         persistPathToSub(pathToSubs),
         persistIntervalSubs(intervalSubs)))
-    case SaveSnapshotSuccess(metadata)         ⇒ log.debug(metadata.toString)
+    case SaveSnapshotSuccess(metadata @ SnapshotMetadata(snapshotPersistenceId, sequenceNr, timestamp)) => {
+      log.debug(metadata.toString)
+      deleteSnapshots(SnapshotSelectionCriteria(maxTimestamp = timestamp - oldestSavedSnapshot ))
+    }
     case SaveSnapshotFailure(metadata, reason) ⇒ log.error(reason,  s"Save snapshot failure with: ${metadata.toString}")
+    case DeleteSnapshotsSuccess(crit) =>
+      log.debug(s"Snapshots successfully deleted for $persistenceId with criteria: $crit")
+    case DeleteSnapshotsFailure(crit, ex) =>
+      log.error(ex, s"Failed to delete old snapshots for $persistenceId with criteria: $crit")
 
     case aEventS@Models.AddEventSub(eventSub: EventSub) =>
       val res = updateState(aEventS)

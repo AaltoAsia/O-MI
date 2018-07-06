@@ -80,6 +80,7 @@ class OmiConfigExtension(val config: Config) extends Extension
   val trimInterval: FiniteDuration = config.getDuration("omi-service.trim-interval")
 
   val snapshotInterval: FiniteDuration = config.getDuration("omi-service.snapshot-interval")
+  val oldestSavedSnapshot: FiniteDuration = config.getDuration("omi-service.snapshot-delete-older")
   /** fast journal databases paths */
   val writeToDisk: Boolean = config.getBoolean("journalDBs.write-to-disk")
   val maxJournalSizeBytes: lang.Long = config.getBytes("journalDBs.max-journal-filesize")

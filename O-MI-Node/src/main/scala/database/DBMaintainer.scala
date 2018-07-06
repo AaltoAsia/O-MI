@@ -52,7 +52,7 @@ class DBMaintainer(
       numDel.map(n => log.debug(s"DELETE returned ${n.sum}"))
     }
     case TakeSnapshot =>
-      takeSnapshot.map(res => cleanPrevayler())
+      takeSnapshot
 
     case _ => log.warning("Unknown message received.")
 

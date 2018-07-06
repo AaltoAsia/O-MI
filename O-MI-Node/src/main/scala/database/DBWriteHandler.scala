@@ -96,7 +96,7 @@ trait DBWriteHandler extends DBHandlerBase {
           for {
             pollNewSubs <- (singleStores.subStore ? GetNewEventSubsForPath(infoItem.path)).mapTo[Set[PollNewEventSub]]
             result <- Future.sequence(pollNewSubs.map(pnes =>
-              (singleStores.pollDataPrevayler ? AddPollData(pnes.id, infoItem.path, value))))
+              (singleStores.pollDataStore ? AddPollData(pnes.id, infoItem.path, value))))
           } yield result)
         val fnesubs = (singleStores.subStore ? LookupNewEventSubs(infoItem.path)).mapTo[Seq[NewEventSub]]
         val fesubs = (singleStores.subStore ? LookupEventSubs(infoItem.path)).mapTo[Seq[NormalEventSub]]
@@ -152,7 +152,7 @@ trait DBWriteHandler extends DBHandlerBase {
         case sub if oldValueOpt.forall(oldValue =>
           singleStores.valueShouldBeUpdated(oldValue, newValue) &&
             (oldValue.timestamp.before(sub.startTime) || oldValue.value != newValue.value)) => {
-          (singleStores.pollDataPrevayler ? AddPollData(sub.id, path, newValue))
+          (singleStores.pollDataStore ? AddPollData(sub.id, path, newValue))
         }
       })
     } yield readyFuture

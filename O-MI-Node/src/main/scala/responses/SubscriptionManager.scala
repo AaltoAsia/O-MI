@@ -186,7 +186,7 @@ class SubscriptionManager(
               for {
                 (path, data) <- sData.pathData
                 value <- data
-                res2 = singleStores.pollDataPrevayler ! AddPollData(sub.id, path, value)
+                res2 = singleStores.pollDataStore ! AddPollData(sub.id, path, value)
               } yield res2
             })
 
@@ -200,7 +200,7 @@ class SubscriptionManager(
               for {
                 (path, data) <- sData.pathData
                 value <- data
-                res2 = singleStores.pollDataPrevayler ! AddPollData(sub.id, path, value)
+                res2 = singleStores.pollDataStore ! AddPollData(sub.id, path, value)
               } yield res2
             })
 
@@ -226,7 +226,7 @@ class SubscriptionManager(
   private def handlePollEvent(pollEvent: PolledEventSub)(implicit timeout: Timeout): Future[ImmutableODF] = {
     log.debug(s"Creating response message for Polled Event Subscription")
     val eventDataF: Future[Map[Path, Seq[Value[Any]]]] =
-      (singleStores.pollDataPrevayler ? PollEventSubscription(pollEvent.id)).mapTo[Map[Path, Seq[Value[Any]]]]
+      (singleStores.pollDataStore ? PollEventSubscription(pollEvent.id)).mapTo[Map[Path, Seq[Value[Any]]]]
     for {
       eventData <- eventDataF
       res: ImmutableODF = ImmutableODF(
@@ -276,7 +276,7 @@ class SubscriptionManager(
 
     log.info(s"Creating response message for Polled Interval Subscription")
 
-    val intervalDataF: Future[Map[Path, Seq[Value[Any]]]] = (singleStores.pollDataPrevayler ?
+    val intervalDataF: Future[Map[Path, Seq[Value[Any]]]] = (singleStores.pollDataStore ?
       PollIntervalSubscription(pollInterval.id)).mapTo[Map[Path, Seq[Value[Any]]]]
     //.mapValues(_.sortBy(_.timestamp.getTime()))
     for {
@@ -450,7 +450,7 @@ class SubscriptionManager(
 
     lazy val removePS = (singleStores.subStore ? RemovePollSub(id)).mapTo[Boolean]
     val ret: Future[Boolean] = removePS.flatMap {
-      case true => (singleStores.pollDataPrevayler ? RemovePollSubData(id)).map(reply => true)
+      case true => (singleStores.pollDataStore ? RemovePollSubData(id)).map(reply => true)
       case false => (singleStores.subStore ? RemoveIntervalSub(id)).mapTo[Boolean].flatMap {
         case true => Future.successful(true)
         case false => (singleStores.subStore ? RemoveEventSub(id)).mapTo[Boolean]
@@ -479,12 +479,12 @@ class SubscriptionManager(
         case e: EventSub => Future.successful((e, None))
         case i: IntervalSub => Future.successful((i, None))
         case pe: PolledEventSub => {
-          (singleStores.pollDataPrevayler ? CheckSubscriptionData(pe.id)).mapTo[Map[Path, Seq[Value[Any]]]].map(data =>
+          (singleStores.pollDataStore ? CheckSubscriptionData(pe.id)).mapTo[Map[Path, Seq[Value[Any]]]].map(data =>
             (pe,
               Some(SubData(data))))
         }
         case pi: PollIntervalSub => {
-          (singleStores.pollDataPrevayler ? CheckSubscriptionData(pi.id)).mapTo[Map[Path, Seq[Value[Any]]]].map(data =>
+          (singleStores.pollDataStore ? CheckSubscriptionData(pi.id)).mapTo[Map[Path, Seq[Value[Any]]]].map(data =>
             (pi,
               Some(SubData(data))))
         }

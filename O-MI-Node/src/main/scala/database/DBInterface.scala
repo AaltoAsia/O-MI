@@ -23,7 +23,6 @@ import com.typesafe.config.{Config, ConfigFactory}
 import akka.actor.{ActorRef, ActorSystem, Props}
 import akka.util.Timeout
 import org.slf4j.{Logger, LoggerFactory}
-import org.prevayler.{PrevaylerFactory}
 import slick.basic.DatabaseConfig
 import types.OmiTypes.ReturnCode
 import slick.jdbc.JdbcProfile
@@ -95,16 +94,11 @@ class SingleStores(protected val settings: OmiConfigExtension)(implicit val syst
 
   import system.dispatcher
 
-  private[this] def createPrevayler[P](in: P, name: String) = {
-  }
-
-  /** List of all prevayler directories. Currently used for removing unnecessary files in these directories */
-  val prevaylerDirectories: ArrayBuffer[File] = ArrayBuffer[File]()
 
   val latestStore: ActorRef = system.actorOf(Props[journal.LatestStore])
   val hierarchyStore: ActorRef = system.actorOf(Props[journal.HierarchyStore])
   val subStore: ActorRef = system.actorOf(Props[journal.SubStore])
-  val pollDataPrevayler: ActorRef = system.actorOf(Props[journal.PollDataStore])
+  val pollDataStore: ActorRef = system.actorOf(Props[journal.PollDataStore])
 
   def buildODFFromValues(items: Seq[(Path, Value[Any])]): ODF = {
     ImmutableODF(items map { case (path, value) =>
@@ -274,8 +268,8 @@ class StubDB(val singleStores: SingleStores, val system: ActorSystem, val settin
     }.toMap)
     val objectsWithValues: Future[ImmutableODF] = for {
       p2iis <- fp2iis
-      pathToValue: Seq[(Path, Value[Any])] <- (singleStores.latestStore ? MultipleReadCommand(p2iis.keys.toVector))
-        .mapTo[Seq[(Path, Value[Any])]]
+      pathToValue  <-
+        (singleStores.latestStore ? MultipleReadCommand(p2iis.keys.toVector)).mapTo[Seq[(Path, Value[Any])]]
       objectsWithValues = ImmutableODF(pathToValue.flatMap {
         case (path: Path, value: Value[Any]) =>
           p2iis.get(path).map {
