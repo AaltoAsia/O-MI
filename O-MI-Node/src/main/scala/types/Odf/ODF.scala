@@ -79,15 +79,15 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
   }
 
   def getLeafPaths: Set[Path] = {
-    val ps = paths.toSeq
-    ps.filter {
-      path: Path =>
-        val index = ps.indexOf(path)
+    val ps: Seq[(Path, Int)] = paths.toSeq.zipWithIndex
+    ps.collect {
+      case (path: Path, index: Int) if{
         val nextIndex = index + 1
         if (nextIndex < ps.size) {
-          val nextPath: Path = ps(nextIndex)
+          val nextPath: Path = ps(nextIndex)._1
           !path.isAncestorOf(nextPath)
         } else true
+      } => path
     }.toSet
   }
 
