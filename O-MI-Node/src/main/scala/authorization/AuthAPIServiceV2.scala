@@ -1,49 +1,37 @@
 package authorization
 
 import scala.concurrent.{Future,Await}
-import scala.concurrent.duration._
 import scala.util.Try
-import scala.language.implicitConversions
-import scala.collection.JavaConversions._
 
-import org.prevayler.Prevayler
-import akka.util.{Timeout, ByteString}
-import akka.actor.ActorSystem
+import akka.util.{ByteString, Timeout}
+import akka.actor.{ActorRef, ActorSystem}
 import akka.stream.ActorMaterializer
-import akka.pattern.ask
 import akka.http.scaladsl.{ Http, HttpExt}
-//import akka.http.scaladsl.model.headers.{Authorization, GenericHttpCredentials}
-import akka.http.scaladsl.model.{HttpMessage, HttpRequest, HttpResponse, StatusCodes, HttpEntity, headers, Uri, FormData}
+import akka.http.scaladsl.model.{HttpMessage, HttpRequest, HttpResponse, HttpEntity, headers, Uri, FormData}
 import akka.http.scaladsl.model.ContentTypes._
 import akka.http.scaladsl.client.RequestBuilding.RequestBuilder
 import akka.http.scaladsl.unmarshalling.Unmarshal
-import akka.http.scaladsl.marshalling.Marshal
-import de.heikoseeberger.akkahttpjson4s.Json4sSupport
-import org.json4s.{DefaultFormats, Formats,CustomSerializer, JString, JObject}
+
+import org.json4s.{JString, JObject}
 import org.json4s.native.JsonMethods._
-import org.json4s.native.{Serialization => JsonSerialization}
 import org.json4s.JsonDSL._
 import org.json4s._
-import agentSystem._
-import org.slf4j.{Logger, LoggerFactory}
-import com.typesafe.config.{Config, ConfigObject}
+import akka.pattern.ask
 
-
-import database.GetTree
-import database.OdfTree
 import types.odf._
+
+import org.slf4j.{LoggerFactory}
+
+import database.journal.Models.GetTree
 import types.Path
 import types.OmiTypes.{OmiRequest, OdfRequest, UserInfo, RawRequestWrapper}
 import http.OmiConfigExtension
-
-
 
 
 /**
   * API response class for getting the permission data from external service.
   */
 case class AuthorizationResponse(allow: List[Path], deny: List[Path])
-
 
 
 trait AuthApiJsonSupport {
@@ -55,10 +43,11 @@ trait AuthApiJsonSupport {
   //implicit val jsonSerialization = JsonSerialization
   //implicit val json4sFormats: Formats = DefaultFormats + new PathSerializer // + new NoneSerializer
   //implicit def jsonMarshaller[T <: AnyRef] = marshaller[T](jsonSerialization, json4sFormats)
-  
+
   protected implicit val materializer: ActorMaterializer
   protected val httpExtension: HttpExt
-  protected implicit val system : ActorSystem
+  protected implicit val system: ActorSystem
+
   import system.dispatcher
 
   protected def bodyStringF(http: HttpMessage): Future[String] =
@@ -67,18 +56,19 @@ trait AuthApiJsonSupport {
   protected def bodyString(http: HttpMessage)(implicit t: Timeout): String =
     Await.result(Unmarshal(http.entity).to[String], t.duration)
 
-  protected def sendAndReceiveAsAuthorizationResponse(httpRequest: HttpRequest)(implicit t: Timeout): Future[AuthorizationResponse] =
+  protected def sendAndReceiveAsAuthorizationResponse(httpRequest: HttpRequest)
+                                                     (implicit t: Timeout): Future[AuthorizationResponse] =
     httpExtension.singleRequest(httpRequest)
       .flatMap { response =>
         if (response.status.isSuccess) {
-          bodyStringF(response) map {(str) =>
+          bodyStringF(response) map { (str) =>
             val json = parse(str) //.extract[AuthorizationResponse] doesnt work for some reason
-            val allow = for {
-              JObject(contents) <- json
-              JField("allowed", JArray(list)) <- contents
-              JString(pathStr) <- list
-            } yield Path(pathStr)
-            val deny  = for {
+          val allow = for {
+            JObject(contents) <- json
+            JField("allowed", JArray(list)) <- contents
+            JString(pathStr) <- list
+          } yield Path(pathStr)
+            val deny = for {
               JObject(contents) <- json
               JField("denied", JArray(list)) <- contents
               JString(pathStr) <- list
@@ -91,18 +81,17 @@ trait AuthApiJsonSupport {
 }
 
 
-
-
 /**
   * Version 2 of AuthAPI service. It provides functionality of the internal AuthAPI interface to external authorization services.
   * This V2 has different interface to allow easier partial authorization by having "deny" rules in addition to "allow" rules.
   */
 class AuthAPIServiceV2(
-    val hierarchyStore: Prevayler[OdfTree],
-    val settings : OmiConfigExtension,
-    protected implicit val system : ActorSystem,
-    protected override implicit val materializer : ActorMaterializer
-  ) extends AuthApi with AuthApiJsonSupport {
+                        val hierarchyStore: ActorRef,
+                        val settings: OmiConfigExtension,
+                        protected implicit val system: ActorSystem,
+                        protected override implicit val materializer: ActorMaterializer
+                      ) extends AuthApi with AuthApiJsonSupport {
+
   import settings.AuthApiV2._
 
 
@@ -110,18 +99,21 @@ class AuthAPIServiceV2(
 
 
   import system.dispatcher
+
   protected val httpExtension: HttpExt = Http(system)
 
 
-  def filterODF(originalRequest: OdfRequest, filters: AuthorizationResponse): Option[OmiRequest] = {
-    val odfTree = hierarchyStore execute GetTree()
+  def filterODF(originalRequest: OdfRequest, filters: AuthorizationResponse): Future[Option[OmiRequest]] = {
+    implicit val timeout: Timeout = originalRequest.handleTTL
+    val odfTreeF: Future[ImmutableODF] = (hierarchyStore ? GetTree).mapTo[ImmutableODF]
+    odfTreeF.map { odfTree =>
+      val requestedTree = odfTree selectSubTree originalRequest.odf.getPaths
+      val allowOdf = requestedTree selectSubTree filters.allow
+      val filteredOdf = allowOdf removePaths filters.deny
 
-    val requestedTree = odfTree selectSubTree originalRequest.odf.getPaths
-    val allowOdf = requestedTree selectSubTree filters.allow
-    val filteredOdf = allowOdf removePaths filters.deny
-
-    if (filteredOdf.isEmpty) None
-    else Some(originalRequest replaceOdf filteredOdf)
+      if (filteredOdf.isEmpty) None
+      else Some(originalRequest replaceOdf filteredOdf)
+    }
   }
 
   def optionToAuthResult: Option[OmiRequest] => (UserInfo => AuthorizationResult) = {
@@ -131,13 +123,13 @@ class AuthAPIServiceV2(
 
 
   protected def extractParameter(
-      httpMessage: HttpMessage, rawOmi: Option[RawRequestWrapper],
-      fromContext: String, from: String)(implicit t: Timeout): Option[String] =
+                                  httpMessage: HttpMessage, rawOmi: Option[RawRequestWrapper],
+                                  fromContext: String, from: String)(implicit t: Timeout): Option[String] =
     fromContext match {
       case "authorizationheader" =>
-        httpMessage.header[headers.Authorization].map(_.value.drop(from.length +1))
+        httpMessage.header[headers.Authorization].map(_.value.drop(from.length + 1))
 
-      case "omienvelope" => 
+      case "omienvelope" =>
         rawOmi.flatMap(_.omiEnvelope.attr(from))
 
       case "headers" =>
@@ -162,17 +154,20 @@ class AuthAPIServiceV2(
         val searchResult = json \\ from
         searchResult match {
           case JString(str) => str
-          case other => 
+          case other =>
             val res = compact(render(other))
-            log.debug(s"Not yet implemented: jsonbody search result: $searchResult, for search term: $from, resulting variable string: $res")
+            log
+              .debug(s"Not yet implemented: jsonbody search result: $searchResult, for search term: $from, resulting variable string: $res")
             res
         }
       }.toOption
     }
 
-  type VariableMap = Map[String,String]
+  type VariableMap = Map[String, String]
 
-  protected def extractToMap(httpRequest: HttpMessage, rawOmi: Option[RawRequestWrapper], confObject: ParameterExtraction)(implicit t: Timeout): VariableMap = {
+  protected def extractToMap(httpRequest: HttpMessage,
+                             rawOmi: Option[RawRequestWrapper],
+                             confObject: ParameterExtraction)(implicit t: Timeout): VariableMap = {
     for {
       (key, value) <- confObject
       (paramKey, variable) <- value
@@ -181,15 +176,18 @@ class AuthAPIServiceV2(
     } yield (variable, paramOption.get) // get: None checked on the previous line
   }
 
-  protected def createRequest(base: RequestBuilder, baseUri: Uri, confObject: ParameterExtraction, variables: VariableMap): HttpRequest = {
-    def mapGet(context: String): Map[String,String] =
+  protected def createRequest(base: RequestBuilder,
+                              baseUri: Uri,
+                              confObject: ParameterExtraction,
+                              variables: VariableMap): HttpRequest = {
+    def mapGet(context: String): Map[String, String] =
       confObject.get(context).getOrElse(Map.empty)
 
-    def keyValues(context: String): Seq[(String,String)] = for {
+    def keyValues(context: String): Seq[(String, String)] = for {
       (key, variable) <- mapGet(context).toSeq
       value <- variables.get(variable).toSeq
     } yield key -> value
-    
+
 
     val query = Uri.Query(keyValues("query"): _*)
     val uri = baseUri.withQuery(query)
@@ -201,22 +199,22 @@ class AuthAPIServiceV2(
 
     val cookies = {
       val cookiePairs = keyValues("cookies")
-      if (cookiePairs.nonEmpty) Seq(headers.Cookie(cookiePairs:_*))
+      if (cookiePairs.nonEmpty) Seq(headers.Cookie(cookiePairs: _*))
       else Seq.empty
     }
- 
+
     val authHeader = for {
       (key, variable) <- mapGet("authorizationheader").headOption.toSeq
       value <- variables.get(variable).toSeq
     } yield headers.RawHeader("Authorization", s"$key $value")
 
-    val json = keyValues("jsonbody").foldLeft(JObject()){
-      (a: JObject, b: (String,String)) => a ~ b
+    val json = keyValues("jsonbody").foldLeft(JObject()) {
+      (a: JObject, b: (String, String)) => a ~ b
     }
-    
+
     val formdataQuery = Uri.Query(keyValues("form-urlencoded"): _*)
 
-    val req = base(uri).withHeaders((extraHeaders ++ authHeader ++ cookies):_*)
+    val req = base(uri).withHeaders((extraHeaders ++ authHeader ++ cookies): _*)
 
     if (json.obj.nonEmpty)
       req.withEntity(
@@ -224,12 +222,13 @@ class AuthAPIServiceV2(
       )
     else if (formdataQuery.nonEmpty)
       req.withEntity(
-          FormData(formdataQuery).toEntity
-        )
+        FormData(formdataQuery).toEntity
+      )
     else req
   }
 
-  protected def isAuthorizedForOdfRequest(httpRequest: HttpRequest, rawOmiRequest: RawRequestWrapper): AuthorizationResult = {
+  protected def isAuthorizedForOdfRequest(httpRequest: HttpRequest,
+                                          rawOmiRequest: RawRequestWrapper): AuthorizationResult = {
 
     implicit val timeout = Timeout(rawOmiRequest.handleTTL)
 
@@ -246,51 +245,57 @@ class AuthAPIServiceV2(
     val copiedHeaders = httpRequest.headers.filter(omiHttpHeadersToAuthentication contains _.lowercaseName)
 
 
-    val resultF = for { 
+    val resultF = for {
 
       authenticationResult <-
-        if (authenticationEndpoint.isEmpty || parametersSkipOnEmpty.forall(vars.get(_).getOrElse("").isEmpty)) {
-          Future.successful(vars)
-        } else {
+      if (authenticationEndpoint.isEmpty || parametersSkipOnEmpty.forall(vars.get(_).getOrElse("").isEmpty)) {
+        Future.successful(vars)
+      } else {
 
-          val authenticationRequest = createRequest(authenticationMethod, authenticationEndpoint, parametersToAuthentication, vars)
-            .mapHeaders(_ ++ copiedHeaders)
+        val authenticationRequest = createRequest(authenticationMethod,
+          authenticationEndpoint,
+          parametersToAuthentication,
+          vars)
+          .mapHeaders(_ ++ copiedHeaders)
 
-          log.debug(s"AuthenticationRequest: $authenticationRequest")
+        log.debug(s"AuthenticationRequest: $authenticationRequest")
 
-          httpExtension.singleRequest(authenticationRequest) map {authenticationResponse =>
+        httpExtension.singleRequest(authenticationRequest) map { authenticationResponse =>
 
-            log.debug(s"Authentication call successful: $authenticationResponse")
+          log.debug(s"Authentication call successful: $authenticationResponse")
 
-            vars ++ extractToMap(authenticationResponse, None, parametersFromAuthentication)
-          }
+          vars ++ extractToMap(authenticationResponse, None, parametersFromAuthentication)
         }
+      }
 
       authorizationRequest = createRequest(
         authorizationMethod, authorizationEndpoint, parametersToAuthorization, authenticationResult)
 
-      _ <- Future.successful{
+      _ <- Future.successful {
         log.debug(s"AuthorizationRequest: $authorizationRequest")
       }
 
       authorizationResponse <- sendAndReceiveAsAuthorizationResponse(authorizationRequest)
 
-      _ <- Future.successful(log.debug(s"Authorization call successfull: ${authorizationResponse.toString.take(160)}..."))
+      _ <- Future
+        .successful(log.debug(s"Authorization call successfull: ${authorizationResponse.toString.take(160)}..."))
 
-      omiRequest <- Future.fromTry{rawOmiRequest.unwrapped}
+      omiRequest <- Future.fromTry {
+        rawOmiRequest.unwrapped
+      }
       odfRequest = omiRequest match {
         case o: OdfRequest => o
         case _ => throw new Error("impossible")
       }
 
-      filteredRequest = filterODF(odfRequest, authorizationResponse)
+      filteredRequest <- filterODF(odfRequest, authorizationResponse)
 
-      user = UserInfo(name=authenticationResult.get("username"))
+      user = UserInfo(name = authenticationResult.get("username"))
 
     } yield optionToAuthResult(filteredRequest)(user)
 
     resultF.failed.map(log debug _.getMessage)
-    
+
     Await.result(resultF, timeout.duration)
   }
 
@@ -298,7 +303,6 @@ class AuthAPIServiceV2(
   override def isAuthorizedForRawRequest(httpRequest: HttpRequest, rawRequest: String): AuthorizationResult = {
     val rawRequestWrapper = RawRequestWrapper(rawRequest, UserInfo())
 
-    import RawRequestWrapper.MessageType._
     if (rawRequestWrapper.msgFormat == Some("odf"))
       isAuthorizedForOdfRequest(httpRequest, rawRequestWrapper)
     else

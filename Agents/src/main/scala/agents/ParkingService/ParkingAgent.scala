@@ -26,7 +26,7 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse, HttpMethods, HttpEntity, HttpHeader, HttpProtocol, StatusCode, StatusCodes, ResponseEntity}
 import akka.http.javadsl.model.headers.{Authorization, RawHeader}
 import akka.stream.ActorMaterializer
-import akka.http.scaladsl.unmarshalling.{Unmarshal}
+import akka.http.scaladsl.unmarshalling.Unmarshal
 
 import com.google.gson.{JsonParser, JsonElement, Gson, JsonNull}
 
@@ -461,9 +461,9 @@ class ParkingAgent(
                     responses.head
               } else {
                   responses.foldLeft(ResponseRequest(Vector())){
-                    case (response, resp) =>
+                    case (_response, resp) =>
                       //log.debug(s"Responses to union:\n${resp.asXML.toString}")
-                      ResponseRequest(response.results ++ resp.results)
+                      ResponseRequest(_response.results ++ resp.results)
                   }
               }
               //log.debug(s"${responses.size} to response:\n" + response.asXML.toString)

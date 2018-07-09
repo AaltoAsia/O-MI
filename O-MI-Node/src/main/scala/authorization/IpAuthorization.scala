@@ -16,7 +16,6 @@ package authorization
 
 import java.net.InetAddress
 
-import scala.collection.JavaConverters._
 import scala.util.{Success, Failure}
 
 import akka.http.scaladsl.model.RemoteAddress
@@ -28,21 +27,21 @@ import http.OmiConfigExtension
 
 
 /** Trait for checking, is connected client IP permitted to do input actions, an ExternalAgent or using Write request.
- * Tests against whitelisted ips and ip masks in configuration.
- */
+  * Tests against whitelisted ips and ip masks in configuration.
+  */
 trait IpAuthorization extends AuthorizationExtension {
-  val settings : OmiConfigExtension
+  val settings: OmiConfigExtension
   private type UserData = RemoteAddress
 
   /** Contains white listed IPs
-   *
-   **/
+    *
+    * */
   private[this] lazy val whiteIPs = settings.inputWhiteListIps
   //log.debug(s"Totally ${whiteIPs.length} IPs")
 
   /** Contains masks of white listed subnets.
-   *
-   **/
+    *
+    * */
   private[this] lazy val whiteMasks = settings.inputWhiteListSubnets
   //log.debug(s"Totally ${whiteMasks.keys.size} masks")
 
@@ -53,151 +52,158 @@ trait IpAuthorization extends AuthorizationExtension {
   def ipHasPermission: UserData => PermissionTest = user => (wrap: RequestWrapper) =>
     wrap.unwrapped flatMap {
       // Write and Response are currently PermissiveRequests
-      case r : PermissiveRequest =>
-        val result = if (user.toOption.exists( addr =>
-            whiteIPs.contains( inetAddrToBytes( addr ) ) ||
-            whiteMasks.exists{
-              case (subnet : InetAddress, subNetMaskLength : Int) =>
+      case r: PermissiveRequest =>
+        val result = if (user.toOption.exists(addr =>
+          whiteIPs.contains(inetAddrToBytes(addr)) ||
+            whiteMasks.exists {
+              case (subnet: InetAddress, subNetMaskLength: Int) =>
                 isInSubnet(subnet, subNetMaskLength, addr)
             }
-            )) Success(r)
+        )) Success(r)
         else Failure(UnauthorizedEx())
 
         if (result.isSuccess) {
           log.debug(s"Authorized IP: $user")
         }
 
-        result.map(r=> (r,r.user))
-        // Read and Subscriptions should be allowed elsewhere
+        result.map(r => (r, r.user))
+      // Read and Subscriptions should be allowed elsewhere
       case _ => Failure(UnauthorizedEx())
     }
 
-    abstract override def makePermissionTestFunction: CombinedTest =
-      combineWithPrevious(
-        super.makePermissionTestFunction,
-        extractIp map ipHasPermission)
+  abstract override def makePermissionTestFunction: CombinedTest =
+    combineWithPrevious(
+      super.makePermissionTestFunction,
+      extractIp map ipHasPermission)
 
-    /** Helper method for converting InetAddress to sequence of Bytes.
-     *
-     * @param addr addr is InetAddress of connector.
-     * @return sequence of bytes.
-     **/
-    private[this] def inetAddrToBytes(addr: InetAddress) : Seq[Byte] = {
-      addr.getAddress().toList
-    }
+  /** Helper method for converting InetAddress to sequence of Bytes.
+    *
+    * @param addr addr is InetAddress of connector.
+    * @return sequence of bytes.
+    * */
+  private[this] def inetAddrToBytes(addr: InetAddress): Seq[Byte] = {
+    addr.getAddress().toList
+  }
 
-    /** Helper method for checking if connection is in allowed subnets.
-     *
-     * @param ip addr is InetAddress of connector.
-     * @return Boolean, true if connection is in allowed suybnet.
-     **/
-    private[this] def isInSubnet(subnet: InetAddress, subNetMaskLength: Int, ip: InetAddress) : Boolean = {
-      // TODO: bytes should be printed as unsigned
-      def compareLog(): Unit = log.debug("Whitelist check for IP address: " + ip.getHostAddress +
-        " against " + subnet.getHostAddress
-        )
-      val ipv4 = 4
-      val ipv6 = 16
-      val subnetBytes = inetAddrToBytes(subnet)
-      val ipBytes = inetAddrToBytes(ip)
-      (subnetBytes.length, ipBytes.length) match {
-        case (a, b) if a == ipv4 && b == a =>{
-          compareLog()
-          val maxBits: Int = 32
-          val allOnes: Int = -1
-          val shiftBy: Int = maxBits - subNetMaskLength
-          //Without  if-clause, shifting by 32 or more is undefined behaviour
-          //OracleJDK: Shifts correctly, OpenJDK: DOES NOT SHIFT AT ALL
-          val mask: Int = if( shiftBy >= 32 ) 0 else allOnes << shiftBy  
+  /** Helper method for checking if connection is in allowed subnets.
+    *
+    * @param ip addr is InetAddress of connector.
+    * @return Boolean, true if connection is in allowed suybnet.
+    * */
+  private[this] def isInSubnet(subnet: InetAddress, subNetMaskLength: Int, ip: InetAddress): Boolean = {
+    // TODO: bytes should be printed as unsigned
+    def compareLog(): Unit = log.debug("Whitelist check for IP address: " + ip.getHostAddress +
+      " against " + subnet.getHostAddress
+    )
 
-          val subnetInt: Int = bytesToInt(subnetBytes) 
-          val ipInt: Int = bytesToInt(ipBytes)
-          val check = (subnetInt & mask) == (ipInt & mask)
+    val ipv4 = 4
+    val ipv6 = 16
+    val subnetBytes = inetAddrToBytes(subnet)
+    val ipBytes = inetAddrToBytes(ip)
+    (subnetBytes.length, ipBytes.length) match {
+      case (a, b) if a == ipv4 && b == a => {
+        compareLog()
+        val maxBits: Int = 32
+        val allOnes: Int = -1
+        val shiftBy: Int = maxBits - subNetMaskLength
+        //Without  if-clause, shifting by 32 or more is undefined behaviour
+        //OracleJDK: Shifts correctly, OpenJDK: DOES NOT SHIFT AT ALL
+        val mask: Int = if (shiftBy >= 32) 0 else allOnes << shiftBy
 
-          check
-        }
-        case (a, b) if a == ipv6 && b == a =>{
-          compareLog()
-          val (firstMask: Long, secondMask: Long) ={
-            val allOnes: Long = -1
-            val maxBits: Int = 64
-            if( subNetMaskLength <= 64 ){
-              //Subnet is shorter than or exactly 64 bits. Only first Long is needs
-              //mask.
-              val shiftBy: Int = maxBits - subNetMaskLength
-              //Without  if-clause, shifting by 64 or more is undefined behaviour
-              //OracleJDK: Shifts correctly, OpenJDK: DOES NOT SHIFT AT ALL
-              (if(shiftBy >= 64 ){0} else {allOnes << shiftBy}, 0l)
-            } else if ( subNetMaskLength > 64){
-              //Subnet is longer than 64 bits. Only second Long is needs
-              //shift. First one is taken as whole.
-              val shiftBy: Int = subNetMaskLength - maxBits
-              (allOnes, allOnes << shiftBy)
-            } 
+        val subnetInt: Int = bytesToInt(subnetBytes)
+        val ipInt: Int = bytesToInt(ipBytes)
+        val check = (subnetInt & mask) == (ipInt & mask)
+
+        check
+      }
+      case (a, b) if a == ipv6 && b == a => {
+        compareLog()
+        val (firstMask: Long, secondMask: Long) = {
+          val allOnes: Long = -1
+          val maxBits: Int = 64
+          if (subNetMaskLength <= 64) {
+            //Subnet is shorter than or exactly 64 bits. Only first Long is needs
+            //mask.
+            val shiftBy: Int = maxBits - subNetMaskLength
+            //Without  if-clause, shifting by 64 or more is undefined behaviour
+            //OracleJDK: Shifts correctly, OpenJDK: DOES NOT SHIFT AT ALL
+            (if (shiftBy >= 64) {
+              0
+            } else {
+              allOnes << shiftBy
+            }, 0l)
+          } else if (subNetMaskLength > 64) {
+            //Subnet is longer than 64 bits. Only second Long is needs
+            //shift. First one is taken as whole.
+            val shiftBy: Int = subNetMaskLength - maxBits
+            (allOnes, allOnes << shiftBy)
           }
-          //Helper for getting address as two longs.
-          def getAsTwoLongs( bytes: Seq[Byte] ) : (Long, Long) ={
-            val (first8Bytes, last8Bytes) = bytes.splitAt(8)
-            ( bytesToLong(first8Bytes), bytesToLong(last8Bytes))
-          }
-          val (firstLongIP:Long , secondLongIP:Long  ) = getAsTwoLongs( ipBytes ) 
-          val (firstLongSubnet:Long , secondLongSubnet:Long  ) = getAsTwoLongs( subnetBytes ) 
-          //Check first Long, first 64 bits, with mask and match
-          lazy val firstCheck: Boolean = (firstLongSubnet & firstMask ) == (firstLongIP & firstMask)
-          //Check second Long, last 64 bits, with mask and match
-          lazy val secondCheck: Boolean = (secondLongSubnet & secondMask ) == (secondLongIP & secondMask)
-          val check = firstCheck && secondCheck
-
-          check
         }
-           case ( a, b) if (( a == ipv4 ) && ( b == ipv6 ) )|| (( a == ipv6 ) && ( b == ipv4 )) =>
-             false
-           case (_,_) => false
-      }
-    }
 
-    /** Helper method for converting byte array to Int
-     *
-     * @param bytes bytes to be converted.
-     * @return Int, bytes presented as Int.
-     **/
-    private[this] def bytesToInt(bytes: Seq[Byte]) : Int = {
-      /*
-      val ip : Int = ((bytes(0) & 0xFF) << 24) |
-      ((bytes(1) & 0xFF) << 16) |
-      ((bytes(2) & 0xFF) << 8)  |
-      ((bytes(3) & 0xFF) << 0)
-      ip*/
-      val ip : Int = (0 until 4).map {
-        byteIndex: Int =>
-          val converted: Int = bytes(byteIndex) & 0xFF
-          val shiftBy: Int = 32 - 8 * (byteIndex + 1)
-          val shifted: Int = converted << shiftBy
-          shifted
-      }.foldLeft(0){
-        case (ip: Int, byteInt: Int) =>
-          byteInt | ip
-      }
-      ip
-    }
+        //Helper for getting address as two longs.
+        def getAsTwoLongs(bytes: Seq[Byte]): (Long, Long) = {
+          val (first8Bytes, last8Bytes) = bytes.splitAt(8)
+          (bytesToLong(first8Bytes), bytesToLong(last8Bytes))
+        }
 
-    /** Helper method for converting byte array to Long
-     *
-     * @param bytes bytes to be converted.
-     * @return Long, bytes presented as Long.
-     **/
-    private[this] def bytesToLong(bytes: Seq[Byte]) : Long = {
-      val ip : Long = (0 until 8).map {
-        byteIndex: Int =>
-          val converted: Long = bytes(byteIndex) & 0xFF
-          val shiftBy: Int = 64 - 8 * (byteIndex + 1)
-          val shifted: Long = converted << shiftBy
-          shifted
-      }.foldLeft(0l){
-        case (ip: Long, byteLong: Long) =>
-          byteLong | ip
+        val (firstLongIP: Long, secondLongIP: Long) = getAsTwoLongs(ipBytes)
+        val (firstLongSubnet: Long, secondLongSubnet: Long) = getAsTwoLongs(subnetBytes)
+        //Check first Long, first 64 bits, with mask and match
+        lazy val firstCheck: Boolean = (firstLongSubnet & firstMask) == (firstLongIP & firstMask)
+        //Check second Long, last 64 bits, with mask and match
+        lazy val secondCheck: Boolean = (secondLongSubnet & secondMask) == (secondLongIP & secondMask)
+        val check = firstCheck && secondCheck
+
+        check
       }
-      ip
+      case (a, b) if ((a == ipv4) && (b == ipv6)) || ((a == ipv6) && (b == ipv4)) =>
+        false
+      case (_, _) => false
     }
+  }
+
+  /** Helper method for converting byte array to Int
+    *
+    * @param bytes bytes to be converted.
+    * @return Int, bytes presented as Int.
+    * */
+  private[this] def bytesToInt(bytes: Seq[Byte]): Int = {
+    /*
+    val ip : Int = ((bytes(0) & 0xFF) << 24) |
+    ((bytes(1) & 0xFF) << 16) |
+    ((bytes(2) & 0xFF) << 8)  |
+    ((bytes(3) & 0xFF) << 0)
+    ip*/
+    val ip: Int = (0 until 4).map {
+      byteIndex: Int =>
+        val converted: Int = bytes(byteIndex) & 0xFF
+        val shiftBy: Int = 32 - 8 * (byteIndex + 1)
+        val shifted: Int = converted << shiftBy
+        shifted
+    }.foldLeft(0) {
+      case (ip: Int, byteInt: Int) =>
+        byteInt | ip
+    }
+    ip
+  }
+
+  /** Helper method for converting byte array to Long
+    *
+    * @param bytes bytes to be converted.
+    * @return Long, bytes presented as Long.
+    * */
+  private[this] def bytesToLong(bytes: Seq[Byte]): Long = {
+    val ip: Long = (0 until 8).map {
+      byteIndex: Int =>
+        val converted: Long = bytes(byteIndex) & 0xFF
+        val shiftBy: Int = 64 - 8 * (byteIndex + 1)
+        val shifted: Long = converted << shiftBy
+        shifted
+    }.foldLeft(0l) {
+      case (ip: Long, byteLong: Long) =>
+        byteLong | ip
+    }
+    ip
+  }
 
 }

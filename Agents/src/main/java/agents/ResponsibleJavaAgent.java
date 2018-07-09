@@ -110,7 +110,7 @@ public class ResponsibleJavaAgent extends JavaAgent implements ResponsibleIntern
     return Futures.successful( 
         Responses.NotImplemented(Duration.apply(10,TimeUnit.SECONDS))
     );
-  };
+  }
 
   /**
    * Method that is inherited from akka.actor.UntypedActor and handles incoming messages

@@ -9,12 +9,12 @@ import UserGroup._
 import VehicleType._
 
 case class ParkingCapacity(
-  val name: String,
-  val maximum: Option[Long],
-  val current: Option[Long],
-  val validForVehicle: Seq[VehicleType],
-  val validUserGroup: Seq[UserGroup],
-  val maximumParkingHours: Option[Long]
+                            name: String,
+  maximum: Option[Long],
+  current: Option[Long],
+  validForVehicle: Seq[VehicleType],
+  validUserGroup: Seq[UserGroup],
+  maximumParkingHours: Option[Long]
 ){
   def toOdf(parentPath: Path): Seq[Node] ={
     val path: Path= parentPath / name
@@ -30,7 +30,7 @@ case class ParkingCapacity(
           "maximumValue",
           path / "maximumValue",
           typeAttribute = Some( "mv:maximumValue"),
-          values = Vector( LongValue(max,currentTimestamp,Map() ) )
+          values = Vector( LongValue(max,currentTimestamp) )
         )
     }.toSeq  ++ current.map{
       cu =>
@@ -38,7 +38,7 @@ case class ParkingCapacity(
           "currentValue",
           path / "currentValue",
           typeAttribute = Some( "mv:currentValue"),
-          values = Vector( LongValue(cu,currentTimestamp,Map() ) )
+          values = Vector( LongValue(cu,currentTimestamp) )
         )
     }.toSeq ++ maximumParkingHours.map{
       mph =>
@@ -46,7 +46,7 @@ case class ParkingCapacity(
           "maximumParkingHours",
           path / "maximumParkingHours",
           typeAttribute = Some( "mv:maximumParkingHours"),
-          values = Vector( LongValue(mph,currentTimestamp,Map() ) )
+          values = Vector( LongValue(mph,currentTimestamp) )
         )
     }.toSeq ++ validForVehicle.headOption.map{
       _ => 
@@ -57,9 +57,8 @@ case class ParkingCapacity(
           values = Vector( 
             Value(
               validForVehicle.map{ vt => s"mv:$vt" }.mkString(","),
-              currentTimestamp,
-              Map.empty[String,String] 
-            ) 
+              currentTimestamp
+            )
           )
         )
     }.toSeq ++ validUserGroup.headOption.map{
@@ -68,7 +67,7 @@ case class ParkingCapacity(
           "validForUserGroup",
           path / "validForUserGroup",
           typeAttribute = Some( "mv:validForUserGroup"),
-          values = Vector( Value(validUserGroup.map{ vt => s"mv:$vt" }.mkString(","), currentTimestamp,Map.empty[String,String] ) )
+          values = Vector( Value(validUserGroup.map{ vt => s"mv:$vt" }.mkString(","), currentTimestamp ) )
         )
     }.toSeq
   }

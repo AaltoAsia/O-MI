@@ -1,6 +1,6 @@
 package agents.parking
 
-import scala.util.{Try}
+import scala.util.Try
 import types.odf._
 import types._
 
@@ -42,7 +42,7 @@ case class Plug(
         nII,
         path / nII,
         typeAttribute = Some(s"mv:$nII"),
-        values = Vector( Value( m, "mv:PlugType", currentTimestamp, Map() ))
+        values = Vector( Value( m, "mv:PlugType", currentTimestamp ))
       )
     } ++ currentInA.map{ m => 
       val nII = "currentInA"
@@ -50,7 +50,7 @@ case class Plug(
         nII,
         path / nII,
         typeAttribute = Some(s"mv:$nII"),
-        values = Vector( DoubleValue( m, currentTimestamp, Map() ))
+        values = Vector( DoubleValue( m, currentTimestamp ))
       )
     } ++ currentType.map{ m => 
       val nII = "currentType"
@@ -58,7 +58,7 @@ case class Plug(
         nII,
         path / nII,
         typeAttribute = Some(s"mv:$nII"),
-        values = Vector( StringValue( m, currentTimestamp, Map() ))
+        values = Vector( StringValue( m, currentTimestamp ))
       )
     } ++ powerInkW.map{ m => 
       val nII = "powerInkW"
@@ -66,7 +66,7 @@ case class Plug(
         nII,
         path / nII,
         typeAttribute = Some(s"mv:$nII"),
-        values = Vector( DoubleValue( m, currentTimestamp, Map() ))
+        values = Vector( DoubleValue( m, currentTimestamp ))
       )
     } ++ voltageInV.map{ m => 
       val nII = "voltageInV"
@@ -74,7 +74,7 @@ case class Plug(
         nII,
         path / nII,
         typeAttribute = Some(s"mv:$nII"),
-        values = Vector( DoubleValue( m, currentTimestamp, Map() ))
+        values = Vector( DoubleValue( m, currentTimestamp ))
       )
     } ++ threePhasedCurrentAvailable.map{ m => 
       val nII = "threePhasedCurrentAvailable"
@@ -82,7 +82,7 @@ case class Plug(
         nII,
         path / nII,
         typeAttribute = Some(s"mv:$nII"),
-        values = Vector( BooleanValue( m, currentTimestamp, Map() ))
+        values = Vector( BooleanValue( m, currentTimestamp ))
       )
     } ++ isFastChargeCapable.map{ m => 
       val nII = "isFastChargeCapable"
@@ -90,7 +90,7 @@ case class Plug(
         nII,
         path / nII,
         typeAttribute = Some(s"mv:$nII"),
-        values = Vector( BooleanValue( m, currentTimestamp, Map() ))
+        values = Vector( BooleanValue( m, currentTimestamp ))
       )
       } 
   }

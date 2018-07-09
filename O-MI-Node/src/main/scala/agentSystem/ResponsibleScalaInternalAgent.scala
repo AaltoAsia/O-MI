@@ -13,36 +13,29 @@
  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 package agentSystem
 
-import scala.reflect.ClassTag
-import scala.util.{Success, Failure, Try}
-import scala.concurrent.{ Future,ExecutionContext, TimeoutException, Promise }
+import scala.concurrent.{ Future}
 import akka.actor.{
-  Actor,
-  ActorRef,
-  ActorLogging,
-  Props,
-  ActorInitializationException
+  ActorRef
 }
-import akka.actor.Actor.Receive
-import akka.pattern.ask
-import akka.util.Timeout
-import com.typesafe.config.Config
-import types.OdfTypes._
 import types.OmiTypes._
-import types.Path
+
 abstract class ResponsibleScalaInternalAgentTemplate(
-  requestHandler: ActorRef,
-  dbHandler: ActorRef
-) extends ScalaInternalAgentTemplate( requestHandler, dbHandler ) with ResponsibleScalaInternalAgent
+                                                      requestHandler: ActorRef,
+                                                      dbHandler: ActorRef
+                                                    ) extends ScalaInternalAgentTemplate(requestHandler, dbHandler) with
+  ResponsibleScalaInternalAgent
 
 trait ResponsibleScalaInternalAgent
- extends ScalaInternalAgent
-  with ResponsibleInternalAgent{
+  extends ScalaInternalAgent
+    with ResponsibleInternalAgent {
+
   import context.dispatcher
-  protected def handleWrite( write: WriteRequest ) : Future[ResponseRequest] = writeToDB(write)
+
+  protected def handleWrite(write: WriteRequest): Future[ResponseRequest] = writeToDB(write)
+
   //protected def handleRead( read: ReadRequest ) : Future[ResponseRequest] = readFromDB(read)
-  protected def handleCall( call: CallRequest ) : Future[ResponseRequest] = {
-    Future{
+  protected def handleCall(call: CallRequest): Future[ResponseRequest] = {
+    Future {
       Responses.NotImplemented()
     }
   }

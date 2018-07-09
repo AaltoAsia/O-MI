@@ -22,6 +22,7 @@ import scala.concurrent.duration._
 
 import org.specs2.matcher._
 import org.specs2.matcher.XmlMatchers._
+
 /*
  * Test class for testing parsing parsing package
  * tests e1   - e99 are for testing OmiParser general methods
@@ -31,7 +32,7 @@ import org.specs2.matcher.XmlMatchers._
  * tests e400 - e499 are for testing OdfParser class
  */
 
-class ParserTest extends Specification with MatcherMacros{
+class ParserTest extends Specification with MatcherMacros {
   val write_response_odf: OdfObjects = {
     /*Right(
       Iterable(
@@ -39,45 +40,46 @@ class ParserTest extends Specification with MatcherMacros{
           10.0, */ OdfObjects(
       Iterable(
         OdfObject(
-        Seq(),
-          Path("Objects","SmartHouse"), Iterable(
+          Seq(),
+          Path("Objects", "SmartHouse"), Iterable(
             OdfInfoItem(
-              Path("Objects","SmartHouse","PowerConsumption"), Iterable(
+              Path("Objects", "SmartHouse", "PowerConsumption"), Iterable(
                 OdfValue(
                   "180", "xs:string",
-                    Timestamp.valueOf("2014-12-18 15:34:52"))), None, None), OdfInfoItem(
-              Path("Objects","SmartHouse","Moisture"), Iterable(
+                  Timestamp.valueOf("2014-12-18 15:34:52"))), None, None), OdfInfoItem(
+              Path("Objects", "SmartHouse", "Moisture"), Iterable(
                 OdfValue(
                   "0.20", "xs:string",
-                    new Timestamp(1418916892L * 1000))), None, None)), Iterable(
+                  new Timestamp(1418916892L * 1000))), None, None)), Iterable(
             OdfObject(
-            Seq(),
-              Path("Objects","SmartHouse","SmartFridge"), Iterable(
+              Seq(),
+              Path("Objects", "SmartHouse", "SmartFridge"), Iterable(
                 OdfInfoItem(
-                  Path("Objects","SmartHouse","SmartFridge","PowerConsumption"), Iterable(
+                  Path("Objects", "SmartHouse", "SmartFridge", "PowerConsumption"), Iterable(
                     OdfValue(
                       "56", "xs:string",
-                        Timestamp.valueOf("2014-12-18 15:34:52"))), None, None)), Iterable(), None, None), OdfObject(
-            Seq(),
-              Path("Objects","SmartHouse","SmartOven"), Iterable(
+                      Timestamp.valueOf("2014-12-18 15:34:52"))), None, None)), Iterable(), None, None), OdfObject(
+              Seq(),
+              Path("Objects", "SmartHouse", "SmartOven"), Iterable(
                 OdfInfoItem(
-                  Path("Objects","SmartHouse","SmartOven","PowerOn"), Iterable(
+                  Path("Objects", "SmartHouse", "SmartOven", "PowerOn"), Iterable(
                     OdfValue(
                       "1", "xs:string",
-                        Timestamp.valueOf("2014-12-18 15:34:52"))), None, None)), Iterable(), None, None)), None, None), OdfObject(
-        Seq(),
-          Path("Objects","SmartCar"), Iterable(
+                      Timestamp.valueOf("2014-12-18 15:34:52"))), None, None)), Iterable(), None, None)), None, None),
+        OdfObject(
+          Seq(),
+          Path("Objects", "SmartCar"), Iterable(
             OdfInfoItem(
-              Path("Objects","SmartCar","Fuel"),
+              Path("Objects", "SmartCar", "Fuel"),
               Vector(OdfValue(
-                  "30",
-                  "xs:string",
-                  Timestamp.valueOf("2014-12-18 15:34:52")
-              )), 
-              None, 
+                "30",
+                "xs:string",
+                Timestamp.valueOf("2014-12-18 15:34:52")
+              )),
+              None,
               Some(OdfMetaData(
                 Vector(OdfInfoItem(
-                  Path("Objects","SmartCar","Fuel/MetaData","Units"),
+                  Path("Objects", "SmartCar", "Fuel/MetaData", "Units"),
                   Vector(OdfValue(
                     "Litre",
                     "xs:string",
@@ -86,41 +88,42 @@ class ParserTest extends Specification with MatcherMacros{
                 ))
               ))
             )),
-          Iterable(), None, None), OdfObject(
-        Seq(),
-          Path("Objects","SmartCottage"), Iterable(), Iterable(
+          Iterable(), None, None),
+        OdfObject(
+          Seq(),
+          Path("Objects", "SmartCottage"), Iterable(), Iterable(
             OdfObject(
-            Seq(),
-              Path("Objects","SmartCottage","Heater"), Iterable(), Iterable(), None, None), OdfObject(
-            Seq(),
-              Path("Objects","SmartCottage","Sauna"), Iterable(), Iterable(), None, None), OdfObject(
-            Seq(),
-              Path("Objects","SmartCottage","Weather"), Iterable(), Iterable(), None, None)), None, None)), None)
+              Seq(),
+              Path("Objects", "SmartCottage", "Heater"), Iterable(), Iterable(), None, None), OdfObject(
+              Seq(),
+              Path("Objects", "SmartCottage", "Sauna"), Iterable(), Iterable(), None, None), OdfObject(
+              Seq(),
+              Path("Objects", "SmartCottage", "Weather"), Iterable(), Iterable(), None, None)), None, None)), None)
   }
   val readOdf: OdfObjects = {
     OdfObjects(
       Iterable(
         OdfObject(
-        Seq(),
-          Path("Objects","SmartHouse"),
+          Seq(),
+          Path("Objects", "SmartHouse"),
           Iterable(
             OdfInfoItem(
-              Path("Objects","SmartHouse","PowerConsumption"),
+              Path("Objects", "SmartHouse", "PowerConsumption"),
               Iterable(),
               None,
               None),
             OdfInfoItem(
-              Path("Objects","SmartHouse","Moisture"),
+              Path("Objects", "SmartHouse", "Moisture"),
               Iterable(),
               None,
               None)),
           Iterable(
             OdfObject(
-            Seq(),
-              Path("Objects","SmartHouse","SmartFridge"),
+              Seq(),
+              Path("Objects", "SmartHouse", "SmartFridge"),
               Iterable(
                 OdfInfoItem(
-                  Path("Objects","SmartHouse","SmartFridge","PowerConsumption"),
+                  Path("Objects", "SmartHouse", "SmartFridge", "PowerConsumption"),
                   Iterable(),
                   None,
                   None)),
@@ -128,11 +131,11 @@ class ParserTest extends Specification with MatcherMacros{
               None,
               None),
             OdfObject(
-            Seq(),
-              Path("Objects","SmartHouse","SmartOven"),
+              Seq(),
+              Path("Objects", "SmartHouse", "SmartOven"),
               Iterable(
                 OdfInfoItem(
-                  Path("Objects","SmartHouse","SmartOven","PowerConsumption"),
+                  Path("Objects", "SmartHouse", "SmartOven", "PowerConsumption"),
                   Iterable(),
                   None,
                   None)),
@@ -142,11 +145,11 @@ class ParserTest extends Specification with MatcherMacros{
           None,
           None),
         OdfObject(
-        Seq(),
-          Path("Objects","SmartCar"),
+          Seq(),
+          Path("Objects", "SmartCar"),
           Iterable(
             OdfInfoItem(
-              Path("Objects","SmartCar","Fuel"),
+              Path("Objects", "SmartCar", "Fuel"),
               Iterable(),
               None,
               None)),
@@ -155,7 +158,7 @@ class ParserTest extends Specification with MatcherMacros{
           None),
         OdfObject(
           Nil,
-          Path("Objects","SmartCottage"),
+          Path("Objects", "SmartCottage"),
           Iterable(),
           Iterable(),
           None,
@@ -163,7 +166,8 @@ class ParserTest extends Specification with MatcherMacros{
       None)
   }
 
-  def is = s2"""
+  def is =
+    s2"""
   This is Specification to check the parsing functionality.
 
   OmiParser should give certain result for
@@ -178,7 +182,7 @@ class ParserTest extends Specification with MatcherMacros{
       correct message     $e100
       missing msgformat   $e101
       missing msg     $e103
-      missing Objects     $e104 
+      missing Objects     $e104
       no objects to parse $e105
     response message with
       correct message     $e200
@@ -194,134 +198,137 @@ class ParserTest extends Specification with MatcherMacros{
       no objects to parse $e305
     correct subscription $e306
     cancel request with
-      correct request     $e500 
+      correct request     $e500
     OdfParser should give certain result for message with
       correct format      $e400
       incorrect XML       $e401
       incorrect label     $e402
     """
 
-    def e1 = {
-      invalidOmiTest(
-        "incorrect xml", "ScalaXMLError"
-        // ,
-        // Set(
-        //   ParseError("OmiParser: Invalid XML: Content is not allowed in prolog.")
-        // )
-      )
-    }
+  def e1 = {
+    invalidOmiTest(
+      "incorrect xml", "ScalaXMLError"
+      // ,
+      // Set(
+      //   ParseError("OmiParser: Invalid XML: Content is not allowed in prolog.")
+      // )
+    )
+  }
 
-    /*
-     * case ParseError("Incorrect prefix :: _ ) matches to list that has that parse error in the head position    
-     */
-    def e2 = {
-      invalidOmiTest(
-        omiReadTest.replace("omiEnvelope", "pmi:omiEnvelope"), "SchemaError"
-        /*,
-        Set(
-          ParseError("OmiParser: Invalid XML, schema failure: The prefix \"pmi\" for element \"pmi:omiEnvelope\" is not bound.")
-        )*/
-     )
+  /*
+   * case ParseError("Incorrect prefix :: _ ) matches to list that has that parse error in the head position
+   */
+  def e2 = {
+    invalidOmiTest(
+      omiReadTest.replace("omiEnvelope", "pmi:omiEnvelope"), "SchemaError"
+      /*,
+      Set(
+        ParseError("OmiParser: Invalid XML, schema failure: The prefix \"pmi\" for element \"pmi:omiEnvelope\" is not bound.")
+      )*/
+    )
 
-    }
+  }
 
-    def e3 = {
-      invalidOmiTest(
-        omiReadTest.replace("omiEnvelope", "Envelope"), "SchemaError"
-        /*,
-        Set(
-          ParseError("OmiParser: Invalid XML, schema failure: cvc-elt.1: Cannot find the declaration of element \'Envelope\'.")
-        )*/
-     )
+  def e3 = {
+    invalidOmiTest(
+      omiReadTest.replace("omiEnvelope", "Envelope"), "SchemaError"
+      /*,
+      Set(
+        ParseError("OmiParser: Invalid XML, schema failure: cvc-elt.1: Cannot find the declaration of element \'Envelope\'.")
+      )*/
+    )
 
-    }
+  }
 
-    def e4 = {
-      invalidOmiTest(
-        """<omiEnvelope ttl="10" version="1.0" xsi:schemaLocation="omi.xsd omi.xsd" xmlns="http://www.opengroup.org/xsd/omi/1.0/" >
-      </omiEnvelope>""", "SchemaError" /*,
+  def e4 = {
+    invalidOmiTest(
+      """<omiEnvelope ttl="10" version="1.0" xsi:schemaLocation="omi.xsd omi.xsd" xmlns="http://www.opengroup.org/xsd/omi/1.0/" >
+      </omiEnvelope>""",
+      "SchemaError" /*,
       Set(
         ParseError("OmiParser: Invalid XML, schema failure: cvc-complex-type.2.4.b: The content of element 'omiEnvelope' is not complete. One of '{\"omi.xsd\":read, \"omi.xsd\":write, \"omi.xsd\":response, \"omi.xsd\":cancel}' is expected.")
       )*/
-   )
-    }
+    )
+  }
 
-    def e5 = {
-      invalidOmiTest(
-        omiReadTest.replace(""" ttl="10" """, """ ttl="" """ ), "SchemaError" /*,
+  def e5 = {
+    invalidOmiTest(
+      omiReadTest.replace(""" ttl="10" """, """ ttl="" """), "SchemaError" /*,
         Set(
           ParseError("OmiParser: Invalid XML, schema failure: cvc-datatype-valid.1.2.1: '' is not a valid value for 'double'.")
         )*/
-     )
-    }
+    )
+  }
 
-    def e6 = {
-      val temp = "daer" 
-      invalidOmiTest(
-        omiReadTest.replace("read", s"$temp"), "SchemaError"/*,
+  def e6 = {
+    val temp = "daer"
+    invalidOmiTest(
+      omiReadTest.replace("read", s"$temp"), "SchemaError" /*,
         Set(
           ParseError(s"OmiParser: Invalid XML, schema failure: cvc-complex-type.2.4.a: Invalid content was found starting with element '$temp'." + " One of '{\"omi.xsd\":read, \"omi.xsd\":write, \"omi.xsd\":response, \"omi.xsd\":cancel}' is expected.")
         )*/
-     )
-    }
+    )
+  }
 
-    def e100 = {
-      validOmiTest(writeRequestTest) 
-    }
+  def e100 = {
+    validOmiTest(writeRequestTest)
+  }
 
-    def e101 = {
-      invalidOmiTest(
-        omiWriteTest.toString.replace("write msgformat=\"odf\"", "write"), "OMIParserError"/*,
+  def e101 = {
+    invalidOmiTest(
+      omiWriteTest.toString.replace("write msgformat=\"odf\"", "write"), "OMIParserError" /*,
         Set(ParseError("OmiParser: Missing msgformat attribute."))*/
-       ) 
-    }
+    )
+  }
 
-    //  def e102 = {
-    //    val temp = OmiParser.parse(omiWriteTest.toString.replace("""msgformat="odf"""", """msgformat="pdf""""))
-    //    temp.head should be equalTo (ParseError("Unknown message format."))
-    //  }
+  //  def e102 = {
+  //    val temp = OmiParser.parse(omiWriteTest.toString.replace("""msgformat="odf"""", """msgformat="pdf""""))
+  //    temp.head should be equalTo (ParseError("Unknown message format."))
+  //  }
 
-    def e103 = {
-      invalidOmiTest(
-        omiWriteTest.toString.replace("msg", "msn"), "SchemaError" 
-        //Set(ParseError("OmiParser: Invalid XML, schema failure: cvc-complex-type.2.4.a: Invalid content was found starting with element 'msn'. One of '{\"omi.xsd\":nodeList, \"omi.xsd\":requestID, \"omi.xsd\":msg}' is expected."))
-      ) 
-    }
+  def e103 = {
+    invalidOmiTest(
+      omiWriteTest.toString.replace("msg", "msn"), "SchemaError"
+      //Set(ParseError("OmiParser: Invalid XML, schema failure: cvc-complex-type.2.4.a: Invalid content was found starting with element 'msn'. One of '{\"omi.xsd\":nodeList, \"omi.xsd\":requestID, \"omi.xsd\":msg}' is expected."))
+    )
+  }
 
-    def e104 = {
-      val temp = <omiEnvelope ttl="10.0" version="1.0"  xmlns="http://www.opengroup.org/xsd/omi/1.0/" xmlns:xs="http://www.w3.org/2001/XMLSchema" ><write msgformat="odf">
-      <msg xmlns="http://www.opengroup.org/xsd/odf/1.0/" xmlns:odf="http://www.opengroup.org/xsd/odf/1.0/" xmlns:xs="http://www.w3.org/2001/XMLSchema">
-    </msg>
-  </write>
-</omiEnvelope>
-invalidOmiTest(
-  temp, "SchemaError" 
-  //Set(ParseError("No Objects child found in msg."))
-)
-
-
-    }
-
-    def e105 = {
-      val temp = <omiEnvelope ttl="10.0" version="1.0"  xmlns="http://www.opengroup.org/xsd/omi/1.0/" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><write msgformat="odf">
-      <msg>
-        <Objects/>
-      </msg>
-    </write>
-  </omiEnvelope>
-  invalidOmiTest( temp, "SchemaError" )
-
-    }
+  def e104 = {
+    val temp = <omiEnvelope ttl="10.0" version="1.0" xmlns="http://www.opengroup.org/xsd/omi/1.0/" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+      <write msgformat="odf">
+        <msg xmlns="http://www.opengroup.org/xsd/odf/1.0/" xmlns:odf="http://www.opengroup.org/xsd/odf/1.0/" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+        </msg>
+      </write>
+    </omiEnvelope>
+    invalidOmiTest(
+      temp, "SchemaError"
+      //Set(ParseError("No Objects child found in msg."))
+    )
 
 
-    def e200 = {
-      validOmiTest(responseRequestTest)
-    }
+  }
+
+  def e105 = {
+    val temp = <omiEnvelope ttl="10.0" version="1.0" xmlns="http://www.opengroup.org/xsd/omi/1.0/" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+      <write msgformat="odf">
+        <msg>
+          <Objects/>
+        </msg>
+      </write>
+    </omiEnvelope>
+    invalidOmiTest(temp, "SchemaError")
+
+  }
 
 
-    def e204 = {
-      val temp = //OmiParser.parse(
-        """
+  def e200 = {
+    validOmiTest(responseRequestTest)
+  }
+
+
+  def e204 = {
+    val temp = //OmiParser.parse(
+      """
       <omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="10">
       <response>
         <result msgformat="odf" > 
@@ -332,24 +339,24 @@ invalidOmiTest(
     </response>
   </omiEnvelope>
   """ //, None)
-  //temp should be equalTo Left(Iterable(ParseError("No Objects child found in msg.")))
-  invalidOmiTest(temp, "SchemaError")
+    //temp should be equalTo Left(Iterable(ParseError("No Objects child found in msg.")))
+    invalidOmiTest(temp, "SchemaError")
 
-    }
+  }
 
-    def e205 = {
-      val temp = //OmiParser.parse(
-        omiResponseTest.replace("<return returnCode=\"200\"/>", "")//, None)
-      //temp.isLeft === true
+  def e205 = {
+    val temp = //OmiParser.parse(
+      omiResponseTest.replace("<return returnCode=\"200\"/>", "") //, None)
+    //temp.isLeft === true
 
-      //temp.left.get.head should be equalTo ParseError("OmiParser: Invalid XML, schema failure: cvc-complex-type.2.4.a: Invalid content was found starting with element 'msg'. One of '{\"omi.xsd\":return}' is expected.")
+    //temp.left.get.head should be equalTo ParseError("OmiParser: Invalid XML, schema failure: cvc-complex-type.2.4.a: Invalid content was found starting with element 'msg'. One of '{\"omi.xsd\":return}' is expected.")
 
-      invalidOmiTest(temp, "SchemaError")
-    }
+    invalidOmiTest(temp, "SchemaError")
+  }
 
-    def e206 = {
-      val temp =// OmiParser.parse(
-        """<?xml version="1.0" encoding="UTF-8"?>
+  def e206 = {
+    val temp =// OmiParser.parse(
+      """<?xml version="1.0" encoding="UTF-8"?>
       <omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="10">
       <response>
         <result msgformat="odf" >
@@ -362,46 +369,46 @@ invalidOmiTest(
       </response>
     </omiEnvelope>
     """ //)
-    // (temp.isRight) and {
-    //   temp.right.get.head should be equalTo ResponseRequest(Iterable(OmiResult(OmiTypes.Returns.Success(), Iterable.empty[Long], Some(OdfObjects(OdfTreeCollection())))), 10 seconds)
-    // }
+        // (temp.isRight) and {
+        //   temp.right.get.head should be equalTo ResponseRequest(Iterable(OmiResult(OmiTypes.Returns.Success(), Iterable.empty[Long], Some(OdfObjects(OdfTreeCollection())))), 10 seconds)
+        // }
+        invalidOmiTest(temp, "SchemaError")
+
+  }
+
+  def e207 = {
+    val temp = //OmiParser.parse(
+      omiResponseTest.replace("returnCode=\"200\"", "") //, None)
+    //temp.isLeft === true
+    //temp.left.get.head should be equalTo ParseError("OmiParser: Invalid XML, schema failure: cvc-complex-type.4: Attribute 'returnCode' must appear on element 'return'.")
     invalidOmiTest(temp, "SchemaError")
+  }
 
-    }
+  def e300 = {
+    validOmiTest(readRequestTest)
+  }
 
-    def e207 = {
-      val temp = //OmiParser.parse(
-        omiResponseTest.replace("returnCode=\"200\"", "")//, None)
-      //temp.isLeft === true
-      //temp.left.get.head should be equalTo ParseError("OmiParser: Invalid XML, schema failure: cvc-complex-type.4: Attribute 'returnCode' must appear on element 'return'.")
-      invalidOmiTest(temp, "SchemaError")
-    }
+  def e301 = {
+    val temp = //OmiParser.parse(
+      omiReadTest.replace("""read msgformat="odf"""", "read")
+    //, None)
+    //temp should be equalTo Left(Iterable(ParseError("OmiParser: Missing msgformat attribute.")))
 
-    def e300 = {
-      validOmiTest(readRequestTest)
-    }
+    invalidOmiTest(temp, "SchemaError")
+  }
 
-    def e301 = {
-      val temp = //OmiParser.parse(
-        omiReadTest.replace("""read msgformat="odf"""", "read")
-      //, None)
-      //temp should be equalTo Left(Iterable(ParseError("OmiParser: Missing msgformat attribute.")))
+  def e303 = {
+    val temp = //OmiParser.parse(
+      omiReadTest.replace("msg", "msn") //, None)
+    //temp.isLeft === true
+    //temp.left.get.head should be equalTo ParseError("OmiParser: Invalid XML, schema failure: cvc-complex-type.2.4.a: Invalid content was found starting with element 'msn'. One of '{\"omi.xsd\":nodeList, \"omi.xsd\":requestID, \"omi.xsd\":msg}' is expected.")
 
-      invalidOmiTest(temp, "SchemaError")
-    }
+    invalidOmiTest(temp, "SchemaError")
+  }
 
-    def e303 = {
-      val temp = //OmiParser.parse(
-        omiReadTest.replace("msg", "msn")//, None)
-      //temp.isLeft === true
-      //temp.left.get.head should be equalTo ParseError("OmiParser: Invalid XML, schema failure: cvc-complex-type.2.4.a: Invalid content was found starting with element 'msn'. One of '{\"omi.xsd\":nodeList, \"omi.xsd\":requestID, \"omi.xsd\":msg}' is expected.")
-
-      invalidOmiTest(temp, "SchemaError")
-    }
-
-    def e304 = {
-      val temp =// OmiParser.parse(
-        """
+  def e304 = {
+    val temp =// OmiParser.parse(
+      """
       <omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="10">
       <read msgformat="odf" >
         <msg xmlns="http://www.opengroup.org/xsd/odf/1.0/"  xmlns:odf="http://www.opengroup.org/xsd/odf/1.0/" xmlns:xs="http://www.w3.org/2001/XMLSchema">
@@ -409,14 +416,14 @@ invalidOmiTest(
     </read>
   </omiEnvelope>
   """ //, None)
-  //temp should be equalTo Left(Iterable(ParseError("No Objects child found in msg.")))
-  invalidOmiTest(temp, "SchemaError")
+        //temp should be equalTo Left(Iterable(ParseError("No Objects child found in msg.")))
+        invalidOmiTest(temp, "SchemaError")
 
-    }
+  }
 
-    def e305 = {
-      val temp = OmiParser.parse(
-        """<?xml version="1.0" encoding="UTF-8"?>
+  def e305 = {
+    val temp = OmiParser.parse(
+      """<?xml version="1.0" encoding="UTF-8"?>
       <omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="10">
       <read msgformat="odf">
         <msg >
@@ -425,25 +432,27 @@ invalidOmiTest(
       </msg>
     </read>
   </omiEnvelope>""")
-temp should be equalTo Right(Iterable(ReadRequest( OldTypeConverter.convertOdfObjects(OdfObjects()))))
+    temp should be equalTo Right(Iterable(ReadRequest(OldTypeConverter.convertOdfObjects(OdfObjects()))))
 
-    }
+  }
 
-    def e306 = {
-      validOmiTest(subscriptionRequestTest)
-    }
-    def e400 = {
-      validOdfTest(writeOdf)
-    }
+  def e306 = {
+    validOmiTest(subscriptionRequestTest)
+  }
 
-    def e401 = {
-      invalidOdfTest( "incorrect xml","ScalaXMLError").pendingUntilFixed
-      //val temp = OdfParser.parse("incorrect xml", None)
-      //temp should be equalTo Left(Iterable(ParseError("Invalid XML: Content is not allowed in prolog.")))
-    }
-    def e402 = {
-      val temp = //OdfParser.parse(
-        """
+  def e400 = {
+    validOdfTest(writeOdf)
+  }
+
+  def e401 = {
+    invalidOdfTest("incorrect xml", "ScalaXMLError").pendingUntilFixed
+    //val temp = OdfParser.parse("incorrect xml", None)
+    //temp should be equalTo Left(Iterable(ParseError("Invalid XML: Content is not allowed in prolog.")))
+  }
+
+  def e402 = {
+    val temp = //OdfParser.parse(
+      """
       <Object>
         <Object>
           <id>SmartHouse</id>
@@ -462,14 +471,14 @@ temp should be equalTo Right(Iterable(ReadRequest( OldTypeConverter.convertOdfOb
               </Object>
             </Object>
             """ //, None)
-            invalidOdfTest( temp,"SchemaError").pendingUntilFixed
-            //temp should be equalTo Left(Iterable( ParseError("OdfParser: Invalid XML, schema failure: cvc-elt.1: Cannot find the declaration of element 'Object'.")))
+    invalidOdfTest(temp, "SchemaError").pendingUntilFixed
+    //temp should be equalTo Left(Iterable( ParseError("OdfParser: Invalid XML, schema failure: cvc-elt.1: Cannot find the declaration of element 'Object'.")))
 
-    }
+  }
 
-    def e500 = {
-      val omiCancelTest =
-        """<?xml version="1.0" encoding="UTF-8"?>
+  def e500 = {
+    val omiCancelTest =
+      """<?xml version="1.0" encoding="UTF-8"?>
       <omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="10">
       <cancel>
         <requestID>123</requestID>
@@ -481,10 +490,10 @@ temp should be equalTo Right(Iterable(ReadRequest( OldTypeConverter.convertOdfOb
     val temp2 = temp.right.get.head.asInstanceOf[CancelRequest]
     //Some type problem here with iterators
     temp2 should be equalTo CancelRequest(Vector(123, 456))
-    }
+  }
 
-    lazy val omiReadTest =
-      """<?xml version="1.0" encoding="UTF-8"?>
+  lazy val omiReadTest =
+    """<?xml version="1.0" encoding="UTF-8"?>
       <omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="10">
       <read msgformat="odf">
         <msg xmlns="http://www.opengroup.org/xsd/odf/1.0/" xmlns:odf="http://www.opengroup.org/xsd/odf/1.0/" xmlns:xs="http://www.w3.org/2001/XMLSchema">
@@ -518,138 +527,138 @@ temp should be equalTo Right(Iterable(ReadRequest( OldTypeConverter.convertOdfOb
                 </msg>
               </read>
             </omiEnvelope>"""
-            lazy val readOdf2 : OdfObjects = {
-              val item1 = createAncestors(OdfInfoItem( 
-                Path( "Objects","SmartHouse","PowerConsumption")
-              ))
-
-          val item2 = createAncestors(OdfInfoItem( 
-            Path( "Objects","SmartHouse","Moisture")
-          ))
-
-      val item3 = createAncestors(OdfInfoItem( 
-        Path( "Objects","SmartHouse","SmartFridge","PowerConsumption")
-      ))
-
-  val object1 = createAncestors(OdfObject(
-    Vector( new OdfQlmID("Heater")),
-    Path("Objects","SmartCottage","Heater")
-  ))
-    item1.union( item2 ).union( item3 ).union( object1 ) 
-
-            }
-            lazy val readRequestTest = ReadRequest(
-               OldTypeConverter.convertOdfObjects(readOdf2),
-              callback = Some(HTTPCallback("http://testing.test"))
-                )
-              lazy val subscriptionRequestTest = SubscriptionRequest(
-                10 seconds,
-                OldTypeConverter.convertOdfObjects(readOdf2),
-                callback = Some(HTTPCallback("http://testing.test"))
-                  )
-
-                lazy val omiWriteTest =
-                  // <?xml version="1.0" encoding="UTF-8"?>
-                  <omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="10.0" xmlns:xs="http://www.w3.org/2001/XMLSchema">
-                  <write msgformat="odf" callback="http://testing.test">
-                  <msg>
-                    <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" xmlns:odf="http://www.opengroup.org/xsd/odf/1.0/" xmlns:xs="http://www.w3.org/2001/XMLSchema">
-                    <Object>
-                      <id>SmartHouse</id>
-                      <InfoItem name="PowerConsumption">
-                        <value unixTime="1418909692" dateTime="2014-12-18T15:34:52.000+02:00" type="xs:int">180</value>
-                      </InfoItem>
-                      <InfoItem name="Moisture">
-                        <value unixTime="1418909692" dateTime="2014-12-18T15:34:52.000+02:00" type="xs:int">0.20</value>
-                      </InfoItem>
-                      <Object>
-                        <id>SmartFridge</id>
-                        <InfoItem name="PowerConsumption">
-                          <value unixTime="1418909692" dateTime="2014-12-18T15:34:52.000+02:00" type="xs:int">56</value>
-                        </InfoItem>
-                      </Object>
-                    </Object>
-                    <Object>
-                      <id>SmartCar</id>
-                      <InfoItem name="Fuel">
-                        <MetaData>
-                          <InfoItem name="Units">
-                            <value type="xs:String">Litre</value>
-                          </InfoItem>
-                        </MetaData>
-                        <value unixTime="1418909692" dateTime="2014-12-18T15:34:52.000+02:00" >30</value>
-                      </InfoItem>
-                    </Object>
-                    <Object>
-                      <id>SmartCottage</id>
-                      <Object>
-                        <id>Heater</id>
-                      </Object>
-                    </Object>
-                  </Objects>
-                </msg>
-              </write>
-            </omiEnvelope>
-            lazy val testTimestamp = new Timestamp( 1418909692 )
-            lazy val writeOdf : OdfObjects = {
-              val item1 = createAncestors(OdfInfoItem( 
-                Path( "Objects","SmartHouse","PowerConsumption"),
-                Vector( 
-                  OdfValue( "193.1", "xs:double", testTimestamp ),
-                  OdfValue( "1.1", "xs:double", testTimestamp )
-                ), 
-              None,
-              None
-            ))
-
-        val item2 = createAncestors(OdfInfoItem( 
-          Path( "Objects","SmartHouse","Moisture"),
-          Vector( 
-            OdfValue( "193.1", "xs:double", timestamp = testTimestamp ),
-            OdfValue( "1.1", "xs:double", timestamp = testTimestamp )
-          ), 
-        Some( OdfDescription( " test" )), Some(
-          OdfMetaData(Vector(OdfInfoItem(
-            Path( "Objects","SmartHouse","Moisture","MetaData","Units"),
-            Vector(OdfValue(
-              "Litre",
-              "xs:string",
-              testTimestamp
-            ))))))
-//Some( OdfMetaData(
-//  "<MetaData xmlns=\"odf.xsd\" xmlns=\"omi.xsd\" xmlns:xs=\"http://www.w3.org/2001/XMLSchema\"" +
-//  " xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"><InfoItem name=\"Units\"><value type=\"xs:String\">" +
-//  "Litre</value></InfoItem></MetaData>"
-//        )
-//    )
+  lazy val readOdf2: OdfObjects = {
+    val item1 = createAncestors(OdfInfoItem(
+      Path("Objects", "SmartHouse", "PowerConsumption")
     ))
 
-val item3 = createAncestors(OdfInfoItem( 
-  Path( "Objects","SmartHouse","SmartFridge","PowerConsumption"),
-  Vector( 
-    OdfValue( "193.1", "xs:double", testTimestamp ),
-    OdfValue( "1.1", "xs:double", testTimestamp )
-  ), 
-None,
-None
+    val item2 = createAncestors(OdfInfoItem(
+      Path("Objects", "SmartHouse", "Moisture")
     ))
 
-val object1 = createAncestors(OdfObject(
-  Vector( new OdfQlmID("Heater")),
-  Path("Objects","SmartCottage","Heater")
-))
-    item1.union( item2 ).union( item3 ).union( object1 ) 
+    val item3 = createAncestors(OdfInfoItem(
+      Path("Objects", "SmartHouse", "SmartFridge", "PowerConsumption")
+    ))
 
-            }
+    val object1 = createAncestors(OdfObject(
+      Vector(new OdfQlmID("Heater")),
+      Path("Objects", "SmartCottage", "Heater")
+    ))
+    item1.union(item2).union(item3).union(object1)
+
+  }
+  lazy val readRequestTest = ReadRequest(
+    OldTypeConverter.convertOdfObjects(readOdf2),
+    callback = Some(HTTPCallback("http://testing.test"))
+  )
+  lazy val subscriptionRequestTest = SubscriptionRequest(
+    10 seconds,
+    OldTypeConverter.convertOdfObjects(readOdf2),
+    callback = Some(HTTPCallback("http://testing.test"))
+  )
+
+  lazy val omiWriteTest =
+  // <?xml version="1.0" encoding="UTF-8"?>
+    <omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="10.0" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+      <write msgformat="odf" callback="http://testing.test">
+        <msg>
+          <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" xmlns:odf="http://www.opengroup.org/xsd/odf/1.0/" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+            <Object>
+              <id>SmartHouse</id>
+              <InfoItem name="PowerConsumption">
+                <value unixTime="1418909692" dateTime="2014-12-18T15:34:52.000+02:00" type="xs:int">180</value>
+              </InfoItem>
+              <InfoItem name="Moisture">
+                <value unixTime="1418909692" dateTime="2014-12-18T15:34:52.000+02:00" type="xs:int">0.20</value>
+              </InfoItem>
+              <Object>
+                <id>SmartFridge</id>
+                <InfoItem name="PowerConsumption">
+                  <value unixTime="1418909692" dateTime="2014-12-18T15:34:52.000+02:00" type="xs:int">56</value>
+                </InfoItem>
+              </Object>
+            </Object>
+            <Object>
+              <id>SmartCar</id>
+              <InfoItem name="Fuel">
+                <MetaData>
+                  <InfoItem name="Units">
+                    <value type="xs:String">Litre</value>
+                  </InfoItem>
+                </MetaData>
+                <value unixTime="1418909692" dateTime="2014-12-18T15:34:52.000+02:00">30</value>
+              </InfoItem>
+            </Object>
+            <Object>
+              <id>SmartCottage</id>
+              <Object>
+                <id>Heater</id>
+              </Object>
+            </Object>
+          </Objects>
+        </msg>
+      </write>
+    </omiEnvelope>
+  lazy val testTimestamp = new Timestamp(1418909692)
+  lazy val writeOdf: OdfObjects = {
+    val item1 = createAncestors(OdfInfoItem(
+      Path("Objects", "SmartHouse", "PowerConsumption"),
+      Vector(
+        OdfValue("193.1", "xs:double", testTimestamp),
+        OdfValue("1.1", "xs:double", testTimestamp)
+      ),
+      None,
+      None
+    ))
+
+    val item2 = createAncestors(OdfInfoItem(
+      Path("Objects", "SmartHouse", "Moisture"),
+      Vector(
+        OdfValue("193.1", "xs:double", timestamp = testTimestamp),
+        OdfValue("1.1", "xs:double", timestamp = testTimestamp)
+      ),
+      Some(OdfDescription(" test")), Some(
+        OdfMetaData(Vector(OdfInfoItem(
+          Path("Objects", "SmartHouse", "Moisture", "MetaData", "Units"),
+          Vector(OdfValue(
+            "Litre",
+            "xs:string",
+            testTimestamp
+          ))))))
+      //Some( OdfMetaData(
+      //  "<MetaData xmlns=\"odf.xsd\" xmlns=\"omi.xsd\" xmlns:xs=\"http://www.w3.org/2001/XMLSchema\"" +
+      //  " xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"><InfoItem name=\"Units\"><value type=\"xs:String\">" +
+      //  "Litre</value></InfoItem></MetaData>"
+      //        )
+      //    )
+    ))
+
+    val item3 = createAncestors(OdfInfoItem(
+      Path("Objects", "SmartHouse", "SmartFridge", "PowerConsumption"),
+      Vector(
+        OdfValue("193.1", "xs:double", testTimestamp),
+        OdfValue("1.1", "xs:double", testTimestamp)
+      ),
+      None,
+      None
+    ))
+
+    val object1 = createAncestors(OdfObject(
+      Vector(new OdfQlmID("Heater")),
+      Path("Objects", "SmartCottage", "Heater")
+    ))
+    item1.union(item2).union(item3).union(object1)
+
+  }
   lazy val writeRequestTest = WriteRequest(
-     OldTypeConverter.convertOdfObjects(writeOdf),
+    OldTypeConverter.convertOdfObjects(writeOdf),
     Some(HTTPCallback("http://testing.test"))
   )
   lazy val responseRequestTest = ResponseRequest(
     Seq(OmiResult(
       OmiTypes.Returns.Success(),
-      odf = Some( OldTypeConverter.convertOdfObjects(writeOdf))
-      ))
+      odf = Some(OldTypeConverter.convertOdfObjects(writeOdf))
+    ))
   )
 
   lazy val omiResponseTest =
@@ -704,114 +713,118 @@ val object1 = createAncestors(OdfObject(
       </response>
     </omiEnvelope>"""
 
-    def validOmiTest( request: OmiRequest ) : MatchResult[OmiParseResult] = {
-      val xml = request.asXML
-      val text = xml.toString
-      val result = OmiParser.parse( text )
-  
-      result should beRight{ 
-        requests: Iterable[OmiRequest] =>
-        {
-          requests should have size(1) 
-        }and{
-          requests.headOption.get.asXML should  beEqualToIgnoringSpace(request.asXML)
-        }
+  def validOmiTest(request: OmiRequest): MatchResult[OmiParseResult] = {
+    val xml = request.asXML
+    val text = xml.toString
+    val result = OmiParser.parse(text)
+
+    result should beRight {
+      requests: Iterable[OmiRequest] => {
+        requests should have size (1)
+      } and {
+        requests.headOption.get.asXML should beEqualToIgnoringSpace(request.asXML)
       }
     }
+  }
 
-    def validOmiTest( text: String ) : MatchResult[OmiParseResult] = {
-      val result = OmiParser.parse( text )
+  def validOmiTest(text: String): MatchResult[OmiParseResult] = {
+    val result = OmiParser.parse(text)
 
-      result should beRight{ 
-        requests: Iterable[OmiRequest] =>
-          requests should have size(1)
-          requests.headOption should beSome{
-            request : OmiRequest  => 
+    result should beRight {
+      requests: Iterable[OmiRequest] =>
+        requests should have size (1)
+        requests.headOption should beSome {
+          request: OmiRequest =>
             request.asXML.toString should be equalTo text
-          }
-      }
+        }
     }
-    def validOmiTest( xml: NodeSeq ) : MatchResult[OmiParseResult] = {
-      val text = xml.toString
-      val result = OmiParser.parse( text )
-  
-      result should beRight{ 
-        requests: Iterable[OmiRequest] =>
-          requests should have size(1)
-          requests.headOption should beSome{
-            request : OmiRequest  => 
+  }
+
+  def validOmiTest(xml: NodeSeq): MatchResult[OmiParseResult] = {
+    val text = xml.toString
+    val result = OmiParser.parse(text)
+
+    result should beRight {
+      requests: Iterable[OmiRequest] =>
+        requests should have size (1)
+        requests.headOption should beSome {
+          request: OmiRequest =>
             request.asXML should beEqualToIgnoringSpace(xml)
-          }
-      }
+        }
     }
-    def invalidOmiTest( xml: NodeSeq, errors : Set[ParseError] ) : MatchResult[OmiParseResult] = {
-      val text = xml.toString
-      val result = OmiParser.parse( text )
-      result should beLeft{
-        parseErrors : Iterable[ParseError] => 
-          parseErrors.toSet should be equalTo errors
-      }
-    }
+  }
 
-    def invalidOmiTest( text: String, errors : Set[ParseError] ) : MatchResult[OmiParseResult]= {
-      val result = OmiParser.parse( text )
-  
-      result should beLeft{
-        parseErrors : Iterable[ParseError] => 
-          parseErrors.toSet should be equalTo errors
-      }
+  def invalidOmiTest(xml: NodeSeq, errors: Set[ParseError]): MatchResult[OmiParseResult] = {
+    val text = xml.toString
+    val result = OmiParser.parse(text)
+    result should beLeft {
+      parseErrors: Iterable[ParseError] =>
+        parseErrors.toSet should be equalTo errors
     }
-    def invalidOmiTest( xml: NodeSeq , errorType: String) : MatchResult[OmiParseResult] = {
-      val text = xml.toString
-      val result = OmiParser.parse( text )
-      result should beLeft{
-        parseErrors : Iterable[ParseError] => 
-          parseErrors.map( parseErrorTypeToString ) must contain( errorType)
-      }
-    }
+  }
 
-    def invalidOmiTest( text: String, errorType: String ) : MatchResult[OmiParseResult]= {
-      val result = OmiParser.parse( text )
-  
-      result should beLeft{
-        parseErrors : Iterable[ParseError] => 
-          parseErrors.map( parseErrorTypeToString ) must contain( errorType)
-      }
-    }
+  def invalidOmiTest(text: String, errors: Set[ParseError]): MatchResult[OmiParseResult] = {
+    val result = OmiParser.parse(text)
 
-    def validOdfTest( node: OdfNode ) : MatchResult[OdfParseResult] = {
-      val correct = createAncestors(node)
-      val xml = correct.asXML// May not be correct?
-      val text = xml.toString
-      val result = OdfParser.parse( text )
-  
-      result should beRight( correct )
+    result should beLeft {
+      parseErrors: Iterable[ParseError] =>
+        parseErrors.toSet should be equalTo errors
     }
+  }
 
-    def invalidOdfTest( text: String, errorType: String) : MatchResult[OdfParseResult] = {
-      val result = OdfParser.parse( text )
-  
-      result should beLeft{
-        parseErrors : Iterable[ParseError] => 
-          parseErrors.map( parseErrorTypeToString ) must contain( errorType )
-          /*
-        case asdf => 
-          println("TYPE MISSMATCH" )
-          throw new Exception("TYPE MISSMATCH")
-          */
-      }
+  def invalidOmiTest(xml: NodeSeq, errorType: String): MatchResult[OmiParseResult] = {
+    val text = xml.toString
+    val result = OmiParser.parse(text)
+    result should beLeft {
+      parseErrors: Iterable[ParseError] =>
+        parseErrors.map(parseErrorTypeToString) must contain(errorType)
     }
-    def parseErrorTypeToString( pe: ParseError ): String ={
-      pe match {
-        case _: SchemaError => "SchemaError"
-        case _: ScalaXMLError => "ScalaXMLError"
-        case _: ScalaxbError => "ScalaxbError"
-        case _: ODFParserError => "ODFParserError"
-        case _: OMIParserError => "OMIParserError"
-        case _: ParseErrorList => "ParserErrorList"
-        case _ => throw pe
-      }
+  }
+
+  def invalidOmiTest(text: String, errorType: String): MatchResult[OmiParseResult] = {
+    val result = OmiParser.parse(text)
+
+    result should beLeft {
+      parseErrors: Iterable[ParseError] =>
+        parseErrors.map(parseErrorTypeToString) must contain(errorType)
     }
+  }
+
+  def validOdfTest(node: OdfNode): MatchResult[OdfParseResult] = {
+    val correct = createAncestors(node)
+    val xml = correct.asXML
+    // May not be correct?
+    val text = xml.toString
+    val result = OdfParser.parse(text)
+
+    result should beRight(correct)
+  }
+
+  def invalidOdfTest(text: String, errorType: String): MatchResult[OdfParseResult] = {
+    val result = OdfParser.parse(text)
+
+    result should beLeft {
+      parseErrors: Iterable[ParseError] =>
+        parseErrors.map(parseErrorTypeToString) must contain(errorType)
+      /*
+    case asdf =>
+      println("TYPE MISSMATCH" )
+      throw new Exception("TYPE MISSMATCH")
+      */
+    }
+  }
+
+  def parseErrorTypeToString(pe: ParseError): String = {
+    pe match {
+      case _: SchemaError => "SchemaError"
+      case _: ScalaXMLError => "ScalaXMLError"
+      case _: ScalaxbError => "ScalaxbError"
+      case _: ODFParserError => "ODFParserError"
+      case _: OMIParserError => "OMIParserError"
+      case _: ParseErrorList => "ParserErrorList"
+      case _ => throw pe
+    }
+  }
 }
 
 

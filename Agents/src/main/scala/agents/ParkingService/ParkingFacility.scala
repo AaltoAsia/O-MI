@@ -262,7 +262,7 @@ case class PostalAddress(
   streetAddress: Option[String],
   postCode: Option[String]
 ) {
-  def toOdf( parentPath: Path ) ={
+  def toOdf( parentPath: Path ): OdfObject ={
     val addressPath = parentPath / "address"
     val countryII = country.map{ c: String => 
       OdfInfoItem( 

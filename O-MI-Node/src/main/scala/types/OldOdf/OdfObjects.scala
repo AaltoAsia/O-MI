@@ -19,91 +19,94 @@ import scala.collection.immutable.HashMap
 import scala.xml.{NamespaceBinding, NodeSeq}
 import parsing.xmlGen.scalaxb.DataRecord
 import parsing.xmlGen.xmlTypes._
-import parsing.xmlGen.{defaultScope, odfDefaultScope, scalaxb}
+import parsing.xmlGen.{scalaxb}
 import types.OdfTypes.OdfTreeCollection._
 
 /** Class implementing OdfObjects. */
 class OdfObjectsImpl(
-  objects:              OdfTreeCollection[OdfObject] = OdfTreeCollection(),
-  version:              Option[String] = None,
-  attributes:           Map[String,String] = HashMap.empty
-) extends Serializable {
+                      objects: OdfTreeCollection[OdfObject] = OdfTreeCollection(),
+                      version: Option[String] = None,
+                      attributes: Map[String, String] = HashMap.empty
+                    ) extends Serializable {
 
   val path = Path("Objects")
   val description: Option[OdfDescription] = None
 
   /** Method for combining two OdfObjects with same path */
   def union(another: OdfObjects): OdfObjects = {
-    val thisObjs: HashMap[Path, OdfObject] = HashMap(objects.map(o => (o.path, o)):_*)
-    val anotherObjs: HashMap[Path, OdfObject] = HashMap(another.objects.map(ao => (ao.path, ao)):_*)
+    val thisObjs: HashMap[Path, OdfObject] = HashMap(objects.map(o => (o.path, o)): _*)
+    val anotherObjs: HashMap[Path, OdfObject] = HashMap(another.objects.map(ao => (ao.path, ao)): _*)
     OdfObjects(
-      thisObjs.merged(anotherObjs){case ((k1, v1),(_, v2)) => (k1,v1.combine(v2))}.values,
-    unionOption(version,another.version){
-      case (a, b) if a > b =>a
-      case (_, b) => b
-    },
+      thisObjs.merged(anotherObjs) { case ((k1, v1), (_, v2)) => (k1, v1.combine(v2)) }.values,
+      unionOption(version, another.version) {
+        case (a, b) if a > b => a
+        case (_, b) => b
+      },
       this.attributes ++ another.attributes
     )
 
   }
 
-  def --(another: OdfObjects): OdfObjects = sharedAndUniques[OdfObjects] ( another ) {
+  def --(another: OdfObjects): OdfObjects = sharedAndUniques[OdfObjects](another) {
     (uniqueObjs: Seq[OdfObject], anotherUniqueObjs: Seq[OdfObject], sharedObjs: Map[Path, Seq[OdfObject]]) =>
-    OdfObjects(
-      sharedObjs.flatMap{
-        case (path:Path, sobj: Seq[OdfObject]) =>
-          sobj.headOption.flatMap{head => sobj.lastOption.flatMap(last =>
-            head -- last)}//.getOrElse(throw new UninitializedError())
-      }.toSeq ++ uniqueObjs,
-      version
-    )
+      OdfObjects(
+        sharedObjs.flatMap {
+          case (path: Path, sobj: Seq[OdfObject]) =>
+            sobj.headOption.flatMap { head =>
+              sobj.lastOption.flatMap(last =>
+                head -- last)
+            } //.getOrElse(throw new UninitializedError())
+        }.toSeq ++ uniqueObjs,
+        version
+      )
   }
 
   /**
-   * Does something similar to intersection. Note that this method should be called first on hierarchytree and then
-   * on the tree that should be added the data. another should be subset of this odfTree.
-   * @param another another OdfObjects to intersect with
-   * @return
-   */
-  def intersect(another: OdfObjects): OdfObjects = sharedAndUniques[OdfObjects] ( another ) {
+    * Does something similar to intersection. Note that this method should be called first on hierarchytree and then
+    * on the tree that should be added the data. another should be subset of this odfTree.
+    *
+    * @param another another OdfObjects to intersect with
+    * @return
+    */
+  def intersect(another: OdfObjects): OdfObjects = sharedAndUniques[OdfObjects](another) {
     (
-    uniqueObjs: Seq[OdfObject],
-    anotherUniqueObjs: Seq[OdfObject],
-    sharedObjs: Map[Path, Seq[OdfObject]]) =>
-    OdfObjects(
-      sharedObjs.flatMap{
-      case (path: Path, sobj: Seq[OdfObject]) =>
-        for{
-          head <- sobj.headOption //first object
-          last <- sobj.lastOption //second object
-          res  <- head.intersect(last)  //intersection
-        } yield res
-      }.toSeq,
-      version orElse another.version
-    )
+      uniqueObjs: Seq[OdfObject],
+      anotherUniqueObjs: Seq[OdfObject],
+      sharedObjs: Map[Path, Seq[OdfObject]]) =>
+      OdfObjects(
+        sharedObjs.flatMap {
+          case (path: Path, sobj: Seq[OdfObject]) =>
+            for {
+              head <- sobj.headOption //first object
+              last <- sobj.lastOption //second object
+              res <- head.intersect(last) //intersection
+            } yield res
+        }.toSeq,
+        version orElse another.version
+      )
   }
 
-  private[this] def sharedAndUniques[A]( another: OdfObjects )( constructor: (
+  private[this] def sharedAndUniques[A](another: OdfObjects)(constructor: (
     Seq[OdfObject],
-    Seq[OdfObject],
-    Map[Path,Seq[OdfObject]]) => A) = {
-    val uniqueObjs : Seq[OdfObject]  = objects.filterNot(
+      Seq[OdfObject],
+      Map[Path, Seq[OdfObject]]) => A) = {
+    val uniqueObjs: Seq[OdfObject] = objects.filterNot(
       obj => another.objects.exists(
         aobj => aobj.path == obj.path
       )
     )
-     val anotherUniqueObjs =  another.objects.filterNot(
-       aobj => objects.exists(
-         obj => aobj.path == obj.path
-       )
-     )
-    
-    val sharedObjs = ( objects ++ another.objects ).filterNot(
+    val anotherUniqueObjs = another.objects.filterNot(
+      aobj => objects.exists(
+        obj => aobj.path == obj.path
+      )
+    )
+
+    val sharedObjs = (objects ++ another.objects).filterNot(
       obj => (uniqueObjs ++ anotherUniqueObjs).exists(
         uobj => uobj.path == obj.path
       )
     ).groupBy(_.path)
-    constructor(uniqueObjs, anotherUniqueObjs,sharedObjs)
+    constructor(uniqueObjs, anotherUniqueObjs, sharedObjs)
   }
 
   def odfDefaultScope: NamespaceBinding = scalaxb.toScope(
@@ -112,21 +115,23 @@ class OdfObjectsImpl(
       //Some("xs") -> "http://www.w3.org/2001/XMLSchema",
       //Some("odf") -> "http://www.opengroup.org/xsd/odf/1.0/"
 
-    ).toSet:_*
+    ).toSet: _*
   )
 
   /** Method to convert to scalaxb generated class. */
-  implicit def asObjectsType : ObjectsType ={
+  implicit def asObjectsType: ObjectsType = {
     ObjectsType(
       ObjectValue = objects.map {
         obj: OdfObject =>
           obj.asObjectType
       },
-      attributes = version.fold(Map.empty[String, DataRecord[Any]])(n => Map("@version" -> DataRecord(n))) ++ attributesToDataRecord( this.attributes )
+      attributes = version.fold(Map.empty[String, DataRecord[Any]])(n => Map("@version" -> DataRecord(n))) ++
+        attributesToDataRecord(this.attributes)
     )
   }
-  implicit def asXML : NodeSeq= {
-    val xml  = scalaxb.toXML[ObjectsType](asObjectsType, None, Some("Objects"), odfDefaultScope)
-    xml//.asInstanceOf[Elem] % new UnprefixedAttribute("xmlns","odf.xsd", Node.NoAttributes)
+
+  implicit def asXML: NodeSeq = {
+    val xml = scalaxb.toXML[ObjectsType](asObjectsType, None, Some("Objects"), odfDefaultScope)
+    xml //.asInstanceOf[Elem] % new UnprefixedAttribute("xmlns","odf.xsd", Node.NoAttributes)
   }
 }    

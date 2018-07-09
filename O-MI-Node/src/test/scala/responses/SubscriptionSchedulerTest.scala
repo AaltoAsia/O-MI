@@ -11,7 +11,7 @@ class SubscriptionSchedulerTest extends Specification {
 
   "Subscription scheduler" should {
 
-    "Answer to correct actor" in new Actorstest{
+    "Answer to correct actor" in new Actorstest {
       val probe1 = TestProbe()
       val probe2 = TestProbe()
       scheduler.scheduleOnce(2 seconds, probe1.ref, "meg")
@@ -21,9 +21,9 @@ class SubscriptionSchedulerTest extends Specification {
     }
     "Be accurate to few a milliseconds" in new Actorstest {
       val probe = TestProbe()
-      scheduler.scheduleOnce(3 seconds,probe.ref, "hello!")
+      scheduler.scheduleOnce(3 seconds, probe.ref, "hello!")
 
-      probe.receiveN(1,3010 milliseconds)
+      probe.receiveN(1, 3010 milliseconds)
       probe.expectNoMsg(2990 milliseconds)
     }
   }

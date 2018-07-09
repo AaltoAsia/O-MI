@@ -14,7 +14,7 @@ import scala.collection.immutable.HashMap
 import scala.collection.mutable
 import scala.concurrent.duration._
 
-class BackupTest extends Specification{
+class BackupTest extends Specification {
   val startTime = new Timestamp(Int.MaxValue)
   val endTime = new Timestamp(Long.MaxValue)
   val polledMinus1 = PollNormalEventSub(11,
@@ -74,12 +74,12 @@ class BackupTest extends Specification{
 
   val subData = Some(
     SubData(HashMap((Path("Objects/a/b/2"),
-      List(Value(1, new Timestamp(System.currentTimeMillis())),
-        Value(2,new Timestamp(System.currentTimeMillis() + 1 )))))))
+                      List(Value(1, new Timestamp(System.currentTimeMillis())),
+                        Value(2, new Timestamp(System.currentTimeMillis() + 1)))))))
 
   "Conversion between subscription-json-subscription transformation" should {
     "Work for polled -1 interval subscriptions" in {
-      val in:(SavedSub, Option[SubData]) = (polledMinus1, subData)
+      val in: (SavedSub, Option[SubData]) = (polledMinus1, subData)
       val jsver = in.toJson
       val jsonver = jsver.prettyPrint
       val parsed = jsonver.parseJson
@@ -87,7 +87,7 @@ class BackupTest extends Specification{
       convertedSub === (polledMinus1, subData)
     }
     "Work for polled -2 interval subscriptions" in {
-      val in:(SavedSub, Option[SubData]) = (polledMinus2, subData)
+      val in: (SavedSub, Option[SubData]) = (polledMinus2, subData)
       val jsver = in.toJson
       val jsonver = jsver.prettyPrint
       val parsed = jsonver.parseJson
@@ -95,7 +95,7 @@ class BackupTest extends Specification{
       convertedSub === (polledMinus2, subData)
     }
     "Work for polled interval subscriptions" in {
-      val in:(SavedSub, Option[SubData]) = (pollInterval, subData)
+      val in: (SavedSub, Option[SubData]) = (pollInterval, subData)
       val jsver = in.toJson
       val jsonver = jsver.prettyPrint
       val parsed = jsonver.parseJson
@@ -103,7 +103,7 @@ class BackupTest extends Specification{
       convertedSub === (pollInterval, subData)
     }
     "Work for interval subscriptions" in {
-      val in:(SavedSub, Option[SubData]) = (normInterval, None)
+      val in: (SavedSub, Option[SubData]) = (normInterval, None)
       val jsver = in.toJson
       val jsonver = jsver.prettyPrint
       val parsed = jsonver.parseJson
@@ -111,7 +111,7 @@ class BackupTest extends Specification{
       convertedSub === (normInterval, None)
     }
     "Work for -1 interval subscriptions" in {
-      val in:(SavedSub, Option[SubData]) = (normEventSub, None)
+      val in: (SavedSub, Option[SubData]) = (normEventSub, None)
       val jsver = in.toJson
       val jsonver = jsver.prettyPrint
       val parsed = jsonver.parseJson
@@ -119,7 +119,7 @@ class BackupTest extends Specification{
       convertedSub === (normEventSub, None)
     }
     "Work for -2 interval subscriptions" in {
-      val in:(SavedSub, Option[SubData]) = (newEventSub, None)
+      val in: (SavedSub, Option[SubData]) = (newEventSub, None)
       val jsver = in.toJson
       val jsonver = jsver.prettyPrint
       val parsed = jsonver.parseJson
