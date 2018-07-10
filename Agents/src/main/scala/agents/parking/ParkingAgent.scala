@@ -63,7 +63,7 @@ class ParkingAgent(
         case Left( errors : JavaIterable[ParseError]) =>
           val msg = errors.asScala.toSeq.mkString("\n")
           log.warning(s"Odf has errors, $name could not be configured.")
-          log.debug(msg)
+          log.info(msg)
           throw AgentConfigurationException(s"File $startStateFile could not be parsed, because of following errors: $msg")
         case Right(odf: ImmutableODF) => odf
       }
@@ -179,7 +179,9 @@ class ParkingAgent(
         obj: Object => 
           val psFormatCheck = write.odf.getChilds(obj.path / "ParkingSpaces").forall{
             case node: Object => 
-              node.typeAttribute.contains("mv:ParkingSpace")
+              val temp = node.typeAttribute.contains("mv:ParkingSpace")
+              if( !temp) log.info("Not a parking space " +node.path)
+              temp 
             case node: InfoItem =>  
               false
           }
@@ -196,7 +198,7 @@ class ParkingAgent(
           result => result.returnValue.returnCode.startsWith("2")
         }
         if( success.nonEmpty ){
-          log.info( s"Write successful")
+          log.debug( s"Write successful")
           updateIndexesAndCapacities( write.odf,response)
         } else Future{ response }
     }
@@ -209,8 +211,6 @@ class ParkingAgent(
     readFromDB(read).flatMap{
       response: ResponseRequest =>
         val (success: Seq[OmiResult], failures: Seq[OmiResult]) = response.results.partition(_.returnValue.returnCode == "200")
-        if( failures.nonEmpty )
-          log.debug( response.asXML.toString )
         val capacityODF = success.flatMap{
           result: OmiResult => 
             result.odf.map{
@@ -345,7 +345,7 @@ class ParkingAgent(
                               }
 
                           }
-                          log.info("FindParking parameters parsed")
+                          log.debug("FindParking parameters parsed")
                           findParking(destination,distance,vehicle,userGroup,charger,wantCharging)
                       }
                   }.getOrElse{
@@ -420,7 +420,7 @@ class ParkingAgent(
               result =>
                 result.odf.map{
                   odf => 
-                    log.info( "Found Successfull result with ODF")
+                    log.debug( "Found Successfull result with ODF")
                     val correctParkingSpaces = odf.nodesWithType("mv:ParkingSpace").collect{
                       case obj: Object =>
                         ParkingSpace.parseOdf(obj.path, odf.immutable) match {
@@ -457,7 +457,7 @@ class ParkingAgent(
                           (charger.isEmpty && wantCharging.forall( !_) ) || 
                           (
                             ( wantCharging.exists(b => b) || charger.nonEmpty ) && 
-                          ps.charger.exists{
+                          ps.chargers.exists{
                             pchar =>
                               charger.forall{
                                 char =>
