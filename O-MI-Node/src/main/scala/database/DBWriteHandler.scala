@@ -20,7 +20,7 @@ import journal.Models.GetSubsForPath
 import journal.Models.AddPollData
 import journal.Models.SingleReadCommand
 import journal.Models.UnionCommand
-import journal.Models.SingleWriteCommand
+import journal.Models.WriteCommand
 import journal.Models.LookupNewEventSubs
 import journal.Models.LookupEventSubs
 
@@ -191,13 +191,11 @@ trait DBWriteHandler extends DBHandlerBase {
       oldValueOpt = (singleStores.latestStore ? SingleReadCommand(path)).mapTo[Option[Value[Any]]]
       value <- info.values
     } yield (path, value, oldValueOpt)
-
     val pollFuture = Future.sequence(pathValueOldValueTuples.map {
       case (path, oldValue, fvalue) =>
         fvalue.flatMap(value =>
           handlePollData(path, oldValue, value))
     }) //Add values to pollsubs in this method
-
     pollFuture.failed.foreach{
       case t: Throwable => log.error(t, "Error when adding poll values to database")
     }
@@ -210,7 +208,6 @@ trait DBWriteHandler extends DBHandlerBase {
       case (path, value, foldValueO) => foldValueO.map(oldValueO => singleStores.processData(path, value, oldValueO))
     })
     val ftriggeringEvents: Future[Seq[InfoItemEvent]] = callbackDataOptions.map(_.flatten)
-
     // TODO: implement responsible agent check here or processEvents method
     // return false  // command was not accepted or failed in agent or physical world but no internal server errors
 
@@ -256,7 +253,7 @@ trait DBWriteHandler extends DBHandlerBase {
       case t: Throwable => log.error(t, "Error when writing values for paths $paths")
     }
 
-    val writeFuture: Future[Seq[Any]] = dbWriteFuture.flatMap {
+    val writeFuture: Future[Any] = dbWriteFuture.flatMap {
       _ =>
         // Update our hierarchy data structures if needed
         log.debug("Writing finished.")
@@ -274,9 +271,12 @@ trait DBWriteHandler extends DBHandlerBase {
             case None => Future.successful[Unit]()
           }
           triggeringEvents <- ftriggeringEvents
-          latestF <- Future.sequence(triggeringEvents.flatMap(iie =>
-            iie.infoItem.values.headOption
-              .map(newValue => (singleStores.latestStore ? SingleWriteCommand(iie.infoItem.path, newValue)))))
+          latestF <- {
+            singleStores.latestStore ? WriteCommand(
+              triggeringEvents.flatMap(iie =>
+                iie.infoItem.values.headOption.map(newValue => iie.infoItem.path -> newValue)).toMap
+                  )
+          }
 
         } yield latestF
     }
