@@ -148,7 +148,7 @@ trait AuthApiProvider extends AuthorizationExtension {
             val newOdfOpt = for {
               paths: JavaIterable[Path] <- Option(maybePaths) // paths might be null
               // Rebuild the request having only `paths`
-              pathTrees = currentTree.selectSubTree(paths.asScala.toVector)
+              pathTrees = currentTree.selectSubTree(paths.asScala.toSet)
               /*paths collect {
                 case path: Path =>              // filter nulls out
                   currentTree.getSubTreeAsODF(paths) match { // figure out is it InfoItem or Object

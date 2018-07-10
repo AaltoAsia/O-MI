@@ -361,7 +361,7 @@ class OdfTypesTest extends mutable.Specification {
   def getCorrectSubTree[M <: scala.collection.Map[OdfPath, Node], S <: scala.collection.SortedSet[OdfPath]](
                                                                                                              o_df: ODF
                                                                                                            ) = {
-    o_df.selectSubTree(Seq(OdfPath("Objects", "ObjectA"))).getPaths.toSet should contain(
+    o_df.selectSubTree(Set(OdfPath("Objects", "ObjectA"))).getPaths.toSet should contain(
       Set(
         OdfPath("Objects"),
         OdfPath("Objects", "ObjectA"),
@@ -409,7 +409,7 @@ class OdfTypesTest extends mutable.Specification {
       attributes = testingAttributes
     )
     o_df.add(beAdded).selectSubTree(
-      Seq(OdfPath("Objects", "ObjectN"))
+      Set(OdfPath("Objects", "ObjectN"))
     ).getPaths.toSet should contain(
       Set(
         OdfPath("Objects"),

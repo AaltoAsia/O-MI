@@ -77,7 +77,7 @@ trait DBReadHandler extends DBHandlerBase {
                 case _ => None
               }
               nfResults = if (notFound.nonEmpty) {
-                val notFoundOdf = requestedODF.selectSubTree(notFound)
+                val notFoundOdf = requestedODF.selectSubTree(notFound.toSet)
                 Vector(Results.NotFoundPaths(notFoundOdf))
               } else Vector.empty
               omiResults = nfResults ++ found.toVector

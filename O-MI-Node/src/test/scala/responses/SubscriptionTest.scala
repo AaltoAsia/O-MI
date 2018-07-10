@@ -346,7 +346,7 @@ class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with Bef
     val basePath = Path("Objects", "SubscriptionTest")
     val odfF = (singleStores.hierarchyStore ? GetTree) (new Timeout(2 minutes)).mapTo[ImmutableODF]
     val hTree: ImmutableODF = Await.result(odfF, Duration.Inf)
-    val p = hTree.selectSubTree(paths.map(basePath / _))
+    val p = hTree.selectSubTree(paths.map(basePath / _).toSet)
     val req = SubscriptionRequest(interval seconds, p, None, None, None, ttl seconds)
     implicit val timeout: Timeout = req.handleTTL
     Await.result((requestHandler ? req).mapTo[ResponseRequest], Duration.Inf)

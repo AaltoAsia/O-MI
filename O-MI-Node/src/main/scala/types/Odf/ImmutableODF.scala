@@ -125,32 +125,28 @@ case class ImmutableODF private[odf](
     this.copy(newNodes)
   }
 
-  def selectUpTree(pathsToGet: Seq[Path]): ODF = {
+  def selectUpTree(pathsToGet: Set[Path]): ODF = {
     ImmutableODF(
-      paths.filter {
-        ancestorPath: Path =>
-          pathsToGet.exists {
-            path: Path =>
-              path == ancestorPath ||
-                ancestorPath.isAncestorOf(path)
-          }
-      }.flatMap {
+      pathsToGet.flatMap{
+        path: Path =>
+        path.getAncestorsAndSelf
+      }.toSet.flatMap {
         path: Path =>
           nodes.get(path)
       }.toVector
     )
   }
 
-  def selectSubTree(pathsToGet: Seq[Path]): ODF = {
-    val ps = paths.filter {
-      path: Path =>
-        pathsToGet.contains(path) ||
-          pathsToGet.exists {
-            filter: Path =>
-              filter.isAncestorOf(path) ||
-                filter.isDescendantOf(path)
-          }
-    }
+  def selectSubTree(pathsToGet: Set[Path]): ODF = {
+    val ps = (pathsToGet.flatMap{
+      wantedPath: Path =>
+        paths.keysIteratorFrom( wantedPath ).takeWhile{
+          path: Path => path == wantedPath || path.isDescendantOf(wantedPath)
+        }
+    } ++  pathsToGet.flatMap{
+        path: Path =>
+        path.getAncestors
+    }).toSet
     ImmutableODF(
       ps.flatMap {
         path: Path =>

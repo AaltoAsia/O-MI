@@ -45,13 +45,13 @@ class MutableODF private[odf](
   }
 
 
-  def selectUpTree(pathsToGet: Seq[Path]): ODF = {
+  def selectUpTree(pathsToGet: Set[Path]): ODF = {
     MutableODF(
       paths.filter {
         ancestorPath: Path =>
+          pathsToGet.contains(ancestorPath) ||
           pathsToGet.exists {
             path: Path =>
-              path == ancestorPath ||
                 ancestorPath.isAncestorOf(path)
           }
       }.flatMap {
@@ -190,7 +190,7 @@ class MutableODF private[odf](
     this
   }
 
-  def selectSubTree(pathsToGet: Seq[Path]): ODF = {
+  def selectSubTree(pathsToGet: Set[Path]): ODF = {
     MutableODF(
       nodes.values.filter {
         node: Node =>

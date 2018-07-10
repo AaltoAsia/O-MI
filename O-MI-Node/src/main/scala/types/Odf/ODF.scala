@@ -139,9 +139,9 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
 
   def get(path: Path): Option[Node] = nodes.get(path)
 
-  def selectSubTree(pathsToGet: Seq[Path]): ODF
+  def selectSubTree(pathsToGet: Set[Path]): ODF
 
-  def selectUpTree(pathsToGet: Seq[Path]): ODF
+  def selectUpTree(pathsToGet: Set[Path]): ODF
 
   def --(removedPaths: Seq[Path]): ODF = removePaths(removedPaths)
 

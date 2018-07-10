@@ -412,7 +412,7 @@ class InfluxDBImplementation(
   def remove(path: Path)(implicit timeout: Timeout): Future[Seq[Int]] = {
     for {
       cachedODF <- (singleStores.hierarchyStore ? GetTree).mapTo[ImmutableODF]
-      removedIIs: Seq[InfoItem] = cachedODF.selectSubTree(Vector(path)).getInfoItems
+      removedIIs: Seq[InfoItem] = cachedODF.selectSubTree(Set(path)).getInfoItems
       query = "q=" + removedIIs.map {
         ii: InfoItem =>
           val mName = pathToMeasurementName(ii.path)

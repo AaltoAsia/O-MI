@@ -282,7 +282,7 @@ class SubscriptionManager(
     for {
       intervalDataP <- intervalDataF
       intervalData: Map[Path, Seq[Value[Any]]] = intervalDataP.mapValues(_.sortBy(_.timestamp.getTime()))
-      combinedWithPaths: Map[Path, Seq[Value[Any]]] = odf.selectSubTree(pollInterval.paths).getInfoItems.map {
+      combinedWithPaths: Map[Path, Seq[Value[Any]]] = odf.selectSubTree(pollInterval.paths.toSet).getInfoItems.map {
         ii: InfoItem =>
           ii.path -> Vector[Value[Any]]()
       }.toMap[Path, Seq[Value[Any]]] ++ intervalData
@@ -358,7 +358,7 @@ class SubscriptionManager(
           val odfTreeF: Future[ImmutableODF] = (singleStores.hierarchyStore ? GetTree).mapTo[ImmutableODF]
           for {
             odfTree: ImmutableODF <- odfTreeF
-            emptyTree: ODF = odfTree.selectSubTree(ps.paths).valuesRemoved.metaDatasRemoved.descriptionsRemoved
+            emptyTree: ODF = odfTree.selectSubTree(ps.paths.toSet).valuesRemoved.metaDatasRemoved.descriptionsRemoved
             subValues: ImmutableODF <- ps match {
               case pollEvent: PolledEventSub => handlePollEvent(pollEvent)
               case pollInterval: PollIntervalSub => handlePollInterval(pollInterval, pollTime, odfTree)
@@ -388,7 +388,7 @@ class SubscriptionManager(
         case Some(iSub: IntervalSub) => { //same as if exists
           val ret: Future[Unit] = for {
             hTree: ImmutableODF <- (singleStores.hierarchyStore ? GetTree).mapTo[ImmutableODF]
-            subedTree: ODF = hTree.selectSubTree(iSub.paths).metaDatasRemoved.descriptionsRemoved
+            subedTree: ODF = hTree.selectSubTree(iSub.paths.toSet).metaDatasRemoved.descriptionsRemoved
             datas: Seq[(Path, Value[Any])] <-
             (singleStores.latestStore ? MultipleReadCommand(subedTree.getInfoItems.map(_.path)))
               .mapTo[Seq[(Path, Value[Any])]]
