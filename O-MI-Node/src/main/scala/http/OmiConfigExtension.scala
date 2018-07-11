@@ -180,6 +180,7 @@ class OmiConfigExtension(val config: Config) extends Extension
   /** Time in milliseconds how long to keep trying to resend the messages to callback addresses in case of infinite durations */
   val callbackTimeout: FiniteDuration = config.getDuration("omi-service.callback-timeout", TimeUnit.MILLISECONDS)
     .milliseconds
+  val startTimeout: FiniteDuration = config.getDuration("omi-service.start-timeout")
   val journalTimeout: FiniteDuration = config.getDuration("omi-service.journal-ask-timeout", TimeUnit.MILLISECONDS).milliseconds
 
   //Haw many messages queued to be send via WS connection, if overflown
