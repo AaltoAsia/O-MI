@@ -35,6 +35,8 @@ import scala.concurrent.duration._
 trait CLIHelperT {
   def handlePathRemove(parentPathS: Seq[Path]): Future[Seq[Int]]
 
+  def takeSnapshot(): Future[Any]
+
   def getAllData(): Future[Option[ODF]]
 
   def writeOdf(odf: ImmutableODF): Future[Unit]
@@ -48,7 +50,7 @@ class CLIHelper(val singleStores: SingleStores, dbConnection: DB)(implicit syste
     def genString(handler: CLIHelper): String = handler.toString
   }
   protected val log: LoggingAdapter = Logging(system, this)
-
+  def takeSnapshot() = singleStores.takeSnapshot
   def handlePathRemove(parentPaths: Seq[Path]): Future[Seq[Int]] = {
     val odfF = (singleStores.hierarchyStore ? GetTree).mapTo[ImmutableODF]
 
