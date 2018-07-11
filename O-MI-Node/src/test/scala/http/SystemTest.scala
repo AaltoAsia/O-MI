@@ -1,15 +1,16 @@
 package http
+
 import java.text.SimpleDateFormat
 import java.util.TimeZone
 
 import akka.http.scaladsl.model.ContentTypes
+
 import scala.concurrent._
 import scala.concurrent.duration._
 import scala.util.Try
 import scala.xml._
-
 import agentSystem.AgentSystem
-import akka.actor.{ActorRef, Props, ActorSystem}
+import akka.actor.{ActorRef, ActorSystem, Props}
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.client.RequestBuilding
 import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport._
@@ -23,25 +24,29 @@ import database._
 import org.specs2.concurrent.ExecutionEnv
 import org.specs2.mutable._
 import org.specs2.specification.BeforeAfterAll
-import responses.{RequestHandler, SubscriptionManager, CallbackHandler}
+import responses.{CallbackHandler, RequestHandler, SubscriptionManager}
 import testHelpers._
+import akka.pattern.ask
+import journal.Models.ErasePathCommand
 
 class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAfterAll {
 
 
-  val conf = ConfigFactory.load("testconfig")
-  val omiServer = new TestOmiServer(conf)
+  val omiServer = new TestOmiServer()
 
   omiServer.bindTCP()
   val serverBinding = omiServer.bindHTTP()
 
-  import omiServer.{ singleStores, dbConnection, system, materializer}
+  import omiServer.{singleStores, dbConnection, system, materializer}
+
   // TODO: better cleaning after tests
   def beforeAll() = {
-    singleStores.hierarchyStore execute TreeRemovePath(types.Path("/Objects"))
+    Await
+      .ready((singleStores.hierarchyStore ? ErasePathCommand(types.Path("/Objects"))) (new Timeout(20 seconds)),
+        20 seconds)
   }
-  sequential
 
+  sequential
 
 
   val probe = TestProbe()
@@ -49,12 +54,12 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
   val http = Http(system)
 
 
-
   val printer = new scala.xml.PrettyPrinter(80, 2)
   val parser = new HTML5Parser
-  val sourceFile = if(java.nio.file.Files.exists(java.nio.file.Paths.get("O-MI-Node/html/ImplementationDetails.html"))){
+  val sourceFile = if (java.nio.file.Files
+    .exists(java.nio.file.Paths.get("O-MI-Node/html/ImplementationDetails.html"))) {
     Source.fromFile("O-MI-Node/html/ImplementationDetails.html")
-  }else Source.fromFile("html/ImplementationDetails.html")
+  } else Source.fromFile("html/ImplementationDetails.html")
   val sourceXML: Node = parser.loadXML(sourceFile)
   val testArticles = sourceXML \\ ("article")
   val tests = testArticles.groupBy(x => x.\@("class"))
@@ -62,7 +67,8 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
   //tests with request response pairs, each containing description and forming single test(req, resp), (req, resp)...
   lazy val readTests = tests("request-response single test").map { node =>
     val textAreas = node \\ ("textarea")
-    require(textAreas.length == 2, s"Each request must have exactly 1 response in request-response tests, could not find for: $node")
+    require(textAreas.length == 2,
+      s"Each request must have exactly 1 response in request-response tests, could not find for: $node")
     val request: Try[Elem] = getSingleRequest(textAreas)
     val correctResponse: Try[Elem] = getSingleResponse(textAreas)
     val testDescription = node \ ("div") \ ("p") text
@@ -73,7 +79,8 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
   //tests that have multiple request-response pairs that all have common description (req, resp, req, resp...)
   lazy val subsNoCallback = tests("request-response test").map { node =>
     val textAreas = node \\ ("textarea")
-    require(textAreas.length % 2 == 0, "There must be even amount of response and request messages(1 response for each request)\n" + textAreas)
+    require(textAreas.length % 2 == 0,
+      "There must be even amount of response and request messages(1 response for each request)\n" + textAreas)
 
     val testDescription: String = node \ ("div") \ ("p") text
 
@@ -102,7 +109,7 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
           val indx: Int = res.lastIndexWhere { x => x.head.\@("class") == "request" }
           res.updated(indx, res.last.head :+ i)
 
-        } else res.:+(i) 
+        } else res.:+(i)
       }
     }
 
@@ -114,14 +121,17 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
       s: Unit =>
         system.terminate()
     }
-    future.onFailure{ 
+    future.onFailure {
       case t: Throwable =>
-        system.log.error( t,"AfterAll encountered:")
+        system.log.error(t, "AfterAll encountered:")
     }
     Await.ready(future, 2 seconds)
     dbConnection.destroy()
-    singleStores.hierarchyStore execute TreeRemovePath(types.Path("/Objects"))
+    Await
+      .ready((singleStores.hierarchyStore ? ErasePathCommand(types.Path("/Objects"))) (new Timeout(20 seconds)),
+        20 seconds)
   }
+
   def getPostRequest(in: String): HttpRequest = {
     val tmp = RequestBuilding.Post("http://localhost:8080/", in)
     tmp
@@ -131,28 +141,31 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
     val tmp = RequestBuilding.Post("http://localhost:8080/", in)
     tmp
   }
+
   def getSingleRequest(reqresp: NodeSeq): Try[Elem] = {
     require(reqresp.length >= 1)
     Try(XML.loadString(setTimezoneToSystemLocale(reqresp.head.text)))
   }
 
-  def removeTimes( text: String) : String =removeUnixTime(removeDateTime(text))
-  def removeDateTime( text: String) : String =text.replaceAll(
+  def removeTimes(text: String): String = removeUnixTime(removeDateTime(text))
+
+  def removeDateTime(text: String): String = text.replaceAll(
     """dateTime\s*=\s*"\S*?"""",
     ""
   )
-  def removeUnixTime( text: String) : String =text.replaceAll(
+
+  def removeUnixTime(text: String): String = text.replaceAll(
     """unixTime\s*=\s*"\d*"""",
     ""
   )
 
   def fixSubId(id: Option[Long], message: String): String =
-    if(id.isEmpty) return message
+    if (id.isEmpty) return message
     else
       message.replaceAll(
         """requestID>\d*<\/requestID""",
         s"""requestID>${id.get}</requestID"""
-  )
+      )
 
   def getSingleResponseNoTime(reqresp: NodeSeq): Try[Elem] = {
     Try(
@@ -163,9 +176,11 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
       )
     )
   }
+
   def getSingleResponse(reqresp: NodeSeq): Try[Elem] = {
     Try(XML.loadString(setTimezoneToSystemLocale(removeDateTime(reqresp.last.text))))
   }
+
   def getCallbackRequest(reqresp: NodeSeq): Try[Elem] = {
     require(reqresp.length >= 1)
     Try(XML.loadString(
@@ -173,15 +188,15 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
         reqresp.head.text.replaceAll(
           """callback\s*=\s*"(http:\/\/callbackAddress\.com:5432)"""",
           """callback="http://localhost:20002/"""")
-        )
       )
+    )
     )
   }
 
   def setTimezoneToSystemLocale(in: String): String = {
     val date = """(end|begin)\s*=\s*"(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?)"""".r
 
-    val replaced = date replaceAllIn (in, _ match {
+    val replaced = date replaceAllIn(in, _ match {
 
       case date(pref, timestamp) => {
 
@@ -214,7 +229,8 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
         request aka "Write request message" must beSuccessfulTry
         correctResponse aka "Correct write response message" must beSuccessfulTry
 
-        val responseFuture = http.singleRequest(getPostRequest(request.get))//pipeline(Post("http://localhost:8080/", request.get))
+        val responseFuture = http
+          .singleRequest(getPostRequest(request.get)) //pipeline(Post("http://localhost:8080/", request.get))
 
         val response = Try(Await.result(responseFuture.flatMap(n =>
           Unmarshal(n).to[NodeSeq]), Duration(10, "second")))
@@ -223,14 +239,14 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
 
         response.get showAs (n =>
           "Request Message:\n" + printer.format(request.get) + "\n\n" + "Actual response:\n" + printer.format(n.head)
-        ) must new BeEqualFormatted(correctResponse.get)
+          ) must new BeEqualFormatted(correctResponse.get)
       }
     }
 
     step({
       Thread.sleep(2000);
     })
-    
+
     "Read Test" >> {
       readTests.foldLeft(org.specs2.specification.core.Fragments.empty)((res, i) => {
         val (request, correctResponse, testDescription) = i
@@ -241,9 +257,9 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
 
           val responseFuture = http.singleRequest(getPostRequest(request.get)).flatMap(n =>
             Unmarshal(n).to[NodeSeq])
-          responseFuture.onFailure{
-            case t : Throwable =>
-             system.log.error( t, "Ummarshalling failure loq: ")
+          responseFuture.onFailure {
+            case t: Throwable =>
+              system.log.error(t, "Ummarshalling failure loq: ")
 
           }
           val responseXML = Try(Await.result(responseFuture, Duration(2, "second")))
@@ -252,7 +268,7 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
           val response = XML.loadString(removeDateTime(responseXML.get.toString))
           t1 and t2 and t3 and (response showAs (n =>
             "Request Message:\n" + printer.format(request.get) + "\n\n" + "Actual response:\n" + printer.format(n.head)
-          ) must new BeEqualFormatted(correctResponse.get))
+            ) must new BeEqualFormatted(correctResponse.get))
         }
       })
     }
@@ -269,19 +285,27 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
               correctResponse aka "Correct response message" must beSuccessfulTry
 
               responseWait.foreach { x => Thread.sleep(x * 1000) }
-              val responseFuture = http.singleRequest(getPostRequest(XML.loadString(fixSubId(requestId,request.get.toString))))
-              val responseXml = Try(Await.result(responseFuture.flatMap(Unmarshal(_).to[NodeSeq]), Duration(2, "second")))
+              val responseFuture = http
+                .singleRequest(getPostRequest(XML.loadString(fixSubId(requestId, request.get.toString))))
+              val responseXml = Try(Await
+                .result(responseFuture.flatMap(Unmarshal(_).to[NodeSeq]), Duration(2, "second")))
               val tryId = Try(responseXml.get.\\("requestID").head.text.toLong).toOption
-              if (requestId.forall(id => tryId.exists(_ != id))) // if the request ID is different and not empty than previous requestId
+              if (requestId
+                .forall(id => tryId
+                  .exists(_ != id))) // if the request ID is different and not empty than previous requestId
                 requestId = tryId
 
               responseXml must beSuccessfulTry
-              
+
               val response = XML.loadString(fixSubId(requestId, removeTimes(responseXml.get.toString)))
 
               response showAs (n =>
-                "Request Message:\n" + printer.format(request.get) + "\n\n" + "Actual response:\n" + printer.format(n.head)
-              ) must new BeEqualFormatted(XML.loadString(fixSubId(requestId,correctResponse.get.toString)))
+                "Request Message:\n" +
+                  printer.format(request.get) +
+                  "\n\n" +
+                  "Actual response:\n" +
+                  printer.format(n.head)
+                ) must new BeEqualFormatted(XML.loadString(fixSubId(requestId, correctResponse.get.toString)))
             }
           })
         }
@@ -308,38 +332,47 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
 
                 responseWait.foreach { x => Thread.sleep(x * 1000) }
 
-                val responseFuture = http.singleRequest(getPostRequest(XML.loadString(fixSubId(requestId,request.get.toString()))))
-                val responseXml = Try(Await.result(responseFuture.flatMap(Unmarshal(_).to[NodeSeq]), Duration(2, "second")))
+                val responseFuture = http
+                  .singleRequest(getPostRequest(XML.loadString(fixSubId(requestId, request.get.toString()))))
+                val responseXml = Try(Await
+                  .result(responseFuture.flatMap(Unmarshal(_).to[NodeSeq]), Duration(2, "second")))
                 val tryId = Try(responseXml.get.\\("requestID").head.text.toLong).toOption
-                if (requestId.forall(id => tryId.exists(_ != id))) // if the request ID is different and not empty than previous requestId
+                if (requestId
+                  .forall(id => tryId
+                    .exists(_ != id))) // if the request ID is different and not empty than previous requestId
                   requestId = tryId
 
 
-
                 responseXml must beSuccessfulTry
-              
-              val response = XML.loadString(fixSubId(requestId,removeTimes(responseXml.get.toString)))
+
+                val response = XML.loadString(fixSubId(requestId, removeTimes(responseXml.get.toString)))
                 //remove blocking waits if possible
-                if(request.get.\\("write").nonEmpty){
+                if (request.get.\\("write").nonEmpty) {
                   Thread.sleep(2000)
                 }
-                val correctResponse = getSingleResponseNoTime(j).map(m => XML.loadString(fixSubId(requestId,m.toString())))
+                val correctResponse = getSingleResponseNoTime(j)
+                  .map(m => XML.loadString(fixSubId(requestId, m.toString())))
                 correctResponse aka "Correct response message" must beSuccessfulTry
                 response showAs (n =>
-                  "Request Message:\n" + printer.format(request.get) + "\n\n" + "Actual response:\n" + printer.format(n.head)
-                ) must new BeEqualFormatted(correctResponse.get)
+                  "Request Message:\n" +
+                    printer.format(request.get) +
+                    "\n\n" +
+                    "Actual response:\n" +
+                    printer.format(n.head)
+                  ) must new BeEqualFormatted(correctResponse.get)
 
               } else {
-                val correctResponse = getSingleResponseNoTime(j).map(m => XML.loadString(fixSubId(requestId,m.toString())))
+                val correctResponse = getSingleResponseNoTime(j)
+                  .map(m => XML.loadString(fixSubId(requestId, m.toString())))
                 correctResponse aka "Correct response message" must beSuccessfulTry
                 val messageOption = probe.expectMsgType[Option[NodeSeq]](Duration(responseWait.getOrElse(2), "second"))
-                
+
                 messageOption must beSome
                 val response = XML.loadString(removeTimes(messageOption.get.toString()))
-                
+
                 response showAs (n =>
                   "Response at callback server:\n" + printer.format(n.head)
-                ) must new BeEqualFormatted(correctResponse.get)
+                  ) must new BeEqualFormatted(correctResponse.get)
 
               }
             }
@@ -355,6 +388,7 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
 ============================================        
         """
       )
+
       def writeMessage(value: String) = {
         s"""<?xml version="1.0" encoding="UTF-8"?>
             <omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="0">
@@ -375,14 +409,16 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
               </write>
             </omiEnvelope>"""
       }
-      "Current Connection Subscription should " >>{
+
+      "Current Connection Subscription should " >> {
         "return correct number of responses for event subscription" >> {
 
           val wsProbe = TestProbe()
           val wsServer = new WsTestCallbackClient(wsProbe.ref, "ws://localhost", 8080)
-            val m1 = wsServer.offer(writeMessage("1"))
-            val res1 = wsProbe.receiveN(1, 5 seconds) //write confirmation
-            val m2 = wsServer.offer("""<?xml version="1.0" encoding="UTF-8"?>
+          val m1 = wsServer.offer(writeMessage("1"))
+          val res1 = wsProbe.receiveN(1, 5 seconds) //write confirmation
+          val m2 = wsServer.offer(
+            """<?xml version="1.0" encoding="UTF-8"?>
               <omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="20">
               <read msgformat="odf" interval="-1" callback="0">
                 <msg>
@@ -396,24 +432,24 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
               </read>
             </omiEnvelope>
             """)
-            val res2 = wsProbe.receiveN(1, 5 seconds) //write confirmation
-            for {
-              _ <- wsServer.offer(writeMessage("2"))
-              _ <- wsServer.offer(writeMessage("3"))
-              _ <- wsServer.offer(writeMessage("4"))
-              f <- wsServer.offer(writeMessage("5"))
-            } yield f
-            val res3 = wsProbe.receiveN(8, 15 seconds)
-            res1.length === 1
-            res2.length === 1
-            res3.length === 8 // 4 write confirmations and 4 subscription updates
+          val res2 = wsProbe.receiveN(1, 5 seconds) //write confirmation
+          for {
+            _ <- wsServer.offer(writeMessage("2"))
+            _ <- wsServer.offer(writeMessage("3"))
+            _ <- wsServer.offer(writeMessage("4"))
+            f <- wsServer.offer(writeMessage("5"))
+          } yield f
+          val res3 = wsProbe.receiveN(8, 15 seconds)
+          res1.length === 1
+          res2.length === 1
+          res3.length === 8 // 4 write confirmations and 4 subscription updates
         }
 
         "return correct number of responses for interval subscription: ttl=7 interval=2" >> {
           val wsProbe = TestProbe()
           val wsServer = new WsTestCallbackClient(wsProbe.ref, "ws://localhost", 8080)
-            wsServer.offer(
-              """<?xml version="1.0" encoding="UTF-8"?>
+          wsServer.offer(
+            """<?xml version="1.0" encoding="UTF-8"?>
               <omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="7">
               <read msgformat="odf" interval="2" callback="0">
                 <msg>
@@ -426,11 +462,11 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
                 </msg>
               </read>
             </omiEnvelope>""")
-            //val result = wsProbe.expectNoMsg(Duration.apply(5, "seconds"))
-            // 3 responses + 1 confirmation
-            val result = wsProbe.receiveN(4, 10 seconds)
-            wsServer.close
-            result.length === 4
+          //val result = wsProbe.expectNoMsg(Duration.apply(5, "seconds"))
+          // 3 responses + 1 confirmation
+          val result = wsProbe.receiveN(4, 10 seconds)
+          wsServer.close
+          result.length === 4
         }
         /*"be sent to correct connections when multiple connections exists" >> {
           val wsProbe1 = TestProbe()
@@ -478,7 +514,8 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
               val res2 = wsProbe2.receiveN(2, 10 seconds) //2 write confirmations(subscribed to unchanging ii)
               res1.length === 6
               res2.length === 2
-        }*/ //broken test randomly fails
+        }*/
+        //broken test randomly fails
       }
 
       "Websocket Socket Subscription " >> {
@@ -486,9 +523,10 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
         val wsServer1 = new WsTestCallbackServer(wsProbe.ref, "localhost", 8787)
         val wsServer2 = new WsTestCallbackServer(wsProbe.ref, "localhost", 8788)
         val bind1 = wsServer1.bind()
-        Await.ready(bind1,5 seconds)
-          "return correct number of responses for event subscription" >> {
-            val m1= getPostRequest("""<?xml version="1.0" encoding="UTF-8"?>
+        Await.ready(bind1, 5 seconds)
+        "return correct number of responses for event subscription" >> {
+          val m1 = getPostRequest(
+            """<?xml version="1.0" encoding="UTF-8"?>
               <omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="15">
               <read msgformat="odf" interval="-1" callback="ws://localhost:8787">
               <msg>
@@ -502,19 +540,20 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
             </read>
           </omiEnvelope>
           """)
-            val res1 = http.singleRequest(m1)
-            Await.result(res1, 5 seconds)
-            for {
-              _ <- http.singleRequest(getPostRequest(writeMessage("2")))
-              _ <- http.singleRequest(getPostRequest(writeMessage("3")))
-              _ <- http.singleRequest(getPostRequest(writeMessage("4")))
-              f <- http.singleRequest(getPostRequest(writeMessage("5")))
-            } yield f
-            val res3 = wsProbe.receiveN(4, 10 seconds)
-            res3.length === 4 // 4 write confirmations and 4 subscription updates
+          val res1 = http.singleRequest(m1)
+          Await.result(res1, 5 seconds)
+          for {
+            _ <- http.singleRequest(getPostRequest(writeMessage("2")))
+            _ <- http.singleRequest(getPostRequest(writeMessage("3")))
+            _ <- http.singleRequest(getPostRequest(writeMessage("4")))
+            f <- http.singleRequest(getPostRequest(writeMessage("5")))
+          } yield f
+          val res3 = wsProbe.receiveN(4, 10 seconds)
+          res3.length === 4 // 4 write confirmations and 4 subscription updates
         }
-          "return correct number of responses for two event subscriptions with same callback address" >> {
-            val m1= getPostRequest("""<?xml version="1.0" encoding="UTF-8"?>
+        "return correct number of responses for two event subscriptions with same callback address" >> {
+          val m1 = getPostRequest(
+            """<?xml version="1.0" encoding="UTF-8"?>
               <omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="15">
               <read msgformat="odf" interval="-1" callback="ws://localhost:8787">
               <msg>
@@ -528,20 +567,21 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
             </read>
           </omiEnvelope>
           """)
-            val res1 = http.singleRequest(m1)
-            val res2 = http.singleRequest(m1)
-            Await.result(res1, 5 seconds)
-            for {
-              _ <- http.singleRequest(getPostRequest(writeMessage("2")))
-              _ <- http.singleRequest(getPostRequest(writeMessage("3")))
-              _ <- http.singleRequest(getPostRequest(writeMessage("4")))
-              f <- http.singleRequest(getPostRequest(writeMessage("5")))
-            } yield f
-            val res3 = wsProbe.receiveN(8, 12 seconds)
-            res3.length === 8 // 4 write confirmations and 4 subscription updates
+          val res1 = http.singleRequest(m1)
+          val res2 = http.singleRequest(m1)
+          Await.result(res1, 5 seconds)
+          for {
+            _ <- http.singleRequest(getPostRequest(writeMessage("2")))
+            _ <- http.singleRequest(getPostRequest(writeMessage("3")))
+            _ <- http.singleRequest(getPostRequest(writeMessage("4")))
+            f <- http.singleRequest(getPostRequest(writeMessage("5")))
+          } yield f
+          val res3 = wsProbe.receiveN(8, 12 seconds)
+          res3.length === 8 // 4 write confirmations and 4 subscription updates
         }
         "return correct number of responses for interval subscription: ttl=7 interval=2" >> {
-              val m1= getPostRequest("""<?xml version="1.0" encoding="UTF-8"?>
+          val m1 = getPostRequest(
+            """<?xml version="1.0" encoding="UTF-8"?>
               <omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="7">
               <read msgformat="odf" interval="2" callback="ws://localhost:8787">
                 <msg>
@@ -554,14 +594,16 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
                 </msg>
               </read>
             </omiEnvelope>""")
-            val res1 = http.singleRequest(m1)
-            val result = wsProbe.receiveN(3, 15 seconds)
-            //val result = wsProbe.expectNoMsg(Duration.apply(5, "seconds"))
-            // 3 responses
-            result.length === 3
+          val res1 = http.singleRequest(m1)
+          val result = wsProbe.receiveN(3, 15 seconds)
+          //val result = wsProbe.expectNoMsg(Duration.apply(5, "seconds"))
+          // 3 responses
+          result.length === 3
         }
-        "return correct number of responses for multiple interval subscription: ttl=7 interval=2 and ttl=8 and interval=3 with same callback address" >> {
-              val m1= getPostRequest("""<?xml version="1.0" encoding="UTF-8"?>
+        "return correct number of responses for multiple interval subscription: ttl=7 interval=2 and ttl=8 and interval=3 with same callback address" >>
+          {
+            val m1 = getPostRequest(
+              """<?xml version="1.0" encoding="UTF-8"?>
               <omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="7">
               <read msgformat="odf" interval="2" callback="ws://localhost:8787">
                 <msg>
@@ -574,7 +616,8 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
                 </msg>
               </read>
             </omiEnvelope>""")
-              val m2= getPostRequest("""<?xml version="1.0" encoding="UTF-8"?>
+            val m2 = getPostRequest(
+              """<?xml version="1.0" encoding="UTF-8"?>
               <omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="8">
               <read msgformat="odf" interval="3" callback="ws://localhost:8787">
                 <msg>
@@ -593,11 +636,13 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
             //val result = wsProbe.expectNoMsg(Duration.apply(5, "seconds"))
             // 3 responses
             result.length === 5
-        }
+          }
         val bind2 = wsServer2.bind()
-        Await.ready(bind2,5 seconds)
-        "return correct number of responses for multiple interval subscription: ttl=7 interval=2 and ttl=8 and interval=3 with different callback address" >> {
-              val m1= getPostRequest("""<?xml version="1.0" encoding="UTF-8"?>
+        Await.ready(bind2, 5 seconds)
+        "return correct number of responses for multiple interval subscription: ttl=7 interval=2 and ttl=8 and interval=3 with different callback address" >>
+          {
+            val m1 = getPostRequest(
+              """<?xml version="1.0" encoding="UTF-8"?>
               <omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="7">
               <read msgformat="odf" interval="2" callback="ws://localhost:8787">
                 <msg>
@@ -610,7 +655,8 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
                 </msg>
               </read>
             </omiEnvelope>""")
-              val m2= getPostRequest("""<?xml version="1.0" encoding="UTF-8"?>
+            val m2 = getPostRequest(
+              """<?xml version="1.0" encoding="UTF-8"?>
               <omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="8">
               <read msgformat="odf" interval="3" callback="ws://localhost:8788">
                 <msg>
@@ -629,9 +675,10 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
             //val result = wsProbe.expectNoMsg(Duration.apply(5, "seconds"))
             // 3 responses
             result.length === 5
-        }
+          }
         "return correct number of responses for two event subscriptions with different callback address" >> {
-            val m1= getPostRequest("""<?xml version="1.0" encoding="UTF-8"?>
+          val m1 = getPostRequest(
+            """<?xml version="1.0" encoding="UTF-8"?>
               <omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="15">
               <read msgformat="odf" interval="-1" callback="ws://localhost:8787">
               <msg>
@@ -645,7 +692,8 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
             </read>
           </omiEnvelope>
           """)
-            val m2= getPostRequest("""<?xml version="1.0" encoding="UTF-8"?>
+          val m2 = getPostRequest(
+            """<?xml version="1.0" encoding="UTF-8"?>
               <omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="15">
               <read msgformat="odf" interval="-1" callback="ws://localhost:8788">
               <msg>
@@ -659,17 +707,17 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
             </read>
           </omiEnvelope>
           """)
-            val res1 = http.singleRequest(m1)
-            val res2 = http.singleRequest(m2)
-            Await.result(res1, 5 seconds)
-            for {
-              _ <- http.singleRequest(getPostRequest(writeMessage("2")))
-              _ <- http.singleRequest(getPostRequest(writeMessage("3")))
-              _ <- http.singleRequest(getPostRequest(writeMessage("4")))
-              f <- http.singleRequest(getPostRequest(writeMessage("5")))
-            } yield f
-            val res3 = wsProbe.receiveN(8, 12 seconds)
-            res3.length === 8 // 4 write confirmations and 4 subscription updates
+          val res1 = http.singleRequest(m1)
+          val res2 = http.singleRequest(m2)
+          Await.result(res1, 5 seconds)
+          for {
+            _ <- http.singleRequest(getPostRequest(writeMessage("2")))
+            _ <- http.singleRequest(getPostRequest(writeMessage("3")))
+            _ <- http.singleRequest(getPostRequest(writeMessage("4")))
+            f <- http.singleRequest(getPostRequest(writeMessage("5")))
+          } yield f
+          val res3 = wsProbe.receiveN(8, 12 seconds)
+          res3.length === 8 // 4 write confirmations and 4 subscription updates
         }
       }
     }

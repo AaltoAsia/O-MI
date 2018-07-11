@@ -8,61 +8,62 @@ import types._
 import Capacity._
 import UserGroup._
 import VehicleType._
-case class Capacity(
-  val name: String,
-  val currentCapacity: Option[Long],
-  val totalCapacity: Option[Long],
-  val validForVehicle: Option[VehicleType],
-  val usergroup: Option[UserGroup]
-){
 
-  def toOdf( parentPath: Path ): OdfObject = {
+case class Capacity(
+                     name: String,
+                     currentCapacity: Option[Long],
+                     totalCapacity: Option[Long],
+                     validForVehicle: Option[VehicleType],
+                     usergroup: Option[UserGroup]
+                   ) {
+
+  def toOdf(parentPath: Path): OdfObject = {
 
     val path = parentPath / name
-    val currentCapacityII = currentCapacity.map{
-      count: Long => 
+    val currentCapacityII = currentCapacity.map {
+      count: Long =>
         OdfInfoItem(
           path / currentCapacityStr,
-          Vector( OdfValue( count, currentTime )),
-          typeValue = Some( "mv:" + currentCapacityStr )
+          Vector(OdfValue(count, currentTime)),
+          typeValue = Some("mv:" + currentCapacityStr)
         )
     }.toVector
-    val totalCapacityII = totalCapacity.map{
-      count: Long => 
+    val totalCapacityII = totalCapacity.map {
+      count: Long =>
         OdfInfoItem(
           path / totalCapacityStr,
-          Vector( OdfValue( count, currentTime )),
-          typeValue = Some( "mv:" + totalCapacityStr )
+          Vector(OdfValue(count, currentTime)),
+          typeValue = Some("mv:" + totalCapacityStr)
         )
     }.toVector
-    val validForVehicleII = validForVehicle.map{
-      veh: VehicleType => 
+    val validForVehicleII = validForVehicle.map {
+      veh: VehicleType =>
         OdfInfoItem(
           path / validForVehicleStr,
-          Vector( OdfValue( veh.toString, currentTime )),
-          typeValue = Some( "mv:" + validForVehicleStr )
+          Vector(OdfValue(veh.toString, currentTime)),
+          typeValue = Some("mv:" + validForVehicleStr)
         )
     }.toVector
-    val userGroupII = usergroup.map{
-      veh: UserGroup => 
+    val userGroupII = usergroup.map {
+      veh: UserGroup =>
         OdfInfoItem(
           path / validForUserGroupStr,
-          Vector( OdfValue( veh.toString, currentTime )),
-          typeValue = Some( "mv:" + validForUserGroupStr )
+          Vector(OdfValue(veh.toString, currentTime)),
+          typeValue = Some("mv:" + validForUserGroupStr)
         )
     }.toVector
     OdfObject(
-      Vector( OdfQlmID( name )),
+      Vector(OdfQlmID(name)),
       path,
       currentCapacityII ++ totalCapacityII ++ userGroupII ++ validForVehicleII,
-      typeValue = Some( "mv:" + capacityTypeStr )
+      typeValue = Some("mv:" + capacityTypeStr)
     )
-      
+
 
   }
 }
 
-object Capacity{
+object Capacity {
 
   val currentCapacityStr = "realTimeValue"
   val totalCapacityStr = "maximumValue"
@@ -72,25 +73,25 @@ object Capacity{
   val userGroupStr = "userGroup"
   val capacityTypeStr = "capacity"
 
-  def apply( obj: OdfObject ): Capacity = {
+  def apply(obj: OdfObject): Capacity = {
     val nameO = obj.id.headOption
-    val currentCapacity: Option[Long] = obj.get( obj.path / currentCapacityStr ).collect{ 
-       case ii: OdfInfoItem =>
-        getLongFromInfoItem( ii )
-     }.flatten
-    val totalCapacity: Option[Long] = obj.get( obj.path / totalCapacityStr ).collect{ 
-       case ii: OdfInfoItem =>
-        getLongFromInfoItem( ii )
-     }.flatten
-    val validForVehicle: Option[VehicleType] = obj.get( obj.path / vehicleTypeStr ).collect{ 
-       case ii: OdfInfoItem =>
-        getStringFromInfoItem( ii ).map( VehicleType(_))
-     }.flatten
-    val usageType: Option[UserGroup] = obj.get( obj.path / userGroupStr ).collect{ 
-       case ii: OdfInfoItem =>
-        getStringFromInfoItem( ii ).map( UserGroup(_))
-     }.flatten
-    nameO.map{ name =>
+    val currentCapacity: Option[Long] = obj.get(obj.path / currentCapacityStr).collect {
+      case ii: OdfInfoItem =>
+        getLongFromInfoItem(ii)
+    }.flatten
+    val totalCapacity: Option[Long] = obj.get(obj.path / totalCapacityStr).collect {
+      case ii: OdfInfoItem =>
+        getLongFromInfoItem(ii)
+    }.flatten
+    val validForVehicle: Option[VehicleType] = obj.get(obj.path / vehicleTypeStr).collect {
+      case ii: OdfInfoItem =>
+        getStringFromInfoItem(ii).map(VehicleType(_))
+    }.flatten
+    val usageType: Option[UserGroup] = obj.get(obj.path / userGroupStr).collect {
+      case ii: OdfInfoItem =>
+        getStringFromInfoItem(ii).map(UserGroup(_))
+    }.flatten
+    nameO.map { name =>
       Capacity(
         name.value,
         currentCapacity,
@@ -98,10 +99,10 @@ object Capacity{
         validForVehicle,
         usageType
       )
-    }.getOrElse{
-        throw new Exception( s"No name found for mv:$capacityTypeStr in ${obj.path}" )
+    }.getOrElse {
+      throw new Exception(s"No name found for mv:$capacityTypeStr in ${obj.path}")
     }
-  
+
   }
 
 }

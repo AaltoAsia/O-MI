@@ -8,17 +8,17 @@ import UserGroup._
 import VehicleType._
 
 case class ParkingSpace(
-  val id: String,
-  val validForVehicle: Seq[VehicleType],
-  val validUserGroups: Seq[UserGroup],
-  val geo: Option[GeoCoordinates],
-  val maximumParkingHours: Option[Long],
-  val available: Option[Boolean],
-  val user: Option[String],
-  val charger: Option[Charger],
-  val height: Option[Double],
-  val length: Option[Double],
-  val width: Option[Double]
+                         id: String,
+  validForVehicle: Seq[VehicleType],
+  validUserGroups: Seq[UserGroup],
+  geo: Option[GeoCoordinates],
+  maximumParkingHours: Option[Long],
+  available: Option[Boolean],
+  user: Option[String],
+  chargers: Seq[Charger],
+  height: Option[Double],
+  length: Option[Double],
+  width: Option[Double]
  ) extends Dimensions{
    def update( other: ParkingSpace ): ParkingSpace= {
      require( id == other.id )
@@ -30,13 +30,16 @@ case class ParkingSpace(
        other.maximumParkingHours.orElse( maximumParkingHours ),
        other.available.orElse( available ),
        other.user.orElse( user ),
-       charger.flatMap{
-         ch => 
-           other.charger.map{
-             och =>
-              ch.update(och)
-           }
-       }.orElse(other.charger),
+      other.chargers.groupBy(_.id).mapValues(_.head).foldLeft(chargers.groupBy(_.id).mapValues(_.head)){
+        case (current:Map[String,Charger], (id: String, charger: Charger)) =>
+          current.get(id) match{
+            case Some(currentCharger: Charger) => 
+              current ++ Map(id -> currentCharger.update(charger))
+            case None =>
+              current ++ Map(id -> charger)
+          }
+      }.values.toSeq,
+
        other.height.orElse( height ),
        other.length.orElse( length ),
        other.width.orElse( width )
@@ -56,7 +59,7 @@ case class ParkingSpace(
         nII,
         path / nII,
         typeAttribute = Some(s"mv:$nII"),
-        values = Vector( LongValue( mph, currentTimestamp, Map() ))
+        values = Vector( LongValue( mph, currentTimestamp ))
       )
     }.toSeq ++ height.map{ h => 
       val nII = "vehicleHeighLimitInM"
@@ -64,7 +67,7 @@ case class ParkingSpace(
         nII,
         path / nII,
         typeAttribute = Some(s"mv:$nII"),
-        values = Vector( DoubleValue( h, currentTimestamp, Map() ))
+        values = Vector( DoubleValue( h, currentTimestamp ))
       )
     }.toSeq ++ width.map{ w => 
       val nII = "vehicleWidthLimitInM"
@@ -72,7 +75,7 @@ case class ParkingSpace(
         nII,
         path / nII,
         typeAttribute = Some(s"mv:$nII"),
-        values = Vector( DoubleValue( w, currentTimestamp, Map() ))
+        values = Vector( DoubleValue( w, currentTimestamp ))
       )
     }.toSeq ++ length.map{ l => 
       val nII = "vehicleLengthLimitInM"
@@ -80,7 +83,7 @@ case class ParkingSpace(
         nII,
         path / nII,
         typeAttribute = Some(s"mv:$nII"),
-        values = Vector( DoubleValue( l, currentTimestamp, Map() ))
+        values = Vector( DoubleValue( l, currentTimestamp ))
       )
     }.toSeq ++ available.map{ a => 
       val nII = "available"
@@ -88,7 +91,7 @@ case class ParkingSpace(
         nII,
         path / nII,
         typeAttribute = Some(s"mv:$nII"),
-        values = Vector( BooleanValue( a, currentTimestamp, Map() ))
+        values = Vector( BooleanValue( a, currentTimestamp ))
       )
     }.toSeq ++ user.map{ u => 
       val nII = "user"
@@ -96,11 +99,11 @@ case class ParkingSpace(
         nII,
         path / nII,
         typeAttribute = Some(s"mv:$nII"),
-        values = Vector( StringValue( u, currentTimestamp, Map() ))
+        values = Vector( StringValue( u, currentTimestamp ))
       )
     }.toSeq ++ 
     geo.map( g => g.toOdf( path )).toSeq.flatten ++ 
-    charger.map( c => c.toOdf( path )).toSeq.flatten 
+    chargers.map( c => c.toOdf( path )).toSeq.flatten 
   }
 }
 
@@ -117,8 +120,8 @@ object ParkingSpace{
               case Failure(e) => throw e
             }
           }
-          val charger = odf.get(path / "Charger").map{ 
-            n: Node => 
+          val chargers = odf.getChilds(path).collect{ 
+            case n: Object if n.typeAttribute.contains("mv:Charger") => 
             Charger.parseOdf( n.path, odf) match{
               case Success(c: Charger) => c
               case Failure(e) => throw e
@@ -147,7 +150,7 @@ object ParkingSpace{
             getLongOption("maximumParkingHours",path,odf),
             getBooleanOption("available",path,odf),
             getStringOption("user",path,odf),
-            charger,
+            chargers,
             getDoubleOption("vehicleHeightLimit",path,odf),
             getDoubleOption("vehicleLengthLimit",path,odf),
             getDoubleOption("vehicleWidthLimit",path,odf)

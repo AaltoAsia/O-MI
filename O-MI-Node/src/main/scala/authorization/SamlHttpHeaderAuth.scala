@@ -14,7 +14,6 @@
 
 package authorization
 
-import scala.collection.JavaConversions.collectionAsScalaIterable
 import scala.util.{Failure, Success}
 
 import akka.http.scaladsl.model.HttpHeader
@@ -26,39 +25,40 @@ import Authorization.{UnauthorizedEx, AuthorizationExtension, CombinedTest, Perm
 import http.OmiConfigExtension
 
 
-
 /** EduPersonPrincipalName, used as user identifier */
 case class Eppn(user: String)
 
 
 /**
- * SAML authorization using http headers got from some reverse-proxying server (e.g. nginx, apache)
- * preferably running on the same computer (for security reasons).
- * Authorizes PermissiveRequests for all users who are specified by EPPN in config whitelist
- * EPPNs are usually in format "username@organizationdomain"
- */
+  * SAML authorization using http headers got from some reverse-proxying server (e.g. nginx, apache)
+  * preferably running on the same computer (for security reasons).
+  * Authorizes PermissiveRequests for all users who are specified by EPPN in config whitelist
+  * EPPNs are usually in format "username@organizationdomain"
+  */
 trait SamlHttpHeaderAuth extends AuthorizationExtension {
   private type User = Option[Eppn]
   val settings: OmiConfigExtension
 
-  private[this] lazy val  whitelistedUsers: Vector[Eppn] ={
-    val tmp= settings.inputWhiteListUsers.map(Eppn(_))
+  private[this] lazy val whitelistedUsers: Vector[Eppn] = {
+    val tmp = settings.inputWhiteListUsers.map(Eppn(_))
 
     log.info(s"O-MI node is configured to allow SAML users: $tmp")
     if (tmp.nonEmpty)
-      log.info("Make sure that you have SAML service provider setup correctly, otherwise you may have a security issue!")
-    
+      log
+        .info("Make sure that you have SAML service provider setup correctly, otherwise you may have a security issue!")
+
     tmp
   }
-  /** 
-   * Select header with the right data in it.
-   * EduPersonPrincipalName
-   * Is it uppercase? Docs say it depends on tool.
-   */
+
+  /**
+    * Select header with the right data in it.
+    * EduPersonPrincipalName
+    * Is it uppercase? Docs say it depends on tool.
+    */
   def headerSelector(header: HttpHeader): Boolean =
     header.name == "HTTP_eppn" || header.name == "HTTP_EPPN"
 
-  private def extractUserData: Directive1[User] = optionalHeaderValue( header =>
+  private def extractUserData: Directive1[User] = optionalHeaderValue(header =>
     if (headerSelector(header))
       Some(Eppn(header.value))
     else
@@ -66,24 +66,24 @@ trait SamlHttpHeaderAuth extends AuthorizationExtension {
   )
 
   private def hasPermission: User => PermissionTest = {
-    case u @ Some(user) => (wrap: RequestWrapper) => wrap.unwrapped flatMap {
+    case u@Some(user) => (wrap: RequestWrapper) =>
+      wrap.unwrapped flatMap {
 
-      case r : PermissiveRequest =>
+        case r: PermissiveRequest =>
 
-        val result = whitelistedUsers contains user
+          val result = whitelistedUsers contains user
 
-        if (result) {
-          log.info(s"Authorized user: $u for ${r.toString.take(80)}...")
-          Success((r,r.user.copy(name = Some(user.user))))
-        } else {
-          log.warn(s"Unauthorized user: $u")
-          Failure(UnauthorizedEx())
-        }
+          if (result) {
+            log.info(s"Authorized user: $u for ${r.toString.take(80)}...")
+            Success((r, r.user.copy(name = Some(user.user))))
+          } else {
+            log.warn(s"Unauthorized user: $u")
+            Failure(UnauthorizedEx())
+          }
 
-      case _ => Failure(UnauthorizedEx())
-    }
-    case _ =>
-      {_ =>  Failure(UnauthorizedEx())}
+        case _ => Failure(UnauthorizedEx())
+      }
+    case _ => { _ => Failure(UnauthorizedEx()) }
   }
 
   abstract override def makePermissionTestFunction: CombinedTest =

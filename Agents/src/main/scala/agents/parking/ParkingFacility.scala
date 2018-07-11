@@ -28,7 +28,7 @@ class ParkingFacility(
         nII,
         path / nII,
         typeAttribute = Some(s"mv:$nII"),
-        values = Vector( LongValue( mph, currentTimestamp, Map() ))
+        values = Vector( LongValue( mph, currentTimestamp ))
       )
     }.toSeq ++ 
     geo.map( g => g.toOdf( path )).toSeq.flatten ++

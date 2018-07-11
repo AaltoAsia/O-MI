@@ -101,8 +101,8 @@ case class OpenLid( path: Path, user: String ) extends ParkingEvent{
 
 case class UpdatePlugMeasurements( path: Path, currentInmA: Option[Double], powerInW: Option[Double], voltageInV: Option[Double]) extends ParkingEvent{
 
-  val chargerPath = path / "Charger" 
-  val plugPath = chargerPath / "Plug"
+  val chargerPath: Path = path / "Charger"
+  val plugPath: Path = chargerPath / "Plug"
   def toOdf: OdfObject ={
     val voltageII = voltageInV.map{
       voltage: Double =>

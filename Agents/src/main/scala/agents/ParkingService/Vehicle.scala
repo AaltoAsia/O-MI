@@ -72,62 +72,62 @@ trait Vehicle{
   val vehicleType: VehicleType
 }
 case class Bicycle(
-                    val length: Option[Double],
-                    val width: Option[Double],
-                    val height: Option[Double]
+                    length: Option[Double],
+                    width: Option[Double],
+                    height: Option[Double]
 ) extends Vehicle{
     final val vehicleType: VehicleType = VehicleType.Bicycle
 
   }
   case class Car(
-                  val length: Option[Double],
-                  val width: Option[Double],
-                  val height: Option[Double]
+                  length: Option[Double],
+                  width: Option[Double],
+                  height: Option[Double]
 ) extends Vehicle {
     final val vehicleType: VehicleType = VehicleType.Car
 
   }
 
   case class Coach(
-                    val length: Option[Double],
-                    val width: Option[Double],
-                    val height: Option[Double]
+                    length: Option[Double],
+                    width: Option[Double],
+                    height: Option[Double]
 ) extends Vehicle{
     final val vehicleType: VehicleType = VehicleType.Coach
 
   }
 
 	case class Motorbike(
-                        val length: Option[Double],
-                        val width: Option[Double],
-                        val height: Option[Double]
+                        length: Option[Double],
+                        width: Option[Double],
+                        height: Option[Double]
 ) extends Vehicle{
     final val vehicleType: VehicleType = VehicleType.Motorbike
 
   }
 
 	case class RecreationalVehicle(
-                                  val length: Option[Double],
-                                  val width: Option[Double],
-                                  val height: Option[Double]
+                                  length: Option[Double],
+                                  width: Option[Double],
+                                  height: Option[Double]
 ) extends Vehicle{
     final val vehicleType: VehicleType = VehicleType.RecreationalVehicle
 
   }
 
 	case class Truck(
-                    val length: Option[Double],
-                    val width: Option[Double],
-                    val height: Option[Double]
+                    length: Option[Double],
+                    width: Option[Double],
+                    height: Option[Double]
 ) extends Vehicle{
     final val vehicleType: VehicleType = VehicleType.Truck
 
   }
 
 case class ElectricVehicle(
-                            val length: Option[Double],
-                            val width: Option[Double],
-                            val height: Option[Double]
+                            length: Option[Double],
+                            width: Option[Double],
+                            height: Option[Double]
 ) extends Vehicle{
     final val vehicleType: VehicleType = VehicleType.ElectricVehicle
 

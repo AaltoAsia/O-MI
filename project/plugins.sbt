@@ -8,6 +8,10 @@ addSbtPlugin("org.scoverage" % "sbt-coveralls" % "1.2.5")
 
 addSbtPlugin("org.scala-sbt.plugins" % "sbt-onejar" % "0.8")
 
+addSbtPlugin("com.thesamet" % "sbt-protoc" % "0.99.18")
+
+libraryDependencies += "com.thesamet.scalapb" %% "compilerplugin" % "0.7.4"
+
 addSbtPlugin("org.scalastyle" %% "scalastyle-sbt-plugin" % "0.6.0")
 
 resolvers += "Typesafe Repository" at "https://repo.typesafe.com/typesafe/releases/"

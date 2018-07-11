@@ -5,6 +5,7 @@ import types.odf._
 import types._
 
 case class Charger(
+  id: String,
   brand: Option[String],
   model: Option[String],
   lidStatus: Option[String],
@@ -17,7 +18,9 @@ case class Charger(
   plugs: Seq[Plug]
 ){
   def update( other: Charger ): Charger ={
+    require( id == other.id )
     Charger(
+      id,
       other.brand.orElse(brand),
       other.model.orElse(model),
       other.lidStatus.orElse(lidStatus),
@@ -37,10 +40,10 @@ case class Charger(
   }
 
   def toOdf(parentPath: Path): Seq[Node] = {
-    val path: Path= parentPath / "Charger"
+    val path: Path= parentPath / id
     Seq(
       Object( 
-        Vector( QlmID( "Charger")),
+        Vector( QlmID( id)),
         path,
         typeAttribute = Some(Charger.mvType)
       )
@@ -50,7 +53,7 @@ case class Charger(
         nII,
         path / nII,
         typeAttribute = Some(s"mv:$nII"),
-        values = Vector( StringValue( b, currentTimestamp, Map() ))
+        values = Vector( StringValue( b, currentTimestamp))
       )
     }.toSeq ++ model.map{ m => 
       val nII = "model"
@@ -58,7 +61,7 @@ case class Charger(
         nII,
         path / nII,
         typeAttribute = Some(s"mv:$nII"),
-        values = Vector( StringValue( m, currentTimestamp, Map() ))
+        values = Vector( StringValue( m, currentTimestamp))
       )
     } ++ currentInA.map{ m => 
       val nII = "currentInA"
@@ -66,7 +69,7 @@ case class Charger(
         nII,
         path / nII,
         typeAttribute = Some(s"mv:$nII"),
-        values = Vector( DoubleValue( m, currentTimestamp, Map() ))
+        values = Vector( DoubleValue( m, currentTimestamp))
       )
     } ++ currentType.map{ m => 
       val nII = "currentType"
@@ -74,7 +77,7 @@ case class Charger(
         nII,
         path / nII,
         typeAttribute = Some(s"mv:$nII"),
-        values = Vector( StringValue( m, currentTimestamp, Map() ))
+        values = Vector( StringValue( m, currentTimestamp))
       )
     } ++ powerInkW.map{ m => 
       val nII = "powerInkW"
@@ -82,7 +85,7 @@ case class Charger(
         nII,
         path / nII,
         typeAttribute = Some(s"mv:$nII"),
-        values = Vector( DoubleValue( m, currentTimestamp, Map() ))
+        values = Vector( DoubleValue( m, currentTimestamp))
       )
     } ++ voltageInV.map{ m => 
       val nII = "voltageInV"
@@ -90,7 +93,7 @@ case class Charger(
         nII,
         path / nII,
         typeAttribute = Some(s"mv:$nII"),
-        values = Vector( DoubleValue( m, currentTimestamp, Map() ))
+        values = Vector( DoubleValue( m, currentTimestamp))
       )
     } ++ threePhasedCurrentAvailable.map{ m => 
       val nII = "threePhasedCurrentAvailable"
@@ -98,7 +101,7 @@ case class Charger(
         nII,
         path / nII,
         typeAttribute = Some(s"mv:$nII"),
-        values = Vector( BooleanValue( m, currentTimestamp, Map() ))
+        values = Vector( BooleanValue( m, currentTimestamp))
       )
     } ++ isFastChargeCapable.map{ m => 
       val nII = "isFastChargeCapable"
@@ -106,7 +109,7 @@ case class Charger(
         nII,
         path / nII,
         typeAttribute = Some(s"mv:$nII"),
-        values = Vector( BooleanValue( m, currentTimestamp, Map() ))
+        values = Vector( BooleanValue( m, currentTimestamp))
       )
       } ++ plugs.flatMap{ p => p.toOdf(path)}
   }
@@ -144,6 +147,7 @@ object Charger{
               throw MVError( s"Plugs path $path/Plugs should be Object.")
           }.toSeq.flatten
           Charger(
+            path.last,
             getStringOption("brand",path,odf),
             getStringOption("model",path,odf),
             getStringOption("lidStatus",path,odf),

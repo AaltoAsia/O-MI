@@ -13,105 +13,128 @@
  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 package agentSystem
 
-import scala.reflect.ClassTag
-import scala.util.{Success, Failure, Try}
-import scala.concurrent.{ Future,ExecutionContext, TimeoutException, Promise }
+import scala.concurrent.{ Future, Promise }
 import akka.actor.{
-  Actor,
   ActorRef,
-  ActorLogging,
-  Props,
-  ActorInitializationException
+  ActorLogging
 }
-import akka.actor.Actor.Receive
 import akka.pattern.ask
 import akka.util.Timeout
-import com.typesafe.config.Config
-import types.OdfTypes._
 import types.OmiTypes._
-import types.Path
 /**
- Commands that can be received from InternalAgentLoader.
- **/
+  * Commands that can be received from InternalAgentLoader.
+  **/
 sealed trait InternalAgentCmd
-case class Start()                    extends InternalAgentCmd
-case class Restart()                  extends InternalAgentCmd
-case class Stop()                     extends InternalAgentCmd
+
+case class Start() extends InternalAgentCmd
+
+case class Restart() extends InternalAgentCmd
+
+case class Stop() extends InternalAgentCmd
 
 trait InternalAgentResponse
-trait InternalAgentSuccess     extends InternalAgentResponse 
-case class CommandSuccessful() extends InternalAgentSuccess 
+
+trait InternalAgentSuccess extends InternalAgentResponse
+
+case class CommandSuccessful() extends InternalAgentSuccess
 
 
-class InternalAgentFailure(msg : String, exp : Option[Throwable] )  extends  Exception(msg, exp.orNull) with InternalAgentResponse
-class InternalAgentConfigurationFailure( msg: String, exp: Option[Throwable] ) extends InternalAgentFailure( msg, exp )
+class InternalAgentFailure(msg: String, exp: Option[Throwable]) extends Exception(msg, exp.orNull) with
+  InternalAgentResponse
 
-class CommandFailed(msg : String, exp : Option[Throwable] ) extends InternalAgentFailure(msg, exp) 
-case class StopFailed(msg : String, exp : Option[Throwable] ) extends CommandFailed(msg, exp) 
-case class StartFailed(msg : String, exp : Option[Throwable] ) extends CommandFailed(msg, exp) 
+class InternalAgentConfigurationFailure(msg: String, exp: Option[Throwable]) extends InternalAgentFailure(msg, exp)
+
+class CommandFailed(msg: String, exp: Option[Throwable]) extends InternalAgentFailure(msg, exp)
+
+case class StopFailed(msg: String, exp: Option[Throwable]) extends CommandFailed(msg, exp)
+
+case class StartFailed(msg: String, exp: Option[Throwable]) extends CommandFailed(msg, exp)
 
 sealed trait ResponsibleAgentMsg
-case class ResponsibleWrite( promise: Promise[ResponseRequest], write: WriteRequest)
 
-case class AgentConfigurationException( msg: String, exp: Option[Throwable] = None) 
-  extends Exception( msg, exp.orNull )
+case class ResponsibleWrite(promise: Promise[ResponseRequest], write: WriteRequest)
 
-abstract class  ScalaInternalAgentTemplate(
-  protected val requestHandler: ActorRef,
-  protected val dbHandler: ActorRef
-) extends ScalaInternalAgent
+case class AgentConfigurationException(msg: String, exp: Option[Throwable] = None)
+  extends Exception(msg, exp.orNull)
 
-trait ScalaInternalAgent extends InternalAgent with ActorLogging{
+abstract class ScalaInternalAgentTemplate(
+                                           protected val requestHandler: ActorRef,
+                                           protected val dbHandler: ActorRef
+                                         ) extends ScalaInternalAgent
+
+trait ScalaInternalAgent extends InternalAgent with ActorLogging {
+
   import context.dispatcher
+
   protected def requestHandler: ActorRef
+
   protected def dbHandler: ActorRef
-  //These need to be implemented 
+
+  //These need to be implemented
   override def preStart: Unit = start
+
   override def postStop: Unit = stop
+
   def receive: PartialFunction[Any, Unit] = {
     case any: Any => unhandled(any)
   }
 
   final def agentSystem: ActorRef = context.parent
+
   final def name: String = self.path.name
-  final def writeToDB(write: WriteRequest) : Future[ResponseRequest] = requestFromDB(write)
-  final def readFromDB(read: ReadRequest) : Future[ResponseRequest] = requestFromDB(read)
-  final def requestFromDB(request: OdfRequest) : Future[ResponseRequest] = {
+
+  final def writeToDB(write: WriteRequest): Future[ResponseRequest] = requestFromDB(write)
+
+  final def readFromDB(read: ReadRequest): Future[ResponseRequest] = requestFromDB(read)
+
+  final def requestFromDB(request: OdfRequest): Future[ResponseRequest] = {
     // timeout for the write request, which means how long this agent waits for write results
-    implicit val timeout : Timeout = Timeout(request.handleTTL)
+    implicit val timeout: Timeout = Timeout(request.handleTTL)
     // Execute the request, execution is asynchronous (will not block)
     val si = ActorSenderInformation(name, self)
-    val requestWithSenderInfo = request.withSenderInformation( si )
+    val requestWithSenderInfo = request.withSenderInformation(si)
     (dbHandler ? requestWithSenderInfo).mapTo[ResponseRequest]
   }
-  final def requestFromNode(request: OdfRequest) : Future[ResponseRequest] = {
+
+  final def requestFromNode(request: OdfRequest): Future[ResponseRequest] = {
     // timeout for the write request, which means how long this agent waits for write results
-    implicit val timeout : Timeout = Timeout(request.handleTTL)
+    implicit val timeout: Timeout = Timeout(request.handleTTL)
     // Execute the request, execution is asynchronous (will not block)
     val si = ActorSenderInformation(name, self)
-    val requestWithSenderInfo = request.withSenderInformation( si )
+    val requestWithSenderInfo = request.withSenderInformation(si)
     (dbHandler ? requestWithSenderInfo).mapTo[ResponseRequest]
   }
+
   final def respond(msg: Any): Unit = {
     val senderRef = sender()
     senderRef ! msg
   }
+
   final def respondFuture(msgFuture: Future[Any]): Unit = {
     val senderRef = sender()
-    msgFuture.map{
+    msgFuture.map {
       any => senderRef ! any
     }
-    msgFuture.onFailure{
+    msgFuture.failed.foreach{
       case e: Exception =>
-        log.error( e, s"RespondFuture caught: ") 
+        log.error(e, s"RespondFuture caught: ")
     }
   }
 
-  final def writeToNode(write: WriteRequest) : Future[ResponseRequest] = writeToDB(write) 
-  @deprecated("Use Actor's preRestart and postRestart methods instead.","o-mi-node-0.9.0") 
-  def restart : InternalAgentResponse = {CommandSuccessful()}
-  @deprecated("Use Actor's preStart method instead.","o-mi-node-0.9.0") 
-  def start   : InternalAgentResponse ={ CommandSuccessful()}
-  @deprecated("Use Actor's postStop method instead.","o-mi-node-0.9.0") 
-  def stop    : InternalAgentResponse = { CommandSuccessful()}
+  final def writeToNode(write: WriteRequest): Future[ResponseRequest] = writeToDB(write)
+
+  @deprecated("Use Actor's preRestart and postRestart methods instead.", "o-mi-node-0.9.0")
+  def restart: InternalAgentResponse = {
+    CommandSuccessful()
+  }
+
+  @deprecated("Use Actor's preStart method instead.", "o-mi-node-0.9.0")
+  def start: InternalAgentResponse = {
+    CommandSuccessful()
+  }
+
+  @deprecated("Use Actor's postStop method instead.", "o-mi-node-0.9.0")
+  def stop: InternalAgentResponse = {
+    CommandSuccessful()
+  }
 }
