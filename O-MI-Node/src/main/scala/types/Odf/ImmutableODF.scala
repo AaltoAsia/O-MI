@@ -137,16 +137,9 @@ case class ImmutableODF private[odf](
     )
   }
 
+
   def selectSubTree(pathsToGet: Set[Path]): ODF = {
-    val ps = (pathsToGet.flatMap{
-      wantedPath: Path =>
-        paths.keysIteratorFrom( wantedPath ).takeWhile{
-          path: Path => path == wantedPath || path.isDescendantOf(wantedPath)
-        }
-      } ++ pathsToGet.flatMap{
-        path: Path =>
-        path.getAncestors
-    }).toSet
+    val ps = selectSubTreePaths(pathsToGet)
     ImmutableODF(
       ps.flatMap {
         path: Path =>

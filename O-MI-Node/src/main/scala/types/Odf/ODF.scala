@@ -147,6 +147,20 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
 
   def get(path: Path): Option[Node] = nodes.get(path)
 
+  def selectSubTreePaths(pathsToGet: Set[Path]): Set[Path] = {
+    (pathsToGet.flatMap{
+      wantedPath: Path =>
+        paths.keysIteratorFrom( wantedPath ).takeWhile{
+          path: Path => path == wantedPath || path.isDescendantOf(wantedPath)
+        }
+      }).toSet ++ pathsToGet.flatMap{
+        path => path.getAncestors
+        //case path: Path if (paths.contains(path)) =>
+        //  path.getAncestors
+        //case _ => Set()
+    }
+  }
+
   def selectSubTree(pathsToGet: Set[Path]): ODF
 
   def selectUpTree(pathsToGet: Set[Path]): ODF
@@ -224,14 +238,11 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
   def readTo(to: ODF): ODF
 
   def readToNodes(to: ODF): Seq[Node] = {
-    val wantedPaths: SortedSet[Path] = this.paths.filter {
-      path: Path =>
-        to.paths.contains(path) ||
-          to.getLeafPaths.exists {
-            requestedPath: Path =>
-              requestedPath.isAncestorOf(path)
-          }
-    }
+    val wantedPaths: SortedSet[Path] =
+      to.paths.filter {
+        path: Path => paths.contains(path)
+      } ++ selectSubTreePaths(to.getLeafPaths).filter(path => paths.contains(path))
+
     val wantedNodes: Seq[Node] = wantedPaths.toSeq.map {
       path: Path =>
         (nodes.get(path), to.nodes.get(path)) match {
