@@ -143,7 +143,7 @@ case class ImmutableODF private[odf](
         paths.keysIteratorFrom( wantedPath ).takeWhile{
           path: Path => path == wantedPath || path.isDescendantOf(wantedPath)
         }
-    } ++  pathsToGet.flatMap{
+      } ++ pathsToGet.flatMap{
         path: Path =>
         path.getAncestors
     }).toSet
