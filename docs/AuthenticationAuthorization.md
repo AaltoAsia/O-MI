@@ -57,15 +57,15 @@ These are examples on how to use Auth API v2 of O-MI Node. They might be secure 
 Start with this to test how the modules work.
 
 **Versions used:**
-* O-MI Node: 0.13.0 2018-07-03
-* O-MI Authentication: unreleased cde1b7d 2018-07-03
-* O-MI Authorization: unreleased e988081 2018-07-03
+* O-MI Node: 0.13.0
+* O-MI Authentication: 1.0.0
+* O-MI Authorization: 1.0.0
 
 **Instructions:**
 1. Install [Authentication module](https://github.com/AaltoAsia/O-MI-Authentication)
     * ldap and nginx installations are optional
 2. Install [Authorization module](https://github.com/AaltoAsia/O-MI-Authorization)
-2. Configure O-MI Node
+2. Configure O-MI Node: [application.conf](https://github.com/AaltoAsia/O-MI#configuration-location)
     1. Configure according to the readmes of the modules
     1. If testing with localhost: add option `omi-service.input-whitelist-ips=[]` to disable localhost authorization
     2. *Optional:* In O-MI Node `logback.xml` configuration file, add `<logger name="authorization" level="DEBUG"/>` inside configuration element for debugging
@@ -79,9 +79,24 @@ Start with this to test how the modules work.
     2. Send and check that the result is `Unauthorized`
     3. Leave page open
 6. Open shell
-    1. Install httpie or use some other http client `sudo apt-get install httpie`
+    1. Install httpie or (the http client of your choice) `sudo apt-get install httpie`
     2. Add your email address as username `http POST :8001/v1/add-user username=your@test.email`
     3. Add allow write rule to your user (automatically created group) `http POST :8001/v1/set-permissions group=your@user.email_USERGROUP permissions:='[{"path":"Objects","request":"wcd","allow":true}]'`
 7. Go back to O-MI Node webclient and send again. You should see returnCode=200.
- 
 
+
+### Read permissions
+
+By default, O-MI Node allows anyone to make any read requests. If some parts of O-DF should be hidden, follow these instructions.
+
+1. Make sure that you have basic installation done as described above.
+2. In [application.conf](https://github.com/AaltoAsia/O-MI#configuration-location) of O-MI Node:
+    1. Set `omi-service.allowRequestTypesForAll = []`
+    2. For anonymous users to get the default permissions from O-MI-Authorization:
+        ```
+        # to skip authentication when token is not found
+        omi-service.authAPI.v2.parameters.skipAuthenticationOnEmpty = ["token"]
+        # to set username to empty string when that happens
+        omi-service.authAPI.v2.parameters.initial.username = ""
+        ```
+3. Set some default permissions (change this to fit your needs): `http POST :8001/v1/set-permissions group=DEFAULT permissions:='[{"path":"Objects","request":"rc","allow":true},{"path":"Objects/private","request":"rc","allow":false]'`
