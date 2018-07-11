@@ -5,6 +5,7 @@ import types.odf._
 import types._
 
 case class Charger(
+  id: String,
   brand: Option[String],
   model: Option[String],
   lidStatus: Option[String],
@@ -17,7 +18,9 @@ case class Charger(
   plugs: Seq[Plug]
 ){
   def update( other: Charger ): Charger ={
+    require( id == other.id )
     Charger(
+      id,
       other.brand.orElse(brand),
       other.model.orElse(model),
       other.lidStatus.orElse(lidStatus),
@@ -37,10 +40,10 @@ case class Charger(
   }
 
   def toOdf(parentPath: Path): Seq[Node] = {
-    val path: Path= parentPath / "Charger"
+    val path: Path= parentPath / id
     Seq(
       Object( 
-        Vector( QlmID( "Charger")),
+        Vector( QlmID( id)),
         path,
         typeAttribute = Some(Charger.mvType)
       )
@@ -144,6 +147,7 @@ object Charger{
               throw MVError( s"Plugs path $path/Plugs should be Object.")
           }.toSeq.flatten
           Charger(
+            path.last,
             getStringOption("brand",path,odf),
             getStringOption("model",path,odf),
             getStringOption("lidStatus",path,odf),

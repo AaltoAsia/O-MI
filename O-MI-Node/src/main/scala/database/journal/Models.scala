@@ -7,7 +7,7 @@ import database.journal.PPersistentNode.NodeType.{Ii, Obj, Objs}
 import types.Path
 import types.odf.{BooleanValue, Description, DoubleValue, FloatValue, ImmutableODF, InfoItem, IntValue, LongValue, MetaData, ODFParser, ODFValue, Object, Objects, QlmID, ShortValue, StringValue, Value}
 
-import scala.util.Try
+import utils._
 
 object Models {
 
@@ -146,11 +146,6 @@ object Models {
         }
       }
     )
-  }
-
-  def merge[A, B](a: Map[A, B], b: Map[A, B])(mergef: (B, Option[B]) => B): Map[A, B] = {
-    val (bigger, smaller) = if (a.size > b.size) (a, b) else (b, a)
-    smaller.foldLeft(bigger) { case (z, (k, v)) => z + (k -> mergef(v, z.get(k))) }
   }
 
   def mergeSubs(a: Map[Path, Seq[EventSub]], b: Map[Path, Seq[EventSub]]): Map[Path, Seq[EventSub]] = {
