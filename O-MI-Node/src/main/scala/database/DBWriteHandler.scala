@@ -131,7 +131,7 @@ trait DBWriteHandler extends DBHandlerBase {
   }
 
   /**
-    * Adds data for polled subscriptions to the Prevayler store.
+    * Adds data for polled subscriptions to the Journal store.
     * Polling removes the related data from database
     * (except for polled interval subscriptions, in which case it leaves the latest value in the database)
     *

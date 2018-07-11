@@ -50,10 +50,10 @@ class SingleStoresMaintainer(
   case object TakeSnapshot
 
   if (settings.writeToDisk) {
-    log.info(s"scheduling prevayler snapshot every $snapshotInterval")
+    log.info(s"scheduling journal snapshot every $snapshotInterval")
     scheduler.schedule(snapshotInterval, snapshotInterval, self, TakeSnapshot)
   } else {
-    log.info("using transient prevayler, taking snapshots is not in use.")
+    log.info("using transient journal, taking snapshots is not in use.")
   }
 
   protected def takeSnapshot: Future[Any] = {
@@ -74,7 +74,7 @@ class SingleStoresMaintainer(
       snapshotF
     }
 
-    log.info("Taking prevayler snapshot")
+    log.info("Taking journal snapshot")
     val res: Future[Seq[Unit]] = Future.sequence(Seq(
       trySnapshot(singleStores.latestStore, "latestStore"),
       trySnapshot(singleStores.hierarchyStore, "hierarchyStore"),
