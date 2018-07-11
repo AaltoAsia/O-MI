@@ -64,10 +64,18 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
     nodes.toVector: _*
   )
 
-  def getChildPaths(path: Path): Seq[Path] = {
-    paths.filter {
-      p: Path => path.isParentOf(p)
-    }.toVector
+  def getChildPaths(wantedPath: Path): Seq[Path] = {
+    val wantedLength = wantedPath.length +1
+    paths
+      .keysIteratorFrom( wantedPath )
+      .drop(1)
+      .takeWhile{
+        path => path.length >= wantedLength //path.isChildOf(wantedPath)
+      }
+      .filter{
+        path => path.length == wantedLength
+      }
+      .toSeq
   }
 
   def getChilds(path: Path): Seq[Node] = {
