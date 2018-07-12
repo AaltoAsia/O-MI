@@ -104,7 +104,7 @@ lazy val root = (project in file(".")).
     ///////////////////////
     //Package information//
     ///////////////////////
-      maintainer := "Tuomas Kinnunen <tuomas.kinnunen@aalto.fi>; Andrea Buda <andrea.buda@aalto.fi>",
+      maintainer := "Tuomas Kinnunen <tuomas.kinnunen@aalto.fi>",
       packageDescription := "Internet of Things data server",
       packageSummary := """Internet of Things data server implementing Open Messaging Interface and Open Data Format""",
 
