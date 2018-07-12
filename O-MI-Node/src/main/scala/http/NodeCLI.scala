@@ -125,7 +125,7 @@ class OmiNodeCLI(
 
   override def postStop: Unit = {
 
-    send(connection)(s"CLI stopped by O-MI Node.\r\n>")
+    send(connection)(s"\n\rCLI stopped by O-MI Node.")
 
   }
 
@@ -310,8 +310,11 @@ class OmiNodeCLI(
       subs <- backupSubscriptions(subPath)
       data <- backupDatabase(odfPath)
     } yield data
-    Await.ready(res, Duration.Inf)
-    "Success\r\n>"
+    val test: Try[Option[Unit]] = Await.ready(res, Duration.Inf).value.get
+    test match {
+      case Success(r) => "Success\r\n>"
+      case Failure(ex) => ex.getMessage + "\r\n>"
+    }
     /*res match {
       case Success(_) => {"Success\n"}
       case Failure(ex) => {
@@ -326,8 +329,8 @@ class OmiNodeCLI(
 
 
   private def backupSubscriptions(filePath: String): Future[Unit] = {
-    val allSubscriptions: Future[List[(SavedSub, Option[SubData])]] = (subscriptionManager ?
-      GetSubsWithPollData(commandTimeout)).mapTo[List[(SavedSub, Option[SubData])]]
+    val allSubscriptions: Future[Seq[(SavedSub, Option[SubData])]] = (subscriptionManager ?
+      GetSubsWithPollData(commandTimeout)).mapTo[Seq[(SavedSub, Option[SubData])]]
 
     allSubscriptions.map(allSubs => {
       val file = new File(filePath)
