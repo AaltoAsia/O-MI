@@ -1,5 +1,6 @@
 package http
 
+import java.io.File
 import java.util.Date
 import java.sql.Timestamp
 import java.net.InetSocketAddress
@@ -51,6 +52,7 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification {
       "Polled Event subscription" >> showSubTestPollEvent
       "nonexistent subscription" >> showSubTestNonexistent
     }
+    "Successfully create backup file for odf and subscription" >> backupTest
   }
   implicit val timeout = Timeout(1.minutes)
 
@@ -68,7 +70,7 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification {
   }
 
   class RemoveTester(path: Path) extends CLIHelperT {
-    val getAllData: Future[Option[ODF]] = Future.failed(new Exception("not implemented"))
+    val getAllData: Future[Option[ODF]] = Future.successful(Some(ImmutableODF(Vector(Objects()))))//new Exception("not implemented"))
 
     def writeOdf(odf: ImmutableODF) = Future.successful()
     def takeSnapshot() = Future.successful()
@@ -429,6 +431,41 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification {
       s"Paths:\r\n${paths.mkString("\r\n")}\r\n>"
     showSubTestBase(sub, correct)
   }
+  def backupTest = new Actorstest() with FileMatchers {
+    val agentsMap: MutableMap[AgentName, AgentInfo] = MutableMap.empty
+    val requestHandler = TestActorRef(new TestDummyRequestHandler())
+    val dbHandler = TestActorRef(new TestDummyDBHandler())
+    val agentSystem = TestActorRef(new TestManager(agentsMap, dbHandler, requestHandler))
+    val subscriptionManager = TestActorRef(new Actor {
+      def receive = {
+        case RemoveSubscription(di, ttl) => sender() ! true
+        case GetSubsWithPollData(ttl) => sender() ! Seq.empty[(SavedSub, Option[SubData])]
+      }
+
+    })
+    val removeHandler = new RemoveTester(Path("Objects/aue"))
+    val remote = new InetSocketAddress("Tester", 22)
+    val connection = TestActorRef(new DummyRemote(remote.toString()))
+
+    val listenerRef = TestActorRef(new OmiNodeCLI(
+      connection,
+      remote,
+      removeHandler,
+      agentSystem,
+      subscriptionManager
+    ))
+    val filename1 = "nodeclisubfiletest"
+    val filename2 = "nodecliodffiletest"
+    val resF: Future[String] = decodeWriteStr(listenerRef ? strToMsg(s"backup $filename1 $filename2"))
+    val correct = "Success\r\n>"
+    resF should beEqualTo(correct).await(0, timeoutDuration)
+
+    (filename1 must beAFilePath) and(
+      filename2 must beAFilePath)
+    new File(filename1).delete()
+    new File(filename2).delete()
+
+  }
 
   def showSubTestEvent = {
     val id: Long = 57171
@@ -547,6 +584,7 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification {
       strToMsg(s"showSub ${sub.map { s => s.id }.getOrElse(57171)}"))
     resF should beEqualTo(correct).await(0, timeoutDuration)
   }
+
 
   def strToWrite(str: String) = Write(ByteString(str))
 
