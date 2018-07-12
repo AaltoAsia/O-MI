@@ -235,9 +235,9 @@ object OmiServer {
         )))
       system.log.info(s"Testing object created. $odf")
 
-      val write = WriteRequest(odf, None, 60 seconds)
-      system.log.info("Write created")
       implicit val timeout: Timeout = settings.journalTimeout
+      val write = WriteRequest(odf, None,settings.startTimeout)
+      system.log.info("Write created")
       val future: Future[ResponseRequest] = (requestHandler ? write).mapTo[ResponseRequest]
       system.log.info("Write started")
       future.foreach {
@@ -259,7 +259,7 @@ object OmiServer {
         case e: Throwable => 
           system.log.error(e, "O-MI InputPusher system not working; exception:")
       }
-      Await.result(future, 60 seconds)
+      Await.result(future, settings.startTimeout)
     }
   }
 }
@@ -271,6 +271,14 @@ object OmiServer {
 object Boot /*extends Starter */ {
   // with App{
   val log: Logger = LoggerFactory.getLogger("OmiServiceTest")
+
+  def time[R](message: String)(block: => R): R = {
+    val t0 = System.nanoTime()
+    val result = block    // call-by-name
+    val t1 = System.nanoTime()
+    log.info(s"$message took:\n${t1 - t0}ns")
+    result
+  }
 
   def main(args: Array[String]): Unit = {
     Try {

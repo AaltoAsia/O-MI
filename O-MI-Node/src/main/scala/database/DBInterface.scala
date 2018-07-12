@@ -32,7 +32,11 @@ import types.Path
 import journal.Models.GetTree
 import journal.Models.SingleReadCommand
 import journal.Models.MultipleReadCommand
+import journal.Models.SaveSnapshot
 import akka.pattern.ask
+
+import scala.concurrent.duration.{Duration, FiniteDuration,MILLISECONDS}
+import scala.util.{Failure, Success}
 
 package object database {
 
@@ -93,7 +97,43 @@ case class AttachEvent(override val infoItem: InfoItem) extends ChangeEvent(info
 class SingleStores(protected val settings: OmiConfigExtension)(implicit val system: ActorSystem) {
 
   import system.dispatcher
+  implicit val timeout = Timeout(settings.journalTimeout)
+  val log = system.log
+  def takeSnapshot: Future[Any] = {
+    val start: FiniteDuration = Duration(System.currentTimeMillis(), MILLISECONDS)
 
+    def trySnapshot(p: ActorRef, errorName: String): Future[Unit] = {
+      val start: FiniteDuration = Duration(System.currentTimeMillis(), MILLISECONDS)
+
+      val snapshotF = (p ? SaveSnapshot()).mapTo[Unit]
+      snapshotF.onComplete {
+        case Success(s) => {
+          val end: FiniteDuration = Duration(System.currentTimeMillis(), MILLISECONDS)
+          val duration: FiniteDuration = end - start
+          log.debug(s"Taking Snapshot for $errorName took $duration")
+        }
+        case Failure(ex) => log.error(ex, s"Failed to take Snapshot of $errorName")
+      }
+      snapshotF
+    }
+
+    log.info("Taking journal snapshot")
+    val res: Future[Seq[Unit]] = Future.sequence(Seq(
+      trySnapshot(latestStore, "latestStore"),
+      trySnapshot(hierarchyStore, "hierarchyStore"),
+      trySnapshot(subStore, "subStore"),
+      trySnapshot(pollDataStore, "pollData"))
+    )
+    res.onComplete {
+      case Success(s) => {
+        val end: FiniteDuration = Duration(System.currentTimeMillis(), MILLISECONDS)
+        val duration: FiniteDuration = end - start
+        log.info(s"Taking Snapshot took $duration")
+      }
+      case Failure(ex) => log.error(ex, "Taking snapshot failed")
+    }
+    res
+  }
 
   val latestStore: ActorRef = system.actorOf(Props[journal.LatestStore])
   val hierarchyStore: ActorRef = system.actorOf(Props[journal.HierarchyStore])

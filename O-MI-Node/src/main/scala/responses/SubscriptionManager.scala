@@ -110,7 +110,7 @@ class SubscriptionManager(
   val intervalMap: ConcurrentHashMap[Long, Cancellable] = new ConcurrentHashMap
 
   /**
-    * Schedule remove operation for subscriptions that are in prevayler stores,
+    * Schedule remove operation for subscriptions that are in journal stores,
     * only run at startup
     */
   private[this] def scheduleTtls(): Future[Unit] = {
@@ -507,7 +507,7 @@ class SubscriptionManager(
   private val rand = new Random()
 
   /**
-    * Method used to add subscriptions to Prevayler database
+    * Method used to add subscriptions to journal database
     *
     * @param subscription SubscriptionRequest of the subscription to add
     * @return Subscription Id within Try monad if adding fails this is a Failure, otherwise Success(id)

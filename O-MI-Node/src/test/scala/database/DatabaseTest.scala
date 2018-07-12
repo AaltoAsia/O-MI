@@ -323,7 +323,7 @@ class DatabaseTest extends Specification with AfterAll {
 //      db.get(Path("/Objects/path/to/sensor1")) shouldEqual None
 //    }
 
-// TODO: sub tests for new prevayler system
+// TODO: sub tests for new journal system
 //    "return correct callback address for subscriptions" in {
 //      id1
 //      id2

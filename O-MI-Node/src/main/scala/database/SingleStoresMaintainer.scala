@@ -50,46 +50,14 @@ class SingleStoresMaintainer(
   case object TakeSnapshot
 
   if (settings.writeToDisk) {
-    log.info(s"scheduling prevayler snapshot every $snapshotInterval")
+    log.info(s"scheduling journal snapshot every $snapshotInterval")
     scheduler.schedule(snapshotInterval, snapshotInterval, self, TakeSnapshot)
   } else {
-    log.info("using transient prevayler, taking snapshots is not in use.")
+    log.info("using transient journal, taking snapshots is not in use.")
   }
 
   protected def takeSnapshot: Future[Any] = {
-    val start: FiniteDuration = Duration(System.currentTimeMillis(), MILLISECONDS)
-
-    def trySnapshot(p: ActorRef, errorName: String): Future[Unit] = {
-      val start: FiniteDuration = Duration(System.currentTimeMillis(), MILLISECONDS)
-
-      val snapshotF = (p ? SaveSnapshot()).mapTo[Unit]
-      snapshotF.onComplete {
-        case Success(s) => {
-          val end: FiniteDuration = Duration(System.currentTimeMillis(), MILLISECONDS)
-          val duration: FiniteDuration = end - start
-          log.debug(s"Taking Snapshot for $errorName took $duration")
-        }
-        case Failure(ex) => log.error(ex, s"Failed to take Snapshot of $errorName")
-      }
-      snapshotF
-    }
-
-    log.info("Taking prevayler snapshot")
-    val res: Future[Seq[Unit]] = Future.sequence(Seq(
-      trySnapshot(singleStores.latestStore, "latestStore"),
-      trySnapshot(singleStores.hierarchyStore, "hierarchyStore"),
-      trySnapshot(singleStores.subStore, "subStore"),
-      trySnapshot(singleStores.pollDataStore, "pollData"))
-    )
-    res.onComplete {
-      case Success(s) => {
-        val end: FiniteDuration = Duration(System.currentTimeMillis(), MILLISECONDS)
-        val duration: FiniteDuration = end - start
-        log.info(s"Taking Snapshot took $duration")
-      }
-      case Failure(ex) => log.error(ex, "Taking snapshot failed")
-    }
-    res
+    singleStores.takeSnapshot
   }
 
 

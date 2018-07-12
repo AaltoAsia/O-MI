@@ -94,7 +94,8 @@ class OmiNodeCLI(
   val commands =
     """Current commands:
   start <agent classname>
-  stop  <agent classname> 
+  stop  <agent classname>
+  snapshot
   list agents 
   list subs 
   showSub <id>
@@ -102,7 +103,7 @@ class OmiNodeCLI(
   remove <path>
   backup <filename for subs> <filename for odf>
   restore <filename for subs> <filename for odf>
-  """
+  """ + "\r\n>"
   val ip: AgentName = sourceAddress.toString
 
   val commandTimeout: FiniteDuration = Duration.fromNanos(context.system.settings.config.getDuration("omi-service.journal-ask-timeout").toNanos)
@@ -124,7 +125,7 @@ class OmiNodeCLI(
 
   override def postStop: Unit = {
 
-    send(connection)(s"CLI stopped by O-MI Node.\r\n")
+    send(connection)(s"\n\rCLI stopped by O-MI Node.")
 
   }
 
@@ -141,7 +142,7 @@ class OmiNodeCLI(
           case AgentInfo(name, classname, config, ref, running, ownedPaths, lang) =>
             f"$name%-20s | $classname%-40s | $running%-7s | ${ownedPaths.size}%-11s | $config"
         }.mkString("\r\n")
-    msg + "\r\n"
+    msg + "\r\n>"
   }
 
   private def listAgents(): String = {
@@ -309,8 +310,11 @@ class OmiNodeCLI(
       subs <- backupSubscriptions(subPath)
       data <- backupDatabase(odfPath)
     } yield data
-    Await.ready(res, Duration.Inf)
-    "Success\r\n>"
+    val test: Try[Option[Unit]] = Await.ready(res, Duration.Inf).value.get
+    test match {
+      case Success(r) => "Success\r\n>"
+      case Failure(ex) => ex.getMessage + "\r\n>"
+    }
     /*res match {
       case Success(_) => {"Success\n"}
       case Failure(ex) => {
@@ -325,8 +329,8 @@ class OmiNodeCLI(
 
 
   private def backupSubscriptions(filePath: String): Future[Unit] = {
-    val allSubscriptions: Future[List[(SavedSub, Option[SubData])]] = (subscriptionManager ?
-      GetSubsWithPollData(commandTimeout)).mapTo[List[(SavedSub, Option[SubData])]]
+    val allSubscriptions: Future[Seq[(SavedSub, Option[SubData])]] = (subscriptionManager ?
+      GetSubsWithPollData(commandTimeout)).mapTo[Seq[(SavedSub, Option[SubData])]]
 
     allSubscriptions.map(allSubs => {
       val file = new File(filePath)
@@ -364,11 +368,11 @@ class OmiNodeCLI(
     } yield res
     temp match {
       case Success(_) => {
-        "Success\n"
+        "Success\r\n>"
       }
       case Failure(ex) => {
         log.error(ex, "Failure when restoring subs and Database")
-        "Failure\n"
+        "Failure\r\n>"
       }
     }
   }
@@ -376,7 +380,7 @@ class OmiNodeCLI(
   private def restoreDatabase(filePath: String) = {
     val parsed: OdfParseResult = ODFParser.parse(new File(filePath))
     val temp = parsed.right.map(odf => Await.ready(removeHandler.writeOdf(odf), 5 minutes))
-    "Done\n"
+    "Done\r\n>"
   }
 
   private def restoreSubs(filePath: String) = {
@@ -391,9 +395,12 @@ class OmiNodeCLI(
         }
     }
     subscriptionManager ! LoadSubs(subs)
-    "Done\n"
+    "Done\r\n>"
   }
-
+  private def takeSnapshot() = {
+    val res = Await.result(removeHandler.takeSnapshot(),Duration.Inf)
+    "Success\r\n>"
+  }
   private def send(receiver: ActorRef)(msg: String): Unit =
     receiver ! Write(ByteString(msg))
 
@@ -419,6 +426,7 @@ class OmiNodeCLI(
         case Vector("showSub", id) => send(sender)(subInfo(id.toLong))
         case Vector("list", "agents") => send(sender)(listAgents())
         case Vector("list", "subs") => send(sender)(listSubs())
+        case Vector("snapshot") => send(sender)(takeSnapshot())
         case Vector("start", agent) => send(sender)(startAgent(agent))
         case Vector("stop", agent) => send(sender)(stopAgent(agent))
         case Vector("remove", pathOrId) => send(sender)(remove(pathOrId))
