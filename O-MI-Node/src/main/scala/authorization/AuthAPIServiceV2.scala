@@ -133,7 +133,7 @@ class AuthAPIServiceV2(
         rawOmi.flatMap(_.omiEnvelope.attr(from))
 
       case "headers" =>
-        httpMessage.headers.find(from == _).map(_.value)
+        httpMessage.headers.find(header => from == header.name).map(_.value)
 
       case "query" =>
         httpMessage match {
@@ -156,8 +156,7 @@ class AuthAPIServiceV2(
           case JString(str) => str
           case other =>
             val res = compact(render(other))
-            log
-              .debug(s"Not yet implemented: jsonbody search result: $searchResult, for search term: $from, resulting variable string: $res")
+            log.debug(s"Not yet implemented: jsonbody search result: $searchResult, for search term: $from, resulting variable string: $res")
             res
         }
       }.toOption
@@ -237,11 +236,12 @@ class AuthAPIServiceV2(
       case x => x
     }).name
 
-    val vars = extractToMap(httpRequest, Some(rawOmiRequest), parametersFromRequest) +
+    val vars = parametersConstants ++
+      extractToMap(httpRequest, Some(rawOmiRequest), parametersFromRequest) +
       ("requestTypeChar" -> requestType.head.toString) +
-      ("requestType" -> requestType) ++
-      parametersConstants
+      ("requestType" -> requestType)
 
+    log.debug(s"Parameter variables: $vars")
     val copiedHeaders = httpRequest.headers.filter(omiHttpHeadersToAuthentication contains _.lowercaseName)
 
 
@@ -272,6 +272,7 @@ class AuthAPIServiceV2(
         authorizationMethod, authorizationEndpoint, parametersToAuthorization, authenticationResult)
 
       _ <- Future.successful {
+        log.debug(s"Parameter variables: $authenticationResult")
         log.debug(s"AuthorizationRequest: $authorizationRequest")
       }
 
