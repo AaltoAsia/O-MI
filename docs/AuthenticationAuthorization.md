@@ -45,14 +45,14 @@ The input for authentication service can be passed by several configurable ways 
 Continue reading below to know about already existing implementations of these APIs.
 
 O-MI Authentication and Authorization reference implementations
----------------------------------------------------------------
+================================================================
 
 * [Authentication module](https://github.com/AaltoAsia/O-MI-Authentication)
 * [Authorization module](https://github.com/AaltoAsia/O-MI-Authorization)
 
 These are examples on how to use Auth API v2 of O-MI Node. They might be secure enough for production use, but use with care. Either of them can be replaced by other software by adjusting the configuration approprietly or implementing a wrapper to fix any larger protocol differences.
 
-### Local User DB, username and password Authentication with JWT session
+## Local User DB, username and password Authentication with JWT session
 
 Start with this to test how the modules work.
 
@@ -85,7 +85,7 @@ Start with this to test how the modules work.
 7. Go back to O-MI Node webclient and send again. You should see returnCode=200.
 
 
-### Read permissions
+## Read permissions
 
 By default, O-MI Node allows anyone to make any read requests. If some parts of O-DF should be hidden, follow these instructions.
 
@@ -101,7 +101,7 @@ By default, O-MI Node allows anyone to make any read requests. If some parts of 
         ```
 3. Set some default permissions (change this to fit your needs): `http POST :8001/v1/set-permissions group=DEFAULT permissions:='[{"path":"Objects","request":"rc","allow":true},{"path":"Objects/private","request":"rc","allow":false]'`
 
-### Authentication with https client certificate (using nginx)
+## Authentication with https client certificate (using nginx)
 
 **Versions used:**
 * O-MI Node: 1.0.2
