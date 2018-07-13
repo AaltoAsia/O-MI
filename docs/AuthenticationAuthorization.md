@@ -136,12 +136,18 @@ By default, O-MI Node allows anyone to make any read requests. If some parts of 
     }
     ```
 4. Configure nginx
-    * put this outside server block to extract CN for the username (*remove "_legacy" if using older than v1.11.6*)
+    * put this outside server block to extract CN for the username (*remove "_legacy" if using older than v1.11.6*) and support websockets
         ```
         map $ssl_client_s_dn_legacy $ssl_client_s_dn_cn {
             default "should_not_happen";
             ~/CN=(?<CN>[^/]+) $CN;
         }  
+        
+        # and websocket support
+        map $http_upgrade $connection_upgrade {
+            default upgrade;
+            '' close;
+        }
         ```
     * setup SSL and the route to O-MI Node
         ```
