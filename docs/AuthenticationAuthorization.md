@@ -45,14 +45,14 @@ The input for authentication service can be passed by several configurable ways 
 Continue reading below to know about already existing implementations of these APIs.
 
 O-MI Authentication and Authorization reference implementations
----------------------------------------------------------------
+================================================================
 
 * [Authentication module](https://github.com/AaltoAsia/O-MI-Authentication)
 * [Authorization module](https://github.com/AaltoAsia/O-MI-Authorization)
 
 These are examples on how to use Auth API v2 of O-MI Node. They might be secure enough for production use, but use with care. Either of them can be replaced by other software by adjusting the configuration approprietly or implementing a wrapper to fix any larger protocol differences.
 
-### Local User DB, username and password Authentication with JWT session
+## Local User DB, username and password Authentication with JWT session
 
 Start with this to test how the modules work.
 
@@ -85,7 +85,7 @@ Start with this to test how the modules work.
 7. Go back to O-MI Node webclient and send again. You should see returnCode=200.
 
 
-### Read permissions
+## Read permissions
 
 By default, O-MI Node allows anyone to make any read requests. If some parts of O-DF should be hidden, follow these instructions.
 
@@ -100,3 +100,90 @@ By default, O-MI Node allows anyone to make any read requests. If some parts of 
         omi-service.authAPI.v2.parameters.initial.username = ""
         ```
 3. Set some default permissions (change this to fit your needs): `http POST :8001/v1/set-permissions group=DEFAULT permissions:='[{"path":"Objects","request":"rc","allow":true},{"path":"Objects/private","request":"rc","allow":false]'`
+
+## Authentication with https client certificate (using nginx)
+
+**Versions used:**
+* O-MI Node: 1.0.2
+* O-MI Authentication: 1.0.0
+* O-MI Authorization: 1.0.0
+* nginx: 1.14.0 (Prior to version 1.11.6, $ssl_client_s_dn_legacy was $ssl_client_s_dn.)
+
+**Instructions:**
+1. Install [Authorization module](https://github.com/AaltoAsia/O-MI-Authorization)
+2. Install nginx
+3. Configure O-MI Node: [application.conf](https://github.com/AaltoAsia/O-MI#configuration-location)
+    ```
+    omi-service.authAPI.v2 {
+      enable = true
+      authentication.url = ""
+      authorization.url = "http://localhost:8001/v1/get-permissions"
+
+      parameters.initial {
+        username = "" # to send empty username if username is not given by nginx
+      }
+      parameters.fromRequest {
+        headers {
+          "X-CLIENT-SSL-USER" = "username"
+        }
+      }
+      parameters.toAuthorization {
+        jsonbody {
+          username = "username"
+          request = "requestTypeChar"
+        }
+      }
+    }
+    ```
+4. Configure nginx
+    * put this outside server block to extract CN for the username (*remove "_legacy" if using older than v1.11.6*) and support websockets
+        ```
+        map $ssl_client_s_dn_legacy $ssl_client_s_dn_cn {
+            default "should_not_happen";
+            ~/CN=(?<CN>[^/]+) $CN;
+        }  
+        
+        # and websocket support
+        map $http_upgrade $connection_upgrade {
+            default upgrade;
+            '' close;
+        }
+        ```
+    * setup SSL and the route to O-MI Node
+        ```
+        server {
+            listen       443 ssl;
+            server_name  localhost;
+            
+            # Server SSL
+            ssl_certificate      server.crt;
+            ssl_certificate_key  server.key;
+
+            # Client SSL
+            ssl_client_certificate ca.crt;
+            ssl_verify_client optional; # or `on` if you require client key
+
+            location / {
+                # client certificate verification: SUCCESS, FAILED[:reason] or NONE
+                if ($ssl_client_verify ~ "FAILED.*") {
+                    return 403;  # Reject the whole request
+                }
+                # username derived from CN and serial
+                proxy_set_header  X-CLIENT-SSL-USER "${ssl_client_s_dn_cn}#${ssl_client_serial}";
+
+                # The usual proxy settings
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header Host $http_host;
+                proxy_redirect off;
+
+                proxy_pass http://localhost:8080;
+
+                # websocket
+                proxy_http_version 1.1;
+                proxy_set_header Upgrade $http_upgrade;
+                proxy_set_header Connection $connection_upgrade;
+            }
+        }
+        ```
+5. (re)Start o-mi-node, o-mi-authorization and nginx
