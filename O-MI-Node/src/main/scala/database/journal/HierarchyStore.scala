@@ -1,11 +1,8 @@
 package database.journal
 
-import java.sql.Timestamp
-
 import akka.actor.ActorLogging
 import akka.persistence._
 import database.journal.Models._
-import database.journal.PPersistentNode.NodeType.{Ii, Obj, Objs}
 import types.Path
 import types.odf._
 

@@ -2,17 +2,15 @@ package types
 package odf
 
 import java.sql.Timestamp
-import java.util.{Date, GregorianCalendar}
+import java.util.GregorianCalendar
+
 import javax.xml.datatype.{DatatypeFactory, XMLGregorianCalendar}
-
-import scala.xml.Utility.trim
-import scala.collection.immutable.HashMap
-import org.specs2.matcher._
-import org.specs2.matcher.XmlMatchers._
-
 import org.specs2._
-import types.{Path => OdfPath}
+import org.specs2.matcher.XmlMatchers._
 import types.OdfTypes._
+import types.{Path => OdfPath}
+
+import scala.collection.immutable.HashMap
 
 class OdfTypesTest extends mutable.Specification {
   val testTime: Timestamp = Timestamp.valueOf("2017-05-11 15:44:55")

@@ -1,8 +1,10 @@
 package database
 
+import akka.pattern.ask
+import akka.util.Timeout
+import journal.Models._
 import parsing.xmlGen._
 import responses.CallbackHandler._
-import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 import types.OmiTypes._
 import types.Path
 import types.odf._
@@ -11,18 +13,6 @@ import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.Try
 import scala.util.control.NonFatal
-import akka.pattern.ask
-import akka.util.Timeout
-import journal.Models.GetTree
-import journal.Models.RemoveEventSub
-import journal.Models.GetNewEventSubsForPath
-import journal.Models.GetSubsForPath
-import journal.Models.AddPollData
-import journal.Models.SingleReadCommand
-import journal.Models.UnionCommand
-import journal.Models.WriteCommand
-import journal.Models.LookupNewEventSubs
-import journal.Models.LookupEventSubs
 
 
 trait DBWriteHandler extends DBHandlerBase {

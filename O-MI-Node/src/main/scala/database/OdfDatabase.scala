@@ -2,25 +2,22 @@ package database
 
 import java.sql.Timestamp
 
+import akka.pattern.ask
 import akka.util.Timeout
-
-import scala.util.{Success, Failure}
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration._
-import scala.concurrent.{Await, Future}
-import scala.concurrent.stm._
-import scala.language.postfixOps
-import org.slf4j.LoggerFactory
-
-import slick.jdbc.meta.MTable
-
+import journal.Models.{GetTree, MultipleReadCommand}
 import http.OmiConfigExtension
-import types.odf._
+import org.slf4j.LoggerFactory
+import slick.jdbc.meta.MTable
 import types.OmiTypes._
 import types.Path
-import akka.pattern.ask
-import journal.Models.GetTree
-import journal.Models.MultipleReadCommand
+import types.odf._
+
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
+import scala.concurrent.stm._
+import scala.concurrent.{Await, Future}
+import scala.language.postfixOps
+import scala.util.{Failure, Success}
 
 trait OdfDatabase extends Tables with DB with TrimmableDB {
 

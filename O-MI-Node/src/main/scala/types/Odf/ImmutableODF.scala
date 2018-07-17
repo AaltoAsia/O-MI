@@ -1,10 +1,11 @@
 package types
 package odf
 
-import scala.collection.{ Seq, Map, SortedSet }
-import scala.collection.immutable.{TreeSet => ImmutableTreeSet, HashMap => ImmutableHashMap }
-import scala.collection.mutable.{HashMap => MutableHashMap }
 import types.Path._
+
+import scala.collection.immutable.{HashMap => ImmutableHashMap, TreeSet => ImmutableTreeSet}
+import scala.collection.mutable.{HashMap => MutableHashMap}
+import scala.collection.{Map, Seq, SortedSet}
 
 case class ImmutableODF private[odf](
                                       nodes: ImmutableHashMap[Path, Node]

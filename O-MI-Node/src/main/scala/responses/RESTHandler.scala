@@ -15,17 +15,17 @@
 
 package responses
 
-import scala.xml.{NodeSeq}
-import database._
-import parsing.xmlGen.{defaultScope, scalaxb, xmlTypes}
-import types.odf.{ImmutableODF, InfoItem, Node, Object, Objects, Value}
-import types._
-import journal.Models.{GetTree, SingleReadCommand}
 import akka.pattern.ask
 import akka.util.Timeout
+import database._
+import journal.Models.{GetTree, SingleReadCommand}
+import parsing.xmlGen.{defaultScope, scalaxb, xmlTypes}
+import types._
+import types.odf.{ImmutableODF, InfoItem, Node, Object, Objects, Value}
 
-import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
+import scala.xml.NodeSeq
 
 object RESTHandler {
 

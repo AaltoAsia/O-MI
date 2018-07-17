@@ -3,33 +3,31 @@ package influxDB
 
 import java.sql.Timestamp
 
-import scala.math.Numeric
-import scala.concurrent.{Await, Future}
-import scala.concurrent.duration._
-import scala.util.{Try}
 import akka.actor.ActorSystem
 import akka.event.LoggingAdapter
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.client.RequestBuilding
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
-import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.ContentTypes._
+import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.unmarshalling._
+import akka.pattern.ask
 import akka.stream.{ActorMaterializer, Materializer}
+import akka.util.Timeout
+import journal.Models.{ErasePathCommand, GetTree, MultipleReadCommand}
 import spray.json._
-import types.odf._
 import types.OmiTypes._
 import types.Path
 import types.Path._
+import types.odf._
 
 import scala.collection.immutable
+import scala.concurrent.duration._
+import scala.concurrent.{Await, Future}
 import scala.language.postfixOps
-import journal.Models.GetTree
-import journal.Models.MultipleReadCommand
-import journal.Models.ErasePathCommand
-import akka.pattern.ask
-import akka.util.Timeout
+import scala.math.Numeric
+import scala.util.Try
 
 object InfluxDBJsonProtocol extends DefaultJsonProtocol {
   def getSeries(json: spray.json.JsValue): immutable.Seq[JsValue] = json match {

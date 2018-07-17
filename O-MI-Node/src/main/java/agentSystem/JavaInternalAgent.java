@@ -1,24 +1,17 @@
 
 package agentSystem;
-import akka.actor.UntypedActor;
+
 import akka.actor.ActorRef;
+import akka.actor.UntypedActor;
+import akka.dispatch.Foreach;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
-import com.typesafe.config.Config;
-
-import scala.concurrent.Future;
-import scala.concurrent.ExecutionContext;
-import akka.dispatch.Foreach;
 import akka.util.Timeout;
+import scala.concurrent.ExecutionContext;
+import scala.concurrent.Future;
+import types.OmiTypes.*;
 
 import static akka.pattern.Patterns.ask;
-import agentSystem.InternalAgent;
-import types.OmiTypes.OmiRequest;
-import types.OmiTypes.OdfRequest;
-import types.OmiTypes.WriteRequest;
-import types.OmiTypes.ReadRequest;
-import types.OmiTypes.ActorSenderInformation;
-import types.OmiTypes.ResponseRequest;
 
 public abstract class JavaInternalAgent extends UntypedActor implements InternalAgent{
   /**

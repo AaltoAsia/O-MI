@@ -17,14 +17,13 @@ import java.io.File
 import java.net.URLClassLoader
 import java.util.jar.JarFile
 
+import agentSystem.AgentEvents._
+import akka.actor.{ActorRef, Props}
+import com.typesafe.config.Config
+
 import scala.collection.JavaConverters._
 import scala.language.postfixOps
 import scala.util.{Failure, Success, Try}
-
-import akka.actor.{Props, ActorRef}
-
-import com.typesafe.config.Config
-import AgentEvents._
 
 sealed trait InternalAgentLoadFailure {
   def msg: String

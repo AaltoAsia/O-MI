@@ -13,14 +13,14 @@
  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 package responses
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
-
 import akka.actor.ActorRef
 import akka.pattern.ask
 import akka.util.Timeout
+import http.OmiConfigExtension
 import types.OmiTypes._
-import http.{ OmiConfigExtension }
+
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
 trait SubscriptionHandler {
 

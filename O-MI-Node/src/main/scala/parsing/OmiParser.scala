@@ -15,19 +15,19 @@ package parsing
 
 import java.io.File
 import java.sql.Timestamp
-import javax.xml.transform.{Source}
+
+import javax.xml.transform.Source
 import javax.xml.transform.stream.StreamSource
+import parsing.xmlGen.xmlTypes
+import types.OmiTypes._
+import types.ParseError._
+import types._
+import types.odf._
 
 import scala.collection.JavaConverters._
 import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
 import scala.xml.{Elem, Node}
-
-import parsing.xmlGen.xmlTypes
-import types.odf._
-import types.OmiTypes._
-import types.ParseError._
-import types._
 
 /** Parser for messages with O-MI protocol */
 object OmiParser extends Parser[OmiParseResult] {

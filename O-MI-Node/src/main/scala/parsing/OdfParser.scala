@@ -15,9 +15,9 @@ package parsing
 
 import java.io.File
 import java.sql.Timestamp
+
 import javax.xml.transform.Source
 import javax.xml.transform.stream.StreamSource
-
 import parsing.xmlGen._
 import parsing.xmlGen.scalaxb.DataRecord
 import parsing.xmlGen.xmlTypes._

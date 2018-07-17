@@ -16,26 +16,18 @@ package odf
 
 import java.io.File
 import java.sql.Timestamp
+
 import javax.xml.transform.Source
 import javax.xml.transform.stream.StreamSource
+import parsing.xmlGen
+import parsing.xmlGen._
+import parsing.xmlGen.scalaxb.DataRecord
+import parsing.xmlGen.xmlTypes._
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable.HashMap
 import scala.util.{Failure, Success, Try}
-import scala.xml.{NodeSeq, Elem}
-
-import parsing.xmlGen
-import parsing.xmlGen._
-import parsing.xmlGen.scalaxb.DataRecord
-import parsing.xmlGen.xmlTypes.{
-  ObjectsType,
-  ObjectType,
-  InfoItemType,
-  ValueType,
-  QlmIDType,
-  MetaDataType
-}
-import types._
+import scala.xml.{Elem, NodeSeq}
 
 /** Parser for data in O-DF format */
 object ODFParser extends parsing.Parser[OdfParseResult] {

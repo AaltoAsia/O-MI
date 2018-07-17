@@ -16,26 +16,21 @@ package database
 import java.io.File
 import java.sql.Timestamp
 
-import scala.collection.mutable.ArrayBuffer
-import scala.concurrent.Future
-import http.OmiConfigExtension
-import com.typesafe.config.{Config, ConfigFactory}
 import akka.actor.{ActorRef, ActorSystem, Props}
+import akka.pattern.ask
 import akka.util.Timeout
+import com.typesafe.config.{Config, ConfigFactory}
+import journal.Models.{GetTree, MultipleReadCommand, SaveSnapshot, SingleReadCommand}
+import http.OmiConfigExtension
 import org.slf4j.{Logger, LoggerFactory}
 import slick.basic.DatabaseConfig
-import types.OmiTypes.ReturnCode
 import slick.jdbc.JdbcProfile
-import types.odf._
-import types.OmiTypes.OmiReturn
+import types.OmiTypes.{OmiReturn, ReturnCode}
 import types.Path
-import journal.Models.GetTree
-import journal.Models.SingleReadCommand
-import journal.Models.MultipleReadCommand
-import journal.Models.SaveSnapshot
-import akka.pattern.ask
+import types.odf._
 
-import scala.concurrent.duration.{Duration, FiniteDuration,MILLISECONDS}
+import scala.concurrent.Future
+import scala.concurrent.duration.{Duration, FiniteDuration, MILLISECONDS}
 import scala.util.{Failure, Success}
 
 package object database {

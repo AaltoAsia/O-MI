@@ -1,9 +1,9 @@
 package types
 package OmiTypes
 
-import scala.concurrent.duration._
 import types.odf._
 
+import scala.concurrent.duration._
 import scala.xml.NodeSeq
 
 object Responses {

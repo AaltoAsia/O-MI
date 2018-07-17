@@ -1,17 +1,17 @@
 package responses
 
-import scala.concurrent.duration._
 import akka.actor.ActorSystem
+import akka.http.scaladsl.model.Uri
+import akka.stream.ActorMaterializer
 import akka.testkit.TestProbe
 import akka.util.Timeout
-import akka.stream.ActorMaterializer
-import akka.http.scaladsl.model.Uri
+import http.OmiConfig
 import org.specs2.concurrent.ExecutionEnv
 import org.specs2.mutable._
-import com.typesafe.config.ConfigFactory
-import http.OmiConfig
 import testHelpers.{Actorstest, SystemTestCallbackServer}
 import types.OmiTypes._
+
+import scala.concurrent.duration._
 
 
 class CallbackHandlerTest(implicit ee: ExecutionEnv) extends Specification {

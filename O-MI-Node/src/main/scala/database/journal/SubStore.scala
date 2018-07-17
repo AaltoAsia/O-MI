@@ -3,11 +3,11 @@ package database.journal
 import java.sql.Timestamp
 import java.util.Date
 
-import PAddSub.SubType._
+import Models._
 import akka.actor.ActorLogging
 import akka.persistence._
 import database._
-import _root_.database.journal.Models._
+import PAddSub.SubType._
 import types.OmiTypes.HTTPCallback
 import types.Path
 

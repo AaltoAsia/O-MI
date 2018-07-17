@@ -269,7 +269,7 @@ object RawRequestWrapper {
 
 }
 
-import RawRequestWrapper.MessageType
+import types.OmiTypes.RawRequestWrapper.MessageType
 
 /**
   * Trait for subscription like classes. Offers a common interface for subscription types.

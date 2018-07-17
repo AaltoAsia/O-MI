@@ -18,9 +18,6 @@ package http
 import java.io.{BufferedWriter, File, FileWriter}
 import java.net.InetSocketAddress
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration._
-import scala.concurrent.{Await, Future}
 import agentSystem.{AgentInfo, AgentName, NewCLI}
 import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, Props}
 import akka.io.Tcp
@@ -29,12 +26,14 @@ import akka.pattern.ask
 import akka.util.{ByteString, Timeout}
 import database._
 import responses._
-import spray.json.JsArray
+import types.Path
 import types.odf._
-import types.{Path}
 
-import scala.language.postfixOps
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
+import scala.concurrent.{Await, Future}
 import scala.io.Source
+import scala.language.postfixOps
 import scala.util.{Failure, Success, Try}
 
 /** Object that contains all commands of InternalAgentCLI.

@@ -2,12 +2,11 @@ package database
 
 import java.sql.Timestamp
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.collection.mutable.{Map => MutableMap, HashMap => MutableHashMap}
-
+import slick.basic.DatabaseConfig
 import slick.jdbc.meta.MTable
 
-import slick.basic.DatabaseConfig
+import scala.collection.mutable.{HashMap => MutableHashMap, Map => MutableMap}
+import scala.concurrent.ExecutionContext.Implicits.global
 //import slick.driver.H2Driver.api._
 import slick.jdbc.JdbcProfile
 import slick.lifted.{Index, ProvenShape}

@@ -13,9 +13,10 @@
  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 package agentSystem
 
-import scala.concurrent.Future
-import akka.actor.{ActorRef}
+import akka.actor.ActorRef
 import http.CLICmds._
+
+import scala.concurrent.Future
 
 trait InternalAgentManager extends BaseAgentSystem with InternalAgentLoader{
 

@@ -1,40 +1,32 @@
 package responses
 
 import agentSystem.AgentSystem
-import akka.util.Timeout
-import akka.testkit.EventFilter
 import akka.pattern.ask
-import akka.stream.{ActorMaterializer, Materializer}
-import akka.testkit.TestEvent.{Mute, UnMute}
+import akka.stream.ActorMaterializer
+import akka.util.Timeout
 import org.specs2.concurrent.ExecutionEnv
-import org.specs2.execute.Result
+import org.specs2.matcher.XmlMatchers._
 import org.specs2.mutable._
 import org.specs2.specification.BeforeAfterAll
-import org.specs2.matcher.XmlMatchers._
-import org.specs2.matcher._
 import testHelpers.Actorstest
 import types.OdfTypes.{OdfInfoItem, OdfValue}
 import types.odf.ImmutableODF
 
-import scala.concurrent.{Await, Future}
+import scala.concurrent.Await
 import scala.util.Try
 
 //import responses.Common._
 import java.sql.Timestamp
 import java.util.{Calendar, TimeZone}
 
-import akka.actor._
-import com.typesafe.config.ConfigFactory
 import database._
-import types.OmiTypes._
-import types.OdfTypes._
-import types.odf.{OldTypeConverter, NewTypeConverter}
-import types._
+import journal.Models.{ErasePathCommand, GetTree}
 import http.OmiConfig
-import journal.Models.ErasePathCommand
-import journal.Models.GetTree
+import types.OdfTypes._
+import types.OmiTypes._
+import types._
+import types.odf.{NewTypeConverter, OldTypeConverter}
 
-import scala.collection.JavaConversions.{asJavaIterable, seqAsJavaList}
 import scala.concurrent.duration._
 
 // For eclipse:

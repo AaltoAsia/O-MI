@@ -17,24 +17,23 @@ import java.net.InetAddress
 import java.sql.Timestamp
 import java.util.Date
 
-import scala.collection.mutable.{Map => MutableMap}
-import scala.concurrent._
-import scala.concurrent.duration._
-import scala.util.{Try,Success,Failure}
-import scala.xml.{NodeSeq}
-
 import akka.actor.ActorSystem
 import akka.event.{LogSource, Logging, LoggingAdapter}
-import akka.http.scaladsl.{Http, HttpExt}
 import akka.http.scaladsl.client.RequestBuilding
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.ws._
-import akka.stream.scaladsl._
+import akka.http.scaladsl.{Http, HttpExt}
 import akka.stream._
+import akka.stream.scaladsl._
+import http.OmiConfigExtension
+import responses.CallbackHandler._
 import types.OmiTypes._
 
-import http.{OmiConfigExtension}
-import CallbackHandler._
+import scala.collection.mutable.{Map => MutableMap}
+import scala.concurrent._
+import scala.concurrent.duration._
+import scala.util.{Failure, Success, Try}
+import scala.xml.NodeSeq
 
 object CallbackHandler {
 

@@ -2,31 +2,30 @@ package http
 
 import java.net.InetAddress
 
-import scala.concurrent.Await
-import scala.concurrent.duration.DurationInt
-import scala.xml._
 import agentSystem.AgentSystem
 import akka.actor._
+import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport.defaultNodeSeqUnmarshaller
+import akka.http.scaladsl.model.MediaTypes._
 import akka.http.scaladsl.model.RemoteAddress
+import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model.headers.{RawHeader, `Remote-Address`}
 import akka.http.scaladsl.testkit.{RouteTest, RouteTestTimeout}
+import akka.pattern.ask
+import akka.stream.ActorMaterializer
 import akka.testkit.TestActorRef
+import akka.util.Timeout
 import database._
+import journal.Models.ErasePathCommand
 import org.slf4j.LoggerFactory
 import org.specs2.matcher.XmlMatchers
 import org.specs2.mutable.Specification
 import org.specs2.specification.BeforeAfterAll
 import responses.{CLIHelper, CallbackHandler, RequestHandler, SubscriptionManager}
-import akka.http.scaladsl.model.MediaTypes._
-import akka.http.scaladsl.model.StatusCodes._
-import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport.defaultNodeSeqUnmarshaller
-import akka.stream._
-import akka.stream.ActorMaterializer
 import testHelpers.Specs2Interface
-import types._
-import akka.pattern.ask
-import akka.util.Timeout
-import journal.Models.ErasePathCommand
+
+import scala.concurrent.Await
+import scala.concurrent.duration.DurationInt
+import scala.xml._
 
 class OmiServiceTest
   extends {

@@ -2,11 +2,12 @@ package types
 package odf
 
 
-import scala.collection.{ Seq, Map, SortedSet }
-import scala.collection.immutable.{HashMap => ImmutableHashMap }
-import scala.xml.NodeSeq
-import parsing.xmlGen.xmlTypes.{ObjectsType, ObjectType}
+import parsing.xmlGen.xmlTypes.{ObjectType, ObjectsType}
 import parsing.xmlGen.{odfDefaultScope, scalaxb}
+
+import scala.collection.immutable.{HashMap => ImmutableHashMap}
+import scala.collection.{Map, Seq, SortedSet}
+import scala.xml.NodeSeq
 
 /** O-DF structure
   */

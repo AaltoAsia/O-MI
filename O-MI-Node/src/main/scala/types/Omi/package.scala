@@ -17,14 +17,14 @@ package types
 
 import java.sql.Timestamp
 import java.util.{Date, GregorianCalendar}
-import javax.xml.datatype.{DatatypeFactory, XMLGregorianCalendar}
 
+import javax.xml.datatype.{DatatypeFactory, XMLGregorianCalendar}
 import parsing.xmlGen._
 import parsing.xmlGen.scalaxb.DataRecord
 import parsing.xmlGen.xmlTypes._
 
-import scala.collection.JavaConverters._
 import scala.collection.Iterable
+import scala.collection.JavaConverters._
 import scala.xml.NodeSeq
 
 /**

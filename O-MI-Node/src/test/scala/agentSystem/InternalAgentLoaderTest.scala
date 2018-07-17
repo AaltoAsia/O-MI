@@ -1,18 +1,14 @@
 package agentSystem
 
-import scala.collection.mutable.{Map => MutableMap}
-import akka.actor.{Actor, ActorSystem, ActorLogging, ActorRef, Props}
-import akka.util.Timeout
+import akka.actor.{ActorRef, ActorSystem}
 import akka.pattern.ask
 import akka.testkit._
-import com.typesafe.config.{ConfigFactory, Config}
+import com.typesafe.config.ConfigFactory
 import http.CLICmds._
 import org.specs2.concurrent.ExecutionEnv
-import org.specs2.specification.create.InterpolatedFragment
 import org.specs2.mutable._
 import testHelpers.Actorstest
-import scala.concurrent.Future
-import http.OmiConfigExtension
+
 import scala.concurrent.duration._
 
 class InternalAgentLoaderTest(implicit ee: ExecutionEnv) extends Specification {

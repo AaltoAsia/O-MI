@@ -1,16 +1,27 @@
 package types;
 
-import java.util.ArrayList;
-import java.util.Iterator;
+import scala.collection.immutable.HashMap;
+import scala.concurrent.duration.Duration;
 import types.OdfTypes.OdfObjects;
 import types.OdfTypes.OdfTreeCollection;
-import types.odf.ImmutableODF;
-import java.sql.Timestamp;
-import scala.collection.immutable.HashMap;
-import scala.concurrent.duration.*;
-import types.OmiTypes.*;
 import types.OmiTypes.UserInfo;
+import types.OmiTypes.ReadRequest;
+import types.OmiTypes.Callback;
+import types.OmiTypes.RawCallback;
+import types.OmiTypes.PollRequest;
+import types.OmiTypes.WriteRequest;
+import types.OmiTypes.SubscriptionRequest;
+import types.OmiTypes.ResponseRequest;
+import types.OmiTypes.ResponseRequest$;
+import types.OmiTypes.CancelRequest;
+import types.OmiTypes.OmiReturn;
+import types.OmiTypes.OmiReturn$;
+import types.OmiTypes.OmiResult;
+import types.OmiTypes.OmiResult$;
+import types.odf.ImmutableODF;
 import types.odf.OldTypeConverter;
+
+import java.sql.Timestamp;
 
   /**
    * Factory class for creating O-MI types used in Scala.

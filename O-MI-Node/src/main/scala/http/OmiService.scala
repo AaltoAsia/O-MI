@@ -16,7 +16,6 @@ package http
 
 import java.net.{InetAddress, URI, URLDecoder}
 import java.nio.file.{Files, Paths}
-import scala.language.postfixOps
 
 import akka.actor.{ActorRef, ActorSystem}
 import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport
@@ -26,13 +25,13 @@ import akka.http.scaladsl.model.{ws, _}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.pattern.ask
-import akka.stream.{ActorMaterializer, _}
 import akka.stream.scaladsl._
-import authorization.AuthAPIService
-import authorization.Authorization._
-import authorization._
+import akka.stream.{ActorMaterializer, _}
 import akka.util.Timeout
+import authorization.Authorization._
+import authorization.{AuthAPIService, _}
 import database.SingleStores
+import database.journal.Models.GetTree
 import org.slf4j.LoggerFactory
 import responses.CallbackHandler._
 import responses.{CallbackHandler, RESTHandler, RemoveSubscription}
@@ -44,9 +43,9 @@ import types.{ParseError, Path}
 import scala.compat.java8.OptionConverters._
 import scala.concurrent.duration._
 import scala.concurrent.{Future, Promise, TimeoutException}
+import scala.language.postfixOps
 import scala.util.{Failure, Success, Try}
 import scala.xml.NodeSeq
-import database.journal.Models.GetTree
 
 trait OmiServiceAuthorization
   extends ExtensibleAuthorization

@@ -19,8 +19,8 @@ package types
 import java.lang.{Iterable => JavaIterable}
 import java.sql.Timestamp
 import java.util.GregorianCalendar
-import javax.xml.datatype.{DatatypeFactory, XMLGregorianCalendar}
 
+import javax.xml.datatype.{DatatypeFactory, XMLGregorianCalendar}
 import parsing.xmlGen._
 import parsing.xmlGen.scalaxb.DataRecord
 

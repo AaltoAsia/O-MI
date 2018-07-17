@@ -17,9 +17,9 @@ package responses
 import java.util.concurrent.TimeUnit.SECONDS
 import java.util.concurrent.{Executors, ScheduledFuture}
 
-import scala.concurrent.duration.Duration
-
 import akka.actor.ActorRef
+
+import scala.concurrent.duration.Duration
 
 class SubscriptionScheduler {
   val timeunit = SECONDS

@@ -1,35 +1,32 @@
 package http
 
 import java.io.File
-import java.util.Date
-import java.sql.Timestamp
 import java.net.InetSocketAddress
+import java.sql.Timestamp
+import java.util.Date
+
+import agentSystem._
+import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem}
+import akka.http.scaladsl.model.Uri
+import akka.io.Tcp.{Received, Write}
+import akka.pattern.ask
+import akka.testkit._
+import akka.util.{ByteString, Timeout}
+import com.typesafe.config.ConfigFactory
+import database._
+import http.CLICmds._
+import org.specs2.concurrent.ExecutionEnv
+import org.specs2.matcher._
+import org.specs2.mutable._
+import responses.{AllSubscriptions, CLIHelperT, RemoveSubscription}
+import testHelpers.Actorstest
+import types.OmiTypes._
+import types.Path
+import types.odf._
 
 import scala.collection.mutable.{Map => MutableMap}
 import scala.concurrent.Future
 import scala.concurrent.duration._
-import akka.util.{ByteString, Timeout}
-import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, Props}
-import akka.pattern.ask
-import akka.testkit._
-import com.typesafe.config.{Config, ConfigFactory}
-import org.specs2.concurrent.ExecutionEnv
-import org.specs2.specification.create.InterpolatedFragment
-import org.specs2.mutable._
-import org.specs2.matcher._
-import org.specs2.matcher.FutureMatchers._
-import com.typesafe.config.{Config, ConfigFactory}
-import testHelpers.Actorstest
-import types.Path
-import types.OmiTypes._
-import responses.{AllSubscriptions, CLIHelperT, RemoveSubscription}
-import agentSystem._
-import akka.util.{ByteString, Timeout}
-import akka.http.scaladsl.model.Uri
-import akka.io.Tcp.{Received, Write}
-import database._
-import http.CLICmds._
-import types.odf._
 
 
 class NodeCLITest(implicit ee: ExecutionEnv) extends Specification {
@@ -85,8 +82,6 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification {
 
   def helpTest = new Actorstest() {
 
-    import system.dispatcher
-
     val agentsMap: MutableMap[AgentName, AgentInfo] = MutableMap.empty
     val requestHandler = TestActorRef(new TestDummyRequestHandler())
     val dbHandler = TestActorRef(new TestDummyDBHandler())
@@ -114,8 +109,6 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification {
   }
 
   def listAgentsTest = new Actorstest() {
-
-    import system.dispatcher
 
     val agents = Vector(
       AgentInfo("test1", "testClass", emptyConfig, None, running = true, Nil, Java()),
@@ -209,8 +202,6 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification {
 
   def unknownCmdTest = new Actorstest() {
 
-    import system.dispatcher
-
     val agentsMap: MutableMap[AgentName, AgentInfo] = MutableMap.empty
     val requestHandler = TestActorRef(new TestDummyRequestHandler())
     val dbHandler = TestActorRef(new TestDummyDBHandler())
@@ -235,8 +226,6 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification {
   }
 
   def removePathTest = new Actorstest() {
-
-    import system.dispatcher
 
     val agentsMap: MutableMap[AgentName, AgentInfo] = MutableMap.empty
     val requestHandler = TestActorRef(new TestDummyRequestHandler())
@@ -264,8 +253,6 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification {
 
   def removeUnexistingPathTest = new Actorstest() {
 
-    import system.dispatcher
-
     val agentsMap: MutableMap[AgentName, AgentInfo] = MutableMap.empty
     val requestHandler = TestActorRef(new TestDummyRequestHandler())
     val dbHandler = TestActorRef(new TestDummyDBHandler())
@@ -290,8 +277,6 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification {
   }
 
   def listSubsTest = new Actorstest() {
-
-    import system.dispatcher
 
     val startTime = new Timestamp(new Date().getTime())
     val endTime = new Timestamp(new Date().getTime() + 1.hours.toMillis)
@@ -345,8 +330,6 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification {
 
   def removeSubTest = new Actorstest() {
 
-    import system.dispatcher
-
     val id = 13
     val agentsMap: MutableMap[AgentName, AgentInfo] = MutableMap.empty
     val requestHandler = TestActorRef(new TestDummyRequestHandler())
@@ -375,8 +358,6 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification {
   }
 
   def removeUnexistingSubTest = new Actorstest() {
-
-    import system.dispatcher
 
     val id = 13
     val agentsMap: MutableMap[AgentName, AgentInfo] = MutableMap.empty

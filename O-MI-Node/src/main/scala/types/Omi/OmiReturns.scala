@@ -2,8 +2,8 @@ package types
 package OmiTypes
 
 import parsing.xmlGen.scalaxb.DataRecord
-import types.OdfTypes.{ OdfTreeCollection }
 import parsing.xmlGen.xmlTypes
+import types.OdfTypes.OdfTreeCollection
 
 object ReturnCode extends Enumeration {
   type ReturnCode = String
@@ -18,7 +18,7 @@ object ReturnCode extends Enumeration {
   val Timeout = "503"
 }
 
-import ReturnCode._
+import types.OmiTypes.ReturnCode._
 
 trait JavaOmiReturn {
   def descriptionAsJava: String

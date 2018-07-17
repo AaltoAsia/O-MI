@@ -9,11 +9,11 @@ import scala.concurrent.Future
 //import scala.collection.JavaConversions.asJavaIterator
 //import akka.http.StatusCode
 
+import akka.pattern.ask
+import journal.Models.GetTree
 import types.OmiTypes._
 import types.Path
 import types.odf.{ImmutableODF, ODF}
-import journal.Models.GetTree
-import akka.pattern.ask
 
 trait DBReadHandler extends DBHandlerBase {
   /** Method for handling ReadRequest.

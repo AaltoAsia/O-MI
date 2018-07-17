@@ -18,19 +18,19 @@ package responses
 
 import java.util.concurrent.TimeUnit
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
-import scala.util.{Failure, Success}
-import akka.event.{LogSource, Logging, LoggingAdapter}
 import akka.actor.ActorSystem
-import database._
-import types.odf._
-import types._
-import journal.Models.{ErasePathCommand, GetTree, UnionCommand, WriteCommand}
+import akka.event.{LogSource, Logging, LoggingAdapter}
 import akka.pattern.ask
 import akka.util.Timeout
+import database._
+import journal.Models.{ErasePathCommand, GetTree, UnionCommand, WriteCommand}
+import types._
+import types.odf._
 
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 import scala.concurrent.duration._
+import scala.util.{Failure, Success}
 
 trait CLIHelperT {
   def handlePathRemove(parentPathS: Seq[Path]): Future[Seq[Int]]

@@ -13,14 +13,12 @@
  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 package agentSystem
 
-import scala.concurrent.{ Future, Promise }
-import akka.actor.{
-  ActorRef,
-  ActorLogging
-}
+import akka.actor.{ActorLogging, ActorRef}
 import akka.pattern.ask
 import akka.util.Timeout
 import types.OmiTypes._
+
+import scala.concurrent.{Future, Promise}
 /**
   * Commands that can be received from InternalAgentLoader.
   **/

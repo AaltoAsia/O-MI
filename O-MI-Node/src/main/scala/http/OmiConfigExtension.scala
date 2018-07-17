@@ -15,21 +15,21 @@
 package http
 
 import java.lang
+import java.net.InetAddress
 import java.util.concurrent.TimeUnit
-import java.net.{InetAddress}
 
-import scala.language.postfixOps
-import scala.language.implicitConversions
-import scala.collection.JavaConverters._
-import scala.concurrent.duration._
-import scala.util.Try
 import agentSystem.AgentSystemConfigExtension
 import akka.actor.{ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
+import akka.http.scaladsl.client.RequestBuilding.{Get, Head, Options, Patch, Post, Put, RequestBuilder}
 import akka.http.scaladsl.model.Uri
 import com.typesafe.config.Config
-import akka.http.scaladsl.client.RequestBuilding.{RequestBuilder,Post,Get,Patch,Put,Head,Options}
-import types.Path
 import types.OmiTypes.RawRequestWrapper.MessageType
+import types.Path
+
+import scala.collection.JavaConverters._
+import scala.concurrent.duration._
+import scala.language.{implicitConversions, postfixOps}
+import scala.util.Try
 
 class OmiConfigExtension(val config: Config) extends Extension
   with AgentSystemConfigExtension {

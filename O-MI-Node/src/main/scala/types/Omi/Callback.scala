@@ -3,10 +3,11 @@ package OmiTypes
 
 import java.net.InetAddress
 
-import scala.util.Try
 import akka.http.scaladsl.model.Uri
-import Callback._
 import database.journal.PCallback
+import types.OmiTypes.Callback._
+
+import scala.util.Try
 
 /**
   * Contains information for sending callbacks for a request or subscription

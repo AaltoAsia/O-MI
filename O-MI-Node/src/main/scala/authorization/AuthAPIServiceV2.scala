@@ -1,32 +1,26 @@
 package authorization
 
-import scala.concurrent.{Future,Await}
-import scala.util.Try
-import scala.collection.mutable
-
-import akka.util.{ByteString, Timeout}
 import akka.actor.{ActorRef, ActorSystem}
-import akka.stream.ActorMaterializer
-import akka.http.scaladsl.{ Http, HttpExt}
-import akka.http.scaladsl.model.{HttpMessage, HttpRequest, HttpResponse, HttpEntity, headers, Uri, FormData}
-import akka.http.scaladsl.model.ContentTypes._
 import akka.http.scaladsl.client.RequestBuilding.RequestBuilder
+import akka.http.scaladsl.model.ContentTypes._
+import akka.http.scaladsl.model._
 import akka.http.scaladsl.unmarshalling.Unmarshal
-
-import org.json4s.{JString, JObject}
-import org.json4s.native.JsonMethods._
-import org.json4s.JsonDSL._
-import org.json4s._
+import akka.http.scaladsl.{Http, HttpExt}
 import akka.pattern.ask
-
+import akka.stream.ActorMaterializer
+import akka.util.{ByteString, Timeout}
+import database.journal.Models.GetTree
+import http.OmiConfigExtension
+import org.json4s.JsonDSL._
+import org.json4s.native.JsonMethods._
+import org.json4s.{JObject, JString, _}
+import org.slf4j.LoggerFactory
+import types.OmiTypes._
+import types.Path
 import types.odf._
 
-import org.slf4j.{LoggerFactory}
-
-import database.journal.Models.GetTree
-import types.Path
-import types.OmiTypes.{OmiRequest, OdfRequest, UserInfo, RawRequestWrapper, ReadRequest}
-import http.OmiConfigExtension
+import scala.concurrent.{Await, Future}
+import scala.util.Try
 
 
 /**

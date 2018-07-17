@@ -6,14 +6,14 @@ import akka.actor.{ActorRef, ActorSystem}
 import akka.http.scaladsl.model.RemoteAddress
 import akka.stream.ActorMaterializer
 import database.SingleStores
-import http.{OmiConfigExtension, OmiService, OmiConfig}
+import http.{OmiConfig, OmiConfigExtension, OmiService}
 import org.specs2.Specification
 import org.specs2.mock.Mockito
 import types.OdfTypes.OdfObjects
 import types.OmiTypes.{RawCallback, ReadRequest, UserInfo}
 import types.odf.OldTypeConverter
 
-import scala.util.{Failure, Try}
+import scala.util.Failure
 
 /**
   * Created by satsuma on 24.5.2017.

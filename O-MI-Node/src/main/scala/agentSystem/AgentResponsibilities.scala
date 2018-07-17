@@ -1,10 +1,10 @@
 package agentSystem
 
-import scala.collection.mutable.{Map => MutableMap}
-import scala.collection.immutable.{Map => ImmutableMap}
-
 import types.OmiTypes._
 import types.Path
+
+import scala.collection.immutable.{Map => ImmutableMap}
+import scala.collection.mutable.{Map => MutableMap}
 
 object AgentResponsibilities {
 
@@ -12,7 +12,7 @@ object AgentResponsibilities {
 
 }
 
-import AgentResponsibilities._
+import agentSystem.AgentResponsibilities._
 
 
 class AgentResponsibilities() {

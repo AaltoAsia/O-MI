@@ -18,7 +18,6 @@ import types.odf._
 import scala.collection.mutable.{HashMap => MutableHashMap, Map => MutableMap}
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionException, Future}
-import scala.language.implicitConversions
 import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
 import scala.xml.XML

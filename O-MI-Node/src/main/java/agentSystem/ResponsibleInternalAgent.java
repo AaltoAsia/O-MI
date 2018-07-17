@@ -1,11 +1,9 @@
 package agentSystem;
 
 import scala.concurrent.Future;
-import scala.concurrent.ExecutionContext;
-import types.OmiTypes.WriteRequest;
-import types.OmiTypes.ReadRequest;
 import types.OmiTypes.CallRequest;
 import types.OmiTypes.ResponseRequest;
+import types.OmiTypes.WriteRequest;
 
 public interface ResponsibleInternalAgent extends InternalAgent{
   /**

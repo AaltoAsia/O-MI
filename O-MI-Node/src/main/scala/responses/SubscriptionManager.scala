@@ -16,26 +16,26 @@ package responses
 
 import java.sql.Timestamp
 import java.util.concurrent.ConcurrentHashMap
-import scala.language.postfixOps
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.{duration,Future, Await}
-import scala.util.{Random, Success}
-import scala.concurrent.duration._
 import akka.actor.{Actor, ActorLogging, Cancellable, Props, Scheduler}
+import akka.pattern.{ask, pipe}
+import akka.util.Timeout
 import database._
+import journal.Models._
 import http.CLICmds.{GetSubsWithPollData, ListSubsCmd, SubInfoCmd}
 import http.OmiConfigExtension
 import responses.CallbackHandler.{CallbackFailure, MissingConnection}
 import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
-import types.odf.{ ODF, ImmutableODF, InfoItem, Value, NewTypeConverter}
 import types.OdfTypes._
 import types.OmiTypes._
 import types._
-import akka.pattern.ask
-import akka.util.Timeout
-import journal.Models._
-import akka.pattern.pipe
+import types.odf._
+
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
+import scala.concurrent.{Await, Future, duration}
+import scala.language.postfixOps
+import scala.util.{Random, Success}
 
 /**
   * Message for triggering handling of intervalsubscriptions

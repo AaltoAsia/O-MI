@@ -2,8 +2,9 @@ package types
 package odf
 
 import database.journal.PMetaData
-import scala.collection.immutable.{ Set}
 import parsing.xmlGen.xmlTypes.MetaDataType
+
+import scala.collection.immutable.Set
 
 object MetaData {
   def empty: MetaData = MetaData(Vector.empty)

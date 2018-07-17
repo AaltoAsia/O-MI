@@ -2,14 +2,13 @@ package database.journal
 
 import akka.actor.ActorLogging
 import akka.persistence._
-import database.SingleStoresMaintainer
 import database.journal.Models._
 import types.Path
 import types.odf.Value
+import utils._
 
 import scala.concurrent.duration.Duration
 import scala.util.Try
-import utils._
 
 class PollDataStore extends PersistentActor with ActorLogging {
   def persistenceId: String = "polldatastore"

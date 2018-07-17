@@ -1,45 +1,38 @@
 package testHelpers
 
-import scala.language.postfixOps
-
-import scala.util.Try
-import scala.concurrent.{Promise, Future, Await}
-import scala.concurrent.duration._
-import scala.xml.{SAXParser, Node, PrettyPrinter, XML}
-import scala.xml.parsing._
-
+import agentSystem._
 import akka.Done
 import akka.actor._
-import akka.http.scaladsl.model.StatusCodes
-import akka.util.Timeout
 import akka.http.scaladsl._
-import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport._
+import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.model.ws._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.testkit.TestFrameworkInterface
-import akka.http.scaladsl.model.ws._
-import akka.stream.scaladsl._
 import akka.stream._
+import akka.stream.scaladsl._
 import akka.testkit.{ImplicitSender, TestKit}
-
-import com.typesafe.config.{Config, ConfigFactory}
+import akka.util.Timeout
+import com.typesafe.config.ConfigFactory
+import database._
+import http._
 import org.specs2.execute.{Failure, FailureException}
 import org.specs2.mutable._
 import org.specs2.specification.Scope
 import org.xml.sax.InputSource
-import responses.RemoveSubscription
-import database._
-import agentSystem._
-import responses._
-import http._
+import responses.{RemoveSubscription, _}
+
+import scala.concurrent.duration._
+import scala.concurrent.{Await, Future, Promise}
+import scala.language.postfixOps
+import scala.xml.parsing._
+import scala.xml.{Node, PrettyPrinter, SAXParser, XML}
 
 //class TestOmiServer(config: Config) extends OmiNode {
 class TestOmiServer() extends OmiNode {
 
   // we need an ActorSystem to host our application in
   implicit val system: ActorSystem = ActorSystem("on-core")
-  implicit val materializer: ActorMaterializer = ActorMaterializer()(system)
-
-  import system.dispatcher // execution context for futures
+  implicit val materializer: ActorMaterializer = ActorMaterializer()(system) // execution context for futures
 
   /**
     * Settings loaded by akka (typesafe config) and our OmiConfigExtension

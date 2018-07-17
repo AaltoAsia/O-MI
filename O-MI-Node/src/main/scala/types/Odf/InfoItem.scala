@@ -3,10 +3,10 @@ package odf
 
 import database.journal.PPersistentNode.NodeType.Ii
 import database.journal.{PInfoItem, PPersistentNode}
-import scala.collection.immutable.{ HashMap, Map =>IMap}
-
 import parsing.xmlGen.scalaxb.DataRecord
 import parsing.xmlGen.xmlTypes.InfoItemType
+
+import scala.collection.immutable.{HashMap, Map => IMap}
 
 object InfoItem {
   def apply(path: Path, values: Vector[Value[Any]]): InfoItem = {

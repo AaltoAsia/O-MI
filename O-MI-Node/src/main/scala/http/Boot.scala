@@ -25,11 +25,10 @@ import akka.pattern.ask
 import akka.stream.ActorMaterializer
 import akka.util.Timeout
 import org.slf4j.{Logger, LoggerFactory}
-import responses.{CLIHelper}
+import responses.CLIHelper
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext, Future}
-import scala.language.postfixOps
 import scala.util.{Failure, Success, Try}
 //import akka.http.WebBoot
 //import akka.http.javadsl.ServerBinding
@@ -210,7 +209,7 @@ object OmiServer {
 
   def saveSettingsOdf(system: ActorSystem, requestHandler: ActorRef, settings: OmiConfigExtension): Unit = {
     if (settings.settingsOdfPath.nonEmpty) {
-      import system.dispatcher // execution context for futures
+      import system.dispatcher// execution context for futures
       // Same timestamp for all OdfValues of the settings
       val date = new Date()
       val currentTime = new java.sql.Timestamp(date.getTime)

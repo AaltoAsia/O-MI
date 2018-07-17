@@ -1,17 +1,13 @@
 package agentSystem
 
-import scala.util.Try
-import scala.concurrent.{Future, ExecutionContext, TimeoutException, Promise}
-import scala.collection.mutable.{Map => MutableMap}
-
+import agentSystem.AgentEvents._
+import akka.actor.{Actor, ActorRef, ActorSystem, Props, Terminated}
 import com.typesafe.config.Config
-import akka.actor.{ActorRef, Actor, ActorSystem, Props, Terminated}
-import akka.testkit.TestActorRef
-
-import agentSystem._
-import types.OmiTypes.{Responses, WriteRequest, ReadRequest, CallRequest, ResponseRequest}
 import http.CLICmds._
-import AgentEvents._
+import types.OmiTypes.{CallRequest, ResponseRequest, Responses, WriteRequest}
+
+import scala.collection.mutable.{Map => MutableMap}
+import scala.concurrent.Future
 
 class FailurePropsAgent(
                          protected val requestHandler: ActorRef,

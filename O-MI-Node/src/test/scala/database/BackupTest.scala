@@ -3,15 +3,14 @@ package database
 import java.sql.Timestamp
 
 import akka.http.scaladsl.model.Uri
-import org.specs2.mutable.Specification
-import types.OmiTypes.{Callback, HTTPCallback}
-import types.{OdfTypes, Path}
 import CustomJsonProtocol._
+import org.specs2.mutable.Specification
 import spray.json._
+import types.OmiTypes.HTTPCallback
+import types.Path
 import types.odf.Value
 
 import scala.collection.immutable.HashMap
-import scala.collection.mutable
 import scala.concurrent.duration._
 
 class BackupTest extends Specification {

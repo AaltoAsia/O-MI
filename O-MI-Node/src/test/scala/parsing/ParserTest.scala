@@ -1,27 +1,20 @@
 package parsing
 
+import java.sql.Timestamp
+
 import org.specs2._
-import scala.io.Source
-import parsing._
-import parsing.xmlGen.xmlTypes._
-import types._
-import types.OmiTypes._
 import types.OdfTypes.OdfTreeCollection._
 import types.OdfTypes._
-import types.Path._
-import java.sql.Timestamp
-import scala.xml.Utility.trim
+import types.OmiTypes._
+import types._
+
 import scala.xml.NodeSeq
 //import java.lang.Iterable
-import scala.collection.JavaConversions.asJavaIterable
-import scala.collection.JavaConversions.seqAsJavaList
-import scala.collection.JavaConversions.iterableAsScalaIterable
+import org.specs2.matcher.XmlMatchers._
+import org.specs2.matcher._
 import types.odf.OldTypeConverter
 
 import scala.concurrent.duration._
-
-import org.specs2.matcher._
-import org.specs2.matcher.XmlMatchers._
 
 /*
  * Test class for testing parsing parsing package

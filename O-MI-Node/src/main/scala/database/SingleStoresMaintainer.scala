@@ -14,19 +14,14 @@
 
 package database
 
-import java.io.{File, FilenameFilter}
-
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration._
-import scala.util.{Failure, Success, Try}
 import akka.actor._
 import akka.dispatch.{BoundedMessageQueueSemantics, RequiresMessageQueue}
-import http.OmiConfigExtension
-import journal.Models.SaveSnapshot
-import akka.pattern.ask
 import akka.util.Timeout
+import http.OmiConfigExtension
 
-import scala.concurrent.{Future}
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
+import scala.concurrent.duration._
 
 object SingleStoresMaintainer {
   def props(

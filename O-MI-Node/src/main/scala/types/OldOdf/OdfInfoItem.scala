@@ -16,15 +16,15 @@ package OdfTypes
 
 import java.sql.Timestamp
 
-import scala.collection.immutable.HashMap
-import scala.util.{Try, Success, Failure}
-
 import parsing.OdfParser
 import parsing.xmlGen._
-import parsing.xmlGen.scalaxb._
 import parsing.xmlGen.scalaxb.XMLStandardTypes._
+import parsing.xmlGen.scalaxb._
 import parsing.xmlGen.xmlTypes._
 import types.OdfTypes.OdfTreeCollection._
+
+import scala.collection.immutable.HashMap
+import scala.util.{Failure, Success, Try}
 
 /** Class implementing OdfInfoItem. */
 class OdfInfoItemImpl(

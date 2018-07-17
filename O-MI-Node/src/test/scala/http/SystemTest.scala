@@ -3,31 +3,25 @@ package http
 import java.text.SimpleDateFormat
 import java.util.TimeZone
 
-import akka.http.scaladsl.model.ContentTypes
-
-import scala.concurrent._
-import scala.concurrent.duration._
-import scala.util.Try
-import scala.xml._
-import agentSystem.AgentSystem
-import akka.actor.{ActorRef, ActorSystem, Props}
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.client.RequestBuilding
 import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport._
 import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.unmarshalling.Unmarshal
-import akka.stream.ActorMaterializer
+import akka.pattern.ask
 import akka.testkit.TestProbe
 import akka.util.Timeout
-import com.typesafe.config.ConfigFactory
 import database._
+import journal.Models.ErasePathCommand
 import org.specs2.concurrent.ExecutionEnv
 import org.specs2.mutable._
 import org.specs2.specification.BeforeAfterAll
-import responses.{CallbackHandler, RequestHandler, SubscriptionManager}
 import testHelpers._
-import akka.pattern.ask
-import journal.Models.ErasePathCommand
+
+import scala.concurrent._
+import scala.concurrent.duration._
+import scala.util.Try
+import scala.xml._
 
 class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAfterAll {
 
@@ -37,7 +31,7 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
   omiServer.bindTCP()
   val serverBinding = omiServer.bindHTTP()
 
-  import omiServer.{singleStores, dbConnection, system, materializer}
+  import omiServer.{dbConnection, materializer, singleStores, system}
 
   // TODO: better cleaning after tests
   def beforeAll() = {

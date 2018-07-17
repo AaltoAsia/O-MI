@@ -14,10 +14,12 @@
 
 package types
 
+import java.util.Dictionary
+
+import types.OmiTypes.ResponseRequest
+
 import scala.collection.JavaConverters._
-import java.util.{Dictionary}
-import scala.concurrent.{Future}
-import OmiTypes.ResponseRequest
+import scala.concurrent.Future
 
 object JavaHelpers {
 

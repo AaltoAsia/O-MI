@@ -3,8 +3,8 @@ package odf
 
 import java.sql.Timestamp
 
-import database.journal.PPersistentValue.ValueTypeOneof.{ProtoBoolValue, ProtoDoubleValue, ProtoLongValue, ProtoStringValue}
 import database.journal.PPersistentValue
+import database.journal.PPersistentValue.ValueTypeOneof.{ProtoBoolValue, ProtoDoubleValue, ProtoLongValue, ProtoStringValue}
 import parsing.xmlGen._
 import parsing.xmlGen.scalaxb.XMLStandardTypes._
 import parsing.xmlGen.scalaxb._
