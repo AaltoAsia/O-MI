@@ -1,9 +1,9 @@
 package agents.parking
 
-import scala.util.Try
-
-import types.odf._
 import types._
+import types.odf._
+
+import scala.util.Try
 
 object VehicleType extends Enumeration{
   type VehicleType = Value
@@ -13,7 +13,7 @@ object VehicleType extends Enumeration{
     values.find( v => v.toString == vt ).getOrElse( Unknown )
   }
 }
-import VehicleType._
+import agents.parking.VehicleType._
 
 class Vehicle( 
   override val length: Option[Double],

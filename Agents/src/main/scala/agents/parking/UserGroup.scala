@@ -10,4 +10,3 @@ object UserGroup extends Enumeration{
   def mvType = "mv:UserGroup"
   def toMvType( v: UserGroup ): String = s"mv:$v"
 }
-import UserGroup._

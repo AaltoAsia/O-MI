@@ -1,8 +1,9 @@
 package agents.parking
 
-import scala.util.{Try, Failure, Success}
-import types.odf._
 import types._
+import types.odf._
+
+import scala.util.{Failure, Success, Try}
 
 class ParkingFacility(
   val name: String,

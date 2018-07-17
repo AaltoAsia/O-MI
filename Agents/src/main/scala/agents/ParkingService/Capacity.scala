@@ -2,12 +2,11 @@
 package agents
 package parkingService
 
-import scala.math
+import agents.parkingService.Capacity._
+import agents.parkingService.UserGroup._
+import agents.parkingService.VehicleType._
 import types.OdfTypes._
 import types._
-import Capacity._
-import UserGroup._
-import VehicleType._
 
 case class Capacity(
                      name: String,

@@ -1,12 +1,12 @@
 
 package agents.parking
 
-import scala.util.{Try, Failure, Success}
-import types.odf._
+import agents.parking.UserGroup._
+import agents.parking.VehicleType._
 import types._
+import types.odf._
 
-import UserGroup._
-import VehicleType._
+import scala.util.Try
 
 case class ParkingCapacity(
                             name: String,

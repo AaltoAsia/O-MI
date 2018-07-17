@@ -1,39 +1,34 @@
 package agents;
 
-import java.lang.Exception;
-import java.util.concurrent.TimeUnit;
-import java.util.Date;
-import java.util.Vector;
-import java.sql.Timestamp;
-
-import scala.concurrent.duration.*;
-import scala.concurrent.Future;
-import scala.concurrent.ExecutionContext;
-import scala.collection.immutable.HashMap;
-import scala.util.*;
-import akka.actor.Props;
+import agentSystem.JavaInternalAgent;
 import akka.actor.ActorRef;
-import akka.util.Timeout;
-import static akka.pattern.Patterns.ask;
-import akka.japi.Creator;
-import akka.dispatch.Mapper;
-import akka.dispatch.OnSuccess;
-import akka.dispatch.OnFailure;
 import akka.actor.Cancellable;
-
+import akka.actor.Props;
+import akka.dispatch.OnFailure;
+import akka.dispatch.OnSuccess;
+import akka.japi.Creator;
 import com.typesafe.config.Config;
-
-import agentSystem.JavaInternalAgent; 
-import agentSystem.*;
-import types.Path;
-import types.OmiTypes.*;
-import types.OdfTypes.OdfValue;
-import types.OdfTypes.*;
-import types.OmiTypes.OmiResult;
-import types.OmiTypes.Results;
+import scala.concurrent.ExecutionContext;
+import scala.concurrent.Future;
+import scala.concurrent.duration.Duration;
+import scala.concurrent.duration.FiniteDuration;
+import scala.util.Random;
 import types.OdfFactory;
-import types.OmiFactory;
 import types.OdfTypes.OdfInfoItem;
+import types.OdfTypes.OdfObjects;
+import types.OdfTypes.OdfValue;
+import types.OdfTypes.OdfDescription;
+import types.OdfTypes.OdfMetaData;
+import types.OmiFactory;
+import types.OmiTypes.OmiResult;
+import types.OmiTypes.WriteRequest;
+import types.OmiTypes.ResponseRequest;
+import types.OmiTypes.Results;
+import types.Path;
+
+import java.sql.Timestamp;
+import java.util.Vector;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Pushes random numbers to given O-DF path at given interval.

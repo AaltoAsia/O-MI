@@ -1,48 +1,37 @@
 package agents;
 
-import java.lang.Object;
-import java.lang.Exception;
-import java.lang.Number;
-import java.text.NumberFormat;
-import java.util.concurrent.TimeUnit;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.HashMap;
-import java.util.Vector;
-import java.util.Collection;
+import agentSystem.InternalAgentConfigurationFailure;
+import agentSystem.JavaInternalAgent;
+import akka.actor.ActorRef;
+import akka.actor.Cancellable;
+import akka.actor.Props;
+import akka.dispatch.OnFailure;
+import akka.dispatch.OnSuccess;
+import akka.japi.Creator;
+import com.typesafe.config.Config;
+import parsing.OdfParser;
+import scala.collection.JavaConversions;
+import scala.concurrent.ExecutionContext;
+import scala.concurrent.Future;
+import scala.concurrent.duration.Duration;
+import scala.concurrent.duration.FiniteDuration;
+import scala.util.Either;
+import scala.util.Random;
+import types.*;
+import types.OdfTypes.OdfInfoItem;
+import types.OdfTypes.OdfObjects;
+import types.OdfTypes.OdfTreeCollection;
+import types.OdfTypes.OdfValue;
+import types.OmiTypes.OmiResult;
+import types.OmiTypes.WriteRequest;
+import types.OmiTypes.ResponseRequest;
+import types.OmiTypes.Results;
+
 import java.io.File;
 import java.sql.Timestamp;
-
-import scala.concurrent.duration.*;
-import scala.concurrent.Future;
-import scala.concurrent.ExecutionContext;
-import scala.collection.JavaConversions;
-import scala.util.*;
-import akka.actor.Props;
-import akka.actor.ActorRef;
-import akka.util.Timeout;
-import static akka.pattern.Patterns.ask;
-import akka.japi.Creator;
-import akka.dispatch.Mapper;
-import akka.dispatch.OnSuccess;
-import akka.dispatch.OnFailure;
-import akka.actor.Cancellable;
-
-import com.typesafe.config.Config;
-
-import parsing.OdfParser;
-import agentSystem.JavaInternalAgent; 
-import agentSystem.*;
-import types.*;
-import types.OmiTypes.*;
-import types.OdfTypes.OdfValue;
-import types.OdfTypes.*;
-import types.OdfFactory;
-import types.OmiFactory;
-import types.OmiTypes.Results;
-import types.OmiTypes.OmiResult;
-import types.OdfTypes.OdfInfoItem;
+import java.text.NumberFormat;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Parses given file for O-DF structure and updates it's values.

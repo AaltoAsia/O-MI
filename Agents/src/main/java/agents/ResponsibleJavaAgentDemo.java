@@ -1,25 +1,27 @@
 package agents;
 
-import java.util.Vector;
-import java.util.Date;
-import java.sql.Timestamp;
-import java.util.concurrent.TimeUnit;
-
-import scala.concurrent.duration.*;
-import scala.concurrent.Future;
-import akka.japi.Creator;
-import akka.actor.Props;
+import agentSystem.ResponsibleJavaInternalAgent;
 import akka.actor.ActorRef;
-import akka.dispatch.*;
-
+import akka.actor.Props;
+import akka.dispatch.Futures;
+import akka.japi.Creator;
 import com.typesafe.config.Config;
-
-import agentSystem.*;
-import types.*;
-import types.OdfTypes.*;
-import types.OmiTypes.*;
-import types.odf.OldTypeConverter;
+import scala.concurrent.Future;
+import scala.concurrent.duration.Duration;
+import types.OdfFactory;
+import types.Path;
 import types.odf.NewTypeConverter;
+import types.odf.OldTypeConverter;
+import types.OmiTypes.ResponseRequest;
+import types.OmiTypes.CallRequest;
+import types.OmiTypes.Responses;
+import types.OdfTypes.OdfInfoItem;
+import types.OdfTypes.OdfNode;
+import types.OdfTypes.OdfValue;
+
+import java.sql.Timestamp;
+import java.util.Vector;
+import java.util.concurrent.TimeUnit;
 
 public class ResponsibleJavaAgentDemo extends ResponsibleJavaInternalAgent {
   static public Props props(final Config config, final ActorRef requestHandler,final ActorRef dbHandler){

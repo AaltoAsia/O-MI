@@ -1,45 +1,39 @@
 package agents;
 
-import java.lang.Object;
-import java.lang.Exception;
-import java.lang.Number;
-import java.text.NumberFormat;
-import java.util.concurrent.TimeUnit;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.HashMap;
-import java.util.Date;
-import java.util.Vector;
-import java.sql.Timestamp;
-
-import scala.concurrent.duration.*;
-import scala.concurrent.Future;
-import scala.concurrent.ExecutionContext;
-import scala.collection.JavaConversions;
-import scala.util.*;
-import akka.actor.Props;
-import akka.util.Timeout;
-import static akka.pattern.Patterns.ask;
-import akka.japi.Creator;
-import akka.dispatch.Mapper;
-import akka.dispatch.OnSuccess;
-import akka.dispatch.OnFailure;
-import akka.actor.Cancellable;
-
-import com.typesafe.config.Config;
-
-import agentSystem.JavaInternalAgent; 
+import agentSystem.JavaInternalAgent;
 import akka.actor.ActorRef;
-import agentSystem.*;
-import types.Path;
-import types.OmiTypes.*;
-import types.OdfTypes.*;
+import akka.actor.Cancellable;
+import akka.actor.Props;
+import akka.dispatch.OnFailure;
+import akka.dispatch.OnSuccess;
+import akka.japi.Creator;
+import com.typesafe.config.Config;
+import scala.collection.JavaConversions;
+import scala.concurrent.ExecutionContext;
+import scala.concurrent.Future;
+import scala.concurrent.duration.Duration;
+import scala.concurrent.duration.FiniteDuration;
+import scala.util.Random;
+import types.JavaHelpers;
 import types.OdfFactory;
-import types.OmiTypes.OmiResult;
-import types.OmiTypes.Results;
 import types.OmiFactory;
-import types.*;
+import types.OdfTypes.OdfObjects;
+import types.OdfTypes.OdfObject;
+import types.OdfTypes.OdfInfoItem;
+import types.OdfTypes.OdfDescription;
+import types.OdfTypes.OdfValue;
+import types.OdfTypes.OdfMetaData;
+import types.OdfTypes.OdfTreeCollection;
+import types.OmiTypes.OmiResult;
+import types.OmiTypes.WriteRequest;
+import types.OmiTypes.ResponseRequest;
+import types.OmiTypes.Results;
+import types.Path;
+
+import java.sql.Timestamp;
+import java.text.NumberFormat;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Writes random generated numbers to a O-DF structure defined in createOdf() method.

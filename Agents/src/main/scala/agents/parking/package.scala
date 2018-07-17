@@ -1,8 +1,8 @@
 package agents
 
-import java.io.File
 import java.sql.Timestamp
 import java.util.Date
+
 import types._
 import types.odf._
 

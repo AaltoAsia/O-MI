@@ -1,15 +1,12 @@
 package agents
 
-import scala.util.{Success, Failure}
-import scala.concurrent.Future
-
-import akka.actor.{Cancellable, Props, Actor, ActorRef}
-import akka.util.Timeout
-import akka.pattern.ask
-
-import agentSystem._ 
+import agentSystem._
+import akka.actor.{Actor, ActorRef, Props}
 import com.typesafe.config.Config
 import types.OmiTypes._
+
+import scala.concurrent.Future
+import scala.util.{Failure, Success}
 
 /**
  * Companion object for ResponsibleScalaAgent. Extends PropsCreator to enforce recommended practice in Props creation.

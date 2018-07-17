@@ -21,11 +21,11 @@ import akka.http.scaladsl.model.RemoteAddress
 import akka.io.{IO, Tcp}
 import akka.pattern.ask
 import akka.util.Timeout
-import com.typesafe.config.Config
-import org.slf4j.LoggerFactory
 import authorization.Authorization.ExtensibleAuthorization
 import authorization.IpAuthorization
+import com.typesafe.config.Config
 import http.{OmiConfig, OmiConfigExtension}
+import org.slf4j.LoggerFactory
 import parsing.OdfParser
 import types.OmiTypes._
 import types._

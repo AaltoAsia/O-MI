@@ -1,9 +1,9 @@
 package agents.parking
 
-import scala.util.Try
-import types.odf._
 import types.Path
-import types._
+import types.odf._
+
+import scala.util.Try
 
 case class PostalAddress(
   country: Option[String],

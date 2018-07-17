@@ -1,17 +1,14 @@
 package agents;
 
-import akka.japi.Creator;
-import akka.actor.Props;
+import agentSystem.JavaInternalAgent;
 import akka.actor.ActorRef;
-import akka.dispatch.Mapper;
-import akka.dispatch.OnSuccess;
+import akka.actor.Props;
 import akka.dispatch.OnFailure;
-
+import akka.dispatch.OnSuccess;
+import akka.japi.Creator;
 import com.typesafe.config.Config;
-
-import agentSystem.*;
-import types.OmiTypes.ResponseRequest;
 import types.OmiTypes.OmiResult;
+import types.OmiTypes.ResponseRequest;
 import types.OmiTypes.Results;
 
 /**

@@ -1,26 +1,20 @@
 package agents
 
-import scala.util.{Random, Success, Failure}
+import java.sql.Timestamp
+import java.util.concurrent.TimeUnit
+
+import agentSystem._
+import akka.actor.{Actor, ActorRef, Cancellable, Props}
+import com.typesafe.config.Config
+import types.OdfTypes._
+import types.OmiTypes.{OmiResult, ResponseRequest, Results, WriteRequest}
+import types.Path
+import types.odf.OldTypeConverter
+
 import scala.concurrent.ExecutionContext.Implicits._
 import scala.concurrent.Future
 import scala.concurrent.duration._
-import scala.collection.mutable.{Queue => MutableQueue}
-
-import java.sql.Timestamp;
-import java.util.Date
-import java.util.concurrent.TimeUnit
-
-import akka.util.Timeout
-import akka.pattern.ask
-import akka.actor.{Cancellable, Props, Actor, ActorRef}
-
-import com.typesafe.config.Config
-
-import types.Path
-import types.OdfTypes._
-import types.odf.{ OldTypeConverter, ImmutableODF}
-import types.OmiTypes.{WriteRequest, ResponseRequest, OmiResult,Results}
-import agentSystem._ 
+import scala.util.{Failure, Random, Success}
 
 /**
  * Companion object for ScalaAgent. Extends PropsCreator to enforce recommended practice in Props creation.

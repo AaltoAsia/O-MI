@@ -5,11 +5,12 @@ import java.sql.Timestamp
 import journal._
 import journal.serialization.JournalProtoBufSerializer
 import org.specs2.Specification
+import org.specs2.specification.core.SpecStructure
 import types.Path
 import types.odf._
 class JournalSerializationTests extends Specification {
   val JournalSerializer = new JournalProtoBufSerializer()
-  def is = s2"""
+  def is: SpecStructure = s2"""
   Journal Serializer should serialize and deserialize protobuf classes correctly
     WriteLatest ${serializeAndDeserialize(PWriteLatest())}
     PersistentValue ${serializeAndDeserialize(PPersistentValue())}
@@ -54,14 +55,14 @@ class JournalSerializationTests extends Specification {
     Objects $buildObjects
     values $asValue"""
 
-  def serializeAndDeserialize(o: AnyRef) = {
+  private def serializeAndDeserialize(o: AnyRef) = {
     val manifest = o.getClass.getName
     val serialized = JournalSerializer.toBinary(o)
     val deserialized = JournalSerializer.fromBinary(serialized, manifest)
     o ====  deserialized
   }
 
-  def buildInfo = {
+  private def buildInfo = {
     val path = "Objects/test/test1"
     val orig = InfoItem(
       Path(path),
@@ -74,7 +75,7 @@ class JournalSerializationTests extends Specification {
     val persisted = orig.persist.ii
     persisted must beSome and (Models.buildInfoItemFromProtobuf(path, persisted.get) === orig )
   }
-  def buildQlmid = {
+  private def buildQlmid = {
     val orig = QlmID(
       "test",
       Some("idType"),
@@ -86,7 +87,7 @@ class JournalSerializationTests extends Specification {
     val persisted = orig.persist
     Models.buildQlmIDFromProtobuf(persisted) === orig
   }
-  def buildObject = {
+  private def buildObject = {
     val path = "Objects/TestObject"
     val orig = Object(
       Path(path),
@@ -97,18 +98,18 @@ class JournalSerializationTests extends Specification {
     val persisted = orig.persist.obj
     persisted must beSome and (Models.buildObjectFromProtobuf(path,persisted.get) === orig)
   }
-  def buildObjects = {
+  private def buildObjects = {
     val path = "Objects"
     val orig = Objects(Some("v1.0.0"), Map("testKey"->"testValue"))
     val persisted = orig.persist.objs
     persisted must beSome and (Models.buildObjectsFromProtobuf(persisted.get) === orig)
   }
-  def buildImmutableOdf = {
+  private def buildImmutableOdf = {
     val orig = ImmutableODF(Seq(Objects(), InfoItem("Objects/test/test1", Vector.empty), Object(Path("Objects/test"))))
     val persisted = orig.nodes.map { case (k, v) => k.toString -> PPersistentNode(v.persist) }
     Models.buildImmutableOdfFromProtobuf(persisted) === orig
   }
-  def asValue = {
+  private def asValue = {
     val ts = new Timestamp(1234567)
     val floatValue = FloatValue(20.0f,ts)
     val doubleValue = DoubleValue(20.0,ts)
@@ -127,7 +128,7 @@ class JournalSerializationTests extends Specification {
     testValue(odfValue) and
     testValue(stringValue)
   }
-  def testValue(value: Value[Any]) = {
+  private def testValue(value: Value[Any]) = {
     val persisted = value.persist
     Models.asValue(persisted) === value
   }

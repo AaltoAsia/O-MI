@@ -1,25 +1,24 @@
 package agents.parking
 
-import java.lang.{Iterable => JavaIterable}
 import java.io.File
+import java.lang.{Iterable => JavaIterable}
 
-import scala.xml.XML
-import scala.util.control.NonFatal
-import scala.util.{ Success, Failure }
-import scala.collection.mutable.SortedMap
-import scala.concurrent.Future
-import scala.collection.JavaConverters._
-
-import akka.actor.{Props, ActorRef}
+import agentSystem._
+import agents.parking.UserGroup._
+import agents.parking.VehicleType._
+import akka.actor.{ActorRef, Props}
 import com.typesafe.config.Config
-
-import agentSystem._ 
 import types.OmiTypes._
-import types.odf._
 import types.Path._
 import types._
-import VehicleType._
-import UserGroup._
+import types.odf._
+
+import scala.collection.JavaConverters._
+import scala.collection.mutable.SortedMap
+import scala.concurrent.Future
+import scala.util.control.NonFatal
+import scala.util.{Failure, Success}
+import scala.xml.XML
 
 object ParkingAgent extends PropsCreator{
   /**

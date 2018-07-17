@@ -1,8 +1,6 @@
 package agents
 package parkingService
 
-import scala.math
-import scala.util._
 import types.OdfTypes._
 import types._
 
@@ -33,8 +31,8 @@ object UserGroup extends Enumeration{
     }
   }
 }
-import UserGroup._
-import VehicleType._
+import agents.parkingService.UserGroup._
+import agents.parkingService.VehicleType._
 
 case class ParkingSpace(
                          name: String,

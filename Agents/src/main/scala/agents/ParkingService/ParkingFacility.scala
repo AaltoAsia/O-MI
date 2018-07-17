@@ -1,12 +1,9 @@
 package agents
 package parkingService
 
-import scala.math
+import agents.parkingService.VehicleType._
 import types.OdfTypes._
 import types._
-
-import VehicleType._
-import UserGroup._
 
 object ParkingFacility{
   def apply(obj: OdfObject ): ParkingFacility={

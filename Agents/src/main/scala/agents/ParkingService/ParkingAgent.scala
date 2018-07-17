@@ -2,44 +2,26 @@ package agents
 package parkingService
 
 import java.io.File
-import java.sql.Timestamp
-import java.util.Date
-import java.net.URLDecoder
 
-import scala.util.{Success, Failure, Try}
-import scala.util.control.NonFatal
-import scala.concurrent.duration._
-import scala.concurrent.{ Await, Future, ExecutionException }
-import scala.concurrent.Future._
-import scala.collection.mutable.{ Map => MutableMap, HashMap => MutableHashMap}
-import scala.collection.JavaConversions._
-import scala.xml.PrettyPrinter
-import scala.language.implicitConversions
-
+import agentSystem._
+import agents.parkingService.UserGroup._
+import agents.parkingService.VehicleType._
+import akka.actor.{Actor, ActorRef, Cancellable, Props}
 import com.typesafe.config.Config
-
-import akka.actor.{Cancellable, Props, Actor, ActorRef, ActorSystem}
-import akka.util.{Timeout, ByteString}
-import akka.pattern.ask
-
-import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.{HttpRequest, HttpResponse, HttpMethods, HttpEntity, HttpHeader, HttpProtocol, StatusCode, StatusCodes, ResponseEntity}
-import akka.http.javadsl.model.headers.{Authorization, RawHeader}
-import akka.stream.ActorMaterializer
-import akka.http.scaladsl.unmarshalling.Unmarshal
-
-import com.google.gson.{JsonParser, JsonElement, Gson, JsonNull}
-
-import agentSystem._ 
-import types.OmiTypes._
+import parsing.OdfParser
 import types.OdfTypes._
-import types.odf._
+import types.OmiTypes._
 import types.Path._
 import types._
-import parsing.OdfParser
+import types.odf._
+
+import scala.collection.mutable.{HashMap => MutableHashMap, Map => MutableMap}
+import scala.concurrent.duration._
+import scala.concurrent.{Await, ExecutionException, Future}
+import scala.language.implicitConversions
+import scala.util.control.NonFatal
+import scala.util.{Failure, Success, Try}
 import scala.xml.XML
-import UserGroup._
-import VehicleType._
 
 /**
  * TODO: Rewrite using ODF type. Note that new types are not as easy to parse to
