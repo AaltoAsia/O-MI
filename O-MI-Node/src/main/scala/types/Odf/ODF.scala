@@ -38,7 +38,10 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
 
   def union[TM <: Map[Path, Node], TS <: SortedSet[Path]](that: ODF): ODF
 
-  def removePaths(removedPaths: Seq[Path]): ODF
+  def removePaths(pathsToRemove: Seq[Path]): ODF = {
+    removePaths(pathsToRemove.toSet)
+  }
+  def removePaths(pathsToRemove: Set[Path]): ODF
 
   def immutable: ImmutableODF
 
@@ -147,13 +150,24 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
 
   def get(path: Path): Option[Node] = nodes.get(path)
 
-  def selectSubTreePaths(pathsToGet: Set[Path]): Set[Path] = {
+  /**
+    * Find given paths and all paths of the descendants.
+    * Same as [[selectSubTreePaths]] but doesn't add ancestors of the subtrees
+    */
+  def subTreePaths(pathsToGet: Set[Path]): Set[Path] = {
     (pathsToGet.flatMap{
       wantedPath: Path =>
         paths.keysIteratorFrom( wantedPath ).takeWhile{
           path: Path => path == wantedPath || path.isDescendantOf(wantedPath)
         }
-      }).toSet ++ pathsToGet.flatMap{
+    }).toSet
+  }
+
+  /**
+    * Same as [[subTreePaths]] but adds ancestors of the subtrees
+    */
+  def selectSubTreePaths(pathsToGet: Set[Path]): Set[Path] = {
+    subTreePaths(pathsToGet) ++ pathsToGet.flatMap{
         path => path.getAncestors
         //case path: Path if (paths.contains(path)) =>
         //  path.getAncestors

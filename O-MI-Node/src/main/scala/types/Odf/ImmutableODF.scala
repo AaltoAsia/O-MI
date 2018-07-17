@@ -14,6 +14,8 @@ case class ImmutableODF private[odf](
   type M = ImmutableHashMap[Path, Node]
   type S = ImmutableTreeSet[Path]
 
+  override val getNodesMap = nodes
+
   def select(that: ODF): ODF = {
     ImmutableODF(
       paths.filter {
@@ -81,20 +83,13 @@ case class ImmutableODF private[odf](
     )
   }
 
-  def removePaths(pathsToRemove: Seq[Path]): ODF = {
-    val subTrees = paths.filter {
-      p =>
-        pathsToRemove.contains(p) ||
-          pathsToRemove.exists(_.isAncestorOf(p))
-    }.toSet
+  def removePaths(pathsToRemove: Set[Path]): ODF = {
+    val subTrees = subTreePaths(pathsToRemove)
     this.copy(nodes -- subTrees)
   }
 
   def removePath(path: Path): ODF = {
-    val subtreeP = paths.filter {
-      p =>
-        path.isAncestorOf(p) || p == path
-    }
+    val subtreeP = subTreePaths(Set(path))
     this.copy(nodes -- subtreeP)
   }
 

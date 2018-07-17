@@ -2,6 +2,7 @@ package authorization
 
 import scala.concurrent.{Future,Await}
 import scala.util.Try
+import scala.collection.mutable
 
 import akka.util.{ByteString, Timeout}
 import akka.actor.{ActorRef, ActorSystem}
@@ -24,14 +25,14 @@ import org.slf4j.{LoggerFactory}
 
 import database.journal.Models.GetTree
 import types.Path
-import types.OmiTypes.{OmiRequest, OdfRequest, UserInfo, RawRequestWrapper}
+import types.OmiTypes.{OmiRequest, OdfRequest, UserInfo, RawRequestWrapper, ReadRequest}
 import http.OmiConfigExtension
 
 
 /**
   * API response class for getting the permission data from external service.
   */
-case class AuthorizationResponse(allow: List[Path], deny: List[Path])
+case class AuthorizationResponse(allow: Set[Path], deny: Set[Path])
 
 
 trait AuthApiJsonSupport {
@@ -74,7 +75,7 @@ trait AuthApiJsonSupport {
               JString(pathStr) <- list
             } yield Path(pathStr)
 
-            AuthorizationResponse(allow, deny)
+            AuthorizationResponse(allow.toSet, deny.toSet)
           }
         } else Future.failed(new Exception(s"Request failed. Response was: $response"))
       }
@@ -107,12 +108,84 @@ class AuthAPIServiceV2(
     implicit val timeout: Timeout = originalRequest.handleTTL
     val odfTreeF: Future[ImmutableODF] = (hierarchyStore ? GetTree).mapTo[ImmutableODF]
     odfTreeF.map { odfTree =>
-      val requestedTree = odfTree selectSubTree originalRequest.odf.getPaths.toSet
-      val allowOdf = requestedTree selectSubTree filters.allow.toSet
-      val filteredOdf = allowOdf removePaths filters.deny
+      originalRequest match {
+        case rr: ReadRequest => // requests with existing tree, requires permissions to whole sub trees
 
-      if (filteredOdf.isEmpty) None
-      else Some(originalRequest replaceOdf filteredOdf)
+          // Calculate required changes to the request
+
+          // partition to request paths and non-allowed remove paths
+          val (requestPaths, nonAllowPaths) =
+            originalRequest.odf
+              .getLeafPaths
+              .partition{ p =>
+                filters.allow.exists(a => (a isAncestorOf p) || a == p)
+              }
+
+          // partition with foldLeft to childDeny and other active deny paths
+          val (childDenyPaths, otherDenyPaths) =
+            filters.deny
+              .foldLeft((Set[Path](),Set[Path]())){
+                case ((childDenyPaths, otherDenyPaths), deniedPath) =>
+                  if (requestPaths exists (rp => rp.isAncestorOf(deniedPath)))
+                    (childDenyPaths + deniedPath, otherDenyPaths)
+                  else if (requestPaths.exists(rPath => deniedPath.isAncestorOf(rPath) || rPath == deniedPath))
+                    (childDenyPaths, otherDenyPaths + deniedPath)
+                  else
+                    (childDenyPaths, otherDenyPaths)
+              }
+
+          // items that need to be queried from hierarchystore
+          val newChildren =
+            childDenyPaths
+              .flatMap{ deniedPath =>
+                odfTree.getChilds(deniedPath.init)
+              }
+              .map{
+                case ii:InfoItem => ii.copy(descriptions=Set.empty, metaData=None)
+                case obj:Object => obj.copy(descriptions=Set.empty)
+                case other => other
+              }
+
+
+          // Execute required changes to the request, TODO: cleaner code
+
+          val filteredOdf = ImmutableODF(
+              (requestPaths -- (childDenyPaths union otherDenyPaths))
+                .flatMap(originalRequest.odf.getNodesMap.get(_))
+                .toSeq
+            )
+            .addNodes(newChildren.toSeq)
+          //  originalRequest.odf
+          //    .removePaths(childDenyPaths union nonAllowPaths union otherDenyPaths) addNodes newChildren.toSeq
+
+
+          //log.debug(s"FILTERODF \n original $originalRequest \n requestPaths $requestPaths \n childDenyPaths $childDenyPaths \n otherDenyPaths $otherDenyPaths \n newChildren $newChildren \n nonAllowPaths $nonAllowPaths \n filteredOdf $filteredOdf")
+
+          // TODO: Cleaner code
+          if (filteredOdf.isEmpty && !(originalRequest.odf.isEmpty && filters.allow.contains(Path("Objects"))))
+            None
+          else
+            Some(originalRequest replaceOdf filteredOdf)
+
+        case _ => // requests with new tree, requires permissions to parents and overwriting items
+          val filteredNodes = originalRequest.odf.getNodesMap.filterKeys{ p =>
+            filters.allow.exists(a => (a isAncestorOf p) || p == a) &&
+            !filters.deny.exists(d => (d isAncestorOf p) || p == d)
+          }
+
+          // Constructor builds missing ancestors
+          val filteredOdf = ImmutableODF(filteredNodes.values)
+
+          //log.debug(s"FILTERODF \n original $originalRequest \n filteredNodes $filteredNodes \n filteredOdf $filteredOdf")
+
+          // TODO: Cleaner code
+          //if (filteredOdf.isEmpty && !(originalRequest.odf.isEmpty && filters.allow.contains(Path("Objects"))))
+          if (filteredOdf.getNodesMap.size < originalRequest.odf.getNodesMap.size)
+            None
+          else
+            //Some(originalRequest replaceOdf filteredOdf)
+            Some(originalRequest)
+      }
     }
   }
 

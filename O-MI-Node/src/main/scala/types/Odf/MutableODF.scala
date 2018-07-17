@@ -91,7 +91,7 @@ class MutableODF private[odf](
     this
   }
 
-  def removePaths(removedPaths: Seq[Path]): ODF = {
+  def removePaths(removedPaths: Set[Path]): ODF = {
     val subtrees = paths.filter {
       p =>
         removedPaths.contains(p) ||
