@@ -58,7 +58,7 @@ sealed trait OmiRequest extends RequestWrapper with JavaOmiRequest {
 
   def timeTTLLimit(begin: Timestamp = currentTimestamp): OmiRequest
 
-  def timedout: Boolean = ttlLimit.map { ts => ts.before(currentTimestamp) }.getOrElse(false)
+  def timedout: Boolean = ttlLimit.exists { ts => ts.before(currentTimestamp) }
 
   def parsed: OmiParseResult = Right(Iterable(this))
 

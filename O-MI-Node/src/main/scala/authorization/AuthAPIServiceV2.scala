@@ -247,7 +247,7 @@ class AuthAPIServiceV2(
                               confObject: ParameterExtraction,
                               variables: VariableMap): HttpRequest = {
     def mapGet(context: String): Map[String, String] =
-      confObject.get(context).getOrElse(Map.empty)
+      confObject.getOrElse(context, Map.empty)
 
     def keyValues(context: String): Seq[(String, String)] = for {
       (key, variable) <- mapGet(context).toSeq
@@ -303,7 +303,7 @@ class AuthAPIServiceV2(
       case x => x
     }).name
 
-    val vars = parametersConstants ++
+    val vars: Map[String, String] = parametersConstants ++
       extractToMap(httpRequest, Some(rawOmiRequest), parametersFromRequest) +
       ("requestTypeChar" -> requestType.head.toString) +
       ("requestType" -> requestType)
@@ -315,7 +315,7 @@ class AuthAPIServiceV2(
     val resultF = for {
 
       authenticationResult <-
-      if (authenticationEndpoint.isEmpty || parametersSkipOnEmpty.forall(vars.get(_).getOrElse("").isEmpty)) {
+      if (authenticationEndpoint.isEmpty || parametersSkipOnEmpty.forall(param => vars.getOrElse(param,"").isEmpty)) {
         Future.successful(vars)
       } else {
 
@@ -371,7 +371,7 @@ class AuthAPIServiceV2(
   override def isAuthorizedForRawRequest(httpRequest: HttpRequest, rawRequest: String): AuthorizationResult = {
     val rawRequestWrapper = RawRequestWrapper(rawRequest, UserInfo())
 
-    if (rawRequestWrapper.msgFormat == Some("odf"))
+    if (rawRequestWrapper.msgFormat.contains("odf"))
       isAuthorizedForOdfRequest(httpRequest, rawRequestWrapper)
     else
       Authorized(UserInfo(None)) // TODO: Cancel, Poll?

@@ -101,7 +101,7 @@ class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with Bef
     subId =>
       pollSub(subId).results.headOption.flatMap {
         result =>
-          result.odf.headOption.map {
+          result.odf.map {
             objects =>
               getInfoItems(NewTypeConverter.convertODF(objects)).flatMap {
                 info => info.values
