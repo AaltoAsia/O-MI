@@ -119,13 +119,13 @@ class AuthAPIServiceV2(
           val (childDenyPaths, otherDenyPaths) =
             filters.deny
               .foldLeft((Set[Path](),Set[Path]())){
-                case ((childDenyPaths, otherDenyPaths), deniedPath) =>
+                case ((_childDenyPaths, _otherDenyPaths), deniedPath) =>
                   if (requestPaths exists (rp => rp.isAncestorOf(deniedPath)))
-                    (childDenyPaths + deniedPath, otherDenyPaths)
+                    (_childDenyPaths + deniedPath, _otherDenyPaths)
                   else if (requestPaths.exists(rPath => deniedPath.isAncestorOf(rPath) || rPath == deniedPath))
-                    (childDenyPaths, otherDenyPaths + deniedPath)
+                    (_childDenyPaths, _otherDenyPaths + deniedPath)
                   else
-                    (childDenyPaths, otherDenyPaths)
+                    (_childDenyPaths, _otherDenyPaths)
               }
 
           // items that need to be queried from hierarchystore

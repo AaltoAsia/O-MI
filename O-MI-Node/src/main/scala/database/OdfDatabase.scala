@@ -168,7 +168,7 @@ trait OdfDatabase extends Tables with DB with TrimmableDB {
         case DBPath(None, _, _) =>
           val ancestors = path.ancestors
           val ancestorsNotReserved = ancestors.filterNot(reserved contains _)
-          log.debug(s" Following ancestors of Path $path are not yet reserved: ${ancestorsNotReserved}")
+          log.debug(s" Following ancestors of Path $path are not yet reserved: $ancestorsNotReserved")
           Map(path -> dbpath) ++ (
             ancestorsNotReserved
               .map(returnOrReserve(_, isInfoItem = false))

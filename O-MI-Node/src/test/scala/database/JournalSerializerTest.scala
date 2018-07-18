@@ -8,7 +8,7 @@ import org.specs2.Specification
 import org.specs2.specification.core.SpecStructure
 import types.Path
 import types.odf._
-class JournalSerializationTests extends Specification {
+class JournalSerializerTest extends Specification {
   val JournalSerializer = new JournalProtoBufSerializer()
   def is: SpecStructure = s2"""
   Journal Serializer should serialize and deserialize protobuf classes correctly
@@ -116,7 +116,7 @@ class JournalSerializationTests extends Specification {
     val shortValue = ShortValue(20,ts)
     val intValue = IntValue(20,ts)
     val longValue = LongValue(20,ts)
-    val booleanValue = BooleanValue(true, ts)
+    val booleanValue = BooleanValue(value = true, ts)
     val odfValue = ODFValue(ImmutableODF(Seq(Objects(), Object(Path("Objects/test")))),ts)
     val stringValue = StringPresentedValue("testValue",ts, "testValuetype")
     testValue(floatValue) and

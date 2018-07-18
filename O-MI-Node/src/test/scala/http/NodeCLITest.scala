@@ -141,12 +141,12 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification {
   def startAgentTest = new Actorstest() {
 
     val name = "StartSuccess"
+    val requestHandler = TestActorRef(new TestDummyRequestHandler())
+    val dbHandler = TestActorRef(new TestDummyDBHandler())
     val ref = system.actorOf(SSAgent.props(emptyConfig, requestHandler, dbHandler), name)
     val clazz = "agentSystem.SSAgent"
     val agentInfo = AgentInfo(name, clazz, emptyConfig, Some(ref), running = false, Nil, Scala())
     val testAgents = MutableMap(name -> agentInfo)
-    val requestHandler = TestActorRef(new TestDummyRequestHandler())
-    val dbHandler = TestActorRef(new TestDummyDBHandler())
     val managerRef = TestActorRef(new TestManager(testAgents, dbHandler, requestHandler))
     val managerActor = managerRef.underlyingActor
     val subscriptionManager = ActorRef.noSender
@@ -172,12 +172,12 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification {
 
   def stopAgentTest = new Actorstest() {
     val name = "StartSuccess"
+    val requestHandler = TestActorRef(new TestDummyRequestHandler())
+    val dbHandler = TestActorRef(new TestDummyDBHandler())
     val ref = system.actorOf(SSAgent.props(emptyConfig, requestHandler, dbHandler), name)
     val clazz = "agentSystem.SSAgent"
     val agentInfo = AgentInfo(name, clazz, emptyConfig, Some(ref), running = true, Nil, Scala())
     val testAgents = MutableMap(name -> agentInfo)
-    val requestHandler = TestActorRef(new TestDummyRequestHandler())
-    val dbHandler = TestActorRef(new TestDummyDBHandler())
     val managerRef = TestActorRef(new TestManager(testAgents, dbHandler, requestHandler))
     val managerActor = managerRef.underlyingActor
     val subscriptionManager = ActorRef.noSender
