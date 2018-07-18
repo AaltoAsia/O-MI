@@ -336,11 +336,13 @@ class OmiNodeCLI(
       val bw = new BufferedWriter(new FileWriter(file))
       val res = JsArray(allSubs.map { sub =>
         Try(sub.toJson)
-      }.map { case Success(s) => Some(s);
-      case Failure(ex) => {
-        log.warning(ex.getMessage); None
-      }
-      }.flatten.toVector)
+      }.flatMap {
+        case Success(s) => Some(s)
+        case Failure(ex) => {
+          log.warning(ex.getMessage)
+          None
+        }
+      }.toVector)
       bw.write(res.prettyPrint)
       bw.close()
     })

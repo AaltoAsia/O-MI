@@ -398,7 +398,7 @@ trait OdfDatabase extends Tables with DB with TrimmableDB {
         val tableDropsAction = DBIO.seq(tableDrops.toSeq: _*)
         val iiPaths = iis.map(_.path)
         val removedPaths = objs.map(_.path) ++ iiPaths
-        val removedPathIDs = (objs ++ iis).map(_.id).flatten
+        val removedPathIDs: Iterable[RequestID] = (objs ++ iis).flatMap(_.id)
         val pathRemoves = pathsTable.removeByIDs(removedPathIDs.toSeq)
         atomic { implicit txn =>
           pathToDBPath --= removedPaths

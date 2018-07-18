@@ -182,9 +182,9 @@ class AgentResponsibilities() {
     }
     //println( s"Responsible Agent's names:\n${responsibleToPaths.keys}")
 
-    val result = responsibleToPaths.keys.flatten.filter {
+    val result = !responsibleToPaths.keys.flatten.exists {
       keyname: AgentName => !optionAgentName.contains(keyname)
-    }.isEmpty
+    }
     //println( s"Permissien check:$result")
     result
   }

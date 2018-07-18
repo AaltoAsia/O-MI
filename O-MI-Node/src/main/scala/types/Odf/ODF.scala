@@ -252,9 +252,7 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
 
   def readToNodes(to: ODF): Seq[Node] = {
     val wantedPaths: SortedSet[Path] =
-      to.paths.filter {
-        path: Path => paths.contains(path)
-      } ++ selectSubTreePaths(to.getLeafPaths).filter(path => paths.contains(path))
+      to.paths.intersect(paths) ++ selectSubTreePaths(to.getLeafPaths).intersect(paths)
 
     val wantedNodes: Seq[Node] = wantedPaths.toSeq.map {
       path: Path =>

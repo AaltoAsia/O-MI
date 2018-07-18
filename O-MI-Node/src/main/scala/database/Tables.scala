@@ -151,7 +151,7 @@ trait Tables extends DBBase {
 
     def trimToNNewestValues(n: Long): DBIOrw[Int] = selectAllExpectNNewestValuesCQ(n).result.flatMap {
       values: Seq[TimedValue] =>
-        val ids = values.map(_.id).flatten
+        val ids: Seq[Long] = values.flatMap(_.id)
         this.filter(_.id inSet (ids)).delete
     }
 

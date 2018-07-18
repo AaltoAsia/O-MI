@@ -211,9 +211,9 @@ class AuthAPIServiceV2(
       case "cookie" =>
         httpMessage match {
           case r: HttpRequest => r.cookies.find(_.name == from).map(_.value)
-          case r: HttpResponse => r.headers.collect {
+          case r: HttpResponse => r.headers.collectFirst {
             case c: headers.`Set-Cookie` if c.cookie.name == from => c.cookie.value
-          }.headOption
+          }
         }
 
       case "jsonbody" => Try[String] {
