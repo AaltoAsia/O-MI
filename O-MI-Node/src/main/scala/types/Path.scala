@@ -162,7 +162,7 @@ object Path {
   }
 
   def apply(pathStr: String*): Path = {
-    new Path(Vector(pathStr).flatten.filterNot(_ == "").toVector)
+    new Path(Vector(pathStr).flatten.filterNot(_ == ""))
   }
 
   /*

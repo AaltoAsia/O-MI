@@ -85,7 +85,7 @@ class AgentResponsibilities() {
     if( resp.size > 1 ){
       resp.map {
         case (responsible: Option[AgentName], paths: Set[Path]) =>
-          responsible -> request.replaceOdf(odf.selectUpTree(paths.toSet))
+          responsible -> request.replaceOdf(odf.selectUpTree(paths))
       }
     } else {
       resp.headOption.map{
@@ -183,7 +183,7 @@ class AgentResponsibilities() {
     //println( s"Responsible Agent's names:\n${responsibleToPaths.keys}")
 
     val result = responsibleToPaths.keys.flatten.filter {
-      keyname: AgentName => optionAgentName.forall { name => name != keyname }
+      keyname: AgentName => !optionAgentName.contains(keyname)
     }.isEmpty
     //println( s"Permissien check:$result")
     result

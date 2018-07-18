@@ -85,7 +85,7 @@ object OdfParser extends Parser[OdfParseResult] {
       case errors: Seq[ParseError] if errors.nonEmpty =>
         //println( root.toString )
 
-        Left(errors.toIterable.asJava) 
+        Left(errors.asJava)
       case empty : Seq[ParseError] if empty.isEmpty =>
 
         val requestProcessTime = currentTime()

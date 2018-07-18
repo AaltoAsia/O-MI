@@ -305,11 +305,11 @@ class OmiNodeCLI(
   }
 
   private def backupSubsAndDatabase(subPath: String, odfPath: String): String = {
-    val res: Future[Option[Unit]] = for {
+    val res: Future[Unit] = for {
       subs <- backupSubscriptions(subPath)
       data <- backupDatabase(odfPath)
     } yield data
-    val test: Try[Option[Unit]] = Await.ready(res, Duration.Inf).value.get
+    val test: Try[Unit] = Await.ready(res, Duration.Inf).value.get
     test match {
       case Success(r) => "Success\r\n>"
       case Failure(ex) => ex.getMessage + "\r\n>"
@@ -346,10 +346,10 @@ class OmiNodeCLI(
     })
   }
 
-  private def backupDatabase(filePath: String): Future[Option[Unit]] = {
+  private def backupDatabase(filePath: String): Future[Unit] = {
     val allData: Future[Option[ODF]] = removeHandler.getAllData()
     allData.map(aData => {
-      aData.map(odf => {
+      aData.foreach(odf => {
         val file = new File(filePath)
         val bw = new BufferedWriter(new FileWriter(file))
         val res = odf.asXML

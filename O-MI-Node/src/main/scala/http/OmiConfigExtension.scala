@@ -57,11 +57,11 @@ class OmiConfigExtension(val config: Config) extends Extension
   implicit def toFiniteDuration(dur: java.time.Duration): FiniteDuration = Duration.fromNanos(dur.toNanos)
 
   // Node special settings
-  val ports : Map[String, Int]= config.getObject("omi-service.ports").unwrapped().asScala.toMap.mapValues{
-    case port : java.lang.Integer => port.toInt
-    case port : java.lang.Object => 
-      throw new Exception("Configs omi-service.ports contain non integer values") 
-  }.toMap
+  val ports : Map[String, Int]= config.getObject("omi-service.ports").unwrapped().asScala.toMap.mapValues {
+    case port: java.lang.Integer => port.toInt
+    case port: java.lang.Object =>
+      throw new Exception("Configs omi-service.ports contain non integer values")
+  }
   val webclientPort: Int = config.getInt("omi-service.ports.webclient")
   val externalAgentPort: Int = ports("external-agents")
   val cliPort: Int = config.getInt("omi-service.ports.cli")
@@ -90,7 +90,7 @@ class OmiConfigExtension(val config: Config) extends Extension
   val externalAgentInterface: String = config.getString("omi-service.external-agent-interface")
 
   // Authorization
-  val allowedRequestTypes: Set[MessageType] = config.getStringList("omi-service.allowRequestTypesForAll").asScala.toSeq
+  val allowedRequestTypes: Set[MessageType] = config.getStringList("omi-service.allowRequestTypesForAll").asScala
     .map((x) => MessageType(x.toLowerCase)).toSet
 
   // Old External AuthAPIService V1
@@ -133,7 +133,7 @@ class OmiConfigExtension(val config: Config) extends Extension
     val parametersToAuthentication: ParameterExtraction = mapmap(parameters.getConfig("toAuthentication"))
     val parametersToAuthorization: ParameterExtraction = mapmap(parameters.getConfig("toAuthorization"))
     val parametersConstants: Map[String, String] = cmap(parameters.getConfig("initial"))
-    val parametersSkipOnEmpty: Seq[String] = parameters.getStringList("skipAuthenticationOnEmpty").asScala.toSeq
+    val parametersSkipOnEmpty: Seq[String] = parameters.getStringList("skipAuthenticationOnEmpty").asScala
 
     def toRequestBuilder(method: String) = method.toLowerCase match {
       case "get" => Get
@@ -153,13 +153,14 @@ class OmiConfigExtension(val config: Config) extends Extension
   //IP
   val inputWhiteListUsers: Vector[String] = config.getStringList("omi-service.input-whitelist-users").asScala.toVector
 
-  val inputWhiteListIps: Vector[Vector[Byte]] = config.getStringList("omi-service.input-whitelist-ips").asScala.toVector.map {
-    s: String =>
-      val ip = inetAddrToBytes(InetAddress.getByName(s))
-      ip.toVector
-  }.toVector
+  val inputWhiteListIps: Vector[Vector[Byte]] = config.getStringList("omi-service.input-whitelist-ips").asScala.toVector
+    .map {
+      s: String =>
+        val ip = inetAddrToBytes(InetAddress.getByName(s))
+        ip.toVector
+    }
 
-  val inputWhiteListSubnets: Map[InetAddress, Int] = config.getStringList("omi-service.input-whitelist-subnets").asScala.toSeq.map{ 
+  val inputWhiteListSubnets: Map[InetAddress, Int] = config.getStringList("omi-service.input-whitelist-subnets").asScala.map{
     case (str: String) =>
       val parts = str.split("/")
       require(parts.length == 2)

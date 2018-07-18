@@ -155,14 +155,12 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
     * Find given paths and all paths of the descendants.
     * Same as [[selectSubTreePaths]] but doesn't add ancestors of the subtrees
     */
-  def subTreePaths(pathsToGet: Set[Path]): Set[Path] = {
-    (pathsToGet.flatMap{
-      wantedPath: Path =>
-        paths.keysIteratorFrom( wantedPath ).takeWhile{
-          path: Path => path == wantedPath || path.isDescendantOf(wantedPath)
-        }
-    }).toSet
-  }
+  def subTreePaths(pathsToGet: Set[Path]): Set[Path] = (pathsToGet.flatMap {
+    wantedPath: Path =>
+      paths.keysIteratorFrom(wantedPath).takeWhile {
+        path: Path => path == wantedPath || path.isDescendantOf(wantedPath)
+      }
+  })
 
   /**
     * Same as [[subTreePaths]] but adds ancestors of the subtrees

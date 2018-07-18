@@ -660,13 +660,13 @@ class ResponseRequest(
 
   implicit def asResponseListType: xmlTypes.ResponseListType =
     xmlTypes.ResponseListType(
-      results.map { result =>
-        result.asRequestResultType
-      }.toVector)
+                               results.map { result =>
+                                 result.asRequestResultType
+                               })
 
   def union(another: ResponseRequest): ResponseRequest = {
     ResponseRequest(
-      Results.unionReduce((results ++ another.results).toVector),
+                     Results.unionReduce((results ++ another.results)),
       if (ttl >= another.ttl) ttl else another.ttl
     )
   }

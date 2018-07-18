@@ -69,8 +69,8 @@ package object OdfTypes {
   /** Helper method for getting all OdfNodes found in given OdfNodes. Basically get list of all nodes in tree.  */
   def getOdfNodes(hasPaths: OdfNode*): Seq[OdfNode] = hasPaths.flatMap {
     case info: OdfInfoItem => Seq(info)
-    case obj: OdfObject => Seq(obj) ++ getOdfNodes(obj.objects.toSeq ++ obj.infoItems.toSeq: _*)
-    case objs: OdfObjects => Seq(objs) ++ getOdfNodes(objs.objects.toSeq: _*)
+    case obj: OdfObject => Seq(obj) ++ getOdfNodes(obj.objects ++ obj.infoItems: _*)
+    case objs: OdfObjects => Seq(objs) ++ getOdfNodes(objs.objects: _*)
   }
 
   /** Helper method for getting all OdfInfoItems found in OdfObjects */

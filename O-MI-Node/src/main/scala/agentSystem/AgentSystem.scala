@@ -120,7 +120,7 @@ object AgentConfigEntry {
 
     val responsibilities: Seq[AgentResponsibility] = Try {
       val responsibilityObj = agentConfig.getObject(s"responsible")
-      val pathStrings : Iterable[String] = responsibilityObj.keySet.asScala.toIterable
+      val pathStrings : Iterable[String] = responsibilityObj.keySet.asScala
       val responsibilityConfig = responsibilityObj.toConfig()
       pathStrings.map {
         pathStr: String =>

@@ -325,7 +325,7 @@ class SubscriptionManager(
       }
       iisWithValues: Seq[InfoItem] = pollData.map {
         case (path: Path, values: Seq[Value[Any]]) =>
-          InfoItem(path, values.toVector)
+          InfoItem(path, values)
       }
       result = ImmutableODF(iisWithValues)
 
