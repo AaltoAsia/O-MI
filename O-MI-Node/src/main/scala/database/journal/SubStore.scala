@@ -12,6 +12,7 @@ import types.OmiTypes.HTTPCallback
 import types.Path
 
 import scala.concurrent.duration._
+import scala.language.postfixOps
 
 class SubStore extends PersistentActor with ActorLogging {
 

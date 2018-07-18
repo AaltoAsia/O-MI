@@ -46,9 +46,7 @@ class CLIHelper(val singleStores: SingleStores, dbConnection: DB)(implicit syste
   implicit val timeout: Timeout = system.settings.config
     .getDuration("omi-service.journal-ask-timeout",TimeUnit.MILLISECONDS).milliseconds
 
-  implicit val logSource: LogSource[CLIHelper] = new LogSource[CLIHelper] {
-    def genString(handler: CLIHelper): String = handler.toString
-  }
+  implicit val logSource: LogSource[CLIHelper] = (handler: CLIHelper) => handler.toString
   protected val log: LoggingAdapter = Logging(system, this)
   def takeSnapshot() = singleStores.takeSnapshot
   def handlePathRemove(parentPaths: Seq[Path]): Future[Seq[Int]] = {

@@ -83,9 +83,7 @@ class CallbackHandler(
 
   protected def currentTimestamp = new Timestamp(new Date().getTime)
 
-  implicit val logSource: LogSource[CallbackHandler] = new LogSource[CallbackHandler] {
-    def genString(requestHandler: CallbackHandler): String = requestHandler.toString
-  }
+  implicit val logSource: LogSource[CallbackHandler] = (requestHandler: CallbackHandler) => requestHandler.toString
 
   protected val log: LoggingAdapter = Logging(system, this)
   val webSocketConnections: MutableMap[String, SendHandler] = MutableMap.empty
