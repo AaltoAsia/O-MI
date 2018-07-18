@@ -17,7 +17,7 @@ import java.net.InetAddress
 import java.sql.Timestamp
 import java.util.Date
 
-import akka.actor.ActorSystem
+import akka.actor.{ActorSystem, Terminated}
 import akka.event.{LogSource, Logging, LoggingAdapter}
 import akka.http.scaladsl.client.RequestBuilding
 import akka.http.scaladsl.model._
@@ -79,7 +79,7 @@ class CallbackHandler(
 
   protected val httpExtension: HttpExt = Http(system)
   val portsUsedByNode: Seq[Int] = settings.ports.values.toSeq
-  val whenTerminated = system.whenTerminated
+  val whenTerminated: Future[Terminated] = system.whenTerminated
 
   protected def currentTimestamp = new Timestamp(new Date().getTime)
 

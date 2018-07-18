@@ -20,6 +20,7 @@ import java.util.concurrent.TimeUnit
 
 import agentSystem.AgentSystemConfigExtension
 import akka.actor.{ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
+import akka.http.scaladsl.client.RequestBuilding
 import akka.http.scaladsl.client.RequestBuilding.{Get, Head, Options, Patch, Post, Put, RequestBuilder}
 import akka.http.scaladsl.model.Uri
 import com.typesafe.config.Config
@@ -135,7 +136,7 @@ class OmiConfigExtension(val config: Config) extends Extension
     val parametersConstants: Map[String, String] = cmap(parameters.getConfig("initial"))
     val parametersSkipOnEmpty: Seq[String] = parameters.getStringList("skipAuthenticationOnEmpty").asScala
 
-    def toRequestBuilder(method: String) = method.toLowerCase match {
+    def toRequestBuilder(method: String): RequestBuilding.RequestBuilder = method.toLowerCase match {
       case "get" => Get
       case "post" => Post
       case "patch" => Patch

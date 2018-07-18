@@ -125,7 +125,7 @@ class AgentResponsibilities() {
     filter
   }
 
-  def removeAgent(agentName: AgentName) = {
+  def removeAgent(agentName: AgentName): pathsToResponsible.type = {
     val agentsResponsibilities = pathsToResponsible.values.collect {
       case AgentResponsibility(aN: AgentName, path: Path, rf: RequestFilter) if agentName == aN =>
         path
@@ -135,7 +135,7 @@ class AgentResponsibilities() {
 
   }
 
-  def add(agentResponsibilities: Seq[AgentResponsibility]) = {
+  def add(agentResponsibilities: Seq[AgentResponsibility]): pathsToResponsible.type = {
     val newMappings = agentResponsibilities.map {
       case ar@AgentResponsibility(agentName: AgentName, path: Path, requestFilter: RequestFilter) =>
         path -> ar

@@ -6,7 +6,7 @@ import akka.pattern.ask
 import akka.util.Timeout
 import journal.Models.{GetTree, MultipleReadCommand}
 import http.OmiConfigExtension
-import org.slf4j.LoggerFactory
+import org.slf4j.{Logger, LoggerFactory}
 import slick.jdbc.meta.MTable
 import types.OmiTypes._
 import types.Path
@@ -25,7 +25,7 @@ trait OdfDatabase extends Tables with DB with TrimmableDB {
 
   protected val settings: OmiConfigExtension
   protected val singleStores: SingleStores
-  protected val log = LoggerFactory.getLogger("O-DF-database")
+  protected val log: Logger = LoggerFactory.getLogger("O-DF-database")
   val pathToDBPath: TMap[Path, DBPath] = TMap()
 
   def initialize(): Unit = {

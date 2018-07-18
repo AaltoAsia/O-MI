@@ -26,7 +26,7 @@ class PollDataStore extends PersistentActor with ActorLogging {
     }
   }
 
-  def updateState(event: Event) = event match {
+  def updateState(event: Event): Unit = event match {
     case PAddPollData(id, path, Some(value)) =>
       val newValue = Map(path -> Seq(value))
       state += state.get(id).map(pv => (id -> mergeValues(pv, newValue))).getOrElse((id -> newValue))

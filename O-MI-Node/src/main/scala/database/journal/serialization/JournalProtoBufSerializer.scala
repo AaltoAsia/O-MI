@@ -43,7 +43,7 @@ class JournalProtoBufSerializer extends SerializerWithStringManifest {
 
   override def identifier = 1500
 
-  override def manifest(o: AnyRef) = o.getClass.getName
+  override def manifest(o: AnyRef): String = o.getClass.getName
 
   override def toBinary(o: AnyRef): Array[Byte] = o match {
     case c: PWriteLatest => c.toByteArray

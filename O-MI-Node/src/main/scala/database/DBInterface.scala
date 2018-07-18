@@ -17,6 +17,7 @@ import java.io.File
 import java.sql.Timestamp
 
 import akka.actor.{ActorRef, ActorSystem, Props}
+import akka.event.LoggingAdapter
 import akka.pattern.ask
 import akka.util.Timeout
 import com.typesafe.config.{Config, ConfigFactory}
@@ -92,8 +93,8 @@ case class AttachEvent(override val infoItem: InfoItem) extends ChangeEvent(info
 class SingleStores(protected val settings: OmiConfigExtension)(implicit val system: ActorSystem) {
 
   import system.dispatcher
-  implicit val timeout = Timeout(settings.journalTimeout)
-  val log = system.log
+  implicit val timeout: Timeout = Timeout(settings.journalTimeout)
+  val log: LoggingAdapter = system.log
   def takeSnapshot: Future[Any] = {
     val start: FiniteDuration = Duration(System.currentTimeMillis(), MILLISECONDS)
 

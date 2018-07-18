@@ -14,7 +14,7 @@ import http.OmiConfigExtension
 import org.json4s.JsonDSL._
 import org.json4s.native.JsonMethods._
 import org.json4s.{JObject, JString, _}
-import org.slf4j.LoggerFactory
+import org.slf4j.{Logger, LoggerFactory}
 import types.OmiTypes._
 import types.Path
 import types.odf._
@@ -90,7 +90,7 @@ class AuthAPIServiceV2(
   import settings.AuthApiV2._
 
 
-  protected val log = LoggerFactory.getLogger(classOf[AuthAPIServiceV2])
+  protected val log: Logger = LoggerFactory.getLogger(classOf[AuthAPIServiceV2])
 
 
   import system.dispatcher
@@ -296,7 +296,7 @@ class AuthAPIServiceV2(
   protected def isAuthorizedForOdfRequest(httpRequest: HttpRequest,
                                           rawOmiRequest: RawRequestWrapper): AuthorizationResult = {
 
-    implicit val timeout = Timeout(rawOmiRequest.handleTTL)
+    implicit val timeout: Timeout = Timeout(rawOmiRequest.handleTTL)
 
     val requestType = (rawOmiRequest.requestVerb match {
       case RawRequestWrapper.MessageType.Response => RawRequestWrapper.MessageType.Write

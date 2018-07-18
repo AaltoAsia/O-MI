@@ -48,7 +48,7 @@ class CLIHelper(val singleStores: SingleStores, dbConnection: DB)(implicit syste
 
   implicit val logSource: LogSource[CLIHelper] = (handler: CLIHelper) => handler.toString
   protected val log: LoggingAdapter = Logging(system, this)
-  def takeSnapshot() = singleStores.takeSnapshot
+  def takeSnapshot(): Future[Any] = singleStores.takeSnapshot
   def handlePathRemove(parentPaths: Seq[Path]): Future[Seq[Int]] = {
     val odfF = (singleStores.hierarchyStore ? GetTree).mapTo[ImmutableODF]
 

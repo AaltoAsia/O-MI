@@ -117,7 +117,7 @@ trait AuthApiProvider extends AuthorizationExtension {
     * Register authorization system that tells if the request is authorized.
     * Registration should be done once.
     */
-  def registerApi(newAuthSystem: AuthApi) = authorizationSystems += newAuthSystem
+  def registerApi(newAuthSystem: AuthApi): mutable.Buffer[AuthApi] = authorizationSystems += newAuthSystem
 
 
   // AuthorizationExtension implementation

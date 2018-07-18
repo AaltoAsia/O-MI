@@ -174,7 +174,7 @@ class TestManager(testAgents: scala.collection.mutable.Map[AgentName, AgentInfo]
       agentStopped(agentRef)
   }
 
-  def getAgents = agents
+  def getAgents: MutableMap[AgentName, AgentInfo] = agents
 }
 
 class AgentSystemSettings(val config: Config) extends AgentSystemConfigExtension
@@ -198,7 +198,7 @@ class TestLoader(testConfig: AgentSystemConfigExtension,
                  protected val requestHandler: ActorRef
                 ) extends BaseAgentSystem with InternalAgentLoader {
   protected[this] val agents: scala.collection.mutable.Map[AgentName, AgentInfo] = MutableMap.empty
-  override protected[this] val settings = testConfig
+  override protected[this] val settings: AgentSystemConfigExtension = testConfig
 
   def receive: Actor.Receive = {
     case ListAgentsCmd() => sender() ! agents.values.toVector

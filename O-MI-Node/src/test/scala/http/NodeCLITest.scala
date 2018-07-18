@@ -51,9 +51,9 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification {
     }
     "Successfully create backup file for odf and subscription" >> backupTest
   }
-  implicit val timeout = Timeout(1.minutes)
+  implicit val timeout: Timeout = Timeout(1.minutes)
 
-  def timeoutDuration = 10.seconds
+  def timeoutDuration: FiniteDuration = 10.seconds
 
   def emptyConfig = ConfigFactory.empty()
 

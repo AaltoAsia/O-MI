@@ -15,7 +15,7 @@ case class ImmutableODF private[odf](
   type M = ImmutableHashMap[Path, Node]
   type S = ImmutableTreeSet[Path]
 
-  override val getNodesMap = nodes
+  override val getNodesMap: ImmutableHashMap[Path, Node] = nodes
 
   def select(that: ODF): ODF = {
     ImmutableODF(
