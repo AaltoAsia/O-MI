@@ -322,7 +322,7 @@ object Results {
   }
 
   object InternalError {
-    def apply(e: Throwable): InternalError = new InternalError(Some(e.getMessage()))
+    def apply(e: Throwable): InternalError = new InternalError(Some(e.getMessage))
 
     def apply(msg: String): InternalError = new InternalError(Some(msg))
   }

@@ -27,7 +27,7 @@ Request with callback
   """
 
   val googleAddress = "http://google.com"
-  val googleIP = InetAddress.getByName(new URI(googleAddress).getHost())
+  val googleIP = InetAddress.getByName(new URI(googleAddress).getHost)
   val cb = RawCallback(googleAddress)
 
   class omiServiceDummy extends OmiService {

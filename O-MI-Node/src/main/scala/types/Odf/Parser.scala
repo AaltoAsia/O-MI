@@ -34,7 +34,7 @@ object ODFParser extends parsing.Parser[OdfParseResult] {
   val schemaName = "odf.xsd"
 
   protected[this] override def schemaPath: Array[Source] = Array[Source](
-    new StreamSource(getClass.getClassLoader().getResourceAsStream("odf.xsd"))
+    new StreamSource(getClass.getClassLoader.getResourceAsStream("odf.xsd"))
   )
 
   /* ParseResult is either a ParseError or an ODFNode, both defined in TypeClasses.scala*/
@@ -243,7 +243,7 @@ object ODFParser extends parsing.Parser[OdfParseResult] {
 
     def parseODFValue = {
       val objectsTypes = valueType.mixed.filter {
-        case dr: scalaxb.DataRecord[Any] =>
+        dr: scalaxb.DataRecord[Any] =>
           dr.value match {
             case objectsType: xmlTypes.ObjectsType =>
               true
@@ -269,7 +269,7 @@ object ODFParser extends parsing.Parser[OdfParseResult] {
           */
       case str: String =>
         val xmlValue = valueType.mixed.map {
-          case dr: xmlGen.scalaxb.DataRecord[_] =>
+          dr: xmlGen.scalaxb.DataRecord[_] =>
             xmlGen.scalaxb.DataRecord.toXML(dr, None, None, xmlGen.odfDefaultScope, typeAttribute = false)
         }.foldLeft(NodeSeq.Empty) {
           case (res: NodeSeq, ns: NodeSeq) => res ++ ns
@@ -313,7 +313,7 @@ object ODFParser extends parsing.Parser[OdfParseResult] {
       case Some(seconds) => new Timestamp(seconds.toLong * 1000)
     }
     case Some(cal) =>
-      new Timestamp(cal.toGregorianCalendar().getTimeInMillis())
+      new Timestamp(cal.toGregorianCalendar().getTimeInMillis)
   }
 
   private[this] def parseQlmID(qlmIdType: QlmIDType): QlmID = {
@@ -324,10 +324,10 @@ object ODFParser extends parsing.Parser[OdfParseResult] {
           qlmIdType.idType,
           qlmIdType.tagType,
           qlmIdType.startDate.map {
-            cal => new Timestamp(cal.toGregorianCalendar().getTimeInMillis())
+            cal => new Timestamp(cal.toGregorianCalendar().getTimeInMillis)
           },
           qlmIdType.endDate.map {
-            cal => new Timestamp(cal.toGregorianCalendar().getTimeInMillis())
+            cal => new Timestamp(cal.toGregorianCalendar().getTimeInMillis)
           },
           parseAttributes(
             qlmIdType.attributes - ("@idType", "@tagType", "@startDate", "@endDate")

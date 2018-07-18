@@ -224,7 +224,7 @@ case class InfoItem(
           this.metaData.map {
             md =>
               md.copy(md.infoItems.filter {
-                case ii: InfoItem =>
+                ii: InfoItem =>
                   names.contains(ii.nameAttribute)
               })
           }
@@ -246,8 +246,8 @@ case class InfoItem(
   }
 
   def persist: PPersistentNode.NodeType = Ii(PInfoItem(typeAttribute.getOrElse(""),
-    names.map(_.persist),
-    descriptions.map(_.persist).toSeq,
-    metaData.map(_.persist()),
-    attributes))
+                                                       names.map(_.persist),
+                                                       descriptions.map(_.persist()).toSeq,
+                                                       metaData.map(_.persist()),
+                                                       attributes))
 }

@@ -172,7 +172,7 @@ class OmiConfigExtension(val config: Config) extends Extension
   }.toMap
 
   private[this] def inetAddrToBytes(addr: InetAddress): Seq[Byte] = {
-    addr.getAddress().toList
+    addr.getAddress.toList
   }
 
 

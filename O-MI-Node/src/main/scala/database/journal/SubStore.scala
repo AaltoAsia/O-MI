@@ -138,7 +138,7 @@ class SubStore extends PersistentActor with ActorLogging {
       }
       case PRemovePollSub(id) => {
         idToSub.get(id).foreach {
-          case pSub: PolledSub => {
+          pSub: PolledSub => {
             idToSub = idToSub - id
             pSub.paths.foreach { path =>
               pathToSubs(path) match {

@@ -142,9 +142,9 @@ sealed trait OdfValue[+T] {
         valueAsDataRecord
       ),
       HashMap(
-        "@type" -> DataRecord(typeValue),
-        "@unixTime" -> DataRecord(timestamp.getTime() / 1000),
-        "@dateTime" -> DataRecord(timestampToXML(timestamp))
+               "@type" -> DataRecord(typeValue),
+               "@unixTime" -> DataRecord(timestamp.getTime / 1000),
+               "@dateTime" -> DataRecord(timestampToXML(timestamp))
       )
     )
   }

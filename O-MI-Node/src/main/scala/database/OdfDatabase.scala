@@ -299,10 +299,8 @@ trait OdfDatabase extends Tables with DB with TrimmableDB {
     }
     log.debug("Running writing actions...")
     val future:Future[OmiReturn] = db.run(actions.transactionally)
-    future.foreach{
-      case default => 
-        log.debug("Writing finished.")
-    }
+    future.foreach(default =>
+      log.debug("Writing finished."))
     future
   }
 

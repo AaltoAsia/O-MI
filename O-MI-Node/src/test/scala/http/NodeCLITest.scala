@@ -225,7 +225,7 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification {
 
   }
 
-  def removePathTest = new Actorstest() {
+  def removePathTest() = new Actorstest() {
 
     val agentsMap: MutableMap[AgentName, AgentInfo] = MutableMap.empty
     val requestHandler = TestActorRef(new TestDummyRequestHandler())
@@ -251,7 +251,7 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification {
     connection.expectMsgType[Write].data.decodeString("UTF-8") must beEqualTo(correct)
   }
 
-  def removeUnexistingPathTest = new Actorstest() {
+  def removeUnexistingPathTest() = new Actorstest() {
 
     val agentsMap: MutableMap[AgentName, AgentInfo] = MutableMap.empty
     val requestHandler = TestActorRef(new TestDummyRequestHandler())
@@ -328,7 +328,7 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification {
     resF should beEqualTo(correct).await(0, timeoutDuration)
   }
 
-  def removeSubTest = new Actorstest() {
+  def removeSubTest() = new Actorstest() {
 
     val id = 13
     val agentsMap: MutableMap[AgentName, AgentInfo] = MutableMap.empty
@@ -357,7 +357,7 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification {
     resF should beEqualTo(correct).await(0, timeoutDuration)
   }
 
-  def removeUnexistingSubTest = new Actorstest() {
+  def removeUnexistingSubTest() = new Actorstest() {
 
     val id = 13
     val agentsMap: MutableMap[AgentName, AgentInfo] = MutableMap.empty

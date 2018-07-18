@@ -112,12 +112,12 @@ object RESTHandler {
           case ii: InfoItem => Some(ii.descriptions map (_.asDescriptionType))
           case n: Node => None
         } map {
-          case descriptions: Set[xmlTypes.DescriptionType] =>
+          descriptions: Set[xmlTypes.DescriptionType] =>
             descriptions.map {
-              case desc: xmlTypes.DescriptionType =>
+              desc: xmlTypes.DescriptionType =>
                 scalaxb.toXML[xmlTypes.DescriptionType](
-                  desc, Some("odf"), Some("description"), defaultScope
-                )
+                                                         desc, Some("odf"), Some("description"), defaultScope
+                                                       )
             }.fold(xml.NodeSeq.Empty) {
               case (l: xml.NodeSeq, r: xml.NodeSeq) => l ++ r
             }

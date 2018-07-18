@@ -37,7 +37,7 @@ trait CLIHelperT {
 
   def takeSnapshot(): Future[Any]
 
-  def getAllData(): Future[Option[ODF]]
+  def getAllData: Future[Option[ODF]]
 
   def writeOdf(odf: ImmutableODF): Future[Unit]
 }

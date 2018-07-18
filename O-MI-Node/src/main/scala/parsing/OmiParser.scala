@@ -33,8 +33,10 @@ import scala.xml.{Elem, Node}
 object OmiParser extends Parser[OmiParseResult] {
 
   protected[this] override def schemaPath: Array[Source] = Array[Source](
-    new StreamSource(getClass.getClassLoader().getResourceAsStream("omi.xsd")),
-    new StreamSource(getClass.getClassLoader().getResourceAsStream("odf.xsd"))
+                                                                          new StreamSource(getClass
+                                                                                             .getClassLoader.getResourceAsStream("omi.xsd")),
+                                                                          new StreamSource(getClass
+                                                                                             .getClassLoader.getResourceAsStream("odf.xsd"))
   )
 
   /**
@@ -355,7 +357,7 @@ object OmiParser extends Parser[OmiParseResult] {
 
   def gcalendarToTimestampOption(gcal: Option[javax.xml.datatype.XMLGregorianCalendar]): Option[Timestamp] = gcal match {
     case None => None
-    case Some(cal) => Some(new Timestamp(cal.toGregorianCalendar().getTimeInMillis()));
+    case Some(cal) => Some(new Timestamp(cal.toGregorianCalendar().getTimeInMillis));
   }
 
   def uriToStringOption(opt: Option[java.net.URI]): Option[String] = opt map {
