@@ -17,6 +17,7 @@ import types.odf._
 
 import scala.collection.mutable.{HashMap => MutableHashMap, Map => MutableMap}
 import scala.concurrent.duration._
+import scala.collection.JavaConverters._
 import scala.concurrent.{Await, ExecutionException, Future}
 import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
@@ -73,7 +74,8 @@ class ParkingAgent(
     val initialODF: OdfObjects = if( startStateFile.exists() && startStateFile.canRead() ){
       val xml = XML.loadFile(startStateFile)
       OdfParser.parse( xml) match {
-        case Left( errors : Seq[ParseError]) =>
+        case Left(errorsJ) =>
+          val errors = errorsJ.asScala
           val msg = errors.mkString("\n")
           log.warning(s"Odf has errors, $name could not be configured.")
           log.debug(msg)
@@ -158,18 +160,18 @@ class ParkingAgent(
                   case ParkingSpace(name,_,_,Some(false),Some(user),chargerO,_,_,_) =>
                     val path = parkingLotsPath / targetPF.name / "ParkingSpaces" / name
                     if( isParkingSpaceFree(path) ){
-                      val openLid: Boolean= chargerO.map{ 
+                      val openLid: Boolean= chargerO.exists {
                         case charger: Charger => lidOpen(charger)
-                      }.getOrElse(false)
+                      }
                       Reservation(path, user, openLid)
                     } else throw AllreadyReserved(path)
 
                         case ParkingSpace(name,_,_,Some(true),Some(user),chargerO,_,_,_) =>
                           val path = parkingLotsPath / targetPF.name / "ParkingSpaces" / name
                           if( isUserCurrentReserver(path, user) ){
-                            val openLid: Boolean = chargerO.map{ 
+                            val openLid: Boolean = chargerO.exists {
                               case charger: Charger => lidOpen(charger)
-                            }.getOrElse(false)
+                            }
                             FreeReservation(path, user, openLid)
                           } else throw WrongUser(path)
 
@@ -296,19 +298,16 @@ class ParkingAgent(
     }
   }
 
-  def isUserCurrentReserver( path: Path, user: String ): Boolean = parkingSpaceStatuses.get( path).map{
-    pSS: ParkingSpaceStatus => 
-      log.debug( s" Current user: ${pSS.user}, sender: $user")
-      pSS.user.contains( user )
-  }.getOrElse( false )
+  def isUserCurrentReserver( path: Path, user: String ): Boolean = parkingSpaceStatuses.get(path).exists {
+    pSS: ParkingSpaceStatus =>
+      log.debug(s" Current user: ${pSS.user}, sender: $user")
+      pSS.user.contains(user)
+  }
 
-  def isParkingSpaceFree( path: Path): Boolean = {
-    parkingSpaceStatuses.get( path).map{
-      pSS: ParkingSpaceStatus => 
-        log.debug( s"Is free? $pSS")
-        pSS.free
-    }.getOrElse(false)
-    
+  def isParkingSpaceFree( path: Path): Boolean = parkingSpaceStatuses.get(path).exists {
+    pSS: ParkingSpaceStatus =>
+      log.debug(s"Is free? $pSS")
+      pSS.free
   }
 
   case class CloseLid( pathToLidState: Path )

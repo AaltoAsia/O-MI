@@ -63,5 +63,4 @@ package object parking{
         throw MVError( s"$name should be an InfoItem.")
     }
   }
-  case class MVError( msg: String ) extends ParseError(msg, "MobiVoc error:") 
 }
