@@ -159,6 +159,7 @@ class SubStore extends PersistentActor with ActorLogging {
             idToSub = idToSub + (id -> polledNewEvent.copy(lastPolled = new Timestamp(new Date().getTime)))
           case pollInterval: PollIntervalSub =>
             idToSub = idToSub + (id -> pollInterval.copy(lastPolled = new Timestamp(new Date().getTime)))
+          case other => log.warning(s"Unknown poll sub type received: $other")
         }
       }
       case other => log.warning(s"Found unknown subType event message: $other")
