@@ -18,7 +18,7 @@ trait DBHandlerBase extends Actor
 
   protected implicit def callbackHandler: CallbackHandler
 
-  protected implicit def removeHandler: CLIHelperT
+  protected implicit def removeHandler(): CLIHelperT
 
   protected def agentResponsibilities: AgentResponsibilities
 }

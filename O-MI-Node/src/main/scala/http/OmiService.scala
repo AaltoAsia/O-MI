@@ -308,8 +308,8 @@ trait OmiService
                   defineCallbackForRequest(request, currentConnectionCallback).flatMap {
                     request: OmiRequest => handleRequest(request)
                   }.recover {
-                    case e: TimeoutException => Responses.TTLTimeout(Some(e.getMessage()))
-                    case e: IllegalArgumentException => Responses.InvalidRequest(Some(e.getMessage()))
+                    case e: TimeoutException => Responses.TTLTimeout(Some(e.getMessage))
+                    case e: IllegalArgumentException => Responses.InvalidRequest(Some(e.getMessage))
                     case icb: InvalidCallback => Responses.InvalidCallback(icb.callback, Some(icb.message))
                     case t: Throwable =>
                       log.error("Internal Server Error: ", t)
@@ -414,7 +414,7 @@ trait OmiService
       lazy val userAddr = for {
         remoteAddr <- request.user.remoteAddress
         hostAddr <- remoteAddr.getAddress.asScala
-        callbackAddr <- Try(InetAddress.getByName(new URI(address).getHost).getHostAddress()).toOption
+        callbackAddr <- Try(InetAddress.getByName(new URI(address).getHost).getHostAddress).toOption
         userAddress = hostAddr.getHostAddress
       } yield (userAddress, callbackAddr)
 
@@ -427,7 +427,7 @@ trait OmiService
           request.withCallback(Some(callback))).recoverWith {
           case throwable: Throwable =>
             Try {
-              throw InvalidCallback(RawCallback(address), throwable.getMessage(), throwable)
+              throw InvalidCallback(RawCallback(address), throwable.getMessage, throwable)
             }
         }
         Future.fromTry(result)

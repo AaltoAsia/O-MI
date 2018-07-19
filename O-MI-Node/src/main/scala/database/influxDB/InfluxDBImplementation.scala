@@ -269,7 +269,7 @@ class InfluxDBImplementation(
     val response = httpExt.singleRequest(request)
 
     response.failed.foreach {
-      case t: Throwable =>
+      t: Throwable =>
         log.warning(request.toString)
         log.error(t, "Failed to communicate to InfluxDB")
     }
@@ -383,10 +383,10 @@ class InfluxDBImplementation(
 
     }
     formatedResponse.failed.foreach {
-      case t: Throwable =>
+      t: Throwable =>
         log.error(t,
-          "Failed to communicate to InfluxDB.")
-        log.warning(t.getStackTrace().mkString("\n"))
+                  "Failed to communicate to InfluxDB.")
+        log.warning(t.getStackTrace.mkString("\n"))
     }
     formatedResponse
   }

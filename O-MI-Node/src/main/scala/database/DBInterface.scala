@@ -259,7 +259,7 @@ class StubDB(val singleStores: SingleStores, val system: ActorSystem, val settin
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
-  def initialize(): Unit = Unit;
+  def initialize(): Unit = Unit
 
   val dbmaintainer: ActorRef = system.actorOf(SingleStoresMaintainer.props(singleStores, settings))
 

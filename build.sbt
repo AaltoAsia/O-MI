@@ -81,7 +81,6 @@ lazy val omiNode = (project in file("O-MI-Node")).
 lazy val agents = (project in file("Agents")).
   settings(commonSettings("Agents"): _*).
   settings(Seq(
-    libraryDependencies ++= commonDependencies,
     publish in Docker := {},
     crossTarget := (unmanagedBase in omiNode).value
     )).

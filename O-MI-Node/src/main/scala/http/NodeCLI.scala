@@ -110,13 +110,13 @@ class OmiNodeCLI(
 
   override def preStart: Unit = {
     val connectToManager = (agentSystem ? NewCLI(ip, self)).mapTo[Boolean]
-    connectToManager.foreach{
-      case _: Boolean =>
+    connectToManager.foreach {
+      _: Boolean =>
         send(connection)(s"CLI connected to AgentManager.\r\n>")
         log.info(s"$ip connected to AgentManager. Connection: $connection")
     }
-    connectToManager.failed.foreach{
-      case t: Throwable => 
+    connectToManager.failed.foreach {
+      t: Throwable =>
         send(connection)(s"CLI failed connected to AgentManager. Caught: $t.\r\n>")
         log.info(s"$ip failed to connect to AgentManager. Caught: $t. Connection: $connection")
     }
@@ -292,13 +292,13 @@ class OmiNodeCLI(
       removeFuture.value match {
         case Some(Success(x)) if x.sum > 0 => {
           log.info(s"Successfully removed: ${x.sum} items")
-          return s"Successfully removed path $pathOrId\r\n>"
+          s"Successfully removed path $pathOrId\r\n>"
         }
-        case Some(Success(x)) => return s"Could not remove $pathOrId\r\n>"
+        case Some(Success(x)) => s"Could not remove $pathOrId\r\n>"
         case Some(Failure(ex)) => {
           log.error(ex, "Error while removing"); s"Failed to remove$pathOrId\r\n>"
         }
-        case None => return "Given Path does not exists\r\n>"
+        case None => "Given Path does not exists\r\n>"
       }
     }
 
@@ -349,7 +349,7 @@ class OmiNodeCLI(
   }
 
   private def backupDatabase(filePath: String): Future[Unit] = {
-    val allData: Future[Option[ODF]] = removeHandler.getAllData()
+    val allData: Future[Option[ODF]] = removeHandler.getAllData
     allData.map(aData => {
       aData.foreach(odf => {
         val file = new File(filePath)

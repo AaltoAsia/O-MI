@@ -436,7 +436,7 @@ case class SubscriptionRequest(
       callbackAsUri.map(c => "@callback" -> DataRecord(c)),
       Some("@msgformat" -> DataRecord("odf")),
       Some("@targetType" -> DataRecord(TargetTypeType.fromString("node", omiDefaultScope))),
-      Some("@interval" -> DataRecord(interval.toSeconds.toString()))
+      Some("@interval" -> DataRecord(interval.toSeconds.toString))
     ).flatten.toMap
   )
 

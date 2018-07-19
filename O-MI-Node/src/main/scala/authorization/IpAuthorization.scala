@@ -82,7 +82,7 @@ trait IpAuthorization extends AuthorizationExtension {
     * @return sequence of bytes.
     * */
   private[this] def inetAddrToBytes(addr: InetAddress): Seq[Byte] = {
-    addr.getAddress().toList
+    addr.getAddress.toList
   }
 
   /** Helper method for checking if connection is in allowed subnets.

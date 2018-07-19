@@ -54,13 +54,13 @@ case class Object(
       id.id
   }.toVector
 
-  def idTest: Boolean = idsToStr.exists {
+  def idTest: Boolean = idsToStr().exists {
     id: String =>
       val pl = path.last
       id == pl
   }
 
-  def tmy = s"Ids don't contain last id in path. ${path.last} not in (${idsToStr.mkString(",")})"
+  def tmy = s"Ids don't contain last id in path. ${path.last} not in (${idsToStr().mkString(",")})"
 
   assert(idTest, tmy)
 

@@ -128,11 +128,11 @@ class CallbackHandler(
       tryUntil
     )(check)(trySend)
 
-    retry.failed.foreach{
-      case _: Throwable=>
+    retry.failed.foreach {
+      _: Throwable =>
         system.log.warning(
-          s"Failed to send POST request to $address after trying until ttl ended."
-        )
+                            s"Failed to send POST request to $address after trying until ttl ended."
+                          )
     }
     retry
 
@@ -190,7 +190,7 @@ class CallbackHandler(
             log.debug(
               s"Response send  to WebSocket connection ${callback.address} failed, ${
                 t
-                  .getMessage()
+                  .getMessage
               }. Connection removed."
             )
             webSocketConnections -= callback.address
@@ -220,7 +220,7 @@ class CallbackHandler(
             log.debug(
               s"Response send  to current connection ${callback.identifier} failed, ${
                 t
-                  .getMessage()
+                  .getMessage
               }. Connection removed."
             )
             currentConnections -= callback.identifier

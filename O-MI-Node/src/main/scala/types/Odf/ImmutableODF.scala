@@ -54,7 +54,7 @@ case class ImmutableODF private[odf](
   def union[TM <: Map[Path, Node], TS <: SortedSet[Path]](that: ODF): ODF = {
     val pathIntersection: SortedSet[Path] = this.paths.intersect(that.paths)
     val thisOnlyNodes: Set[Node] = (paths -- pathIntersection).flatMap {
-      case p: Path =>
+      p: Path =>
         nodes.get(p)
     }
     val thatOnlyNodes: Set[Node] = (that.paths -- pathIntersection).flatMap {

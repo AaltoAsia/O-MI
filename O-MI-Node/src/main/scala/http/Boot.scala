@@ -240,7 +240,7 @@ object OmiServer {
       val future: Future[ResponseRequest] = (requestHandler ? write).mapTo[ResponseRequest]
       system.log.info("Write started")
       future.foreach {
-        case response: ResponseRequest =>
+        response: ResponseRequest =>
           Results.unionReduce(response.results).forall {
             result: OmiResult =>
               result.returnValue match {
@@ -254,8 +254,8 @@ object OmiServer {
           }
       }
 
-      future.failed.foreach{
-        case e: Throwable => 
+      future.failed.foreach {
+        e: Throwable =>
           system.log.error(e, "O-MI InputPusher system not working; exception:")
       }
       Await.result(future, settings.startTimeout)

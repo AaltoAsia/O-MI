@@ -186,8 +186,8 @@ trait DBWriteHandler extends DBHandlerBase {
         fvalue.flatMap(value =>
           handlePollData(path, oldValue, value))
     }) //Add values to pollsubs in this method
-    pollFuture.failed.foreach{
-      case t: Throwable => log.error(t, "Error when adding poll values to database")
+    pollFuture.failed.foreach {
+      t: Throwable => log.error(t, "Error when adding poll values to database")
     }
 
     //pollFuture.onFailure{
@@ -239,8 +239,8 @@ trait DBWriteHandler extends DBHandlerBase {
     val dbWriteFuture = infosToBeWrittenInDBF.flatMap(
       infosToBeWrittenInDB => dbConnection.writeMany(ImmutableODF(infosToBeWrittenInDB)))
 
-    dbWriteFuture.failed.foreach{
-      case t: Throwable => log.error(t, "Error when writing values for paths $paths")
+    dbWriteFuture.failed.foreach {
+      t: Throwable => log.error(t, "Error when writing values for paths $paths")
     }
 
     val writeFuture: Future[Any] = dbWriteFuture.flatMap {

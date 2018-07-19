@@ -51,7 +51,7 @@ trait SubscriptionHandler {
         case id: Long =>
           Results.Subscription(id)
       }.recoverWith {
-      case e: IllegalArgumentException => Future.successful(Results.InvalidRequest(Some(e.getMessage())))
+      case e: IllegalArgumentException => Future.successful(Results.InvalidRequest(Some(e.getMessage)))
       case e: Throwable => Future
         .failed(new RuntimeException(s"Error when trying to create subscription: ${e.getMessage}", e))
     }
