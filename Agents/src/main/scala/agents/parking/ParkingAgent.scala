@@ -282,86 +282,111 @@ class ParkingAgent(
   override def handleCall(call: CallRequest) : Future[ResponseRequest] = {
     val r:Option[Future[ResponseRequest]] = call.odf.get( findParkingPath ).map{
       case ii: InfoItem =>
-        ii.values.collect{
+        ii.values.collectFirst {
           case value: ODFValue =>
             val odf: ImmutableODF = value.value.immutable
-            val param = odf.get(parameterPath) 
-            param.map{
-                case ii: InfoItem =>
-                  Future{
-                    Responses.InvalidRequest( Some(s"Found ${ii.path} InfoItem from input when Object is expected. Refer to O-DF guidelines stored in MetaData."))
-                  }
-                case obj: Object  =>
-                  odf.get( destinationParamPath ).map{
-                    case ii: InfoItem =>
-                      return Future{
-                        Responses.InvalidRequest( Some(s"Found ${ii.path} InfoItem from input when Object is expected. Refer to O-DF guidelines stored in MetaData."))
-                      }
-                    case obj: Object => 
-                      GeoCoordinates.parseOdf( obj.path, odf) match {
-                        case Failure( e: ParseError ) =>
-                          Future{ Responses.ParseErrors( Vector(e) ) }
-                        case Failure( NonFatal(e)) => 
-                          Future{ Responses.InternalError( e ) }
-                        case Success( destination: GeoCoordinates) =>
-                          val distance : Double = getDoubleOption( "DistanceFromDestination", parameterPath, odf).getOrElse(1000.0)
-                          val wantCharging : Option[Boolean] = getBooleanOption( "wantCharging", parameterPath, odf)
-                          val userGroup = getStringOption( "UserGroup",parameterPath, odf).map{
-                            str => 
-                              str.split(",").map{
-                                subStr => 
+            val param = odf.get(parameterPath)
+            param.map {
+              case ii: InfoItem =>
+                Future {
+                  Responses
+                    .InvalidRequest(Some(s"Found ${
+                      ii
+                        .path
+                    } InfoItem from input when Object is expected. Refer to O-DF guidelines stored in MetaData."))
+                }
+              case obj: Object =>
+                odf.get(destinationParamPath).map {
+                  case ii: InfoItem =>
+                    return Future {
+                      Responses
+                        .InvalidRequest(Some(s"Found ${
+                          ii
+                            .path
+                        } InfoItem from input when Object is expected. Refer to O-DF guidelines stored in MetaData."))
+                    }
+                  case obj: Object =>
+                    GeoCoordinates.parseOdf(obj.path, odf) match {
+                      case Failure(e: ParseError) =>
+                        Future {
+                          Responses.ParseErrors(Vector(e))
+                        }
+                      case Failure(NonFatal(e)) =>
+                        Future {
+                          Responses.InternalError(e)
+                        }
+                      case Success(destination: GeoCoordinates) =>
+                        val distance: Double = getDoubleOption("DistanceFromDestination", parameterPath, odf)
+                          .getOrElse(1000.0)
+                        val wantCharging: Option[Boolean] = getBooleanOption("wantCharging", parameterPath, odf)
+                        val userGroup = getStringOption("UserGroup", parameterPath, odf).map {
+                          str =>
+                            str.split(",").map {
+                              subStr =>
                                 val ug = UserGroup(subStr)
                                 ug
-                              }
-                          }.toSeq.flatten.flatten
-                          val vehicle = odf.get( vehicleParamPath ).map{
-                            case ii: InfoItem =>
-                              return Future{
-                                Responses.InvalidRequest( Some(s"Found ${ii.path} InfoItem from input when Object is expected. Refer to O-DF guidelines stored in MetaData."))
-                              }
-                            case obj: Object => 
-                              Vehicle.parseOdf( obj.path, odf)  match{
-                                case Success(v: Vehicle) => v
-                                case Failure(e) =>
-                                  return Future{
-                                    Responses.InvalidRequest( Some(s"Incorrect vehicle parameter format. ${e.getMessage}"))
-                                  }
+                            }
+                        }.toSeq.flatten.flatten
+                        val vehicle = odf.get(vehicleParamPath).map {
+                          case ii: InfoItem =>
+                            return Future {
+                              Responses
+                                .InvalidRequest(Some(s"Found ${
+                                  ii
+                                    .path
+                                } InfoItem from input when Object is expected. Refer to O-DF guidelines stored in " +
+                                                       s"MetaData."))
+                            }
+                          case obj: Object =>
+                            Vehicle.parseOdf(obj.path, odf) match {
+                              case Success(v: Vehicle) => v
+                              case Failure(e) =>
+                                return Future {
+                                  Responses.InvalidRequest(Some(s"Incorrect vehicle parameter format. ${e.getMessage}"))
+                                }
 
-                              }
-                          }
-                          val charger = odf.get( chargerParamPath).map{
-                            case ii: InfoItem =>
-                              return Future{
-                                Responses.InvalidRequest( Some(s"Found ${ii.path} InfoItem from input when Object is expected. Refer to O-DF guidelines stored in MetaData."))
-                              }
-                            case obj: Object => 
-                              Charger.parseOdf( obj.path, odf) match{
-                                case Success(v: Charger) => v
-                                case Failure(e) =>
-                                  return Future{
-                                    Responses.InvalidRequest( Some(s"Incorrect Charger parameter format. ${e.getMessage}"))
-                                  }
-                              }
+                            }
+                        }
+                        val charger = odf.get(chargerParamPath).map {
+                          case ii: InfoItem =>
+                            return Future {
+                              Responses
+                                .InvalidRequest(Some(s"Found ${
+                                  ii
+                                    .path
+                                } InfoItem from input when Object is expected. Refer to O-DF guidelines stored in " +
+                                                       s"MetaData."))
+                            }
+                          case obj: Object =>
+                            Charger.parseOdf(obj.path, odf) match {
+                              case Success(v: Charger) => v
+                              case Failure(e) =>
+                                return Future {
+                                  Responses.InvalidRequest(Some(s"Incorrect Charger parameter format. ${e.getMessage}"))
+                                }
+                            }
 
-                          }
-                          log.debug("FindParking parameters parsed")
-                          findParking(destination,distance,vehicle,userGroup,charger,wantCharging)
-                      }
-                  }.getOrElse{
-                      Future{
-                        Responses.InvalidRequest( Some(s"Could not find Destination Object from input. Refer to O-DF guidelines stored in MetaData."))
-                      }
+                        }
+                        log.debug("FindParking parameters parsed")
+                        findParking(destination, distance, vehicle, userGroup, charger, wantCharging)
+                    }
+                }.getOrElse {
+                  Future {
+                    Responses
+                      .InvalidRequest(Some(s"Could not find Destination Object from input. Refer to O-DF guidelines stored in MetaData."))
                   }
-                  /*
-                  val charging = getBooleanOption( "wantCharging", obj.path, odf)
-                  */
-
-            }.getOrElse{
-                Future{
-                  Responses.InvalidRequest( Some(s"Could find Objects/Parameters Object from given O-DF input. Refer to O-DF guidelines stored in MetaData."))
                 }
+              /*
+              val charging = getBooleanOption( "wantCharging", obj.path, odf)
+              */
+
+            }.getOrElse {
+              Future {
+                Responses
+                  .InvalidRequest(Some(s"Could find Objects/Parameters Object from given O-DF input. Refer to O-DF guidelines stored in MetaData."))
+              }
             }
-        }.headOption.getOrElse{
+        }.getOrElse{
           Future{
             Responses.InvalidRequest(Some(s"$findParkingPath path should contain value with type odf."))
           }
