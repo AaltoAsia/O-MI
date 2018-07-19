@@ -12,8 +12,8 @@ import org.specs2.mock.Mockito
 import types.OdfTypes.OdfObjects
 import types.OmiTypes.{RawCallback, ReadRequest, UserInfo}
 import types.odf.OldTypeConverter
-
 import scala.util.Failure
+import testHelpers.OmiServiceDummy
 
 /**
   * Created by satsuma on 24.5.2017.
@@ -30,22 +30,9 @@ Request with callback
   val googleIP = InetAddress.getByName(new URI(googleAddress).getHost())
   val cb = RawCallback(googleAddress)
 
-  class omiServiceDummy extends OmiService {
-    override protected def requestHandler: ActorRef = ???
-
-    override val callbackHandler: CallbackHandler = mock[CallbackHandler]
-    override protected val system: ActorSystem = ActorSystem()
-    override val singleStores: SingleStores = mock[SingleStores]
-
-    override protected implicit def materializer: ActorMaterializer = ???
-
-    override protected def subscriptionManager: ActorRef = ???
-
-    implicit val settings: OmiConfigExtension = OmiConfig(system)
-  }
 
   def ct1 = {
-    val dummy = new omiServiceDummy()
+    val dummy = new OmiServiceDummy()
     val differentCb = RawCallback(InetAddress.getLoopbackAddress.getHostAddress)
     dummy
       .defineCallbackForRequest(ReadRequest(OldTypeConverter.convertOdfObjects(OdfObjects()),
@@ -55,7 +42,7 @@ Request with callback
   }
 
   def ct2 = {
-    val dummy = new omiServiceDummy()
+    val dummy = new OmiServiceDummy()
     dummy.callbackHandler.createCallbackAddress(googleAddress) returns Failure(new Exception("dummy"))
     dummy
       .defineCallbackForRequest(ReadRequest(OldTypeConverter.convertOdfObjects(OdfObjects()),
