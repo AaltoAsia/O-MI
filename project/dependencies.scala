@@ -32,13 +32,13 @@ object Dependencies {
   val hikariCP     = "com.typesafe.slick" %% "slick-hikaricp" % slickV
   //val sqliteJdbc   = "org.xerial"          % "sqlite-jdbc"    % "3.7.2" //common
   //"com.zaxxer"          % "HikariCP-java6" % "2.3.3" // XXX: manually updated dependency, slick had 2.0.1
-  val h2           = "com.h2database"      % "h2"             % "1.4.192" //common
-  val leveldb      = "org.iq80.leveldb"    % "leveldb"        % "0.9"
+  val h2           = "com.h2database"      % "h2"             % "1.4.197" //common
+  val leveldb      = "org.iq80.leveldb"    % "leveldb"        % "0.10"
   val leveldbjni   = "org.fusesource.leveldbjni"   % "leveldbjni-all"   % "1.8"
   //val json4s       = "org.json4s"         %% "json4s-native"  % "3.3.0" //common
   val postgres     = "org.postgresql"      % "postgresql"      % "9.4.1211"
-  val json4s       = "org.json4s"         %% "json4s-native"   % "3.5.3" //common
-  val json4sAkka   = "de.heikoseeberger"  %% "akka-http-json4s" % "1.16.0" //common
+  val json4s       = "org.json4s"         %% "json4s-native"   % "3.5.4" //common
+  val json4sAkka   = "de.heikoseeberger"  %% "akka-http-json4s" % "1.21.0" //common
 
   //etc
   val logback          = "ch.qos.logback" % "logback-classic" % "1.1.3"
