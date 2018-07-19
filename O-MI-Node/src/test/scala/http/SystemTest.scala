@@ -112,7 +112,7 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
 
   def afterAll = {
     val future = serverBinding.flatMap(sb => sb.unbind()).flatMap {
-      s: Unit =>
+      s =>
         system.terminate()
     }
     future.onFailure {

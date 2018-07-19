@@ -4,8 +4,8 @@ import Keys._
 object Dependencies {
 
   //Akka 
-  val akkaV = "2.5.12"
-  val akkaHttpV = "10.0.11"
+  val akkaV = "2.5.14"
+  val akkaHttpV = "10.1.3"
   val akkaActor    = "com.typesafe.akka" %% "akka-actor" % akkaV //
   val akkaSlf4j    = "com.typesafe.akka" %% "akka-slf4j" % akkaV
   val akkaStream   = "com.typesafe.akka" %% "akka-stream" % akkaV
@@ -15,7 +15,7 @@ object Dependencies {
   val httpExperimnt= "com.typesafe.akka" %% "akka-http" % akkaHttpV
   val httpXml      = "com.typesafe.akka" %% "akka-http-xml" % akkaHttpV
   val sprayJson    = "com.typesafe.akka" %% "akka-http-spray-json" % akkaHttpV 
-  val httpCors     = "ch.megard"         %% "akka-http-cors" % "0.2.2"
+  val httpCors     = "ch.megard"         %% "akka-http-cors" % "0.3.0"
   //Test dependencies
   val specs2V = "4.3.0"
   val specs2       = "org.specs2"        %% "specs2-core"   % specs2V   % "test"
