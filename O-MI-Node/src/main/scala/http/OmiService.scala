@@ -62,7 +62,7 @@ trait OmiServiceAuthorization
   */
 class OmiServiceImpl(
                       protected val system: ActorSystem,
-                      protected val materializer: ActorMaterializer,
+                      val materializer: ActorMaterializer,
                       protected val subscriptionManager: ActorRef,
                       val settings: OmiConfigExtension,
                       val singleStores: SingleStores,
@@ -496,7 +496,7 @@ trait WebSocketOMISupport {
   self: OmiService =>
   protected def system: ActorSystem
 
-  protected implicit def materializer: ActorMaterializer
+  implicit def materializer: ActorMaterializer
 
   protected def subscriptionManager: ActorRef
 

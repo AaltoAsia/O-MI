@@ -7,7 +7,7 @@ import com.typesafe.config.ConfigFactory
 import http.CLICmds._
 import org.specs2.concurrent.ExecutionEnv
 import org.specs2.mutable._
-import testHelpers.Actorstest
+import testHelpers.{Actorstest,NoisyActorstest}
 
 import scala.concurrent.duration._
 
@@ -23,17 +23,17 @@ class InternalAgentLoaderTest(implicit ee: ExecutionEnv) extends Specification {
       "agent's class does not implement trait InternalAgent" >> unimplementedIATest
       "agent's companion object does not implement trait PropsCreator" >> unimplementedPCTest
       "agent's companion object creates props for something else than agent" >> wrongPropsTest
-      "agent's companion object is actually something else" >> oddObjectTest
+      "agent's companion object is actually something else" >> skipped(oddObjectTest)
     }
     "log warnings when loaded classes throw exceptions when " >> {
       "props are created " >> propsTest
       "agent is started  " >> startTest
     }
 
-    "store successfully started agents to agents " >> skipped("random failures") //successfulAgents 
+    "store successfully started agents to agents " >> skipped(successfulAgents)
   }
 
-  def missingAgentTest = new Actorstest() {
+  def missingAgentTest = new NoisyActorstest() {
     val classname = "unexisting"
     val exception = new java.lang.ClassNotFoundException(classname)
     val configStr =
@@ -54,7 +54,7 @@ class InternalAgentLoaderTest(implicit ee: ExecutionEnv) extends Specification {
     logWarningTest(new AgentSystemSettings(config), warnings)
   }
 
-  def missingObjectTest = new Actorstest() {
+  def missingObjectTest = new NoisyActorstest() {
     val classname = "agentSystem.CompanionlessAgent"
     val exception = new java.lang.ClassNotFoundException(classname + "$")
     val configStr =
@@ -76,7 +76,7 @@ class InternalAgentLoaderTest(implicit ee: ExecutionEnv) extends Specification {
     logWarningTest(asce, warnings)
   }
 
-  def unimplementedIATest = new Actorstest() {
+  def unimplementedIATest = new NoisyActorstest() {
     val classname = "agentSystem.WrongInterfaceAgent"
     val configStr =
       s"""
@@ -97,7 +97,7 @@ class InternalAgentLoaderTest(implicit ee: ExecutionEnv) extends Specification {
     logWarningTest(asce, warnings)
   }
 
-  def unimplementedPCTest = new Actorstest() {
+  def unimplementedPCTest = new NoisyActorstest() {
     val classname = "agentSystem.NotPropsCreatorAgent"
     val configStr =
       s"""
@@ -118,7 +118,7 @@ class InternalAgentLoaderTest(implicit ee: ExecutionEnv) extends Specification {
     logWarningTest(new AgentSystemSettings(config), warnings)
   }
 
-  def wrongPropsTest = new Actorstest() {
+  def wrongPropsTest = new NoisyActorstest() {
     val classname = "agentSystem.WrongPropsAgent"
     val created = "agentSystem.FFAgent"
     val configStr =
@@ -140,11 +140,11 @@ class InternalAgentLoaderTest(implicit ee: ExecutionEnv) extends Specification {
     after
   }
 
-  def oddObjectTest = new Actorstest() {
+  def oddObjectTest = new NoisyActorstest() {
     after
   }
 
-  def propsTest = new Actorstest() {
+  def propsTest = new NoisyActorstest() {
     val exception: Throwable = new Exception("Test failure.")
     val classname = "agentSystem.FailurePropsAgent"
     val configStr =
@@ -165,7 +165,7 @@ class InternalAgentLoaderTest(implicit ee: ExecutionEnv) extends Specification {
     logWarningTest(new AgentSystemSettings(config), warnings)
   }
 
-  def startTest = new Actorstest(/*ActorSystem()*/) {
+  def startTest = new NoisyActorstest(/*ActorSystem()*/) {
     val exception: Throwable = StartFailed("Test failure.", None)
     val classname = "agentSystem.FFAgent"
     val configStr =
@@ -186,7 +186,7 @@ class InternalAgentLoaderTest(implicit ee: ExecutionEnv) extends Specification {
     logWarningTest(new AgentSystemSettings(config), warnings)
   }
 
-  def successfulAgents = new Actorstest(ActorSystem()) {
+  def successfulAgents = new Actorstest() {
     val emptyConfig = ConfigFactory.empty()
     val classname = "agentSystem.SSAgent"
     val classname2 = "unexisting"

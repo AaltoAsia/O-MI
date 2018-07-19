@@ -2,92 +2,36 @@ package http
 
 import java.net.InetAddress
 
-import agentSystem.AgentSystem
 import akka.actor._
 import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport.defaultNodeSeqUnmarshaller
 import akka.http.scaladsl.model.MediaTypes._
 import akka.http.scaladsl.model.RemoteAddress
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model.headers.{RawHeader, `Remote-Address`}
-import akka.http.scaladsl.testkit.{RouteTest, RouteTestTimeout}
+import akka.http.scaladsl.testkit.Specs2RouteTest
 import akka.pattern.ask
 import akka.stream.ActorMaterializer
-import akka.testkit.TestActorRef
 import akka.util.Timeout
-import database._
-import journal.Models.ErasePathCommand
-import org.slf4j.LoggerFactory
 import org.specs2.matcher.XmlMatchers
 import org.specs2.mutable.Specification
 import org.specs2.specification.BeforeAfterAll
-import responses.{CLIHelper, CallbackHandler, RequestHandler, SubscriptionManager}
-import testHelpers.Specs2Interface
 
 import scala.concurrent.Await
 import scala.concurrent.duration.DurationInt
 import scala.xml._
 
+import database._
+import responses.{CLIHelper, CallbackHandler, RequestHandler, SubscriptionManager}
+import agentSystem.AgentSystem
+import journal.Models.ErasePathCommand
+
 class OmiServiceTest
-  extends {
-    override val log = LoggerFactory.getLogger("OmiServiceTest")
-  }
-    with Specification
-    with Specs2Interface
+  extends Specification
     with XmlMatchers
-    with RouteTest
-    with OmiService
-    with BeforeAfterAll {
-
-  implicit override val materializer: ActorMaterializer = ActorMaterializer()(system)
-
-  def actorRefFactory = system
-
-  implicit val settings: OmiConfigExtension = OmiConfig(system)
-
-  implicit val callbackHandler: CallbackHandler = new CallbackHandler(settings)(system, materializer)
-  implicit val singleStores: SingleStores = new SingleStores(settings)
-
-  implicit def default(implicit system: ActorSystem) = RouteTestTimeout(5.second)
-
-  implicit val dbConnection = new TestDB("omiService-test")(
-    system,
-    singleStores,
-    settings
-  )
-  dbConnection.clearDB()
-  val analytics = None
-
-  val subscriptionManager = TestActorRef(SubscriptionManager.props(
-    settings,
-    singleStores,
-    callbackHandler
-  ))
-
-  val dbHandler = system.actorOf(
-    DBHandler.props(
-      dbConnection,
-      singleStores,
-      callbackHandler,
-      new CLIHelper(singleStores, dbConnection)
-    ),
-    "database-handler"
-  )
-  val requestHandler = system.actorOf(
-    RequestHandler.props(
-      subscriptionManager,
-      dbHandler,
-      settings
-    ),
-    "RequestHandler"
-  )
-  val agentSystem = system.actorOf(
-    AgentSystem.props(
-      dbHandler,
-      requestHandler,
-      settings
-    ),
-    "agent-system"
-  )
+    with Specs2RouteTest
+    with BeforeAfterAll
+    with testHelpers.TestOmiService
+{
 
 
   val printer = new scala.xml.PrettyPrinter(80, 2)
@@ -101,7 +45,7 @@ class OmiServiceTest
     OmiServer.saveSettingsOdf(system, requestHandler, settings) //Boot.init(dbConnection)
   }
 
-  def afterAll = {
+  override def afterAll = {
     dbConnection.destroy()
     Await
       .ready((singleStores.hierarchyStore.?(ErasePathCommand(types.Path("Objects")))(new Timeout(5 seconds))),

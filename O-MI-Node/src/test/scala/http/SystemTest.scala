@@ -111,10 +111,11 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
   }
 
   def afterAll = {
-    val future = serverBinding.flatMap(sb => sb.unbind()).flatMap {
-      s =>
-        system.terminate()
-    }
+    val future = serverBinding
+      .flatMap(sb => sb.unbind())
+      .flatMap(_ => testServer.unbind())
+      .flatMap(_ => system.terminate())
+
     future.onFailure {
       case t: Throwable =>
         system.log.error(t, "AfterAll encountered:")
@@ -158,7 +159,7 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
     else
       message.replaceAll(
         """requestID>\d*<\/requestID""",
-        s"""requestID>${id.get}</requestID"""
+        s"""requestID>${ id.get }</requestID"""
       )
 
   def getSingleResponseNoTime(reqresp: NodeSeq): Try[Elem] = {
@@ -459,64 +460,69 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
           //val result = wsProbe.expectNoMsg(Duration.apply(5, "seconds"))
           // 3 responses + 1 confirmation
           val result = wsProbe.receiveN(4, 10 seconds)
-          wsServer.close
+          wsServer.close()
           result.length === 4
         }
-        /*"be sent to correct connections when multiple connections exists" >> {
+        
+        //broken test randomly fails
+        // 2018-07-19: trying to fix
+        "be sent to correct connections when multiple connections exists" >> {
           val wsProbe1 = TestProbe()
           val wsProbe2 = TestProbe()
           val wsServer1 = new WsTestCallbackClient(wsProbe1.ref, "ws://localhost", 8080)
-            val wsServer2 = new WsTestCallbackClient(wsProbe2.ref, "ws://localhost", 8080)
-              wsServer1.offer(
-                """<?xml version="1.0" encoding="UTF-8"?>
-                <omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="10">
-                <read msgformat="odf" interval="-1" callback="0">
-                  <msg>
-                    <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/">
-                      <Object>
-                        <id>WebSocketTest</id>
-                        <InfoItem name="WSInfoItem1"/>
-                      </Object>
-                    </Objects>
-                  </msg>
-                </read>
-              </omiEnvelope>""")
-              wsServer2.offer(
-                """<?xml version="1.0" encoding="UTF-8"?>
-                <omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="10">
-                <read msgformat="odf" interval="-1" callback="0">
-                  <msg>
-                    <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/">
-                      <Object>
-                        <id>WebSocketTest</id>
-                        <InfoItem name="WSInfoItem2"/>
-                      </Object>
-                    </Objects>
-                  </msg>
-                </read>
-              </omiEnvelope>""")
-              wsProbe1.receiveN(1, 5 seconds) //responses for subscriptions
-              wsProbe2.receiveN(1, 5 seconds)
-              for{
-                _ <- wsServer2.offer(writeMessage("6")) //WS2
-                _ <- wsServer2.offer(writeMessage("7")) //WS2
-                _ <- wsServer1.offer(writeMessage("8")) //WS1
-                r <- wsServer1.offer(writeMessage("9")) //WS1
-              } yield r
+          val wsServer2 = new WsTestCallbackClient(wsProbe2.ref, "ws://localhost", 8080)
+          wsServer1.offer(
+            """<?xml version="1.0" encoding="UTF-8"?>
+            <omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="10">
+            <read msgformat="odf" interval="-1" callback="0">
+              <msg>
+                <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/">
+                  <Object>
+                    <id>WebSocketTest</id>
+                    <InfoItem name="WSInfoItem1"/>
+                  </Object>
+                </Objects>
+              </msg>
+            </read>
+          </omiEnvelope>""")
+          wsServer2.offer(
+            """<?xml version="1.0" encoding="UTF-8"?>
+            <omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="10">
+            <read msgformat="odf" interval="-1" callback="0">
+              <msg>
+                <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/">
+                  <Object>
+                    <id>WebSocketTest</id>
+                    <InfoItem name="WSInfoItem2"/>
+                  </Object>
+                </Objects>
+              </msg>
+            </read>
+          </omiEnvelope>""")
+          wsProbe1.receiveN(1, 5 seconds) //responses for subscriptions
+          wsProbe2.receiveN(1, 5 seconds)
+          val res = for{
+            _ <- wsServer2.offer(writeMessage("6")) //WS2
+            _ <- wsServer2.offer(writeMessage("7")) //WS2
+            _ <- wsServer1.offer(writeMessage("8")) //WS1
+            r <- wsServer1.offer(writeMessage("9")) //WS1
+          } yield r
+          Await.ready(res, 10 seconds)
 
-              val res1 = wsProbe1.receiveN(6, 10 seconds) //4 subscription updates and 2 write confirmations
-              val res2 = wsProbe2.receiveN(2, 10 seconds) //2 write confirmations(subscribed to unchanging ii)
-              res1.length === 6
-              res2.length === 2
-        }*/
-        //broken test randomly fails
+          val res1 = wsProbe1.receiveN(6, 10 seconds) //4 subscription updates and 2 write confirmations
+          val res2 = wsProbe2.receiveN(2, 10 seconds) //2 write confirmations(subscribed to unchanging ii)
+          wsServer1.close()
+          wsServer2.close()
+          res1.length === 6
+          res2.length === 2
+        }
       }
 
       "Websocket Socket Subscription " >> {
         val wsProbe = TestProbe()
         val wsServer1 = new WsTestCallbackServer(wsProbe.ref, "localhost", 8787)
         val wsServer2 = new WsTestCallbackServer(wsProbe.ref, "localhost", 8788)
-        val bind1 = wsServer1.bind()
+        val (bind1, unbind1) = wsServer1.bind()
         Await.ready(bind1, 5 seconds)
         "return correct number of responses for event subscription" >> {
           val m1 = getPostRequest(
@@ -631,7 +637,7 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
             // 3 responses
             result.length === 5
           }
-        val bind2 = wsServer2.bind()
+        val (bind2, unbind2) = wsServer2.bind()
         Await.ready(bind2, 5 seconds)
         "return correct number of responses for multiple interval subscription: ttl=7 interval=2 and ttl=8 and interval=3 with different callback address" >>
           {
@@ -712,6 +718,10 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
           } yield f
           val res3 = wsProbe.receiveN(8, 12 seconds)
           res3.length === 8 // 4 write confirmations and 4 subscription updates
+        }
+        step{
+          unbind1()
+          unbind2()
         }
       }
     }
