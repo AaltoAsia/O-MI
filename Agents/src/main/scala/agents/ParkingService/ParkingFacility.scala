@@ -100,11 +100,11 @@ case class ParkingFacility(
     )
 
     val capacitiesObj = OdfObject(
-      Vector( OdfQlmID( "Capacities" ) ),
-      facilityPath / "Capacitiess",
-      Vector(),
-      capacities.map( _.toOdf(facilityPath / "Capacities") ).toVector,
-      typeValue = Some( "list" )
+                                   Vector( OdfQlmID( "Capacities" ) ),
+                                   facilityPath / "Capacitiess",
+                                   Vector(),
+                                   capacities.map(_.toOdf(facilityPath / "Capacities")),
+                                   typeValue = Some( "list" )
     )
 
     OdfObject(

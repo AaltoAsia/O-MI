@@ -240,54 +240,56 @@ class ParkingAgent(
     case call: CallRequest => respondFuture(handleCall(call))
   }
   def handleEvents( events: Seq[ParkingEvent] ): Future[ResponseRequest] ={
-      Future.sequence(events.map{
-        case reservation: Reservation => 
+      Future.sequence(events.map {
+        case reservation: Reservation =>
           log.debug("Reserving parking space")
 
-          val responseF = writeToDB( WriteRequest( OldTypeConverter.convertOdfObjects(reservation.toOdf.createAncestors ) ) )
-            responseF.onSuccess{
-              case response: ResponseRequest =>
-                if( reservation.openLid ){
-                  closeLidIn( reservation.path / "Charger" / "LidStatus" )
-                }
-                updateCalculatedIIsToDB
-                parkingSpaceStatuses.get(reservation.path).foreach{
-                  case ParkingSpaceStatus( path, user, available ) =>
-                    parkingSpaceStatuses.update( path, ParkingSpaceStatus( path, Some(reservation.user), false ) )
-                }
-            }
-          responseF
-        case freeing: FreeReservation => 
-          log.debug("Freeing parking space")
-          val responseF = writeToDB( WriteRequest( OldTypeConverter.convertOdfObjects(freeing.toOdf.createAncestors) ) )
-          responseF.onSuccess{
+          val responseF = writeToDB(WriteRequest(OldTypeConverter.convertOdfObjects(reservation.toOdf.createAncestors)))
+          responseF.onSuccess {
             case response: ResponseRequest =>
-              if( freeing.openLid ){
-                closeLidIn( freeing.path / "Charger" / "LidStatus" )
+              if (reservation.openLid) {
+                closeLidIn(reservation.path / "Charger" / "LidStatus")
               }
               updateCalculatedIIsToDB
-              parkingSpaceStatuses.get(freeing.path).foreach{
-                case ParkingSpaceStatus( path, user, available ) =>
-                  parkingSpaceStatuses.update( path, ParkingSpaceStatus( path, None, true ) )
+              parkingSpaceStatuses.get(reservation.path).foreach {
+                case ParkingSpaceStatus(path, user, available) =>
+                  parkingSpaceStatuses.update(path, ParkingSpaceStatus(path, Some(reservation.user), false))
+              }
+          }
+          responseF
+        case freeing: FreeReservation =>
+          log.debug("Freeing parking space")
+          val responseF = writeToDB(WriteRequest(OldTypeConverter.convertOdfObjects(freeing.toOdf.createAncestors)))
+          responseF.onSuccess {
+            case response: ResponseRequest =>
+              if (freeing.openLid) {
+                closeLidIn(freeing.path / "Charger" / "LidStatus")
+              }
+              updateCalculatedIIsToDB
+              parkingSpaceStatuses.get(freeing.path).foreach {
+                case ParkingSpaceStatus(path, user, available) =>
+                  parkingSpaceStatuses.update(path, ParkingSpaceStatus(path, None, true))
               }
           }
           responseF
         case oL: OpenLid =>
           log.debug("Opening lid")
-          val responseF = writeToDB( WriteRequest( OldTypeConverter.convertOdfObjects(oL.toOdf.createAncestors) ) )
-          responseF.onSuccess{
+          val responseF = writeToDB(WriteRequest(OldTypeConverter.convertOdfObjects(oL.toOdf.createAncestors)))
+          responseF.onSuccess {
             case response: ResponseRequest =>
-              closeLidIn( oL.path / "Charger" / "LidStatus" )
+              closeLidIn(oL.path / "Charger" / "LidStatus")
               updateCalculatedIIsToDB
           }
           responseF
-        case upl: UpdatePlugMeasurements  =>
+        case upl: UpdatePlugMeasurements =>
           log.debug("Received update from plug")
-          val responseF = writeToDB( WriteRequest( OldTypeConverter.convertOdfObjects(upl.toOdf.createAncestors) ) )
+          val responseF = writeToDB(WriteRequest(OldTypeConverter.convertOdfObjects(upl.toOdf.createAncestors)))
           responseF
-      }.toSeq).map{
+      }).map{
         seq => 
-          ResponseRequest(Results.unionReduce(seq.flatMap( _.results).toVector ++ Vector(Results.Success(description= Some("Successfully writen.")))).toVector)
+          ResponseRequest(Results
+                            .unionReduce(seq.flatMap(_.results).toVector ++ Vector(Results
+                                                                                     .Success(description = Some("Successfully writen.")))))
       }
   }
 
