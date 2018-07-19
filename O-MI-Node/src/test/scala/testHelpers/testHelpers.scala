@@ -247,7 +247,7 @@ class WsTestCallbackServer(destination: ActorRef, interface: String, port: Int)(
         system.log.error(ex, "Failed to bind to {}:{}!", interface, port)
 
     }
-    def unbind: () => Future[Unit] = () =>
+    def unbind: () => Future[akka.Done] = () =>
       bindingFuture
         .flatMap(_.unbind()) // trigger unbinding from the port
 
