@@ -380,6 +380,7 @@ object CustomJsonProtocol extends DefaultJsonProtocol {
             "paths" -> JsArray(paths.map(p => JsString(p.toString))),
             "data" -> JsNull
           )
+        case other => throw new Exception(s"Uknown subscription type when serializing: $other" )
       }
     }
   }

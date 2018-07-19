@@ -362,6 +362,9 @@ class SubscriptionManager(
             subValues: ImmutableODF <- ps match {
               case pollEvent: PolledEventSub => handlePollEvent(pollEvent)
               case pollInterval: PollIntervalSub => handlePollInterval(pollInterval, pollTime, odfTree)
+              case other =>
+                log.warning(s"Found invalid polled sub type $other")
+                Future.successful(ImmutableODF(Vector.empty))
             }
             res: ODF = subValues.union(emptyTree)
           } yield Some(res)

@@ -227,13 +227,14 @@ trait DBWriteHandler extends DBHandlerBase {
     // DB + Poll Subscriptions
     val infosToBeWrittenInDBF: Future[Seq[InfoItem]] =
       ftriggeringEvents.map(triggeringEvents => //InfoItems contain single value
-        triggeringEvents
-          .map(_.infoItem) //map type to OdfInfoItem
-          .groupBy(_.path) //combine same paths
-          .flatMap {
-          case (path: Path, iis: Vector[InfoItem]) => //flatMap to remove None values
-            iis.reduceOption(_.union(_)) //Combine infoitems with same paths to single infoitem
-        }(collection.breakOut)) // breakOut to correct collection type
+                              triggeringEvents
+                                .map(_.infoItem) //map type to OdfInfoItem
+                                .groupBy(_.path) //combine same paths
+                                .flatMap(next => {//flatMap to remove None values
+                              val (path: Path, iis: Seq[InfoItem]) = next
+                                iis.reduceOption(_.union(_))
+                              } //Combine infoitems with same paths to single infoitem
+                                        )(collection.breakOut)) // breakOut to correct collection type
 
     log.debug("Writing infoitems to db")
     val dbWriteFuture = infosToBeWrittenInDBF.flatMap(
@@ -258,7 +259,7 @@ trait DBWriteHandler extends DBHandlerBase {
               (singleStores.hierarchyStore ? UnionCommand(updateTree))
 
             }
-            case None => Future.successful[Unit]()
+            case None => Future.successful[Unit](Unit)
           }
           triggeringEvents <- ftriggeringEvents
           latestF <- {

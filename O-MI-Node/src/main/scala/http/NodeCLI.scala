@@ -234,6 +234,8 @@ class OmiNodeCLI(
         case None =>
           log.info(s"Subscription with id $id not found.\r\n Sending ...")
           s"Subscription with id $id not found.\r\n>"
+        case other => log.warning(s"Received unknown sub type from subscriptionmanager $other")
+          "Failed to get subscription data\r\n>"
       }.recover {
       case _: Throwable =>
         log.info(s"Failed to get subscription with $id.\r\n Sending ...")
@@ -394,6 +396,7 @@ class OmiNodeCLI(
           log.warning(ex.getMessage); None
         }
         }
+      case other => throw new Exception(s"Invalid JS type found: $other")
     }
     subscriptionManager ! LoadSubs(subs)
     "Done\r\n>"

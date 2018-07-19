@@ -36,16 +36,13 @@ object InfluxDBJsonProtocol extends DefaultJsonProtocol {
         case results: JsArray =>
           results.elements.collect {
             case statementObj: JsObject =>
-              statementObj.getFields("statement_id").headOption match {
-                case Some(id: JsNumber) =>
-                //log.warning( s"Parsing JSON result for statement $id" )
-              }
               statementObj.getFields("series").collect {
                 case series: JsArray =>
                   series.elements
               }.flatten
           }.flatten
       }.flatten
+    case other => immutable.Seq.empty[JsValue] //should this throw error instead?
   }
 
   def measurementNameToPath(measurementName: String): Path = Path(measurementName.replace("\\=", "=")

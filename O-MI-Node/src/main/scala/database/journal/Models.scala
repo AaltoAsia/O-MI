@@ -141,7 +141,7 @@ object Models {
             buildObjectFromProtobuf(k, pobject)
           case Objs(pobjects) =>
             buildObjectsFromProtobuf(pobjects)
-
+          case other => throw new Exception(s"Invalid nodeType found $other")
         }
       }
     )
