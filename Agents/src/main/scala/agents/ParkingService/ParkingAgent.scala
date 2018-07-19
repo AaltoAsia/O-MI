@@ -154,41 +154,42 @@ class ParkingAgent(
                     existingPF.name == pf.name 
                 }
             }
-            val events = existingPFs.map{
+            val events = existingPFs.flatMap {
               targetPF: ParkingFacility =>
-                val event: Seq[ParkingEvent] = targetPF.parkingSpaces.collect{
-                  case ParkingSpace(name,_,_,Some(false),Some(user),chargerO,_,_,_) =>
+                val event: Seq[ParkingEvent] = targetPF.parkingSpaces.collect {
+                  case ParkingSpace(name, _, _, Some(false), Some(user), chargerO, _, _, _) =>
                     val path = parkingLotsPath / targetPF.name / "ParkingSpaces" / name
-                    if( isParkingSpaceFree(path) ){
-                      val openLid: Boolean= chargerO.exists {
+                    if (isParkingSpaceFree(path)) {
+                      val openLid: Boolean = chargerO.exists {
                         case charger: Charger => lidOpen(charger)
                       }
                       Reservation(path, user, openLid)
                     } else throw AllreadyReserved(path)
 
-                        case ParkingSpace(name,_,_,Some(true),Some(user),chargerO,_,_,_) =>
-                          val path = parkingLotsPath / targetPF.name / "ParkingSpaces" / name
-                          if( isUserCurrentReserver(path, user) ){
-                            val openLid: Boolean = chargerO.exists {
-                              case charger: Charger => lidOpen(charger)
-                            }
-                            FreeReservation(path, user, openLid)
-                          } else throw WrongUser(path)
+                  case ParkingSpace(name, _, _, Some(true), Some(user), chargerO, _, _, _) =>
+                    val path = parkingLotsPath / targetPF.name / "ParkingSpaces" / name
+                    if (isUserCurrentReserver(path, user)) {
+                      val openLid: Boolean = chargerO.exists {
+                        case charger: Charger => lidOpen(charger)
+                      }
+                      FreeReservation(path, user, openLid)
+                    } else throw WrongUser(path)
 
-                              case ParkingSpace(name,_,_,_,Some(user),Some(charger),_,_,_) if lidOpen(charger) =>
-                                val path = parkingLotsPath / targetPF.name / "ParkingSpaces" / name
-                                if( isUserCurrentReserver(path, user) ){
-                                  OpenLid( path, user)
-                                } else throw WrongUser(path)
+                  case ParkingSpace(name, _, _, _, Some(user), Some(charger), _, _, _) if lidOpen(charger) =>
+                    val path = parkingLotsPath / targetPF.name / "ParkingSpaces" / name
+                    if (isUserCurrentReserver(path, user)) {
+                      OpenLid(path, user)
+                    } else throw WrongUser(path)
 
-                                /*
-                              case ParkingSpace(name,_,_,_,_,Some(Charger(_,_,_,_,_,_,_,_,_,plugs)),_,_,_) if plugs.exists(plugMeasureUpdate(_)) =>
-                                val path = parkingLotsPath / targetPF.name / "ParkingSpaces" / name
-                                UpdatePlugMeasurements( path, plug.currentInA, plug.powerInkW, plug.voltageInV) 
-                                */
+                  /*
+                case ParkingSpace(name,_,_,_,_,Some(Charger(_,_,_,_,_,_,_,_,_,plugs)),_,_,_) if plugs.exists
+                (plugMeasureUpdate(_)) =>
+                  val path = parkingLotsPath / targetPF.name / "ParkingSpaces" / name
+                  UpdatePlugMeasurements( path, plug.currentInA, plug.powerInkW, plug.voltageInV)
+                  */
                 }
                 event
-            }.flatten
+            }
             val responseF = writeToDB( write )
             val statusUpdate = responseF.map{
               case response: ResponseRequest =>
