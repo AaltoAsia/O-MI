@@ -14,6 +14,7 @@ import types._
 import types.odf._
 
 import scala.collection.JavaConverters._
+import scala.collection.mutable
 import scala.collection.mutable.SortedMap
 import scala.concurrent.Future
 import scala.util.control.NonFatal
@@ -50,8 +51,8 @@ class ParkingAgent(
   val calculateCapacitiesEnabled: Boolean = if( config.hasPath("calculate-capacities") ) config.getBoolean("calculate-capacities") else false
 
   //Path to object containing all parking lots.
-  val latitudePFIndex: SortedMap[ Double, Set[Path] ] = SortedMap.empty
-  val longitudePFIndex: SortedMap[ Double, Set[Path] ] = SortedMap.empty
+  val latitudePFIndex: mutable.SortedMap[ Double, Set[Path] ] = mutable.SortedMap.empty
+  val longitudePFIndex: mutable.SortedMap[ Double, Set[Path] ] = mutable.SortedMap.empty
 
   //File used to populate node with initial state
   {
@@ -86,13 +87,13 @@ class ParkingAgent(
               }
               if( fails.nonEmpty) Future{ response }
               else{
-                success.foreach{
-                  case result: OmiResult =>
-                    result.odf.foreach{
+                success.foreach {
+                  result: OmiResult =>
+                    result.odf.foreach {
                       odf =>
-                        updateIndexesAndCapacities(odf,response)
+                        updateIndexesAndCapacities(odf, response)
                     }
-                  }
+                }
               }
               response
           }
@@ -102,16 +103,16 @@ class ParkingAgent(
       case e: Exception => 
         throw new Exception(s"Could not set initial state for $name. Initial write to DB failed.", e)
       
-    }.map{
-      case response: ResponseRequest => 
-        response.results.foreach{
-          case result: OmiResult =>
+    }.map {
+      response: ResponseRequest =>
+        response.results.foreach {
+          result: OmiResult =>
             result.returnValue match {
               case succ: Returns.ReturnTypes.Successful =>
-                log.info( s"Successfully initialized state for $name" )
+                log.info(s"Successfully initialized state for $name")
               case other =>
-                log.warning( s"Could not set initial state for $name. Got result:$result.")
-                throw new Exception( s"Could not set initial state for $name. Got following result from DB: $result.")
+                log.warning(s"Could not set initial state for $name. Got result:$result.")
+                throw new Exception(s"Could not set initial state for $name. Got following result from DB: $result.")
             }
         }
     }

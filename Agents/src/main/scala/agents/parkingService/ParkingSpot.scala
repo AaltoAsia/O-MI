@@ -140,14 +140,14 @@ object ParkingSpace {
     }.flatten
     val iFV = obj.get( obj.path / "validForVehicle" ).collect{
       case ii: OdfInfoItem =>
-        getStringFromInfoItem( ii ).map{
-          case str: String  =>  VehicleType(str)
+        getStringFromInfoItem( ii ).map {
+          str: String => VehicleType(str)
         }
     }.flatten
     val ut = obj.get( obj.path / "validForUserGroup" ).collect{
       case ii: OdfInfoItem =>
-        getStringFromInfoItem( ii ).map{
-          case str: String  =>  UserGroup(str)
+        getStringFromInfoItem( ii ).map {
+          str: String => UserGroup(str)
         }
     }.flatten
     val charger = obj.get( obj.path / "Charger" ).collect{
