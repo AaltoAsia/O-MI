@@ -1,11 +1,11 @@
-package agents
-package parkingService
+package agents.parkingService
 
 import java.io.File
 
 import agentSystem._
-import agents.parkingService.UserGroup._
-import agents.parkingService.VehicleType._
+import UserGroup._
+import VehicleType._
+import parkingService._
 import akka.actor.{Actor, ActorRef, Cancellable, Props}
 import com.typesafe.config.Config
 import parsing.OdfParser

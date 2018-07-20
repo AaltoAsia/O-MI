@@ -1,12 +1,12 @@
 
-package agents
-package parkingService
+package agents.parkingService
 
-import agents.parkingService.Capacity._
-import agents.parkingService.UserGroup._
-import agents.parkingService.VehicleType._
+import Capacity._
+import UserGroup._
+import VehicleType._
 import types.OdfTypes._
 import types._
+import parkingService._
 
 case class Capacity(
                      name: String,

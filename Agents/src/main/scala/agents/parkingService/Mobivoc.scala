@@ -1,6 +1,5 @@
 
-package agents
-package parkingService
+package agents.parkingService
 
 object Mobivoc{
   val parkingFacility = "mv:ParkingFacility"
