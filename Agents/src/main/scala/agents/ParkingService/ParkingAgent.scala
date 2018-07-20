@@ -255,7 +255,7 @@ class ParkingAgent(
               updateCalculatedIIsToDB
               parkingSpaceStatuses.get(reservation.path).foreach {
                 case ParkingSpaceStatus(path, user, available) =>
-                  parkingSpaceStatuses.update(path, ParkingSpaceStatus(path, Some(reservation.user), false))
+                  parkingSpaceStatuses.update(path, ParkingSpaceStatus(path, Some(reservation.user), free = false))
               }
           }
           responseF
@@ -270,7 +270,7 @@ class ParkingAgent(
               updateCalculatedIIsToDB
               parkingSpaceStatuses.get(freeing.path).foreach {
                 case ParkingSpaceStatus(path, user, available) =>
-                  parkingSpaceStatuses.update(path, ParkingSpaceStatus(path, None, true))
+                  parkingSpaceStatuses.update(path, ParkingSpaceStatus(path, None, free = true))
               }
           }
           responseF
@@ -380,7 +380,7 @@ class ParkingAgent(
               None,
               None
             )
-            npf.toOdf(parkingLotsPath,true).createAncestors
+            npf.toOdf(parkingLotsPath, calculatedPaths = true).createAncestors
         }
         val writeOdf = newPFs.fold(OdfObjects()){
           case ( odf: OdfObjects, l: OdfObjects) => odf.union(l)
