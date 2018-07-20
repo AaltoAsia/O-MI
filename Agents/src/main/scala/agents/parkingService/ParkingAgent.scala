@@ -35,7 +35,6 @@ import scala.xml.XML
  * Companion object for ResponsibleScalaAgent. Extends PropsCreator to enforce recommended practice in Props creation.
  *  <a href="http://doc.akka.io/docs/akka/2.4/scala/actors.html#Recommended_Practices">Akka recommends to</a>.
  *
- *  @param _config Contains configuration for this agent, as given in application.conf.
  */
 object ParkingAgent extends PropsCreator{
   /**
@@ -356,7 +355,7 @@ class ParkingAgent(
         pfs
     }
   }
-  def updateCalculatedIIsToDB: Future[ResponseRequest] ={
+  def updateCalculatedIIsToDB(): Future[ResponseRequest] ={
     getCurrentParkingFacilities.flatMap{
       parkingFacilities: Vector[ParkingFacility] =>
         val newPFs= parkingFacilities.map{
@@ -474,7 +473,7 @@ class ParkingAgent(
     charger: Option[Charger],
     arrivalTime: Option[String]
   )
-  private def updateParkingSpaceStatuses: Future[Unit] ={
+  private def updateParkingSpaceStatuses(): Future[Unit] ={
     getCurrentParkingFacilities.map {
       currentPFs: Seq[ParkingFacility] =>
         if (currentPFs.nonEmpty) {

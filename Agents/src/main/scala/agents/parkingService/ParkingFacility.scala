@@ -198,7 +198,7 @@ case class GPSCoordinates(
 
                     val t = math.sin(deltaLat/2) * math.sin(deltaLat/2) + math.cos(a1) * math.cos(a2) * math.sin(deltaLon/2) * math.sin(deltaLon/2)
                     val c = 2 * math.asin(math.min(math.sqrt(t), 1))
-                    val distance = radius * c;
+                    val distance = radius * c
                     distance 
                 }
             }
