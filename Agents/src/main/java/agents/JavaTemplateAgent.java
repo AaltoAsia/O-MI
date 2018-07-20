@@ -21,7 +21,7 @@ public class JavaTemplateAgent extends JavaInternalAgent {
    *  Implement it in way that
    *  <a href="http://doc.akka.io/docs/akka/current/java/untyped-actors.html#Recommended_Practices">Akka recommends to</a>.
    *
-   *  @param _config Contains configuration for this agent, as given in application.conf.
+   *  @param config Contains configuration for this agent, as given in application.conf.
    *  <a href="https://github.com/typesafehub/config">Typesafe config</a>.
    */
   static public Props props(final Config config, final ActorRef requestHandler, final ActorRef dbHandler) {

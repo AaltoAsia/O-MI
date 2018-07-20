@@ -115,7 +115,7 @@ public class JavaAgent extends JavaInternalAgent {
     String newValueStr = rnd.nextDouble() +""; 
 
     // Multiple values can be added at the same time but we add one
-    Vector<OdfValue<Object>> values = new Vector<OdfValue<Object>>();
+    Vector<OdfValue<Object>> values = new Vector<>();
 
     //OdfValues value can be stored as: string, short, int, long, float or double
     OdfValue<Object> value = OdfFactory.createOdfValue(
@@ -126,8 +126,8 @@ public class JavaAgent extends JavaInternalAgent {
     OdfDescription description = OdfFactory.createOdfDescription( "Temperature sensor in SensorBox");
 
     // Create O-DF MetaData
-    Vector<OdfInfoItem> metaItems = new Vector<OdfInfoItem>();
-    Vector<OdfValue<Object>> metaValues = new Vector<OdfValue<Object>>();
+    Vector<OdfInfoItem> metaItems = new Vector<>();
+    Vector<OdfValue<Object>> metaValues = new Vector<>();
     OdfValue<Object> metaValue = OdfFactory.createOdfValue(
         "Celsius", "xs:string", timestamp
     );
