@@ -1,4 +1,4 @@
-package agents.parkingService
+package agents
 
 import java.sql.Timestamp
 import java.util.Date

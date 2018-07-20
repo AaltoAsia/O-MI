@@ -245,7 +245,7 @@ public class JavaFileAgent extends JavaInternalAgent {
       }
 
       // Multiple values can be added at the same time but we add one
-      Vector<OdfValue<Object>> newValues = new Vector<OdfValue<Object>>();
+      Vector<OdfValue<Object>> newValues = new Vector<>();
       OdfValue<Object> value = OdfFactory.createOdfValue(
           newValueStr, typeStr, timestamp
       );

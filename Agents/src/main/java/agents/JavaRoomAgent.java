@@ -114,7 +114,7 @@ public class JavaRoomAgent extends JavaInternalAgent {
     //Reset writeCount
     writeCount = 0;
     //O-DF Object s as child of O-DF Objects
-    Vector<OdfObject> objects = new Vector<OdfObject>();
+    Vector<OdfObject> objects = new Vector<>();
     objects.add( createExampleRoom() );
     
     //Create O-DF Objects
@@ -133,12 +133,12 @@ public class JavaRoomAgent extends JavaInternalAgent {
     );
 
     //Child O-DF InfoItems of ExampleRoom
-    Vector<OdfInfoItem> infoItems = new Vector<OdfInfoItem>();
+    Vector<OdfInfoItem> infoItems = new Vector<>();
     OdfInfoItem location = createLocation(path); 
     infoItems.add(location);
 
     //Child O-DF Object of ExampleRoom
-    Vector<OdfObject> objects = new Vector<OdfObject>();
+    Vector<OdfObject> objects = new Vector<>();
     objects.add( createSensorBox(path));
 
     //Creata actual O-DF Object
@@ -169,13 +169,13 @@ public class JavaRoomAgent extends JavaInternalAgent {
     );
 
     //O-DF InfoItems of sensors in SensorBox
-    Vector<OdfInfoItem> infoItems = new Vector<OdfInfoItem>();
+    Vector<OdfInfoItem> infoItems = new Vector<>();
     infoItems.add( createLocation(path) );
     infoItems.add( createSensor("Temperature","Celsius",path) );
     infoItems.add( createSensor("Humidity","Percentage of water in air",path) );
 
     //SensorBox doesn't have child O-DF Object s
-    Vector<OdfObject> objects = new Vector<OdfObject>();
+    Vector<OdfObject> objects = new Vector<>();
 
     //Create O-DY Object for SensorBox
     return OdfFactory.createOdfObject(
@@ -210,7 +210,7 @@ public class JavaRoomAgent extends JavaInternalAgent {
     String newValueStr = rnd.nextDouble() +""; 
 
     // Multiple values can be added at the same time but we add one
-    Vector<OdfValue<Object>> values = new Vector<OdfValue<Object>>();
+    Vector<OdfValue<Object>> values = new Vector<>();
  
     // OdfValue has type parameter for type of value, Object is used to avoid problems
     // with having values with different types in same Collection.
@@ -224,13 +224,13 @@ public class JavaRoomAgent extends JavaInternalAgent {
     values.add(value);
 
     //Create Unit meta data for the sensor. 
-    Vector<OdfValue<Object>> metaValues = new Vector<OdfValue<Object>>();
+    Vector<OdfValue<Object>> metaValues = new Vector<>();
     OdfValue<Object> metaValue = OdfFactory.createOdfValue(
         unit, "xs:string", timestamp
     );
     metaValues.add(metaValue);
 
-    Vector<OdfInfoItem> metaInfoItems = new Vector<OdfInfoItem>();
+    Vector<OdfInfoItem> metaInfoItems = new Vector<>();
     OdfInfoItem metaInfoItem = OdfFactory.createOdfInfoItem(
        new Path( path.toString() +"/MetaData/Unit"), 
        metaValues
@@ -281,7 +281,7 @@ public class JavaRoomAgent extends JavaInternalAgent {
     String newValueStr = "+" + rnd.nextDouble() + "+" +rnd.nextDouble() + "+" + rnd.nextInt(15000) +"CRSWGS_84"; 
 
     // Multiple values can be added at the same time but we add one
-    Vector<OdfValue<Object>> values = new Vector<OdfValue<Object>>();
+    Vector<OdfValue<Object>> values = new Vector<>();
 
     // OdfValue has type parameter for type of value, Object is used to avoid problems
     // with having values with different types in same Collection.
@@ -295,13 +295,13 @@ public class JavaRoomAgent extends JavaInternalAgent {
     values.add(value);
 
     //Create type meta data about location.
-    Vector<OdfValue<Object>> metaValues = new Vector<OdfValue<Object>>();
+    Vector<OdfValue<Object>> metaValues = new Vector<>();
     OdfValue<Object> metaValue = OdfFactory.createOdfValue(
         "ISO 6709", timestamp
     );
     metaValues.add(metaValue);
 
-    Vector<OdfInfoItem> metaInfoItems = new Vector<OdfInfoItem>();
+    Vector<OdfInfoItem> metaInfoItems = new Vector<>();
     OdfInfoItem metaInfoItem = OdfFactory.createOdfInfoItem(
        new Path( path.toString() +"/MetaData/type"), 
        metaValues
@@ -430,7 +430,7 @@ public class JavaRoomAgent extends JavaInternalAgent {
       }
 
       // Multiple values can be added at the same time but we add one
-      Vector<OdfValue<Object>> newValues = new Vector<OdfValue<Object>>();
+      Vector<OdfValue<Object>> newValues = new Vector<>();
       OdfValue<Object> value = OdfFactory.createOdfValue(
           newValueStr, typeStr, timestamp
       );

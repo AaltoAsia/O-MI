@@ -6,7 +6,7 @@ import UserGroup._
 import VehicleType._
 import types.OdfTypes._
 import types._
-import parkingService._
+import agents.parkingService._
 
 case class Capacity(
                      name: String,

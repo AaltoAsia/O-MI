@@ -1,11 +1,11 @@
 
 <Objects>
   <Ojbect>
-    <Id>ParkingService</ID>
+    <Id>ParkingService</Id>
     <Ojbect type="list">
-      <Id>ParkingFacilities</ID>
+      <Id>ParkingFacilities</Id>
       <Ojbect type="mv:ParkingFacility">
-        <Id>ParkingFacility</ID>
+        <Id>ParkingFacility</Id>
         <description lang="English">Parking lot on northern side of Computer Science building.</description>
         <InfoItem name="Owner" type="mv:isOwnedBy"><!-- Maybe use something from www.schema.org -->
           <value>Aalto University</value>
@@ -80,7 +80,7 @@
           </Object>
         </Object>
         <Ojbect type="list">
-          <Id>ParkingSpapces</ID>
+          <Id>ParkingSpapces</Id>
           <Object type="mv:ParkingSpace">
             <id>MotorbikeSpace2</id>
             <InfoItem name="Available">
@@ -90,7 +90,7 @@
               <value>NONE</value>
             </InfoItem>
             <InfoItem name="intendedForVehicle" type="mv:intendedForVehicle">
-              <value>Motorbike</valu>
+              <value>Motorbike</value>
             </InfoItem>
             <InfoItem name="vehicleHeightLimit" type="mv:vehicleHeightLimit">
               <value type="ws:double">2.5</value>
@@ -123,7 +123,7 @@
               <value>NONE</value>
             </InfoItem>
             <InfoItem name="intendedForVehicle" type="mv:intendedForVehicle">
-              <value>Motorbike</valu>
+              <value>Motorbike</value>
             </InfoItem>
             <InfoItem name="vehicleHeightLimit" type="mv:vehicleHeightLimit">
               <value type="ws:double">2.5</value>
@@ -156,7 +156,7 @@
               <value>NONE</value>
             </InfoItem>
             <InfoItem name="intendedForVehicle" type="mv:intendedForVehicle">
-              <value>Car</valu>
+              <value>Car</value>
             </InfoItem>
             <InfoItem name="vehicleHeightLimit" type="mv:vehicleHeightLimit">
               <value type="ws:double">2.5</value>
@@ -189,7 +189,7 @@
               <value>NONE</value>
             </InfoItem>
             <InfoItem name="intendedForVehicle" type="mv:intendedForVehicle">
-              <value>Car</valu>
+              <value>Car</value>
             </InfoItem>
             <InfoItem name="vehicleHeightLimit" type="mv:vehicleHeightLimit">
               <value type="ws:double">2.5</value>
@@ -222,7 +222,7 @@
               <value>NONE</value>
             </InfoItem>
             <InfoItem name="intendedForVehicle" type="mv:intendedForVehicle">
-              <value>Car</valu>
+              <value>Car</value>
             </InfoItem>
             <InfoItem name="vehicleHeightLimit" type="mv:vehicleHeightLimit">
               <value type="ws:double">2.5</value>
@@ -255,7 +255,7 @@
               <value>NONE</value>
             </InfoItem>
             <InfoItem name="intendedForVehicle" type="mv:intendedForVehicle">
-              <value>Car</valu>
+              <value>Car</value>
             </InfoItem>
             <InfoItem name="vehicleHeightLimit" type="mv:vehicleHeightLimit">
               <value type="ws:double">2.5</value>
@@ -288,10 +288,10 @@
               <value>NONE</value>
             </InfoItem>
             <InfoItem name="intendedForVehicle" type="mv:intendedForVehicle">
-              <value>ElectricVehicle</valu>
+              <value>ElectricVehicle</value>
             </InfoItem>
             <InfoItem name="parkingUsageType" type="mv:parkingUsageType">
-              <value>ElectricVehicle</valu>
+              <value>ElectricVehicle</value>
             </InfoItem>
             <InfoItem name="vehicleHeightLimit" type="mv:vehicleHeightLimit">
               <value type="ws:double">2.5</value>
@@ -360,10 +360,10 @@
               <value>NONE</value>
             </InfoItem>
             <InfoItem name="intendedForVehicle" type="mv:intendedForVehicle">
-              <value>ElectricVehicle</valu>
+              <value>ElectricVehicle</value>
             </InfoItem>
             <InfoItem name="parkingUsageType" type="mv:parkingUsageType">
-              <value>ElectricVehicle</valu>
+              <value>ElectricVehicle</value>
             </InfoItem>
             <InfoItem name="vehicleHeightLimit" type="mv:vehicleHeightLimit">
               <value type="ws:double">2.5</value>

@@ -1,7 +1,7 @@
 package agents.parkingService
 
 import agents.parkingService.VehicleType._
-import parkingService._
+import agents.parkingService._
 import types.OdfTypes._
 import types._
 

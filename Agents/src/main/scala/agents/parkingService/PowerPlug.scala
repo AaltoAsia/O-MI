@@ -1,7 +1,7 @@
 package agents.parkingService
 
 import types.OdfTypes._
-import parkingService._
+import agents.parkingService._
 import types._
 
 object PowerPlug{

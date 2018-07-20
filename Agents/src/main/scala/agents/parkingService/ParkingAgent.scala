@@ -5,7 +5,7 @@ import java.io.File
 import agentSystem._
 import UserGroup._
 import VehicleType._
-import parkingService._
+import agents.parkingService._
 import akka.actor.{Actor, ActorRef, Cancellable, Props}
 import com.typesafe.config.Config
 import parsing.OdfParser
