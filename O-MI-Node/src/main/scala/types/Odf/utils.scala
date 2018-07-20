@@ -3,6 +3,11 @@ package odf
 
 import scala.collection.JavaConverters._
 
+
+trait Unionable[T] {
+  def union(t: T): T
+}
+
 object OdfCollection {
   def apply[T](): OdfCollection[T] = Vector()
 

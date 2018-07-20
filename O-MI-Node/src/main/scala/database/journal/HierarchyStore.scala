@@ -21,13 +21,16 @@ class HierarchyStore extends PersistentActor with ActorLogging {
     case e: Event => e match {
       case PUnion(another) => state = state.union(buildImmutableOdfFromProtobuf(another)).valuesRemoved.immutable
       case PErasePath(path) => state = state.removePath(Path(path)).immutable
+      case _ =>
 
     }
     case p: PersistentCommand => p match {
       case UnionCommand(other) => state = state.union(other).valuesRemoved.immutable
       case ErasePathCommand(path) => state = state.removePath(path).immutable
+      case _ =>
 
     }
+    case _ =>
   }
 
   def receiveRecover: Receive = {

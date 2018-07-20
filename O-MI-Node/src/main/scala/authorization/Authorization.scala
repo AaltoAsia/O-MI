@@ -162,13 +162,6 @@ object Authorization {
 
   case class UnauthorizedEx(message: String = "Unauthorized") extends Exception(message)
 
-  /**
-    * Template for any authorization implementations. This enables the combination of many
-    * authorization methods in the service using [[makePermissionTestFunction]] that combines
-    * all [[hasPermission]] functions.
-    */
-  //trait AuthorizationExtension extends AuthorizationExtSupport {
-  //}
 
 }
 

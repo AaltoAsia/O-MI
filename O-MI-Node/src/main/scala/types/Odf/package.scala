@@ -15,9 +15,6 @@ package object odf {
   type OdfParseResult = Either[JavaIterable[_ <:ParseError], ImmutableODF]
   type OdfCollection[T] = Vector[T]
 
-  trait Unionable[T] {
-    def union(t: T): T
-  }
 
   def timestampToXML(timestamp: Timestamp): XMLGregorianCalendar = {
     val cal = new GregorianCalendar()

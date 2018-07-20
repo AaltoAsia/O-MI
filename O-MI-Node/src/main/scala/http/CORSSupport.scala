@@ -16,7 +16,6 @@ package http
 
 import akka.http.scaladsl.server.Directive0
 import ch.megard.akka.http.cors.scaladsl.CorsDirectives
-import ch.megard.akka.http.cors.scaladsl.model.HttpHeaderRange
 import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
 
 /**
