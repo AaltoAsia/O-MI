@@ -103,7 +103,7 @@ case class ParkingSpace(
       )
     }.toSeq ++ 
     geo.map( g => g.toOdf( path )).toSeq.flatten ++ 
-    chargers.map(c => c.toOdf(path)).flatten
+    chargers.flatMap(c => c.toOdf(path))
   }
 }
 

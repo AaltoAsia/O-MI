@@ -21,9 +21,9 @@ object Charger{
         getStringFromInfoItem( ii )
      }.flatten
      val plugO = obj.get( obj.path / "Plugs" ).collect{
-       case cobj: OdfObject if cobj.typeValue == "list" =>
+       case cobj: OdfObject if cobj.typeValue.contains("list") =>
         cobj.objects.collect{
-          case plugObj: OdfObject if plugObj.typeValue == "mv:Plug" =>
+          case plugObj: OdfObject if plugObj.typeValue.contains("mv:Plug") =>
             PowerPlug(plugObj)
         }
      }.toVector.flatten

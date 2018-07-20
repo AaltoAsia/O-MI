@@ -19,6 +19,7 @@ import scala.collection.mutable.{HashMap => MutableHashMap, Map => MutableMap}
 import scala.concurrent.duration._
 import scala.collection.JavaConverters._
 import scala.concurrent.{Await, ExecutionException, Future}
+import scala.language.postfixOps
 import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
 import scala.xml.XML
