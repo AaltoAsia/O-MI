@@ -21,7 +21,7 @@ object Charger{
         getStringFromInfoItem( ii )
      }.flatten
      val plugO = obj.get( obj.path / "Plugs" ).collect{
-       case cobj: OdfObject if cobj.typeValue.contains("list") =>
+       case cobj: OdfObject if cobj.typeValue.contains("list") => //Typevalue is Option! do not compare with ==
         cobj.objects.collect{
           case plugObj: OdfObject if plugObj.typeValue.contains("mv:Plug") =>
             PowerPlug(plugObj)
