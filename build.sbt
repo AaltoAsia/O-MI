@@ -1,4 +1,3 @@
-import com.github.retronym.SbtOneJar
 import Dependencies._
 import NativePackagerHelper._
 import Path.relativeTo
@@ -195,6 +194,6 @@ lazy val root = (project in file(".")).
   dependsOn(agents)
 
 // Choose Tomcat or Jetty default settings and build a .war file with `sbt package`
-tomcat()
-// jetty()
+enablePlugins(TomcatPlugin)
+//enablePlugins(JettyPlugin)
   
