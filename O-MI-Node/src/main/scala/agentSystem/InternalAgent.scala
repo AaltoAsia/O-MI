@@ -69,9 +69,9 @@ trait ScalaInternalAgent extends InternalAgent with ActorLogging {
   protected def dbHandler: ActorRef
 
   //These need to be implemented
-  override def preStart: Unit = start
+  override def preStart: Unit = CommandSuccessful()
 
-  override def postStop: Unit = stop
+  override def postStop: Unit = CommandSuccessful()
 
   def receive: PartialFunction[Any, Unit] = {
     case any: Any => unhandled(any)

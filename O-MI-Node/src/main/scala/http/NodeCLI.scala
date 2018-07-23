@@ -382,7 +382,7 @@ class OmiNodeCLI(
 
   private def restoreDatabase(filePath: String) = {
     val parsed: OdfParseResult = ODFParser.parse(new File(filePath))
-    val temp = parsed.right.map(odf => Await.ready(removeHandler.writeOdf(odf), 5 minutes))
+    parsed.right.map(odf => Await.ready(removeHandler.writeOdf(odf), 5 minutes))
     "Done\r\n>"
   }
 
@@ -402,7 +402,7 @@ class OmiNodeCLI(
     "Done\r\n>"
   }
   private def takeSnapshot() = {
-    val res = Await.result(removeHandler.takeSnapshot(),Duration.Inf)
+    Await.result(removeHandler.takeSnapshot(),Duration.Inf)
     "Success\r\n>"
   }
   private def send(receiver: ActorRef)(msg: String): Unit =

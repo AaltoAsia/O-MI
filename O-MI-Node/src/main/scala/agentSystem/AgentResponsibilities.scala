@@ -28,8 +28,8 @@ class AgentResponsibilities() {
     }
   }
   def splitReadAndDeleteToResponsible( request: OdfRequest ) : ImmutableMap[Option[AgentName], OdfRequest] ={
-    def filter: RequestFilter => Boolean = createFilter(request)
-    val odf = request.odf
+    //def filter: RequestFilter => Boolean = createFilter(request)
+    //val odf = request.odf
     ???
   }
 

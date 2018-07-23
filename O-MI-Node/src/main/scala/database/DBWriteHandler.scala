@@ -82,15 +82,16 @@ trait DBWriteHandler extends DBHandlerBase {
       case AttachEvent(infoItem) =>
         // val fpollNewSubs  = (singleStores.subStore ? GetNewEventSubsForPath(infoItem.path)).mapTo[Set[PollNewEventSub]]
         //.map(pollNewSubs => infoItem.values.headOption.map(value => pollNewSubs.map(pnes => (singleStores.pollDataPrevayler ? AddPollData(pnes.id, infoItem.path, value)))))
-        val pollnewSubs: Option[Future[Set[Any]]] = infoItem.values.headOption.map(value =>
+        val pollnewSubs: Future[Set[Any]] = infoItem.values.headOption.map(value =>
           for {
             pollNewSubs <- (singleStores.subStore ? GetNewEventSubsForPath(infoItem.path)).mapTo[Set[PollNewEventSub]]
             result <- Future.sequence(pollNewSubs.map(pnes =>
               (singleStores.pollDataStore ? AddPollData(pnes.id, infoItem.path, value))))
-          } yield result)
+          } yield result).getOrElse(Future.successful(Set.empty[Any]))
         val fnesubs = (singleStores.subStore ? LookupNewEventSubs(infoItem.path)).mapTo[Seq[NewEventSub]]
         val fesubs = (singleStores.subStore ? LookupEventSubs(infoItem.path)).mapTo[Seq[NormalEventSub]]
         for {
+          _ <- pollnewSubs
           nesubs: Seq[NewEventSub] <- fnesubs
           esubs: Seq[NormalEventSub] <- fesubs
           resp: Seq[(EventSub, InfoItem)] = (esubs ++ nesubs).map {

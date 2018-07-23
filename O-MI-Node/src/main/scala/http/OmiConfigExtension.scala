@@ -14,7 +14,6 @@
 
 package http
 
-import java.lang
 import java.net.InetAddress
 import java.util.concurrent.TimeUnit
 

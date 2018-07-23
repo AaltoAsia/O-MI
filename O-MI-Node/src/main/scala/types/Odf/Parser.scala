@@ -146,17 +146,17 @@ object ODFParser extends parsing.Parser[OdfParseResult] {
     }
   }
 
-  private[this] def validateId(
-                                optionId: Option[String]
-                              ): Option[String] = for {
-    head <- optionId
-    validated <- validateId(head)
-  } yield validated
+  //private[this] def validateId( //TODO remove?, Unused
+  //                              optionId: Option[String]
+  //                            ): Option[String] = for {
+  //  head <- optionId
+  //  validated <- validateId(head)
+  //} yield validated
 
   private[this] def parseObject(
                                  requestProcessTime: Timestamp,
                                  obj: ObjectType,
-                                 path: Path = Path("Objects")
+                                 path: Path
                                ): Vector[Node] = {
 
     val ids = obj.id.map { qlmIdType => parseQlmID(qlmIdType) }.toVector

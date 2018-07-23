@@ -12,12 +12,12 @@ import javax.xml.bind.annotation.*;
 
 
 /**
- * Some kind of identifier with optional "format" attribute for indicating what kind of identifier is used. 
- * 
+ * Some kind of identifier with optional "format" attribute for indicating what kind of identifier is used.
+ *
  * <p>Java class for IdType complex type.
- * 
+ *
  * <p>The following schema fragment specifies the expected content contained within this class.
- * 
+ *
  * <pre>
  * &lt;complexType name="IdType"&gt;
  *   &lt;simpleContent&gt;
@@ -27,8 +27,8 @@ import javax.xml.bind.annotation.*;
  *   &lt;/simpleContent&gt;
  * &lt;/complexType&gt;
  * </pre>
- * 
- * 
+ *
+ *
  */
 @XmlAccessorType(XmlAccessType.FIELD)
 @XmlType(name = "IdType", propOrder = {
@@ -43,11 +43,11 @@ public class IdType {
 
     /**
      * Gets the value of the value property.
-     * 
+     *
      * @return
      *     possible object is
      *     {@link String }
-     *     
+     *
      */
     public String getValue() {
         return value;
@@ -55,11 +55,11 @@ public class IdType {
 
     /**
      * Sets the value of the value property.
-     * 
+     *
      * @param value
      *     allowed object is
      *     {@link String }
-     *     
+     *
      */
     public void setValue(String value) {
         this.value = value;
@@ -67,11 +67,11 @@ public class IdType {
 
     /**
      * Gets the value of the format property.
-     * 
+     *
      * @return
      *     possible object is
      *     {@link String }
-     *     
+     *
      */
     public String getFormat() {
         return format;

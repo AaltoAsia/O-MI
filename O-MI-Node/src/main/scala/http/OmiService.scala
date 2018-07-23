@@ -465,7 +465,6 @@ trait OmiService
         extractClientIP { user =>
           //val xmlH = XML.loadString("""<?xml version="1.0" encoding="UTF-8"?>""" )
           val response = handleRequest(hasPermissionTest, requestString, remote = user) //.map{ ns => xmlH ++ ns }
-        val marshal = ToResponseMarshallable(response)(Marshaller.futureMarshaller(xmlCT))
           complete(response)
         }
       }

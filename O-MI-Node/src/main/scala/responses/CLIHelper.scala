@@ -57,7 +57,7 @@ class CLIHelper(val singleStores: SingleStores, dbConnection: DB)(implicit syste
       nodeO.flatMap {
         case Some(node) => {
 
-          val leafs = odfF.map(_.getPaths.filter {
+          odfF.foreach(_.getPaths.filter {
             p: Path =>
               node.path.isAncestorOf(p)
           }.foreach { path =>
