@@ -34,7 +34,7 @@
         <InfoItem name="numberOfWomen'sParkingSpaces" type="mv:numberOfWomen'sParkingSpaces"><!-- Counted by agent. -->
           <value type="xs:int">2</value>
         </InfoItem>
-        <InfoItem name="numberOfCarShairngSpaces" type="mv:numberOfCarSharingSpaces"><!-- Counted by agent. -->
+        <InfoItem name="numberOfCarSharingSpaces" type="mv:numberOfCarSharingSpaces"><!-- Counted by agent. -->
           <value type="xs:int">2</value>
         </InfoItem>
         <InfoItem name="numberOfParkingSpacesForDisabledPersons" type="mv:numberOfParkingSpacesForDisabledPersons"><!-- Counted by agent. -->
@@ -80,7 +80,7 @@
           </Object>
         </Object>
         <Ojbect type="list">
-          <Id>ParkingSpapces</Id>
+          <Id>ParkingSpaces</Id>
           <Object type="mv:ParkingSpace">
             <id>MotorbikeSpace2</id>
             <InfoItem name="Available">
@@ -317,7 +317,7 @@
             <Object type="mv:Charger">
               <id>Charger</id>
               <InfoItem name="Brand" type="mv:Brand">
-                <value>Exampler</value>
+                <value>Example</value>
               </InfoItem>
               <InfoItem name="Model" type="mv:Model">
                 <value>ExampleI</value>
@@ -389,7 +389,7 @@
             <Object type="mv:Charger">
               <id>Charger</id>
               <InfoItem name="Brand" type="mv:Brand">
-                <value>Exampler</value>
+                <value>Example</value>
               </InfoItem>
               <InfoItem name="Model" type="mv:Model">
                 <value>ExampleI</value>

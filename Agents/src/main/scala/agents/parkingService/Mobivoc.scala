@@ -6,6 +6,6 @@ object Mobivoc{
   val parkingLot = "mv:ParkingLot"
   val parkingGarage = "mv:ParkingGarage"
   val undergroundParkingGarage = "mv:UndergroundParkingGarage"
-  val auiomatieParkingGarage = "mv:AutomatedParkingGarage"
+  val automatedParkingGarage = "mv:AutomatedParkingGarage"
   val bicycleParkingStation = "mv:BicycleParkingStation"
 }

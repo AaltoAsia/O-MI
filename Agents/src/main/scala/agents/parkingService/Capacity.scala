@@ -13,7 +13,7 @@ case class Capacity(
                      currentCapacity: Option[Long],
                      totalCapacity: Option[Long],
                      validForVehicle: Option[VehicleType],
-                     usergroup: Option[UserGroup]
+                     userGroup: Option[UserGroup]
                    ) {
 
   def toOdf(parentPath: Path): OdfObject = {
@@ -43,7 +43,7 @@ case class Capacity(
           typeValue = Some("mv:" + validForVehicleStr)
         )
     }.toVector
-    val userGroupII = usergroup.map {
+    val userGroupII = userGroup.map {
       veh: UserGroup =>
         OdfInfoItem(
           path / validForUserGroupStr,

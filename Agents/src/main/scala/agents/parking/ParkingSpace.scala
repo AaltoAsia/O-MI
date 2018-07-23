@@ -62,7 +62,7 @@ case class ParkingSpace(
         values = Vector( LongValue( mph, currentTimestamp ))
       )
     }.toSeq ++ height.map{ h => 
-      val nII = "vehicleHeighLimitInM"
+      val nII = "vehicleHeightLimitInM"
       InfoItem( 
         nII,
         path / nII,

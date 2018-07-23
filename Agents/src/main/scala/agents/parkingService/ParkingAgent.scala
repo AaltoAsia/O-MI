@@ -292,7 +292,7 @@ class ParkingAgent(
         seq => 
           ResponseRequest(Results
                             .unionReduce(seq.flatMap(_.results).toVector ++ Vector(Results
-                                                                                     .Success(description = Some("Successfully writen.")))))
+                                                                                     .Success(description = Some("Successfully written.")))))
       }
   }
 
@@ -423,7 +423,7 @@ class ParkingAgent(
                       Responses.InvalidRequest(Some(s"Unknown type for parameter value."))
                     }
               case Some(odf: OdfObjects) =>
-                Try{getfindParkingParams(odf)} match{
+                Try{getFindParkingParams(odf)} match{
                   case Success( Some(pp:ParkingParameters) ) =>
                     findParking( pp)
                   case Success( None ) =>
@@ -454,11 +454,11 @@ class ParkingAgent(
               //log.debug(s"${responses.size} to response:\n" + response.asXML.toString)
               response
           }.recover{
-            case e: ExecutionException => 
+            case e: ExecutionException =>
               log.error("ParkingAgent call request: ", e)
-              Responses.InternalError(e.getCause())                                                                                                                                                             
-              
-            case NonFatal(e) => 
+              Responses.InternalError(e.getCause())
+
+            case NonFatal(e) =>
               log.error("ParkingAgent call request: ", e)
               Responses.InternalError(e)
 
@@ -486,13 +486,13 @@ class ParkingAgent(
               }
           }
           parkingSpaceStatuses ++= entries
-          //log.debug( parkingSpaceStatuses.mkString("\n") ) 
+          //log.debug( parkingSpaceStatuses.mkString("\n") )
         } //else {throw new Exception( "No parking facilities found from db.")}
     }
   }
 
 
-  def getfindParkingParams(objects: OdfObjects): Option[ParkingParameters] ={
+  def getFindParkingParams(objects: OdfObjects): Option[ParkingParameters] ={
     val destinationO = objects.get(destinationParameterPath).collect{
       case obj: OdfObject =>
         GPSCoordinates(obj)

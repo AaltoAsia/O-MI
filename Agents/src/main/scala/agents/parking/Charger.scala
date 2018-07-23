@@ -157,7 +157,7 @@ object Charger{
             getDoubleOption("powerInkW",path,odf),
             getDoubleOption("voltageInV",path,odf),
             getBooleanOption("threePhasedCurrentAvailable",path,odf),
-            getBooleanOption("isFastChargeCopable",path,odf),
+            getBooleanOption("isFastChargeCapable",path,odf),
             plugs
           )
         case Some(obj: Object) => 

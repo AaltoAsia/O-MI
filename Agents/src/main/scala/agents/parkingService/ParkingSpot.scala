@@ -67,7 +67,7 @@ case class ParkingSpace(
       OdfInfoItem(
         spotPath / "validForVehicle",
         Vector( OdfValue( VehicleType.toString(v), currentTime ) ),
-        typeValue = Some( "mv:intededForVehicle")
+        typeValue = Some( "mv:validForVehicle")
       ) 
     }.toVector
     val userGroupII = validForUserGroup.map{
@@ -81,7 +81,7 @@ case class ParkingSpace(
     val maxHII = maxHeight.map{
       v: Double=>
       OdfInfoItem(
-        spotPath / "vechileHeightLimit",
+        spotPath / "vehicleHeightLimit",
         Vector( OdfValue( v, currentTime ) ),
         typeValue = Some( "mv:vehicleHeightLimit")
       ) 
@@ -89,7 +89,7 @@ case class ParkingSpace(
     val maxLII = maxLength.map{
       v: Double=>
       OdfInfoItem(
-        spotPath / "vechileLengthLimit",
+        spotPath / "vehicleLengthLimit",
         Vector( OdfValue( v, currentTime ) ),
         typeValue = Some( "mv:vehicleLengthLimit")
       ) 
@@ -97,7 +97,7 @@ case class ParkingSpace(
     val maxWII = maxWidth.map{
       v: Double=>
       OdfInfoItem(
-        spotPath / "vechileWidthLimit",
+        spotPath / "vehicleWidthLimit",
         Vector( OdfValue( v, currentTime ) ),
         typeValue = Some( "mv:vehicleWidthLimit")
       ) 

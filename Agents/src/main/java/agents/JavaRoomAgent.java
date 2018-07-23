@@ -79,7 +79,7 @@ public class JavaRoomAgent extends JavaInternalAgent {
             conf.getDuration("interval", TimeUnit.SECONDS),
             TimeUnit.SECONDS);	
 
-    //Lets schelude a messge to us on every interval
+    //Lets schedule a message to us on every interval
     //and save the reference so we can stop the agent.
     intervalJob = context().system().scheduler().schedule(
         Duration.Zero(),                //Delay start
@@ -141,7 +141,7 @@ public class JavaRoomAgent extends JavaInternalAgent {
     Vector<OdfObject> objects = new Vector<>();
     objects.add( createSensorBox(path));
 
-    //Creata actual O-DF Object
+    //Create an actual O-DF Object
     return OdfFactory.createOdfObject(
         path,
         infoItems,
@@ -163,7 +163,7 @@ public class JavaRoomAgent extends JavaInternalAgent {
     String[] parentArray = parentPath.toArray(); 
     String parentId = parentArray[ parentArray.length - 1];//Last
 
-    //Creata description
+    //Create a description
     OdfDescription description = OdfFactory.createOdfDescription(
         "SensorBox in " + parentId
     );

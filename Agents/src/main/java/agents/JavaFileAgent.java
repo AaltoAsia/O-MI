@@ -91,7 +91,7 @@ public class JavaFileAgent extends JavaInternalAgent {
     pathToFile = config.getString("file");
     file = new File(pathToFile);
     if( file.exists()  && file.isFile() && file.canRead() ){
-      //Lets schelude a messge to us on every interval
+      //Lets schedule a message to us on every interval
       //and save the reference so we can stop the agent.
       intervalJob = context().system().scheduler().schedule(
           Duration.Zero(),                //Delay start

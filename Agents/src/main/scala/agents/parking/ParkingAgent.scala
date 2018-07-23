@@ -445,7 +445,7 @@ class ParkingAgent(
               result =>
                 result.odf.map{
                   odf => 
-                    log.debug( "Found Successfull result with ODF")
+                    log.debug( "Found Successful result with ODF")
                     val correctParkingSpaces = odf.nodesWithType("mv:ParkingSpace").collect{
                       case obj: Object =>
                         ParkingSpace.parseOdf(obj.path, odf.immutable) match {

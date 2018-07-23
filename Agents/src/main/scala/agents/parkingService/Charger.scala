@@ -46,7 +46,7 @@ object Charger{
        case ii: OdfInfoItem =>
         getDoubleFromInfoItem( ii )
      }.flatten
-     val tpca = obj.get( obj.path / "threephasedCurrentAvailable" ).collect{
+     val tpca = obj.get( obj.path / "threePhasedCurrentAvailable" ).collect{
        case ii: OdfInfoItem =>
         getBooleanFromInfoItem( ii )
      }.flatten

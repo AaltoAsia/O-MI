@@ -60,13 +60,13 @@ case class ParkingFacility(
    *
    * TODO:
    * * Replace InfoItems with Capacities objects.
-   * * Dicide naming converntion for capacity objects.
+   * * Decide naming convention for capacity objects.
   def calculateCapacities: ParkingFacility = this.copy( capacities =  
     parkingSpaces.groupBy{ 
      case space: ParkingSpace => 
        (space.validForVehicle, space.validForUserGroup)
    }.map{
-     case (Tuple2( vehicle, validForUserGroup), parkingSpaceses) => 
+     case (Tuple2( vehicle, validForUserGroup), parkingSpaces) =>
        Capacity( // Are these always calculated?
          ???, //TODO: What is name of this actually "vehicles for usergroup"? 
          Some( parkingSpaceses.count( _.available.getOrElse(false) ) ),
