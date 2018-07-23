@@ -24,6 +24,7 @@ import akka.http.scaladsl.client.RequestBuilding
 import akka.http.scaladsl.client.RequestBuilding.{Get, Head, Options, Patch, Post, Put, RequestBuilder}
 import akka.http.scaladsl.model.Uri
 import com.typesafe.config.Config
+import org.slf4j.LoggerFactory
 import types.OmiTypes.RawRequestWrapper.MessageType
 import types.Path
 
@@ -33,7 +34,8 @@ import scala.language.{implicitConversions, postfixOps}
 import scala.util.Try
 
 class OmiConfigExtension(val config: Config) extends Extension
-  with AgentSystemConfigExtension {
+                                                     with AgentSystemConfigExtension {
+  val log = LoggerFactory.getLogger("Config")
 
   /**
     * Throws exceptions if invalid url, returns the input parameter if success
@@ -58,7 +60,7 @@ class OmiConfigExtension(val config: Config) extends Extension
   implicit def toFiniteDuration(dur: java.time.Duration): FiniteDuration = Duration.fromNanos(dur.toNanos)
 
   // Node special settings
-  val ports : Map[String, Int]= config.getObject("omi-service.ports").unwrapped().asScala.toMap.mapValues {
+  val ports: Map[String, Int] = config.getObject("omi-service.ports").unwrapped().asScala.toMap.mapValues {
     case port: java.lang.Integer => port.toInt
     case port: java.lang.Object =>
       throw new Exception("Configs omi-service.ports contain non integer values")
@@ -83,8 +85,23 @@ class OmiConfigExtension(val config: Config) extends Extension
   val snapshotInterval: FiniteDuration = config.getDuration("omi-service.snapshot-interval")
   val oldestSavedSnapshot: FiniteDuration = config.getDuration("omi-service.snapshot-delete-older")
   /** fast journal databases paths */
-  val writeToDisk: Boolean = config.getBoolean("journalDBs.write-to-disk")
-  val maxJournalSizeBytes: lang.Long = config.getBytes("journalDBs.max-journal-filesize")
+  Try(config.getString("journalDBs.directory"))
+    .foreach(value =>
+               if (value != "./logs/journalDBs")
+                 log.error("Invalid setting found",
+                           new IllegalArgumentException("Illegal argument in application.conf: 'journalDBs.directory'" +
+                                                          " " +
+                                                          "setting is deprecated. Config location for journal and " +
+                                                          "snapshot directories can be found under akka.persistence " +
+                                                          "configuration path"))
+               else log
+                 .warn("deprecated setting found in config: journalDBs.directory. Directory location config moved to " +
+                         "under akka.persistence config path."))
+  val writeToDisk = config.getBoolean("journalDBs.write-to-disk")
+
+  Try(config.getBytes("journalDBs.max-journal-filesize"))
+    .foreach(value => log.warn("deprecated setting found in config: journalDBs.max-journal-filesize"))
+
   // Listen interfaces and ports
 
   val interface: String = config.getString("omi-service.interface")
@@ -116,18 +133,19 @@ class OmiConfigExtension(val config: Config) extends Extension
     type ParameterExtraction = Map[String, Map[String, String]]
 
     def cmap(c: Config): Map[String, String] =
-      c.root().keySet.asScala.toSet.map{
-        key:String => 
+      c.root().keySet.asScala.toSet.map {
+        key: String =>
           key -> c.getString(key)
       }.toMap
 
     def mapmap(c: Config): ParameterExtraction = {
-      c.root().keySet.asScala.toSet.map{
+      c.root().keySet.asScala.toSet.map {
         key: String =>
-        val innerConfig = c.getConfig(key)
-        key.toLowerCase -> cmap(innerConfig)
+          val innerConfig = c.getConfig(key)
+          key.toLowerCase -> cmap(innerConfig)
       }.toMap
     }
+
     val parameters: Config = authAPIServiceV2.getConfig("parameters")
     val parametersFromRequest: ParameterExtraction = mapmap(parameters.getConfig("fromRequest"))
     val parametersFromAuthentication: ParameterExtraction = mapmap(parameters.getConfig("fromAuthentication"))
@@ -161,15 +179,16 @@ class OmiConfigExtension(val config: Config) extends Extension
         ip.toVector
     }
 
-  val inputWhiteListSubnets: Map[InetAddress, Int] = config.getStringList("omi-service.input-whitelist-subnets").asScala.map{
-    case (str: String) =>
-      val parts = str.split("/")
-      require(parts.length == 2)
-      val mask = parts.head
-      val bits = parts.last
-      val ip = InetAddress.getByName(mask) //inetAddrToBytes(InetAddress.getByName(mask))
-      (ip, bits.toInt)
-  }.toMap
+  val inputWhiteListSubnets: Map[InetAddress, Int] = config.getStringList("omi-service.input-whitelist-subnets").asScala
+    .map {
+      case (str: String) =>
+        val parts = str.split("/")
+        require(parts.length == 2)
+        val mask = parts.head
+        val bits = parts.last
+        val ip = InetAddress.getByName(mask) //inetAddrToBytes(InetAddress.getByName(mask))
+        (ip, bits.toInt)
+    }.toMap
 
   private[this] def inetAddrToBytes(addr: InetAddress): Seq[Byte] = {
     addr.getAddress.toList
@@ -179,11 +198,13 @@ class OmiConfigExtension(val config: Config) extends Extension
   /** Time in seconds how long to wait until retrying sending. */
   val callbackDelay: FiniteDuration = config.getDuration("omi-service.callback-delay", TimeUnit.SECONDS).seconds
 
-  /** Time in milliseconds how long to keep trying to resend the messages to callback addresses in case of infinite durations */
+  /** Time in milliseconds how long to keep trying to resend the messages to callback addresses in case of infinite
+    * durations */
   val callbackTimeout: FiniteDuration = config.getDuration("omi-service.callback-timeout", TimeUnit.MILLISECONDS)
     .milliseconds
   val startTimeout: FiniteDuration = config.getDuration("omi-service.start-timeout")
-  val journalTimeout: FiniteDuration = config.getDuration("omi-service.journal-ask-timeout", TimeUnit.MILLISECONDS).milliseconds
+  val journalTimeout: FiniteDuration = config.getDuration("omi-service.journal-ask-timeout", TimeUnit.MILLISECONDS)
+    .milliseconds
 
   //Haw many messages queued to be send via WS connection, if overflown
   //connection fails
