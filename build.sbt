@@ -182,6 +182,44 @@ lazy val root = (project in file(".")).
       mappings in Universal := (mappings in Universal).value.distinct,
       //linuxPackageMappings := linuxPackageMappings.value.map{mapping => val filtered = mapping.mappings.toList.distinct;mapping.copy(mappings=filtered)},
       //linuxPackageMappings in Rpm := (linuxPackageMappings in Rpm).value.map{mapping => val filtered = mapping.mappings.toList.distinct;mapping.copy(mappings=filtered)},
+      /**
+       * TODO: Start using after sorting out possible issues and checking
+       * that structure is in wanted format. Should solve issues with wrong
+       * permissions preventing creating files.
+       */
+    /*
+    //Create empty database directory for Tar. Zip removes empty directories?
+    //TODO: Check Warp10
+    mappings in (Universal,packageZipTarball) ++= {
+      val base = baseDirectory.value
+      Seq( base -> "database/")
+    },
+    mappings in (Universal,packageBin) ++= {
+      val base = baseDirectory.value
+      Seq( base  -> "database/")
+    },
+    // Create directories to /var/lib/o-mi-node with correct permissions and add
+    // symlinks for them.
+      linuxPackageMappings ++= Seq(
+          packageTemplateMapping(
+            s"/var/lib/${normalizedName.value}/"
+          )() withUser( daemonUser.value ) withGroup( daemonGroup.value ),
+          packageTemplateMapping(
+            s"/var/lib/${normalizedName.value}/database"
+          )() withUser( daemonUser.value ) withGroup( daemonGroup.value ),
+          packageTemplateMapping(
+            s"/var/lib/${normalizedName.value}/journal"
+          )() withUser( daemonUser.value ) withGroup( daemonGroup.value ),
+          packageTemplateMapping(
+            s"/var/lib/${normalizedName.value}/snapshots"
+          )() withUser( daemonUser.value ) withGroup( daemonGroup.value )
+        ),
+      linuxPackageSymlinks ++=Seq(
+        LinuxSymlink( s"/usr/share/${normalizedName.value}/database", s"/var/lib/${normalizedName.value}/database"),
+        LinuxSymlink( s"/usr/share/${normalizedName.value}/journal", s"/var/lib/${normalizedName.value}/journal"),
+        LinuxSymlink( s"/usr/share/${normalizedName.value}/snapshost", s"/var/lib/${normalizedName.value}/snapshost")
+      ),
+    */
       linuxPackageMappings in Rpm := configWithNoReplace((linuxPackageMappings in Rpm).value),
       debianPackageDependencies in Debian ++= Seq("java8-runtime", "bash (>= 2.05a-11)"),
 
