@@ -69,8 +69,8 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification {
   class RemoveTester(path: Path) extends CLIHelperT {
     val getAllData: Future[Option[ODF]] = Future.successful(Some(ImmutableODF(Vector(Objects()))))//new Exception("not implemented"))
 
-    def writeOdf(odf: ImmutableODF) = Future.successful()
-    def takeSnapshot() = Future.successful()
+    def writeOdf(odf: ImmutableODF) = Future.successful(())
+    def takeSnapshot() = Future.successful(())
     override def handlePathRemove(parentPaths: Seq[Path]): Future[Seq[Int]] = {
       if (path == parentPaths.head || path.isAncestorOf(parentPaths.head)) {
         Future.successful(Seq(1)) //???
@@ -392,11 +392,11 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification {
     val startTime = new Timestamp(new Date().getTime())
     val endTime = new Timestamp(new Date().getTime() + 1.hours.toMillis)
     val interval = 5.minutes
-    val nextRunTime = new Timestamp(new Date().getTime() + interval.toMillis)
+    //val nextRunTime = new Timestamp(new Date().getTime() + interval.toMillis)
     val callback = HTTPCallback(Uri("http://test.org:31"))
 
-    val remote = new InetSocketAddress("Tester", 22)
-    val removeHandler = new RemoveTester(Path("objects/aue"))
+    //val remote = new InetSocketAddress("Tester", 22)
+    //val removeHandler = new RemoveTester(Path("objects/aue"))
     val sub = Some(IntervalSub(
       id,
       paths,
@@ -451,14 +451,14 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification {
   def showSubTestEvent = {
     val id: Long = 57171
     val paths = Vector(Path("Objects/obj1/"), Path("Objects/obj2/sensor1"), Path("Objects/obj3/sobj/sensor"))
-    val startTime = new Timestamp(new Date().getTime())
+    //val startTime = new Timestamp(new Date().getTime())
     val endTime = new Timestamp(new Date().getTime() + 1.hours.toMillis)
-    val interval = 5.minutes
-    val nextRunTime = new Timestamp(new Date().getTime() + interval.toMillis)
+    //val interval = 5.minutes
+    //val nextRunTime = new Timestamp(new Date().getTime() + interval.toMillis)
     val callback = HTTPCallback(Uri("http://test.org:31"))
 
-    val remote = new InetSocketAddress("Tester", 22)
-    val removeHandler = new RemoveTester(Path("objects/aue"))
+    //val remote = new InetSocketAddress("Tester", 22)
+    //val removeHandler = new RemoveTester(Path("objects/aue"))
     val sub = Some(NormalEventSub(
       id,
       paths,
@@ -478,10 +478,10 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification {
     val endTime = new Timestamp(new Date().getTime() + 1.hours.toMillis)
     val interval = 5.minutes
     val nextRunTime = new Timestamp(new Date().getTime() + interval.toMillis)
-    val callback = HTTPCallback(Uri("http://test.org:31"))
+    //val callback = HTTPCallback(Uri("http://test.org:31"))
 
-    val remote = new InetSocketAddress("Tester", 22)
-    val removeHandler = new RemoveTester(Path("objects/aue"))
+    //val remote = new InetSocketAddress("Tester", 22)
+    //val removeHandler = new RemoveTester(Path("objects/aue"))
     val sub = Some(PollIntervalSub(
       id,
       endTime,
@@ -505,10 +505,10 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification {
     val endTime = new Timestamp(new Date().getTime() + 1.hours.toMillis)
     val interval = 5.minutes
     val nextRunTime = new Timestamp(new Date().getTime() + interval.toMillis)
-    val callback = HTTPCallback(Uri("http://test.org:31"))
+    //val callback = HTTPCallback(Uri("http://test.org:31"))
 
-    val remote = new InetSocketAddress("Tester", 22)
-    val removeHandler = new RemoveTester(Path("objects/aue"))
+    //val remote = new InetSocketAddress("Tester", 22)
+    //val removeHandler = new RemoveTester(Path("objects/aue"))
     val sub = Some(PollNormalEventSub(
       id,
       endTime,
@@ -526,15 +526,15 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification {
 
   def showSubTestNonexistent = {
     val id: Long = 57171
-    val paths = Vector(Path("Objects/obj1/"), Path("Objects/obj2/sensor1"), Path("Objects/obj3/sobj/sensor"))
-    val startTime = new Timestamp(new Date().getTime())
-    val endTime = new Timestamp(new Date().getTime() + 1.hours.toMillis)
-    val interval = 5.minutes
-    val nextRunTime = new Timestamp(new Date().getTime() + interval.toMillis)
-    val callback = HTTPCallback(Uri("http://test.org:31"))
+    //val paths = Vector(Path("Objects/obj1/"), Path("Objects/obj2/sensor1"), Path("Objects/obj3/sobj/sensor"))
+    //val startTime = new Timestamp(new Date().getTime())
+    //val endTime = new Timestamp(new Date().getTime() + 1.hours.toMillis)
+    //val interval = 5.minutes
+    //val nextRunTime = new Timestamp(new Date().getTime() + interval.toMillis)
+    //val callback = HTTPCallback(Uri("http://test.org:31"))
 
-    val remote = new InetSocketAddress("Tester", 22)
-    val removeHandler = new RemoveTester(Path("objects/aue"))
+    //val remote = new InetSocketAddress("Tester", 22)
+    //val removeHandler = new RemoveTester(Path("objects/aue"))
     val correct: String = s"Subscription with id $id not found.\r\n>"
     showSubTestBase(None, correct)
   }

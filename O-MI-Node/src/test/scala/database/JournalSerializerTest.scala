@@ -99,7 +99,6 @@ class JournalSerializerTest extends Specification {
     persisted must beSome and (Models.buildObjectFromProtobuf(path,persisted.get) === orig)
   }
   private def buildObjects = {
-    val path = "Objects"
     val orig = Objects(Some("v1.0.0"), Map("testKey"->"testValue"))
     val persisted = orig.persist.objs
     persisted must beSome and (Models.buildObjectsFromProtobuf(persisted.get) === orig)

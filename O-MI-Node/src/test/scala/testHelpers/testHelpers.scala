@@ -1,5 +1,12 @@
 package testHelpers
 
+import scala.concurrent.{Await, Future, Promise}
+import scala.concurrent.duration._
+import scala.language.postfixOps
+import scala.xml.{Node, PrettyPrinter, SAXParser, XML}
+import scala.xml.parsing._
+
+import akka.testkit.TestEventListener
 import akka.Done
 import akka.actor._
 import akka.http.scaladsl._
@@ -7,28 +14,24 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.ws._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.testkit.RouteTestTimeout
-import akka.testkit.TestActorRef
 import akka.stream._
 import akka.stream.scaladsl._
-import akka.testkit.{ImplicitSender, TestKit}
+import akka.testkit.{ImplicitSender, TestActorRef, TestKit}
 import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
-import org.specs2.execute.{Failure, FailureException}
+import org.specs2.matcher._
+import org.specs2.mock.Mockito
 import org.specs2.mutable._
 import org.specs2.specification.Scope
 import org.xml.sax.InputSource
-import org.slf4j.LoggerFactory
-import org.specs2.mock.Mockito
 
-import scala.concurrent.duration._
-import scala.concurrent.{Await, Future, Promise}
-import scala.language.postfixOps
-import scala.xml.parsing._
-import scala.xml.{Node, PrettyPrinter, SAXParser, XML}
-
-import responses.{RemoveSubscription, _}
-import database._
+import types.odf.ODF
+import responses._
 import http._
+import database.journal.Models.GetTree
+import database.SingleStores
+import database.TestDB
+import database.DBHandler
 import agentSystem._
 
 //class TestOmiServer(config: Config) extends OmiNode {
@@ -75,7 +78,7 @@ trait SilentActorSystem {
 }
 
 trait TestOmiService extends OmiServiceTestImpl {
-  implicit def default(implicit system: ActorSystem) = RouteTestTimeout(5.second)
+  implicit def default = RouteTestTimeout(5.second)
 
 }
 trait OmiServiceTestImpl extends OmiService with AnyActorSystem {
@@ -172,6 +175,7 @@ class WsTestCallbackClient(destination: ActorRef, interface: String, port: Int)(
         //println(s"$interface:$port received: $pretty")
         destination ! message.text
       }
+      case _ =>
     }
   }
   val outgoingSourceQueue = akka.stream.scaladsl.Source.queue[Message](5,
@@ -292,7 +296,6 @@ class WsTestCallbackServer(destination: ActorRef, interface: String, port: Int)(
   }
 }
 
-import akka.testkit.TestEventListener
 
 class SilentTestEventListener extends TestEventListener {
   override def print(event: Any): Unit = ()
@@ -377,8 +380,6 @@ class HTML5Parser extends NoBindingFactoryAdapter {
 }
 
 
-import org.specs2.matcher._
-
 class BeEqualFormatted(node: Seq[Node]) extends EqualIgnoringSpaceMatcher(node) {
   val printer = new scala.xml.PrettyPrinter(80, 2)
 
@@ -405,7 +406,7 @@ class OmiServiceDummy extends OmiService with Mockito {
   override protected def requestHandler: ActorRef = ???
 
   override val callbackHandler: CallbackHandler = mock[CallbackHandler]
-  override protected val system: ActorSystem = ActorSystem()
+  override protected val system: ActorSystem = Actorstest.createAs()
   override val singleStores: SingleStores = mock[SingleStores]
 
   override implicit def materializer: ActorMaterializer = ???
@@ -413,4 +414,13 @@ class OmiServiceDummy extends OmiService with Mockito {
   override protected def subscriptionManager: ActorRef = ???
 
   implicit val settings: OmiConfigExtension = OmiConfig(system)
+}
+
+object DummyHierarchyStore {
+  def apply(odf: ODF)(implicit system: ActorSystem) =
+    system actorOf Props(new Actor {
+      def receive = {
+        case GetTree => sender() ! odf.immutable
+      }
+    }) 
 }

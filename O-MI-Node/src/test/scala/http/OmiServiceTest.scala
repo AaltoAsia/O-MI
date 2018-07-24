@@ -2,7 +2,6 @@ package http
 
 import java.net.InetAddress
 
-import akka.actor._
 import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport.defaultNodeSeqUnmarshaller
 import akka.http.scaladsl.model.MediaTypes._
 import akka.http.scaladsl.model.RemoteAddress
@@ -10,7 +9,6 @@ import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model.headers.{RawHeader, `Remote-Address`}
 import akka.http.scaladsl.testkit.Specs2RouteTest
 import akka.pattern.ask
-import akka.stream.ActorMaterializer
 import akka.util.Timeout
 import org.specs2.matcher.XmlMatchers
 import org.specs2.mutable.Specification
@@ -21,8 +19,6 @@ import scala.concurrent.duration.DurationInt
 import scala.xml._
 
 import database._
-import responses.{CLIHelper, CallbackHandler, RequestHandler, SubscriptionManager}
-import agentSystem.AgentSystem
 import journal.Models.ErasePathCommand
 
 class OmiServiceTest

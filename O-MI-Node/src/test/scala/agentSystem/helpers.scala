@@ -1,7 +1,7 @@
 package agentSystem
 
 import agentSystem.AgentEvents._
-import akka.actor.{Actor, ActorRef, ActorSystem, Props, Terminated}
+import akka.actor.{Actor, ActorRef, Props, Terminated}
 import com.typesafe.config.Config
 import http.CLICmds._
 import types.OmiTypes.{CallRequest, ResponseRequest, Responses, WriteRequest}
@@ -152,7 +152,7 @@ object WrongPropsAgent extends PropsCreator {
 class TestManager(testAgents: scala.collection.mutable.Map[AgentName, AgentInfo],
                   protected val dbHandler: ActorRef,
                   protected val requestHandler: ActorRef
-                 )(implicit system: ActorSystem) extends BaseAgentSystem with InternalAgentManager {
+                 ) extends BaseAgentSystem with InternalAgentManager {
   protected val agents: scala.collection.mutable.Map[AgentName, AgentInfo] = testAgents
   agents.values.foreach {
     ai: AgentInfo =>

@@ -116,7 +116,7 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
       .flatMap(_ => testServer.unbind())
       .flatMap(_ => system.terminate())
 
-    future.onFailure {
+    future.failed.foreach {
       case t: Throwable =>
         system.log.error(t, "AfterAll encountered:")
     }
@@ -252,7 +252,7 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
 
           val responseFuture = http.singleRequest(getPostRequest(request.get)).flatMap(n =>
             Unmarshal(n).to[NodeSeq])
-          responseFuture.onFailure {
+          responseFuture.failed.foreach {
             case t: Throwable =>
               system.log.error(t, "Ummarshalling failure loq: ")
 
@@ -410,9 +410,9 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
 
           val wsProbe = TestProbe()
           val wsServer = new WsTestCallbackClient(wsProbe.ref, "ws://localhost", 8080)
-          val m1 = wsServer.offer(writeMessage("1"))
+          wsServer.offer(writeMessage("1"))
           val res1 = wsProbe.receiveN(1, 5 seconds) //write confirmation
-          val m2 = wsServer.offer(
+          wsServer.offer(
             """<?xml version="1.0" encoding="UTF-8"?>
               <omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="20">
               <read msgformat="odf" interval="-1" callback="0">
@@ -570,6 +570,7 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
           val res1 = http.singleRequest(m1)
           val res2 = http.singleRequest(m1)
           Await.result(res1, 5 seconds)
+          Await.result(res2, 5 seconds)
           for {
             _ <- http.singleRequest(getPostRequest(writeMessage("2")))
             _ <- http.singleRequest(getPostRequest(writeMessage("3")))
@@ -594,7 +595,7 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
                 </msg>
               </read>
             </omiEnvelope>""")
-          val res1 = http.singleRequest(m1)
+          http.singleRequest(m1)
           val result = wsProbe.receiveN(3, 15 seconds)
           //val result = wsProbe.expectNoMsg(Duration.apply(5, "seconds"))
           // 3 responses
@@ -630,8 +631,8 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
                 </msg>
               </read>
             </omiEnvelope>""")
-            val res1 = http.singleRequest(m1)
-            val res2 = http.singleRequest(m2)
+            http.singleRequest(m1)
+            http.singleRequest(m2)
             val result = wsProbe.receiveN(5, 20 seconds)
             //val result = wsProbe.expectNoMsg(Duration.apply(5, "seconds"))
             // 3 responses
@@ -669,8 +670,8 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
                 </msg>
               </read>
             </omiEnvelope>""")
-            val res1 = http.singleRequest(m1)
-            val res2 = http.singleRequest(m2)
+            http.singleRequest(m1)
+            http.singleRequest(m2)
             val result = wsProbe.receiveN(5, 20 seconds)
             //val result = wsProbe.expectNoMsg(Duration.apply(5, "seconds"))
             // 3 responses
@@ -710,6 +711,7 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
           val res1 = http.singleRequest(m1)
           val res2 = http.singleRequest(m2)
           Await.result(res1, 5 seconds)
+          Await.result(res2, 5 seconds)
           for {
             _ <- http.singleRequest(getPostRequest(writeMessage("2")))
             _ <- http.singleRequest(getPostRequest(writeMessage("3")))

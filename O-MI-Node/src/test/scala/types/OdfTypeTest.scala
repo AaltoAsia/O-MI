@@ -95,7 +95,7 @@ class OdfTypesTest extends mutable.Specification {
     val p = new scala.xml.PrettyPrinter(120, 4)
     val oldType: OdfObjects = parsing.OdfParser.parse(testingNodesAsXML.toString) match {
       case Right(o) => o
-      case Left(errors: Seq[ParseError]) =>
+      case Left(errors: Seq[_]) =>
         println("PARSING FAILED:\n" + errors.mkString("\n"))
         throw new Exception("Parsing failed!")
     }
@@ -109,7 +109,7 @@ class OdfTypesTest extends mutable.Specification {
   }
 
   def repeatedNewConvertTest = {
-    val newType = ImmutableODF(testingNodes)
+    //val newType = ImmutableODF(testingNodes)
     val newTypeWithoutNamesForIIs = ImmutableODF(testingNodes.map {
       case obj: Objects => obj
       case obj: Object => obj.copy(descriptions = obj.descriptions.headOption.toSet)
@@ -157,7 +157,7 @@ class OdfTypesTest extends mutable.Specification {
   def repeatedOldConvertTest = {
     val oldType: OdfObjects = parsing.OdfParser.parse(testingNodesAsXML.toString) match {
       case Right(o) => o
-      case Left(errors: Seq[ParseError]) =>
+      case Left(errors: Seq[_]) =>
         println("PARSING FAILED:\n" + errors.mkString("\n"))
         throw new Exception("Parsing failed!")
     }

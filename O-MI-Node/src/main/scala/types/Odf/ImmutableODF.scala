@@ -256,4 +256,5 @@ object ImmutableODF {
       )
     )
   }
+  def apply(single: Node): ImmutableODF = apply(Vector(single))
 }

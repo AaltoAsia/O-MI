@@ -297,4 +297,6 @@ object ODF {
       case mutable: 
     }
   }*/
+  def apply(n: Node): ODF = ImmutableODF(n)
+  def apply(n: Node*): ODF = ImmutableODF(n)
 }

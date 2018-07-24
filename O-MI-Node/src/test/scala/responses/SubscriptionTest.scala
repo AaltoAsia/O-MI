@@ -43,7 +43,7 @@ case class SubscriptionRequest(
 ) extends OmiRequest with SubLike with OdfRequest
 
  */
-class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with BeforeAfterAll {
+class SubscriptionTest extends Specification with BeforeAfterAll {
   implicit val system = testHelpers.Actorstest.createAs()
   implicit val materializer: ActorMaterializer = ActorMaterializer()(system)
   implicit val settings = OmiConfig(system)
@@ -319,7 +319,7 @@ class SubscriptionTest(implicit ee: ExecutionEnv) extends Specification with Bef
 
   def initDB() = {
     //pathPrefix
-    val pp = Path("Objects", "SubscriptionTest")
+    //val pp = Path("Objects", "SubscriptionTest")
     val pathAndvalues: Iterable[(Path, Vector[OdfValue[Any]])] = Seq(
       (Path("p", "1"), nv("1")),
       (Path("p", "2"), nv("2")),

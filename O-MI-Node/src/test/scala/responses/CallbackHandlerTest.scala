@@ -8,7 +8,7 @@ import akka.util.Timeout
 import http.OmiConfig
 import org.specs2.concurrent.ExecutionEnv
 import org.specs2.mutable._
-import testHelpers.{Actorstest, SystemTestCallbackServer, SilentActorSystem}
+import testHelpers.{Actorstest, SystemTestCallbackServer}
 import types.OmiTypes._
 
 
@@ -58,7 +58,7 @@ class CallbackHandlerTest(implicit ee: ExecutionEnv) extends Specification {
   }
 
   def initCallbackServer(port: Int)(implicit system: ActorSystem) = {
-    implicit val timeout = Timeout(5 seconds)
+    //implicit val timeout = Timeout(5 seconds)
     val probe = TestProbe()
     val testServer = new SystemTestCallbackServer(probe.ref, "localhost", port)
     (testServer,probe)

@@ -83,7 +83,7 @@ class BackupTest extends Specification {
       val jsonver = jsver.prettyPrint
       val parsed = jsonver.parseJson
       val convertedSub: (SavedSub, Option[SubData]) = parsed.convertTo[(SavedSub, Option[SubData])]
-      convertedSub === (polledMinus1, subData)
+      convertedSub === ((polledMinus1, subData))
     }
     "Work for polled -2 interval subscriptions" in {
       val in: (SavedSub, Option[SubData]) = (polledMinus2, subData)
@@ -91,7 +91,7 @@ class BackupTest extends Specification {
       val jsonver = jsver.prettyPrint
       val parsed = jsonver.parseJson
       val convertedSub: (SavedSub, Option[SubData]) = parsed.convertTo[(SavedSub, Option[SubData])]
-      convertedSub === (polledMinus2, subData)
+      convertedSub === ((polledMinus2, subData))
     }
     "Work for polled interval subscriptions" in {
       val in: (SavedSub, Option[SubData]) = (pollInterval, subData)
@@ -99,7 +99,7 @@ class BackupTest extends Specification {
       val jsonver = jsver.prettyPrint
       val parsed = jsonver.parseJson
       val convertedSub: (SavedSub, Option[SubData]) = parsed.convertTo[(SavedSub, Option[SubData])]
-      convertedSub === (pollInterval, subData)
+      convertedSub === ((pollInterval, subData))
     }
     "Work for interval subscriptions" in {
       val in: (SavedSub, Option[SubData]) = (normInterval, None)
@@ -107,7 +107,7 @@ class BackupTest extends Specification {
       val jsonver = jsver.prettyPrint
       val parsed = jsonver.parseJson
       val convertedSub: (SavedSub, Option[SubData]) = parsed.convertTo[(SavedSub, Option[SubData])]
-      convertedSub === (normInterval, None)
+      convertedSub === ((normInterval, None))
     }
     "Work for -1 interval subscriptions" in {
       val in: (SavedSub, Option[SubData]) = (normEventSub, None)
@@ -115,7 +115,7 @@ class BackupTest extends Specification {
       val jsonver = jsver.prettyPrint
       val parsed = jsonver.parseJson
       val convertedSub: (SavedSub, Option[SubData]) = parsed.convertTo[(SavedSub, Option[SubData])]
-      convertedSub === (normEventSub, None)
+      convertedSub === ((normEventSub, None))
     }
     "Work for -2 interval subscriptions" in {
       val in: (SavedSub, Option[SubData]) = (newEventSub, None)
@@ -123,7 +123,7 @@ class BackupTest extends Specification {
       val jsonver = jsver.prettyPrint
       val parsed = jsonver.parseJson
       val convertedSub: (SavedSub, Option[SubData]) = parsed.convertTo[(SavedSub, Option[SubData])]
-      convertedSub === (newEventSub, None)
+      convertedSub === ((newEventSub, None))
     }
   }
 }

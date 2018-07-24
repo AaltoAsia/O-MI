@@ -254,7 +254,7 @@ class InternalAgentLoaderTest(implicit ee: ExecutionEnv) extends Specification {
           agentInfo => agentInfo.copy(agent = matchAll)
         }
     }
-    res.onFailure { case er: Throwable => system.log.error(er, "ListAgentsCmd() future failed") }
+    res.failed.foreach { case er: Throwable => system.log.error(er, "ListAgentsCmd() future failed") }
 
     res must contain {
       t: AgentInfo =>
@@ -273,7 +273,7 @@ class InternalAgentLoaderTest(implicit ee: ExecutionEnv) extends Specification {
     val dbHandler = TestActorRef(new TestDummyDBHandler())
     val filters = warnings.map { msg => EventFilter.warning(message = msg, occurrences = 1) }
     filterEvents(filters) {
-      val loader = _system.actorOf(TestLoader.props(config, dbHandler, requestHandler), "agent-loader")
+      _system.actorOf(TestLoader.props(config, dbHandler, requestHandler), "agent-loader")
     }
   }
 }
