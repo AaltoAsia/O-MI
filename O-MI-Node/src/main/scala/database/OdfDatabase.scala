@@ -500,10 +500,6 @@ trait OdfDatabase extends Tables with DB with TrimmableDB {
     }
   }
 
-  def readLatestFromCache(requestedOdf: ODF)(implicit timeout: Timeout): Future[Option[ImmutableODF]] = {
-    readLatestFromCache(requestedOdf.getLeafPaths.toSeq)
-  }
-
   def readLatestFromCache(leafPaths: Seq[Path])(implicit timeout: Timeout): Future[Option[ImmutableODF]] = {
     // NOTE: Might go off sync with tree or values if the request is large,
     // but it shouldn't be a big problem
@@ -531,20 +527,6 @@ trait OdfDatabase extends Tables with DB with TrimmableDB {
       }.toVector))
     } yield objectsWithValues
 
-    //val pathToValue = singleStores.latestStore execute LookupSensorDatas( p2iis.keys.toVector)
-    //val objectsWithValues = ImmutableODF(pathToValue.flatMap{
-    //  case ( path: Path, value: Value[Any]) =>
-    //    p2iis.get(path).map{
-    //      ii: InfoItem =>
-    //        ii.copy(
-    //          names = Vector.empty,
-    //          descriptions = Set.empty,
-    //          metaData = None,
-    //          values = Vector( value)
-    //        )}
-    //}.toVector)
-
-    // Some(objectsWithValues)
   }
 
 }
