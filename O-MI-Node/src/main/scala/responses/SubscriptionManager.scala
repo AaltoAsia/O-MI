@@ -14,6 +14,8 @@
 
 package responses
 
+import scala.language.implicitConversions
+
 import java.sql.Timestamp
 import java.util.concurrent.ConcurrentHashMap
 
