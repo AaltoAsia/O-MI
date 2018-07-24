@@ -4,15 +4,14 @@ import java.sql.Timestamp
 
 import org.specs2._
 import types.OdfTypes.OdfTreeCollection._
-import types.OdfTypes._
 import types.OmiTypes._
 import types._
+import types.odf._
 
 import scala.xml.NodeSeq
 //import java.lang.Iterable
 import org.specs2.matcher.XmlMatchers._
 import org.specs2.matcher._
-import types.odf.OldTypeConverter
 
 import scala.concurrent.duration._
 
@@ -26,138 +25,138 @@ import scala.concurrent.duration._
  */
 
 class ParserTest extends Specification with MatcherMacros {
-  val write_response_odf: OdfObjects = {
-    /*Right(
-      Iterable(
-        WriteRequest(
-          10.0, */ OdfObjects(
-      Iterable(
-        OdfObject(
-          Seq(),
-          Path("Objects", "SmartHouse"), Iterable(
-            OdfInfoItem(
-              Path("Objects", "SmartHouse", "PowerConsumption"), Iterable(
-                OdfValue(
-                  "180", "xs:string",
-                  Timestamp.valueOf("2014-12-18 15:34:52"))), None, None), OdfInfoItem(
-              Path("Objects", "SmartHouse", "Moisture"), Iterable(
-                OdfValue(
-                  "0.20", "xs:string",
-                  new Timestamp(1418916892L * 1000))), None, None)), Iterable(
-            OdfObject(
-              Seq(),
-              Path("Objects", "SmartHouse", "SmartFridge"), Iterable(
-                OdfInfoItem(
-                  Path("Objects", "SmartHouse", "SmartFridge", "PowerConsumption"), Iterable(
-                    OdfValue(
-                      "56", "xs:string",
-                      Timestamp.valueOf("2014-12-18 15:34:52"))), None, None)), Iterable(), None, None), OdfObject(
-              Seq(),
-              Path("Objects", "SmartHouse", "SmartOven"), Iterable(
-                OdfInfoItem(
-                  Path("Objects", "SmartHouse", "SmartOven", "PowerOn"), Iterable(
-                    OdfValue(
-                      "1", "xs:string",
-                      Timestamp.valueOf("2014-12-18 15:34:52"))), None, None)), Iterable(), None, None)), None, None),
-        OdfObject(
-          Seq(),
-          Path("Objects", "SmartCar"), Iterable(
-            OdfInfoItem(
-              Path("Objects", "SmartCar", "Fuel"),
-              Vector(OdfValue(
-                "30",
-                "xs:string",
-                Timestamp.valueOf("2014-12-18 15:34:52")
-              )),
-              None,
-              Some(OdfMetaData(
-                Vector(OdfInfoItem(
-                  Path("Objects", "SmartCar", "Fuel/MetaData", "Units"),
-                  Vector(OdfValue(
-                    "Litre",
-                    "xs:string",
-                    Timestamp.valueOf("2014-12-18 15:34:52")
-                  ))
-                ))
-              ))
-            )),
-          Iterable(), None, None),
-        OdfObject(
-          Seq(),
-          Path("Objects", "SmartCottage"), Iterable(), Iterable(
-            OdfObject(
-              Seq(),
-              Path("Objects", "SmartCottage", "Heater"), Iterable(), Iterable(), None, None), OdfObject(
-              Seq(),
-              Path("Objects", "SmartCottage", "Sauna"), Iterable(), Iterable(), None, None), OdfObject(
-              Seq(),
-              Path("Objects", "SmartCottage", "Weather"), Iterable(), Iterable(), None, None)), None, None)), None)
-  }
-  val readOdf: OdfObjects = {
-    OdfObjects(
-      Iterable(
-        OdfObject(
-          Seq(),
-          Path("Objects", "SmartHouse"),
-          Iterable(
-            OdfInfoItem(
-              Path("Objects", "SmartHouse", "PowerConsumption"),
-              Iterable(),
-              None,
-              None),
-            OdfInfoItem(
-              Path("Objects", "SmartHouse", "Moisture"),
-              Iterable(),
-              None,
-              None)),
-          Iterable(
-            OdfObject(
-              Seq(),
-              Path("Objects", "SmartHouse", "SmartFridge"),
-              Iterable(
-                OdfInfoItem(
-                  Path("Objects", "SmartHouse", "SmartFridge", "PowerConsumption"),
-                  Iterable(),
-                  None,
-                  None)),
-              Iterable(),
-              None,
-              None),
-            OdfObject(
-              Seq(),
-              Path("Objects", "SmartHouse", "SmartOven"),
-              Iterable(
-                OdfInfoItem(
-                  Path("Objects", "SmartHouse", "SmartOven", "PowerConsumption"),
-                  Iterable(),
-                  None,
-                  None)),
-              Iterable(),
-              None,
-              None)),
-          None,
-          None),
-        OdfObject(
-          Seq(),
-          Path("Objects", "SmartCar"),
-          Iterable(
-            OdfInfoItem(
-              Path("Objects", "SmartCar", "Fuel"),
-              Iterable(),
-              None,
-              None)),
-          Iterable(),
-          None,
-          None),
-        OdfObject(
-          Nil,
-          Path("Objects", "SmartCottage"),
-          Iterable(),
-          Iterable(),
-          None,
-          None)),
-      None)
-  }
+//  val write_response_odf: OdfObjects = {
+//    /*Right(
+//      Iterable(
+//        WriteRequest(
+//          10.0, */ OdfObjects(
+//      Iterable(
+//        OdfObject(
+//          Seq(),
+//          Path("Objects", "SmartHouse"), Iterable(
+//            OdfInfoItem(
+//              Path("Objects", "SmartHouse", "PowerConsumption"), Iterable(
+//                OdfValue(
+//                  "180", "xs:string",
+//                  Timestamp.valueOf("2014-12-18 15:34:52"))), None, None), OdfInfoItem(
+//              Path("Objects", "SmartHouse", "Moisture"), Iterable(
+//                OdfValue(
+//                  "0.20", "xs:string",
+//                  new Timestamp(1418916892L * 1000))), None, None)), Iterable(
+//            OdfObject(
+//              Seq(),
+//              Path("Objects", "SmartHouse", "SmartFridge"), Iterable(
+//                OdfInfoItem(
+//                  Path("Objects", "SmartHouse", "SmartFridge", "PowerConsumption"), Iterable(
+//                    OdfValue(
+//                      "56", "xs:string",
+//                      Timestamp.valueOf("2014-12-18 15:34:52"))), None, None)), Iterable(), None, None), OdfObject(
+//              Seq(),
+//              Path("Objects", "SmartHouse", "SmartOven"), Iterable(
+//                OdfInfoItem(
+//                  Path("Objects", "SmartHouse", "SmartOven", "PowerOn"), Iterable(
+//                    OdfValue(
+//                      "1", "xs:string",
+//                      Timestamp.valueOf("2014-12-18 15:34:52"))), None, None)), Iterable(), None, None)), None, None),
+//        OdfObject(
+//          Seq(),
+//          Path("Objects", "SmartCar"), Iterable(
+//            OdfInfoItem(
+//              Path("Objects", "SmartCar", "Fuel"),
+//              Vector(OdfValue(
+//                "30",
+//                "xs:string",
+//                Timestamp.valueOf("2014-12-18 15:34:52")
+//              )),
+//              None,
+//              Some(OdfMetaData(
+//                Vector(OdfInfoItem(
+//                  Path("Objects", "SmartCar", "Fuel/MetaData", "Units"),
+//                  Vector(OdfValue(
+//                    "Litre",
+//                    "xs:string",
+//                    Timestamp.valueOf("2014-12-18 15:34:52")
+//                  ))
+//                ))
+//              ))
+//            )),
+//          Iterable(), None, None),
+//        OdfObject(
+//          Seq(),
+//          Path("Objects", "SmartCottage"), Iterable(), Iterable(
+//            OdfObject(
+//              Seq(),
+//              Path("Objects", "SmartCottage", "Heater"), Iterable(), Iterable(), None, None), OdfObject(
+//              Seq(),
+//              Path("Objects", "SmartCottage", "Sauna"), Iterable(), Iterable(), None, None), OdfObject(
+//              Seq(),
+//              Path("Objects", "SmartCottage", "Weather"), Iterable(), Iterable(), None, None)), None, None)), None)
+//  }
+//  val readOdf: OdfObjects = {
+//    OdfObjects(
+//      Iterable(
+//        OdfObject(
+//          Seq(),
+//          Path("Objects", "SmartHouse"),
+//          Iterable(
+//            OdfInfoItem(
+//              Path("Objects", "SmartHouse", "PowerConsumption"),
+//              Iterable(),
+//              None,
+//              None),
+//            OdfInfoItem(
+//              Path("Objects", "SmartHouse", "Moisture"),
+//              Iterable(),
+//              None,
+//              None)),
+//          Iterable(
+//            OdfObject(
+//              Seq(),
+//              Path("Objects", "SmartHouse", "SmartFridge"),
+//              Iterable(
+//                OdfInfoItem(
+//                  Path("Objects", "SmartHouse", "SmartFridge", "PowerConsumption"),
+//                  Iterable(),
+//                  None,
+//                  None)),
+//              Iterable(),
+//              None,
+//              None),
+//            OdfObject(
+//              Seq(),
+//              Path("Objects", "SmartHouse", "SmartOven"),
+//              Iterable(
+//                OdfInfoItem(
+//                  Path("Objects", "SmartHouse", "SmartOven", "PowerConsumption"),
+//                  Iterable(),
+//                  None,
+//                  None)),
+//              Iterable(),
+//              None,
+//              None)),
+//          None,
+//          None),
+//        OdfObject(
+//          Seq(),
+//          Path("Objects", "SmartCar"),
+//          Iterable(
+//            OdfInfoItem(
+//              Path("Objects", "SmartCar", "Fuel"),
+//              Iterable(),
+//              None,
+//              None)),
+//          Iterable(),
+//          None,
+//          None),
+//        OdfObject(
+//          Nil,
+//          Path("Objects", "SmartCottage"),
+//          Iterable(),
+//          Iterable(),
+//          None,
+//          None)),
+//      None)
+//  }
 
   def is =
     s2"""
@@ -425,7 +424,7 @@ class ParserTest extends Specification with MatcherMacros {
       </msg>
     </read>
   </omiEnvelope>""")
-    temp should be equalTo Right(Iterable(ReadRequest(OldTypeConverter.convertOdfObjects(OdfObjects()))))
+    temp should be equalTo Right(Iterable(ReadRequest(ODF(Objects.empty))))
 
   }
 
@@ -520,33 +519,32 @@ class ParserTest extends Specification with MatcherMacros {
                 </msg>
               </read>
             </omiEnvelope>"""
-  lazy val readOdf2: OdfObjects = {
-    val item1 = createAncestors(OdfInfoItem(
+  lazy val readOdf2: ODF = ODF(
+    InfoItem.build(
       Path("Objects", "SmartHouse", "PowerConsumption")
-    ))
+    ),
 
-    val item2 = createAncestors(OdfInfoItem(
+    InfoItem.build(
       Path("Objects", "SmartHouse", "Moisture")
-    ))
+    ),
 
-    val item3 = createAncestors(OdfInfoItem(
+    InfoItem.build(
       Path("Objects", "SmartHouse", "SmartFridge", "PowerConsumption")
-    ))
+    ),
 
-    val object1 = createAncestors(OdfObject(
-      Vector(new OdfQlmID("Heater")),
+    Object(
+      Vector(new QlmID("Heater")),
       Path("Objects", "SmartCottage", "Heater")
-    ))
-    item1.union(item2).union(item3).union(object1)
+    )
+  )
 
-  }
   lazy val readRequestTest = ReadRequest(
-    OldTypeConverter.convertOdfObjects(readOdf2),
+    readOdf2,
     callback = Some(HTTPCallback("http://testing.test"))
   )
   lazy val subscriptionRequestTest = SubscriptionRequest(
     10 seconds,
-    OldTypeConverter.convertOdfObjects(readOdf2),
+    readOdf2,
     callback = Some(HTTPCallback("http://testing.test"))
   )
 
@@ -593,64 +591,59 @@ class ParserTest extends Specification with MatcherMacros {
       </write>
     </omiEnvelope>
   lazy val testTimestamp = new Timestamp(1418909692)
-  lazy val writeOdf: OdfObjects = {
-    val item1 = createAncestors(OdfInfoItem(
+  lazy val writeOdf: ODF = ODF(
+    InfoItem(
       Path("Objects", "SmartHouse", "PowerConsumption"),
       Vector(
-        OdfValue("193.1", "xs:double", testTimestamp),
-        OdfValue("1.1", "xs:double", testTimestamp)
-      ),
-      None,
-      None
-    ))
+        Value("193.1", "xs:double", testTimestamp),
+        Value("1.1", "xs:double", testTimestamp)
+      )
+    ),
 
-    val item2 = createAncestors(OdfInfoItem(
+    InfoItem.build((
       Path("Objects", "SmartHouse", "Moisture"),
-      Vector(
-        OdfValue("193.1", "xs:double", timestamp = testTimestamp),
-        OdfValue("1.1", "xs:double", timestamp = testTimestamp)
+      Vector[Value[Any]](
+        Value("193.1", "xs:double", timestamp = testTimestamp),
+        Value("1.1", "xs:double", timestamp = testTimestamp)
       ),
-      Some(OdfDescription(" test")), Some(
-        OdfMetaData(Vector(OdfInfoItem(
+      Description(" test"), 
+      MetaData(Vector(InfoItem(
           Path("Objects", "SmartHouse", "Moisture", "MetaData", "Units"),
-          Vector(OdfValue(
+          Vector(Value(
             "Litre",
             "xs:string",
             testTimestamp
-          ))))))
-      //Some( OdfMetaData(
+          ))
+      )))
+    )),
+      //Some( MetaData(
       //  "<MetaData xmlns=\"odf.xsd\" xmlns=\"omi.xsd\" xmlns:xs=\"http://www.w3.org/2001/XMLSchema\"" +
       //  " xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"><InfoItem name=\"Units\"><value type=\"xs:String\">" +
       //  "Litre</value></InfoItem></MetaData>"
       //        )
       //    )
-    ))
 
-    val item3 = createAncestors(OdfInfoItem(
+    InfoItem(
       Path("Objects", "SmartHouse", "SmartFridge", "PowerConsumption"),
       Vector(
-        OdfValue("193.1", "xs:double", testTimestamp),
-        OdfValue("1.1", "xs:double", testTimestamp)
-      ),
-      None,
-      None
-    ))
+        Value("193.1", "xs:double", testTimestamp),
+        Value("1.1", "xs:double", testTimestamp)
+      )
+    ),
 
-    val object1 = createAncestors(OdfObject(
-      Vector(new OdfQlmID("Heater")),
+    Object(
       Path("Objects", "SmartCottage", "Heater")
-    ))
-    item1.union(item2).union(item3).union(object1)
+    )
+  )
 
-  }
   lazy val writeRequestTest = WriteRequest(
-    OldTypeConverter.convertOdfObjects(writeOdf),
+    writeOdf,
     Some(HTTPCallback("http://testing.test"))
   )
   lazy val responseRequestTest = ResponseRequest(
     Seq(OmiResult(
       OmiTypes.Returns.Success(),
-      odf = Some(OldTypeConverter.convertOdfObjects(writeOdf))
+      odf = Some(writeOdf)
     ))
   )
 
@@ -783,18 +776,17 @@ class ParserTest extends Specification with MatcherMacros {
     }
   }
 
-  def validOdfTest(node: OdfNode): MatchResult[OdfParseResult] = {
-    val correct = createAncestors(node)
-    val xml = correct.asXML
+  def validOdfTest(odf: ODF): MatchResult[OdfParseResult] = {
+    val xml = odf.asXML
     // May not be correct?
     val text = xml.toString
-    val result = OdfParser.parse(text)
+    val result = ODFParser.parse(text)
 
-    result should beRight(correct)
+    result should beRight(odf)
   }
 
   def invalidOdfTest(text: String, errorType: String): MatchResult[OdfParseResult] = {
-    val result = OdfParser.parse(text)
+    val result = ODFParser.parse(text)
 
     result should beLeft {
       parseErrors: Iterable[ParseError] =>
