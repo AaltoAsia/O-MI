@@ -111,7 +111,7 @@ object Plug{
             getDoubleOption("powerInkW",path,odf),
             getDoubleOption("voltageInV",path,odf),
             getBooleanOption("threePhasedCurrentAvailable",path,odf),
-            getBooleanOption("isFastChargeCopable",path,odf)
+            getBooleanOption("isFastChargeCapable",path,odf)
           )
         case Some(obj: Object) => 
           throw MVError( s"Plug path $path has wrong type attribute ${obj.typeAttribute}")

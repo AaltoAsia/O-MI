@@ -39,7 +39,7 @@ package object OmiTypes {
 
   def requestToEnvelope(request: OmiEnvelopeTypeOption, ttl: Long): xmlTypes.OmiEnvelopeType = {
     val namespace = Some("omi.xsd")
-    val version = "1.0"
+    //val version = "1.0" //TODO remove unused?
     val datarecord = request match {
       case read: xmlTypes.ReadRequestType =>
         scalaxb.DataRecord[xmlTypes.ReadRequestType](namespace, Some("read"), read)

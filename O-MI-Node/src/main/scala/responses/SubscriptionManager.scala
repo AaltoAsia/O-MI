@@ -173,8 +173,6 @@ class SubscriptionManager(
   private def loadSub(subs: Seq[(SavedSub, Option[SubData])]): Future[Unit] = {
     implicit val timeout: Timeout = settings.journalTimeout
     val allSubsF: Future[AllSubscriptions] = getAllSubs()
-    val existingIds: Future[Set[Long]] = allSubsF
-      .map(allSubs => (allSubs.polls ++ allSubs.intervals ++ allSubs.events).map(_.id))
     for {
       allSubs <- allSubsF
       existingIds: Set[Long] = (allSubs.polls ++ allSubs.intervals ++ allSubs.events).map(_.id)

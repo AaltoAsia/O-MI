@@ -49,11 +49,11 @@ public class CancelRequestType {
 
     /**
      * Gets the value of the nodeList property.
-     * 
+     *
      * @return
      *     possible object is
      *     {@link NodesType }
-     *     
+     *
      */
     public NodesType getNodeList() {
         return nodeList;

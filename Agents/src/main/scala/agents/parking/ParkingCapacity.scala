@@ -1,4 +1,3 @@
-
 package agents.parking
 
 import agents.parking.UserGroup._

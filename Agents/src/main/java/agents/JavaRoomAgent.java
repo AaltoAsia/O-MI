@@ -79,7 +79,7 @@ public class JavaRoomAgent extends JavaInternalAgent {
             conf.getDuration("interval", TimeUnit.SECONDS),
             TimeUnit.SECONDS);	
 
-    //Lets schelude a messge to us on every interval
+    //Lets schedule a message to us on every interval
     //and save the reference so we can stop the agent.
     intervalJob = context().system().scheduler().schedule(
         Duration.Zero(),                //Delay start
@@ -114,7 +114,7 @@ public class JavaRoomAgent extends JavaInternalAgent {
     //Reset writeCount
     writeCount = 0;
     //O-DF Object s as child of O-DF Objects
-    Vector<OdfObject> objects = new Vector<OdfObject>();
+    Vector<OdfObject> objects = new Vector<>();
     objects.add( createExampleRoom() );
     
     //Create O-DF Objects
@@ -133,15 +133,15 @@ public class JavaRoomAgent extends JavaInternalAgent {
     );
 
     //Child O-DF InfoItems of ExampleRoom
-    Vector<OdfInfoItem> infoItems = new Vector<OdfInfoItem>();
+    Vector<OdfInfoItem> infoItems = new Vector<>();
     OdfInfoItem location = createLocation(path); 
     infoItems.add(location);
 
     //Child O-DF Object of ExampleRoom
-    Vector<OdfObject> objects = new Vector<OdfObject>();
+    Vector<OdfObject> objects = new Vector<>();
     objects.add( createSensorBox(path));
 
-    //Creata actual O-DF Object
+    //Create an actual O-DF Object
     return OdfFactory.createOdfObject(
         path,
         infoItems,
@@ -163,19 +163,19 @@ public class JavaRoomAgent extends JavaInternalAgent {
     String[] parentArray = parentPath.toArray(); 
     String parentId = parentArray[ parentArray.length - 1];//Last
 
-    //Creata description
+    //Create a description
     OdfDescription description = OdfFactory.createOdfDescription(
         "SensorBox in " + parentId
     );
 
     //O-DF InfoItems of sensors in SensorBox
-    Vector<OdfInfoItem> infoItems = new Vector<OdfInfoItem>();
+    Vector<OdfInfoItem> infoItems = new Vector<>();
     infoItems.add( createLocation(path) );
     infoItems.add( createSensor("Temperature","Celsius",path) );
     infoItems.add( createSensor("Humidity","Percentage of water in air",path) );
 
     //SensorBox doesn't have child O-DF Object s
-    Vector<OdfObject> objects = new Vector<OdfObject>();
+    Vector<OdfObject> objects = new Vector<>();
 
     //Create O-DY Object for SensorBox
     return OdfFactory.createOdfObject(
@@ -210,7 +210,7 @@ public class JavaRoomAgent extends JavaInternalAgent {
     String newValueStr = rnd.nextDouble() +""; 
 
     // Multiple values can be added at the same time but we add one
-    Vector<OdfValue<Object>> values = new Vector<OdfValue<Object>>();
+    Vector<OdfValue<Object>> values = new Vector<>();
  
     // OdfValue has type parameter for type of value, Object is used to avoid problems
     // with having values with different types in same Collection.
@@ -224,13 +224,13 @@ public class JavaRoomAgent extends JavaInternalAgent {
     values.add(value);
 
     //Create Unit meta data for the sensor. 
-    Vector<OdfValue<Object>> metaValues = new Vector<OdfValue<Object>>();
+    Vector<OdfValue<Object>> metaValues = new Vector<>();
     OdfValue<Object> metaValue = OdfFactory.createOdfValue(
         unit, "xs:string", timestamp
     );
     metaValues.add(metaValue);
 
-    Vector<OdfInfoItem> metaInfoItems = new Vector<OdfInfoItem>();
+    Vector<OdfInfoItem> metaInfoItems = new Vector<>();
     OdfInfoItem metaInfoItem = OdfFactory.createOdfInfoItem(
        new Path( path.toString() +"/MetaData/Unit"), 
        metaValues
@@ -281,7 +281,7 @@ public class JavaRoomAgent extends JavaInternalAgent {
     String newValueStr = "+" + rnd.nextDouble() + "+" +rnd.nextDouble() + "+" + rnd.nextInt(15000) +"CRSWGS_84"; 
 
     // Multiple values can be added at the same time but we add one
-    Vector<OdfValue<Object>> values = new Vector<OdfValue<Object>>();
+    Vector<OdfValue<Object>> values = new Vector<>();
 
     // OdfValue has type parameter for type of value, Object is used to avoid problems
     // with having values with different types in same Collection.
@@ -295,13 +295,13 @@ public class JavaRoomAgent extends JavaInternalAgent {
     values.add(value);
 
     //Create type meta data about location.
-    Vector<OdfValue<Object>> metaValues = new Vector<OdfValue<Object>>();
+    Vector<OdfValue<Object>> metaValues = new Vector<>();
     OdfValue<Object> metaValue = OdfFactory.createOdfValue(
         "ISO 6709", timestamp
     );
     metaValues.add(metaValue);
 
-    Vector<OdfInfoItem> metaInfoItems = new Vector<OdfInfoItem>();
+    Vector<OdfInfoItem> metaInfoItems = new Vector<>();
     OdfInfoItem metaInfoItem = OdfFactory.createOdfInfoItem(
        new Path( path.toString() +"/MetaData/type"), 
        metaValues
@@ -341,7 +341,7 @@ public class JavaRoomAgent extends JavaInternalAgent {
     Collection<OdfInfoItem> infoItems = JavaConversions.asJavaCollection(odf.infoItems());
 
     //Collection of new values per path
-    Map<Path, scala.collection.immutable.Vector<OdfValue<Object>>> pathValuePairs = new HashMap();
+    Map<Path, scala.collection.immutable.Vector<OdfValue<Object>>> pathValuePairs = new HashMap<>();
 
     //Generate new value for each O-DF InfoItem
     for( OdfInfoItem item : infoItems){
@@ -404,29 +404,33 @@ public class JavaRoomAgent extends JavaInternalAgent {
         } catch(java.text.ParseException pe){
           //Value was not a Number
           //Check if it is a Boolean
-          if( oldValueStr.toLowerCase().equals("false") ){
-            typeStr = "xs:boolean";
-            if( multiplier > 1.05 || multiplier < -1.05 ) {
-              newValueStr = "true";
-            } else {
-              newValueStr = "false";
-            }
-          } else if( oldValueStr.toLowerCase().equals("true") ){
-            typeStr = "xs:boolean";
-            if( multiplier > 1.05 || multiplier < -1.05 ) {
-              newValueStr = "false";
-            } else {
-              newValueStr = "true";
-            }
-          } else {
-            //Was not a Boolean. Keep old value as string 
-            newValueStr = oldValueStr;
+          switch (oldValueStr.toLowerCase()) {
+            case "false":
+              typeStr = "xs:boolean";
+              if (multiplier > 1.05 || multiplier < -1.05) {
+                newValueStr = "true";
+              } else {
+                newValueStr = "false";
+              }
+              break;
+            case "true":
+              typeStr = "xs:boolean";
+              if (multiplier > 1.05 || multiplier < -1.05) {
+                newValueStr = "false";
+              } else {
+                newValueStr = "true";
+              }
+              break;
+            default:
+              //Was not a Boolean. Keep old value as string
+              newValueStr = oldValueStr;
+              break;
           }
         }
       }
 
       // Multiple values can be added at the same time but we add one
-      Vector<OdfValue<Object>> newValues = new Vector<OdfValue<Object>>();
+      Vector<OdfValue<Object>> newValues = new Vector<>();
       OdfValue<Object> value = OdfFactory.createOdfValue(
           newValueStr, typeStr, timestamp
       );

@@ -161,7 +161,7 @@ class ScalaAgent(
    */
   override  def receive : Actor.Receive = {
     //ScalaAgent specific messages
-    case Update() => update
+    case Update() => update()
   }
 
   /**

@@ -61,9 +61,9 @@ class ODFAgent(
     }
   }
 
-  // Schelude update and save job, for stopping
+  // Schedule update and save job, for stopping
   // Will send Update message to self every interval
-  private val  updateSchelude : Cancellable = context.system.scheduler.schedule(
+  private val  updateSchedule : Cancellable = context.system.scheduler.schedule(
     Duration(0, SECONDS),
     interval,
     self,
@@ -99,7 +99,7 @@ class ODFAgent(
               // debug level is enabled (in logback.xml and application.conf)
               log.debug(s"$name wrote paths successfully.")
             case ie: OmiResult => 
-              log.warning(s"Something went wrong when $name writed, $ie")
+              log.warning(s"Something went wrong when $name wrote, $ie")
           }
             case Failure( t: Throwable) => 
               // This sends debug log message to O-MI Node logs if
@@ -114,7 +114,7 @@ class ODFAgent(
     case Update() => update()
   }
    override def postStop: Unit = {
-    updateSchelude.cancel()
+    updateSchedule.cancel()
    }
   
   private def genValue(value: Value[Any], nts: Timestamp ) : Value[Any] = {

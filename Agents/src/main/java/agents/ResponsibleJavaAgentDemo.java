@@ -52,7 +52,7 @@ public class ResponsibleJavaAgentDemo extends ResponsibleJavaInternalAgent {
           "Hello " + value.value().toString() + ", welcome to the Internet of Things.",
           new Timestamp(new java.util.Date().getTime())
       );  
-      Vector<OdfValue<Object>> values = new Vector<OdfValue<Object>>();
+      Vector<OdfValue<Object>> values = new Vector<>();
       values.add( newValue );
       OdfInfoItem new_ii = OdfFactory.createOdfInfoItem(
           new Path("Objects/Service/Greeting"),

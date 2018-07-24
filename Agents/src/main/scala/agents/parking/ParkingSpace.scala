@@ -62,7 +62,7 @@ case class ParkingSpace(
         values = Vector( LongValue( mph, currentTimestamp ))
       )
     }.toSeq ++ height.map{ h => 
-      val nII = "vehicleHeighLimitInM"
+      val nII = "vehicleHeightLimitInM"
       InfoItem( 
         nII,
         path / nII,
@@ -103,7 +103,7 @@ case class ParkingSpace(
       )
     }.toSeq ++ 
     geo.map( g => g.toOdf( path )).toSeq.flatten ++ 
-    chargers.map( c => c.toOdf( path )).toSeq.flatten 
+    chargers.flatMap(c => c.toOdf(path))
   }
 }
 

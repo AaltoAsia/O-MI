@@ -81,8 +81,8 @@ object ParkingFacility{
           }
           val ohps: Seq[OpeningHoursSpecification] = odf.get( path / "OpeningHoursSpecifications").map{
             case obj: Object => 
-              val (success, fails ) = odf.getChilds( path / "OpeningHoursSpecifications").map{
-                case node: Node => OpeningHoursSpecification.parseOdf(node.path,odf)
+              val (success, fails ) = odf.getChilds( path / "OpeningHoursSpecifications").map {
+                node: Node => OpeningHoursSpecification.parseOdf(node.path, odf)
               }.partition{ 
                 case Success(_) => true
                 case Failure(_) => false
@@ -106,8 +106,8 @@ object ParkingFacility{
           }.toSeq.flatten
           val capacities: Seq[ParkingCapacity] = odf.get( path / "Capacities").map{
             case obj: Object => 
-              val (success,fails ) = odf.getChilds( path / "Capacities").map{
-                case node: Node => ParkingCapacity.parseOdf(node.path,odf)
+              val (success,fails ) = odf.getChilds( path / "Capacities").map {
+                node: Node => ParkingCapacity.parseOdf(node.path, odf)
               }.partition{ 
                 case Success(_) => true
                 case Failure(_) => false
@@ -131,8 +131,8 @@ object ParkingFacility{
           }.toSeq.flatten
           val parkingSpaces: Seq[ParkingSpace] = odf.get( path / "ParkingSpaces").map{
             case obj: Object => 
-              val (success, fails ) = odf.getChilds( path /  "ParkingSpaces").map{
-                case node: Node => ParkingSpace.parseOdf(node.path,odf)
+              val (success, fails ) = odf.getChilds( path /  "ParkingSpaces").map {
+                node: Node => ParkingSpace.parseOdf(node.path, odf)
               }.partition{ 
                 case Success(_) => true
                 case Failure(_) => false

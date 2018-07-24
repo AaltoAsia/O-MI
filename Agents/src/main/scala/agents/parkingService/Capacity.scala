@@ -1,19 +1,19 @@
 
-package agents
-package parkingService
+package agents.parkingService
 
-import agents.parkingService.Capacity._
-import agents.parkingService.UserGroup._
-import agents.parkingService.VehicleType._
+import Capacity._
+import UserGroup._
+import VehicleType._
 import types.OdfTypes._
 import types._
+import agents.parkingService._
 
 case class Capacity(
                      name: String,
                      currentCapacity: Option[Long],
                      totalCapacity: Option[Long],
                      validForVehicle: Option[VehicleType],
-                     usergroup: Option[UserGroup]
+                     userGroup: Option[UserGroup]
                    ) {
 
   def toOdf(parentPath: Path): OdfObject = {
@@ -43,7 +43,7 @@ case class Capacity(
           typeValue = Some("mv:" + validForVehicleStr)
         )
     }.toVector
-    val userGroupII = usergroup.map {
+    val userGroupII = userGroup.map {
       veh: UserGroup =>
         OdfInfoItem(
           path / validForUserGroupStr,

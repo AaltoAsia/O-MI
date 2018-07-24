@@ -51,8 +51,7 @@ trait AuthApiJsonSupport {
   protected def bodyString(http: HttpMessage)(implicit t: Timeout): String =
     Await.result(Unmarshal(http.entity).to[String], t.duration)
 
-  protected def sendAndReceiveAsAuthorizationResponse(httpRequest: HttpRequest)
-                                                     (implicit t: Timeout): Future[AuthorizationResponse] =
+  protected def sendAndReceiveAsAuthorizationResponse(httpRequest: HttpRequest): Future[AuthorizationResponse] =
     httpExtension.singleRequest(httpRequest)
       .flatMap { response =>
         if (response.status.isSuccess) {

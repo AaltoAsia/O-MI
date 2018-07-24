@@ -1,11 +1,10 @@
-
-package agents
-package parkingService
+package agents.parkingService
 
 import types.OdfTypes._
+import agents.parkingService._
 import types._
 
-case class AllreadyReserved( path: Path ) extends Exception( s"Parking space at $path is allready reserved.")
+case class AllreadyReserved( path: Path ) extends Exception( s"Parking space at $path is already reserved.")
 case class WrongUser( path: Path ) extends Exception( s"Parking space at $path is received to other user.")
 case class UnknownEvent(path: Path) extends Exception( s"Received unknown event fo Parking space at $path.")
 sealed trait ParkingEvent

@@ -91,7 +91,7 @@ public class JavaFileAgent extends JavaInternalAgent {
     pathToFile = config.getString("file");
     file = new File(pathToFile);
     if( file.exists()  && file.isFile() && file.canRead() ){
-      //Lets schelude a messge to us on every interval
+      //Lets schedule a message to us on every interval
       //and save the reference so we can stop the agent.
       intervalJob = context().system().scheduler().schedule(
           Duration.Zero(),                //Delay start
@@ -156,7 +156,7 @@ public class JavaFileAgent extends JavaInternalAgent {
     Collection<OdfInfoItem> infoItems = JavaConversions.asJavaCollection(odf.infoItems());
 
     //Collection of new values per path
-    Map<Path, scala.collection.immutable.Vector<OdfValue<Object>>> pathValuePairs = new HashMap();
+    Map<Path, scala.collection.immutable.Vector<OdfValue<Object>>> pathValuePairs = new HashMap<>();
 
     //Generate new value for each O-DF InfoItem
     for( OdfInfoItem item : infoItems){
@@ -219,29 +219,33 @@ public class JavaFileAgent extends JavaInternalAgent {
         } catch(java.text.ParseException pe){
           //Value was not a Number
           //Check if it is a Boolean
-          if( oldValueStr.toLowerCase().equals("false") ){
-            typeStr = "xs:boolean";
-            if( multiplier > 1.05 || multiplier < -1.05 ) {
-              newValueStr = "true";
-            } else {
-              newValueStr = "false";
-            }
-          } else if( oldValueStr.toLowerCase().equals("true") ){
-            typeStr = "xs:boolean";
-            if( multiplier > 1.05 || multiplier < -1.05 ) {
-              newValueStr = "false";
-            } else {
-              newValueStr = "true";
-            }
-          } else {
-            //Was not a Boolean. Keep old value as string 
-            newValueStr = oldValueStr;
+          switch (oldValueStr.toLowerCase()) {
+            case "false":
+              typeStr = "xs:boolean";
+              if (multiplier > 1.05 || multiplier < -1.05) {
+                newValueStr = "true";
+              } else {
+                newValueStr = "false";
+              }
+              break;
+            case "true":
+              typeStr = "xs:boolean";
+              if (multiplier > 1.05 || multiplier < -1.05) {
+                newValueStr = "false";
+              } else {
+                newValueStr = "true";
+              }
+              break;
+            default:
+              //Was not a Boolean. Keep old value as string
+              newValueStr = oldValueStr;
+              break;
           }
         }
       }
 
       // Multiple values can be added at the same time but we add one
-      Vector<OdfValue<Object>> newValues = new Vector<OdfValue<Object>>();
+      Vector<OdfValue<Object>> newValues = new Vector<>();
       OdfValue<Object> value = OdfFactory.createOdfValue(
           newValueStr, typeStr, timestamp
       );

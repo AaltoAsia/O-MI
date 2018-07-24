@@ -23,14 +23,14 @@ package object parking{
   def getLongOption(name: String, path: Path, odf: ImmutableODF): Option[Long] = {
     odf.get( path / name ).flatMap{
       case ii:InfoItem =>
-        ii.values.collect{
-          case value: ShortValue => 
+        ii.values.collectFirst {
+          case value: ShortValue =>
             value.value.toLong
-          case value: IntValue => 
-            value.value.toLong 
-          case value: LongValue => 
+          case value: IntValue =>
+            value.value.toLong
+          case value: LongValue =>
             value.value
-        }.headOption
+        }
       case ii:Node =>
         throw MVError( s"$name should be an InfoItem.")
     }
@@ -38,12 +38,12 @@ package object parking{
   def getDoubleOption(name: String, path: Path, odf: ImmutableODF): Option[Double] = {
     odf.get( path / name ).flatMap{
       case ii:InfoItem =>
-        ii.values.collect{
-          case value: FloatValue => 
-            value.value.toDouble 
-          case value: DoubleValue => 
-            value.value 
-        }.headOption
+        ii.values.collectFirst {
+          case value: FloatValue =>
+            value.value.toDouble
+          case value: DoubleValue =>
+            value.value
+        }
       case ii:Node =>
         throw MVError( s"$name should be an InfoItem.")
     }
@@ -51,17 +51,16 @@ package object parking{
   def getBooleanOption(name: String, path: Path, odf: ImmutableODF): Option[Boolean] = {
     odf.get( path / name ).flatMap{
       case ii:InfoItem =>
-        ii.values.collect{
-          case value: StringValue if value.value.toLowerCase == "true" =>true 
+        ii.values.collectFirst {
+          case value: StringValue if value.value.toLowerCase == "true" => true
           case value: StringValue if value.value.toLowerCase == "false" => false
-          case value: StringPresentedValue if value.value.toLowerCase == "true" =>true 
+          case value: StringPresentedValue if value.value.toLowerCase == "true" => true
           case value: StringPresentedValue if value.value.toLowerCase == "false" => false
-          case value: BooleanValue => 
-            value.value 
-        }.headOption
+          case value: BooleanValue =>
+            value.value
+        }
       case ii:Node =>
         throw MVError( s"$name should be an InfoItem.")
     }
   }
-  case class MVError( msg: String ) extends ParseError(msg, "MobiVoc error:") 
 }

@@ -1,5 +1,5 @@
-
 package agents.parking
+
 object UserGroup extends Enumeration{
   type UserGroup = Value
   val CarsharingUsers, PersonsWithDisabledParkingPermit, TaxiDrivers, Women, Inhabitants, Families, Unknown = Value   

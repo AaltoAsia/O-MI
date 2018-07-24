@@ -12,7 +12,6 @@ import scala.util.{Failure, Success}
  * Companion object for ResponsibleScalaAgent. Extends PropsCreator to enforce recommended practice in Props creation.
  *  <a href="http://doc.akka.io/docs/akka/2.4/scala/actors.html#Recommended_Practices">Akka recommends to</a>.
  *
- *  @param _config Contains configuration for this agent, as given in application.conf.
  */
 object ResponsibleScalaAgent extends PropsCreator{
   /**
@@ -77,6 +76,6 @@ class ResponsibleScalaAgent(
     //Following are inherited from ResponsibleScalaInternalActor.
     case write: WriteRequest => respondFuture(handleWrite(write))
     //ScalaAgent specific messages
-    case Update() => update
+    case Update() => update()
   }
 }

@@ -1,7 +1,7 @@
-package agents
-package parkingService
+package agents.parkingService
 
 import agents.parkingService.VehicleType._
+import agents.parkingService._
 import types.OdfTypes._
 import types._
 
@@ -60,13 +60,13 @@ case class ParkingFacility(
    *
    * TODO:
    * * Replace InfoItems with Capacities objects.
-   * * Dicide naming converntion for capacity objects.
+   * * Decide naming convention for capacity objects.
   def calculateCapacities: ParkingFacility = this.copy( capacities =  
     parkingSpaces.groupBy{ 
      case space: ParkingSpace => 
        (space.validForVehicle, space.validForUserGroup)
    }.map{
-     case (Tuple2( vehicle, validForUserGroup), parkingSpaceses) => 
+     case (Tuple2( vehicle, validForUserGroup), parkingSpaces) =>
        Capacity( // Are these always calculated?
          ???, //TODO: What is name of this actually "vehicles for usergroup"? 
          Some( parkingSpaceses.count( _.available.getOrElse(false) ) ),
@@ -100,11 +100,11 @@ case class ParkingFacility(
     )
 
     val capacitiesObj = OdfObject(
-      Vector( OdfQlmID( "Capacities" ) ),
-      facilityPath / "Capacitiess",
-      Vector(),
-      capacities.map( _.toOdf(facilityPath / "Capacities") ).toVector,
-      typeValue = Some( "list" )
+                                   Vector( OdfQlmID( "Capacities" ) ),
+                                   facilityPath / "Capacitiess",
+                                   Vector(),
+                                   capacities.map(_.toOdf(facilityPath / "Capacities")),
+                                   typeValue = Some( "list" )
     )
 
     OdfObject(
@@ -198,7 +198,7 @@ case class GPSCoordinates(
 
                     val t = math.sin(deltaLat/2) * math.sin(deltaLat/2) + math.cos(a1) * math.cos(a2) * math.sin(deltaLon/2) * math.sin(deltaLon/2)
                     val c = 2 * math.asin(math.min(math.sqrt(t), 1))
-                    val distance = radius * c;
+                    val distance = radius * c
                     distance 
                 }
             }

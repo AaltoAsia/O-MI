@@ -186,28 +186,34 @@ object OmiParser extends Parser[OmiParseResult] {
             case Right(odf) =>
               read.interval match {
                 case None =>
-                  Right(Iterable(
-                    ReadRequest(
-                      odf,
-                      gcalendarToTimestampOption(read.begin),
-                      gcalendarToTimestampOption(read.end),
-                      read.newest.map(_.toInt),
-                      read.oldest.map(_.toInt),
-                      callback,
-                      ttl
-                    )
-                  ))
+                  if (read.newest.nonEmpty && read.oldest.nonEmpty)
+                    Left(Iterable(OMIParserError("Invalid Read request, Can not query oldest and newest values at same time.")))
+                  else
+                    Right(Iterable(
+                                    ReadRequest(
+                                                 odf,
+                                                 gcalendarToTimestampOption(read.begin),
+                                                 gcalendarToTimestampOption(read.end),
+                                                 read.newest.map(_.toInt),
+                                                 read.oldest.map(_.toInt),
+                                                 callback,
+                                                 ttl
+                                               )
+                                  ))
                 case Some(interval) =>
-                  Right(Iterable(
-                    SubscriptionRequest(
-                      parseInterval(interval),
-                      odf,
-                      read.newest.map(_.toInt),
-                      read.oldest.map(_.toInt),
-                      callback,
-                      ttl
-                    )
-                  ))
+                  if (read.newest.nonEmpty && read.oldest.nonEmpty)
+                    Left(Iterable(OMIParserError("Invalid Read request, Can not query oldest and newest values at same time.")))
+                  else
+                    Right(Iterable(
+                                    SubscriptionRequest(
+                                                         parseInterval(interval),
+                                                         odf,
+                                                         read.newest.map(_.toInt),
+                                                         read.oldest.map(_.toInt),
+                                                         callback,
+                                                         ttl
+                                                       )
+                                  ))
               }
           }
         }
