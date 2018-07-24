@@ -13,14 +13,12 @@
  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 package agentSystem
 
-import scala.concurrent.{ Future, Promise }
-import akka.actor.{
-  ActorRef,
-  ActorLogging
-}
+import akka.actor.{ActorLogging, ActorRef}
 import akka.pattern.ask
 import akka.util.Timeout
 import types.OmiTypes._
+
+import scala.concurrent.{Future, Promise}
 /**
   * Commands that can be received from InternalAgentLoader.
   **/
@@ -71,9 +69,9 @@ trait ScalaInternalAgent extends InternalAgent with ActorLogging {
   protected def dbHandler: ActorRef
 
   //These need to be implemented
-  override def preStart: Unit = start
+  override def preStart: Unit = CommandSuccessful()
 
-  override def postStop: Unit = stop
+  override def postStop: Unit = CommandSuccessful()
 
   def receive: PartialFunction[Any, Unit] = {
     case any: Any => unhandled(any)

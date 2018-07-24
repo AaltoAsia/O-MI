@@ -3,10 +3,10 @@ package odf
 
 import database.journal.PPersistentNode.NodeType.Obj
 import database.journal.{PObject, PPersistentNode}
-
-import scala.collection.immutable.{ HashMap, Map =>IMap}
 import parsing.xmlGen.scalaxb.DataRecord
 import parsing.xmlGen.xmlTypes.{InfoItemType, ObjectType}
+
+import scala.collection.immutable.{HashMap, Map => IMap}
 
 object Object {
   def apply(
@@ -54,13 +54,13 @@ case class Object(
       id.id
   }.toVector
 
-  def idTest: Boolean = idsToStr.exists {
+  def idTest: Boolean = idsToStr().exists {
     id: String =>
       val pl = path.last
       id == pl
   }
 
-  def tmy = s"Ids don't contain last id in path. ${path.last} not in (${idsToStr.mkString(",")})"
+  def tmy = s"Ids don't contain last id in path. ${path.last} not in (${idsToStr().mkString(",")})"
 
   assert(idTest, tmy)
 

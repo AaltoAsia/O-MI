@@ -18,9 +18,6 @@ package http
 import java.io.{BufferedWriter, File, FileWriter}
 import java.net.InetSocketAddress
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration._
-import scala.concurrent.{Await, Future}
 import agentSystem.{AgentInfo, AgentName, NewCLI}
 import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, Props}
 import akka.io.Tcp
@@ -29,12 +26,14 @@ import akka.pattern.ask
 import akka.util.{ByteString, Timeout}
 import database._
 import responses._
-import spray.json.JsArray
+import types.Path
 import types.odf._
-import types.{Path}
 
-import scala.language.postfixOps
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
+import scala.concurrent.{Await, Future}
 import scala.io.Source
+import scala.language.postfixOps
 import scala.util.{Failure, Success, Try}
 
 /** Object that contains all commands of InternalAgentCLI.
@@ -111,13 +110,13 @@ class OmiNodeCLI(
 
   override def preStart: Unit = {
     val connectToManager = (agentSystem ? NewCLI(ip, self)).mapTo[Boolean]
-    connectToManager.foreach{
-      case _: Boolean =>
+    connectToManager.foreach {
+      _: Boolean =>
         send(connection)(s"CLI connected to AgentManager.\r\n>")
         log.info(s"$ip connected to AgentManager. Connection: $connection")
     }
-    connectToManager.failed.foreach{
-      case t: Throwable => 
+    connectToManager.failed.foreach {
+      t: Throwable =>
         send(connection)(s"CLI failed connected to AgentManager. Caught: $t.\r\n>")
         log.info(s"$ip failed to connect to AgentManager. Caught: $t. Connection: $connection")
     }
@@ -235,6 +234,8 @@ class OmiNodeCLI(
         case None =>
           log.info(s"Subscription with id $id not found.\r\n Sending ...")
           s"Subscription with id $id not found.\r\n>"
+        case other => log.warning(s"Received unknown sub type from subscriptionmanager $other")
+          "Failed to get subscription data\r\n>"
       }.recover {
       case _: Throwable =>
         log.info(s"Failed to get subscription with $id.\r\n Sending ...")
@@ -293,24 +294,24 @@ class OmiNodeCLI(
       removeFuture.value match {
         case Some(Success(x)) if x.sum > 0 => {
           log.info(s"Successfully removed: ${x.sum} items")
-          return s"Successfully removed path $pathOrId\r\n>"
+          s"Successfully removed path $pathOrId\r\n>"
         }
-        case Some(Success(x)) => return s"Could not remove $pathOrId\r\n>"
+        case Some(Success(x)) => s"Could not remove $pathOrId\r\n>"
         case Some(Failure(ex)) => {
           log.error(ex, "Error while removing"); s"Failed to remove$pathOrId\r\n>"
         }
-        case None => return "Given Path does not exists\r\n>"
+        case None => "Given Path does not exists\r\n>"
       }
     }
 
   }
 
   private def backupSubsAndDatabase(subPath: String, odfPath: String): String = {
-    val res: Future[Option[Unit]] = for {
+    val res: Future[Unit] = for {
       subs <- backupSubscriptions(subPath)
       data <- backupDatabase(odfPath)
     } yield data
-    val test: Try[Option[Unit]] = Await.ready(res, Duration.Inf).value.get
+    val test: Try[Unit] = Await.ready(res, Duration.Inf).value.get
     test match {
       case Success(r) => "Success\r\n>"
       case Failure(ex) => ex.getMessage + "\r\n>"
@@ -337,20 +338,22 @@ class OmiNodeCLI(
       val bw = new BufferedWriter(new FileWriter(file))
       val res = JsArray(allSubs.map { sub =>
         Try(sub.toJson)
-      }.map { case Success(s) => Some(s);
-      case Failure(ex) => {
-        log.warning(ex.getMessage); None
-      }
-      }.flatten.toVector)
+      }.flatMap {
+        case Success(s) => Some(s)
+        case Failure(ex) => {
+          log.warning(ex.getMessage)
+          None
+        }
+      }.toVector)
       bw.write(res.prettyPrint)
       bw.close()
     })
   }
 
-  private def backupDatabase(filePath: String): Future[Option[Unit]] = {
-    val allData: Future[Option[ODF]] = removeHandler.getAllData()
+  private def backupDatabase(filePath: String): Future[Unit] = {
+    val allData: Future[Option[ODF]] = removeHandler.getAllData
     allData.map(aData => {
-      aData.map(odf => {
+      aData.foreach(odf => {
         val file = new File(filePath)
         val bw = new BufferedWriter(new FileWriter(file))
         val res = odf.asXML
@@ -379,7 +382,7 @@ class OmiNodeCLI(
 
   private def restoreDatabase(filePath: String) = {
     val parsed: OdfParseResult = ODFParser.parse(new File(filePath))
-    val temp = parsed.right.map(odf => Await.ready(removeHandler.writeOdf(odf), 5 minutes))
+    parsed.right.map(odf => Await.ready(removeHandler.writeOdf(odf), 5 minutes))
     "Done\r\n>"
   }
 
@@ -393,12 +396,13 @@ class OmiNodeCLI(
           log.warning(ex.getMessage); None
         }
         }
+      case other => throw new Exception(s"Invalid JS type found: $other")
     }
     subscriptionManager ! LoadSubs(subs)
     "Done\r\n>"
   }
   private def takeSnapshot() = {
-    val res = Await.result(removeHandler.takeSnapshot(),Duration.Inf)
+    Await.result(removeHandler.takeSnapshot(),Duration.Inf)
     "Success\r\n>"
   }
   private def send(receiver: ActorRef)(msg: String): Unit =

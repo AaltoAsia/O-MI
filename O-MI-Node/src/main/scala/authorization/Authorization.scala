@@ -18,9 +18,9 @@ import akka.http.scaladsl.server.Directive.SingleValueModifiers
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.server.util.Tupler._
+import http.OmiConfigExtension
 import org.slf4j.{Logger, LoggerFactory}
 import types.OmiTypes._
-import http.OmiConfigExtension
 
 import scala.util.{Failure, Success, Try}
 
@@ -162,17 +162,10 @@ object Authorization {
 
   case class UnauthorizedEx(message: String = "Unauthorized") extends Exception(message)
 
-  /**
-    * Template for any authorization implementations. This enables the combination of many
-    * authorization methods in the service using [[makePermissionTestFunction]] that combines
-    * all [[hasPermission]] functions.
-    */
-  //trait AuthorizationExtension extends AuthorizationExtSupport {
-  //}
 
 }
 
-import Authorization._
+import authorization.Authorization._
 
 /** Dummy authorization, allows everything. Can be used for testing, disabling authorization
   * temporarily and serves as an example of how to extend [[Authorization]] as a Stackable trait.

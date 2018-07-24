@@ -1,37 +1,32 @@
 package authorization
 
-import scala.concurrent.{Future,Await}
-import scala.util.Try
-
-import akka.util.{ByteString, Timeout}
 import akka.actor.{ActorRef, ActorSystem}
-import akka.stream.ActorMaterializer
-import akka.http.scaladsl.{ Http, HttpExt}
-import akka.http.scaladsl.model.{HttpMessage, HttpRequest, HttpResponse, HttpEntity, headers, Uri, FormData}
-import akka.http.scaladsl.model.ContentTypes._
 import akka.http.scaladsl.client.RequestBuilding.RequestBuilder
+import akka.http.scaladsl.model.ContentTypes._
+import akka.http.scaladsl.model._
 import akka.http.scaladsl.unmarshalling.Unmarshal
-
-import org.json4s.{JString, JObject}
-import org.json4s.native.JsonMethods._
-import org.json4s.JsonDSL._
-import org.json4s._
+import akka.http.scaladsl.{Http, HttpExt}
 import akka.pattern.ask
-
+import akka.stream.ActorMaterializer
+import akka.util.{ByteString, Timeout}
+import database.journal.Models.GetTree
+import http.OmiConfigExtension
+import org.json4s.JsonDSL._
+import org.json4s.native.JsonMethods._
+import org.json4s.{JObject, JString, _}
+import org.slf4j.{Logger, LoggerFactory}
+import types.OmiTypes._
+import types.Path
 import types.odf._
 
-import org.slf4j.{LoggerFactory}
-
-import database.journal.Models.GetTree
-import types.Path
-import types.OmiTypes.{OmiRequest, OdfRequest, UserInfo, RawRequestWrapper}
-import http.OmiConfigExtension
+import scala.concurrent.{Await, Future}
+import scala.util.Try
 
 
 /**
   * API response class for getting the permission data from external service.
   */
-case class AuthorizationResponse(allow: List[Path], deny: List[Path])
+case class AuthorizationResponse(allow: Set[Path], deny: Set[Path])
 
 
 trait AuthApiJsonSupport {
@@ -56,8 +51,7 @@ trait AuthApiJsonSupport {
   protected def bodyString(http: HttpMessage)(implicit t: Timeout): String =
     Await.result(Unmarshal(http.entity).to[String], t.duration)
 
-  protected def sendAndReceiveAsAuthorizationResponse(httpRequest: HttpRequest)
-                                                     (implicit t: Timeout): Future[AuthorizationResponse] =
+  protected def sendAndReceiveAsAuthorizationResponse(httpRequest: HttpRequest): Future[AuthorizationResponse] =
     httpExtension.singleRequest(httpRequest)
       .flatMap { response =>
         if (response.status.isSuccess) {
@@ -74,7 +68,7 @@ trait AuthApiJsonSupport {
               JString(pathStr) <- list
             } yield Path(pathStr)
 
-            AuthorizationResponse(allow, deny)
+            AuthorizationResponse(allow.toSet, deny.toSet)
           }
         } else Future.failed(new Exception(s"Request failed. Response was: $response"))
       }
@@ -95,7 +89,7 @@ class AuthAPIServiceV2(
   import settings.AuthApiV2._
 
 
-  protected val log = LoggerFactory.getLogger(classOf[AuthAPIServiceV2])
+  protected val log: Logger = LoggerFactory.getLogger(classOf[AuthAPIServiceV2])
 
 
   import system.dispatcher
@@ -107,12 +101,84 @@ class AuthAPIServiceV2(
     implicit val timeout: Timeout = originalRequest.handleTTL
     val odfTreeF: Future[ImmutableODF] = (hierarchyStore ? GetTree).mapTo[ImmutableODF]
     odfTreeF.map { odfTree =>
-      val requestedTree = odfTree selectSubTree originalRequest.odf.getPaths.toSet
-      val allowOdf = requestedTree selectSubTree filters.allow.toSet
-      val filteredOdf = allowOdf removePaths filters.deny
+      originalRequest match {
+        case rr: ReadRequest => // requests with existing tree, requires permissions to whole sub trees
 
-      if (filteredOdf.isEmpty) None
-      else Some(originalRequest replaceOdf filteredOdf)
+          // Calculate required changes to the request
+
+          // partition to request paths and non-allowed remove paths
+          val (requestPaths, nonAllowPaths) =
+            originalRequest.odf
+              .getLeafPaths
+              .partition{ p =>
+                filters.allow.exists(a => (a isAncestorOf p) || a == p)
+              }
+
+          // partition with foldLeft to childDeny and other active deny paths
+          val (childDenyPaths, otherDenyPaths) =
+            filters.deny
+              .foldLeft((Set[Path](),Set[Path]())){
+                case ((_childDenyPaths, _otherDenyPaths), deniedPath) =>
+                  if (requestPaths exists (rp => rp.isAncestorOf(deniedPath)))
+                    (_childDenyPaths + deniedPath, _otherDenyPaths)
+                  else if (requestPaths.exists(rPath => deniedPath.isAncestorOf(rPath) || rPath == deniedPath))
+                    (_childDenyPaths, _otherDenyPaths + deniedPath)
+                  else
+                    (_childDenyPaths, _otherDenyPaths)
+              }
+
+          // items that need to be queried from hierarchystore
+          val newChildren =
+            childDenyPaths
+              .flatMap{ deniedPath =>
+                odfTree.getChilds(deniedPath.init)
+              }
+              .map{
+                case ii:InfoItem => ii.copy(descriptions=Set.empty, metaData=None)
+                case obj:Object => obj.copy(descriptions=Set.empty)
+                case other => other
+              }
+
+
+          // Execute required changes to the request, TODO: cleaner code
+
+          val filteredOdf = ImmutableODF(
+              (requestPaths -- (childDenyPaths union otherDenyPaths))
+                .flatMap(originalRequest.odf.getNodesMap.get(_))
+                .toSeq
+            )
+            .addNodes(newChildren.toSeq)
+          //  originalRequest.odf
+          //    .removePaths(childDenyPaths union nonAllowPaths union otherDenyPaths) addNodes newChildren.toSeq
+
+
+          //log.debug(s"FILTERODF \n original $originalRequest \n requestPaths $requestPaths \n childDenyPaths $childDenyPaths \n otherDenyPaths $otherDenyPaths \n newChildren $newChildren \n nonAllowPaths $nonAllowPaths \n filteredOdf $filteredOdf")
+
+          // TODO: Cleaner code
+          if (filteredOdf.isEmpty && !(originalRequest.odf.isEmpty && filters.allow.contains(Path("Objects"))))
+            None
+          else
+            Some(originalRequest replaceOdf filteredOdf)
+
+        case _ => // requests with new tree, requires permissions to parents and overwriting items
+          val filteredNodes = originalRequest.odf.getNodesMap.filterKeys{ p =>
+            filters.allow.exists(a => (a isAncestorOf p) || p == a) &&
+            !filters.deny.exists(d => (d isAncestorOf p) || p == d)
+          }
+
+          // Constructor builds missing ancestors
+          val filteredOdf = ImmutableODF(filteredNodes.values)
+
+          //log.debug(s"FILTERODF \n original $originalRequest \n filteredNodes $filteredNodes \n filteredOdf $filteredOdf")
+
+          // TODO: Cleaner code
+          //if (filteredOdf.isEmpty && !(originalRequest.odf.isEmpty && filters.allow.contains(Path("Objects"))))
+          if (filteredOdf.getNodesMap.size < originalRequest.odf.getNodesMap.size)
+            None
+          else
+            //Some(originalRequest replaceOdf filteredOdf)
+            Some(originalRequest)
+      }
     }
   }
 
@@ -144,9 +210,9 @@ class AuthAPIServiceV2(
       case "cookie" =>
         httpMessage match {
           case r: HttpRequest => r.cookies.find(_.name == from).map(_.value)
-          case r: HttpResponse => r.headers.collect {
+          case r: HttpResponse => r.headers.collectFirst {
             case c: headers.`Set-Cookie` if c.cookie.name == from => c.cookie.value
-          }.headOption
+          }
         }
 
       case "jsonbody" => Try[String] {
@@ -180,7 +246,7 @@ class AuthAPIServiceV2(
                               confObject: ParameterExtraction,
                               variables: VariableMap): HttpRequest = {
     def mapGet(context: String): Map[String, String] =
-      confObject.get(context).getOrElse(Map.empty)
+      confObject.getOrElse(context, Map.empty)
 
     def keyValues(context: String): Seq[(String, String)] = for {
       (key, variable) <- mapGet(context).toSeq
@@ -229,14 +295,14 @@ class AuthAPIServiceV2(
   protected def isAuthorizedForOdfRequest(httpRequest: HttpRequest,
                                           rawOmiRequest: RawRequestWrapper): AuthorizationResult = {
 
-    implicit val timeout = Timeout(rawOmiRequest.handleTTL)
+    implicit val timeout: Timeout = Timeout(rawOmiRequest.handleTTL)
 
     val requestType = (rawOmiRequest.requestVerb match {
       case RawRequestWrapper.MessageType.Response => RawRequestWrapper.MessageType.Write
       case x => x
     }).name
 
-    val vars = parametersConstants ++
+    val vars: Map[String, String] = parametersConstants ++
       extractToMap(httpRequest, Some(rawOmiRequest), parametersFromRequest) +
       ("requestTypeChar" -> requestType.head.toString) +
       ("requestType" -> requestType)
@@ -248,7 +314,7 @@ class AuthAPIServiceV2(
     val resultF = for {
 
       authenticationResult <-
-      if (authenticationEndpoint.isEmpty || parametersSkipOnEmpty.forall(vars.get(_).getOrElse("").isEmpty)) {
+      if (authenticationEndpoint.isEmpty || parametersSkipOnEmpty.forall(param => vars.getOrElse(param,"").isEmpty)) {
         Future.successful(vars)
       } else {
 
@@ -304,7 +370,7 @@ class AuthAPIServiceV2(
   override def isAuthorizedForRawRequest(httpRequest: HttpRequest, rawRequest: String): AuthorizationResult = {
     val rawRequestWrapper = RawRequestWrapper(rawRequest, UserInfo())
 
-    if (rawRequestWrapper.msgFormat == Some("odf"))
+    if (rawRequestWrapper.msgFormat.contains("odf"))
       isAuthorizedForOdfRequest(httpRequest, rawRequestWrapper)
     else
       Authorized(UserInfo(None)) // TODO: Cancel, Poll?

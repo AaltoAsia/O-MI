@@ -15,26 +15,28 @@ package parsing
 
 import java.io.File
 import java.sql.Timestamp
-import javax.xml.transform.{Source}
+
+import javax.xml.transform.Source
 import javax.xml.transform.stream.StreamSource
+import parsing.xmlGen.xmlTypes
+import types.OmiTypes._
+import types.ParseError._
+import types._
+import types.odf._
 
 import scala.collection.JavaConverters._
 import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
 import scala.xml.{Elem, Node}
 
-import parsing.xmlGen.xmlTypes
-import types.odf._
-import types.OmiTypes._
-import types.ParseError._
-import types._
-
 /** Parser for messages with O-MI protocol */
 object OmiParser extends Parser[OmiParseResult] {
 
   protected[this] override def schemaPath: Array[Source] = Array[Source](
-    new StreamSource(getClass.getClassLoader().getResourceAsStream("omi.xsd")),
-    new StreamSource(getClass.getClassLoader().getResourceAsStream("odf.xsd"))
+                                                                          new StreamSource(getClass
+                                                                                             .getClassLoader.getResourceAsStream("omi.xsd")),
+                                                                          new StreamSource(getClass
+                                                                                             .getClassLoader.getResourceAsStream("odf.xsd"))
   )
 
   /**
@@ -184,28 +186,34 @@ object OmiParser extends Parser[OmiParseResult] {
             case Right(odf) =>
               read.interval match {
                 case None =>
-                  Right(Iterable(
-                    ReadRequest(
-                      odf,
-                      gcalendarToTimestampOption(read.begin),
-                      gcalendarToTimestampOption(read.end),
-                      read.newest.map(_.toInt),
-                      read.oldest.map(_.toInt),
-                      callback,
-                      ttl
-                    )
-                  ))
+                  if (read.newest.nonEmpty && read.oldest.nonEmpty)
+                    Left(Iterable(OMIParserError("Invalid Read request, Can not query oldest and newest values at same time.")))
+                  else
+                    Right(Iterable(
+                                    ReadRequest(
+                                                 odf,
+                                                 gcalendarToTimestampOption(read.begin),
+                                                 gcalendarToTimestampOption(read.end),
+                                                 read.newest.map(_.toInt),
+                                                 read.oldest.map(_.toInt),
+                                                 callback,
+                                                 ttl
+                                               )
+                                  ))
                 case Some(interval) =>
-                  Right(Iterable(
-                    SubscriptionRequest(
-                      parseInterval(interval),
-                      odf,
-                      read.newest.map(_.toInt),
-                      read.oldest.map(_.toInt),
-                      callback,
-                      ttl
-                    )
-                  ))
+                  if (read.newest.nonEmpty && read.oldest.nonEmpty)
+                    Left(Iterable(OMIParserError("Invalid Read request, Can not query oldest and newest values at same time.")))
+                  else
+                    Right(Iterable(
+                                    SubscriptionRequest(
+                                                         parseInterval(interval),
+                                                         odf,
+                                                         read.newest.map(_.toInt),
+                                                         read.oldest.map(_.toInt),
+                                                         callback,
+                                                         ttl
+                                                       )
+                                  ))
               }
           }
         }
@@ -355,7 +363,7 @@ object OmiParser extends Parser[OmiParseResult] {
 
   def gcalendarToTimestampOption(gcal: Option[javax.xml.datatype.XMLGregorianCalendar]): Option[Timestamp] = gcal match {
     case None => None
-    case Some(cal) => Some(new Timestamp(cal.toGregorianCalendar().getTimeInMillis()));
+    case Some(cal) => Some(new Timestamp(cal.toGregorianCalendar().getTimeInMillis));
   }
 
   def uriToStringOption(opt: Option[java.net.URI]): Option[String] = opt map {

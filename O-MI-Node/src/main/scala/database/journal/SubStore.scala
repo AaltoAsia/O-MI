@@ -3,15 +3,16 @@ package database.journal
 import java.sql.Timestamp
 import java.util.Date
 
-import PAddSub.SubType._
+import Models._
 import akka.actor.ActorLogging
 import akka.persistence._
 import database._
-import _root_.database.journal.Models._
+import PAddSub.SubType._
 import types.OmiTypes.HTTPCallback
 import types.Path
 
 import scala.concurrent.duration._
+import scala.language.postfixOps
 
 class SubStore extends PersistentActor with ActorLogging {
 
@@ -26,7 +27,7 @@ class SubStore extends PersistentActor with ActorLogging {
   var pathToSubs: Map[Path, Set[Long]] = Map()
   var intervalSubs: Map[Long, IntervalSub] = Map()
 
-  def addPollSub(ps: PolledSub) = {
+  def addPollSub(ps: PolledSub): Unit = {
     if (ps.endTime.after(new Date())) {
       idToSub = idToSub + (ps.id -> ps)
 
@@ -40,14 +41,14 @@ class SubStore extends PersistentActor with ActorLogging {
     }
   }
 
-  def addIntervalSub(is: IntervalSub) = {
+  def addIntervalSub(is: IntervalSub): Unit = {
     if (is.endTime.after(new Date())) {
       intervalSubs = intervalSubs.updated(is.id, is) //) intervalSub//TODO check this
     }
   }
 
 
-  def addEventSub(es: EventSub) = {
+  def addEventSub(es: EventSub): Unit = {
     if (es.endTime.after(new Date())) {
       val newSubs: Map[Path, Seq[EventSub]] = Map(es.paths.map(n => n -> Seq(es)): _*)
       eventSubs = mergeSubs(eventSubs, newSubs)
@@ -124,6 +125,7 @@ class SubStore extends PersistentActor with ActorLogging {
               )
             )
           }
+        case _ =>
       }
       case PRemoveIntervalSub(id) => {
         intervalSubs = intervalSubs - id
@@ -137,7 +139,7 @@ class SubStore extends PersistentActor with ActorLogging {
       }
       case PRemovePollSub(id) => {
         idToSub.get(id).foreach {
-          case pSub: PolledSub => {
+          pSub: PolledSub => {
             idToSub = idToSub - id
             pSub.paths.foreach { path =>
               pathToSubs(path) match {
@@ -157,8 +159,10 @@ class SubStore extends PersistentActor with ActorLogging {
             idToSub = idToSub + (id -> polledNewEvent.copy(lastPolled = new Timestamp(new Date().getTime)))
           case pollInterval: PollIntervalSub =>
             idToSub = idToSub + (id -> pollInterval.copy(lastPolled = new Timestamp(new Date().getTime)))
+          case other => log.warning(s"Unknown poll sub type received: $other")
         }
       }
+      case other => log.warning(s"Found unknown subType event message: $other")
 
     }
     case p: PersistentCommand => p match {
@@ -181,6 +185,7 @@ class SubStore extends PersistentActor with ActorLogging {
               addEventSub(ne)
             }
           }
+        case _ =>
       }
       case Models.AddIntervalSub(is) => {
         val persisted = is.persist()
@@ -205,9 +210,11 @@ class SubStore extends PersistentActor with ActorLogging {
           persist(PAddSub(PpollInterval(ps.persist()))) { event =>
             addPollSub(ps)
           }
-
+        case other => log.warning(s"Unknown poll sub type: $other")
       }
+      case _ =>
     }
+    case _ =>
   }
 
 
@@ -251,6 +258,7 @@ class SubStore extends PersistentActor with ActorLogging {
           new Timestamp(lastPolled),
           new Timestamp(starTime),
           paths.map(Path(_)).toVector)
+      case other => throw new Exception(s"Error while recovering subs: $other")
     }
     )
   }
@@ -260,6 +268,7 @@ class SubStore extends PersistentActor with ActorLogging {
       case pnes: PollNormalEventSub => PPolledSub(PPolledSub.Polledsub.Pnes(pnes.persist()))
       case pnews: PollNewEventSub => PPolledSub(PPolledSub.Polledsub.Pnews(pnews.persist()))
       case pints: PollIntervalSub => PPolledSub(PPolledSub.Polledsub.Pints(pints.persist()))
+      case other => throw new Exception(s"Error while serializing subs: $other")
     }
   }
 

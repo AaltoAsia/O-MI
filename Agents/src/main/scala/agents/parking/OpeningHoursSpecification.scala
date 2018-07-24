@@ -1,9 +1,10 @@
 package agents.parking
 
 
-import scala.util.Try
-import types.odf._
 import types._
+import types.odf._
+
+import scala.util.Try
 
 case class OpeningHoursSpecification( 
   name: String,
@@ -61,11 +62,11 @@ object OpeningHoursSpecification{
           val dow = getStringOption("DayOfWeek",path,odf)
           OpeningHoursSpecification(obj.path.last,opens,closes,dow)
         case Some(obj: Object) => 
-          throw MVError( s"OpeninHoursSpecification path $path has wrong type attribute ${obj.typeAttribute}")
+          throw MVError( s"OpeningHoursSpecification path $path has wrong type attribute ${obj.typeAttribute}")
         case Some(obj: Node) => 
-          throw MVError( s"OpeninHoursSpecification path $path should be Object with type $mvType")
+          throw MVError( s"OpeningHoursSpecification path $path should be Object with type $mvType")
         case None => 
-          throw MVError( s"OpeninHoursSpecification path $path not found from given O-DF")
+          throw MVError( s"OpeningHoursSpecification path $path not found from given O-DF")
       }
     }
   }

@@ -1,8 +1,9 @@
 package agents.parking
 
-import scala.util.Try
-import types.odf._
 import types._
+import types.odf._
+
+import scala.util.Try
 
 case class Plug(
   id: String,
@@ -110,7 +111,7 @@ object Plug{
             getDoubleOption("powerInkW",path,odf),
             getDoubleOption("voltageInV",path,odf),
             getBooleanOption("threePhasedCurrentAvailable",path,odf),
-            getBooleanOption("isFastChargeCopable",path,odf)
+            getBooleanOption("isFastChargeCapable",path,odf)
           )
         case Some(obj: Object) => 
           throw MVError( s"Plug path $path has wrong type attribute ${obj.typeAttribute}")

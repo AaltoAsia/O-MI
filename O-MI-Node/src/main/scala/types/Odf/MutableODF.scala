@@ -1,10 +1,11 @@
 package types
 package odf
 
-import scala.collection.{ Seq, Map, SortedSet }
-import scala.collection.immutable.{ HashMap => ImmutableHashMap }
-import scala.collection.mutable.{TreeSet => MutableTreeSet, HashMap => MutableHashMap }
 import types.Path._
+
+import scala.collection.immutable.{HashMap => ImmutableHashMap}
+import scala.collection.mutable.{HashMap => MutableHashMap, TreeSet => MutableTreeSet}
+import scala.collection.{Map, Seq, SortedSet}
 
 class MutableODF private[odf](
                                protected[odf] val nodes: MutableHashMap[Path, Node] = MutableHashMap.empty
@@ -91,7 +92,7 @@ class MutableODF private[odf](
     this
   }
 
-  def removePaths(removedPaths: Seq[Path]): ODF = {
+  def removePaths(removedPaths: Set[Path]): ODF = {
     val subtrees = paths.filter {
       p =>
         removedPaths.contains(p) ||

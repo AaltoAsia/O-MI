@@ -1,9 +1,9 @@
 package types
 package OmiTypes
 
-import scala.concurrent.duration._
 import types.odf._
 
+import scala.concurrent.duration._
 import scala.xml.NodeSeq
 
 object Responses {
@@ -92,9 +92,9 @@ object Responses {
     ttl
   )
 
-  def InternalError(e: Throwable, ttl: Duration): ResponseRequest = this.InternalError(Some(e.getMessage()), ttl)
+  def InternalError(e: Throwable, ttl: Duration): ResponseRequest = this.InternalError(Some(e.getMessage), ttl)
 
-  def InternalError(e: Throwable): ResponseRequest = this.InternalError(Some(e.getMessage()), 10.seconds)
+  def InternalError(e: Throwable): ResponseRequest = this.InternalError(Some(e.getMessage), 10.seconds)
 
   def TTLTimeout(message: Option[String] = None, ttl: Duration = 10.seconds): ResponseRequest = ResponseRequest(
     OdfCollection(Results.TTLTimeout(message)),

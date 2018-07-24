@@ -1,7 +1,5 @@
-package agents
-package parkingService
+package agents.parkingService
 
-import scala.math
 import types.OdfTypes._
 import types._
 

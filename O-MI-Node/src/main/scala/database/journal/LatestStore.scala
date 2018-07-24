@@ -1,7 +1,5 @@
 package database.journal
 
-import java.sql.Timestamp
-
 import akka.actor.ActorLogging
 import akka.persistence._
 import database.journal.Models._

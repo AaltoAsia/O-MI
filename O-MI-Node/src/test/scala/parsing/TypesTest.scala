@@ -3,17 +3,16 @@ package parsing
 import java.net.URI
 
 import akka.http.scaladsl.model.Uri
-
-import scala.collection.JavaConversions.seqAsJavaList
-import scala.concurrent.duration._
-import xml._
 import org.specs2._
 import types.OdfTypes.OdfTreeCollection._
 import types.OdfTypes._
 import types.OmiTypes._
 import types.Path._
-import types.odf.OldTypeConverter
 import types._
+import types.odf.OldTypeConverter
+
+import scala.concurrent.duration._
+import scala.xml._
 
 
 /* Test class for testing ODF Types */

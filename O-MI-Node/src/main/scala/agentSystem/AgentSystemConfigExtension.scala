@@ -2,15 +2,15 @@ package agentSystem
 
 import java.util.concurrent.TimeUnit
 
-import scala.collection.JavaConverters._
-import scala.concurrent.duration._
-import scala.util.{Success, Failure, Try}
-
 import akka.actor.Extension
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigException._
-import types.Path
 import types.OmiTypes.OmiRequestType._
+import types.Path
+
+import scala.collection.JavaConverters._
+import scala.concurrent.duration._
+import scala.util.{Failure, Success, Try}
 
 
 trait AgentSystemConfigExtension extends Extension {

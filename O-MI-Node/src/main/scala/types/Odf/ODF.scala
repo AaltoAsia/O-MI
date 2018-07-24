@@ -2,11 +2,12 @@ package types
 package odf
 
 
-import scala.collection.{ Seq, Map, SortedSet }
-import scala.collection.immutable.{HashMap => ImmutableHashMap }
-import scala.xml.NodeSeq
-import parsing.xmlGen.xmlTypes.{ObjectsType, ObjectType}
+import parsing.xmlGen.xmlTypes.{ObjectType, ObjectsType}
 import parsing.xmlGen.{odfDefaultScope, scalaxb}
+
+import scala.collection.immutable.{HashMap => ImmutableHashMap}
+import scala.collection.{Map, Seq, SortedSet}
+import scala.xml.NodeSeq
 
 /** O-DF structure
   */
@@ -38,7 +39,10 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
 
   def union[TM <: Map[Path, Node], TS <: SortedSet[Path]](that: ODF): ODF
 
-  def removePaths(removedPaths: Seq[Path]): ODF
+  def removePaths(pathsToRemove: Seq[Path]): ODF = {
+    removePaths(pathsToRemove.toSet)
+  }
+  def removePaths(pathsToRemove: Set[Path]): ODF
 
   def immutable: ImmutableODF
 
@@ -147,13 +151,22 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
 
   def get(path: Path): Option[Node] = nodes.get(path)
 
+  /**
+    * Find given paths and all paths of the descendants.
+    * Same as [[selectSubTreePaths]] but doesn't add ancestors of the subtrees
+    */
+  def subTreePaths(pathsToGet: Set[Path]): Set[Path] = (pathsToGet.flatMap {
+    wantedPath: Path =>
+      paths.keysIteratorFrom(wantedPath).takeWhile {
+        path: Path => path == wantedPath || path.isDescendantOf(wantedPath)
+      }
+  })
+
+  /**
+    * Same as [[subTreePaths]] but adds ancestors of the subtrees
+    */
   def selectSubTreePaths(pathsToGet: Set[Path]): Set[Path] = {
-    (pathsToGet.flatMap{
-      wantedPath: Path =>
-        paths.keysIteratorFrom( wantedPath ).takeWhile{
-          path: Path => path == wantedPath || path.isDescendantOf(wantedPath)
-        }
-      }).toSet ++ pathsToGet.flatMap{
+    subTreePaths(pathsToGet) ++ pathsToGet.flatMap{
         path => path.getAncestors
         //case path: Path if (paths.contains(path)) =>
         //  path.getAncestors
@@ -239,9 +252,7 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
 
   def readToNodes(to: ODF): Seq[Node] = {
     val wantedPaths: SortedSet[Path] =
-      to.paths.filter {
-        path: Path => paths.contains(path)
-      } ++ selectSubTreePaths(to.getLeafPaths).filter(path => paths.contains(path))
+      to.paths.intersect(paths) ++ selectSubTreePaths(to.getLeafPaths).intersect(paths)
 
     val wantedNodes: Seq[Node] = wantedPaths.toSeq.map {
       path: Path =>
@@ -286,4 +297,6 @@ object ODF {
       case mutable: 
     }
   }*/
+  def apply(n: Node): ODF = ImmutableODF(n)
+  def apply(n: Node*): ODF = ImmutableODF(n)
 }

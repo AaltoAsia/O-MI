@@ -1,14 +1,11 @@
-package agents
-package parkingService
+package agents.parkingService
 
-import scala.math
 import types.OdfTypes._
 import types._
-
 object Charger{
 
   def apply( obj: OdfObject ) : Charger ={
-     val name = obj.id.headOption
+     //val name = obj.id.headOption
      val brand = obj.get( obj.path / "Brand" ).collect{
        case ii: OdfInfoItem =>
         getStringFromInfoItem( ii )
@@ -22,16 +19,16 @@ object Charger{
         getStringFromInfoItem( ii )
      }.flatten
      val plugO = obj.get( obj.path / "Plugs" ).collect{
-       case cobj: OdfObject if cobj.typeValue == "list" =>
+       case cobj: OdfObject if cobj.typeValue.contains("list") => //Typevalue is Option! do not compare with ==
         cobj.objects.collect{
-          case plugObj: OdfObject if plugObj.typeValue == "mv:Plug" =>
+          case plugObj: OdfObject if plugObj.typeValue.contains("mv:Plug") =>
             PowerPlug(plugObj)
         }
      }.toVector.flatten
-     val pt = obj.get( obj.path / "plugType" ).collect{
-       case ii: OdfInfoItem =>
-        getStringFromInfoItem( ii )
-     }.flatten
+    // val pt = obj.get( obj.path / "plugType" ).collect{
+    //   case ii: OdfInfoItem =>
+    //    getStringFromInfoItem( ii )
+    // }.flatten
      val current = obj.get( obj.path / "currentInA" ).collect{
        case ii: OdfInfoItem =>
         getDoubleFromInfoItem( ii )
@@ -48,7 +45,7 @@ object Charger{
        case ii: OdfInfoItem =>
         getDoubleFromInfoItem( ii )
      }.flatten
-     val tpca = obj.get( obj.path / "threephasedCurrentAvailable" ).collect{
+     val tpca = obj.get( obj.path / "threePhasedCurrentAvailable" ).collect{
        case ii: OdfInfoItem =>
         getBooleanFromInfoItem( ii )
      }.flatten
@@ -112,13 +109,13 @@ case class Charger(
           typeValue = Some( "mv:Model" )
         )
     }
-    val lidStatusII = lidStatus.map{
-      str => 
-        OdfInfoItem(
-          chargerPath / "LidStatus",
-          Vector( OdfValue( str, currentTime ))
-        )
-    }
+   // val lidStatusII = lidStatus.map{
+   //   str =>
+   //     OdfInfoItem(
+   //       chargerPath / "LidStatus",
+   //       Vector( OdfValue( str, currentTime ))
+   //     )
+   // }
     val powerInkWII = powerInkW.map{ pT =>
       OdfInfoItem(
         chargerPath / "powerInkW",

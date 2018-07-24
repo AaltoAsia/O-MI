@@ -1,9 +1,6 @@
-package agents
-package parkingService
+package agents.parkingService
 
-import scala.math
 import types.OdfTypes._
-import types._
 
 //TODO: How to present validFor*?
 object VehicleType extends Enumeration{
@@ -32,7 +29,7 @@ object VehicleType extends Enumeration{
       case Unknown => "Unknown"
   }
 }
-import VehicleType._
+import agents.parkingService.VehicleType._
 
 object Vehicle{
   def apply( obj: OdfObject ): Vehicle ={

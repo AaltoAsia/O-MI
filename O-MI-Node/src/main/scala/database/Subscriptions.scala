@@ -14,22 +14,22 @@
 
 package database
 
-import scala.language.postfixOps
 import java.net.InetAddress
 import java.sql.Timestamp
 import java.util.Date
 
-import scala.collection.immutable.{HashMap}
 import akka.http.scaladsl.model.Uri
+import journal.Models.PersistentSub
+import journal._
 import spray.json.{DefaultJsonProtocol, JsArray, JsNull, JsNumber, JsObject, JsString, JsValue, RootJsonFormat}
+import types.OmiTypes._
 import types._
 import types.odf._
-import types.OmiTypes._
-import journal.Models.PersistentSub
-import journal.{PPollNormalEventSub, PPollNewEventSub, PNewEventSub, PIntervalSub, PNormalEventSub, PPollIntervalSub}
 
-import collection.breakOut
+import scala.collection.breakOut
+import scala.collection.immutable.HashMap
 import scala.concurrent.duration._
+import scala.language.postfixOps
 
 sealed trait SavedSub {
   val id: Long
@@ -380,6 +380,7 @@ object CustomJsonProtocol extends DefaultJsonProtocol {
             "paths" -> JsArray(paths.map(p => JsString(p.toString))),
             "data" -> JsNull
           )
+        case other => throw new Exception(s"Uknown subscription type when serializing: $other" )
       }
     }
   }

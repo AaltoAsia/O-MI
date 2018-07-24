@@ -3,33 +3,31 @@ package influxDB
 
 import java.sql.Timestamp
 
-import scala.math.Numeric
-import scala.concurrent.{Await, Future}
-import scala.concurrent.duration._
-import scala.util.{Try}
 import akka.actor.ActorSystem
 import akka.event.LoggingAdapter
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.client.RequestBuilding
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
-import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.ContentTypes._
+import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.unmarshalling._
+import akka.pattern.ask
 import akka.stream.{ActorMaterializer, Materializer}
+import akka.util.Timeout
+import journal.Models.{ErasePathCommand, GetTree, MultipleReadCommand}
 import spray.json._
-import types.odf._
 import types.OmiTypes._
 import types.Path
 import types.Path._
+import types.odf._
 
 import scala.collection.immutable
+import scala.concurrent.duration._
+import scala.concurrent.{Await, Future}
 import scala.language.postfixOps
-import journal.Models.GetTree
-import journal.Models.MultipleReadCommand
-import journal.Models.ErasePathCommand
-import akka.pattern.ask
-import akka.util.Timeout
+import scala.math.Numeric
+import scala.util.Try
 
 object InfluxDBJsonProtocol extends DefaultJsonProtocol {
   def getSeries(json: spray.json.JsValue): immutable.Seq[JsValue] = json match {
@@ -38,16 +36,13 @@ object InfluxDBJsonProtocol extends DefaultJsonProtocol {
         case results: JsArray =>
           results.elements.collect {
             case statementObj: JsObject =>
-              statementObj.getFields("statement_id").headOption match {
-                case Some(id: JsNumber) =>
-                //log.warning( s"Parsing JSON result for statement $id" )
-              }
               statementObj.getFields("series").collect {
                 case series: JsArray =>
                   series.elements
               }.flatten
           }.flatten
       }.flatten
+    case other => immutable.Seq.empty[JsValue] //should this throw error instead?
   }
 
   def measurementNameToPath(measurementName: String): Path = Path(measurementName.replace("\\=", "=")
@@ -313,7 +308,7 @@ class InfluxDBImplementation
     val response = httpExt.singleRequest(request)
 
     response.failed.foreach {
-      case t: Throwable =>
+      t: Throwable =>
         log.warning(request.toString)
         log.error(t, "Failed to communicate to InfluxDB")
     }
@@ -414,10 +409,10 @@ class InfluxDBImplementation
 
     }
     formatedResponse.failed.foreach {
-      case t: Throwable =>
+      t: Throwable =>
         log.error(t,
-          "Failed to communicate to InfluxDB.")
-        log.warning(t.getStackTrace().mkString("\n"))
+                  "Failed to communicate to InfluxDB.")
+        log.warning(t.getStackTrace.mkString("\n"))
     }
     formatedResponse
   }

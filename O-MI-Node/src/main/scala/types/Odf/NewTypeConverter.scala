@@ -1,8 +1,9 @@
 package types
 package odf
 
-import scala.collection.immutable.HashMap
 import types.OdfTypes._
+
+import scala.collection.immutable.HashMap
 
 @deprecated("Should refactor all OdfTypes usages to use new ODF types.", "O-MI-Node 0.11.0")
 object NewTypeConverter {

@@ -1,10 +1,10 @@
 package agentSystem
 
-import scala.collection.mutable.{Map => MutableMap}
-import scala.collection.immutable.{Map => ImmutableMap}
-
 import types.OmiTypes._
 import types.Path
+
+import scala.collection.immutable.{Map => ImmutableMap}
+import scala.collection.mutable.{Map => MutableMap}
 
 object AgentResponsibilities {
 
@@ -12,7 +12,7 @@ object AgentResponsibilities {
 
 }
 
-import AgentResponsibilities._
+import agentSystem.AgentResponsibilities._
 
 
 class AgentResponsibilities() {
@@ -28,8 +28,8 @@ class AgentResponsibilities() {
     }
   }
   def splitReadAndDeleteToResponsible( request: OdfRequest ) : ImmutableMap[Option[AgentName], OdfRequest] ={
-    def filter: RequestFilter => Boolean = createFilter(request)
-    val odf = request.odf
+    //def filter: RequestFilter => Boolean = createFilter(request)
+    //val odf = request.odf
     ???
   }
 
@@ -85,7 +85,7 @@ class AgentResponsibilities() {
     if( resp.size > 1 ){
       resp.map {
         case (responsible: Option[AgentName], paths: Set[Path]) =>
-          responsible -> request.replaceOdf(odf.selectUpTree(paths.toSet))
+          responsible -> request.replaceOdf(odf.selectUpTree(paths))
       }
     } else {
       resp.headOption.map{
@@ -125,7 +125,7 @@ class AgentResponsibilities() {
     filter
   }
 
-  def removeAgent(agentName: AgentName) = {
+  def removeAgent(agentName: AgentName): MutableMap[Path, AgentResponsibility] = {
     val agentsResponsibilities = pathsToResponsible.values.collect {
       case AgentResponsibility(aN: AgentName, path: Path, rf: RequestFilter) if agentName == aN =>
         path
@@ -135,7 +135,7 @@ class AgentResponsibilities() {
 
   }
 
-  def add(agentResponsibilities: Seq[AgentResponsibility]) = {
+  def add(agentResponsibilities: Seq[AgentResponsibility]): MutableMap[Path, AgentResponsibility]= {
     val newMappings = agentResponsibilities.map {
       case ar@AgentResponsibility(agentName: AgentName, path: Path, requestFilter: RequestFilter) =>
         path -> ar
@@ -182,9 +182,9 @@ class AgentResponsibilities() {
     }
     //println( s"Responsible Agent's names:\n${responsibleToPaths.keys}")
 
-    val result = responsibleToPaths.keys.flatten.filter {
-      keyname: AgentName => optionAgentName.forall { name => name != keyname }
-    }.isEmpty
+    val result = !responsibleToPaths.keys.flatten.exists {
+      keyname: AgentName => !optionAgentName.contains(keyname)
+    }
     //println( s"Permissien check:$result")
     result
   }

@@ -28,7 +28,7 @@ import types.odf._
 import scala.collection.JavaConverters._
 import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
-import scala.xml.NodeSeq
+import scala.xml.{NamespaceBinding, NodeSeq}
 
 trait JavaOmiRequest {
   def callbackAsJava(): JIterable[Callback]
@@ -58,7 +58,7 @@ sealed trait OmiRequest extends RequestWrapper with JavaOmiRequest {
 
   def timeTTLLimit(begin: Timestamp = currentTimestamp): OmiRequest
 
-  def timedout: Boolean = ttlLimit.map { ts => ts.before(currentTimestamp) }.getOrElse(false)
+  def timedout: Boolean = ttlLimit.exists { ts => ts.before(currentTimestamp) }
 
   def parsed: OmiParseResult = Right(Iterable(this))
 
@@ -168,9 +168,9 @@ class RawRequestWrapper(val rawRequest: String, private val user0: UserInfo) ext
 
 
   class Element(private val ev: EvElemStart) {
-    val pre = ev.pre
-    val label = ev.label
-    val scope = ev.scope
+    val pre: String = ev.pre
+    val label: String = ev.label
+    val scope: NamespaceBinding = ev.scope
 
     def attr(key: String): Option[String] = for {
       nodeSeqAttr <- ev.attrs.get(key)
@@ -269,7 +269,7 @@ object RawRequestWrapper {
 
 }
 
-import RawRequestWrapper.MessageType
+import types.OmiTypes.RawRequestWrapper.MessageType
 
 /**
   * Trait for subscription like classes. Offers a common interface for subscription types.
@@ -355,7 +355,7 @@ case class ReadRequest(
 
   def withSenderInformation(si: SenderInformation): OmiRequest = this.copy(senderInformation = Some(si))
 
-  val requestVerb = MessageType.Read
+  val requestVerb: MessageType.Read.type = MessageType.Read
 }
 
 /**
@@ -396,7 +396,7 @@ case class PollRequest(
 
   def withSenderInformation(si: SenderInformation): OmiRequest = this.copy(senderInformation = Some(si))
 
-  val requestVerb = MessageType.Read
+  val requestVerb: MessageType.Read.type = MessageType.Read
 }
 
 /**
@@ -436,7 +436,7 @@ case class SubscriptionRequest(
       callbackAsUri.map(c => "@callback" -> DataRecord(c)),
       Some("@msgformat" -> DataRecord("odf")),
       Some("@targetType" -> DataRecord(TargetTypeType.fromString("node", omiDefaultScope))),
-      Some("@interval" -> DataRecord(interval.toSeconds.toString()))
+      Some("@interval" -> DataRecord(interval.toSeconds.toString))
     ).flatten.toMap
   )
 
@@ -446,7 +446,7 @@ case class SubscriptionRequest(
 
   def replaceOdf(nOdf: ODF): SubscriptionRequest = copy(odf = nOdf)
 
-  val requestVerb = MessageType.Read
+  val requestVerb: MessageType.Read.type = MessageType.Read
 }
 
 
@@ -537,7 +537,7 @@ case class CallRequest(
 
   def withSenderInformation(si: SenderInformation): OmiRequest = this.copy(senderInformation = Some(si))
 
-  val requestVerb = MessageType.Call
+  val requestVerb: MessageType.Call.type = MessageType.Call
 }
 
 case class DeleteRequest(
@@ -580,7 +580,7 @@ case class DeleteRequest(
 
   def withSenderInformation(si: SenderInformation): OmiRequest = this.copy(senderInformation = Some(si))
 
-  val requestVerb = MessageType.Delete
+  val requestVerb: MessageType.Delete.type = MessageType.Delete
 }
 
 /**
@@ -616,7 +616,7 @@ case class CancelRequest(
 
   def withSenderInformation(si: SenderInformation): OmiRequest = this.copy(senderInformation = Some(si))
 
-  val requestVerb = MessageType.Cancel
+  val requestVerb: MessageType.Cancel.type = MessageType.Cancel
 }
 
 trait JavaResponseRequest {
@@ -660,13 +660,13 @@ class ResponseRequest(
 
   implicit def asResponseListType: xmlTypes.ResponseListType =
     xmlTypes.ResponseListType(
-      results.map { result =>
-        result.asRequestResultType
-      }.toVector)
+                               results.map { result =>
+                                 result.asRequestResultType
+                               })
 
   def union(another: ResponseRequest): ResponseRequest = {
     ResponseRequest(
-      Results.unionReduce((results ++ another.results).toVector),
+                     Results.unionReduce((results ++ another.results)),
       if (ttl >= another.ttl) ttl else another.ttl
     )
   }
@@ -702,7 +702,7 @@ class ResponseRequest(
     )
   }
 
-  val requestVerb = MessageType.Response
+  val requestVerb: MessageType.Response.type = MessageType.Response
 }
 
 

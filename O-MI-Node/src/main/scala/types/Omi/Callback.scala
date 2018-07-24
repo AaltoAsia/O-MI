@@ -3,10 +3,11 @@ package OmiTypes
 
 import java.net.InetAddress
 
-import scala.util.Try
 import akka.http.scaladsl.model.Uri
-import Callback._
 import database.journal.PCallback
+import types.OmiTypes.Callback._
+
+import scala.util.Try
 
 /**
   * Contains information for sending callbacks for a request or subscription
@@ -40,19 +41,19 @@ trait WebSocketCallback extends DefinedCallback {
 final case class CurrentConnectionCallback(identifier: ConnectionIdentifier) extends WebSocketCallback {
   val address: String = "0"
 
-  def persist() = None
+  def persist(): Option[PCallback] = None
 }
 
 final case class WSCallback(uri: Uri) extends WebSocketCallback {
   val address: String = uri.toString
 
-  def persist() = None
+  def persist(): Option[PCallback] = None
 }
 
 final case class HTTPCallback(uri: Uri) extends DefinedCallback {
   val address: String = uri.toString
 
-  def persist() = Some(PCallback(address))
+  def persist(): Option[PCallback] = Some(PCallback(address))
 }
 
 final case class RawCallbackFound(msg: String) extends Exception(msg)

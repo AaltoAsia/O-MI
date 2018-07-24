@@ -3,10 +3,10 @@ package odf
 
 import database.journal.PPersistentNode.NodeType.Ii
 import database.journal.{PInfoItem, PPersistentNode}
-import scala.collection.immutable.{ HashMap, Map =>IMap}
-
 import parsing.xmlGen.scalaxb.DataRecord
 import parsing.xmlGen.xmlTypes.InfoItemType
+
+import scala.collection.immutable.{HashMap, Map => IMap}
 
 object InfoItem {
   def apply(path: Path, values: Vector[Value[Any]]): InfoItem = {
@@ -224,7 +224,7 @@ case class InfoItem(
           this.metaData.map {
             md =>
               md.copy(md.infoItems.filter {
-                case ii: InfoItem =>
+                ii: InfoItem =>
                   names.contains(ii.nameAttribute)
               })
           }
@@ -246,8 +246,8 @@ case class InfoItem(
   }
 
   def persist: PPersistentNode.NodeType = Ii(PInfoItem(typeAttribute.getOrElse(""),
-    names.map(_.persist),
-    descriptions.map(_.persist).toSeq,
-    metaData.map(_.persist()),
-    attributes))
+                                                       names.map(_.persist),
+                                                       descriptions.map(_.persist()).toSeq,
+                                                       metaData.map(_.persist()),
+                                                       attributes))
 }

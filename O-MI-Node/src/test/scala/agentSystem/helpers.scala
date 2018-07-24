@@ -1,17 +1,13 @@
 package agentSystem
 
-import scala.util.Try
-import scala.concurrent.{Future, ExecutionContext, TimeoutException, Promise}
-import scala.collection.mutable.{Map => MutableMap}
-
+import agentSystem.AgentEvents._
+import akka.actor.{Actor, ActorRef, Props, Terminated}
 import com.typesafe.config.Config
-import akka.actor.{ActorRef, Actor, ActorSystem, Props, Terminated}
-import akka.testkit.TestActorRef
-
-import agentSystem._
-import types.OmiTypes.{Responses, WriteRequest, ReadRequest, CallRequest, ResponseRequest}
 import http.CLICmds._
-import AgentEvents._
+import types.OmiTypes.{CallRequest, ResponseRequest, Responses, WriteRequest}
+
+import scala.collection.mutable.{Map => MutableMap}
+import scala.concurrent.Future
 
 class FailurePropsAgent(
                          protected val requestHandler: ActorRef,
@@ -156,7 +152,7 @@ object WrongPropsAgent extends PropsCreator {
 class TestManager(testAgents: scala.collection.mutable.Map[AgentName, AgentInfo],
                   protected val dbHandler: ActorRef,
                   protected val requestHandler: ActorRef
-                 )(implicit system: ActorSystem) extends BaseAgentSystem with InternalAgentManager {
+                 ) extends BaseAgentSystem with InternalAgentManager {
   protected val agents: scala.collection.mutable.Map[AgentName, AgentInfo] = testAgents
   agents.values.foreach {
     ai: AgentInfo =>
@@ -178,7 +174,7 @@ class TestManager(testAgents: scala.collection.mutable.Map[AgentName, AgentInfo]
       agentStopped(agentRef)
   }
 
-  def getAgents = agents
+  def getAgents: MutableMap[AgentName, AgentInfo] = agents
 }
 
 class AgentSystemSettings(val config: Config) extends AgentSystemConfigExtension
@@ -202,7 +198,7 @@ class TestLoader(testConfig: AgentSystemConfigExtension,
                  protected val requestHandler: ActorRef
                 ) extends BaseAgentSystem with InternalAgentLoader {
   protected[this] val agents: scala.collection.mutable.Map[AgentName, AgentInfo] = MutableMap.empty
-  override protected[this] val settings = testConfig
+  override protected[this] val settings: AgentSystemConfigExtension = testConfig
 
   def receive: Actor.Receive = {
     case ListAgentsCmd() => sender() ! agents.values.toVector

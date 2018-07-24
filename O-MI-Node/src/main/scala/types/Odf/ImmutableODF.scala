@@ -1,10 +1,11 @@
 package types
 package odf
 
-import scala.collection.{ Seq, Map, SortedSet }
-import scala.collection.immutable.{TreeSet => ImmutableTreeSet, HashMap => ImmutableHashMap }
-import scala.collection.mutable.{HashMap => MutableHashMap }
 import types.Path._
+
+import scala.collection.immutable.{HashMap => ImmutableHashMap, TreeSet => ImmutableTreeSet}
+import scala.collection.mutable.{HashMap => MutableHashMap}
+import scala.collection.{Map, Seq, SortedSet}
 
 case class ImmutableODF private[odf](
                                       nodes: ImmutableHashMap[Path, Node]
@@ -13,6 +14,8 @@ case class ImmutableODF private[odf](
 
   type M = ImmutableHashMap[Path, Node]
   type S = ImmutableTreeSet[Path]
+
+  override val getNodesMap: ImmutableHashMap[Path, Node] = nodes
 
   def select(that: ODF): ODF = {
     ImmutableODF(
@@ -51,7 +54,7 @@ case class ImmutableODF private[odf](
   def union[TM <: Map[Path, Node], TS <: SortedSet[Path]](that: ODF): ODF = {
     val pathIntersection: SortedSet[Path] = this.paths.intersect(that.paths)
     val thisOnlyNodes: Set[Node] = (paths -- pathIntersection).flatMap {
-      case p: Path =>
+      p: Path =>
         nodes.get(p)
     }
     val thatOnlyNodes: Set[Node] = (that.paths -- pathIntersection).flatMap {
@@ -81,20 +84,13 @@ case class ImmutableODF private[odf](
     )
   }
 
-  def removePaths(pathsToRemove: Seq[Path]): ODF = {
-    val subTrees = paths.filter {
-      p =>
-        pathsToRemove.contains(p) ||
-          pathsToRemove.exists(_.isAncestorOf(p))
-    }.toSet
+  def removePaths(pathsToRemove: Set[Path]): ODF = {
+    val subTrees = subTreePaths(pathsToRemove)
     this.copy(nodes -- subTrees)
   }
 
   def removePath(path: Path): ODF = {
-    val subtreeP = paths.filter {
-      p =>
-        path.isAncestorOf(p) || p == path
-    }
+    val subtreeP = subTreePaths(Set(path))
     this.copy(nodes -- subtreeP)
   }
 
@@ -260,4 +256,5 @@ object ImmutableODF {
       )
     )
   }
+  def apply(single: Node): ImmutableODF = apply(Vector(single))
 }

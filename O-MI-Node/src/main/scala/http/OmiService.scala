@@ -16,7 +16,6 @@ package http
 
 import java.net.{InetAddress, URI, URLDecoder}
 import java.nio.file.{Files, Paths}
-import scala.language.postfixOps
 
 import akka.actor.{ActorRef, ActorSystem}
 import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport
@@ -26,13 +25,13 @@ import akka.http.scaladsl.model.{ws, _}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.pattern.ask
-import akka.stream.{ActorMaterializer, _}
 import akka.stream.scaladsl._
-import authorization.AuthAPIService
-import authorization.Authorization._
-import authorization._
+import akka.stream.{ActorMaterializer, _}
 import akka.util.Timeout
+import authorization.Authorization._
+import authorization.{AuthAPIService, _}
 import database.SingleStores
+import database.journal.Models.GetTree
 import org.slf4j.LoggerFactory
 import responses.CallbackHandler._
 import responses.{CallbackHandler, RESTHandler, RemoveSubscription}
@@ -44,9 +43,9 @@ import types.{ParseError, Path}
 import scala.compat.java8.OptionConverters._
 import scala.concurrent.duration._
 import scala.concurrent.{Future, Promise, TimeoutException}
+import scala.language.postfixOps
 import scala.util.{Failure, Success, Try}
 import scala.xml.NodeSeq
-import database.journal.Models.GetTree
 
 trait OmiServiceAuthorization
   extends ExtensibleAuthorization
@@ -63,7 +62,7 @@ trait OmiServiceAuthorization
   */
 class OmiServiceImpl(
                       protected val system: ActorSystem,
-                      protected val materializer: ActorMaterializer,
+                      val materializer: ActorMaterializer,
                       protected val subscriptionManager: ActorRef,
                       val settings: OmiConfigExtension,
                       val singleStores: SingleStores,
@@ -309,8 +308,8 @@ trait OmiService
                   defineCallbackForRequest(request, currentConnectionCallback).flatMap {
                     request: OmiRequest => handleRequest(request)
                   }.recover {
-                    case e: TimeoutException => Responses.TTLTimeout(Some(e.getMessage()))
-                    case e: IllegalArgumentException => Responses.InvalidRequest(Some(e.getMessage()))
+                    case e: TimeoutException => Responses.TTLTimeout(Some(e.getMessage))
+                    case e: IllegalArgumentException => Responses.InvalidRequest(Some(e.getMessage))
                     case icb: InvalidCallback => Responses.InvalidCallback(icb.callback, Some(icb.message))
                     case t: Throwable =>
                       log.error("Internal Server Error: ", t)
@@ -415,7 +414,7 @@ trait OmiService
       lazy val userAddr = for {
         remoteAddr <- request.user.remoteAddress
         hostAddr <- remoteAddr.getAddress.asScala
-        callbackAddr <- Try(InetAddress.getByName(new URI(address).getHost).getHostAddress()).toOption
+        callbackAddr <- Try(InetAddress.getByName(new URI(address).getHost).getHostAddress).toOption
         userAddress = hostAddr.getHostAddress
       } yield (userAddress, callbackAddr)
 
@@ -428,7 +427,7 @@ trait OmiService
           request.withCallback(Some(callback))).recoverWith {
           case throwable: Throwable =>
             Try {
-              throw InvalidCallback(RawCallback(address), throwable.getMessage(), throwable)
+              throw InvalidCallback(RawCallback(address), throwable.getMessage, throwable)
             }
         }
         Future.fromTry(result)
@@ -466,7 +465,6 @@ trait OmiService
         extractClientIP { user =>
           //val xmlH = XML.loadString("""<?xml version="1.0" encoding="UTF-8"?>""" )
           val response = handleRequest(hasPermissionTest, requestString, remote = user) //.map{ ns => xmlH ++ ns }
-        val marshal = ToResponseMarshallable(response)(Marshaller.futureMarshaller(xmlCT))
           complete(response)
         }
       }
@@ -497,7 +495,7 @@ trait WebSocketOMISupport {
   self: OmiService =>
   protected def system: ActorSystem
 
-  protected implicit def materializer: ActorMaterializer
+  implicit def materializer: ActorMaterializer
 
   protected def subscriptionManager: ActorRef
 

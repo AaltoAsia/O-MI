@@ -14,15 +14,14 @@
 
 package authorization
 
-import scala.util.{Failure, Success}
-
 import akka.http.scaladsl.model.HttpHeader
 import akka.http.scaladsl.server.Directive1
 import akka.http.scaladsl.server.Directives.optionalHeaderValue
-
-import types.OmiTypes._
-import Authorization.{UnauthorizedEx, AuthorizationExtension, CombinedTest, PermissionTest}
+import authorization.Authorization.{AuthorizationExtension, CombinedTest, PermissionTest, UnauthorizedEx}
 import http.OmiConfigExtension
+import types.OmiTypes._
+
+import scala.util.{Failure, Success}
 
 
 /** EduPersonPrincipalName, used as user identifier */

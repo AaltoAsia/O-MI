@@ -2,12 +2,12 @@ package parsing
 package xmlGen
 package scalaxb
 
-import scala.xml.{Node, NodeSeq, NamespaceBinding, Elem}
+import javax.xml.bind.DatatypeConverter
 import javax.xml.datatype.XMLGregorianCalendar
 import javax.xml.namespace.QName
-import javax.xml.bind.DatatypeConverter
 
 import scala.language.implicitConversions
+import scala.xml.{Elem, NamespaceBinding, Node, NodeSeq}
 
 object `package` {
 
@@ -695,8 +695,8 @@ object ElemName {
 
 trait AnyElemNameParser extends scala.util.parsing.combinator.Parsers {
 
-  import scala.collection.mutable.ListBuffer
   import scala.annotation.tailrec
+  import scala.collection.mutable.ListBuffer
 
   type Elem = ElemName
 
@@ -983,8 +983,9 @@ object Helper {
   }
 
   def toCalendar(value: java.util.GregorianCalendar): XMLGregorianCalendar = {
-    import javax.xml.datatype._
     import java.util.{GregorianCalendar, Calendar => JCalendar}
+
+    import javax.xml.datatype._
 
     val xmlGregorian = DataTypeFactory.get().newXMLGregorianCalendar()
     if (value.getTimeZone != null) {

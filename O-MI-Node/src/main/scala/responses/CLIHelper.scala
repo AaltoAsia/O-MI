@@ -18,19 +18,19 @@ package responses
 
 import java.util.concurrent.TimeUnit
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
-import scala.util.{Failure, Success}
-import akka.event.{LogSource, Logging, LoggingAdapter}
 import akka.actor.ActorSystem
-import database._
-import types.odf._
-import types._
-import journal.Models.{ErasePathCommand, GetTree, UnionCommand, WriteCommand}
+import akka.event.{LogSource, Logging, LoggingAdapter}
 import akka.pattern.ask
 import akka.util.Timeout
+import database._
+import journal.Models.{ErasePathCommand, GetTree, UnionCommand, WriteCommand}
+import types._
+import types.odf._
 
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 import scala.concurrent.duration._
+import scala.util.{Failure, Success}
 
 trait CLIHelperT {
   def handlePathRemove(parentPathS: Seq[Path]): Future[Seq[Int]]
@@ -46,11 +46,9 @@ class CLIHelper(val singleStores: SingleStores, dbConnection: DB)(implicit syste
   implicit val timeout: Timeout = system.settings.config
     .getDuration("omi-service.journal-ask-timeout",TimeUnit.MILLISECONDS).milliseconds
 
-  implicit val logSource: LogSource[CLIHelper] = new LogSource[CLIHelper] {
-    def genString(handler: CLIHelper): String = handler.toString
-  }
+  implicit val logSource: LogSource[CLIHelper] = (handler: CLIHelper) => handler.toString
   protected val log: LoggingAdapter = Logging(system, this)
-  def takeSnapshot() = singleStores.takeSnapshot
+  def takeSnapshot(): Future[Any] = singleStores.takeSnapshot
   def handlePathRemove(parentPaths: Seq[Path]): Future[Seq[Int]] = {
     val odfF = (singleStores.hierarchyStore ? GetTree).mapTo[ImmutableODF]
 
@@ -59,7 +57,7 @@ class CLIHelper(val singleStores: SingleStores, dbConnection: DB)(implicit syste
       nodeO.flatMap {
         case Some(node) => {
 
-          val leafs = odfF.map(_.getPaths.filter {
+          odfF.foreach(_.getPaths.filter {
             p: Path =>
               node.path.isAncestorOf(p)
           }.foreach { path =>

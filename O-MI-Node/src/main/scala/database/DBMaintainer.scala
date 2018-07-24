@@ -15,11 +15,11 @@
 package database
 
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration._
-
 import akka.actor._
 import http.OmiConfigExtension
+
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
 
 object DBMaintainer {
   def props(

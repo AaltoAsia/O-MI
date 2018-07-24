@@ -8,12 +8,12 @@
 
 package parsing.xmlGen.omi;
 
-import java.util.ArrayList;
-import java.util.List;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlType;
+import java.util.ArrayList;
+import java.util.List;
 
 
 /**
@@ -49,11 +49,11 @@ public class CancelRequestType {
 
     /**
      * Gets the value of the nodeList property.
-     * 
+     *
      * @return
      *     possible object is
      *     {@link NodesType }
-     *     
+     *
      */
     public NodesType getNodeList() {
         return nodeList;

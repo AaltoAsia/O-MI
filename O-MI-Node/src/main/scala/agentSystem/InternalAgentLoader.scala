@@ -17,14 +17,13 @@ import java.io.File
 import java.net.URLClassLoader
 import java.util.jar.JarFile
 
+import agentSystem.AgentEvents._
+import akka.actor.{ActorRef, Props}
+import com.typesafe.config.Config
+
 import scala.collection.JavaConverters._
 import scala.language.postfixOps
 import scala.util.{Failure, Success, Try}
-
-import akka.actor.{Props, ActorRef}
-
-import com.typesafe.config.Config
-import AgentEvents._
 
 sealed trait InternalAgentLoadFailure {
   def msg: String
@@ -268,21 +267,21 @@ trait InternalAgentLoader extends BaseAgentSystem {
     loadJar(file)
   }
 
-  private[this] def addJarToClassloader(jarName: String): Unit = {
-    val urlsO = loadJar(jarName)
-    urlsO match {
-      case None =>
-      case Some(arr) =>
-        arr foreach {
-          url =>
-            log.info("Deploying " + url)
-        }
-        val urls = arr map {
-          _.toURI.toURL
-        }
-        val classLoader = new URLClassLoader(urls, Thread.currentThread.getContextClassLoader)
-        Thread.currentThread.setContextClassLoader(classLoader)
-    }
-  }
+ // private[this] def addJarToClassloader(jarName: String): Unit = {
+ //   val urlsO = loadJar(jarName)
+ //   urlsO match {
+ //     case None =>
+ //     case Some(arr) =>
+ //       arr foreach {
+ //         url =>
+ //           log.info("Deploying " + url)
+ //       }
+ //       val urls = arr map {
+ //         _.toURI.toURL
+ //       }
+ //       val classLoader = new URLClassLoader(urls, Thread.currentThread.getContextClassLoader)
+ //       Thread.currentThread.setContextClassLoader(classLoader)
+ //   }
+ // }//TODO uncomment if needed
 
 }

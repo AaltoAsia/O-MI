@@ -1,13 +1,7 @@
 package types;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import types.OdfTypes.*;
-import java.sql.Timestamp;
-import scala.collection.immutable.HashMap;
-import scala.concurrent.duration.*;
-import types.OmiTypes.*;
 import types.OmiTypes.Returns;
+import types.OmiTypes.OmiReturn;
 
 final public class ReturnFactory{
   public static OmiReturn Success(

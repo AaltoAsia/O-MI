@@ -16,11 +16,11 @@ package parsing
 import java.io.{File, IOException, StringReader}
 import java.sql.Timestamp
 import java.util.Date
+
 import javax.xml.XMLConstants
 import javax.xml.parsers.SAXParserFactory
 import javax.xml.transform.stream.StreamSource
 import javax.xml.validation.{Schema, SchemaFactory, Validator}
-
 import org.xml.sax.SAXException
 import types.{ParseError, SchemaError}
 

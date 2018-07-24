@@ -1,8 +1,9 @@
 package agents.parking
 
-import scala.util.{Try, Failure, Success}
-import types.odf._
 import types._
+import types.odf._
+
+import scala.util.{Failure, Success, Try}
 
 case class Charger(
   id: String,
@@ -31,8 +32,8 @@ case class Charger(
       other.threePhasedCurrentAvailable.orElse(threePhasedCurrentAvailable),
       other.isFastChargeCapable.orElse(isFastChargeCapable),
       (this.plugs ++ other.plugs).groupBy(_.id).map{
-        case (id, plugs: Seq[Plug] ) =>
-          plugs.fold(Plug(id)){
+        case (_id, plugs: Seq[Plug] ) =>
+          plugs.fold(Plug(_id)){
             case (l: Plug, r: Plug) => l.update(r)
           }
       }.toSeq
@@ -123,8 +124,8 @@ object Charger{
         case Some(obj: Object) if obj.typeAttribute.contains(mvType) =>
           val plugs: Seq[Plug] = odf.get( path / "Plugs").map{
             case obj: Object => 
-              val ( success, fails ) = odf.getChilds( path / "Plugs").map{
-                case node: Node => Plug.parseOdf(node.path,odf)
+              val ( success, fails ) = odf.getChilds( path / "Plugs").map {
+                node: Node => Plug.parseOdf(node.path, odf)
               }.partition{ 
                 case Success(_) => true
                 case Failure(_) => false
@@ -134,6 +135,7 @@ object Charger{
                   fails.map{
                     case Failure( pe: ParseError ) => pe
                     case Failure( e ) => throw e
+                    case _ => throw new IllegalStateException("Failures should not contain Success")
                   }
                 )
                 
@@ -156,7 +158,7 @@ object Charger{
             getDoubleOption("powerInkW",path,odf),
             getDoubleOption("voltageInV",path,odf),
             getBooleanOption("threePhasedCurrentAvailable",path,odf),
-            getBooleanOption("isFastChargeCopable",path,odf),
+            getBooleanOption("isFastChargeCapable",path,odf),
             plugs
           )
         case Some(obj: Object) => 

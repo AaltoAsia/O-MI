@@ -1,21 +1,17 @@
 package agents
 
-import scala.util.{Success, Failure}
-import scala.concurrent.Future
-
-import akka.actor.{Cancellable, Props, Actor, ActorRef}
-import akka.util.Timeout
-import akka.pattern.ask
-
-import agentSystem._ 
+import agentSystem._
+import akka.actor.{Actor, ActorRef, Props}
 import com.typesafe.config.Config
 import types.OmiTypes._
+
+import scala.concurrent.Future
+import scala.util.{Failure, Success}
 
 /**
  * Companion object for ResponsibleScalaAgent. Extends PropsCreator to enforce recommended practice in Props creation.
  *  <a href="http://doc.akka.io/docs/akka/2.4/scala/actors.html#Recommended_Practices">Akka recommends to</a>.
  *
- *  @param _config Contains configuration for this agent, as given in application.conf.
  */
 object ResponsibleScalaAgent extends PropsCreator{
   /**
@@ -80,6 +76,6 @@ class ResponsibleScalaAgent(
     //Following are inherited from ResponsibleScalaInternalActor.
     case write: WriteRequest => respondFuture(handleWrite(write))
     //ScalaAgent specific messages
-    case Update() => update
+    case Update() => update()
   }
 }

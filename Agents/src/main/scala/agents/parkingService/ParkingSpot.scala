@@ -1,11 +1,7 @@
-package agents
-package parkingService
+package agents.parkingService
 
-import scala.math
-import scala.util._
 import types.OdfTypes._
 import types._
-
 
 object UserGroup extends Enumeration{
   type UserGroup = Value
@@ -33,8 +29,8 @@ object UserGroup extends Enumeration{
     }
   }
 }
-import UserGroup._
-import VehicleType._
+import agents.parkingService.UserGroup._
+import agents.parkingService.VehicleType._
 
 case class ParkingSpace(
                          name: String,
@@ -70,7 +66,7 @@ case class ParkingSpace(
       OdfInfoItem(
         spotPath / "validForVehicle",
         Vector( OdfValue( VehicleType.toString(v), currentTime ) ),
-        typeValue = Some( "mv:intededForVehicle")
+        typeValue = Some( "mv:validForVehicle")
       ) 
     }.toVector
     val userGroupII = validForUserGroup.map{
@@ -84,7 +80,7 @@ case class ParkingSpace(
     val maxHII = maxHeight.map{
       v: Double=>
       OdfInfoItem(
-        spotPath / "vechileHeightLimit",
+        spotPath / "vehicleHeightLimit",
         Vector( OdfValue( v, currentTime ) ),
         typeValue = Some( "mv:vehicleHeightLimit")
       ) 
@@ -92,7 +88,7 @@ case class ParkingSpace(
     val maxLII = maxLength.map{
       v: Double=>
       OdfInfoItem(
-        spotPath / "vechileLengthLimit",
+        spotPath / "vehicleLengthLimit",
         Vector( OdfValue( v, currentTime ) ),
         typeValue = Some( "mv:vehicleLengthLimit")
       ) 
@@ -100,7 +96,7 @@ case class ParkingSpace(
     val maxWII = maxWidth.map{
       v: Double=>
       OdfInfoItem(
-        spotPath / "vechileWidthLimit",
+        spotPath / "vehicleWidthLimit",
         Vector( OdfValue( v, currentTime ) ),
         typeValue = Some( "mv:vehicleWidthLimit")
       ) 
@@ -143,14 +139,14 @@ object ParkingSpace {
     }.flatten
     val iFV = obj.get( obj.path / "validForVehicle" ).collect{
       case ii: OdfInfoItem =>
-        getStringFromInfoItem( ii ).map{
-          case str: String  =>  VehicleType(str)
+        getStringFromInfoItem( ii ).map {
+          str: String => VehicleType(str)
         }
     }.flatten
     val ut = obj.get( obj.path / "validForUserGroup" ).collect{
       case ii: OdfInfoItem =>
-        getStringFromInfoItem( ii ).map{
-          case str: String  =>  UserGroup(str)
+        getStringFromInfoItem( ii ).map {
+          str: String => UserGroup(str)
         }
     }.flatten
     val charger = obj.get( obj.path / "Charger" ).collect{

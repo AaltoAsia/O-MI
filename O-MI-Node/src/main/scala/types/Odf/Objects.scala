@@ -1,13 +1,13 @@
 package types
 package odf
 
+import database.journal.PPersistentNode.NodeType.Objs
 import database.journal.{PObjects, PPersistentNode}
-import database.journal.PPersistentNode.NodeType.{Objs}
-import scala.language.implicitConversions
-
-import scala.collection.immutable.{ HashMap, Map =>IMap}
 import parsing.xmlGen.scalaxb.DataRecord
 import parsing.xmlGen.xmlTypes.{ObjectType, ObjectsType}
+
+import scala.collection.immutable.{HashMap, Map => IMap}
+import scala.language.implicitConversions
 
 @SerialVersionUID(2921615916249400841L)
 case class Objects(

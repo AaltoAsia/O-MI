@@ -2,25 +2,22 @@ package database
 
 import java.sql.Timestamp
 
+import akka.pattern.ask
 import akka.util.Timeout
-
-import scala.util.{Success, Failure}
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration._
-import scala.concurrent.{Await, Future}
-import scala.concurrent.stm._
-import scala.language.postfixOps
-import org.slf4j.LoggerFactory
-
-import slick.jdbc.meta.MTable
-
+import journal.Models.{GetTree, MultipleReadCommand}
 import http.OmiConfigExtension
-import types.odf._
+import org.slf4j.{Logger, LoggerFactory}
+import slick.jdbc.meta.MTable
 import types.OmiTypes._
 import types.Path
-import akka.pattern.ask
-import journal.Models.GetTree
-import journal.Models.MultipleReadCommand
+import types.odf._
+
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
+import scala.concurrent.stm._
+import scala.concurrent.{Await, Future}
+import scala.language.postfixOps
+import scala.util.{Failure, Success}
 
 trait OdfDatabase extends Tables with DB with TrimmableDB {
 
@@ -28,7 +25,7 @@ trait OdfDatabase extends Tables with DB with TrimmableDB {
 
   protected val settings: OmiConfigExtension
   protected val singleStores: SingleStores
-  protected val log = LoggerFactory.getLogger("O-DF-database")
+  protected val log: Logger = LoggerFactory.getLogger("O-DF-database")
   val pathToDBPath: TMap[Path, DBPath] = TMap()
 
   def initialize(): Unit = {
@@ -171,7 +168,7 @@ trait OdfDatabase extends Tables with DB with TrimmableDB {
         case DBPath(None, _, _) =>
           val ancestors = path.ancestors
           val ancestorsNotReserved = ancestors.filterNot(reserved contains _)
-          log.debug(s" Following ancestors of Path $path are not yet reserved: ${ancestorsNotReserved}")
+          log.debug(s" Following ancestors of Path $path are not yet reserved: $ancestorsNotReserved")
           Map(path -> dbpath) ++ (
             ancestorsNotReserved
               .map(returnOrReserve(_, isInfoItem = false))
@@ -302,10 +299,8 @@ trait OdfDatabase extends Tables with DB with TrimmableDB {
     }
     log.debug("Running writing actions...")
     val future:Future[OmiReturn] = db.run(actions.transactionally)
-    future.foreach{
-      case default => 
-        log.debug("Writing finished.")
-    }
+    future.foreach(default =>
+      log.debug("Writing finished."))
     future
   }
 
@@ -401,7 +396,7 @@ trait OdfDatabase extends Tables with DB with TrimmableDB {
         val tableDropsAction = DBIO.seq(tableDrops.toSeq: _*)
         val iiPaths = iis.map(_.path)
         val removedPaths = objs.map(_.path) ++ iiPaths
-        val removedPathIDs = (objs ++ iis).map(_.id).flatten
+        val removedPathIDs: Iterable[RequestID] = (objs ++ iis).flatMap(_.id)
         val pathRemoves = pathsTable.removeByIDs(removedPathIDs.toSeq)
         atomic { implicit txn =>
           pathToDBPath --= removedPaths

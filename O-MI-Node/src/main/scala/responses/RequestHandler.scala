@@ -128,7 +128,7 @@ class RequestHandler(
        (dbHandler ? request).mapTo[ResponseRequest]
    }
   }
-  def splitAndHandle( request: OdfRequest )(f: OdfRequest => Future[ResponseRequest])  ={
+  def splitAndHandle( request: OdfRequest )(f: OdfRequest => Future[ResponseRequest]): Future[ResponseRequest] ={
     val responsibleToRequest = agentResponsibilities.splitRequestToResponsible( request )
     val fSeq = Future.sequence(
       responsibleToRequest.map{

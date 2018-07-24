@@ -2,12 +2,11 @@ package database
 
 import java.sql.Timestamp
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.collection.mutable.{Map => MutableMap, HashMap => MutableHashMap}
-
+import slick.basic.DatabaseConfig
 import slick.jdbc.meta.MTable
 
-import slick.basic.DatabaseConfig
+import scala.collection.mutable.{HashMap => MutableHashMap, Map => MutableMap}
+import scala.concurrent.ExecutionContext.Implicits.global
 //import slick.driver.H2Driver.api._
 import slick.jdbc.JdbcProfile
 import slick.lifted.{Index, ProvenShape}
@@ -152,7 +151,7 @@ trait Tables extends DBBase {
 
     def trimToNNewestValues(n: Long): DBIOrw[Int] = selectAllExpectNNewestValuesCQ(n).result.flatMap {
       values: Seq[TimedValue] =>
-        val ids = values.map(_.id).flatten
+        val ids: Seq[Long] = values.flatMap(_.id)
         this.filter(_.id inSet (ids)).delete
     }
 

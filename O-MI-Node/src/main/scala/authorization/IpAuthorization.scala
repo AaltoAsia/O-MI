@@ -16,14 +16,14 @@ package authorization
 
 import java.net.InetAddress
 
-import scala.util.{Success, Failure}
-
 import akka.http.scaladsl.model.RemoteAddress
-import Authorization.{UnauthorizedEx, AuthorizationExtension, CombinedTest, PermissionTest}
 import akka.http.scaladsl.server.Directive1
 import akka.http.scaladsl.server.Directives.extractClientIP
-import types.OmiTypes._
+import authorization.Authorization.{AuthorizationExtension, CombinedTest, PermissionTest, UnauthorizedEx}
 import http.OmiConfigExtension
+import types.OmiTypes._
+
+import scala.util.{Failure, Success}
 
 
 /** Trait for checking, is connected client IP permitted to do input actions, an ExternalAgent or using Write request.
@@ -82,7 +82,7 @@ trait IpAuthorization extends AuthorizationExtension {
     * @return sequence of bytes.
     * */
   private[this] def inetAddrToBytes(addr: InetAddress): Seq[Byte] = {
-    addr.getAddress().toList
+    addr.getAddress.toList
   }
 
   /** Helper method for checking if connection is in allowed subnets.

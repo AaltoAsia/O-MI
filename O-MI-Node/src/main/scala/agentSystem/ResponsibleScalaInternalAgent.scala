@@ -13,11 +13,10 @@
  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 package agentSystem
 
-import scala.concurrent.{ Future}
-import akka.actor.{
-  ActorRef
-}
+import akka.actor.ActorRef
 import types.OmiTypes._
+
+import scala.concurrent.Future
 
 abstract class ResponsibleScalaInternalAgentTemplate(
                                                       requestHandler: ActorRef,

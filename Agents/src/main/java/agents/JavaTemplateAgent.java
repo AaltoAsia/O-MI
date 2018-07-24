@@ -1,17 +1,14 @@
 package agents;
 
-import akka.japi.Creator;
-import akka.actor.Props;
+import agentSystem.JavaInternalAgent;
 import akka.actor.ActorRef;
-import akka.dispatch.Mapper;
-import akka.dispatch.OnSuccess;
+import akka.actor.Props;
 import akka.dispatch.OnFailure;
-
+import akka.dispatch.OnSuccess;
+import akka.japi.Creator;
 import com.typesafe.config.Config;
-
-import agentSystem.*;
-import types.OmiTypes.ResponseRequest;
 import types.OmiTypes.OmiResult;
+import types.OmiTypes.ResponseRequest;
 import types.OmiTypes.Results;
 
 /**
@@ -24,7 +21,7 @@ public class JavaTemplateAgent extends JavaInternalAgent {
    *  Implement it in way that
    *  <a href="http://doc.akka.io/docs/akka/current/java/untyped-actors.html#Recommended_Practices">Akka recommends to</a>.
    *
-   *  @param _config Contains configuration for this agent, as given in application.conf.
+   *  @param config Contains configuration for this agent, as given in application.conf.
    *  <a href="https://github.com/typesafehub/config">Typesafe config</a>.
    */
   static public Props props(final Config config, final ActorRef requestHandler, final ActorRef dbHandler) {

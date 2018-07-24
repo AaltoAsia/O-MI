@@ -1,16 +1,6 @@
 package types
 
-import java.sql.Timestamp
-import java.util.{Date, GregorianCalendar}
-import javax.xml.datatype.{DatatypeFactory, XMLGregorianCalendar}
-
-import scala.xml.Utility.trim
-import scala.collection.immutable.HashMap
-import org.specs2.matcher._
-import org.specs2.matcher.XmlMatchers._
-
 import org.specs2._
-import types.Path._
 
 class PathTest extends mutable.Specification {
   sequential

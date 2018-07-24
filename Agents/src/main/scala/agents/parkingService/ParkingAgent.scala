@@ -1,45 +1,27 @@
-package agents
-package parkingService
+package agents.parkingService
 
 import java.io.File
-import java.sql.Timestamp
-import java.util.Date
-import java.net.URLDecoder
 
-import scala.util.{Success, Failure, Try}
-import scala.util.control.NonFatal
-import scala.concurrent.duration._
-import scala.concurrent.{ Await, Future, ExecutionException }
-import scala.concurrent.Future._
-import scala.collection.mutable.{ Map => MutableMap, HashMap => MutableHashMap}
-import scala.collection.JavaConversions._
-import scala.xml.PrettyPrinter
-import scala.language.implicitConversions
-
-import com.typesafe.config.Config
-
-import akka.actor.{Cancellable, Props, Actor, ActorRef, ActorSystem}
-import akka.util.{Timeout, ByteString}
-import akka.pattern.ask
-
-import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.{HttpRequest, HttpResponse, HttpMethods, HttpEntity, HttpHeader, HttpProtocol, StatusCode, StatusCodes, ResponseEntity}
-import akka.http.javadsl.model.headers.{Authorization, RawHeader}
-import akka.stream.ActorMaterializer
-import akka.http.scaladsl.unmarshalling.Unmarshal
-
-import com.google.gson.{JsonParser, JsonElement, Gson, JsonNull}
-
-import agentSystem._ 
-import types.OmiTypes._
-import types.OdfTypes._
-import types.odf._
-import types.Path._
-import types._
-import parsing.OdfParser
-import scala.xml.XML
+import agentSystem._
 import UserGroup._
 import VehicleType._
+import akka.actor.{Actor, ActorRef, Cancellable, Props}
+import com.typesafe.config.Config
+import parsing.OdfParser
+import types.OdfTypes._
+import types.OmiTypes._
+import types.Path._
+import types._
+import types.odf._
+
+import scala.collection.mutable.{HashMap => MutableHashMap, Map => MutableMap}
+import scala.concurrent.duration._
+import scala.collection.JavaConverters._
+import scala.concurrent.{Await, ExecutionException, Future}
+import scala.language.postfixOps
+import scala.util.control.NonFatal
+import scala.util.{Failure, Success, Try}
+import scala.xml.XML
 
 /**
  * TODO: Rewrite using ODF type. Note that new types are not as easy to parse to
@@ -52,7 +34,6 @@ import VehicleType._
  * Companion object for ResponsibleScalaAgent. Extends PropsCreator to enforce recommended practice in Props creation.
  *  <a href="http://doc.akka.io/docs/akka/2.4/scala/actors.html#Recommended_Practices">Akka recommends to</a>.
  *
- *  @param _config Contains configuration for this agent, as given in application.conf.
  */
 object ParkingAgent extends PropsCreator{
   /**
@@ -92,7 +73,8 @@ class ParkingAgent(
     val initialODF: OdfObjects = if( startStateFile.exists() && startStateFile.canRead() ){
       val xml = XML.loadFile(startStateFile)
       OdfParser.parse( xml) match {
-        case Left( errors : Seq[ParseError]) =>
+        case Left(errorsJ) =>
+          val errors = errorsJ.asScala
           val msg = errors.mkString("\n")
           log.warning(s"Odf has errors, $name could not be configured.")
           log.debug(msg)
@@ -112,20 +94,20 @@ class ParkingAgent(
       case e: Exception => 
         throw new Exception(s"Could not set initial state for $name. Initial write to DB failed.", e)
       
-    }.flatMap{
-      case response: ResponseRequest => 
-        response.results.foreach{
-          case result: OmiResult =>
+    }.flatMap {
+      response: ResponseRequest =>
+        response.results.foreach {
+          result: OmiResult =>
             result.returnValue match {
               case succ: Returns.ReturnTypes.Successful =>
-                log.info( s"Successfully initialized state for $name" )
+                log.info(s"Successfully initialized state for $name")
               case other =>
-                log.warning( s"Could not set initial state for $name. Got result:$result.")
-                throw new Exception( s"Could not set initial state for $name. Got following result from DB: $result.")
+                log.warning(s"Could not set initial state for $name. Got result:$result.")
+                throw new Exception(s"Could not set initial state for $name. Got following result from DB: $result.")
             }
         }
-        val initialisationStatus: Future[Unit] = updateParkingSpaceStatuses 
-        initialisationStatus.recover{
+        val initialisationStatus: Future[Unit] = updateParkingSpaceStatuses
+        initialisationStatus.recover {
           case e: Exception =>
             log.error(e.getMessage)
             context.stop(self)
@@ -143,7 +125,7 @@ class ParkingAgent(
   val chargerParameterPath: Path = parameterPath / "Charger"
 
   override protected def handleWrite(write: WriteRequest) : Future[ResponseRequest] = {
-    def plugMeasureUpdate( plug: PowerPlug): Boolean =  plug.currentInA.nonEmpty || plug.powerInkW.nonEmpty || plug.voltageInV.nonEmpty
+    //def plugMeasureUpdate( plug: PowerPlug): Boolean =  plug.currentInA.nonEmpty || plug.powerInkW.nonEmpty || plug.voltageInV.nonEmpty
     if( write.odf.get(findParkingPath).nonEmpty ){
       return Future{
         Responses.InvalidRequest(Some(s"Writing to $findParkingPath is not allowed.")) 
@@ -162,64 +144,65 @@ class ParkingAgent(
               }
           }.toVector.flatten
         }
-        odfToPFs.flatMap{
-          case writingPfs:Vector[ParkingFacility] => 
-            val (existingPFs,newPFs) = writingPfs.partition{
-              pf: ParkingFacility => 
-                currentPFs.exists{
-                  existingPF: ParkingFacility => 
-                    existingPF.name == pf.name 
+        odfToPFs.flatMap {
+          writingPfs: Vector[ParkingFacility] =>
+            val (existingPFs, newPFs) = writingPfs.partition {
+              pf: ParkingFacility =>
+                currentPFs.exists {
+                  existingPF: ParkingFacility =>
+                    existingPF.name == pf.name
                 }
             }
-            val events = existingPFs.map{
+            val events = existingPFs.flatMap {
               targetPF: ParkingFacility =>
-                val event: Seq[ParkingEvent] = targetPF.parkingSpaces.collect{
-                  case ParkingSpace(name,_,_,Some(false),Some(user),chargerO,_,_,_) =>
+                val event: Seq[ParkingEvent] = targetPF.parkingSpaces.collect {
+                  case ParkingSpace(name, _, _, Some(false), Some(user), chargerO, _, _, _) =>
                     val path = parkingLotsPath / targetPF.name / "ParkingSpaces" / name
-                    if( isParkingSpaceFree(path) ){
-                      val openLid: Boolean= chargerO.map{ 
-                        case charger: Charger => lidOpen(charger)
-                      }.getOrElse(false)
+                    if (isParkingSpaceFree(path)) {
+                      val openLid: Boolean = chargerO.exists {
+                        charger: Charger => lidOpen(charger)
+                      }
                       Reservation(path, user, openLid)
                     } else throw AllreadyReserved(path)
 
-                        case ParkingSpace(name,_,_,Some(true),Some(user),chargerO,_,_,_) =>
-                          val path = parkingLotsPath / targetPF.name / "ParkingSpaces" / name
-                          if( isUserCurrentReserver(path, user) ){
-                            val openLid: Boolean = chargerO.map{ 
-                              case charger: Charger => lidOpen(charger)
-                            }.getOrElse(false)
-                            FreeReservation(path, user, openLid)
-                          } else throw WrongUser(path)
+                  case ParkingSpace(name, _, _, Some(true), Some(user), chargerO, _, _, _) =>
+                    val path = parkingLotsPath / targetPF.name / "ParkingSpaces" / name
+                    if (isUserCurrentReserver(path, user)) {
+                      val openLid: Boolean = chargerO.exists {
+                        charger: Charger => lidOpen(charger)
+                      }
+                      FreeReservation(path, user, openLid)
+                    } else throw WrongUser(path)
 
-                              case ParkingSpace(name,_,_,_,Some(user),Some(charger),_,_,_) if lidOpen(charger) =>
-                                val path = parkingLotsPath / targetPF.name / "ParkingSpaces" / name
-                                if( isUserCurrentReserver(path, user) ){
-                                  OpenLid( path, user)
-                                } else throw WrongUser(path)
+                  case ParkingSpace(name, _, _, _, Some(user), Some(charger), _, _, _) if lidOpen(charger) =>
+                    val path = parkingLotsPath / targetPF.name / "ParkingSpaces" / name
+                    if (isUserCurrentReserver(path, user)) {
+                      OpenLid(path, user)
+                    } else throw WrongUser(path)
 
-                                /*
-                              case ParkingSpace(name,_,_,_,_,Some(Charger(_,_,_,_,_,_,_,_,_,plugs)),_,_,_) if plugs.exists(plugMeasureUpdate(_)) =>
-                                val path = parkingLotsPath / targetPF.name / "ParkingSpaces" / name
-                                UpdatePlugMeasurements( path, plug.currentInA, plug.powerInkW, plug.voltageInV) 
-                                */
+                  /*
+                case ParkingSpace(name,_,_,_,_,Some(Charger(_,_,_,_,_,_,_,_,_,plugs)),_,_,_) if plugs.exists
+                (plugMeasureUpdate(_)) =>
+                  val path = parkingLotsPath / targetPF.name / "ParkingSpaces" / name
+                  UpdatePlugMeasurements( path, plug.currentInA, plug.powerInkW, plug.voltageInV)
+                  */
                 }
                 event
-            }.flatten
-            val responseF = writeToDB( write )
-            val statusUpdate = responseF.map{
-              case response: ResponseRequest =>
-                val succResult = response.results.collect{
+            }
+            val responseF = writeToDB(write)
+            val statusUpdate = responseF.map {
+              response: ResponseRequest =>
+                val succResult = response.results.collect {
                   case success: Results.Success =>
                     success
                 }
-                if( succResult.nonEmpty ){
-                  val entries = newPFs.flatMap{ 
+                if (succResult.nonEmpty) {
+                  val entries = newPFs.flatMap {
                     pf: ParkingFacility =>
-                      pf.parkingSpaces.map{
+                      pf.parkingSpaces.map {
                         space: ParkingSpace =>
                           val path = parkingLotsPath / pf.name / space.name
-                          path -> ParkingSpaceStatus( path, space.user, space.user.isEmpty ) 
+                          path -> ParkingSpaceStatus(path, space.user, space.user.isEmpty)
                       }
                   }
                   parkingSpaceStatuses ++= entries
@@ -227,16 +210,18 @@ class ParkingAgent(
 
                 response
             }
-            statusUpdate.flatMap{
-              case response: ResponseRequest =>
-                val succResult = response.results.collect{
+            statusUpdate.flatMap {
+              response: ResponseRequest =>
+                val succResult = response.results.collect {
                   case success: Results.Success =>
                     success
                 }
-                if( succResult.nonEmpty ) handleEvents( events)
-                else Future{ response}
+                if (succResult.nonEmpty) handleEvents(events)
+                else Future {
+                  response
+                }
             }
-            }.recover{
+        }.recover{
               case e: ExecutionException =>
                 log.error("ParkingAgent write request: ", e)
                 Responses.InternalError(e.getCause())                                                                                                                                                             
@@ -246,7 +231,7 @@ class ParkingAgent(
 
             }
     }
-    val res = Try{ Await.ready(response, 10.minutes) }
+    Try(Await.ready(response, 10.minutes)).failed.foreach(msg => log.error("Timeout when writing", msg))
     response
   }
   
@@ -257,54 +242,53 @@ class ParkingAgent(
     case call: CallRequest => respondFuture(handleCall(call))
   }
   def handleEvents( events: Seq[ParkingEvent] ): Future[ResponseRequest] ={
-      Future.sequence(events.map{
-        case reservation: Reservation => 
+      Future.sequence(events.map {
+        case reservation: Reservation =>
           log.debug("Reserving parking space")
 
-          val responseF = writeToDB( WriteRequest( OldTypeConverter.convertOdfObjects(reservation.toOdf.createAncestors ) ) )
-            responseF.onSuccess{
-              case response: ResponseRequest =>
-                if( reservation.openLid ){
-                  closeLidIn( reservation.path / "Charger" / "LidStatus" )
-                }
-                updateCalculatedIIsToDB
-                parkingSpaceStatuses.get(reservation.path).foreach{
-                  case ParkingSpaceStatus( path, user, available ) =>
-                    parkingSpaceStatuses.update( path, ParkingSpaceStatus( path, Some(reservation.user), false ) )
-                }
-            }
-          responseF
-        case freeing: FreeReservation => 
-          log.debug("Freeing parking space")
-          val responseF = writeToDB( WriteRequest( OldTypeConverter.convertOdfObjects(freeing.toOdf.createAncestors) ) )
-          responseF.onSuccess{
-            case response: ResponseRequest =>
-              if( freeing.openLid ){
-                closeLidIn( freeing.path / "Charger" / "LidStatus" )
+          val responseF = writeToDB(WriteRequest(OldTypeConverter.convertOdfObjects(reservation.toOdf.createAncestors)))
+          responseF.foreach{response  =>
+              if (reservation.openLid) {
+                closeLidIn(reservation.path / "Charger" / "LidStatus")
               }
               updateCalculatedIIsToDB
-              parkingSpaceStatuses.get(freeing.path).foreach{
-                case ParkingSpaceStatus( path, user, available ) =>
-                  parkingSpaceStatuses.update( path, ParkingSpaceStatus( path, None, true ) )
+              parkingSpaceStatuses.get(reservation.path).foreach {
+                case ParkingSpaceStatus(path, user, available) =>
+                  parkingSpaceStatuses.update(path, ParkingSpaceStatus(path, Some(reservation.user), free = false))
+              }
+          }
+          responseF
+        case freeing: FreeReservation =>
+          log.debug("Freeing parking space")
+          val responseF = writeToDB(WriteRequest(OldTypeConverter.convertOdfObjects(freeing.toOdf.createAncestors)))
+          responseF.foreach{response =>
+              if (freeing.openLid) {
+                closeLidIn(freeing.path / "Charger" / "LidStatus")
+              }
+              updateCalculatedIIsToDB
+              parkingSpaceStatuses.get(freeing.path).foreach {
+                case ParkingSpaceStatus(path, user, available) =>
+                  parkingSpaceStatuses.update(path, ParkingSpaceStatus(path, None, free = true))
               }
           }
           responseF
         case oL: OpenLid =>
           log.debug("Opening lid")
-          val responseF = writeToDB( WriteRequest( OldTypeConverter.convertOdfObjects(oL.toOdf.createAncestors) ) )
-          responseF.onSuccess{
-            case response: ResponseRequest =>
-              closeLidIn( oL.path / "Charger" / "LidStatus" )
+          val responseF = writeToDB(WriteRequest(OldTypeConverter.convertOdfObjects(oL.toOdf.createAncestors)))
+          responseF.foreach{response =>
+              closeLidIn(oL.path / "Charger" / "LidStatus")
               updateCalculatedIIsToDB
           }
           responseF
-        case upl: UpdatePlugMeasurements  =>
+        case upl: UpdatePlugMeasurements =>
           log.debug("Received update from plug")
-          val responseF = writeToDB( WriteRequest( OldTypeConverter.convertOdfObjects(upl.toOdf.createAncestors) ) )
+          val responseF = writeToDB(WriteRequest(OldTypeConverter.convertOdfObjects(upl.toOdf.createAncestors)))
           responseF
-      }.toSeq).map{
+      }).map{
         seq => 
-          ResponseRequest(Results.unionReduce(seq.flatMap( _.results).toVector ++ Vector(Results.Success(description= Some("Successfully writen.")))).toVector)
+          ResponseRequest(Results
+                            .unionReduce(seq.flatMap(_.results).toVector ++ Vector(Results
+                                                                                     .Success(description = Some("Successfully written.")))))
       }
   }
 
@@ -315,19 +299,16 @@ class ParkingAgent(
     }
   }
 
-  def isUserCurrentReserver( path: Path, user: String ): Boolean = parkingSpaceStatuses.get( path).map{
-    pSS: ParkingSpaceStatus => 
-      log.debug( s" Current user: ${pSS.user}, sender: $user")
-      pSS.user.contains( user )
-  }.getOrElse( false )
+  def isUserCurrentReserver( path: Path, user: String ): Boolean = parkingSpaceStatuses.get(path).exists {
+    pSS: ParkingSpaceStatus =>
+      log.debug(s" Current user: ${pSS.user}, sender: $user")
+      pSS.user.contains(user)
+  }
 
-  def isParkingSpaceFree( path: Path): Boolean = {
-    parkingSpaceStatuses.get( path).map{
-      pSS: ParkingSpaceStatus => 
-        log.debug( s"Is free? $pSS")
-        pSS.free
-    }.getOrElse(false)
-    
+  def isParkingSpaceFree( path: Path): Boolean = parkingSpaceStatuses.get(path).exists {
+    pSS: ParkingSpaceStatus =>
+      log.debug(s"Is free? $pSS")
+      pSS.free
   }
 
   case class CloseLid( pathToLidState: Path )
@@ -351,26 +332,26 @@ class ParkingAgent(
     )
 
     val result = readFromDB(request)
-    result.map{
-      case response: ResponseRequest => 
-        log.debug( s"getCurrentParkingFacilities got ${response.results.length}")
-        val pfs = response.results.find{
-          result : OmiResult =>
-            result.returnValue.returnCode == ReturnCode.Success  && result.odf.nonEmpty
-        }.flatMap{
-          result : OmiResult => result.odf.map( NewTypeConverter.convertODF(_) )
-        }.flatMap{
+    result.map {
+      response: ResponseRequest =>
+        log.debug(s"getCurrentParkingFacilities got ${response.results.length}")
+        val pfs = response.results.find {
+          result: OmiResult =>
+            result.returnValue.returnCode == ReturnCode.Success && result.odf.nonEmpty
+        }.flatMap {
+          result: OmiResult => result.odf.map(NewTypeConverter.convertODF(_))
+        }.flatMap {
           odf: OdfObjects =>
-            odf.get( parkingLotsPath ).map{
+            odf.get(parkingLotsPath).collect{
               case pfsObj: OdfObject =>
-                pfsObj.objects.map( ParkingFacility( _))
+                pfsObj.objects.map(ParkingFacility(_))
             }
         }.toVector.flatten
-        log.debug( s"Found current ${pfs.length} parking facilities")
+        log.debug(s"Found current ${pfs.length} parking facilities")
         pfs
     }
   }
-  def updateCalculatedIIsToDB: Future[ResponseRequest] ={
+  def updateCalculatedIIsToDB(): Future[ResponseRequest] ={
     getCurrentParkingFacilities.flatMap{
       parkingFacilities: Vector[ParkingFacility] =>
         val newPFs= parkingFacilities.map{
@@ -396,7 +377,7 @@ class ParkingAgent(
               None,
               None
             )
-            npf.toOdf(parkingLotsPath,true).createAncestors
+            npf.toOdf(parkingLotsPath, calculatedPaths = true).createAncestors
         }
         val writeOdf = newPFs.fold(OdfObjects()){
           case ( odf: OdfObjects, l: OdfObjects) => odf.union(l)
@@ -438,7 +419,7 @@ class ParkingAgent(
                       Responses.InvalidRequest(Some(s"Unknown type for parameter value."))
                     }
               case Some(odf: OdfObjects) =>
-                Try{getfindParkingParams(odf)} match{
+                Try{getFindParkingParams(odf)} match{
                   case Success( Some(pp:ParkingParameters) ) =>
                     findParking( pp)
                   case Success( None ) =>
@@ -453,31 +434,34 @@ class ParkingAgent(
             }
             log.debug("Parameters total: "+requests.size)
             requests
-          }.map{
-            case responses: Vector[ResponseRequest] =>
+          }.map {
+            responses: Vector[ResponseRequest] =>
               log.debug(s"Total Responses ${responses.size}")
-              val response = if( responses.size == 1 ){
-                    //log.debug(s"response:\n" + responses.head.asXML.toString)
-                    responses.head
+              val response = if (responses.size == 1) {
+                //log.debug(s"response:\n" + responses.head.asXML.toString)
+                responses.head
               } else {
-                  responses.foldLeft(ResponseRequest(Vector())){
-                    case (_response, resp) =>
-                      //log.debug(s"Responses to union:\n${resp.asXML.toString}")
-                      ResponseRequest(_response.results ++ resp.results)
-                  }
+                responses.foldLeft(ResponseRequest(Vector())) {
+                  case (_response, resp) =>
+                    //log.debug(s"Responses to union:\n${resp.asXML.toString}")
+                    ResponseRequest(_response.results ++ resp.results)
+                }
               }
               //log.debug(s"${responses.size} to response:\n" + response.asXML.toString)
               response
           }.recover{
-            case e: ExecutionException => 
+            case e: ExecutionException =>
               log.error("ParkingAgent call request: ", e)
-              Responses.InternalError(e.getCause())                                                                                                                                                             
-              
-            case NonFatal(e) => 
+              Responses.InternalError(e.getCause())
+
+            case NonFatal(e) =>
               log.error("ParkingAgent call request: ", e)
               Responses.InternalError(e)
 
           }
+        case Some(other) =>
+          log.error(s"Unknown Node Type $other");
+          Future.successful(Responses.InternalError(Some(s"Unknown Node Type$other")))
       }
   }
   case class ParkingParameters(
@@ -488,26 +472,26 @@ class ParkingAgent(
     charger: Option[Charger],
     arrivalTime: Option[String]
   )
-  private def updateParkingSpaceStatuses: Future[Unit] ={
-    getCurrentParkingFacilities.map{
-      case currentPFs: Seq[ParkingFacility] =>
-        if( currentPFs.nonEmpty ){
-          val entries = currentPFs.flatMap{
+  private def updateParkingSpaceStatuses(): Future[Unit] ={
+    getCurrentParkingFacilities.map {
+      currentPFs: Seq[ParkingFacility] =>
+        if (currentPFs.nonEmpty) {
+          val entries = currentPFs.flatMap {
             pf: ParkingFacility =>
-              pf.parkingSpaces.map{
+              pf.parkingSpaces.map {
                 space: ParkingSpace =>
                   val path = parkingLotsPath / pf.name / "ParkingSpaces" / space.name
-                  path -> ParkingSpaceStatus( path, space.user, space.user.isEmpty ) 
+                  path -> ParkingSpaceStatus(path, space.user, space.user.isEmpty)
               }
           }
           parkingSpaceStatuses ++= entries
-          //log.debug( parkingSpaceStatuses.mkString("\n") ) 
+          //log.debug( parkingSpaceStatuses.mkString("\n") )
         } //else {throw new Exception( "No parking facilities found from db.")}
     }
   }
 
 
-  def getfindParkingParams(objects: OdfObjects): Option[ParkingParameters] ={
+  def getFindParkingParams(objects: OdfObjects): Option[ParkingParameters] ={
     val destinationO = objects.get(destinationParameterPath).collect{
       case obj: OdfObject =>
         GPSCoordinates(obj)
@@ -539,59 +523,59 @@ class ParkingAgent(
     } yield ParkingParameters( destination, distanceFromDestination, vehicle, validForUserGroupO, chargerO, arrivalTimeO) 
   }
 
-  def findParking( parameters: ParkingParameters ):Future[ResponseRequest]= getCurrentParkingFacilities.map{
-   case parkingFacilities: Vector[ParkingFacility] =>
-    val nearbyParkingFacilities = parkingFacilities.filter{
-      pf: ParkingFacility =>
-        pf.geo.flatMap{
-          case gps: GPSCoordinates => 
-            gps.distanceFrom( parameters.destination).map{ 
-              dist: Double => 
-                log.debug( s"$dist < ${parameters.distanceFromDestination}" )
-                dist <= parameters.distanceFromDestination
-            }
-        }.getOrElse(false) //&& pf.containsSpacesFor( parameters.vehicle )
-    }
-    val parkingFacilitiesWithMatchingSpots: Vector[ParkingFacility]= nearbyParkingFacilities.map{
-      pf: ParkingFacility =>
-        pf.copy(
-          parkingSpaces = pf.parkingSpaces.filter{
-            pS: ParkingSpace => 
-              val vehicleCheck = pS.validForVehicle.forall{
-                vT: VehicleType => 
-                  vT == parameters.vehicle.vehicleType
-              } 
-              val usageCheck = parameters.validForUserGroup.forall{
-                check: UserGroup =>
-                pS.validForUserGroup.forall{
-                  uT: UserGroup => 
-                    uT == check
-                }
+  def findParking( parameters: ParkingParameters ):Future[ResponseRequest]= getCurrentParkingFacilities.map {
+    parkingFacilities: Vector[ParkingFacility] =>
+      val nearbyParkingFacilities = parkingFacilities.filter {
+        pf: ParkingFacility =>
+          pf.geo.flatMap {
+            gps: GPSCoordinates =>
+              gps.distanceFrom(parameters.destination).map {
+                dist: Double =>
+                  log.debug(s"$dist < ${parameters.distanceFromDestination}")
+                  dist <= parameters.distanceFromDestination
               }
-              val sizeCheck = pS.validDimensions( parameters.vehicle )
-              val chargerCheck = parameters.charger.forall{
-                case charger: Charger =>
-                  pS.charger.exists{
-                    case pSCharger: Charger =>
-                      pSCharger.validFor( charger )
-                  }
-              }
-              vehicleCheck && usageCheck && sizeCheck && chargerCheck
-          }
-        )
-    }
+          }.getOrElse(false) //&& pf.containsSpacesFor( parameters.vehicle )
+      }
+      val parkingFacilitiesWithMatchingSpots: Vector[ParkingFacility] = nearbyParkingFacilities.map {
+        pf: ParkingFacility =>
+          pf.copy(
+                   parkingSpaces = pf.parkingSpaces.filter {
+                     pS: ParkingSpace =>
+                       val vehicleCheck = pS.validForVehicle.forall {
+                         vT: VehicleType =>
+                           vT == parameters.vehicle.vehicleType
+                       }
+                       val usageCheck = parameters.validForUserGroup.forall {
+                         check: UserGroup =>
+                           pS.validForUserGroup.forall {
+                             uT: UserGroup =>
+                               uT == check
+                           }
+                       }
+                       val sizeCheck = pS.validDimensions(parameters.vehicle)
+                       val chargerCheck = parameters.charger.forall {
+                         charger: Charger =>
+                           pS.charger.exists {
+                             pSCharger: Charger =>
+                               pSCharger.validFor(charger)
+                           }
+                       }
+                       vehicleCheck && usageCheck && sizeCheck && chargerCheck
+                   }
+                 )
+      }
 
-    if( parkingFacilitiesWithMatchingSpots.nonEmpty ){
-        val odf:OdfObjects = parkingFacilitiesWithMatchingSpots.foldLeft(OdfObjects()){
+      if (parkingFacilitiesWithMatchingSpots.nonEmpty) {
+        val odf: OdfObjects = parkingFacilitiesWithMatchingSpots.foldLeft(OdfObjects()) {
           case (odf: OdfObjects, pf: ParkingFacility) =>
-            val add: OdfObjects = pf.toOdf(parkingLotsPath).createAncestors 
-            odf.union( add)
-        
+            val add: OdfObjects = pf.toOdf(parkingLotsPath).createAncestors
+            odf.union(add)
+
         }
         Responses.Success(Some(OldTypeConverter.convertOdfObjects(odf)), 10 seconds)
-    } else{
-        Responses.NotFound("Could not find parking facility with matching parking spaces." )
-    }
+      } else {
+        Responses.NotFound("Could not find parking facility with matching parking spaces.")
+      }
   }
 }
 

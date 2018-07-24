@@ -17,14 +17,14 @@ package types
 
 import java.sql.Timestamp
 import java.util.{Date, GregorianCalendar}
-import javax.xml.datatype.{DatatypeFactory, XMLGregorianCalendar}
 
+import javax.xml.datatype.{DatatypeFactory, XMLGregorianCalendar}
 import parsing.xmlGen._
 import parsing.xmlGen.scalaxb.DataRecord
 import parsing.xmlGen.xmlTypes._
 
-import scala.collection.JavaConverters._
 import scala.collection.Iterable
+import scala.collection.JavaConverters._
 import scala.xml.NodeSeq
 
 /**
@@ -39,7 +39,7 @@ package object OmiTypes {
 
   def requestToEnvelope(request: OmiEnvelopeTypeOption, ttl: Long): xmlTypes.OmiEnvelopeType = {
     val namespace = Some("omi.xsd")
-    val version = "1.0"
+    //val version = "1.0" //TODO remove unused?
     val datarecord = request match {
       case read: xmlTypes.ReadRequestType =>
         scalaxb.DataRecord[xmlTypes.ReadRequestType](namespace, Some("read"), read)

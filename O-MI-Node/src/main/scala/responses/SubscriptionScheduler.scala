@@ -17,17 +17,15 @@ package responses
 import java.util.concurrent.TimeUnit.SECONDS
 import java.util.concurrent.{Executors, ScheduledFuture}
 
-import scala.concurrent.duration.Duration
-
 import akka.actor.ActorRef
+
+import scala.concurrent.duration.Duration
 
 class SubscriptionScheduler {
   val timeunit = SECONDS
   private val scheduler = Executors.newSingleThreadScheduledExecutor()
 
-  private def createRunnable(message: Any, sender: ActorRef): Runnable = new Runnable() {
-    def run(): Unit = sender ! message
-  }
+  private def createRunnable(message: Any, sender: ActorRef): Runnable = () => sender ! message
 
   def scheduleOnce(timeout: Duration, sender: ActorRef, message: Any): ScheduledFuture[_] = {
     val task: Runnable = createRunnable(message, sender)

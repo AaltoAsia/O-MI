@@ -1,13 +1,14 @@
 package types
 package odf
 
-import scala.collection.{Map, Seq}
-import scala.collection.immutable.HashMap
 import java.sql.Timestamp
 
 import database.journal.{PQlmid, PTimestamp}
-import parsing.xmlGen.xmlTypes.QlmIDType
 import parsing.xmlGen.scalaxb.DataRecord
+import parsing.xmlGen.xmlTypes.QlmIDType
+
+import scala.collection.immutable.HashMap
+import scala.collection.{Map, Seq}
 
 object QlmID {
 

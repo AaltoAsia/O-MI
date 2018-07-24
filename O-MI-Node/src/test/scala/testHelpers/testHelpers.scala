@@ -1,93 +1,45 @@
 package testHelpers
 
-import scala.language.postfixOps
-
-import scala.util.Try
-import scala.concurrent.{Promise, Future, Await}
+import scala.concurrent.{Await, Future, Promise}
 import scala.concurrent.duration._
-import scala.xml.{SAXParser, Node, PrettyPrinter, XML}
+import scala.language.postfixOps
+import scala.xml.{Node, PrettyPrinter, SAXParser, XML}
 import scala.xml.parsing._
 
+import akka.testkit.TestEventListener
 import akka.Done
 import akka.actor._
-import akka.http.scaladsl.model.StatusCodes
-import akka.util.Timeout
 import akka.http.scaladsl._
-import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport._
-import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.testkit.TestFrameworkInterface
+import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.ws._
-import akka.stream.scaladsl._
+import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.testkit.RouteTestTimeout
 import akka.stream._
-import akka.testkit.{ImplicitSender, TestKit}
-
-import com.typesafe.config.{Config, ConfigFactory}
-import org.specs2.execute.{Failure, FailureException}
+import akka.stream.scaladsl._
+import akka.testkit.{ImplicitSender, TestActorRef, TestKit}
+import akka.util.Timeout
+import com.typesafe.config.ConfigFactory
+import org.specs2.matcher._
+import org.specs2.mock.Mockito
 import org.specs2.mutable._
 import org.specs2.specification.Scope
 import org.xml.sax.InputSource
-import responses.RemoveSubscription
-import database._
-import agentSystem._
+
+import types.odf.ODF
 import responses._
 import http._
+import database.journal.Models.GetTree
+import database.SingleStores
+import database.TestDB
+import database.DBHandler
+import agentSystem._
 
 //class TestOmiServer(config: Config) extends OmiNode {
-class TestOmiServer() extends OmiNode {
+class TestOmiServer() extends OmiNode with OmiServiceTestImpl {
 
   // we need an ActorSystem to host our application in
   implicit val system: ActorSystem = ActorSystem("on-core")
-  implicit val materializer: ActorMaterializer = ActorMaterializer()(system)
-
-  import system.dispatcher // execution context for futures
-
-  /**
-    * Settings loaded by akka (typesafe config) and our OmiConfigExtension
-    */
-  implicit val settings: OmiConfigExtension = OmiConfig(system) //new OmiConfigExtension(config)
-
-  implicit val singleStores = new SingleStores(settings)
-  implicit val dbConnection = new TestDB("system-test")(
-    system,
-    singleStores,
-    settings
-  )
-
-  implicit val callbackHandler: CallbackHandler = new CallbackHandler(settings)(system, materializer)
-
-  val dbHandler = system.actorOf(
-    DBHandler.props(
-      dbConnection,
-      singleStores,
-      callbackHandler,
-      new CLIHelper(singleStores, dbConnection)
-    ),
-    "database-handler"
-  )
-  val subscriptionManager = system.actorOf(
-    SubscriptionManager.props(
-      settings,
-      singleStores,
-      callbackHandler
-    ),
-    "subscription-handler"
-  )
-  val requestHandler: ActorRef = system.actorOf(
-    RequestHandler.props(
-      subscriptionManager,
-      dbHandler,
-      settings
-    ),
-    "request-handler"
-  )
-  val agentSystem = system.actorOf(
-    AgentSystem.props(
-      dbHandler,
-      requestHandler,
-      settings
-    ),
-    "agent-system"
-  )
+  implicit val materializer: ActorMaterializer = ActorMaterializer()(system) // execution context for futures
 
 
   implicit val cliListener = system.actorOf(
@@ -116,14 +68,72 @@ class TestOmiServer() extends OmiNode {
 
 
   implicit val timeoutForBind: Timeout = Timeout(5.seconds)
-
 }
 
+trait AnyActorSystem {
+  implicit val system: ActorSystem
+}
+trait SilentActorSystem {
+  implicit val system = Actorstest.createSilentAs()
+}
+
+trait TestOmiService extends OmiServiceTestImpl {
+  implicit def default = RouteTestTimeout(5.second)
+
+}
+trait OmiServiceTestImpl extends OmiService with AnyActorSystem {
+  lazy implicit val settings: OmiConfigExtension = OmiConfig(system)
+  lazy implicit val callbackHandler: CallbackHandler = new CallbackHandler(settings)(system, materializer)
+  lazy implicit val singleStores: SingleStores = new SingleStores(settings)
+
+
+  lazy implicit val dbConnection = new TestDB("test")(
+    system,
+    singleStores,
+    settings
+  )
+  //dbConnection.clearDB()
+
+  lazy val subscriptionManager = TestActorRef(SubscriptionManager.props(
+    settings,
+    singleStores,
+    callbackHandler
+  ))
+
+  lazy val dbHandler = system.actorOf(
+    DBHandler.props(
+      dbConnection,
+      singleStores,
+      callbackHandler,
+      new CLIHelper(singleStores, dbConnection)
+    ),
+    "database-handler"
+  )
+  lazy val requestHandler = system.actorOf(
+    RequestHandler.props(
+      subscriptionManager,
+      dbHandler,
+      settings
+    ),
+    "RequestHandler"
+  )
+  lazy val agentSystem = system.actorOf(
+    AgentSystem.props(
+      dbHandler,
+      requestHandler,
+      settings
+    ),
+    "agent-system"
+  )
+}
 
 class SystemTestCallbackServer(destination: ActorRef, interface: String, port: Int) {
 
-  implicit val system = ActorSystem()
+  implicit val system = ActorSystem("callback-test-server",
+    Actorstest.silentLoggerConf.withFallback(ConfigFactory.defaultReference()))
+
   implicit val materializer = ActorMaterializer()
+  import system.dispatcher
 
   val prettyPrint = new PrettyPrinter(80, 2)
   val route = formFields("msg".as[String]) { msg =>
@@ -143,6 +153,12 @@ class SystemTestCallbackServer(destination: ActorRef, interface: String, port: I
 
   val bindFuture = Http().bindAndHandle(route, interface, port)
   Await.ready(bindFuture, 5 seconds)
+
+  def unbind() = {
+    bindFuture
+      .flatMap(_.unbind()) // trigger unbinding from the port
+      .map(_ => system.terminate())
+  }
 }
 
 class WsTestCallbackClient(destination: ActorRef, interface: String, port: Int)(implicit system: ActorSystem) {
@@ -159,6 +175,7 @@ class WsTestCallbackClient(destination: ActorRef, interface: String, port: Int)(
         //println(s"$interface:$port received: $pretty")
         destination ! message.text
       }
+      case _ =>
     }
   }
   val outgoingSourceQueue = akka.stream.scaladsl.Source.queue[Message](5,
@@ -198,17 +215,17 @@ class WsTestCallbackClient(destination: ActorRef, interface: String, port: Int)(
   closed.foreach(c => system.log.debug("Closed WS connection"))
 
   def offer(message: String) = {
-    sourceQueue.map(que => que.offer(TextMessage(message)))
+    sourceQueue.flatMap(que => que.offer(TextMessage(message)))
   }
 
-  def close = sourceQueue.map(_.complete())
+  def close() = sourceQueue.map(_.complete())
 
 
 }
 
 class WsTestCallbackServer(destination: ActorRef, interface: String, port: Int)(implicit system: ActorSystem) {
 
-  protected implicit val materializer = ActorMaterializer()
+  implicit val materializer = ActorMaterializer()
 
   import system.dispatcher
 
@@ -234,8 +251,13 @@ class WsTestCallbackServer(destination: ActorRef, interface: String, port: Int)(
         system.log.error(ex, "Failed to bind to {}:{}!", interface, port)
 
     }
-    bindingFuture
+    def unbind: () => Future[akka.Done] = () =>
+      bindingFuture
+        .flatMap(_.unbind()) // trigger unbinding from the port
+
+    (bindingFuture, unbind)
   }
+
 
   // Queue howto: http://loicdescotte.github.io/posts/play-akka-streams-queue/
   // T is the source type
@@ -274,15 +296,14 @@ class WsTestCallbackServer(destination: ActorRef, interface: String, port: Int)(
   }
 }
 
-import akka.testkit.TestEventListener
 
 class SilentTestEventListener extends TestEventListener {
   override def print(event: Any): Unit = ()
 }
 
 
-abstract class Actorstest(
-                           val as: ActorSystem = Actorstest.createAs()) extends TestKit(as) with
+class Actorstest
+  (val as: ActorSystem = Actorstest.createSilentAs()) extends TestKit(as) with
   After with
   Scope with
   ImplicitSender {
@@ -293,12 +314,39 @@ abstract class Actorstest(
   }
 }
 
+class NoisyActorstest
+  (as: ActorSystem = Actorstest.createAs()) extends Actorstest(as)
+
 object Actorstest {
-  def createAs() = ActorSystem("testsystem", ConfigFactory.parseString(
+  val silentLoggerConf = ConfigFactory.parseString(
     """
-    akka.loggers = ["testHelpers.SilentTestEventListener", "akka.event.slf4j.Slf4jLogger"]
-    """).withFallback(ConfigFactory.load()))
+    akka {
+      stdout-loglevel = "OFF"
+      loglevel = "OFF"
+      loggers = []
+      persistence {
+        journal { # somehow these come from resources/application.conf???
+          plugin = ""
+          auto-start-journals = []
+        }
+        snapshot-store {
+          plugin = ""
+          auto-start-snapshot-stores = []
+        }
+      }
+    }
+    """
+  )
+  val loggerConf = ConfigFactory.parseString(
+    """
+    akka.loggers = ["testHelpers.SilentTestEventListener"]
+    """)
+  def createAs() = ActorSystem("testsystem", loggerConf.withFallback(ConfigFactory.load()))
+  def createSilentAs() = ActorSystem("testsystem", silentLoggerConf.withFallback(ConfigFactory.load()))
+  def apply() = new Actorstest()
+  def silent() = new Actorstest(createSilentAs())
 }
+
 
 class SubscriptionHandlerTestActor extends Actor {
   def receive = {
@@ -332,8 +380,6 @@ class HTML5Parser extends NoBindingFactoryAdapter {
 }
 
 
-import org.specs2.matcher._
-
 class BeEqualFormatted(node: Seq[Node]) extends EqualIgnoringSpaceMatcher(node) {
   val printer = new scala.xml.PrettyPrinter(80, 2)
 
@@ -343,15 +389,6 @@ class BeEqualFormatted(node: Seq[Node]) extends EqualIgnoringSpaceMatcher(node) 
   }
 }
 
-
-trait Specs2Interface extends TestFrameworkInterface {
-
-  def failTest(msg: String): Nothing = {
-    val trace = new Exception().getStackTrace.toList
-    val fixedTrace = trace.drop(trace.indexWhere(_.getClassName.startsWith("org.specs2")) - 1)
-    throw new FailureException(Failure(msg, stackTrace = fixedTrace))
-  }
-}
 
 /* XXX: Check Throwable type and message without using withThrowable, that
  * causes compiler to assertion error from typer. Issue is caused by combination
@@ -364,3 +401,26 @@ class TesterTest extends Specification
       t must beFailedTry.withThrowable[java.lang.IllegalArgumentException]("test")
     }
 }*/
+
+class OmiServiceDummy extends OmiService with Mockito {
+  override protected def requestHandler: ActorRef = ???
+
+  override val callbackHandler: CallbackHandler = mock[CallbackHandler]
+  override protected val system: ActorSystem = Actorstest.createAs()
+  override val singleStores: SingleStores = mock[SingleStores]
+
+  override implicit def materializer: ActorMaterializer = ???
+
+  override protected def subscriptionManager: ActorRef = ???
+
+  implicit val settings: OmiConfigExtension = OmiConfig(system)
+}
+
+object DummyHierarchyStore {
+  def apply(odf: ODF)(implicit system: ActorSystem) =
+    system actorOf Props(new Actor {
+      def receive = {
+        case GetTree => sender() ! odf.immutable
+      }
+    }) 
+}

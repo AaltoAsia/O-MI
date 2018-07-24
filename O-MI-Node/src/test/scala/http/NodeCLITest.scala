@@ -1,34 +1,32 @@
 package http
 
-import java.util.Date
-import java.sql.Timestamp
+import java.io.File
 import java.net.InetSocketAddress
+import java.sql.Timestamp
+import java.util.Date
+
+import agentSystem._
+import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem}
+import akka.http.scaladsl.model.Uri
+import akka.io.Tcp.{Received, Write}
+import akka.pattern.ask
+import akka.testkit._
+import akka.util.{ByteString, Timeout}
+import com.typesafe.config.ConfigFactory
+import database._
+import http.CLICmds._
+import org.specs2.concurrent.ExecutionEnv
+import org.specs2.matcher._
+import org.specs2.mutable._
+import responses.{AllSubscriptions, CLIHelperT, RemoveSubscription}
+import testHelpers.Actorstest
+import types.OmiTypes._
+import types.Path
+import types.odf._
 
 import scala.collection.mutable.{Map => MutableMap}
 import scala.concurrent.Future
 import scala.concurrent.duration._
-import akka.util.{ByteString, Timeout}
-import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, Props}
-import akka.pattern.ask
-import akka.testkit._
-import com.typesafe.config.{Config, ConfigFactory}
-import org.specs2.concurrent.ExecutionEnv
-import org.specs2.specification.create.InterpolatedFragment
-import org.specs2.mutable._
-import org.specs2.matcher._
-import org.specs2.matcher.FutureMatchers._
-import com.typesafe.config.{Config, ConfigFactory}
-import testHelpers.Actorstest
-import types.Path
-import types.OmiTypes._
-import responses.{AllSubscriptions, CLIHelperT, RemoveSubscription}
-import agentSystem._
-import akka.util.{ByteString, Timeout}
-import akka.http.scaladsl.model.Uri
-import akka.io.Tcp.{Received, Write}
-import database._
-import http.CLICmds._
-import types.odf._
 
 
 class NodeCLITest(implicit ee: ExecutionEnv) extends Specification {
@@ -51,10 +49,11 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification {
       "Polled Event subscription" >> showSubTestPollEvent
       "nonexistent subscription" >> showSubTestNonexistent
     }
+    "Successfully create backup file for odf and subscription" >> backupTest
   }
-  implicit val timeout = Timeout(1.minutes)
+  implicit val timeout: Timeout = Timeout(1.minutes)
 
-  def timeoutDuration = 10.seconds
+  def timeoutDuration: FiniteDuration = 10.seconds
 
   def emptyConfig = ConfigFactory.empty()
 
@@ -68,10 +67,10 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification {
   }
 
   class RemoveTester(path: Path) extends CLIHelperT {
-    val getAllData: Future[Option[ODF]] = Future.failed(new Exception("not implemented"))
+    val getAllData: Future[Option[ODF]] = Future.successful(Some(ImmutableODF(Vector(Objects()))))//new Exception("not implemented"))
 
-    def writeOdf(odf: ImmutableODF) = Future.successful()
-    def takeSnapshot() = Future.successful()
+    def writeOdf(odf: ImmutableODF) = Future.successful(())
+    def takeSnapshot() = Future.successful(())
     override def handlePathRemove(parentPaths: Seq[Path]): Future[Seq[Int]] = {
       if (path == parentPaths.head || path.isAncestorOf(parentPaths.head)) {
         Future.successful(Seq(1)) //???
@@ -82,8 +81,6 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification {
   }
 
   def helpTest = new Actorstest() {
-
-    import system.dispatcher
 
     val agentsMap: MutableMap[AgentName, AgentInfo] = MutableMap.empty
     val requestHandler = TestActorRef(new TestDummyRequestHandler())
@@ -112,8 +109,6 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification {
   }
 
   def listAgentsTest = new Actorstest() {
-
-    import system.dispatcher
 
     val agents = Vector(
       AgentInfo("test1", "testClass", emptyConfig, None, running = true, Nil, Java()),
@@ -146,12 +141,12 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification {
   def startAgentTest = new Actorstest() {
 
     val name = "StartSuccess"
+    val requestHandler = TestActorRef(new TestDummyRequestHandler())
+    val dbHandler = TestActorRef(new TestDummyDBHandler())
     val ref = system.actorOf(SSAgent.props(emptyConfig, requestHandler, dbHandler), name)
     val clazz = "agentSystem.SSAgent"
     val agentInfo = AgentInfo(name, clazz, emptyConfig, Some(ref), running = false, Nil, Scala())
     val testAgents = MutableMap(name -> agentInfo)
-    val requestHandler = TestActorRef(new TestDummyRequestHandler())
-    val dbHandler = TestActorRef(new TestDummyDBHandler())
     val managerRef = TestActorRef(new TestManager(testAgents, dbHandler, requestHandler))
     val managerActor = managerRef.underlyingActor
     val subscriptionManager = ActorRef.noSender
@@ -177,12 +172,12 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification {
 
   def stopAgentTest = new Actorstest() {
     val name = "StartSuccess"
+    val requestHandler = TestActorRef(new TestDummyRequestHandler())
+    val dbHandler = TestActorRef(new TestDummyDBHandler())
     val ref = system.actorOf(SSAgent.props(emptyConfig, requestHandler, dbHandler), name)
     val clazz = "agentSystem.SSAgent"
     val agentInfo = AgentInfo(name, clazz, emptyConfig, Some(ref), running = true, Nil, Scala())
     val testAgents = MutableMap(name -> agentInfo)
-    val requestHandler = TestActorRef(new TestDummyRequestHandler())
-    val dbHandler = TestActorRef(new TestDummyDBHandler())
     val managerRef = TestActorRef(new TestManager(testAgents, dbHandler, requestHandler))
     val managerActor = managerRef.underlyingActor
     val subscriptionManager = ActorRef.noSender
@@ -207,8 +202,6 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification {
 
   def unknownCmdTest = new Actorstest() {
 
-    import system.dispatcher
-
     val agentsMap: MutableMap[AgentName, AgentInfo] = MutableMap.empty
     val requestHandler = TestActorRef(new TestDummyRequestHandler())
     val dbHandler = TestActorRef(new TestDummyDBHandler())
@@ -232,9 +225,7 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification {
 
   }
 
-  def removePathTest = new Actorstest() {
-
-    import system.dispatcher
+  def removePathTest() = new Actorstest() {
 
     val agentsMap: MutableMap[AgentName, AgentInfo] = MutableMap.empty
     val requestHandler = TestActorRef(new TestDummyRequestHandler())
@@ -260,9 +251,7 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification {
     connection.expectMsgType[Write].data.decodeString("UTF-8") must beEqualTo(correct)
   }
 
-  def removeUnexistingPathTest = new Actorstest() {
-
-    import system.dispatcher
+  def removeUnexistingPathTest() = new Actorstest() {
 
     val agentsMap: MutableMap[AgentName, AgentInfo] = MutableMap.empty
     val requestHandler = TestActorRef(new TestDummyRequestHandler())
@@ -288,8 +277,6 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification {
   }
 
   def listSubsTest = new Actorstest() {
-
-    import system.dispatcher
 
     val startTime = new Timestamp(new Date().getTime())
     val endTime = new Timestamp(new Date().getTime() + 1.hours.toMillis)
@@ -341,9 +328,7 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification {
     resF should beEqualTo(correct).await(0, timeoutDuration)
   }
 
-  def removeSubTest = new Actorstest() {
-
-    import system.dispatcher
+  def removeSubTest() = new Actorstest() {
 
     val id = 13
     val agentsMap: MutableMap[AgentName, AgentInfo] = MutableMap.empty
@@ -372,9 +357,7 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification {
     resF should beEqualTo(correct).await(0, timeoutDuration)
   }
 
-  def removeUnexistingSubTest = new Actorstest() {
-
-    import system.dispatcher
+  def removeUnexistingSubTest() = new Actorstest() {
 
     val id = 13
     val agentsMap: MutableMap[AgentName, AgentInfo] = MutableMap.empty
@@ -409,11 +392,11 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification {
     val startTime = new Timestamp(new Date().getTime())
     val endTime = new Timestamp(new Date().getTime() + 1.hours.toMillis)
     val interval = 5.minutes
-    val nextRunTime = new Timestamp(new Date().getTime() + interval.toMillis)
+    //val nextRunTime = new Timestamp(new Date().getTime() + interval.toMillis)
     val callback = HTTPCallback(Uri("http://test.org:31"))
 
-    val remote = new InetSocketAddress("Tester", 22)
-    val removeHandler = new RemoveTester(Path("objects/aue"))
+    //val remote = new InetSocketAddress("Tester", 22)
+    //val removeHandler = new RemoveTester(Path("objects/aue"))
     val sub = Some(IntervalSub(
       id,
       paths,
@@ -429,18 +412,53 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification {
       s"Paths:\r\n${paths.mkString("\r\n")}\r\n>"
     showSubTestBase(sub, correct)
   }
+  def backupTest = new Actorstest() with FileMatchers {
+    val agentsMap: MutableMap[AgentName, AgentInfo] = MutableMap.empty
+    val requestHandler = TestActorRef(new TestDummyRequestHandler())
+    val dbHandler = TestActorRef(new TestDummyDBHandler())
+    val agentSystem = TestActorRef(new TestManager(agentsMap, dbHandler, requestHandler))
+    val subscriptionManager = TestActorRef(new Actor {
+      def receive = {
+        case RemoveSubscription(di, ttl) => sender() ! true
+        case GetSubsWithPollData(ttl) => sender() ! Seq.empty[(SavedSub, Option[SubData])]
+      }
+
+    })
+    val removeHandler = new RemoveTester(Path("Objects/aue"))
+    val remote = new InetSocketAddress("Tester", 22)
+    val connection = TestActorRef(new DummyRemote(remote.toString()))
+
+    val listenerRef = TestActorRef(new OmiNodeCLI(
+      connection,
+      remote,
+      removeHandler,
+      agentSystem,
+      subscriptionManager
+    ))
+    val filename1 = "nodeclisubfiletest"
+    val filename2 = "nodecliodffiletest"
+    val resF: Future[String] = decodeWriteStr(listenerRef ? strToMsg(s"backup $filename1 $filename2"))
+    val correct = "Success\r\n>"
+    resF should beEqualTo(correct).await(0, timeoutDuration)
+
+    (filename1 must beAFilePath) and(
+      filename2 must beAFilePath)
+    new File(filename1).delete()
+    new File(filename2).delete()
+
+  }
 
   def showSubTestEvent = {
     val id: Long = 57171
     val paths = Vector(Path("Objects/obj1/"), Path("Objects/obj2/sensor1"), Path("Objects/obj3/sobj/sensor"))
-    val startTime = new Timestamp(new Date().getTime())
+    //val startTime = new Timestamp(new Date().getTime())
     val endTime = new Timestamp(new Date().getTime() + 1.hours.toMillis)
-    val interval = 5.minutes
-    val nextRunTime = new Timestamp(new Date().getTime() + interval.toMillis)
+    //val interval = 5.minutes
+    //val nextRunTime = new Timestamp(new Date().getTime() + interval.toMillis)
     val callback = HTTPCallback(Uri("http://test.org:31"))
 
-    val remote = new InetSocketAddress("Tester", 22)
-    val removeHandler = new RemoveTester(Path("objects/aue"))
+    //val remote = new InetSocketAddress("Tester", 22)
+    //val removeHandler = new RemoveTester(Path("objects/aue"))
     val sub = Some(NormalEventSub(
       id,
       paths,
@@ -460,10 +478,10 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification {
     val endTime = new Timestamp(new Date().getTime() + 1.hours.toMillis)
     val interval = 5.minutes
     val nextRunTime = new Timestamp(new Date().getTime() + interval.toMillis)
-    val callback = HTTPCallback(Uri("http://test.org:31"))
+    //val callback = HTTPCallback(Uri("http://test.org:31"))
 
-    val remote = new InetSocketAddress("Tester", 22)
-    val removeHandler = new RemoveTester(Path("objects/aue"))
+    //val remote = new InetSocketAddress("Tester", 22)
+    //val removeHandler = new RemoveTester(Path("objects/aue"))
     val sub = Some(PollIntervalSub(
       id,
       endTime,
@@ -487,10 +505,10 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification {
     val endTime = new Timestamp(new Date().getTime() + 1.hours.toMillis)
     val interval = 5.minutes
     val nextRunTime = new Timestamp(new Date().getTime() + interval.toMillis)
-    val callback = HTTPCallback(Uri("http://test.org:31"))
+    //val callback = HTTPCallback(Uri("http://test.org:31"))
 
-    val remote = new InetSocketAddress("Tester", 22)
-    val removeHandler = new RemoveTester(Path("objects/aue"))
+    //val remote = new InetSocketAddress("Tester", 22)
+    //val removeHandler = new RemoveTester(Path("objects/aue"))
     val sub = Some(PollNormalEventSub(
       id,
       endTime,
@@ -508,15 +526,15 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification {
 
   def showSubTestNonexistent = {
     val id: Long = 57171
-    val paths = Vector(Path("Objects/obj1/"), Path("Objects/obj2/sensor1"), Path("Objects/obj3/sobj/sensor"))
-    val startTime = new Timestamp(new Date().getTime())
-    val endTime = new Timestamp(new Date().getTime() + 1.hours.toMillis)
-    val interval = 5.minutes
-    val nextRunTime = new Timestamp(new Date().getTime() + interval.toMillis)
-    val callback = HTTPCallback(Uri("http://test.org:31"))
+    //val paths = Vector(Path("Objects/obj1/"), Path("Objects/obj2/sensor1"), Path("Objects/obj3/sobj/sensor"))
+    //val startTime = new Timestamp(new Date().getTime())
+    //val endTime = new Timestamp(new Date().getTime() + 1.hours.toMillis)
+    //val interval = 5.minutes
+    //val nextRunTime = new Timestamp(new Date().getTime() + interval.toMillis)
+    //val callback = HTTPCallback(Uri("http://test.org:31"))
 
-    val remote = new InetSocketAddress("Tester", 22)
-    val removeHandler = new RemoveTester(Path("objects/aue"))
+    //val remote = new InetSocketAddress("Tester", 22)
+    //val removeHandler = new RemoveTester(Path("objects/aue"))
     val correct: String = s"Subscription with id $id not found.\r\n>"
     showSubTestBase(None, correct)
   }
@@ -547,6 +565,7 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification {
       strToMsg(s"showSub ${sub.map { s => s.id }.getOrElse(57171)}"))
     resF should beEqualTo(correct).await(0, timeoutDuration)
   }
+
 
   def strToWrite(str: String) = Write(ByteString(str))
 

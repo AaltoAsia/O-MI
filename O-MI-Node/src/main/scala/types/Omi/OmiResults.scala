@@ -2,12 +2,14 @@ package types
 package OmiTypes
 
 import java.lang.{Iterable => JIterable}
-import scala.collection.JavaConverters._
-import scala.concurrent.duration._
+
 import parsing.xmlGen.scalaxb.DataRecord
+import parsing.xmlGen.xmlTypes._
 import parsing.xmlGen.{omiDefaultScope, xmlTypes}
 import types.odf._
-import parsing.xmlGen.xmlTypes._
+
+import scala.collection.JavaConverters._
+import scala.concurrent.duration._
 import scala.util.Try
 
 trait JavaOmiResult {
@@ -320,7 +322,7 @@ object Results {
   }
 
   object InternalError {
-    def apply(e: Throwable): InternalError = new InternalError(Some(e.getMessage()))
+    def apply(e: Throwable): InternalError = new InternalError(Some(e.getMessage))
 
     def apply(msg: String): InternalError = new InternalError(Some(msg))
   }

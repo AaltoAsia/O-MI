@@ -1,25 +1,24 @@
 package agents.parking
 
-import java.lang.{Iterable => JavaIterable}
 import java.io.File
+import java.lang.{Iterable => JavaIterable}
 
-import scala.xml.XML
-import scala.util.control.NonFatal
-import scala.util.{ Success, Failure }
-import scala.collection.mutable.SortedMap
-import scala.concurrent.Future
-import scala.collection.JavaConverters._
-
-import akka.actor.{Props, ActorRef}
+import agentSystem._
+import agents.parking.UserGroup._
+import agents.parking.VehicleType._
+import akka.actor.{ActorRef, Props}
 import com.typesafe.config.Config
-
-import agentSystem._ 
 import types.OmiTypes._
-import types.odf._
 import types.Path._
 import types._
-import VehicleType._
-import UserGroup._
+import types.odf._
+
+import scala.collection.JavaConverters._
+import scala.collection.mutable
+import scala.concurrent.Future
+import scala.util.control.NonFatal
+import scala.util.{Failure, Success}
+import scala.xml.XML
 
 object ParkingAgent extends PropsCreator{
   /**
@@ -51,8 +50,8 @@ class ParkingAgent(
   val calculateCapacitiesEnabled: Boolean = if( config.hasPath("calculate-capacities") ) config.getBoolean("calculate-capacities") else false
 
   //Path to object containing all parking lots.
-  val latitudePFIndex: SortedMap[ Double, Set[Path] ] = SortedMap.empty
-  val longitudePFIndex: SortedMap[ Double, Set[Path] ] = SortedMap.empty
+  val latitudePFIndex: mutable.SortedMap[ Double, Set[Path] ] = mutable.SortedMap.empty
+  val longitudePFIndex: mutable.SortedMap[ Double, Set[Path] ] = mutable.SortedMap.empty
 
   //File used to populate node with initial state
   {
@@ -60,7 +59,7 @@ class ParkingAgent(
     val initialODF: ImmutableODF = if( startStateFile.exists() && startStateFile.canRead() ){
       val xml = XML.loadFile(startStateFile)
       ODFParser.parse( xml) match {
-        case Left( errors : JavaIterable[ParseError]) =>
+        case Left(errors) =>
           val msg = errors.asScala.toSeq.mkString("\n")
           log.warning(s"Odf has errors, $name could not be configured.")
           log.info(msg)
@@ -87,13 +86,13 @@ class ParkingAgent(
               }
               if( fails.nonEmpty) Future{ response }
               else{
-                success.foreach{
-                  case result: OmiResult =>
-                    result.odf.foreach{
+                success.foreach {
+                  result: OmiResult =>
+                    result.odf.foreach {
                       odf =>
-                        updateIndexesAndCapacities(odf,response)
+                        updateIndexesAndCapacities(odf, response)
                     }
-                  }
+                }
               }
               response
           }
@@ -103,16 +102,16 @@ class ParkingAgent(
       case e: Exception => 
         throw new Exception(s"Could not set initial state for $name. Initial write to DB failed.", e)
       
-    }.map{
-      case response: ResponseRequest => 
-        response.results.foreach{
-          case result: OmiResult =>
+    }.map {
+      response: ResponseRequest =>
+        response.results.foreach {
+          result: OmiResult =>
             result.returnValue match {
               case succ: Returns.ReturnTypes.Successful =>
-                log.info( s"Successfully initialized state for $name" )
+                log.info(s"Successfully initialized state for $name")
               case other =>
-                log.warning( s"Could not set initial state for $name. Got result:$result.")
-                throw new Exception( s"Could not set initial state for $name. Got following result from DB: $result.")
+                log.warning(s"Could not set initial state for $name. Got result:$result.")
+                throw new Exception(s"Could not set initial state for $name. Got following result from DB: $result.")
             }
         }
     }
@@ -283,86 +282,111 @@ class ParkingAgent(
   override def handleCall(call: CallRequest) : Future[ResponseRequest] = {
     val r:Option[Future[ResponseRequest]] = call.odf.get( findParkingPath ).map{
       case ii: InfoItem =>
-        ii.values.collect{
+        ii.values.collectFirst {
           case value: ODFValue =>
             val odf: ImmutableODF = value.value.immutable
-            val param = odf.get(parameterPath) 
-            param.map{
-                case ii: InfoItem =>
-                  Future{
-                    Responses.InvalidRequest( Some(s"Found ${ii.path} InfoItem from input when Object is expected. Refer to O-DF guidelines stored in MetaData."))
-                  }
-                case obj: Object  =>
-                  odf.get( destinationParamPath ).map{
-                    case ii: InfoItem =>
-                      return Future{
-                        Responses.InvalidRequest( Some(s"Found ${ii.path} InfoItem from input when Object is expected. Refer to O-DF guidelines stored in MetaData."))
-                      }
-                    case obj: Object => 
-                      GeoCoordinates.parseOdf( obj.path, odf) match {
-                        case Failure( e: ParseError ) =>
-                          Future{ Responses.ParseErrors( Vector(e) ) }
-                        case Failure( NonFatal(e)) => 
-                          Future{ Responses.InternalError( e ) }
-                        case Success( destination: GeoCoordinates) =>
-                          val distance : Double = getDoubleOption( "DistanceFromDestination", parameterPath, odf).getOrElse(1000.0)
-                          val wantCharging : Option[Boolean] = getBooleanOption( "wantCharging", parameterPath, odf)
-                          val userGroup = getStringOption( "UserGroup",parameterPath, odf).map{
-                            str => 
-                              str.split(",").map{
-                                subStr => 
+            val param = odf.get(parameterPath)
+            param.map {
+              case ii: InfoItem =>
+                Future {
+                  Responses
+                    .InvalidRequest(Some(s"Found ${
+                      ii
+                        .path
+                    } InfoItem from input when Object is expected. Refer to O-DF guidelines stored in MetaData."))
+                }
+              case obj: Object =>
+                odf.get(destinationParamPath).map {
+                  case ii: InfoItem =>
+                    return Future {
+                      Responses
+                        .InvalidRequest(Some(s"Found ${
+                          ii
+                            .path
+                        } InfoItem from input when Object is expected. Refer to O-DF guidelines stored in MetaData."))
+                    }
+                  case obj: Object =>
+                    GeoCoordinates.parseOdf(obj.path, odf) match {
+                      case Failure(e: ParseError) =>
+                        Future {
+                          Responses.ParseErrors(Vector(e))
+                        }
+                      case Failure(NonFatal(e)) =>
+                        Future {
+                          Responses.InternalError(e)
+                        }
+                      case Success(destination: GeoCoordinates) =>
+                        val distance: Double = getDoubleOption("DistanceFromDestination", parameterPath, odf)
+                          .getOrElse(1000.0)
+                        val wantCharging: Option[Boolean] = getBooleanOption("wantCharging", parameterPath, odf)
+                        val userGroup = getStringOption("UserGroup", parameterPath, odf).map {
+                          str =>
+                            str.split(",").map {
+                              subStr =>
                                 val ug = UserGroup(subStr)
                                 ug
-                              }
-                          }.toSeq.flatten.flatten
-                          val vehicle = odf.get( vehicleParamPath ).map{
-                            case ii: InfoItem =>
-                              return Future{
-                                Responses.InvalidRequest( Some(s"Found ${ii.path} InfoItem from input when Object is expected. Refer to O-DF guidelines stored in MetaData."))
-                              }
-                            case obj: Object => 
-                              Vehicle.parseOdf( obj.path, odf)  match{
-                                case Success(v: Vehicle) => v
-                                case Failure(e) =>
-                                  return Future{
-                                    Responses.InvalidRequest( Some(s"Incorrect vehicle parameter format. ${e.getMessage}"))
-                                  }
+                            }
+                        }.toSeq.flatten.flatten
+                        val vehicle = odf.get(vehicleParamPath).map {
+                          case ii: InfoItem =>
+                            return Future {
+                              Responses
+                                .InvalidRequest(Some(s"Found ${
+                                  ii
+                                    .path
+                                } InfoItem from input when Object is expected. Refer to O-DF guidelines stored in " +
+                                                       s"MetaData."))
+                            }
+                          case obj: Object =>
+                            Vehicle.parseOdf(obj.path, odf) match {
+                              case Success(v: Vehicle) => v
+                              case Failure(e) =>
+                                return Future {
+                                  Responses.InvalidRequest(Some(s"Incorrect vehicle parameter format. ${e.getMessage}"))
+                                }
 
-                              }
-                          }
-                          val charger = odf.get( chargerParamPath).map{
-                            case ii: InfoItem =>
-                              return Future{
-                                Responses.InvalidRequest( Some(s"Found ${ii.path} InfoItem from input when Object is expected. Refer to O-DF guidelines stored in MetaData."))
-                              }
-                            case obj: Object => 
-                              Charger.parseOdf( obj.path, odf) match{
-                                case Success(v: Charger) => v
-                                case Failure(e) =>
-                                  return Future{
-                                    Responses.InvalidRequest( Some(s"Incorrect Charger parameter format. ${e.getMessage}"))
-                                  }
-                              }
+                            }
+                        }
+                        val charger = odf.get(chargerParamPath).map {
+                          case ii: InfoItem =>
+                            return Future {
+                              Responses
+                                .InvalidRequest(Some(s"Found ${
+                                  ii
+                                    .path
+                                } InfoItem from input when Object is expected. Refer to O-DF guidelines stored in " +
+                                                       s"MetaData."))
+                            }
+                          case obj: Object =>
+                            Charger.parseOdf(obj.path, odf) match {
+                              case Success(v: Charger) => v
+                              case Failure(e) =>
+                                return Future {
+                                  Responses.InvalidRequest(Some(s"Incorrect Charger parameter format. ${e.getMessage}"))
+                                }
+                            }
 
-                          }
-                          log.debug("FindParking parameters parsed")
-                          findParking(destination,distance,vehicle,userGroup,charger,wantCharging)
-                      }
-                  }.getOrElse{
-                      Future{
-                        Responses.InvalidRequest( Some(s"Could not find Destination Object from input. Refer to O-DF guidelines stored in MetaData."))
-                      }
+                        }
+                        log.debug("FindParking parameters parsed")
+                        findParking(destination, distance, vehicle, userGroup, charger, wantCharging)
+                    }
+                }.getOrElse {
+                  Future {
+                    Responses
+                      .InvalidRequest(Some(s"Could not find Destination Object from input. Refer to O-DF guidelines stored in MetaData."))
                   }
-                  /*
-                  val charging = getBooleanOption( "wantCharging", obj.path, odf)
-                  */
-
-            }.getOrElse{
-                Future{
-                  Responses.InvalidRequest( Some(s"Could find Objects/Parameters Object from given O-DF input. Refer to O-DF guidelines stored in MetaData."))
                 }
+              /*
+              val charging = getBooleanOption( "wantCharging", obj.path, odf)
+              */
+
+            }.getOrElse {
+              Future {
+                Responses
+                  .InvalidRequest(Some(s"Could find Objects/Parameters Object from given O-DF input. Refer to O-DF guidelines stored in MetaData."))
+              }
             }
-        }.headOption.getOrElse{
+        }.getOrElse{
           Future{
             Responses.InvalidRequest(Some(s"$findParkingPath path should contain value with type odf."))
           }
@@ -420,7 +444,7 @@ class ParkingAgent(
               result =>
                 result.odf.map{
                   odf => 
-                    log.debug( "Found Successfull result with ODF")
+                    log.debug( "Found Successful result with ODF")
                     val correctParkingSpaces = odf.nodesWithType("mv:ParkingSpace").collect{
                       case obj: Object =>
                         ParkingSpace.parseOdf(obj.path, odf.immutable) match {
@@ -523,9 +547,7 @@ class ParkingAgent(
                     val nOdf = odf.removePaths(removedPaths.toSeq).union(correctNodes)
                     nOdf
                 }
-            }.fold(ImmutableODF()){
-              case (l:ImmutableODF, r: ImmutableODF) => l.union(r).immutable
-            }
+            }.fold(ImmutableODF()){(l: ODF, r: ODF) => l.union(r).immutable}
             Responses.Success(objects = Some(newOdf))
         }
       }

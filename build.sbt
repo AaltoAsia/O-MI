@@ -1,4 +1,3 @@
-import com.github.retronym.SbtOneJar
 import Dependencies._
 import NativePackagerHelper._
 import Path.relativeTo
@@ -29,7 +28,7 @@ addCommandAlias("systemTest", "omiNode/testOnly http.SystemTest")
 
 def commonSettings(moduleName: String) = Seq(
   name := s"O-MI-$moduleName",
-  version := "1.0.0", // WARN: Release ver must be "x.y.z" (no dashes, '-')
+  version := "1.0.2", // WARN: Release ver must be "x.y.z" (no dashes, '-')
   scalaVersion := "2.12.6",
   scalacOptions := Seq("-unchecked", "-feature", "-deprecation", "-encoding", "utf8", "-Xlint"),
   scalacOptions in (Compile,doc) ++= Seq("-groups", "-deprecation", "-implicits", "-diagrams", "-diagrams-debug", "-encoding", "utf8"),
@@ -37,7 +36,7 @@ def commonSettings(moduleName: String) = Seq(
   autoAPIMappings := true,
   exportJars := true,
   EclipseKeys.withSource := true,
-  coverageExcludedPackages := "parsing.xmlGen.*;",
+  coverageExcludedPackages := "parsing.xmlGen.*;database\\.journal\\.P[A-Z].*;",
 
   //ScoverageSbtPlugin.ScoverageKeys.coverageExcludedPackages := "parsing.xmlGen.*;"
   testFrameworks += new TestFramework("org.scalameter.ScalaMeterFramework"),
@@ -81,7 +80,6 @@ lazy val omiNode = (project in file("O-MI-Node")).
 lazy val agents = (project in file("Agents")).
   settings(commonSettings("Agents"): _*).
   settings(Seq(
-    libraryDependencies ++= commonDependencies,
     publish in Docker := {},
     crossTarget := (unmanagedBase in omiNode).value
     )).
@@ -104,7 +102,7 @@ lazy val root = (project in file(".")).
     ///////////////////////
     //Package information//
     ///////////////////////
-      maintainer := "Tuomas Kinnunen <tuomas.kinnunen@aalto.fi>; Andrea Buda <andrea.buda@aalto.fi>",
+      maintainer := "Tuomas Kinnunen <tuomas.kinnunen@aalto.fi>",
       packageDescription := "Internet of Things data server",
       packageSummary := """Internet of Things data server implementing Open Messaging Interface and Open Data Format""",
 
@@ -234,6 +232,6 @@ lazy val root = (project in file(".")).
   dependsOn(agents)
 
 // Choose Tomcat or Jetty default settings and build a .war file with `sbt package`
-tomcat()
-// jetty()
+enablePlugins(TomcatPlugin)
+//enablePlugins(JettyPlugin)
   

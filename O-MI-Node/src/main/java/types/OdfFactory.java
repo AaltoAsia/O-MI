@@ -1,20 +1,10 @@
 package types;
 
-import java.lang.Object;
-import java.util.Vector;
-import types.OdfTypes.*;
-import types.OdfTypes.OdfObjects;
-import types.OdfTypes.OdfDescription;
-import types.OdfTypes.OdfMetaData;
-import types.OdfTypes.OdfObject;
-import types.OdfTypes.OdfInfoItem;
-import types.OdfTypes.OdfValue;
-import types.OdfTypes.OdfValue$;
-import types.OdfTypes.OdfTreeCollection;
-import types.OdfTypes.OdfQlmID;
-import types.OdfTypes.OdfQlmID$;
-import java.sql.Timestamp;
 import scala.collection.immutable.HashMap;
+import types.OdfTypes.*;
+
+import java.sql.Timestamp;
+import java.util.Vector;
 
   /**
    * Factory class for creating O-DF types used in Scala.

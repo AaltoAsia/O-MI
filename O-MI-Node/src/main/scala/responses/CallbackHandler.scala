@@ -17,24 +17,23 @@ import java.net.InetAddress
 import java.sql.Timestamp
 import java.util.Date
 
-import scala.collection.mutable.{Map => MutableMap}
-import scala.concurrent._
-import scala.concurrent.duration._
-import scala.util.{Try,Success,Failure}
-import scala.xml.{NodeSeq}
-
-import akka.actor.ActorSystem
+import akka.actor.{ActorSystem, Terminated}
 import akka.event.{LogSource, Logging, LoggingAdapter}
-import akka.http.scaladsl.{Http, HttpExt}
 import akka.http.scaladsl.client.RequestBuilding
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.ws._
-import akka.stream.scaladsl._
+import akka.http.scaladsl.{Http, HttpExt}
 import akka.stream._
+import akka.stream.scaladsl._
+import http.OmiConfigExtension
+import responses.CallbackHandler._
 import types.OmiTypes._
 
-import http.{OmiConfigExtension}
-import CallbackHandler._
+import scala.collection.mutable.{Map => MutableMap}
+import scala.concurrent._
+import scala.concurrent.duration._
+import scala.util.{Failure, Success, Try}
+import scala.xml.NodeSeq
 
 object CallbackHandler {
 
@@ -80,13 +79,11 @@ class CallbackHandler(
 
   protected val httpExtension: HttpExt = Http(system)
   val portsUsedByNode: Seq[Int] = settings.ports.values.toSeq
-  val whenTerminated = system.whenTerminated
+  val whenTerminated: Future[Terminated] = system.whenTerminated
 
   protected def currentTimestamp = new Timestamp(new Date().getTime)
 
-  implicit val logSource: LogSource[CallbackHandler] = new LogSource[CallbackHandler] {
-    def genString(requestHandler: CallbackHandler): String = requestHandler.toString
-  }
+  implicit val logSource: LogSource[CallbackHandler] = (requestHandler: CallbackHandler) => requestHandler.toString
 
   protected val log: LoggingAdapter = Logging(system, this)
   val webSocketConnections: MutableMap[String, SendHandler] = MutableMap.empty
@@ -131,11 +128,11 @@ class CallbackHandler(
       tryUntil
     )(check)(trySend)
 
-    retry.failed.foreach{
-      case _: Throwable=>
+    retry.failed.foreach {
+      _: Throwable =>
         system.log.warning(
-          s"Failed to send POST request to $address after trying until ttl ended."
-        )
+                            s"Failed to send POST request to $address after trying until ttl ended."
+                          )
     }
     retry
 
@@ -193,7 +190,7 @@ class CallbackHandler(
             log.debug(
               s"Response send  to WebSocket connection ${callback.address} failed, ${
                 t
-                  .getMessage()
+                  .getMessage
               }. Connection removed."
             )
             webSocketConnections -= callback.address
@@ -223,7 +220,7 @@ class CallbackHandler(
             log.debug(
               s"Response send  to current connection ${callback.identifier} failed, ${
                 t
-                  .getMessage()
+                  .getMessage
               }. Connection removed."
             )
             currentConnections -= callback.identifier

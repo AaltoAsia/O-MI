@@ -1,8 +1,10 @@
 package database
 
+import akka.pattern.ask
+import akka.util.Timeout
+import journal.Models._
 import parsing.xmlGen._
 import responses.CallbackHandler._
-import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
 import types.OmiTypes._
 import types.Path
 import types.odf._
@@ -11,18 +13,6 @@ import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.Try
 import scala.util.control.NonFatal
-import akka.pattern.ask
-import akka.util.Timeout
-import journal.Models.GetTree
-import journal.Models.RemoveEventSub
-import journal.Models.GetNewEventSubsForPath
-import journal.Models.GetSubsForPath
-import journal.Models.AddPollData
-import journal.Models.SingleReadCommand
-import journal.Models.UnionCommand
-import journal.Models.WriteCommand
-import journal.Models.LookupNewEventSubs
-import journal.Models.LookupEventSubs
 
 
 trait DBWriteHandler extends DBHandlerBase {
@@ -92,15 +82,16 @@ trait DBWriteHandler extends DBHandlerBase {
       case AttachEvent(infoItem) =>
         // val fpollNewSubs  = (singleStores.subStore ? GetNewEventSubsForPath(infoItem.path)).mapTo[Set[PollNewEventSub]]
         //.map(pollNewSubs => infoItem.values.headOption.map(value => pollNewSubs.map(pnes => (singleStores.pollDataPrevayler ? AddPollData(pnes.id, infoItem.path, value)))))
-        val pollnewSubs: Option[Future[Set[Any]]] = infoItem.values.headOption.map(value =>
+        val pollnewSubs: Future[Set[Any]] = infoItem.values.headOption.map(value =>
           for {
             pollNewSubs <- (singleStores.subStore ? GetNewEventSubsForPath(infoItem.path)).mapTo[Set[PollNewEventSub]]
             result <- Future.sequence(pollNewSubs.map(pnes =>
               (singleStores.pollDataStore ? AddPollData(pnes.id, infoItem.path, value))))
-          } yield result)
+          } yield result).getOrElse(Future.successful(Set.empty[Any]))
         val fnesubs = (singleStores.subStore ? LookupNewEventSubs(infoItem.path)).mapTo[Seq[NewEventSub]]
         val fesubs = (singleStores.subStore ? LookupEventSubs(infoItem.path)).mapTo[Seq[NormalEventSub]]
         for {
+          _ <- pollnewSubs
           nesubs: Seq[NewEventSub] <- fnesubs
           esubs: Seq[NormalEventSub] <- fesubs
           resp: Seq[(EventSub, InfoItem)] = (esubs ++ nesubs).map {
@@ -196,8 +187,8 @@ trait DBWriteHandler extends DBHandlerBase {
         fvalue.flatMap(value =>
           handlePollData(path, oldValue, value))
     }) //Add values to pollsubs in this method
-    pollFuture.failed.foreach{
-      case t: Throwable => log.error(t, "Error when adding poll values to database")
+    pollFuture.failed.foreach {
+      t: Throwable => log.error(t, "Error when adding poll values to database")
     }
 
     //pollFuture.onFailure{
@@ -237,20 +228,21 @@ trait DBWriteHandler extends DBHandlerBase {
     // DB + Poll Subscriptions
     val infosToBeWrittenInDBF: Future[Seq[InfoItem]] =
       ftriggeringEvents.map(triggeringEvents => //InfoItems contain single value
-        triggeringEvents
-          .map(_.infoItem) //map type to OdfInfoItem
-          .groupBy(_.path) //combine same paths
-          .flatMap {
-          case (path: Path, iis: Vector[InfoItem]) => //flatMap to remove None values
-            iis.reduceOption(_.union(_)) //Combine infoitems with same paths to single infoitem
-        }(collection.breakOut)) // breakOut to correct collection type
+                              triggeringEvents
+                                .map(_.infoItem) //map type to OdfInfoItem
+                                .groupBy(_.path) //combine same paths
+                                .flatMap(next => {//flatMap to remove None values
+                              val (path: Path, iis: Seq[InfoItem]) = next
+                                iis.reduceOption(_.union(_))
+                              } //Combine infoitems with same paths to single infoitem
+                                        )(collection.breakOut)) // breakOut to correct collection type
 
     log.debug("Writing infoitems to db")
     val dbWriteFuture = infosToBeWrittenInDBF.flatMap(
       infosToBeWrittenInDB => dbConnection.writeMany(ImmutableODF(infosToBeWrittenInDB)))
 
-    dbWriteFuture.failed.foreach{
-      case t: Throwable => log.error(t, "Error when writing values for paths $paths")
+    dbWriteFuture.failed.foreach {
+      t: Throwable => log.error(t, "Error when writing values for paths $paths")
     }
 
     val writeFuture: Future[Any] = dbWriteFuture.flatMap {
@@ -268,7 +260,7 @@ trait DBWriteHandler extends DBHandlerBase {
               (singleStores.hierarchyStore ? UnionCommand(updateTree))
 
             }
-            case None => Future.successful[Unit]()
+            case None => Future.successful[Unit](Unit)
           }
           triggeringEvents <- ftriggeringEvents
           latestF <- {

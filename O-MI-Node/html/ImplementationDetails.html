@@ -1400,10 +1400,10 @@
 		    </textarea>
 	    </div>
 	</article>
-	<!--<article class="request-response single test" --> 
+	<article class="request-response single test" >
 	    <h2> Newest and Oldest  </h2>
 	    <div > <p class="description">
-		User has gone mad and wants two newest and two oldest values for same time
+		Return error when request contains both newest and oldest values.
 		</p>
 		Argument:
 		<ul>
@@ -1417,13 +1417,13 @@
 <?xml version="1.0"?>
 <omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="0">
   <read msgformat="odf" newest="2" oldest="2">
-    <msg xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
-      <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/">
+    <msg>
+      <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
         <Object>
-          <id idType="TypeTwo">Object1</id>
+          <id>Object1</id>
           <InfoItem name="Sensor1"/>
           <Object>
-            <id idType="TypeTwo">SubObject1</id>
+            <id>SubObject1</id>
           </Object>
         </Object>
       </Objects>
@@ -1436,16 +1436,17 @@
 		<h3>Response:</h3>
 		    <textarea class="response" rows=30 cols=100 style="border: none;" readonly>
 <?xml version="1.0"?>
-<omiEnvelope xmlns="http://www.opengroup.org/xsd/odf/1.0/" xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="10" version="1.0">
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="10" version="1.0">
   <response>
     <result>
-      <return description="Bad request: requirement failed: Both newest and oldest at the same time not supported!" returnCode="400"/>
+      <return description="O-MI Parser error: Invalid Read request, Can not query oldest and newest values at same time." returnCode="400">
+      </return>
     </result>
   </response>
 </omiEnvelope>
 		    </textarea>
 	    </div>
-	</article>-->
+	</article>
 	</div>
 	<div>
 	<h1> Subscription request </h1>

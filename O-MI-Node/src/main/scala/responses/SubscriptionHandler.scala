@@ -13,14 +13,14 @@
  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 package responses
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
-
 import akka.actor.ActorRef
 import akka.pattern.ask
 import akka.util.Timeout
+import http.OmiConfigExtension
 import types.OmiTypes._
-import http.{ OmiConfigExtension }
+
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
 trait SubscriptionHandler {
 
@@ -51,7 +51,7 @@ trait SubscriptionHandler {
         case id: Long =>
           Results.Subscription(id)
       }.recoverWith {
-      case e: IllegalArgumentException => Future.successful(Results.InvalidRequest(Some(e.getMessage())))
+      case e: IllegalArgumentException => Future.successful(Results.InvalidRequest(Some(e.getMessage)))
       case e: Throwable => Future
         .failed(new RuntimeException(s"Error when trying to create subscription: ${e.getMessage}", e))
     }

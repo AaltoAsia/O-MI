@@ -38,7 +38,7 @@
                 <Object type="mv:Charger" required="false">
                   <id>Charger</id>
                   <InfoItem name="Brand" type="mv:Brand" required="false">
-                    <value>Exampler</value>
+                    <value>Example</value>
                   </InfoItem>
                   <InfoItem name="Model" type="mv:Model" required="false">
                     <value>ExampleI</value>

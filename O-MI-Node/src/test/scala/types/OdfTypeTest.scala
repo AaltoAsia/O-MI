@@ -2,17 +2,15 @@ package types
 package odf
 
 import java.sql.Timestamp
-import java.util.{Date, GregorianCalendar}
+import java.util.GregorianCalendar
+
 import javax.xml.datatype.{DatatypeFactory, XMLGregorianCalendar}
-
-import scala.xml.Utility.trim
-import scala.collection.immutable.HashMap
-import org.specs2.matcher._
-import org.specs2.matcher.XmlMatchers._
-
 import org.specs2._
-import types.{Path => OdfPath}
+import org.specs2.matcher.XmlMatchers._
 import types.OdfTypes._
+import types.{Path => OdfPath}
+
+import scala.collection.immutable.HashMap
 
 class OdfTypesTest extends mutable.Specification {
   val testTime: Timestamp = Timestamp.valueOf("2017-05-11 15:44:55")
@@ -97,7 +95,7 @@ class OdfTypesTest extends mutable.Specification {
     val p = new scala.xml.PrettyPrinter(120, 4)
     val oldType: OdfObjects = parsing.OdfParser.parse(testingNodesAsXML.toString) match {
       case Right(o) => o
-      case Left(errors: Seq[ParseError]) =>
+      case Left(errors: Seq[_]) =>
         println("PARSING FAILED:\n" + errors.mkString("\n"))
         throw new Exception("Parsing failed!")
     }
@@ -111,7 +109,7 @@ class OdfTypesTest extends mutable.Specification {
   }
 
   def repeatedNewConvertTest = {
-    val newType = ImmutableODF(testingNodes)
+    //val newType = ImmutableODF(testingNodes)
     val newTypeWithoutNamesForIIs = ImmutableODF(testingNodes.map {
       case obj: Objects => obj
       case obj: Object => obj.copy(descriptions = obj.descriptions.headOption.toSet)
@@ -159,7 +157,7 @@ class OdfTypesTest extends mutable.Specification {
   def repeatedOldConvertTest = {
     val oldType: OdfObjects = parsing.OdfParser.parse(testingNodesAsXML.toString) match {
       case Right(o) => o
-      case Left(errors: Seq[ParseError]) =>
+      case Left(errors: Seq[_]) =>
         println("PARSING FAILED:\n" + errors.mkString("\n"))
         throw new Exception("Parsing failed!")
     }

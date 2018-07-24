@@ -16,26 +16,22 @@ package database
 import java.io.File
 import java.sql.Timestamp
 
-import scala.collection.mutable.ArrayBuffer
-import scala.concurrent.Future
-import http.OmiConfigExtension
-import com.typesafe.config.{Config, ConfigFactory}
 import akka.actor.{ActorRef, ActorSystem, Props}
+import akka.event.LoggingAdapter
+import akka.pattern.ask
 import akka.util.Timeout
+import com.typesafe.config.{Config, ConfigFactory}
+import journal.Models.{GetTree, MultipleReadCommand, SaveSnapshot, SingleReadCommand}
+import http.OmiConfigExtension
 import org.slf4j.{Logger, LoggerFactory}
 import slick.basic.DatabaseConfig
-import types.OmiTypes.ReturnCode
 import slick.jdbc.JdbcProfile
-import types.odf._
-import types.OmiTypes.OmiReturn
+import types.OmiTypes.{OmiReturn, ReturnCode}
 import types.Path
-import journal.Models.GetTree
-import journal.Models.SingleReadCommand
-import journal.Models.MultipleReadCommand
-import journal.Models.SaveSnapshot
-import akka.pattern.ask
+import types.odf._
 
-import scala.concurrent.duration.{Duration, FiniteDuration,MILLISECONDS}
+import scala.concurrent.Future
+import scala.concurrent.duration.{Duration, FiniteDuration, MILLISECONDS}
 import scala.util.{Failure, Success}
 
 package object database {
@@ -97,8 +93,8 @@ case class AttachEvent(override val infoItem: InfoItem) extends ChangeEvent(info
 class SingleStores(protected val settings: OmiConfigExtension)(implicit val system: ActorSystem) {
 
   import system.dispatcher
-  implicit val timeout = Timeout(settings.journalTimeout)
-  val log = system.log
+  implicit val timeout: Timeout = Timeout(settings.journalTimeout)
+  val log: LoggingAdapter = system.log
   def takeSnapshot: Future[Any] = {
     val start: FiniteDuration = Duration(System.currentTimeMillis(), MILLISECONDS)
 
@@ -263,7 +259,7 @@ class StubDB(val singleStores: SingleStores, val system: ActorSystem, val settin
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
-  def initialize(): Unit = Unit;
+  def initialize(): Unit = Unit
 
   val dbmaintainer: ActorRef = system.actorOf(SingleStoresMaintainer.props(singleStores, settings))
 

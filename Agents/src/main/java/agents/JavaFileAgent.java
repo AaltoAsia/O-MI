@@ -1,48 +1,37 @@
 package agents;
 
-import java.lang.Object;
-import java.lang.Exception;
-import java.lang.Number;
-import java.text.NumberFormat;
-import java.util.concurrent.TimeUnit;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.HashMap;
-import java.util.Vector;
-import java.util.Collection;
+import agentSystem.InternalAgentConfigurationFailure;
+import agentSystem.JavaInternalAgent;
+import akka.actor.ActorRef;
+import akka.actor.Cancellable;
+import akka.actor.Props;
+import akka.dispatch.OnFailure;
+import akka.dispatch.OnSuccess;
+import akka.japi.Creator;
+import com.typesafe.config.Config;
+import parsing.OdfParser;
+import scala.collection.JavaConversions;
+import scala.concurrent.ExecutionContext;
+import scala.concurrent.Future;
+import scala.concurrent.duration.Duration;
+import scala.concurrent.duration.FiniteDuration;
+import scala.util.Either;
+import scala.util.Random;
+import types.*;
+import types.OdfTypes.OdfInfoItem;
+import types.OdfTypes.OdfObjects;
+import types.OdfTypes.OdfTreeCollection;
+import types.OdfTypes.OdfValue;
+import types.OmiTypes.OmiResult;
+import types.OmiTypes.WriteRequest;
+import types.OmiTypes.ResponseRequest;
+import types.OmiTypes.Results;
+
 import java.io.File;
 import java.sql.Timestamp;
-
-import scala.concurrent.duration.*;
-import scala.concurrent.Future;
-import scala.concurrent.ExecutionContext;
-import scala.collection.JavaConversions;
-import scala.util.*;
-import akka.actor.Props;
-import akka.actor.ActorRef;
-import akka.util.Timeout;
-import static akka.pattern.Patterns.ask;
-import akka.japi.Creator;
-import akka.dispatch.Mapper;
-import akka.dispatch.OnSuccess;
-import akka.dispatch.OnFailure;
-import akka.actor.Cancellable;
-
-import com.typesafe.config.Config;
-
-import parsing.OdfParser;
-import agentSystem.JavaInternalAgent; 
-import agentSystem.*;
-import types.*;
-import types.OmiTypes.*;
-import types.OdfTypes.OdfValue;
-import types.OdfTypes.*;
-import types.OdfFactory;
-import types.OmiFactory;
-import types.OmiTypes.Results;
-import types.OmiTypes.OmiResult;
-import types.OdfTypes.OdfInfoItem;
+import java.text.NumberFormat;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Parses given file for O-DF structure and updates it's values.
@@ -102,7 +91,7 @@ public class JavaFileAgent extends JavaInternalAgent {
     pathToFile = config.getString("file");
     file = new File(pathToFile);
     if( file.exists()  && file.isFile() && file.canRead() ){
-      //Lets schelude a messge to us on every interval
+      //Lets schedule a message to us on every interval
       //and save the reference so we can stop the agent.
       intervalJob = context().system().scheduler().schedule(
           Duration.Zero(),                //Delay start
@@ -167,7 +156,7 @@ public class JavaFileAgent extends JavaInternalAgent {
     Collection<OdfInfoItem> infoItems = JavaConversions.asJavaCollection(odf.infoItems());
 
     //Collection of new values per path
-    Map<Path, scala.collection.immutable.Vector<OdfValue<Object>>> pathValuePairs = new HashMap();
+    Map<Path, scala.collection.immutable.Vector<OdfValue<Object>>> pathValuePairs = new HashMap<>();
 
     //Generate new value for each O-DF InfoItem
     for( OdfInfoItem item : infoItems){
@@ -230,29 +219,33 @@ public class JavaFileAgent extends JavaInternalAgent {
         } catch(java.text.ParseException pe){
           //Value was not a Number
           //Check if it is a Boolean
-          if( oldValueStr.toLowerCase().equals("false") ){
-            typeStr = "xs:boolean";
-            if( multiplier > 1.05 || multiplier < -1.05 ) {
-              newValueStr = "true";
-            } else {
-              newValueStr = "false";
-            }
-          } else if( oldValueStr.toLowerCase().equals("true") ){
-            typeStr = "xs:boolean";
-            if( multiplier > 1.05 || multiplier < -1.05 ) {
-              newValueStr = "false";
-            } else {
-              newValueStr = "true";
-            }
-          } else {
-            //Was not a Boolean. Keep old value as string 
-            newValueStr = oldValueStr;
+          switch (oldValueStr.toLowerCase()) {
+            case "false":
+              typeStr = "xs:boolean";
+              if (multiplier > 1.05 || multiplier < -1.05) {
+                newValueStr = "true";
+              } else {
+                newValueStr = "false";
+              }
+              break;
+            case "true":
+              typeStr = "xs:boolean";
+              if (multiplier > 1.05 || multiplier < -1.05) {
+                newValueStr = "false";
+              } else {
+                newValueStr = "true";
+              }
+              break;
+            default:
+              //Was not a Boolean. Keep old value as string
+              newValueStr = oldValueStr;
+              break;
           }
         }
       }
 
       // Multiple values can be added at the same time but we add one
-      Vector<OdfValue<Object>> newValues = new Vector<OdfValue<Object>>();
+      Vector<OdfValue<Object>> newValues = new Vector<>();
       OdfValue<Object> value = OdfFactory.createOdfValue(
           newValueStr, typeStr, timestamp
       );

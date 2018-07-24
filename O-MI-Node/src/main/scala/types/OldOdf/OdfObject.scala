@@ -15,11 +15,11 @@ package types
 package OdfTypes
 
 
-import scala.collection.immutable.HashMap
-
 import parsing.xmlGen.scalaxb.DataRecord
 import parsing.xmlGen.xmlTypes._
 import types.OdfTypes.OdfTreeCollection._
+
+import scala.collection.immutable.HashMap
 
 /** Class implementing OdfObject. */
 class OdfObjectImpl(

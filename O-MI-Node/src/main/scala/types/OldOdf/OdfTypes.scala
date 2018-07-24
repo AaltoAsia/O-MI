@@ -16,12 +16,12 @@ package OdfTypes
 
 import java.sql.Timestamp
 
-import scala.collection.mutable.{Map => MutableMap}
-import scala.collection.immutable.HashMap
-import scala.collection.JavaConverters._
-
 import parsing.xmlGen.scalaxb.DataRecord
 import parsing.xmlGen.xmlTypes._
+
+import scala.collection.JavaConverters._
+import scala.collection.immutable.HashMap
+import scala.collection.mutable.{Map => MutableMap}
 
 object OdfTreeCollection {
   def apply[T](): OdfTreeCollection[T] = Vector()

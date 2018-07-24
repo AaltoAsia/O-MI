@@ -15,17 +15,17 @@
 
 package responses
 
-import scala.xml.{NodeSeq}
-import database._
-import parsing.xmlGen.{defaultScope, scalaxb, xmlTypes}
-import types.odf.{ImmutableODF, InfoItem, Node, Object, Objects, Value}
-import types._
-import journal.Models.{GetTree, SingleReadCommand}
 import akka.pattern.ask
 import akka.util.Timeout
+import database._
+import journal.Models.{GetTree, SingleReadCommand}
+import parsing.xmlGen.{defaultScope, scalaxb, xmlTypes}
+import types._
+import types.odf.{ImmutableODF, InfoItem, Node, Object, Objects, Value}
 
-import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
+import scala.xml.NodeSeq
 
 object RESTHandler {
 
@@ -112,12 +112,12 @@ object RESTHandler {
           case ii: InfoItem => Some(ii.descriptions map (_.asDescriptionType))
           case n: Node => None
         } map {
-          case descriptions: Set[xmlTypes.DescriptionType] =>
+          descriptions: Set[xmlTypes.DescriptionType] =>
             descriptions.map {
-              case desc: xmlTypes.DescriptionType =>
+              desc: xmlTypes.DescriptionType =>
                 scalaxb.toXML[xmlTypes.DescriptionType](
-                  desc, Some("odf"), Some("description"), defaultScope
-                )
+                                                         desc, Some("odf"), Some("description"), defaultScope
+                                                       )
             }.fold(xml.NodeSeq.Empty) {
               case (l: xml.NodeSeq, r: xml.NodeSeq) => l ++ r
             }
@@ -167,7 +167,7 @@ object RESTHandler {
               )).map(Right(_))
             )
           case None => Future.successful(None)
-          case other => Future.failed(new Exception(s"Invalid type found in rest response handler: ${other}"))
+          case other => Future.failed(new Exception(s"Invalid type found in rest response handler: $other"))
         }
       }
     }

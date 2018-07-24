@@ -16,24 +16,22 @@ package authorization
 
 import java.lang.{Iterable => JavaIterable}
 
-import scala.language.postfixOps
-import scala.collection.JavaConverters._
-import scala.collection.mutable
-import scala.util.{Failure, Success, Try}
-import database._
-import Authorization.{AuthorizationExtension, CombinedTest, UnauthorizedEx}
 import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.server.Directives.extract
-import types.OdfTypes._
-import types.odf.{ImmutableODF}
-import types.OmiTypes._
-import types.Path
 import akka.pattern.ask
 import akka.util.Timeout
+import authorization.Authorization.{AuthorizationExtension, CombinedTest, UnauthorizedEx}
+import database._
 import journal.Models.GetTree
+import types.OdfTypes._
+import types.OmiTypes._
+import types.Path
+import types.odf.ImmutableODF
 
-import scala.concurrent.duration._
+import scala.collection.JavaConverters._
+import scala.collection.mutable
 import scala.concurrent.Await
+import scala.util.{Failure, Success, Try}
 
 sealed trait AuthorizationResult {
   def user: UserInfo
@@ -119,7 +117,7 @@ trait AuthApiProvider extends AuthorizationExtension {
     * Register authorization system that tells if the request is authorized.
     * Registration should be done once.
     */
-  def registerApi(newAuthSystem: AuthApi) = authorizationSystems += newAuthSystem
+  def registerApi(newAuthSystem: AuthApi): mutable.Buffer[AuthApi] = authorizationSystems += newAuthSystem
 
 
   // AuthorizationExtension implementation

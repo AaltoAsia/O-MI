@@ -2,22 +2,19 @@ package types
 
 import java.lang.{Iterable => JavaIterable}
 import java.sql.Timestamp
-import java.util.{GregorianCalendar, Dictionary}
-import javax.xml.datatype.{DatatypeFactory, XMLGregorianCalendar}
+import java.util.{Dictionary, GregorianCalendar}
 
+import javax.xml.datatype.{DatatypeFactory, XMLGregorianCalendar}
 import parsing.xmlGen.scalaxb._
 
-import scala.collection.immutable.{Map => ImmutableMap}
-import scala.collection.Map
 import scala.collection.JavaConverters._
+import scala.collection.Map
+import scala.collection.immutable.{Map => ImmutableMap}
 
 package object odf {
   type OdfParseResult = Either[JavaIterable[_ <:ParseError], ImmutableODF]
   type OdfCollection[T] = Vector[T]
 
-  trait Unionable[T] {
-    def union(t: T): T
-  }
 
   def timestampToXML(timestamp: Timestamp): XMLGregorianCalendar = {
     val cal = new GregorianCalendar()

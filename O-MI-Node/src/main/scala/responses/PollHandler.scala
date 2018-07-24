@@ -14,16 +14,16 @@
 
 package responses
 
+import akka.actor.{Actor, ActorLogging, ActorRef}
+import akka.pattern.ask
+import akka.util.Timeout
+import http.OmiConfigExtension
+import types.OmiTypes._
+import types.odf._
+
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.control.NonFatal
-
-import akka.actor.{ActorRef, ActorLogging, Actor}
-import akka.pattern.ask
-import akka.util.Timeout
-import types.odf._
-import types.OmiTypes._
-import http.{OmiConfigExtension }
 
 trait PollHandler extends Actor with ActorLogging {
 

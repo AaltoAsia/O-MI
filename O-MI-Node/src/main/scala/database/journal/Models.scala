@@ -2,11 +2,10 @@ package database.journal
 
 import java.sql.Timestamp
 
-import database.{EventSub, IntervalSub, PolledSub}
 import database.journal.PPersistentNode.NodeType.{Ii, Obj, Objs}
+import database.{EventSub, IntervalSub, PolledSub}
 import types.Path
-import types.odf.{BooleanValue, Description, DoubleValue, FloatValue, ImmutableODF, InfoItem, IntValue, LongValue, MetaData, ODFParser, ODFValue, Object, Objects, QlmID, ShortValue, StringValue, Value}
-
+import types.odf.{BooleanValue, Description, DoubleValue, FloatValue, ImmutableODF, InfoItem, IntValue, LongValue, MetaData, ODFParser, ODFValue, Object, Objects, QlmID, ShortValue, Value}
 import utils._
 
 object Models {
@@ -142,7 +141,7 @@ object Models {
             buildObjectFromProtobuf(k, pobject)
           case Objs(pobjects) =>
             buildObjectsFromProtobuf(pobjects)
-
+          case other => throw new Exception(s"Invalid nodeType found $other")
         }
       }
     )

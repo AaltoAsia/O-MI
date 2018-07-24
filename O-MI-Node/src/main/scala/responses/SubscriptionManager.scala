@@ -16,26 +16,26 @@ package responses
 
 import java.sql.Timestamp
 import java.util.concurrent.ConcurrentHashMap
-import scala.language.postfixOps
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.{duration,Future, Await}
-import scala.util.{Random, Success}
-import scala.concurrent.duration._
 import akka.actor.{Actor, ActorLogging, Cancellable, Props, Scheduler}
+import akka.pattern.{ask, pipe}
+import akka.util.Timeout
 import database._
+import journal.Models._
 import http.CLICmds.{GetSubsWithPollData, ListSubsCmd, SubInfoCmd}
 import http.OmiConfigExtension
 import responses.CallbackHandler.{CallbackFailure, MissingConnection}
 import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
-import types.odf.{ ODF, ImmutableODF, InfoItem, Value, NewTypeConverter}
 import types.OdfTypes._
 import types.OmiTypes._
 import types._
-import akka.pattern.ask
-import akka.util.Timeout
-import journal.Models._
-import akka.pattern.pipe
+import types.odf._
+
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
+import scala.concurrent.{Await, Future, duration}
+import scala.language.postfixOps
+import scala.util.{Random, Success}
 
 /**
   * Message for triggering handling of intervalsubscriptions
@@ -134,8 +134,8 @@ class SubscriptionManager(
           .putIfAbsent(iSub.id, intervalScheduler.schedule(initialDelay, iSub.interval, self, HandleIntervals(iSub.id)))
       }
       res: Unit = allSubs.foreach { sub =>
-        if (sub.endTime.getTime() != Long.MaxValue) {
-          val nextRun = (sub.endTime.getTime() - currentTime).millis
+        if (sub.endTime.getTime != Long.MaxValue) {
+          val nextRun = (sub.endTime.getTime - currentTime).millis
 
           if (nextRun.toMillis > 0L) {
             ttlScheduler.scheduleOnce(nextRun, self, SubscriptionTimeout(sub.id))
@@ -173,8 +173,6 @@ class SubscriptionManager(
   private def loadSub(subs: Seq[(SavedSub, Option[SubData])]): Future[Unit] = {
     implicit val timeout: Timeout = settings.journalTimeout
     val allSubsF: Future[AllSubscriptions] = getAllSubs()
-    val existingIds: Future[Set[Long]] = allSubsF
-      .map(allSubs => (allSubs.polls ++ allSubs.intervals ++ allSubs.events).map(_.id))
     for {
       allSubs <- allSubsF
       existingIds: Set[Long] = (allSubs.polls ++ allSubs.intervals ++ allSubs.events).map(_.id)
@@ -243,8 +241,8 @@ class SubscriptionManager(
                                  pollTime: Long): Option[Vector[Value[Any]]] = {
     //Refactor
     val buffer: collection.mutable.Buffer[Value[Any]] = collection.mutable.Buffer()
-    val lastPolled = pollInterval.lastPolled.getTime()
-    val pollTimeOffset = (lastPolled - pollInterval.startTime.getTime()) % pollInterval.interval.toMillis
+    val lastPolled = pollInterval.lastPolled.getTime
+    val pollTimeOffset = (lastPolled - pollInterval.startTime.getTime) % pollInterval.interval.toMillis
     val interval = pollInterval.interval.toMillis
     var nextTick = lastPolled + (interval - pollTimeOffset)
 
@@ -264,8 +262,8 @@ class SubscriptionManager(
       }
       //overcomplicated??
       if (previousValue.timestamp.getTime != pollTime &&
-        previousValue.timestamp.getTime() > lastPolled &&
-        previousValue.timestamp.getTime() > (nextTick - interval))
+        previousValue.timestamp.getTime > lastPolled &&
+        previousValue.timestamp.getTime > (nextTick - interval))
         buffer += previousValue
       Some(buffer.toVector)
     } else None
@@ -291,8 +289,8 @@ class SubscriptionManager(
           values.lastOption match {
             case Some(last) =>
               log.info(s"Found previous values for intervalsubscription: $last")
-              val tuple: Tuple2[Path,Seq[Value[Any]]] = (path, values :+ last.retime(new Timestamp(pollTime)))
-              Future.successful[Tuple2[Path,Seq[Value[Any]]]](tuple)
+              val tuple: (Path, Seq[Value[Any]]) = (path, values :+ last.retime(new Timestamp(pollTime)))
+              Future.successful[(Path, Seq[Value[Any]])](tuple)
 
             case None =>
               val msg = s"Found previous values for intervalsubscription, but lastOption is None, should not be possible."
@@ -325,7 +323,7 @@ class SubscriptionManager(
       }
       iisWithValues: Seq[InfoItem] = pollData.map {
         case (path: Path, values: Seq[Value[Any]]) =>
-          InfoItem(path, values.toVector)
+          InfoItem(path, values)
       }
       result = ImmutableODF(iisWithValues)
 
@@ -362,6 +360,9 @@ class SubscriptionManager(
             subValues: ImmutableODF <- ps match {
               case pollEvent: PolledEventSub => handlePollEvent(pollEvent)
               case pollInterval: PollIntervalSub => handlePollInterval(pollInterval, pollTime, odfTree)
+              case other =>
+                log.warning(s"Found invalid polled sub type $other")
+                Future.successful(ImmutableODF(Vector.empty))
             }
             res: ODF = subValues.union(emptyTree)
           } yield Some(res)
@@ -400,7 +401,7 @@ class SubscriptionManager(
             )
             foundPaths = odfWithValues.getPaths
             missedPaths = iSub.paths.filterNot {
-              case path: Path => foundPaths.contains(path)
+              path: Path => foundPaths.contains(path)
             }
             succResult = Vector(Results.Success(OdfTreeCollection(iSub.id), Some(odfWithValues)))
             failedResults = if (missedPaths.nonEmpty) Vector(Results.SubscribedPathsNotFound(missedPaths)) else Vector
@@ -518,11 +519,11 @@ class SubscriptionManager(
     val allIdsF: Future[Set[Long]] = allSubsF
       .map(allSubs => (allSubs.events ++ allSubs.intervals ++ allSubs.polls).map(_.id))
 
-    def getNewId(): Future[Long] = {
+    def getNewId: Future[Long] = {
       val nId: Long = rand.nextInt(Int.MaxValue)
       allIdsF.flatMap(allIds =>
         if (allIds.contains(nId))
-          getNewId()
+          getNewId
         else
           Future.successful(nId))
     }
@@ -539,7 +540,7 @@ class SubscriptionManager(
         case Duration(-1, duration.SECONDS) => {
           //normal event subscription
           val newSubId: Future[Long] = for {
-            newId <- getNewId()
+            newId <- getNewId
             addedSub <- singleStores.subStore ? AddEventSub(
               NormalEventSub(
                 newId,
@@ -558,7 +559,7 @@ class SubscriptionManager(
         }
         case dur@Duration(-2, duration.SECONDS) => {
           val newSubId: Future[Long] = for {
-            newId <- getNewId()
+            newId <- getNewId
             addedSub <- singleStores.subStore ? AddEventSub(
               NewEventSub(
                 newId,
@@ -578,7 +579,7 @@ class SubscriptionManager(
         } //subscription for new node
         case dur: FiniteDuration if dur.gteq(minIntervalDuration) => {
           val newSubId: Future[Long] = for {
-            newId <- getNewId()
+            newId <- getNewId
             iSub = IntervalSub(
               newId,
               OdfTypes.getLeafs(subscribedOdf).iterator.map(_.path).toSeq,
@@ -608,7 +609,7 @@ class SubscriptionManager(
           case Duration(-1, duration.SECONDS) => {
             //event poll sub
             val newSubId: Future[Long] = for {
-              newId <- getNewId()
+              newId <- getNewId
               addedSub <- singleStores.subStore ? AddPollSub(
                 PollNormalEventSub(
                   newId,
@@ -629,7 +630,7 @@ class SubscriptionManager(
           }
           case Duration(-2, duration.SECONDS) => {
             val newSubId: Future[Long] = for {
-              newId <- getNewId()
+              newId <- getNewId
               addedSub <- singleStores.subStore ? AddPollSub(
                 PollNewEventSub(
                   newId,
@@ -652,7 +653,7 @@ class SubscriptionManager(
           case dur: FiniteDuration if dur.gteq(minIntervalDuration) => {
             //interval poll
             val newSubId: Future[Long] = for {
-              newId <- getNewId()
+              newId <- getNewId
               addedSub <- singleStores.subStore ? AddPollSub(
                 PollIntervalSub(
                   newId,

@@ -1,10 +1,10 @@
 package responses
 
-import scala.concurrent.duration._
-
 import akka.testkit.TestProbe
 import org.specs2.mutable._
 import testHelpers.Actorstest
+
+import scala.concurrent.duration._
 
 class SubscriptionSchedulerTest extends Specification {
   val scheduler = new SubscriptionScheduler
