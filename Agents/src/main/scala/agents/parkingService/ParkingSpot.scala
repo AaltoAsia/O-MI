@@ -2,7 +2,6 @@ package agents.parkingService
 
 import types.OdfTypes._
 import types._
-import agents.parkingService._
 
 object UserGroup extends Enumeration{
   type UserGroup = Value

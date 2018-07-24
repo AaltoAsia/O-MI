@@ -1,7 +1,6 @@
 package agents.parkingService
 
 import types.OdfTypes._
-import agents.parkingService._
 import types._
 
 case class AllreadyReserved( path: Path ) extends Exception( s"Parking space at $path is already reserved.")

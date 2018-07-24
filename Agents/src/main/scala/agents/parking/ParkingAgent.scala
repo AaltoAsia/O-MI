@@ -15,7 +15,6 @@ import types.odf._
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
-import scala.collection.mutable.SortedMap
 import scala.concurrent.Future
 import scala.util.control.NonFatal
 import scala.util.{Failure, Success}
@@ -60,7 +59,7 @@ class ParkingAgent(
     val initialODF: ImmutableODF = if( startStateFile.exists() && startStateFile.canRead() ){
       val xml = XML.loadFile(startStateFile)
       ODFParser.parse( xml) match {
-        case Left( errors : JavaIterable[ParseError]) =>
+        case Left(errors) =>
           val msg = errors.asScala.toSeq.mkString("\n")
           log.warning(s"Odf has errors, $name could not be configured.")
           log.info(msg)
@@ -548,9 +547,7 @@ class ParkingAgent(
                     val nOdf = odf.removePaths(removedPaths.toSeq).union(correctNodes)
                     nOdf
                 }
-            }.fold(ImmutableODF()){
-              case (l:ImmutableODF, r: ImmutableODF) => l.union(r).immutable
-            }
+            }.fold(ImmutableODF()){(l: ODF, r: ODF) => l.union(r).immutable}
             Responses.Success(objects = Some(newOdf))
         }
       }

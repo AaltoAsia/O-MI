@@ -135,6 +135,7 @@ object Charger{
                   fails.map{
                     case Failure( pe: ParseError ) => pe
                     case Failure( e ) => throw e
+                    case _ => throw new IllegalStateException("Failures should not contain Success")
                   }
                 )
                 

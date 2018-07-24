@@ -1,7 +1,6 @@
 package agents.parkingService
 
 import agents.parkingService.VehicleType._
-import agents.parkingService._
 import types.OdfTypes._
 import types._
 
@@ -99,13 +98,13 @@ case class ParkingFacility(
       typeValue = Some( "list" )
     )
 
-    val capacitiesObj = OdfObject(
-                                   Vector( OdfQlmID( "Capacities" ) ),
-                                   facilityPath / "Capacitiess",
-                                   Vector(),
-                                   capacities.map(_.toOdf(facilityPath / "Capacities")),
-                                   typeValue = Some( "list" )
-    )
+    //val capacitiesObj = OdfObject(
+    //                               Vector( OdfQlmID( "Capacities" ) ),
+    //                               facilityPath / "Capacitiess",
+    //                               Vector(),
+    //                               capacities.map(_.toOdf(facilityPath / "Capacities")),
+    //                               typeValue = Some( "list" )
+    //)
 
     OdfObject(
       Vector( OdfQlmID( name ) ),

@@ -2,11 +2,10 @@ package agents.parkingService
 
 import types.OdfTypes._
 import types._
-import agents.parkingService._
 object Charger{
 
   def apply( obj: OdfObject ) : Charger ={
-     val name = obj.id.headOption
+     //val name = obj.id.headOption
      val brand = obj.get( obj.path / "Brand" ).collect{
        case ii: OdfInfoItem =>
         getStringFromInfoItem( ii )
@@ -26,10 +25,10 @@ object Charger{
             PowerPlug(plugObj)
         }
      }.toVector.flatten
-     val pt = obj.get( obj.path / "plugType" ).collect{
-       case ii: OdfInfoItem =>
-        getStringFromInfoItem( ii )
-     }.flatten
+    // val pt = obj.get( obj.path / "plugType" ).collect{
+    //   case ii: OdfInfoItem =>
+    //    getStringFromInfoItem( ii )
+    // }.flatten
      val current = obj.get( obj.path / "currentInA" ).collect{
        case ii: OdfInfoItem =>
         getDoubleFromInfoItem( ii )
@@ -110,13 +109,13 @@ case class Charger(
           typeValue = Some( "mv:Model" )
         )
     }
-    val lidStatusII = lidStatus.map{
-      str => 
-        OdfInfoItem(
-          chargerPath / "LidStatus",
-          Vector( OdfValue( str, currentTime ))
-        )
-    }
+   // val lidStatusII = lidStatus.map{
+   //   str =>
+   //     OdfInfoItem(
+   //       chargerPath / "LidStatus",
+   //       Vector( OdfValue( str, currentTime ))
+   //     )
+   // }
     val powerInkWII = powerInkW.map{ pT =>
       OdfInfoItem(
         chargerPath / "powerInkW",
