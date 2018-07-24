@@ -1,7 +1,6 @@
 package agents.parkingService
 
 import types.OdfTypes._
-import agents.parkingService._
 
 //TODO: How to present validFor*?
 object VehicleType extends Enumeration{

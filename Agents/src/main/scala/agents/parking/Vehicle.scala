@@ -133,6 +133,7 @@ object Vehicle{
             case Some(VehicleType.Bicycle) => Bicycle( l,w,h)
             case Some(VehicleType.Unknown ) =>
               throw MVError( s"Vehicle path $path has wrong type attribute ${obj.typeAttribute}")
+            case Some(other) => throw MVError(s"Vehicle path $path has unknown type attribute ${obj.typeAttribute}")
             case None =>
               throw MVError( s"Vehicle path $path has wrong type attribute ${obj.typeAttribute}")
           }

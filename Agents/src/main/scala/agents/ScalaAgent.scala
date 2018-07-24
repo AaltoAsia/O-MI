@@ -98,16 +98,16 @@ class ScalaAgent(
     // type metadata, default is xs:string
     val typeStr : String= "xs:integer"
     //New value as String
-    val valueStr : String = newValueStr
+    //val valueStr : String = newValueStr
 
     val odfValue : OdfValue[Any] = OdfValue( newValueStr, typeStr, timestamp ) 
 
     // Multiple values can be added at the same time but we add one
     val odfValues : Vector[OdfValue[Any]] = Vector( odfValue )
 
-    val metaValueStr : String = newValueStr
+    //val metaValueStr : String = newValueStr
 
-    val metaValue : OdfValue[Any] = OdfValue( newValueStr, typeStr, timestamp ) 
+    //val metaValue : OdfValue[Any] = OdfValue( newValueStr, typeStr, timestamp )
 
     // Multiple values can be added at the same time but we add one
     val metaValues : Vector[OdfValue[Any]] = Vector( odfValue )

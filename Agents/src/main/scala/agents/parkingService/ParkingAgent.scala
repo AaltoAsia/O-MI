@@ -5,7 +5,6 @@ import java.io.File
 import agentSystem._
 import UserGroup._
 import VehicleType._
-import agents.parkingService._
 import akka.actor.{Actor, ActorRef, Cancellable, Props}
 import com.typesafe.config.Config
 import parsing.OdfParser
@@ -126,7 +125,7 @@ class ParkingAgent(
   val chargerParameterPath: Path = parameterPath / "Charger"
 
   override protected def handleWrite(write: WriteRequest) : Future[ResponseRequest] = {
-    def plugMeasureUpdate( plug: PowerPlug): Boolean =  plug.currentInA.nonEmpty || plug.powerInkW.nonEmpty || plug.voltageInV.nonEmpty
+    //def plugMeasureUpdate( plug: PowerPlug): Boolean =  plug.currentInA.nonEmpty || plug.powerInkW.nonEmpty || plug.voltageInV.nonEmpty
     if( write.odf.get(findParkingPath).nonEmpty ){
       return Future{
         Responses.InvalidRequest(Some(s"Writing to $findParkingPath is not allowed.")) 
@@ -232,7 +231,7 @@ class ParkingAgent(
 
             }
     }
-    val res = Try{ Await.ready(response, 10.minutes) }
+    Try(Await.ready(response, 10.minutes)).failed.foreach(msg => log.error("Timeout when writing", msg))
     response
   }
   
@@ -248,8 +247,7 @@ class ParkingAgent(
           log.debug("Reserving parking space")
 
           val responseF = writeToDB(WriteRequest(OldTypeConverter.convertOdfObjects(reservation.toOdf.createAncestors)))
-          responseF.onSuccess {
-            case response: ResponseRequest =>
+          responseF.foreach{response  =>
               if (reservation.openLid) {
                 closeLidIn(reservation.path / "Charger" / "LidStatus")
               }
@@ -263,8 +261,7 @@ class ParkingAgent(
         case freeing: FreeReservation =>
           log.debug("Freeing parking space")
           val responseF = writeToDB(WriteRequest(OldTypeConverter.convertOdfObjects(freeing.toOdf.createAncestors)))
-          responseF.onSuccess {
-            case response: ResponseRequest =>
+          responseF.foreach{response =>
               if (freeing.openLid) {
                 closeLidIn(freeing.path / "Charger" / "LidStatus")
               }
@@ -278,8 +275,7 @@ class ParkingAgent(
         case oL: OpenLid =>
           log.debug("Opening lid")
           val responseF = writeToDB(WriteRequest(OldTypeConverter.convertOdfObjects(oL.toOdf.createAncestors)))
-          responseF.onSuccess {
-            case response: ResponseRequest =>
+          responseF.foreach{response =>
               closeLidIn(oL.path / "Charger" / "LidStatus")
               updateCalculatedIIsToDB
           }
@@ -346,7 +342,7 @@ class ParkingAgent(
           result: OmiResult => result.odf.map(NewTypeConverter.convertODF(_))
         }.flatMap {
           odf: OdfObjects =>
-            odf.get(parkingLotsPath).map {
+            odf.get(parkingLotsPath).collect{
               case pfsObj: OdfObject =>
                 pfsObj.objects.map(ParkingFacility(_))
             }
@@ -463,6 +459,9 @@ class ParkingAgent(
               Responses.InternalError(e)
 
           }
+        case Some(other) =>
+          log.error(s"Unknown Node Type $other");
+          Future.successful(Responses.InternalError(Some(s"Unknown Node Type$other")))
       }
   }
   case class ParkingParameters(
