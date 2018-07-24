@@ -138,13 +138,8 @@ object InfluxDBJsonProtocol extends DefaultJsonProtocol {
   }
 
 }
+object InfluxDBImplementation{
 
-class InfluxDBImplementation(
-                              protected val config: InfluxDBConfigExtension
-                            )(
-                              implicit val system: ActorSystem,
-                              protected val singleStores: SingleStores
-                            ) extends DB {
 
   final class AcceptHeader(format: String) extends ModeledCustomHeader[AcceptHeader] {
     override def renderInRequests: Boolean = true
@@ -162,6 +157,68 @@ class InfluxDBImplementation(
     override def parse(value: String) = Try(new AcceptHeader(value))
   }
 
+  def infoItemToWriteFormat(ii: InfoItem): Seq[String] = {
+    val measurement: String = pathToMeasurementName(ii.path).replace(" ", "\\ ")
+    ii.values.map {
+      value: Value[Any] =>
+        val valueStr: String = value.value match {
+          case odf: ImmutableODF => throw new Exception("Having O-DF inside value with InfluxDB is not supported.")
+          case str: String => s""""${str.replace("\"", "\\\"")}""""
+          case num: Double => s"$num" 
+          case num: Float => s"$num" 
+          case num: Int => s"$num" 
+          case num: Long => s"$num" 
+          case num: Short => s"$num" 
+          case bool: Boolean => bool.toString
+          case any: Any => s""""${any.toString.replace("\"", "\\\"")}""""
+        }
+        s"$measurement value=$valueStr ${value.timestamp.getTime}"
+    }
+  }
+
+  //TODO: Escape all odd parts
+  def pathToMeasurementName(path: Path): String = path.toString.replace("=", "\\=").replace(",", "\\,")
+
+  def getNBetweenInfoItemsQueryString(
+                                       iis: Iterable[InfoItem],
+                                       filteringClause: String
+                                     ): String = {
+    val queries = iis.map {
+      ii: InfoItem =>
+        val measurementName = pathToMeasurementName(ii.path)
+        val select = s"""SELECT value FROM "$measurementName""""
+        s"$select $filteringClause"
+    }
+    queries.mkString(";\n")
+  }
+  def filteringClause( 
+    beginO: Option[Timestamp],
+    endO: Option[Timestamp],
+    newestO: Option[Int]
+  ) ={
+    val whereClause = (beginO, endO) match {
+      case (Some(begin), Some(end)) => s"WHERE time >= '${begin.toString}' AND time <= '${end.toString}'"
+      case (None, Some(end)) => s"WHERE time <= '${end.toString}'"
+      case (Some(begin), None) => s"WHERE time >= '${begin.toString}'"
+      case (None, None) => ""
+    }
+    val limitClause = newestO.map {
+      n: Int => s"LIMIT $n"
+    }.getOrElse {
+      if (beginO.isEmpty && endO.isEmpty) "LIMIT 1" else ""
+    }
+    s"$whereClause ORDER BY time DESC $limitClause"
+  }
+}
+
+class InfluxDBImplementation
+(
+  protected val config: InfluxDBConfigExtension
+  )(
+    implicit val system: ActorSystem,
+    protected val singleStores: SingleStores
+  ) extends DB {
+  import InfluxDBImplementation._
 
   protected val writeAddress: Uri = config.writeAddress //Get from config
   log.info(s"Write address of InfluxDB instance $writeAddress")
@@ -173,21 +230,6 @@ class InfluxDBImplementation(
   implicit val mat: Materializer = ActorMaterializer()
 
   def log: LoggingAdapter = system.log
-
-  def infoItemToWriteFormat(ii: InfoItem): Seq[String] = {
-    val measurement: String = pathToMeasurementName(ii.path).replace(" ", "\\ ")
-    ii.values.map {
-      value: Value[Any] =>
-        val valueStr: String = value.value match {
-          case odf: ImmutableODF => throw new Exception("Having O-DF inside value with InfluxDB is not supported.")
-          case str: String => s""""${str.replace("\"", "\\\"")}""""
-          case num: Numeric[_] => s"$num" //XXX: may cause issues...
-          case bool: Boolean => bool.toString
-          case any: Any => s""""${any.toString.replace("\"", "\\\"")}""""
-        }
-        s"$measurement value=$valueStr ${value.timestamp.getTime}"
-    }
-  }
 
   def initialize(): Unit = {
     val initialisation = httpResponseToStrict(sendQuery("show databases")).flatMap {
@@ -327,22 +369,9 @@ class InfluxDBImplementation(
               })
               .union(requestedODF)))
           case (bO, eO, nO) => {
-            lazy val whereClause = (bO, eO) match {
-              case (Some(begin), Some(end)) => s"WHERE time >= '${begin.toString}' AND time <= '${end.toString}'"
-              case (None, Some(end)) => s"WHERE time <= '${end.toString}'"
-              case (Some(begin), None) => s"WHERE time >= '${begin.toString}'"
-              case (None, None) => ""
-            }
-            lazy val limitClause = nO.map {
-              n: Int =>
-                s"LIMIT $n"
-            }.getOrElse {
-              if (beginO.isEmpty && endO.isEmpty) "LIMIT 1" else ""
-            }
-            lazy val filteringClause: String = s"$whereClause ORDER BY time DESC $limitClause"
 
             if (requestedIIs.nonEmpty) {
-              val iiQueries = getNBetweenInfoItemsQueryString(requestedIIs, filteringClause)
+              val iiQueries = getNBetweenInfoItemsQueryString(requestedIIs, filteringClause(bO,eO,nO))
               read(iiQueries, requestedODF)
             } else Future.successful(Some(requestedODF))
           }
@@ -393,21 +422,6 @@ class InfluxDBImplementation(
     formatedResponse
   }
 
-  def getNBetweenInfoItemsQueryString(
-                                       iis: Iterable[InfoItem],
-                                       filteringClause: String
-                                     ): String = {
-    val queries = iis.map {
-      ii: InfoItem =>
-        val measurementName = pathToMeasurementName(ii.path)
-        val select = s"""SELECT value FROM "$measurementName""""
-        s"$select $filteringClause"
-    }
-    queries.mkString(";\n")
-  }
-
-  //TODO: Escape all odd parts
-  def pathToMeasurementName(path: Path): String = path.toString.replace("=", "\\=").replace(",", "\\,")
 
   def remove(path: Path)(implicit timeout: Timeout): Future[Seq[Int]] = {
     for {
