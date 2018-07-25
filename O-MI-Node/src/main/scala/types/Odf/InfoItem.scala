@@ -1,6 +1,7 @@
 package types
 package odf
 
+import scala.language.implicitConversions
 import database.journal.PPersistentNode.NodeType.Ii
 import database.journal.{PInfoItem, PPersistentNode}
 import parsing.xmlGen.scalaxb.DataRecord
@@ -9,6 +10,42 @@ import parsing.xmlGen.xmlTypes.InfoItemType
 import scala.collection.immutable.{HashMap, Map => IMap}
 
 object InfoItem {
+  sealed trait Parameters {
+    def apply(): InfoItem
+  }
+  trait Builders {
+    implicit def fromPath(path: Path) = new Parameters {
+      def apply = InfoItem( path.last, path)
+    }
+    implicit def fromPathValues(t: (Path, Vector[Value[Any]])) = new Parameters {
+      val (path, values) = t
+      def apply =
+        InfoItem( path.last, path, values=values)
+    }
+    implicit def fromPathValuesDesc(t: (Path,
+                                 Vector[Value[Any]],
+                                 Description)) = new Parameters {
+      val (path, values, description) = t
+      def apply = InfoItem( path.last, path, values=values, descriptions=Set(description))
+    }
+    implicit def fromPathValuesMeta(t: (Path,
+                                 Vector[Value[Any]],
+                                 MetaData)) = new Parameters {
+      val (path, values, metaData) = t
+      def apply = InfoItem( path.last, path, values=values, metaData=Some(metaData))
+    }
+    implicit def fromPathValuesDescMeta(t: (Path,
+                                 Vector[Value[Any]],
+                                 Description,
+                                 MetaData)) = new Parameters {
+      val (path, values, description, metaData) = t
+      def apply = InfoItem( path.last, path, values=values, metaData=Some(metaData), descriptions=Set(description))
+    }
+  }
+
+  def build(magnet: Parameters): InfoItem = magnet()
+
+
   def apply(path: Path, values: Vector[Value[Any]]): InfoItem = {
     InfoItem(
       path.last,

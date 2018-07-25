@@ -9,6 +9,10 @@ import parsing.xmlGen.xmlTypes.{ObjectType, ObjectsType}
 import scala.collection.immutable.{HashMap, Map => IMap}
 import scala.language.implicitConversions
 
+object Objects {
+  val empty: Objects = Objects()
+}
+
 @SerialVersionUID(2921615916249400841L)
 case class Objects(
                     version: Option[String] = None,

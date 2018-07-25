@@ -11,7 +11,8 @@ import scala.collection.JavaConverters._
 import scala.collection.Map
 import scala.collection.immutable.{Map => ImmutableMap}
 
-package object odf {
+package object odf extends InfoItem.Builders {
+
   type OdfParseResult = Either[JavaIterable[_ <:ParseError], ImmutableODF]
   type OdfCollection[T] = Vector[T]
 
