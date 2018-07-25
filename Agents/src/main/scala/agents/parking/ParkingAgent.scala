@@ -1,7 +1,6 @@
 package agents.parking
 
 import java.io.File
-import java.lang.{Iterable => JavaIterable}
 
 import agentSystem._
 import agents.parking.UserGroup._

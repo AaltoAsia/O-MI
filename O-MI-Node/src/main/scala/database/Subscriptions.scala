@@ -161,6 +161,7 @@ case class SubData(
 //  def empty: PollSubData = PollSubData(collection.mutable.HashMap.empty)
 //}
 
+
 object CustomJsonProtocol extends DefaultJsonProtocol {
 
   implicit object SubscriptionJsonFormat extends RootJsonFormat[(SavedSub, Option[SubData])] {
@@ -193,10 +194,14 @@ object CustomJsonProtocol extends DefaultJsonProtocol {
       JsNumber(startTime),
       JsNumber(lastPolled),
       JsNull,
-      JsArray(paths: Vector[JsString]),
-      JsArray(data: Vector[JsObject])) => {
+      JsArray(pathsU),
+      JsArray(dataU)) => {
+        val paths = pathsU.collect{case s: JsString => s}
+        val data = dataU.collect{case d: JsObject=> d}
         val subData: Seq[(Path, List[Value[Any]])] = data.map(_.getFields("path", "values") match {
-          case Seq(JsString(path), JsArray(values: Vector[JsObject])) => (Path(path), values
+          case Seq(JsString(path), JsArray(valuesU)) =>
+            val values = valuesU.collect{case o:JsObject => o}
+            (Path(path), values
             .map(_.getFields("value", "typeValue", "timeStamp") match {
               case Seq(JsString(value),
               JsString(typeValue),
@@ -239,8 +244,9 @@ object CustomJsonProtocol extends DefaultJsonProtocol {
       JsNull,
       JsNull,
       JsString(callback),
-      JsArray(paths: Vector[JsString]),
+      JsArray(pathsU),
       JsNull) if interval.toLong == -1 || interval.toLong == -2 => { //EventSub
+        val paths = pathsU.collect{case s:JsString => s} //unchecked otherwise
         if (interval.toLong == -1) {
           (NormalEventSub(id.toLong,
             paths.map(p => Path(p.value)),
@@ -267,8 +273,9 @@ object CustomJsonProtocol extends DefaultJsonProtocol {
       JsNumber(startTime),
       JsNull,
       JsString(callback),
-      JsArray(paths: Vector[JsString]),
+      JsArray(pathsU),
       JsNull) => { //IntervalSub
+        val paths = pathsU.collect{case s: JsString => s}
         (IntervalSub(id.toLong,
           paths.map(p => Path(p.value)),
           new Timestamp(endTime.toLong),
