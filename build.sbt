@@ -7,7 +7,7 @@ import DebianConstants._
 lazy val separator = taskKey[Unit]("Prints seperating string")
 separator := println("########################################################\n\n\n\n")
 
-addCommandAlias("release", ";doc ;universal:packageBin ;universal:packageZipTarball ;debian:packageBin ;rpm:packageBin")
+addCommandAlias("release", ";unidoc ;universal:packageBin ;universal:packageZipTarball ;debian:packageBin ;rpm:packageBin")
 addCommandAlias("systemTest", "omiNode/testOnly http.SystemTest")
 
 //mapGenericFilesToLinux
@@ -32,7 +32,7 @@ def commonSettings(moduleName: String) = Seq(
   scalaVersion := "2.12.6",
   scalacOptions := Seq("-unchecked", "-feature", "-deprecation", "-encoding", "utf8", "-Xlint"),
   scalacOptions in (Compile,doc) ++= Seq("-groups", "-deprecation", "-implicits", "-diagrams", "-diagrams-debug", "-encoding", "utf8"),
-  javacOptions += "-Xlint:unchecked",
+  //javacOptions += "-Xlint:unchecked",
   autoAPIMappings := true,
   exportJars := true,
   EclipseKeys.withSource := true,
@@ -43,34 +43,31 @@ def commonSettings(moduleName: String) = Seq(
   logBuffered := false
 )
 
-lazy val JavaDoc = config("genjavadoc") extend Compile
+lazy val Javadoc = config("genjavadoc") extend Compile
 
-lazy val javadocSettings = inConfig(JavaDoc)(Defaults.configSettings) ++ Seq(
-  addCompilerPlugin("com.typesafe.genjavadoc" %% "genjavadoc-plugin" %
-    "0.11" cross CrossVersion.full),
+lazy val javadocSettings = inConfig(Javadoc)(Defaults.configSettings) ++ Seq(
+  addCompilerPlugin("com.typesafe.genjavadoc" %% "genjavadoc-plugin" % "0.11" cross CrossVersion.full),
   scalacOptions += s"-P:genjavadoc:out=${target.value}/java",
-  packageDoc in Compile := (packageDoc in JavaDoc).value,
-  sources in JavaDoc := 
-    (target.value / "java" ** "*.java").get ++ (sources in Compile).value.
-      filter(_.getName.endsWith(".java")),
-  javacOptions in JavaDoc := Seq(),
-  artifactName in packageDoc in JavaDoc :=
-    ((sv, mod, art) =>
-      "" + mod.name + "_" + sv.binary + "-" + mod.revision + "-javadoc.jar")
-)
+  packageDoc in Compile := (packageDoc in Javadoc).value,
+  sources in Javadoc :=
+    (target.value / "java" ** "*.java").get ++
+    (sources in Compile).value.filter(_.getName.endsWith(".java")),
+    javacOptions in Javadoc := Seq(),
+    artifactName in packageDoc in Javadoc := ((sv, mod, art) =>
+        "" + mod.name + "_" + sv.binary + "-" + mod.revision + "-javadoc.jar")
+      )
 
 lazy val omiNode = (project in file("O-MI-Node")).
-  //conf(JavaDoc).
+  enablePlugins(GenJavadocPlugin).
   settings(
     (commonSettings("Backend") ++ 
-     javadocSettings ++ Seq(
+     Seq(
       publish in Docker := {},
       parallelExecution in Test := false,
       //packageDoc in Compile += (baseDirectory).map( _ / html
       cleanFiles += {baseDirectory.value / "logs"},
       //cleanFiles <++= baseDirectory {_ * "*.db" get},
-      target in (Compile, doc) := baseDirectory.value / "html" / "api",
-      target in (JavaDoc, doc) := baseDirectory.value / "html" / "api" / "java",
+     // target in (JavaDoc, doc) := baseDirectory.value / "html" / "api" / "java",
       PB.targets in Compile := Seq(
         scalapb.gen() -> (sourceManaged in Compile).value
         ),
@@ -78,6 +75,7 @@ lazy val omiNode = (project in file("O-MI-Node")).
       libraryDependencies ++= commonDependencies ++ testDependencies)): _*)
 
 lazy val agents = (project in file("Agents")).
+  enablePlugins(GenJavadocPlugin).
   settings(commonSettings("Agents"): _*).
   settings(Seq(
     publish in Docker := {},
@@ -91,9 +89,16 @@ lazy val root = (project in file(".")).
   enablePlugins(DockerPlugin).
   //enablePlugins(CodacyCoveragePlugin).
   enablePlugins(RpmPlugin).
+  enablePlugins(ScalaUnidocPlugin).
+  enablePlugins(JavaUnidocPlugin).
+  configs(Javadoc).
+  settings(javadocSettings: _*).
   settings(commonSettings("Node")).
   settings(
     Seq(
+      target in unidoc in JavaUnidoc := (baseDirectory in omiNode).value / "html" / "api" / "java",
+      target in unidoc in ScalaUnidoc := (baseDirectory in omiNode).value / "html" / "api",
+         //unidoc / target := baseDirectory.value / "html" / "api",
     /////////////////////////////////
     //Starting point of the program//
     /////////////////////////////////
