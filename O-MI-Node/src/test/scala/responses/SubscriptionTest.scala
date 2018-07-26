@@ -50,7 +50,7 @@ class SubscriptionTest extends Specification with BeforeAfterAll {
   implicit val callbackHandler: CallbackHandler = new CallbackHandler(settings)(system, materializer)
   val analytics = None
 
-  implicit val singleStores = new SingleStores(settings)
+  implicit val singleStores = SingleStores(settings)
   implicit val dbConnection: TestDB = new TestDB("subscription-test-db")(
     system,
     singleStores,

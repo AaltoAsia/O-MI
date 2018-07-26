@@ -8,6 +8,7 @@ import org.specs2.mutable._
 import org.specs2.specification.BeforeAfterAll
 
 import types.odf._
+import types.OmiTypes.OmiReturn
 import types.Path
 
 class InfluxDBProtocolsTest( implicit ee: ExecutionEnv ) 
@@ -40,45 +41,12 @@ class InfluxDBProtocolsTest( implicit ee: ExecutionEnv )
          }
        } 
      }
+     /*
      "For reading:" >> {
         val n = 5
-        val begin = currentTimestamp
-        val end = new Timestamp(currentTimestamp.getTime().toLong + 1000000)
-       "Filtering clause without limiters" >>{
-         filteringClause(None, None, None) shouldEqual( s" ORDER BY time DESC LIMIT 1")
-       }
-       "Filtering clause with only begin" >>{
-         filteringClause(Some( begin), None, None) shouldEqual( s"WHERE time >= '$begin' ORDER BY time DESC ")
-       }
-       "Filtering clause with only end" >>{
-         filteringClause(None, Some( end),None) shouldEqual( s"WHERE time <= '$end' ORDER BY time DESC ")
-       }
-       "Filtering clause with only newest" >>{
-         filteringClause(None, None, Some( n )) shouldEqual( s" ORDER BY time DESC LIMIT $n")
-       }
-       "Filtering clause with begin and newest" >>{
-         filteringClause(Some( begin), None, Some( n )) shouldEqual( s"WHERE time >= '$begin' ORDER BY time DESC LIMIT $n")
-       }
-       "Filtering clause with end and newest" >>{
-         filteringClause(None, Some( end), Some( n )) shouldEqual( s"WHERE time <= '$end' ORDER BY time DESC LIMIT $n")
-       }
-       "Filtering clause with begin, end and newest" >>{
-         filteringClause(Some(begin), Some( end ), Some( n )) shouldEqual( s"WHERE time >= '$begin' AND time <= '$end' ORDER BY time DESC LIMIT $n")
-       }
-       "Filtering clause with begin and end" >>{
-         filteringClause(Some(begin), Some( end ), None) shouldEqual( s"WHERE time >= '$begin' AND time <= '$end' ORDER BY time DESC ")
-       }
-       "Get N between query ">>{
-         val iis = Vector( 
-           InfoItem( Path("Objects","Obj","II1"),Vector.empty ), 
-           InfoItem( Path("Objects","Obj","II2"),Vector.empty  )
-         )
-         getNBetweenInfoItemsQueryString( iis, filteringClause(None,None,None)) shouldEqual(
-           """SELECT value FROM "Objects/Obj/II1"  ORDER BY time DESC LIMIT 1;
-SELECT value FROM "Objects/Obj/II2"  ORDER BY time DESC LIMIT 1"""
-         )
-       }
-     }
+        val begin = Some(currentTimestamp)
+        val end = Some(new Timestamp(currentTimestamp.getTime().toLong + 1000000))
+     }*/
    }
 
 }

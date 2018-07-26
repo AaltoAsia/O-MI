@@ -2,7 +2,7 @@ package database
 package influxDB
 
 import akka.actor.ActorSystem
-import org.slf4j.{Logger}
+import akka.event.{Logging,LoggingAdapter, LogSource}
 import akka.stream.{ActorMaterializer, Materializer}
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.client.RequestBuilding
@@ -43,7 +43,10 @@ trait InfluxDBClient {
   import system.dispatcher // execution context for futures
   val httpExt = Http(system)
   implicit val mat: Materializer = ActorMaterializer()
-  def log: Logger 
+  implicit val logSourceType: LogSource[InfluxDBClient] = new LogSource[InfluxDBClient] {
+    def genString(a:InfluxDBClient) = s"InfluxClient:${a.config.address}:${a.config.databaseName}"
+  }
+  def log: LoggingAdapter
 
   def httpResponseToStrict(futureResponse: Future[HttpResponse]): Future[HttpEntity.Strict] = {
     futureResponse.flatMap {
@@ -53,15 +56,15 @@ trait InfluxDBClient {
         entity.toStrict(10.seconds).flatMap { stricted =>
           Unmarshal(stricted).to[String].map {
             str =>
-              log.warn(s""" Query returned $status with:\n $str""")
+              log.warning(s""" InfluxQuery returned $status with:\n $str""")
               throw new Exception(str)
           }
         }
     }
   }
 
-  def sendQuery(query: String): Future[HttpResponse] = {
-    val httpEntity = FormData(("q", query)).toEntity(HttpCharsets.`UTF-8`)
+  def sendQueries(queries: Seq[InfluxQuery]): Future[HttpResponse] = {
+    val httpEntity = FormData(("q", queries.map(_.query).mkString(";\n")) ).toEntity(HttpCharsets.`UTF-8`)
     val request = RequestBuilding.Post(readAddress, httpEntity).withHeaders(AcceptHeader("application/json"))
     val responseF: Future[HttpResponse] = httpExt.singleRequest(request) //httpHandler(request)
     responseF

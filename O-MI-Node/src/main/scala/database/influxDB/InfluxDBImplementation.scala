@@ -4,7 +4,7 @@ package influxDB
 import java.sql.Timestamp
 
 import akka.actor.ActorSystem
-import org.slf4j.{Logger, LoggerFactory}
+import akka.event.{Logging,LoggingAdapter}
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.model.ContentTypes._
 import akka.http.scaladsl.model._
@@ -34,34 +34,29 @@ class InfluxDBImplementation
   log.info(s"Read address of InfluxDB instance $readAddress")
 
   import system.dispatcher // execution context for futures
-
-  def log: Logger = LoggerFactory.getLogger("InfluxDBClient")
+  def log: LoggingAdapter = Logging(system, this)
   implicit val odfJsonFormatter: InfluxDBJsonProtocol.InfluxDBJsonODFFormat = new InfluxDBJsonProtocol.InfluxDBJsonODFFormat()
 
   def initialize(): Unit = {
-    val initialisation = httpResponseToStrict(sendQuery("show databases")).flatMap {
+    val initialisation = httpResponseToStrict(sendQueries(Vector( ShowDBs ))).flatMap {
       entity: HttpEntity.Strict =>
         val ent = entity.copy(contentType = `application/json`)
 
         implicit val showDatabaseFormat: InfluxDBJsonProtocol.InfluxDBJsonShowDatabasesFormat = new InfluxDBJsonProtocol.InfluxDBJsonShowDatabasesFormat()
         Unmarshal(ent).to[Seq[String]].map {
           databases: Seq[String] =>
-            log.debug(s" Found following databases: ${databases.mkString(", ")}")
+            log.debug(s"Found following databases: ${databases.mkString(", ")}")
             if (databases.contains(config.databaseName)) {
               //Everything okay
               log.info(s"Database ${config.databaseName} found from InfluxDB at address ${config.address}")
               Future.successful(())
             } else {
               //Create or error
-              log.warn(s"Database ${config.databaseName} not found from InfluxDB at address ${config.address}")
-              log.warn(s"Creating database ${config.databaseName} to InfluxDB in address ${config.address}")
-              sendQuery(s"create database ${config.databaseName} ").flatMap {
+              log.warning(s"Database ${config.databaseName} not found from InfluxDB at address ${config.address}")
+              log.warning(s"Creating database ${config.databaseName} to InfluxDB in address ${config.address}")
+              sendQueries(Vector(CreateDB(config.databaseName))).flatMap {
                 case response@HttpResponse(status, headers, _entity, protocol) if status.isSuccess =>
-                  log
-                    .info(s"Database ${config.databaseName} created seccessfully to InfluxDB at address ${
-                      config
-                        .address
-                    }")
+                  log.info(s"Database ${config.databaseName} created seccessfully to InfluxDB at address ${config.address}")
                   Future.successful(())
                 case response@HttpResponse(status, headers, _entity, protocol) if status.isFailure =>
                   _entity.toStrict(10.seconds).flatMap { stricted =>
@@ -72,7 +67,7 @@ class InfluxDBImplementation
                             config
                               .address
                           }")
-                        log.warn(s""" Query returned $status with:\n $str""")
+                        log.warning(s"""InfluxQuery returned $status with:\n $str""")
                         throw new Exception(str)
                     }
                   }
@@ -106,7 +101,7 @@ class InfluxDBImplementation
       case HttpResponse(status, headers, entity, protocol) if status.isFailure =>
         Unmarshal(entity).to[String].map {
           str =>
-            log.warn(s"Write returned $status with:\n $str")
+            log.warning(s"Write returned $status with:\n $str")
             OmiReturn(status.value, Some(str))
         }
     }
@@ -152,8 +147,8 @@ class InfluxDBImplementation
           case (bO, eO, nO) => {
 
             if (requestedIIs.nonEmpty) {
-              val iiQueries = getNBetweenInfoItemsQueryString(requestedIIs, filteringClause(bO,eO,nO))
-              read(iiQueries, requestedODF)
+              val queries = createNBetweenInfoItemsQueries( requestedIIs,bO,eO,nO)
+              read(queries, requestedODF)
             } else Future.successful(Some(requestedODF))
           }
 
@@ -163,8 +158,8 @@ class InfluxDBImplementation
 
     }
   }
-  private def read(content: String, requestedODF: ODF): Future[Option[ImmutableODF]] = {
-    val responseF: Future[HttpResponse] = sendQuery(content)
+  private def read(queries: Seq[InfluxQuery], requestedODF: ODF): Future[Option[ImmutableODF]] = {
+    val responseF: Future[HttpResponse] = sendQueries(queries)
     //httpHandler(request)
     val formatedResponse = httpResponseToStrict(responseF).flatMap {
       entity: HttpEntity.Strict =>
@@ -180,7 +175,7 @@ class InfluxDBImplementation
     formatedResponse.failed.foreach {
       t: Throwable =>
         log.error("Failed to communicate to InfluxDB.",t)
-        log.warn(t.getStackTrace.mkString("\n"))
+        log.warning(t.getStackTrace.mkString("\n"))
     }
     formatedResponse
   }
@@ -190,12 +185,12 @@ class InfluxDBImplementation
     for {
       cachedODF <- (singleStores.hierarchyStore ? GetTree).mapTo[ImmutableODF]
       removedIIs: Seq[InfoItem] = cachedODF.selectSubTree(Set(path)).getInfoItems
-      query = removedIIs.map {
+      queries = removedIIs.map {
         ii: InfoItem =>
           val mName = pathToMeasurementName(ii.path)
-          s"""DROP MEASUREMENT "$mName""""
-      }.mkString(";")
-      response: HttpResponse <- sendQuery(query)
+          DropMeasurement(mName)
+      }
+      response: HttpResponse <- sendQueries(queries)
       res <- response match {
         case HttpResponse(status, headers, entity, protocol) if status.isSuccess => {
           (singleStores.hierarchyStore ? ErasePathCommand(path)).map(_ =>
@@ -206,7 +201,7 @@ class InfluxDBImplementation
         case HttpResponse(status, headers, entity, protocol) if status.isFailure =>
           Unmarshal(entity).to[String].map {
             str =>
-              log.warn(s"Remove returned $status with:\n $str")
+              log.warning(s"Remove returned $status with:\n $str")
               throw new Exception(str)
           }
       }
@@ -235,35 +230,40 @@ object InfluxDBImplementation{
   //Escape all odd parts
   def pathToMeasurementName(path: Path): String = path.toString.replace("=", "\\=").replace(",", "\\,")
 
-  def getNBetweenInfoItemsQueryString(
-                                       iis: Iterable[InfoItem],
-                                       filteringClause: String
-                                     ): String = {
-    val queries = iis.map {
-      ii: InfoItem =>
-        val measurementName = pathToMeasurementName(ii.path)
-        val select = s"""SELECT value FROM "$measurementName""""
-        s"$select $filteringClause"
-    }
-    queries.mkString(";\n")
-  }
-
-  def filteringClause( 
+  def createNBetweenInfoItemsQueries(
+    iis: Iterable[InfoItem],
     beginO: Option[Timestamp],
     endO: Option[Timestamp],
     newestO: Option[Int]
-  ) ={
-    val whereClause = (beginO, endO) match {
-      case (Some(begin), Some(end)) => s"WHERE time >= '${begin.toString}' AND time <= '${end.toString}'"
-      case (None, Some(end)) => s"WHERE time <= '${end.toString}'"
-      case (Some(begin), None) => s"WHERE time >= '${begin.toString}'"
-      case (None, None) => ""
+  ): Seq[InfluxQuery] = { 
+    val whereClause = createWhereClause( beginO,endO)
+    val limitClause = createLimitClause(newestO, beginO, endO)
+    iis.map {
+      ii: InfoItem =>
+        val measurementName = pathToMeasurementName(ii.path)
+        SelectValue( measurementName, whereClause,Some(DescTimeOrderByClause()),limitClause)
+    }.toVector
+  }
+  def createWhereClause( 
+    beginO: Option[Timestamp],
+    endO: Option[Timestamp]
+  ): Option[WhereClause] ={
+    (beginO, endO) match {
+      case (Some(begin), Some(end)) => Some(WhereClause( Vector( LowerTimeBoundExpression(begin),UpperTimeBoundExpression(end))))
+      case (None, Some(end)) => Some(WhereClause( Vector( UpperTimeBoundExpression(end))))
+      case (Some(begin), None) => Some(WhereClause( Vector( LowerTimeBoundExpression(begin))))
+      case (None, None) => None
     }
-    val limitClause = newestO.map {
-      n: Int => s"LIMIT $n"
-    }.getOrElse {
-      if (beginO.isEmpty && endO.isEmpty) "LIMIT 1" else ""
+  }
+  def createLimitClause( 
+    newestO: Option[Int],
+    beginO: Option[Timestamp],
+    endO: Option[Timestamp]
+  ): Option[LimitClause]  ={
+    newestO.map {
+      n: Int => LimitClause(n)
+    }.orElse {
+      if (beginO.isEmpty && endO.isEmpty) Some(LimitClause(1)) else None
     }
-    s"$whereClause ORDER BY time DESC $limitClause"
   }
 }
