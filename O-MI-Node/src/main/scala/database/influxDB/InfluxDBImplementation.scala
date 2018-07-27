@@ -97,6 +97,7 @@ class InfluxDBImplementation
     }
     response.flatMap {
       case HttpResponse(status, headers, entity, protocol) if status.isSuccess =>
+        log.debug("Successful write to InfluxDB")
         Future.successful(OmiReturn(status.value))
       case HttpResponse(status, headers, entity, protocol) if status.isFailure =>
         Unmarshal(entity).to[String].map {

@@ -8,7 +8,6 @@ import org.specs2.mutable._
 import org.specs2.specification.BeforeAfterAll
 
 import types.odf._
-import types.OmiTypes.OmiReturn
 import types.Path
 
 class InfluxDBProtocolsTest( implicit ee: ExecutionEnv ) 

@@ -36,84 +36,10 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
       override def sendQueries(queries: Seq[InfluxQuery]): Future[HttpResponse] = {
        implicit val timeout: Timeout = Timeout( 1 minutes )
         (tester ? queries).mapTo[HttpResponse]
-        /*
-        queries.collect{
-          case ShowDBs => 
-            if( hasDB ) {
-              Future{
-                HttpResponse( 
-                  StatusCodes.OK,
-                  entity = HttpEntity(s"""{"results":[{"statement_id":0,"series":[{"name":"databases","columns":["name"],"values":[["_internal"],["${conf.databaseName}"]]}]}]}""" )
-                )
-              }
-            } else {
-              Future{
-                HttpResponse( 
-                  StatusCodes.OK,
-                  entity = HttpEntity(s"""{"results":[{"statement_id":0,"series":[{"name":"databases","columns":["name"],"values":[["_internal"]]}]}]}""" )
-                )
-              }
-            }
-          case CreateDB( name ) =>
-            if( hasDB && name == conf.databaseName ){
-              Future{
-                HttpResponse( 
-                  StatusCodes.OK,
-                  entity = HttpEntity("""{"results":[{"statement_id":0}]}""" )
-                )
-              }
-            } else {
-              Future{
-                HttpResponse( 
-                  StatusCodes.BadRequest,
-                  entity = HttpEntity("""{"error":"test failure"}""" )
-                )
-              }
-            }
-          case DropMeasurement( name) =>
-            if( hasDB ){
-              Future{
-                HttpResponse( 
-                  StatusCodes.OK,
-                  entity = HttpEntity("""{"results":[{"statement_id":0}]}""" )
-                )
-              }
-            } else {
-              Future{
-                HttpResponse( 
-                  StatusCodes.BadRequest,
-                  entity = HttpEntity("""{"error":"test failure"}""" )
-                )
-              }
-            }
-        }.headOption.getOrElse{
-          Future{
-            HttpResponse( 
-              StatusCodes.BadRequest,
-              entity = HttpEntity("""{"error":"No Queries given"}""" )
-            )
-          }
-        }*/
       }
       override def sendMeasurements(measurements: String ): Future[HttpResponse] = {
        implicit val timeout: Timeout = Timeout( 1 minutes )
         (tester ? measurements).mapTo[HttpResponse]
-        /*
-            if( hasDB ){
-              Future{
-                HttpResponse( 
-                  StatusCodes.OK,
-                  entity = HttpEntity("""{"results":[{"statement_id":0}]}""" )
-                )
-              }
-            } else {
-              Future{
-                HttpResponse( 
-                  StatusCodes.BadRequest,
-                  entity = HttpEntity("""{"error":"test failure"}""" )
-                )
-              }
-            }*/
       }
     }
     def inTodo = { 1 === 2}.pendingUntilFixed
@@ -129,7 +55,7 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
           #password = <user's password>
 
         }
-        akka.loggers = ["akka.testkit.TestEventListener"]
+        akka.loggers = ["testHelpers.SilentTestEventListener"]
         """ ) 
       "should create new DB if configuret one not found" >> new NoisyActorstest(ActorSystem("InfluxTest", loggerConf.withFallback(ConfigFactory.load()))){
         val settings: OmiConfigExtension = OmiConfig(system)
@@ -267,7 +193,8 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
         val source = s"InfluxClient:${conf.address}:${conf.databaseName}"
         val logFilters = Vector(// TODO: Why sucsse when filter should fail
           EventFilter.debug(start = s"Found following databases: ",source = source, occurrences = 1),
-          EventFilter.info(s"Database ${conf.databaseName} found from InfluxDB at address ${conf.address}",source, occurrences = 1)
+          EventFilter.info(s"Database ${conf.databaseName} found from InfluxDB at address ${conf.address}",source, occurrences = 1),
+          EventFilter.debug(s"Successful write to InfluxDB",source, occurrences = 1)
         )
 
 
@@ -281,6 +208,63 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
          }.map(_.returnCode) must beEqualTo( "200 OK").await 
       }
 
+     "should return 400 Bad Request status if write fails" >> new NoisyActorstest(ActorSystem("InfluxTest", loggerConf.withFallback(ConfigFactory.load()))){
+        val settings: OmiConfigExtension = OmiConfig(system)
+        val singleStores = new DummySingleStores(settings)
+        val probe = 
+          system actorOf Props(new Actor {
+            def receive = {
+              case queries: Seq[InfluxQuery] => 
+                if( queries.length == 1 ){
+                  queries.headOption match{
+                    case Some( ShowDBs ) => 
+                      sender() ! HttpResponse( 
+                        StatusCodes.OK,
+                        entity = HttpEntity(
+                          s"""{"results":[{"statement_id":0,"series":[{"name":"databases","columns":["name"],"values":[["_internal"],["${conf.databaseName}"]]}]}]}""" 
+                        )
+                      )
+                    case Some( CreateDB( name )) => 
+                      if( name == conf.databaseName ) {
+                        sender !  HttpResponse( 
+                          StatusCodes.OK,
+                          entity = HttpEntity("""{"results":[{"statement_id":0}]}""" )
+                        )
+                    } else {
+                      sender ! HttpResponse( 
+                        StatusCodes.BadRequest,
+                        entity = HttpEntity("""{"error":"test failure"}""" )
+                      )
+                    }
+                  }
+              }
+              case meas: String =>
+                sender() ! HttpResponse( 
+                  StatusCodes.BadRequest,
+                  entity = HttpEntity("""{"error":"test failure"}""" )
+                )
+            }
+          }) 
+        val conf: InfluxDBConfigExtension = new InfluxDBConfigExtension(system.settings.config)
+
+        val source = s"InfluxClient:${conf.address}:${conf.databaseName}"
+        val str = """{"error":"test failure"}"""
+        val logFilters = Vector(// TODO: Why sucsse when filter should fail
+          EventFilter.debug(start = s"Found following databases: ",source = source, occurrences = 1),
+          EventFilter.info(s"Database ${conf.databaseName} found from InfluxDB at address ${conf.address}",source, occurrences = 1),
+          EventFilter.warning(s"Write returned 400 Bad Request with:\n $str",source, occurrences = 1)
+        )
+
+
+        filterEvents(logFilters){
+          val influx = new MockInfluxDB(
+            probe,
+            conf
+          )(system,singleStores)
+          val ii = Vector( InfoItem( Path("Objects","Obj","II"), Vector( IntValue(13,currentTimestamp))))
+          influx.writeMany(ii)
+         }.map(_.returnCode) must beEqualTo( "400 Bad Request").await 
+     }
      "should read" >> {
        "in correct format" >> inTodo
        "unmarshal results correctly" >> inTodo
