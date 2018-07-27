@@ -28,6 +28,8 @@
     <logger name="responses" level="DEBUG" />
 		<logger name="authorization" level="DEBUG" />
 -->
+    <logger name="database.influx" level="DEBUG" />
+    <logger name="database" level="DEBUG" />
     <logger name="agentSystem" level="WARNING" />
     <root level="ERROR">
         <appender-ref ref="CONSOLE"/>
