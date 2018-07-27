@@ -261,7 +261,8 @@ class SubscriptionTest extends Specification with BeforeAfterAll {
 
     }
 
-    "return no new values for event subscription if there are no new events" >> skipped {
+    //This test was skipped for duration, but seems to pass just fine.
+    "return no new values for event subscription if there are no new events" >> {
       val subIdO: Option[Long] = addSub(5, -1, Seq(Path("r", "1"))).results.headOption
         .flatMap { result => result.requestIDs.headOption }
       pollValues(subIdO) must be empty

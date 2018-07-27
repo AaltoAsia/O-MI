@@ -23,14 +23,13 @@ class InternalAgentLoaderTest(implicit ee: ExecutionEnv) extends Specification {
       "agent's class does not implement trait InternalAgent" >> unimplementedIATest
       "agent's companion object does not implement trait PropsCreator" >> unimplementedPCTest
       "agent's companion object creates props for something else than agent" >> wrongPropsTest
-      "agent's companion object is actually something else" >> skipped(oddObjectTest)
     }
     "log warnings when loaded classes throw exceptions when " >> {
       "props are created " >> propsTest
       "agent is started  " >> startTest
     }
 
-    "store successfully started agents to agents " >> skipped(successfulAgents)
+    "store successfully started agents to agents " >> successfulAgents
   }
 
   def missingAgentTest = new NoisyActorstest() {
@@ -192,54 +191,58 @@ class InternalAgentLoaderTest(implicit ee: ExecutionEnv) extends Specification {
     val classname2 = "unexisting"
     val classname3 = "agentSystem.SFAgent"
     val matchAll = Some(ActorRef.noSender)
+    val confs = Vector(
+      s"""{
+         name = "A1"
+         class = "$classname"
+         language = "scala"
+       }""" ,
+       s"""{
+         name = "A2"
+         class = "$classname"
+         language = "scala"
+       }""" ,
+       s"""{
+         name = "A3"
+         class = "$classname"
+         language = "scala"
+       }""" ,
+       s"""{
+         name = "A4"
+         class = "$classname2"
+         language = "scala"
+       }""" ,
+       s"""{
+         name = "A5"
+         class = "$classname3"
+         language = "scala"
+       }""" ,
+       s"""{
+         name = "A6"
+         class = "$classname2"
+         language = "scala"
+       }""" ,
+       s"""{
+         name = "A7" 
+         class = "$classname3"
+         language = "scala"
+       }
+       """
+     )
     val correctAgents = Vector(
-      AgentInfo("A1", classname, emptyConfig, matchAll, running = true, Seq.empty, Scala()),
-      AgentInfo("A2", classname, emptyConfig, matchAll, running = true, Seq.empty, Scala()),
-      AgentInfo("A3", classname, emptyConfig, matchAll, running = true, Seq.empty, Scala()),
+      AgentInfo("A1", classname, ConfigFactory.parseString(confs(0)), matchAll, running = true, Seq.empty, Scala()),
+      AgentInfo("A2", classname, ConfigFactory.parseString(confs(2)), matchAll, running = true, Seq.empty, Scala()),
+      AgentInfo("A3", classname, ConfigFactory.parseString(confs(3)), matchAll, running = true, Seq.empty, Scala()),
       //4 and 6, should fail without causing problem
-      AgentInfo("A5", classname3, emptyConfig, matchAll, running = true, Seq.empty, Scala()),
-      AgentInfo("A7", classname3, emptyConfig, matchAll, running = true, Seq.empty, Scala())
+      AgentInfo("A5", classname3, ConfigFactory.parseString(confs(5)), matchAll, running = true, Seq.empty, Scala()),
+      AgentInfo("A7", classname3, ConfigFactory.parseString(confs(6)), matchAll, running = true, Seq.empty, Scala())
     )
     val configStr =
       s"""
    agent-system{
      starting-timeout = 5 seconds
      internal-agents =[
-       {
-         name = "A1"
-         class = "$classname"
-         language = "scala"
-       },
-       {
-         name = "A2"
-         class = "$classname"
-         language = "scala"
-       },
-       {
-         name = "A3"
-         class = "$classname"
-         language = "scala"
-       },
-       {
-         name = "A4"
-         class = "$classname2"
-         language = "scala"
-       },
-       {
-         name = "A5"
-         class = "$classname3"
-         language = "scala"
-       },
-       {
-         name = "A6"
-         class = "$classname2"
-         language = "scala"
-       },
-       {
-         name = "A7" 
-         class = "$classname3"
-         language = "scala"
-       }
+     ${confs.mkString(",\n")}
      ] 
    }
    """
