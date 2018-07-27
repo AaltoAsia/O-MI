@@ -1,21 +1,13 @@
-package database
-package influxDB
+package database.influxDB
 
 import java.sql.Timestamp
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
-import akka.http.scaladsl.model.ContentTypes._
-import akka.http.scaladsl.model._
-import akka.http.scaladsl.unmarshalling._
 import spray.json._
-import types.OmiTypes._
 import types.Path
 import types.Path._
 import types.odf._
 
 import scala.collection.immutable
-import scala.concurrent.duration._
-import scala.concurrent.{Await, Future}
-import scala.language.postfixOps
 
 object InfluxDBJsonProtocol extends DefaultJsonProtocol {
   def getSeries(json: spray.json.JsValue): immutable.Seq[JsValue] = json match {

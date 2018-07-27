@@ -1,5 +1,4 @@
-package database
-package influxDB
+package database.influxDB
 
 import akka.actor.{ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
 import akka.http.scaladsl.model.Uri

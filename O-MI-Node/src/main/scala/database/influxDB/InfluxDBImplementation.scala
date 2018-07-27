@@ -1,5 +1,4 @@
-package database
-package influxDB
+package database.influxDB
 
 import java.sql.Timestamp
 
@@ -11,7 +10,8 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.unmarshalling._
 import akka.pattern.ask
 import akka.util.Timeout
-import journal.Models.{ErasePathCommand, GetTree, MultipleReadCommand}
+import database.{DB, SingleStores}
+import database.journal.Models.{ErasePathCommand, GetTree, MultipleReadCommand}
 import types.OmiTypes._
 import types.Path
 import types.Path._

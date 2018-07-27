@@ -1,8 +1,7 @@
-package database
-package influxDB
+package database.influxDB
 
 import akka.actor.ActorSystem
-import akka.event.{Logging,LoggingAdapter, LogSource}
+import akka.event.{LoggingAdapter, LogSource}
 import akka.stream.{ActorMaterializer, Materializer}
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.client.RequestBuilding
