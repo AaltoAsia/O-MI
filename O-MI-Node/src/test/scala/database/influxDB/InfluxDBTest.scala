@@ -55,7 +55,11 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
           #password = <user's password>
 
         }
-        akka.loggers = ["testHelpers.SilentTestEventListener"]
+        akka {
+          stdout-loglevel = OFF
+          loglevel = DEBUG
+          loggers = ["testHelpers.SilentTestEventListener"]
+        }
         """ ) 
       "should create new DB if configuret one not found" >> new NoisyActorstest(ActorSystem("InfluxTest", loggerConf.withFallback(ConfigFactory.load()))){
         val settings: OmiConfigExtension = OmiConfig(system)
