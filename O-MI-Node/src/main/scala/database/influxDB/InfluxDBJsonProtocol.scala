@@ -97,7 +97,15 @@ object InfluxDBJsonProtocol extends DefaultJsonProtocol {
           InfoItem(path.last, path, values = values.collect {
             case JsArray(Seq(JsString(timestampStr), JsNumber(number))) =>
               val timestamp: Timestamp = Timestamp.valueOf(timestampStr.replace("T", " ").replace("Z", " "))
-              Value(number, timestamp)
+              val value ={
+                if( number.isValidShort )     number.toShortExact 
+                else if( number.isValidInt )  number.toIntExact
+                else if( number.isValidLong ) number.toLongExact
+                else if( number.isDecimalFloat || number.isBinaryFloat || number.isExactFloat ) number.toFloat
+                else if( number.isDecimalDouble || number.isBinaryDouble || number.isExactDouble ) number.toDouble
+                else number.toString
+              }
+              Value(value, timestamp)
             case JsArray(Seq(JsString(timestampStr), JsBoolean(bool))) =>
               val timestamp: Timestamp = Timestamp.valueOf(timestampStr.replace("T", " ").replace("Z", " "))
               Value(bool, timestamp)

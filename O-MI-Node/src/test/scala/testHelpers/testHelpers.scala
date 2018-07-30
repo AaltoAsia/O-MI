@@ -427,10 +427,9 @@ object DummyHierarchyStore {
 
 class DummySingleStores(
   override protected val settings: OmiConfigExtension,
-  val odf: ODF = ImmutableODF()
+  override val latestStore: ActorRef = ActorRef.noSender,
+  override val subStore: ActorRef =  ActorRef.noSender,
+  override val pollDataStore: ActorRef =  ActorRef.noSender,
+  override val hierarchyStore: ActorRef =  ActorRef.noSender,
   )(implicit val system: ActorSystem)  extends SingleStores{
-  override val latestStore: ActorRef = ActorRef.noSender
-  override val subStore: ActorRef =  ActorRef.noSender
-  override val pollDataStore: ActorRef =  ActorRef.noSender
-  override val hierarchyStore: ActorRef = DummyHierarchyStore(odf)
 }
