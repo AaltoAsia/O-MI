@@ -53,7 +53,7 @@ object Dependencies {
   //Scala XML      
   //val scalaXML     = "org.scala-lang.modules"      %% "scala-xml"    % "2.11.0-M4"
 
-  //STM            
+  //STM
   val stm          = "org.scala-stm"               %% "scala-stm"    % "0.8"
 
   //Java dependencies

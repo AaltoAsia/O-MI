@@ -25,7 +25,7 @@ import org.specs2.mutable._
 import org.specs2.specification.Scope
 import org.xml.sax.InputSource
 
-import types.odf.ODF
+import types.odf._
 import responses._
 import http._
 import database.journal.Models.GetTree
@@ -84,7 +84,7 @@ trait TestOmiService extends OmiServiceTestImpl {
 trait OmiServiceTestImpl extends OmiService with AnyActorSystem {
   lazy implicit val settings: OmiConfigExtension = OmiConfig(system)
   lazy implicit val callbackHandler: CallbackHandler = new CallbackHandler(settings)(system, materializer)
-  lazy implicit val singleStores: SingleStores = new SingleStores(settings)
+  lazy implicit val singleStores: SingleStores = SingleStores(settings)
 
 
   lazy implicit val dbConnection = new TestDB("test")(
@@ -424,4 +424,13 @@ object DummyHierarchyStore {
         case GetTree => sender() ! odf.immutable
       }
     }) 
+}
+
+class DummySingleStores(
+  override protected val settings: OmiConfigExtension,
+  override val latestStore: ActorRef = ActorRef.noSender,
+  override val subStore: ActorRef =  ActorRef.noSender,
+  override val pollDataStore: ActorRef =  ActorRef.noSender,
+  override val hierarchyStore: ActorRef =  ActorRef.noSender,
+  )(implicit val system: ActorSystem)  extends SingleStores{
 }

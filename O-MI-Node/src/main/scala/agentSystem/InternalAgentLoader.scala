@@ -262,10 +262,10 @@ trait InternalAgentLoader extends BaseAgentSystem {
     } else None
   }
 
-  private[this] def loadJar(jarName: String): Option[Array[File]] = {
-    val file = new File(jarName)
-    loadJar(file)
-  }
+  //private[this] def loadJar(jarName: String): Option[Array[File]] = {
+  //  val file = new File(jarName)
+  //  loadJar(file)
+  //}
 
  // private[this] def addJarToClassloader(jarName: String): Unit = {
  //   val urlsO = loadJar(jarName)

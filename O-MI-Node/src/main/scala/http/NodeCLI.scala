@@ -389,9 +389,11 @@ class OmiNodeCLI(
   private def restoreSubs(filePath: String) = {
     val json: JsValue = Source.fromFile(filePath).getLines().mkString.parseJson
     val subs: Seq[(SavedSub, Option[SubData])] = json match {
-      case JsArray(subscriptions: Vector[JsObject]) => subscriptions
-        .map(sub => Try(sub.convertTo[(SavedSub, Option[SubData])]))
-        .flatMap { case Success(s) => Some(s);
+      case JsArray(subscriptionsU) =>
+        val subscriptions = subscriptionsU.collect{case o: JsObject => o}
+        subscriptions
+          .map(sub => Try(sub.convertTo[(SavedSub, Option[SubData])]))
+          .flatMap { case Success(s) => Some(s);
         case Failure(ex) => {
           log.warning(ex.getMessage); None
         }

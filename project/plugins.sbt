@@ -21,6 +21,7 @@ addSbtPlugin("org.scalastyle" %% "scalastyle-sbt-plugin" % "1.0.0")
 
 resolvers += "Typesafe Repository" at "https://repo.typesafe.com/typesafe/releases/"
 
+
 // https://github.com/codacy/sbt-codacy-coverage
 addSbtPlugin("com.codacy" % "sbt-codacy-coverage" % "1.3.12")
  
@@ -45,3 +46,7 @@ addSbtPlugin("io.kamon" % "sbt-aspectj-runner" % "1.1.0")
 // TODO: To check: Is this used? if not, remove
 // https://github.com/sbt/sbt-javaagent
 addSbtPlugin("com.lightbend.sbt" % "sbt-javaagent" % "0.1.4")
+
+//https://github.com/sbt/sbt-unidoc
+addSbtPlugin("com.eed3si9n" % "sbt-unidoc" % "0.4.2")
+

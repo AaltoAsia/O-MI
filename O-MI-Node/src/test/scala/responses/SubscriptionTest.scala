@@ -49,7 +49,7 @@ class SubscriptionTest extends Specification with BeforeAfterAll {
   implicit val callbackHandler: CallbackHandler = new CallbackHandler(settings)(system, materializer)
   val analytics = None
 
-  implicit val singleStores = new SingleStores(settings)
+  implicit val singleStores = SingleStores(settings)
   implicit val dbConnection: TestDB = new TestDB("subscription-test-db")(
     system,
     singleStores,
@@ -260,7 +260,8 @@ class SubscriptionTest extends Specification with BeforeAfterAll {
 
     }
 
-    "return no new values for event subscription if there are no new events" >> skipped {
+    //This test was skipped for duration, but seems to pass just fine.
+    "return no new values for event subscription if there are no new events" >> {
       val subIdO: Option[Long] = addSub(5, -1, Seq(Path("r", "1"))).results.headOption
         .flatMap { result => result.requestIDs.headOption }
       pollValues(subIdO) must be empty

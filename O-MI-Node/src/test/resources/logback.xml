@@ -27,7 +27,9 @@
     <logger name="accessControl" level="INFO" />
     <logger name="responses" level="DEBUG" />
 		<logger name="authorization" level="DEBUG" />
+    <logger name="database" level="WARNING" />
 -->
+    <logger name="database.influxDB" level="DEBUG" />
     <logger name="agentSystem" level="WARNING" />
     <root level="ERROR">
         <appender-ref ref="CONSOLE"/>

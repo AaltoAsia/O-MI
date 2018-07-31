@@ -55,7 +55,7 @@ class OmiServer extends OmiNode {
     */
   val settings: OmiConfigExtension = OmiConfig(system)
 
-  val singleStores = new SingleStores(settings)
+  val singleStores = SingleStores(settings)
   val dbConnection: DB = settings.databaseImplementation.toUpperCase match {
     case "SLICK" => new DatabaseConnection()(
       system,
