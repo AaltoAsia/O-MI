@@ -4,7 +4,6 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.model.Uri
 import akka.stream.ActorMaterializer
 import akka.testkit.TestProbe
-import akka.util.Timeout
 import http.OmiConfig
 import org.specs2.concurrent.ExecutionEnv
 import org.specs2.mutable._

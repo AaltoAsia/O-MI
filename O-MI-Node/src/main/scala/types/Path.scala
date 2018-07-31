@@ -146,9 +146,9 @@ class Path private(pathSeq: Vector[String]) extends Serializable { // TODO: test
 
   def length: Int = toSeq.length
 
-  def getAncestorsAndSelf: Seq[Path] = toSeq.inits.map(Path(_)).filter(_.nonEmpty).toVector ++ Vector(this)
+  def getAncestorsAndSelf: Seq[Path] = toSeq.inits.map(Path(_)).filter(_.nonEmpty).toVector
 
-  def getAncestors: Seq[Path] = toSeq.inits.map(Path(_)).filter(_.nonEmpty).toVector
+  def getAncestors: Seq[Path] = toSeq.inits.drop(1).map(Path(_)).filter(_.nonEmpty).toVector
 
   def getParent: Path = Path(toSeq.init)
 }

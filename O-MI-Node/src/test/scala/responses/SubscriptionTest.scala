@@ -4,7 +4,6 @@ import agentSystem.AgentSystem
 import akka.pattern.ask
 import akka.stream.ActorMaterializer
 import akka.util.Timeout
-import org.specs2.concurrent.ExecutionEnv
 import org.specs2.matcher.XmlMatchers._
 import org.specs2.mutable._
 import org.specs2.specification.BeforeAfterAll
@@ -73,14 +72,6 @@ class SubscriptionTest extends Specification with BeforeAfterAll {
     ),
     "database-handler"
   )
-  val agentSystem = system.actorOf(
-    AgentSystem.props(
-      dbHandler,
-      requestHandler,
-      settings
-    ),
-    "agent-system-test"
-  )
   val requestHandler = system.actorOf(
     RequestHandler.props(
       subscriptionManager,
@@ -88,6 +79,14 @@ class SubscriptionTest extends Specification with BeforeAfterAll {
       settings
     ),
     "RequestHandler"
+  )
+  val agentSystem = system.actorOf(
+    AgentSystem.props(
+      dbHandler,
+      requestHandler,
+      settings
+    ),
+    "agent-system-test"
   )
 
   val calendar = Calendar.getInstance()

@@ -97,7 +97,33 @@ class AuthAPIServiceV2(
   protected val httpExtension: HttpExt = Http(system)
 
 
-  def filterODF(originalRequest: OdfRequest, filters: AuthorizationResponse): Future[Option[OmiRequest]] = {
+  /** Filter ODF in the [[OdfRequest]] with given allow and deny filters in [[AuthorizationResponse]].
+    *
+    *  The process is different for [[ReadRequest]] and other [[OdfRequest]].
+    *  Currently others just fail if even a single leaf path is not allowed by
+    *  filters, but [[ReadRequest]] will use
+    *  [[database.SingleStores.hierarchyStore]] to expand any siblings of
+    *  unauthorized Object or InfoItem if they belong to the original request,
+    *  thus it will usually result in Some unless all of the requested paths
+    *  and their children nodes were denied.
+    *
+    *  Read request:
+    *  1. get leafs
+    *  2. filter to allowed sub trees only
+    *  3. find affecting deny paths and categorize into those which generate siblings and direct deny paths
+    *  4. generate siblings recursively
+    *  5. modify original request; add new paths and remove denied
+    * 
+    * @param originalRequest Original request to modify
+    * @param aFilters Contains the allow and deny filters to use
+    * @return Some, containing the filtered request; None, if the whole request is unauthorized
+    */
+  def filterODF(originalRequest: OdfRequest, aFilters: AuthorizationResponse): Future[Option[OdfRequest]] = {
+    val filters = AuthorizationResponse(
+        aFilters.allow.filterNot(p => p.getAncestors.exists(aFilters.allow contains _)),
+        aFilters.deny.filterNot(p => p.getAncestors.exists(aFilters.deny contains _))
+      )
+
     implicit val timeout: Timeout = originalRequest.handleTTL
     val odfTreeF: Future[ImmutableODF] = (hierarchyStore ? GetTree).mapTo[ImmutableODF]
     odfTreeF.map { odfTree =>
@@ -114,45 +140,76 @@ class AuthAPIServiceV2(
                 filters.allow.exists(a => (a isAncestorOf p) || a == p)
               }
 
-          // partition with foldLeft to childDeny and other active deny paths
-          val (childDenyPaths, otherDenyPaths) =
-            filters.deny
-              .foldLeft((Set[Path](),Set[Path]())){
-                case ((_childDenyPaths, _otherDenyPaths), deniedPath) =>
-                  if (requestPaths exists (rp => rp.isAncestorOf(deniedPath)))
-                    (_childDenyPaths + deniedPath, _otherDenyPaths)
-                  else if (requestPaths.exists(rPath => deniedPath.isAncestorOf(rPath) || rPath == deniedPath))
-                    (_childDenyPaths, _otherDenyPaths + deniedPath)
-                  else
-                    (_childDenyPaths, _otherDenyPaths)
-              }
+          val allowChildren = nonAllowPaths.iterator.flatMap(p =>
+            filters.allow.filter(a => p isAncestorOf a)
+          ).toSet
 
-          // items that need to be queried from hierarchystore
-          val newChildren =
-            childDenyPaths
-              .flatMap{ deniedPath =>
-                odfTree.getChilds(deniedPath.init)
-              }
-              .map{
-                case ii:InfoItem => ii.copy(descriptions=Set.empty, metaData=None)
-                case obj:Object => obj.copy(descriptions=Set.empty)
-                case other => other
-              }
+          val allowedRequestPaths = requestPaths union allowChildren
 
+          @annotation.tailrec
+          def iterateDenyPaths(requestPaths: Set[Path],
+              resultChildren: Set[Path] = Set.empty,
+              resultDenyPaths: Set[Path] = Set.empty
+            ): (Set[Path],Set[Path]) = {
+            // partition with foldLeft to childDeny and other active deny paths
+            val (childDenyPaths, otherDenyPaths) =
+              filters.deny
+                .foldLeft((Set[Path](),Set[Path]())){
+                  case ((_childDenyPaths, _otherDenyPaths), deniedPath) =>
+                    if (requestPaths exists (rp => rp.isAncestorOf(deniedPath)))
+                      (_childDenyPaths + deniedPath, _otherDenyPaths)
+                    else if (
+                      requestPaths.exists( rPath =>
+                          deniedPath.isAncestorOf(rPath)
+                          || rPath == deniedPath)
+                    )
+                      (_childDenyPaths, _otherDenyPaths + deniedPath)
+                    else
+                      (_childDenyPaths, _otherDenyPaths)
+                }
+
+            val denyPaths = childDenyPaths union otherDenyPaths
+
+            // items that need to be queried from hierarchystore
+            val newChildrenPaths =
+              childDenyPaths
+                .flatMap{ deniedPath =>
+                  odfTree.getChildPaths(deniedPath.init) // Siblings (children of parent)
+                } //.filterNot(childPath => filters.deny.exists(childPath isDescendantOf _))
+
+            //log.debug(s"DENYSOLVER: requestPaths $requestPaths \n childDenyPaths $childDenyPaths \n otherDenyPaths $otherDenyPaths \n newChildrenPaths $newChildrenPaths")
+
+            if (newChildrenPaths.isEmpty)
+              (resultChildren, resultDenyPaths union denyPaths)
+            else 
+              iterateDenyPaths(
+                newChildrenPaths,
+                resultChildren union newChildrenPaths,
+                resultDenyPaths union denyPaths
+              )
+          }
+
+          val (newChildrenPaths, denyPaths) = iterateDenyPaths(allowedRequestPaths)
+
+          val allowedChildrenPaths = (newChildrenPaths union allowChildren) -- denyPaths
 
           // Execute required changes to the request, TODO: cleaner code
 
           val filteredOdf = ImmutableODF(
-              (requestPaths -- (childDenyPaths union otherDenyPaths))
+              (allowedRequestPaths -- denyPaths)
                 .flatMap(originalRequest.odf.getNodesMap.get(_))
                 .toSeq
             )
-            .addNodes(newChildren.toSeq)
+            .addNodes(allowedChildrenPaths.iterator.flatMap(odfTree.get).map{
+              case ii:InfoItem => ii.copy(descriptions=Set.empty, metaData=None)
+              case obj:Object => obj.copy(descriptions=Set.empty)
+              case other => other
+            }.toSeq)
           //  originalRequest.odf
-          //    .removePaths(childDenyPaths union nonAllowPaths union otherDenyPaths) addNodes newChildren.toSeq
+          //    .removePaths(childDenyPaths union nonAllowPaths union otherDenyPaths) addNodes newChildrenPaths.toSeq
 
 
-          //log.debug(s"FILTERODF \n original $originalRequest \n requestPaths $requestPaths \n childDenyPaths $childDenyPaths \n otherDenyPaths $otherDenyPaths \n newChildren $newChildren \n nonAllowPaths $nonAllowPaths \n filteredOdf $filteredOdf")
+          //log.debug(s"FILTERODF \n original $originalRequest \n allowedRequestPaths $allowedRequestPaths \n denyPaths $denyPaths \n newChildrenPaths $newChildrenPaths \n filteredOdf $filteredOdf")
 
           // TODO: Cleaner code
           if (filteredOdf.isEmpty && !(originalRequest.odf.isEmpty && filters.allow.contains(Path("Objects"))))

@@ -5,12 +5,11 @@ import java.util.Date
 import java.sql.Timestamp
 import org.specs2.concurrent.ExecutionEnv
 import org.specs2.mutable._
-import org.specs2.specification.BeforeAfterAll
 
 import types.odf._
 import types.Path
 
-class InfluxDBProtocolsTest( implicit ee: ExecutionEnv ) 
+class InfluxDBProtocolsTest() 
  extends Specification {
    import InfluxDBImplementation._
    def currentTimestamp = new Timestamp( new Date().getTime)

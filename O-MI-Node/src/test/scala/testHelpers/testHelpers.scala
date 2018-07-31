@@ -246,7 +246,7 @@ class WsTestCallbackServer(destination: ActorRef, interface: String, port: Int)(
     val bindingFuture =
       httpExt.bindAndHandle(route, interface, port)
 
-    bindingFuture.onFailure {
+    bindingFuture.failed.foreach {
       case ex: Exception =>
         system.log.error(ex, "Failed to bind to {}:{}!", interface, port)
 
@@ -337,12 +337,13 @@ object Actorstest {
     }
     """
   )
+  val silentLoggerConfFull = silentLoggerConf.withFallback(ConfigFactory.load())
   val loggerConf = ConfigFactory.parseString(
     """
     akka.loggers = ["testHelpers.SilentTestEventListener"]
     """)
   def createAs() = ActorSystem("testsystem", loggerConf.withFallback(ConfigFactory.load()))
-  def createSilentAs() = ActorSystem("testsystem", silentLoggerConf.withFallback(ConfigFactory.load()))
+  def createSilentAs() = ActorSystem("testsystem", silentLoggerConfFull)
   def apply() = new Actorstest()
   def silent() = new Actorstest(createSilentAs())
 }
