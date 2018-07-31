@@ -46,7 +46,10 @@ trait Clause {
 case class WhereClause(
   val expressions: Seq[Expression]
 ) extends Clause {
-  def clause: String = "WHERE "+ expressions.map(_.expression).mkString( " AND " )
+  def clause: String = {
+    if( expressions.nonEmpty ) "WHERE "+ expressions.map(_.expression).mkString( " AND " )
+    else ""
+  }
 }
 case class LimitClause(
   val n: Int

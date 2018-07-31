@@ -17,7 +17,7 @@ import http.{OmiConfig, OmiConfigExtension}
 import com.typesafe.config.ConfigFactory
 
 import database.SingleStores
-import database.journal.Models.{MultipleReadCommand}
+import database.journal.Models.{ErasePathCommand, GetTree, MultipleReadCommand}
 import testHelpers._
 import types.odf._
 import types.OmiTypes.OmiReturn
@@ -1003,6 +1003,76 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
             ).await
        }
      }
-     "Should send correct query for remove and remove correct data cache" >> inTodo 
-   }
+     "Should send correct query for remove and remove correct data cache" >> testInit{ implicit system: ActorSystem =>
+          val settings: OmiConfigExtension = OmiConfig(system)
+          val timestamp = currentTimestamp
+          val nodes = Vector(
+            Object( Path("Objects","Obj")).copy( descriptions= Set(Description("test"))),
+            InfoItem( "II1", Path("Objects","Obj","II1"), values = Vector( IntValue(13,timestamp)), descriptions = Set(Description("test"))),
+            InfoItem( "II2", Path("Objects","Obj","II2"), values = Vector( IntValue(13,timestamp))),
+            InfoItem( Path("Objects","Obj2","II"), Vector( IntValue(13,timestamp)))
+          )
+          val odf = ImmutableODF( nodes ).valuesRemoved
+          val hierarchyProbe = system actorOf Props(new Actor {
+              def receive = {
+                case GetTree => sender() ! odf
+                case ErasePathCommand(path) => sender() ! {Unit}
+              }
+            }
+          )
+          val singleStores = new DummySingleStores(settings,
+            hierarchyStore = hierarchyProbe
+          )
+          val conf: InfluxDBConfigExtension = new InfluxDBConfigExtension(system.settings.config)
+          val n = 53
+          val serverprobe = 
+            system actorOf Props(new Actor {
+              def receive = {
+                case queries: Seq[InfluxQuery] => 
+                  if( queries.length == 1 ){
+                    queries.headOption match{
+                      case Some( ShowDBs ) => 
+                        sender() ! foundDBResult(conf.databaseName)
+                      case Some( CreateDB( name )) => 
+                        if( name == conf.databaseName ) {
+                          sender() ! okResult
+                        } else {
+                          sender() ! badRequestResult( "test failure" )
+                        }
+                      case Some( DropMeasurement(name)) =>
+                        sender() ! okResult
+                      case Some( select: SelectValue ) =>
+                        sender() ! badRequestResult( "No select queries needed!" )
+                    }
+                  } else {
+                    if( queries.collect{
+                      case DropMeasurement(name) => name 
+                    }.nonEmpty ) {
+                        sender() ! okResult
+                    } else{ 
+                        sender() ! badRequestResult( "No select queries needed!" )
+                    }
+
+                  }
+              }
+            }) 
+
+          val source = s"InfluxClient:${conf.address}:${conf.databaseName}"
+          val str = """{"error":"test failure"}"""
+          val logFilters = Vector(
+            EventFilter.debug(start = s"Found following databases: ",source = source, occurrences = 1),
+            EventFilter.info(s"Database ${conf.databaseName} found from InfluxDB at address ${conf.address}",source, occurrences = 1)
+          )
+
+
+          filterEvents(logFilters){
+            val influx = new MockInfluxDB(
+              serverprobe,
+              conf
+            )(system,singleStores)
+
+            influx.remove(Path("Objects","Obj"))
+          } must beEqualTo(Vector(1,1)).await
+       }
+     }
 }

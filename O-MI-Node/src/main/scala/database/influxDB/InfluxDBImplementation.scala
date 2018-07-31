@@ -197,7 +197,7 @@ class InfluxDBImplementation
           (singleStores.hierarchyStore ? ErasePathCommand(path)).map(_ =>
             removedIIs.map {
               ii: InfoItem => 1
-            })
+            }.toVector)
         }
         case HttpResponse(status, headers, entity, protocol) if status.isFailure =>
           Unmarshal(entity).to[String].map {
