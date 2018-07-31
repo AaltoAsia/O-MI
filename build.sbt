@@ -36,7 +36,7 @@ def commonSettings(moduleName: String) = Seq(
   autoAPIMappings := true,
   exportJars := true,
   EclipseKeys.withSource := true,
-  coverageExcludedPackages := "parsing.xmlGen.*;database\\.journal\\.P[A-Z].*;",
+  coverageExcludedPackages := "parsing.xmlGen.*;database\\.journal\\.P[A-Z].*;types.OdfTypes.*;",
 
   //ScoverageSbtPlugin.ScoverageKeys.coverageExcludedPackages := "parsing.xmlGen.*;"
   testFrameworks += new TestFramework("org.scalameter.ScalaMeterFramework"),
