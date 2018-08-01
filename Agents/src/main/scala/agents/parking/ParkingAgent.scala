@@ -455,62 +455,65 @@ class ParkingAgent(
                     }.filter{
                       case (path: Path, ps: ParkingSpace) =>
                         log.debug( "Checking " + ps.id )
-                        lazy val validVehicle = ps.validForVehicle.exists{ 
-                          vt: VehicleType =>
-                            vehicle.forall{
-                              v =>
-                                val typeCheck = {
-                                  v.vehicleType == vt ||
-                                  v.vehicleType == VehicleType.Vehicle ||
-                                  (v.vehicleType == VehicleType.ElectricVehicle && vt == VehicleType.Car && wantCharging.forall( !_ ))
-                                }
-                                val dimensionCheck ={
-                                  v.length.forall{ vl =>  ps.length.forall{ pl => vl <= pl }} && 
-                                  v.width.forall{ vl =>  ps.width.forall{ pl => vl <= pl }} && 
-                                  v.height.forall{ vl =>  ps.height.forall{ pl => vl <= pl }}  
-                                }
-                                log.debug(s"vehicle $typeCheck $dimensionCheck")
-                                typeCheck && dimensionCheck
-                            }
-                        } 
-                        lazy val correctUserGroup = (ps.validUserGroups.isEmpty || ps.validUserGroups.exists{
-                          pug => userGroup.contains(pug)
-                        }) 
-                        lazy val validCharger = {
-                          (charger.isEmpty && wantCharging.forall( !_) ) || 
-                          (
-                            ( wantCharging.exists(b => b) || charger.nonEmpty ) && 
-                          ps.chargers.exists{
-                            pchar =>
-                              charger.forall{
-                                char =>
-                                  val correctChar =
-                                  char.brand.forall( pchar.brand.contains(_))&&
-                                  char.model.forall( pchar.model.contains(_))&&
-                                  char.currentType.forall( pchar.currentType.contains(_))&&
-                                  char.threePhasedCurrentAvailable.forall( pchar.threePhasedCurrentAvailable.contains(_))&&
-                                  char.isFastChargeCapable.forall(pchar.isFastChargeCapable.contains(_)) 
-
-                                  val correctPlug = (char.plugs.isEmpty || char.plugs.exists{
-                                    plug =>
-                                      pchar.plugs.exists{
-                                        pplug => 
-                                          plug.plugType.forall( pplug.plugType.contains(_)) &&
-                                          plug.currentType.forall( pplug.currentType.contains(_))&&
-                                          plug.threePhasedCurrentAvailable.forall( pplug.threePhasedCurrentAvailable.contains(_))&&
-                                          plug.isFastChargeCapable.forall(pplug.isFastChargeCapable.contains(_))
-
-                                      }
-                                  })
-                                  log.debug( s"Charger $correctChar Plug $correctPlug")
-                                  correctChar && correctPlug
+                        if( ps.available.isEmpty && ps.chargers.nonEmpty) log.debug(s"ParkingSpace $path without available, but has charger")
+                        if( ps.available.forall(b => b) ) {
+                          lazy val validVehicle = ps.validForVehicle.exists{ 
+                            vt: VehicleType =>
+                              vehicle.forall{
+                                v =>
+                                  val typeCheck = {
+                                    v.vehicleType == vt ||
+                                    v.vehicleType == VehicleType.Vehicle ||
+                                    (v.vehicleType == VehicleType.ElectricVehicle && vt == VehicleType.Car && wantCharging.forall( !_ ))
+                                  }
+                                  val dimensionCheck ={
+                                    v.length.forall{ vl =>  ps.length.forall{ pl => vl <= pl }} && 
+                                    v.width.forall{ vl =>  ps.width.forall{ pl => vl <= pl }} && 
+                                    v.height.forall{ vl =>  ps.height.forall{ pl => vl <= pl }}  
+                                  }
+                                  log.debug(s"vehicle $typeCheck $dimensionCheck")
+                                  typeCheck && dimensionCheck
                               }
+                          } 
+                          lazy val correctUserGroup = (ps.validUserGroups.isEmpty || ps.validUserGroups.exists{
+                            pug => userGroup.contains(pug)
+                          }) 
+                          lazy val validCharger = {
+                            (charger.isEmpty && wantCharging.forall( !_) ) || 
+                            (
+                              ( wantCharging.exists(b => b) || charger.nonEmpty ) && 
+                              ps.chargers.exists{
+                                pchar =>
+                                  charger.forall{
+                                    char =>
+                                      val correctChar =
+                                        char.brand.forall( pchar.brand.contains(_))&&
+                                      char.model.forall( pchar.model.contains(_))&&
+                                      char.currentType.forall( pchar.currentType.contains(_))&&
+                                      char.threePhasedCurrentAvailable.forall( pchar.threePhasedCurrentAvailable.contains(_))&&
+                                      char.isFastChargeCapable.forall(pchar.isFastChargeCapable.contains(_)) 
 
+                                      val correctPlug = (char.plugs.isEmpty || char.plugs.exists{
+                                        plug =>
+                                          pchar.plugs.exists{
+                                            pplug => 
+                                              plug.plugType.forall( pplug.plugType.contains(_)) &&
+                                              plug.currentType.forall( pplug.currentType.contains(_))&&
+                                              plug.threePhasedCurrentAvailable.forall( pplug.threePhasedCurrentAvailable.contains(_))&&
+                                              plug.isFastChargeCapable.forall(pplug.isFastChargeCapable.contains(_))
+
+                                          }
+                                      })
+                                    log.debug( s"Charger $correctChar Plug $correctPlug")
+                                    correctChar && correctPlug
+                                  }
+
+                              }
+                              )
                           }
-                        )
-                      }
-                        log.debug(s"PS checks $validVehicle && $correctUserGroup && $validCharger" )
-                        validVehicle && correctUserGroup && validCharger
+                          log.debug(s"PS checks $validVehicle && $correctUserGroup && $validCharger" )
+                          validVehicle && correctUserGroup && validCharger
+                        } else false
                     }.flatMap{
                       case (path: Path, ps: ParkingSpace ) =>
                         ps.toOdf(path.getParent)
