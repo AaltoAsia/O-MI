@@ -13,14 +13,13 @@ import scala.util.control.NonFatal
 import scala.concurrent.duration._
 import org.specs2.concurrent.ExecutionEnv
 import org.specs2.mutable._
-import http.{OmiConfig, OmiConfigExtension}
+import http.{OmiConfig }
 import com.typesafe.config.ConfigFactory
 
 import database.SingleStores
 import database.journal.Models.{ErasePathCommand, GetTree, MultipleReadCommand}
 import testHelpers._
 import types.odf._
-import types.OmiTypes.OmiReturn
 import types.Path
 
 class InfluxDBTest( implicit ee: ExecutionEnv ) 
@@ -40,6 +39,7 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
                           entity = HttpEntity(s"""{"error":"$error"}""" )
                         )
 
+   private case class QueryPackage( queries: Vector[InfluxQuery])
    class MockInfluxDB(
      val tester: ActorRef,
      override protected val config: InfluxDBConfigExtension
@@ -49,7 +49,7 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
     ) extends InfluxDBImplementation( config)(system,singleStores) {
       override def sendQueries(queries: Seq[InfluxQuery]): Future[HttpResponse] = {
        implicit val timeout: Timeout = Timeout( 1 minutes )
-        (tester ? queries).mapTo[HttpResponse]
+        (tester ? QueryPackage(queries.toVector)).mapTo[HttpResponse]
       }
       override def sendMeasurements(measurements: String ): Future[HttpResponse] = {
        implicit val timeout: Timeout = Timeout( 1 minutes )
@@ -79,13 +79,12 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
          new NoisyActorstest(ActorSystem("InfluxTest", loggerConf.withFallback(ConfigFactory.load()))){ f(system) }
        }
        "should create new DB if configuret one not found" >> testInit{ implicit system: ActorSystem =>
-        val settings: OmiConfigExtension = OmiConfig(system)
-        val singleStores = new DummySingleStores(settings)
+        val singleStores = new DummySingleStores(OmiConfig(system))
         val conf: InfluxDBConfigExtension = new InfluxDBConfigExtension(system.settings.config)
         val probe = 
           system actorOf Props(new Actor {
             def receive = {
-              case queries: Seq[InfluxQuery] => 
+              case QueryPackage( queries: Vector[InfluxQuery]) => 
                 if( queries.length == 1 ){
                   queries.headOption match{
                     case Some( ShowDBs ) => 
@@ -99,6 +98,8 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
                       } else {
                         sender() ! badRequestResult( "test failure" )
                       }
+                    case Some( query ) => sender() ! badRequestResult( "wrong query, test failure" )
+                    case None => sender() ! badRequestResult( "wrong query, test failure" )
                   }
                 }
             }
@@ -114,7 +115,7 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
 
 
         filterEvents(logFilters){
-          val influx = new MockInfluxDB(
+          new MockInfluxDB(
             probe,
             conf
           )(system,singleStores)
@@ -122,13 +123,12 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
         }
       }
       "should find existing DB and use it" >> testInit{ implicit system: ActorSystem =>
-        val settings: OmiConfigExtension = OmiConfig(system)
-        val singleStores = new DummySingleStores(settings)
+        val singleStores = new DummySingleStores(OmiConfig(system))
         val conf: InfluxDBConfigExtension = new InfluxDBConfigExtension(system.settings.config)
         val probe = 
           system actorOf Props(new Actor {
             def receive = {
-              case queries: Seq[InfluxQuery] => 
+              case QueryPackage( queries: Vector[InfluxQuery] ) => 
                 if( queries.length == 1 ){
                   queries.headOption match{
                     case Some( ShowDBs ) => 
@@ -139,20 +139,17 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
                     } else {
                       sender() ! badRequestResult( "test failure" )
                     }
+                    case Some( query ) => sender() ! badRequestResult( "wrong query, test failure" )
+                    case None => sender() ! badRequestResult( "wrong query, test failure" )
                   }
                 }
             }
           }) 
 
-        val source = s"InfluxClient:${conf.address}:${conf.databaseName}"
-        val logFilters = Vector(
-          EventFilter.debug(start = s"Found following databases: ",source = source, occurrences = 1),
-          EventFilter.info(s"Database ${conf.databaseName} found from InfluxDB at address ${conf.address}",source, occurrences = 1)
-        )
-
-
-        filterEvents(logFilters){
-          val influx = new MockInfluxDB(
+        filterEvents(
+          initializationLogFilters( conf ) 
+        ){
+          new MockInfluxDB(
             probe,
             conf
           )(system,singleStores)
@@ -161,13 +158,12 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
       }
     "writeMany should" >> {
        "send measurements in correct format" >> testInit{ implicit system: ActorSystem =>
-          val settings: OmiConfigExtension = OmiConfig(system)
-          val singleStores = new DummySingleStores(settings)
+          val singleStores = new DummySingleStores(OmiConfig(system))
           val conf: InfluxDBConfigExtension = new InfluxDBConfigExtension(system.settings.config)
           val probe = 
             system actorOf Props(new Actor {
               def receive = {
-                case queries: Seq[InfluxQuery] => 
+                case QueryPackage( queries: Vector[InfluxQuery] ) => 
                   if( queries.length == 1 ){
                     queries.headOption match{
                       case Some( ShowDBs ) => 
@@ -175,25 +171,24 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
                       case Some( CreateDB( name )) => 
                         if( name == conf.databaseName ) {
                           sender() ! okResult
-                      } else {
-                        sender() ! badRequestResult( "test failure" )
-                      }
+                        } else {
+                          sender() ! badRequestResult( "test failure" )
+                        }
+                      case Some( query ) => sender() ! badRequestResult( "wrong query, test failure" )
+                      case None => sender() ! badRequestResult( "wrong query, test failure" )
                     }
-                }
+                  }
                 case meas: String =>
                   sender() ! okResult
               }
             }) 
 
           val source = s"InfluxClient:${conf.address}:${conf.databaseName}"
-          val logFilters = Vector(
-            EventFilter.debug(start = s"Found following databases: ",source = source, occurrences = 1),
-            EventFilter.info(s"Database ${conf.databaseName} found from InfluxDB at address ${conf.address}",source, occurrences = 1),
+          filterEvents(
+            initializationLogFilters( conf ) ++ Vector(
             EventFilter.debug(s"Successful write to InfluxDB",source, occurrences = 1)
-          )
-
-
-          filterEvents(logFilters){
+            )
+          ){
             val influx = new MockInfluxDB(
               probe,
               conf
@@ -203,14 +198,13 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
            }.map(_.returnCode) must beEqualTo( "200 OK").await 
         }
 
-       "return 400 Bad Request status if write fails" >> testInit{ implicit system: ActorSystem =>
-          val settings: OmiConfigExtension = OmiConfig(system)
-          val singleStores = new DummySingleStores(settings)
+        "return 400 Bad Request status if write fails" >> testInit{ implicit system: ActorSystem =>
+          val singleStores = new DummySingleStores(OmiConfig(system))
           val conf: InfluxDBConfigExtension = new InfluxDBConfigExtension(system.settings.config)
           val probe = 
             system actorOf Props(new Actor {
               def receive = {
-                case queries: Seq[InfluxQuery] => 
+                case QueryPackage( queries: Vector[InfluxQuery] ) => 
                   if( queries.length == 1 ){
                     queries.headOption match{
                       case Some( ShowDBs ) => 
@@ -221,41 +215,39 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
                         } else {
                           sender() ! badRequestResult( "test failure" )
                         }
+                      case Some( query ) => sender() ! badRequestResult( "wrong query, test failure" )
+                      case None => sender() ! badRequestResult( "wrong query, test failure" )
                     }
-                }
-                case meas: String =>
-                  sender() ! badRequestResult( "test failure" )
+                  }
+                      case meas: String =>
+                        sender() ! badRequestResult( "test failure" )
               }
             }) 
 
           val source = s"InfluxClient:${conf.address}:${conf.databaseName}"
           val str = """{"error":"test failure"}"""
-          val logFilters = Vector(
-            EventFilter.debug(start = s"Found following databases: ",source = source, occurrences = 1),
-            EventFilter.info(s"Database ${conf.databaseName} found from InfluxDB at address ${conf.address}",source, occurrences = 1),
-            EventFilter.warning(s"Write returned 400 Bad Request with:\n $str",source, occurrences = 1)
-          )
-
-
-          filterEvents(logFilters){
-            val influx = new MockInfluxDB(
-              probe,
-              conf
-            )(system,singleStores)
-            val ii = Vector( InfoItem( Path("Objects","Obj","II"), Vector( IntValue(13,currentTimestamp))))
-            influx.writeMany(ii)
-           }.map(_.returnCode) must beEqualTo( "400 Bad Request").await 
-       }
+          filterEvents(
+            initializationLogFilters( conf ) ++ Vector(
+              EventFilter.warning(s"Write returned 400 Bad Request with:\n $str",source, occurrences = 1)
+            )
+          ){
+              val influx = new MockInfluxDB(
+                probe,
+                conf
+              )(system,singleStores)
+              val ii = Vector( InfoItem( Path("Objects","Obj","II"), Vector( IntValue(13,currentTimestamp))))
+              influx.writeMany(ii)
+            }.map(_.returnCode) must beEqualTo( "400 Bad Request").await 
+          }
       }
      "getNBetween should" >>{
        "prevent request with Oldest parameter" >>  testInit{ implicit system: ActorSystem =>
-          val settings: OmiConfigExtension = OmiConfig(system)
-          val singleStores = new DummySingleStores(settings)
+          val singleStores = new DummySingleStores(OmiConfig(system))
           val conf: InfluxDBConfigExtension = new InfluxDBConfigExtension(system.settings.config)
           val probe = 
             system actorOf Props(new Actor {
               def receive = {
-                case queries: Seq[InfluxQuery] => 
+                case QueryPackage( queries: Vector[InfluxQuery] ) => 
                   if( queries.length == 1 ){
                     queries.headOption match{
                       case Some( ShowDBs ) => 
@@ -266,6 +258,8 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
                         } else {
                           sender() ! badRequestResult( "test failure" )
                         }
+                      case Some( query ) => sender() ! badRequestResult( "wrong query, test failure" )
+                      case None => sender() ! badRequestResult( "wrong query, test failure" )
                     }
                 }
                 case meas: String =>
@@ -273,15 +267,9 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
               }
             }) 
 
-          val source = s"InfluxClient:${conf.address}:${conf.databaseName}"
-          val str = """{"error":"test failure"}"""
-          val logFilters = Vector(
-            EventFilter.debug(start = s"Found following databases: ",source = source, occurrences = 1),
-            EventFilter.info(s"Database ${conf.databaseName} found from InfluxDB at address ${conf.address}",source, occurrences = 1)
-          )
-
-
-          filterEvents(logFilters){
+          filterEvents(
+            initializationLogFilters( conf )
+          ){
             val influx = new MockInfluxDB(
               probe,
               conf
@@ -290,18 +278,17 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
             val n = 53
             val ii = Vector( InfoItem( Path("Objects","Obj","II"), Vector( IntValue(13,currentTimestamp))))
             influx.getNBetween(ii,None,None,None,Some(n))
-            }.recover{ case NonFatal(t) => t.getMessage()} must beEqualTo("Oldest attribute is not allowed with InfluxDB.").await 
+          }.recover{ case NonFatal(t) => t.getMessage()} must beEqualTo("Oldest attribute is not allowed with InfluxDB.").await 
        }
+       val timestamp = currentTimestamp
+       val nodes = Vector(
+         Object( Path("Objects","Obj")).copy( descriptions= Set(Description("test"))),
+         InfoItem( "II1", Path("Objects","Obj","II1"), descriptions = Set(Description("test"))),
+         InfoItem( "II2", Path("Objects","Obj","II2")),
+         InfoItem( Path("Objects","Obj2","II"), Vector.empty)
+       )
+       val odf = ImmutableODF( nodes ).valuesRemoved
        "send correct query without additional parameters" >>  testInit{ implicit system: ActorSystem =>
-          val settings: OmiConfigExtension = OmiConfig(system)
-          val timestamp = currentTimestamp
-          val nodes = Vector(
-            Object( Path("Objects","Obj")).copy( descriptions= Set(Description("test"))),
-            InfoItem( "II1", Path("Objects","Obj","II1"), values = Vector( IntValue(13,timestamp)), descriptions = Set(Description("test"))),
-            InfoItem( "II2", Path("Objects","Obj","II2"), values = Vector( IntValue(13,timestamp))),
-            InfoItem( Path("Objects","Obj2","II"), Vector( IntValue(13,timestamp)))
-          )
-          val odf = ImmutableODF( nodes ).valuesRemoved
           val latestProbe = system actorOf Props(new Actor {
               def receive = {
                 case MultipleReadCommand(paths) => 
@@ -311,7 +298,7 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
                   sender() ! tuples
               }
             }) 
-          val singleStores = new DummySingleStores(settings,
+          val singleStores = new DummySingleStores(OmiConfig(system),
             latestStore = latestProbe,
             hierarchyStore = DummyHierarchyStore( odf )
           )
@@ -319,7 +306,7 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
           val serverprobe = 
             system actorOf Props(new Actor {
               def receive = {
-                case queries: Seq[InfluxQuery] => 
+                case QueryPackage( queries: Vector[InfluxQuery] ) => 
                   if( queries.length == 1 ){
                     queries.headOption match{
                       case Some( ShowDBs ) => 
@@ -332,6 +319,8 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
                         }
                       case Some( select: SelectValue ) =>
                         sender() ! badRequestResult( "No select queries needed!" )
+                      case Some( query ) => sender() ! badRequestResult( "wrong query, test failure" )
+                      case None => sender() ! badRequestResult( "wrong query, test failure" )
                     }
                   } else {
                     queries.collect{
@@ -347,21 +336,14 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
               }
             }) 
 
-          val source = s"InfluxClient:${conf.address}:${conf.databaseName}"
-          val str = """{"error":"test failure"}"""
-          val logFilters = Vector(
-            EventFilter.debug(start = s"Found following databases: ",source = source, occurrences = 1),
-            EventFilter.info(s"Database ${conf.databaseName} found from InfluxDB at address ${conf.address}",source, occurrences = 1)
-          )
-
-
-          filterEvents(logFilters){
+          filterEvents(
+            initializationLogFilters( conf )
+          ){
             val influx = new MockInfluxDB(
               serverprobe,
               conf
             )(system,singleStores)
 
-            val n = 53
             val leaf = Vector( Object( Path("Objects","Obj")))
             influx.getNBetween(leaf,None,None,None,None)
             } must beEqualTo(
@@ -372,44 +354,20 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
               )))
             ).await
        }
-       def jsonFormat( measurement: String, index: Int, timestamp: Timestamp, value: Any) ={
-         s"""{
-           "statement_id": $index,
-           "series": [
-           {
-             "name": "${measurement}",
-             "columns": [
-             "time",
-             "value"
-             ],
-             "values": [
-             [
-             "$timestamp",
-             $value
-             ]
-             ]
-           }
-           ]
-         }"""
-       }
+       val correctFloatResults = Some(ImmutableODF(Vector(
+                Object( Path("Objects","Obj")).copy( descriptions= Set(Description("test"))),
+              InfoItem( Path("Objects","Obj","II1"), Vector( FloatValue(13.7f,timestamp))).copy( descriptions=Set(Description("test"))),
+              InfoItem( Path("Objects","Obj","II2"), Vector( FloatValue(13.7f,timestamp)))
+              )))
        "send correct query with only begin parameter" >>  testInit{ implicit system: ActorSystem =>
-          val settings: OmiConfigExtension = OmiConfig(system)
-          val timestamp = currentTimestamp
-          val nodes = Vector(
-            Object( Path("Objects","Obj")).copy( descriptions= Set(Description("test"))),
-            InfoItem( "II1", Path("Objects","Obj","II1"), values = Vector( IntValue(13,timestamp)), descriptions = Set(Description("test"))),
-            InfoItem( "II2", Path("Objects","Obj","II2"), values = Vector( IntValue(13,timestamp))),
-            InfoItem( Path("Objects","Obj2","II"), Vector( IntValue(13,timestamp)))
-          )
-          val odf = ImmutableODF( nodes ).valuesRemoved
-          val singleStores = new DummySingleStores(settings,
+          val singleStores = new DummySingleStores(OmiConfig(system),
             hierarchyStore = DummyHierarchyStore( odf )
           )
           val conf: InfluxDBConfigExtension = new InfluxDBConfigExtension(system.settings.config)
           val serverprobe = 
             system actorOf Props(new Actor {
               def receive = {
-                case queries: Seq[InfluxQuery] => 
+                case QueryPackage( queries: Vector[InfluxQuery] ) => 
                   if( queries.length == 1 ){
                     queries.headOption match{
                       case Some( ShowDBs ) => 
@@ -422,6 +380,8 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
                         }
                       case Some( select: SelectValue ) =>
                         sender() ! badRequestResult( "No select queries needed!" )
+                      case Some( query ) => sender() ! badRequestResult( "wrong query, test failure" )
+                      case None => sender() ! badRequestResult( "wrong query, test failure" )
                     }
                   } else {
                     val results = queries.collect{
@@ -452,21 +412,14 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
               }
             }) 
 
-          val source = s"InfluxClient:${conf.address}:${conf.databaseName}"
-          val str = """{"error":"test failure"}"""
-          val logFilters = Vector(
-            EventFilter.debug(start = s"Found following databases: ",source = source, occurrences = 1),
-            EventFilter.info(s"Database ${conf.databaseName} found from InfluxDB at address ${conf.address}",source, occurrences = 1)
-          )
-
-
-          filterEvents(logFilters){
+          filterEvents(
+            initializationLogFilters( conf )
+          ){
             val influx = new MockInfluxDB(
               serverprobe,
               conf
             )(system,singleStores)
 
-            val n = 53
             val leaf = Vector( Object( Path("Objects","Obj")))
             influx.getNBetween(leaf,Some(timestamp),None,None,None)
             } must beEqualTo(
@@ -478,23 +431,14 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
             ).await
        }
        "send correct query with only end parameter" >> testInit{ implicit system: ActorSystem =>
-          val settings: OmiConfigExtension = OmiConfig(system)
-          val timestamp = currentTimestamp
-          val nodes = Vector(
-            Object( Path("Objects","Obj")).copy( descriptions= Set(Description("test"))),
-            InfoItem( "II1", Path("Objects","Obj","II1"), values = Vector( IntValue(13,timestamp)), descriptions = Set(Description("test"))),
-            InfoItem( "II2", Path("Objects","Obj","II2"), values = Vector( IntValue(13,timestamp))),
-            InfoItem( Path("Objects","Obj2","II"), Vector( IntValue(13,timestamp)))
-          )
-          val odf = ImmutableODF( nodes ).valuesRemoved
-          val singleStores = new DummySingleStores(settings,
+          val singleStores = new DummySingleStores(OmiConfig(system),
             hierarchyStore = DummyHierarchyStore( odf )
           )
           val conf: InfluxDBConfigExtension = new InfluxDBConfigExtension(system.settings.config)
           val serverprobe = 
             system actorOf Props(new Actor {
               def receive = {
-                case queries: Seq[InfluxQuery] => 
+                case QueryPackage( queries: Vector[InfluxQuery] ) => 
                   if( queries.length == 1 ){
                     queries.headOption match{
                       case Some( ShowDBs ) => 
@@ -507,6 +451,8 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
                         }
                       case Some( select: SelectValue ) =>
                         sender() ! badRequestResult( "No select queries needed!" )
+                      case Some( query ) => sender() ! badRequestResult( "wrong query, test failure" )
+                      case None => sender() ! badRequestResult( "wrong query, test failure" )
                     }
                   } else {
                     val results = queries.collect{
@@ -538,42 +484,22 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
               }
             }) 
 
-          val source = s"InfluxClient:${conf.address}:${conf.databaseName}"
-          val str = """{"error":"test failure"}"""
-          val logFilters = Vector(
-            EventFilter.debug(start = s"Found following databases: ",source = source, occurrences = 1),
-            EventFilter.info(s"Database ${conf.databaseName} found from InfluxDB at address ${conf.address}",source, occurrences = 1)
-          )
-
-
-          filterEvents(logFilters){
+          filterEvents(
+            initializationLogFilters( conf )
+          ){
             val influx = new MockInfluxDB(
               serverprobe,
               conf
             )(system,singleStores)
 
-            val n = 53
             val leaf = Vector( Object( Path("Objects","Obj")))
             influx.getNBetween(leaf,None,Some(timestamp),None,None)
             } must beEqualTo(
-              Some(ImmutableODF(Vector(
-                Object( Path("Objects","Obj")).copy( descriptions= Set(Description("test"))),
-              InfoItem( Path("Objects","Obj","II1"), Vector( FloatValue(13.7f,timestamp))).copy( descriptions=Set(Description("test"))),
-              InfoItem( Path("Objects","Obj","II2"), Vector( FloatValue(13.7f,timestamp)))
-              )))
+              correctFloatResults
             ).await
        }
        "send correct query with only newest parameter" >> testInit{ implicit system: ActorSystem =>
-          val settings: OmiConfigExtension = OmiConfig(system)
-          val timestamp = currentTimestamp
-          val nodes = Vector(
-            Object( Path("Objects","Obj")).copy( descriptions= Set(Description("test"))),
-            InfoItem( "II1", Path("Objects","Obj","II1"), values = Vector( IntValue(13,timestamp)), descriptions = Set(Description("test"))),
-            InfoItem( "II2", Path("Objects","Obj","II2"), values = Vector( IntValue(13,timestamp))),
-            InfoItem( Path("Objects","Obj2","II"), Vector( IntValue(13,timestamp)))
-          )
-          val odf = ImmutableODF( nodes ).valuesRemoved
-          val singleStores = new DummySingleStores(settings,
+          val singleStores = new DummySingleStores(OmiConfig(system),
             hierarchyStore = DummyHierarchyStore( odf )
           )
           val n = 30
@@ -581,7 +507,7 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
           val serverprobe = 
             system actorOf Props(new Actor {
               def receive = {
-                case queries: Seq[InfluxQuery] => 
+                case QueryPackage( queries: Vector[InfluxQuery] ) => 
                   if( queries.length == 1 ){
                     queries.headOption match{
                       case Some( ShowDBs ) => 
@@ -594,6 +520,8 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
                         }
                       case Some( select: SelectValue ) =>
                         sender() ! badRequestResult( "No select queries needed!" )
+                      case Some( query ) => sender() ! badRequestResult( "wrong query, test failure" )
+                      case None => sender() ! badRequestResult( "wrong query, test failure" )
                     }
                   } else {
                     val results = queries.collect{
@@ -625,15 +553,9 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
               }
             }) 
 
-          val source = s"InfluxClient:${conf.address}:${conf.databaseName}"
-          val str = """{"error":"test failure"}"""
-          val logFilters = Vector(
-            EventFilter.debug(start = s"Found following databases: ",source = source, occurrences = 1),
-            EventFilter.info(s"Database ${conf.databaseName} found from InfluxDB at address ${conf.address}",source, occurrences = 1)
-          )
-
-
-          filterEvents(logFilters){
+          filterEvents(
+            initializationLogFilters( conf )
+          ){
             val influx = new MockInfluxDB(
               serverprobe,
               conf
@@ -642,31 +564,18 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
             val leaf = Vector( Object( Path("Objects","Obj")))
             influx.getNBetween(leaf,None,None,Some(n),None)
             } must beEqualTo(
-              Some(ImmutableODF(Vector(
-                Object( Path("Objects","Obj")).copy( descriptions= Set(Description("test"))),
-              InfoItem( Path("Objects","Obj","II1"), Vector( FloatValue(13.7f,timestamp))).copy( descriptions=Set(Description("test"))),
-              InfoItem( Path("Objects","Obj","II2"), Vector( FloatValue(13.7f,timestamp)))
-              )))
+              correctFloatResults
             ).await
        }
        "send correct query with begin and end parameters" >> testInit{ implicit system: ActorSystem =>
-          val settings: OmiConfigExtension = OmiConfig(system)
-          val timestamp = currentTimestamp
-          val nodes = Vector(
-            Object( Path("Objects","Obj")).copy( descriptions= Set(Description("test"))),
-            InfoItem( "II1", Path("Objects","Obj","II1"), values = Vector( IntValue(13,timestamp)), descriptions = Set(Description("test"))),
-            InfoItem( "II2", Path("Objects","Obj","II2"), values = Vector( IntValue(13,timestamp))),
-            InfoItem( Path("Objects","Obj2","II"), Vector( IntValue(13,timestamp)))
-          )
-          val odf = ImmutableODF( nodes ).valuesRemoved
-          val singleStores = new DummySingleStores(settings,
+          val singleStores = new DummySingleStores(OmiConfig(system),
             hierarchyStore = DummyHierarchyStore( odf )
           )
           val conf: InfluxDBConfigExtension = new InfluxDBConfigExtension(system.settings.config)
           val serverprobe = 
             system actorOf Props(new Actor {
               def receive = {
-                case queries: Seq[InfluxQuery] => 
+                case QueryPackage( queries: Vector[InfluxQuery] ) => 
                   if( queries.length == 1 ){
                     queries.headOption match{
                       case Some( ShowDBs ) => 
@@ -679,6 +588,8 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
                         }
                       case Some( select: SelectValue ) =>
                         sender() ! badRequestResult( "No select queries needed!" )
+                      case Some( query ) => sender() ! badRequestResult( "wrong query, test failure" )
+                      case None => sender() ! badRequestResult( "wrong query, test failure" )
                     }
                   } else {
                     val results = queries.collect{
@@ -711,15 +622,9 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
               }
             }) 
 
-          val source = s"InfluxClient:${conf.address}:${conf.databaseName}"
-          val str = """{"error":"test failure"}"""
-          val logFilters = Vector(
-            EventFilter.debug(start = s"Found following databases: ",source = source, occurrences = 1),
-            EventFilter.info(s"Database ${conf.databaseName} found from InfluxDB at address ${conf.address}",source, occurrences = 1)
-          )
-
-
-          filterEvents(logFilters){
+          filterEvents(
+            initializationLogFilters( conf )
+          ){
             val influx = new MockInfluxDB(
               serverprobe,
               conf
@@ -728,24 +633,11 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
             val leaf = Vector( Object( Path("Objects","Obj")))
             influx.getNBetween(leaf,Some(timestamp),Some(timestamp),None,None)
             } must beEqualTo(
-              Some(ImmutableODF(Vector(
-                Object( Path("Objects","Obj")).copy( descriptions= Set(Description("test"))),
-              InfoItem( Path("Objects","Obj","II1"), Vector( FloatValue(13.7f,timestamp))).copy( descriptions=Set(Description("test"))),
-              InfoItem( Path("Objects","Obj","II2"), Vector( FloatValue(13.7f,timestamp)))
-              )))
+              correctFloatResults
             ).await
        }
        "send correct query with begin and newest parameters" >>testInit{ implicit system: ActorSystem =>
-          val settings: OmiConfigExtension = OmiConfig(system)
-          val timestamp = currentTimestamp
-          val nodes = Vector(
-            Object( Path("Objects","Obj")).copy( descriptions= Set(Description("test"))),
-            InfoItem( "II1", Path("Objects","Obj","II1"), values = Vector( IntValue(13,timestamp)), descriptions = Set(Description("test"))),
-            InfoItem( "II2", Path("Objects","Obj","II2"), values = Vector( IntValue(13,timestamp))),
-            InfoItem( Path("Objects","Obj2","II"), Vector( IntValue(13,timestamp)))
-          )
-          val odf = ImmutableODF( nodes ).valuesRemoved
-          val singleStores = new DummySingleStores(settings,
+          val singleStores = new DummySingleStores(OmiConfig(system),
             hierarchyStore = DummyHierarchyStore( odf )
           )
           val n = 30
@@ -753,7 +645,7 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
           val serverprobe = 
             system actorOf Props(new Actor {
               def receive = {
-                case queries: Seq[InfluxQuery] => 
+                case QueryPackage( queries: Vector[InfluxQuery] ) => 
                   if( queries.length == 1 ){
                     queries.headOption match{
                       case Some( ShowDBs ) => 
@@ -766,6 +658,8 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
                         }
                       case Some( select: SelectValue ) =>
                         sender() ! badRequestResult( "No select queries needed!" )
+                      case Some( query ) => sender() ! badRequestResult( "wrong query, test failure" )
+                      case None => sender() ! badRequestResult( "wrong query, test failure" )
                     }
                   } else {
                     val results = queries.collect{
@@ -801,15 +695,9 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
               }
             }) 
 
-          val source = s"InfluxClient:${conf.address}:${conf.databaseName}"
-          val str = """{"error":"test failure"}"""
-          val logFilters = Vector(
-            EventFilter.debug(start = s"Found following databases: ",source = source, occurrences = 1),
-            EventFilter.info(s"Database ${conf.databaseName} found from InfluxDB at address ${conf.address}",source, occurrences = 1)
-          )
-
-
-          filterEvents(logFilters){
+          filterEvents(
+            initializationLogFilters( conf )
+          ){
             val influx = new MockInfluxDB(
               serverprobe,
               conf
@@ -818,24 +706,11 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
             val leaf = Vector( Object( Path("Objects","Obj")))
             influx.getNBetween(leaf,Some(timestamp),None,Some(n),None)
             } must beEqualTo(
-              Some(ImmutableODF(Vector(
-                Object( Path("Objects","Obj")).copy( descriptions= Set(Description("test"))),
-              InfoItem( Path("Objects","Obj","II1"), Vector( FloatValue(13.7f,timestamp))).copy( descriptions=Set(Description("test"))),
-              InfoItem( Path("Objects","Obj","II2"), Vector( FloatValue(13.7f,timestamp)))
-              )))
+              correctFloatResults
             ).await
        }
        "send correct query with end and newest parameters" >>testInit{ implicit system: ActorSystem =>
-          val settings: OmiConfigExtension = OmiConfig(system)
-          val timestamp = currentTimestamp
-          val nodes = Vector(
-            Object( Path("Objects","Obj")).copy( descriptions= Set(Description("test"))),
-            InfoItem( "II1", Path("Objects","Obj","II1"), values = Vector( IntValue(13,timestamp)), descriptions = Set(Description("test"))),
-            InfoItem( "II2", Path("Objects","Obj","II2"), values = Vector( IntValue(13,timestamp))),
-            InfoItem( Path("Objects","Obj2","II"), Vector( IntValue(13,timestamp)))
-          )
-          val odf = ImmutableODF( nodes ).valuesRemoved
-          val singleStores = new DummySingleStores(settings,
+          val singleStores = new DummySingleStores(OmiConfig(system),
             hierarchyStore = DummyHierarchyStore( odf )
           )
           val n = 30
@@ -843,7 +718,7 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
           val serverprobe = 
             system actorOf Props(new Actor {
               def receive = {
-                case queries: Seq[InfluxQuery] => 
+                case QueryPackage( queries: Vector[InfluxQuery] ) => 
                   if( queries.length == 1 ){
                     queries.headOption match{
                       case Some( ShowDBs ) => 
@@ -856,6 +731,8 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
                         }
                       case Some( select: SelectValue ) =>
                         sender() ! badRequestResult( "No select queries needed!" )
+                      case Some( query ) => sender() ! badRequestResult( "wrong query, test failure" )
+                      case None => sender() ! badRequestResult( "wrong query, test failure" )
                     }
                   } else {
                     val results = queries.collect{
@@ -891,15 +768,9 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
               }
             }) 
 
-          val source = s"InfluxClient:${conf.address}:${conf.databaseName}"
-          val str = """{"error":"test failure"}"""
-          val logFilters = Vector(
-            EventFilter.debug(start = s"Found following databases: ",source = source, occurrences = 1),
-            EventFilter.info(s"Database ${conf.databaseName} found from InfluxDB at address ${conf.address}",source, occurrences = 1)
-          )
-
-
-          filterEvents(logFilters){
+          filterEvents(
+            initializationLogFilters( conf )
+          ){
             val influx = new MockInfluxDB(
               serverprobe,
               conf
@@ -908,24 +779,11 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
             val leaf = Vector( Object( Path("Objects","Obj")))
             influx.getNBetween(leaf,None,Some(timestamp),Some(n),None)
             } must beEqualTo(
-              Some(ImmutableODF(Vector(
-                Object( Path("Objects","Obj")).copy( descriptions= Set(Description("test"))),
-              InfoItem( Path("Objects","Obj","II1"), Vector( FloatValue(13.7f,timestamp))).copy( descriptions=Set(Description("test"))),
-              InfoItem( Path("Objects","Obj","II2"), Vector( FloatValue(13.7f,timestamp)))
-              )))
+              correctFloatResults
             ).await
        }
        "send correct query with begin, end and newest parameters" >> testInit{ implicit system: ActorSystem =>
-          val settings: OmiConfigExtension = OmiConfig(system)
-          val timestamp = currentTimestamp
-          val nodes = Vector(
-            Object( Path("Objects","Obj")).copy( descriptions= Set(Description("test"))),
-            InfoItem( "II1", Path("Objects","Obj","II1"), values = Vector( IntValue(13,timestamp)), descriptions = Set(Description("test"))),
-            InfoItem( "II2", Path("Objects","Obj","II2"), values = Vector( IntValue(13,timestamp))),
-            InfoItem( Path("Objects","Obj2","II"), Vector( IntValue(13,timestamp)))
-          )
-          val odf = ImmutableODF( nodes ).valuesRemoved
-          val singleStores = new DummySingleStores(settings,
+          val singleStores = new DummySingleStores(OmiConfig(system),
             hierarchyStore = DummyHierarchyStore( odf )
           )
           val conf: InfluxDBConfigExtension = new InfluxDBConfigExtension(system.settings.config)
@@ -933,7 +791,7 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
           val serverprobe = 
             system actorOf Props(new Actor {
               def receive = {
-                case queries: Seq[InfluxQuery] => 
+                case QueryPackage( queries: Vector[InfluxQuery] ) => 
                   if( queries.length == 1 ){
                     queries.headOption match{
                       case Some( ShowDBs ) => 
@@ -946,6 +804,8 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
                         }
                       case Some( select: SelectValue ) =>
                         sender() ! badRequestResult( "No select queries needed!" )
+                      case Some( query ) => sender() ! badRequestResult( "wrong query, test failure" )
+                      case None => sender() ! badRequestResult( "wrong query, test failure" )
                     }
                   } else {
                     val results = queries.collect{
@@ -978,15 +838,9 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
               }
             }) 
 
-          val source = s"InfluxClient:${conf.address}:${conf.databaseName}"
-          val str = """{"error":"test failure"}"""
-          val logFilters = Vector(
-            EventFilter.debug(start = s"Found following databases: ",source = source, occurrences = 1),
-            EventFilter.info(s"Database ${conf.databaseName} found from InfluxDB at address ${conf.address}",source, occurrences = 1)
-          )
-
-
-          filterEvents(logFilters){
+          filterEvents(
+            initializationLogFilters( conf )
+          ){
             val influx = new MockInfluxDB(
               serverprobe,
               conf
@@ -994,25 +848,18 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
 
             val leaf = Vector( Object( Path("Objects","Obj")))
             influx.getNBetween(leaf,Some(timestamp),Some(timestamp),Some(n),None)
-            } must beEqualTo(
-              Some(ImmutableODF(Vector(
-                Object( Path("Objects","Obj")).copy( descriptions= Set(Description("test"))),
-              InfoItem( Path("Objects","Obj","II1"), Vector( FloatValue(13.7f,timestamp))).copy( descriptions=Set(Description("test"))),
-              InfoItem( Path("Objects","Obj","II2"), Vector( FloatValue(13.7f,timestamp)))
-              )))
-            ).await
+            } must beEqualTo(correctFloatResults).await
        }
      }
      "Should send correct query for remove and remove correct data cache" >> testInit{ implicit system: ActorSystem =>
-          val settings: OmiConfigExtension = OmiConfig(system)
-          val timestamp = currentTimestamp
-          val nodes = Vector(
-            Object( Path("Objects","Obj")).copy( descriptions= Set(Description("test"))),
-            InfoItem( "II1", Path("Objects","Obj","II1"), values = Vector( IntValue(13,timestamp)), descriptions = Set(Description("test"))),
-            InfoItem( "II2", Path("Objects","Obj","II2"), values = Vector( IntValue(13,timestamp))),
-            InfoItem( Path("Objects","Obj2","II"), Vector( IntValue(13,timestamp)))
-          )
-          val odf = ImmutableODF( nodes ).valuesRemoved
+          val conf: InfluxDBConfigExtension = new InfluxDBConfigExtension(system.settings.config)
+       val nodes = Vector(
+         Object( Path("Objects","Obj")).copy( descriptions= Set(Description("test"))),
+         InfoItem( "II1", Path("Objects","Obj","II1"), descriptions = Set(Description("test"))),
+         InfoItem( "II2", Path("Objects","Obj","II2")),
+         InfoItem( Path("Objects","Obj2","II"), Vector.empty)
+       )
+       val odf = ImmutableODF( nodes ).valuesRemoved
           val hierarchyProbe = system actorOf Props(new Actor {
               def receive = {
                 case GetTree => sender() ! odf
@@ -1020,15 +867,13 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
               }
             }
           )
-          val singleStores = new DummySingleStores(settings,
+          val singleStores = new DummySingleStores(OmiConfig(system),
             hierarchyStore = hierarchyProbe
           )
-          val conf: InfluxDBConfigExtension = new InfluxDBConfigExtension(system.settings.config)
-          val n = 53
           val serverprobe = 
             system actorOf Props(new Actor {
               def receive = {
-                case queries: Seq[InfluxQuery] => 
+                case QueryPackage( queries: Vector[InfluxQuery] ) => 
                   if( queries.length == 1 ){
                     queries.headOption match{
                       case Some( ShowDBs ) => 
@@ -1043,6 +888,8 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
                         sender() ! okResult
                       case Some( select: SelectValue ) =>
                         sender() ! badRequestResult( "No select queries needed!" )
+                      case Some( query ) => sender() ! badRequestResult( "wrong query, test failure" )
+                      case None => sender() ! badRequestResult( "wrong query, test failure" )
                     }
                   } else {
                     if( queries.collect{
@@ -1057,15 +904,11 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
               }
             }) 
 
-          val source = s"InfluxClient:${conf.address}:${conf.databaseName}"
-          val str = """{"error":"test failure"}"""
-          val logFilters = Vector(
-            EventFilter.debug(start = s"Found following databases: ",source = source, occurrences = 1),
-            EventFilter.info(s"Database ${conf.databaseName} found from InfluxDB at address ${conf.address}",source, occurrences = 1)
-          )
 
 
-          filterEvents(logFilters){
+          filterEvents(
+            initializationLogFilters( conf )
+          ){
             val influx = new MockInfluxDB(
               serverprobe,
               conf
@@ -1075,4 +918,31 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
           } must beEqualTo(Vector(1,1)).await
        }
      }
+     def initializationLogFilters( conf: InfluxDBConfigExtension) ={
+       val source = s"InfluxClient:${conf.address}:${conf.databaseName}"
+       Vector(
+         EventFilter.debug(start = s"Found following databases: ",source = source, occurrences = 1),
+         EventFilter.info(s"Database ${conf.databaseName} found from InfluxDB at address ${conf.address}",source, occurrences = 1)
+       )
+     }
+       def jsonFormat( measurement: String, index: Int, timestamp: Timestamp, value: Any) ={
+         s"""{
+           "statement_id": $index,
+           "series": [
+           {
+             "name": "${measurement}",
+             "columns": [
+             "time",
+             "value"
+             ],
+             "values": [
+             [
+             "$timestamp",
+             $value
+             ]
+             ]
+           }
+           ]
+         }"""
+       }
 }
