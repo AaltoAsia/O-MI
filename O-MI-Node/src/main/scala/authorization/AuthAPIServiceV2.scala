@@ -264,7 +264,7 @@ class AuthAPIServiceV2(
           case _ => None
         }
 
-      case "cookie" =>
+      case "cookies" =>
         httpMessage match {
           case r: HttpRequest => r.cookies.find(_.name == from).map(_.value)
           case r: HttpResponse => r.headers.collectFirst {
