@@ -22,10 +22,11 @@ import org.specs2.concurrent.ExecutionEnv
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers
 import akka.http.scaladsl.client.RequestBuilding._
-import akka.util.Timeout
+import akka.util.{ByteString, Timeout}
 import org.specs2.specification.Scope
 import org.specs2.matcher.MustThrownExpectations
 import scala.collection.immutable
+import scala.concurrent.Future
 
 class AuthAPIServiceMock(hierarchyStored: ODF=ImmutableODF())(implicit system: ActorSystem)
   extends AuthAPIServiceV2(
@@ -378,6 +379,28 @@ class AuthServiceTest(implicit ee: ExecutionEnv) extends AuthServiceTestEnv{
           val res = createRequest(Post, uri, twoVars("jsonbody"), testVars)
           res.entity.toString === """HttpEntity.Strict(application/json,{"Tok":"myToken","foo":"bar"})"""
         }
+      }
+    }
+    "sendAndReceiveAsAuthorizationResponse" should {
+      "parse response correctly" in new AuthTest() {
+        val authzRequest = Post(uri)
+        val authzResponse = HttpResponse(entity=
+          HttpEntity.Strict(ContentTypes.`application/json`, 
+            ByteString("""{"allowed":["Objects"],"denied":["Objects/private"]}""") )
+        )
+        //httpExtension.singleRequest(anyObject, anyObject, anyObject, anyObject
+        //  ) returns Future.successful(authzResponse)
+        httpExtension.singleRequest(authzRequest) returns Future.successful(authzResponse)
+
+        // run
+        val result = sendAndReceiveAsAuthorizationResponse(authzRequest)
+
+        // test
+        // XXX: bug with mocks? (two calls)
+        there were two(httpExtension).singleRequest(authzRequest)
+        result must equalTo(
+          AuthorizationResponse(Set(Path("Objects")),Set(Path("Objects/private")))
+        ).await
       }
     }
   } // AuthAPIService
