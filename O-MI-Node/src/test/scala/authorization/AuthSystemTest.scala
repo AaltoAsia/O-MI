@@ -19,6 +19,14 @@ import scala.concurrent.Await
 import org.specs2.specification.AfterAll
 import types.OmiTypes._
 import org.specs2.concurrent.ExecutionEnv
+import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.headers
+import akka.http.scaladsl.client.RequestBuilding._
+import akka.util.{ByteString, Timeout}
+import org.specs2.specification.Scope
+import org.specs2.matcher.MustThrownExpectations
+import scala.collection.immutable
+import scala.concurrent.Future
 
 class AuthAPIServiceMock(hierarchyStored: ODF=ImmutableODF())(implicit system: ActorSystem)
   extends AuthAPIServiceV2(
@@ -27,7 +35,9 @@ class AuthAPIServiceMock(hierarchyStored: ODF=ImmutableODF())(implicit system: A
     , system
     , mock[ActorMaterializer]
     )
-  with Mockito {
+  with Mockito
+  with MustThrownExpectations
+  with Scope {
 
   override val httpExtension = mock[HttpExt]
 }
@@ -85,47 +95,49 @@ class AuthServiceTest(implicit ee: ExecutionEnv) extends AuthServiceTestEnv{
     , InfoItem.build(Path("Objects/SemiPublicObject/PrivateItem"))
     )
 
-  val testFiltersDeny = AuthorizationResponse(
-    Set(Path("Objects")),
-    Set(Path("Objects/PrivateObject")
-      , Path("Objects/PublicObject/PrivateObject")
-      , Path("Objects/PrivateObject/PrivateItem")
-      , Path("Objects/PublicObject/PrivateObject/PrivateItem")
-      , Path("Objects/PublicObject/PrivateItem")
-      , Path("Objects/SemiPublicObject/PrivateItem")
-      )
-    )
-  val testFiltersBoth = AuthorizationResponse(
-    Set(Path("Objects/PublicObject")
-      , Path("Objects/Object1")
-      , Path("Objects/SemiPublicObject/PublicItem")),
-    Set(Path("Objects/PrivateObject")
-      , Path("Objects/PublicObject/PrivateObject")
-      , Path("Objects/PrivateObject/PrivateItem")
-      , Path("Objects/PublicObject/PrivateObject/PrivateItem")
-      , Path("Objects/SemiPublicObject/PrivateItem")
-      , Path("Objects/PublicObject/PrivateItem")
-      )
-    )
-
-  val testFiltersAllow = AuthorizationResponse(
-    Set(Path("Objects/PublicObject")
-      , Path("Objects/Object1")
-      , Path("Objects/SemiPublicObject/PublicItem")),
-    Set()
-  )
 
   case class AuthTest() extends AuthAPIServiceMock(testOdf)
 
-  val ReadAll = ReadRequest(ODF(Objects.empty))
-  val WritePublic = WriteRequest(ODF(Objects.empty))
+  val ReadAll = ReadRequest(ODF(Objects.empty), ttl=10.seconds)
 
-  "AuthAPIServiceV2" should {
-    "filter O-DF correctly, given allow and deny lists of paths, it" should {
+  "AuthAPIServiceV2" >> {addSections
+
+    section("filterODF") // start
+
+    "filterODF, given allow and deny lists of paths, it" should {
+
+      val WritePublic = WriteRequest(ODF(Objects.empty))
+      val testFiltersDeny = AuthorizationResponse(
+        Set(Path("Objects")),
+        Set(Path("Objects/PrivateObject")
+          , Path("Objects/PublicObject/PrivateObject")
+          , Path("Objects/PrivateObject/PrivateItem")
+          , Path("Objects/PublicObject/PrivateObject/PrivateItem")
+          , Path("Objects/PublicObject/PrivateItem")
+          , Path("Objects/SemiPublicObject/PrivateItem")
+          )
+        )
+      val testFiltersBoth = AuthorizationResponse(
+        Set(Path("Objects/PublicObject")
+          , Path("Objects/Object1")
+          , Path("Objects/SemiPublicObject/PublicItem")),
+        Set(Path("Objects/PrivateObject")
+          , Path("Objects/PublicObject/PrivateObject")
+          , Path("Objects/PrivateObject/PrivateItem")
+          , Path("Objects/PublicObject/PrivateObject/PrivateItem")
+          , Path("Objects/PublicObject/PrivateItem")
+          )
+        )
+
+      val testFiltersAllow = AuthorizationResponse(
+        Set(Path("Objects/PublicObject")
+          , Path("Objects/Object1")
+          , Path("Objects/SemiPublicObject/PublicItem")),
+        Set()
+      )
       
       val emptyFilters = AuthorizationResponse(Set(),Set())
 
-      section("simple") // start
 
       "return unauthorized, for" >> {
         "empty allowed and denied list, in read Objects request" in {
@@ -152,6 +164,27 @@ class AuthServiceTest(implicit ee: ExecutionEnv) extends AuthServiceTestEnv{
               , Set(Path("Objects/SemiPublicObject/PrivateItem"))
             )
           ) must beNone.await
+        }
+        "write non allowed" in {
+          AuthTest().filterODF(
+            WriteRequest(ODF(
+                InfoItem.build(Path("Objects/SemiPublicObject/PrivateItem"))
+            )),
+            testFiltersBoth) must beNone.await
+        }
+        "write direct deny" in {
+          AuthTest().filterODF(
+            WriteRequest(ODF(
+                InfoItem.build(Path("Objects/PublicObject/PrivateItem"))
+            )),
+            testFiltersBoth) must beNone.await
+        }
+        "write Object deny" in {
+          AuthTest().filterODF(
+            WriteRequest(ODF(
+                InfoItem.build(Path("Objects/PrivateObject/PublicItem"))
+            )),
+            testFiltersBoth) must beNone.await
         }
       }
 
@@ -195,10 +228,20 @@ class AuthServiceTest(implicit ee: ExecutionEnv) extends AuthServiceTestEnv{
             Path("Objects/SemiPublicObject/PublicItem")
           ).await
         }
-      }
 
-      section("simple") // end
-      section("complex") // start
+        "for allow and deny filters in authorized write request" in {
+          AuthTest().filterODF(
+            WriteRequest(ODF(
+                InfoItem.build(Path("Objects/PublicObject/PublicItem"))
+              , InfoItem.build(Path("Objects/SemiPublicObject/PublicItem"))
+            )),
+            testFiltersBoth
+            ) must containExactlyPaths(
+                Path("Objects/PublicObject/PublicItem")
+              , Path("Objects/SemiPublicObject/PublicItem")
+            ).await
+        }
+      }
 
       "return correct for read Objects request with" >> {
         "many deny filters" in {
@@ -238,9 +281,127 @@ class AuthServiceTest(implicit ee: ExecutionEnv) extends AuthServiceTestEnv{
             ).await
         }
       }
-      section("complex") // end
     }
-    
-  }
+    section("filterODF") // end
 
+
+    val uri = Uri("http://localhost")
+    implicit val t = Timeout(20.seconds)
+
+    "extractParameter" should {
+
+      val omi = Some(RawRequestWrapper(ReadAll.asXML.toString, UserInfo()))
+      val base = Post(uri)
+
+      "extract from HttpRequest" >> {
+        "authorizationheader" in new AuthTest() {
+          val http = base.addCredentials(headers.OAuth2BearerToken("mytoken"))
+
+          extractParameter(
+            http, omi, "authorizationheader", "Bearer") must beSome("mytoken")
+        }
+
+        "omienvelope" in new AuthTest() {
+          extractParameter(base, omi, "omienvelope", "ttl") must beSome("10")
+        }
+
+        "headers" in new AuthTest() {
+          val http = base.withHeaders(headers.RawHeader("X-Derp", "mytoken"))
+
+          extractParameter(http, omi, "headers", "X-Derp") must beSome("mytoken")
+        }
+
+        "query" in new AuthTest() {
+          val http = Post(Uri("http://localhost?Token=myToken"))
+
+          extractParameter(http, omi, "query", "Token") must beSome("myToken")
+        }
+        "cookies" in new AuthTest() {
+          val http = base.withHeaders(headers.Cookie("Token", "myToken"))
+
+          extractParameter(http, omi, "cookies", "Token") must beSome("myToken")
+        }
+        "jsonbody" in new AuthTest() {
+          val http = base.withEntity("""{"Token": "myToken"}""")
+
+          extractParameter(http, omi, "jsonbody", "Token") must beSome("myToken")
+        }
+      }
+      "extract from HttpResponse" >> {
+        "cookies" in new AuthTest() {
+          val http = HttpResponse(headers=immutable.Seq(
+            headers.`Set-Cookie`(headers.HttpCookie("Token", "myToken")):HttpHeader
+          ))
+
+          extractParameter(http, omi, "cookies", "Token") must beSome("myToken")
+        }
+
+        "query" in new AuthTest() {
+          extractParameter(HttpResponse(), omi, "query", "Token") must beNone
+        }
+      }
+    }
+    "createRequest" should {
+      "correctly include two variables of" >> {
+
+        //def twoVars(context: String, nameA: String, nameB: String) =
+        //  Map(context -> Map(nameA -> "a", nameB -> "b"))
+        def twoVars(context: String) = Map(context -> Map("Tok" -> "a", "foo" -> "b"))
+        def singleVar(context: String) = Map(context -> Map("Tok" -> "a"))
+
+        val testVars = Map("a" -> "myToken", "b" -> "bar")
+
+        "query" in new AuthTest() {
+          createRequest(Post, uri, twoVars("query"), testVars)
+            .uri.toString === "http://localhost?Tok=myToken&foo=bar"
+        }
+        "headers" in new AuthTest() {
+          val res = createRequest(Post, uri, twoVars("headers"), testVars)
+          extractParameter(res, None, "headers", "Tok") must beSome("myToken")
+          extractParameter(res, None, "headers", "foo") must beSome("bar")
+        }
+        "cookies" in new AuthTest() {
+          val res = createRequest(Post, uri, twoVars("cookies"), testVars)
+          extractParameter(res, None, "cookies", "Tok") must beSome("myToken")
+          extractParameter(res, None, "cookies", "foo") must beSome("bar")
+        }
+        "authorizationheader" in new AuthTest() {
+          val res = createRequest(Post, uri, singleVar("authorizationheader"), testVars)
+          // Reusing "headers" extraction to check the Authorization header,
+          // because it is RawHeader when created with createRequest
+          extractParameter(res, None, "headers", "Authorization") must beSome("Tok myToken")
+        }
+        "form-urlencoded" in new AuthTest() {
+          val res = createRequest(Post, uri, twoVars("form-urlencoded"), testVars)
+          res.entity.toString === "HttpEntity.Strict(application/x-www-form-urlencoded; charset=UTF-8,Tok=myToken&foo=bar)"
+        }
+        "jsonbody" in new AuthTest {
+          val res = createRequest(Post, uri, twoVars("jsonbody"), testVars)
+          res.entity.toString === """HttpEntity.Strict(application/json,{"Tok":"myToken","foo":"bar"})"""
+        }
+      }
+    }
+    "sendAndReceiveAsAuthorizationResponse" should {
+      "parse response correctly" in new AuthTest() {
+        val authzRequest = Post(uri)
+        val authzResponse = HttpResponse(entity=
+          HttpEntity.Strict(ContentTypes.`application/json`, 
+            ByteString("""{"allowed":["Objects"],"denied":["Objects/private"]}""") )
+        )
+        //httpExtension.singleRequest(anyObject, anyObject, anyObject, anyObject
+        //  ) returns Future.successful(authzResponse)
+        httpExtension.singleRequest(authzRequest) returns Future.successful(authzResponse)
+
+        // run
+        val result = sendAndReceiveAsAuthorizationResponse(authzRequest)
+
+        // test
+        // XXX: bug with mocks? (two calls)
+        there were two(httpExtension).singleRequest(authzRequest)
+        result must equalTo(
+          AuthorizationResponse(Set(Path("Objects")),Set(Path("Objects/private")))
+        ).await
+      }
+    }
+  } // AuthAPIService
 }
