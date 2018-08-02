@@ -1,7 +1,6 @@
 package database.influxDB
 
 import java.sql.Timestamp
-import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import spray.json._
 import types.Path
 import types.Path._
@@ -48,27 +47,6 @@ object InfluxDBJsonProtocol extends DefaultJsonProtocol {
     }
 
     def write(obj: Seq[String]): spray.json.JsValue = ???
-  }
-
-  class InfluxDBJsonShowMeasurementsFormat() extends RootJsonFormat[Seq[Path]] {
-    def read(json: spray.json.JsValue): Seq[Path] = {
-      val names: Seq[Path] = getSeries(json).collect {
-        case serie: JsObject =>
-          serie.getFields("name", "columns", "values") match {
-            case Seq(JsString("measurements"), JsArray(Seq(JsString("name"))), JsArray(values)) =>
-              values.collect {
-                case JsArray(Seq(JsString(strPath))) =>
-                  val path = measurementNameToPath(strPath)
-                  path
-              }
-
-            case seq: Seq[JsValue] => Vector.empty
-          }
-      }.flatten
-      names
-    }
-
-    def write(obj: Seq[Path]): spray.json.JsValue = ???
   }
 
   class InfluxDBJsonODFFormat() extends RootJsonFormat[ImmutableODF] {
