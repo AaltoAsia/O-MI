@@ -349,13 +349,14 @@ class AuthAPIServiceV2(
     else req
   }
 
-  protected def isAuthorizedForOdfRequest(httpRequest: HttpRequest,
-                                          rawOmiRequest: RawRequestWrapper): AuthorizationResult = {
+  def isAuthorizedForOdfRequest(httpRequest: HttpRequest,
+                                rawOmiRequest: RawRequestWrapper): AuthorizationResult = {
 
     implicit val timeout: Timeout = Timeout(rawOmiRequest.handleTTL)
 
+    import RawRequestWrapper.MessageType._
     val requestType = (rawOmiRequest.requestVerb match {
-      case RawRequestWrapper.MessageType.Response => RawRequestWrapper.MessageType.Write
+      case Response => Write
       case x => x
     }).name
 
@@ -371,7 +372,12 @@ class AuthAPIServiceV2(
     val resultF = for {
 
       authenticationResult <-
-      if (authenticationEndpoint.isEmpty || parametersSkipOnEmpty.forall(param => vars.getOrElse(param,"").isEmpty)) {
+      if (authenticationEndpoint.isEmpty ||
+        (
+          parametersSkipOnEmpty.nonEmpty &&
+          parametersSkipOnEmpty.forall(param => vars.getOrElse(param,"").isEmpty)
+        )
+      ) {
         Future.successful(vars)
       } else {
 
@@ -409,7 +415,7 @@ class AuthAPIServiceV2(
       }
       odfRequest = omiRequest match {
         case o: OdfRequest => o
-        case _ => throw new Error("impossible")
+        case _ => throw new Error("Authorization failed: Parsed request was not O-DF request")
       }
 
       filteredRequest <- filterODF(odfRequest, authorizationResponse)

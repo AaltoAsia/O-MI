@@ -9,7 +9,6 @@ import org.specs2.mock.Mockito.mock
 import org.specs2.mutable.Specification
 import types.odf.ImmutableODF
 import types.odf._
-import http.OmiConfigExtension
 import testHelpers.{DummyHierarchyStore, Actorstest}
 import akka.stream.ActorMaterializer
 import scala.collection.immutable.{HashMap, Vector}
@@ -27,11 +26,16 @@ import org.specs2.specification.Scope
 import org.specs2.matcher.MustThrownExpectations
 import scala.collection.immutable
 import scala.concurrent.Future
+import com.typesafe.config._
+import http.OmiConfigExtension
 
-class AuthAPIServiceMock(hierarchyStored: ODF=ImmutableODF())(implicit system: ActorSystem)
+class AuthAPIServiceMock(
+    config: Config = ConfigFactory.empty()
+  , hierarchyStored: ODF=ImmutableODF()
+  )(implicit system: ActorSystem)
   extends AuthAPIServiceV2(
     DummyHierarchyStore(hierarchyStored)
-    , new OmiConfigExtension(Actorstest.silentLoggerConfFull)
+    , new OmiConfigExtension(config.withFallback(Actorstest.silentLoggerConfFull))
     , system
     , mock[ActorMaterializer]
     )
@@ -41,7 +45,7 @@ class AuthAPIServiceMock(hierarchyStored: ODF=ImmutableODF())(implicit system: A
 
   override val httpExtension = mock[HttpExt]
 }
-class AuthServiceTestEnv extends Specification with AfterAll{
+class AuthServiceTestEnv extends Specification with AfterAll with Mockito {
   implicit val system = Actorstest.createSilentAs()
 
   def afterAll = {
@@ -96,7 +100,7 @@ class AuthServiceTest(implicit ee: ExecutionEnv) extends AuthServiceTestEnv{
     )
 
 
-  case class AuthTest() extends AuthAPIServiceMock(testOdf)
+  case class AuthTest() extends AuthAPIServiceMock(hierarchyStored=testOdf)
 
   val ReadAll = ReadRequest(ODF(Objects.empty), ttl=10.seconds)
 
@@ -287,11 +291,12 @@ class AuthServiceTest(implicit ee: ExecutionEnv) extends AuthServiceTestEnv{
 
     val uri = Uri("http://localhost")
     implicit val t = Timeout(20.seconds)
+    val httpRequest = Post(uri)
 
     "extractParameter" should {
 
       val omi = Some(RawRequestWrapper(ReadAll.asXML.toString, UserInfo()))
-      val base = Post(uri)
+      val base = httpRequest
 
       "extract from HttpRequest" >> {
         "authorizationheader" in new AuthTest() {
@@ -341,35 +346,48 @@ class AuthServiceTest(implicit ee: ExecutionEnv) extends AuthServiceTestEnv{
         }
       }
     }
+
+    //def twoVars(context: String, nameA: String, nameB: String) =
+    //  Map(context -> Map(nameA -> "a", nameB -> "b"))
+    def twoVars(context: String) = Map(context -> Map("Tok" -> "a", "foo" -> "b"))
+    def singleVar(context: String) = Map(context -> Map("Tok" -> "a"))
+
+    val testVars = Map("a" -> "myToken", "b" -> "bar")
+
     "createRequest" should {
       "correctly include two variables of" >> {
-
-        //def twoVars(context: String, nameA: String, nameB: String) =
-        //  Map(context -> Map(nameA -> "a", nameB -> "b"))
-        def twoVars(context: String) = Map(context -> Map("Tok" -> "a", "foo" -> "b"))
-        def singleVar(context: String) = Map(context -> Map("Tok" -> "a"))
-
-        val testVars = Map("a" -> "myToken", "b" -> "bar")
-
         "query" in new AuthTest() {
           createRequest(Post, uri, twoVars("query"), testVars)
             .uri.toString === "http://localhost?Tok=myToken&foo=bar"
         }
         "headers" in new AuthTest() {
           val res = createRequest(Post, uri, twoVars("headers"), testVars)
-          extractParameter(res, None, "headers", "Tok") must beSome("myToken")
-          extractParameter(res, None, "headers", "foo") must beSome("bar")
+          //extractParameter(res, None, "headers", "Tok") must beSome("myToken")
+          //extractParameter(res, None, "headers", "foo") must beSome("bar")
+          res.headers must contain(
+            allOf(
+              beLike[HttpHeader]{case h => h.name === "Tok" and h.value === "myToken"},
+              beLike[HttpHeader]{case h => h.name === "foo" and h.value === "bar"}
+            )
+          )
         }
         "cookies" in new AuthTest() {
           val res = createRequest(Post, uri, twoVars("cookies"), testVars)
-          extractParameter(res, None, "cookies", "Tok") must beSome("myToken")
-          extractParameter(res, None, "cookies", "foo") must beSome("bar")
+          //extractParameter(res, None, "cookies", "Tok") must beSome("myToken")
+          //extractParameter(res, None, "cookies", "foo") must beSome("bar")
+          res.cookies must contain(
+            allOf(
+              beLike[headers.HttpCookiePair]{case h => h.name === "Tok" and h.value === "myToken"},
+              beLike[headers.HttpCookiePair]{case h => h.name === "foo" and h.value === "bar"}
+            )
+          )
         }
         "authorizationheader" in new AuthTest() {
           val res = createRequest(Post, uri, singleVar("authorizationheader"), testVars)
-          // Reusing "headers" extraction to check the Authorization header,
-          // because it is RawHeader when created with createRequest
-          extractParameter(res, None, "headers", "Authorization") must beSome("Tok myToken")
+          //extractParameter(res, None, "headers", "Authorization") must beSome("Tok myToken")
+          res.headers must contain(
+            beLike[HttpHeader]{case h => h.name === "Authorization" and h.value === "Tok myToken"}
+          )
         }
         "form-urlencoded" in new AuthTest() {
           val res = createRequest(Post, uri, twoVars("form-urlencoded"), testVars)
@@ -381,13 +399,13 @@ class AuthServiceTest(implicit ee: ExecutionEnv) extends AuthServiceTestEnv{
         }
       }
     }
+
+    val authzResponse = HttpResponse().withEntity(ContentTypes.`application/json`, 
+        """{"allowed":["Objects"],"denied":["Objects/private"]}""" 
+      )
     "sendAndReceiveAsAuthorizationResponse" should {
       "parse response correctly" in new AuthTest() {
-        val authzRequest = Post(uri)
-        val authzResponse = HttpResponse(entity=
-          HttpEntity.Strict(ContentTypes.`application/json`, 
-            ByteString("""{"allowed":["Objects"],"denied":["Objects/private"]}""") )
-        )
+        val authzRequest = httpRequest
         //httpExtension.singleRequest(anyObject, anyObject, anyObject, anyObject
         //  ) returns Future.successful(authzResponse)
         httpExtension.singleRequest(authzRequest) returns Future.successful(authzResponse)
@@ -403,5 +421,75 @@ class AuthServiceTest(implicit ee: ExecutionEnv) extends AuthServiceTestEnv{
         ).await
       }
     }
+    "extractToMap" should {
+      "extract many parameters according to config" in new AuthTest() {
+        val request = createRequest(Post, uri, twoVars("headers"), testVars)
+
+        extractToMap(request, None, twoVars("headers")) === testVars
+      }
+    }
+    "isAuthorizedForRawRequest" should {
+
+      "call isAuthorizedForOdfRequest for odf request" in {
+        val authTest = spy(AuthTest())
+        val result = Authorized(UserInfo(None, Some("test")))
+        doReturn(result).when(authTest).isAuthorizedForOdfRequest(anyObject, anyObject)
+
+        authTest.isAuthorizedForRawRequest(httpRequest, ReadAll.asXML.toString) === result
+
+        there was one(authTest).isAuthorizedForOdfRequest(anyObject, anyObject)
+      }
+      "return Authorized for other requests" in {
+        AuthTest().isAuthorizedForRawRequest(
+          httpRequest, CancelRequest(Vector(1)).asXML.toString
+        ) === Authorized(UserInfo(None))
+      }
+    }
+
+    "isAuthorizedForOdfRequest" should {
+
+      val baseConf = ConfigFactory.parseString("""
+        omi-service.authAPI.v2 {
+          authentication.url = "http://localhost"
+          authentication.method = GET
+          authorization.url = "http://localhost"
+          authorization.method = POST
+        }""")
+      val config1 = baseConf withFallback ConfigFactory.parseString("""
+        omi-service.authAPI.v2 {
+          parameters.fromRequest.query.Tok = token
+          parameters.toAuthentication.query.Tok = token
+          parameters.fromAuthentication.jsonbody.username = username
+          parameters.toAuthorization.jsonbody {
+            username = "username"
+            request = "requestTypeChar"
+          }
+        } """)
+
+      "work correctly for auth and authz" in new AuthAPIServiceMock(config1) {
+        implicit val order = inOrder(httpExtension)
+
+        val tokenUri = uri.withQuery(Uri.Query("Tok" -> "myToken"))
+        val authnRequest = beLike[HttpRequest]{
+          case r => r.method === HttpMethods.GET and r.uri.toString === uri.toString
+        }
+        val authnResponse = HttpResponse().withEntity(ContentTypes.`application/json`, """{"username":"test"}""")
+        //val authzResult = HttpResponse()
+        val authzRequest = beLike[HttpRequest]{
+          case r => r.toStrict(1.seconds) ===
+            HttpEntity.Strict(ContentTypes.`application/json`, ByteString("""{"username":"test","request":"r"}"""))
+        }
+
+
+        //httpExtension.singleRequest(authnRequest,anyObject,anyObject,anyObject) returns Future.successful(authnResponse)
+        //httpExtension.singleRequest(authzRequest,anyObject,anyObject,anyObject) returns Future.successful(authzResponse)
+        httpExtension.singleRequest(anyObject,anyObject,anyObject,anyObject) 
+          .returns(Future.successful(authnResponse))
+          .thenReturns(Future.successful(authzResponse))
+        
+        isAuthorizedForRawRequest(Post(tokenUri), ReadAll.asXML.toString) === Changed(ReadAll, UserInfo(None, Some("test")))
+      }
+    }
+
   } // AuthAPIService
 }
