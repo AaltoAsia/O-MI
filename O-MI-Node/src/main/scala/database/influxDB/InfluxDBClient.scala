@@ -14,7 +14,7 @@ import scala.concurrent.duration._
 import scala.util.Try
 
 object InfluxDBClient {
-  final class AcceptHeader(format: String) extends ModeledCustomHeader[AcceptHeader] {
+  case class AcceptHeader(format: String) extends ModeledCustomHeader[AcceptHeader] {
     override def renderInRequests: Boolean = true
 
     override def renderInResponses: Boolean = false
@@ -28,6 +28,10 @@ object InfluxDBClient {
     override val name = "Accept"
 
     override def parse(value: String) = Try(new AcceptHeader(value))
+  }
+  def queriesToHTTPPost( queries: Seq[InfluxQuery],readAddress: Uri): HttpRequest ={
+    val httpEntity = FormData(("q", queries.map(_.query).mkString(";\n")) ).toEntity(HttpCharsets.`UTF-8`)
+    RequestBuilding.Post(readAddress, httpEntity).withHeaders(AcceptHeader("application/json"))
   }
 }
 
@@ -63,8 +67,7 @@ trait InfluxDBClient {
   }
 
   def sendQueries(queries: Seq[InfluxQuery]): Future[HttpResponse] = {
-    val httpEntity = FormData(("q", queries.map(_.query).mkString(";\n")) ).toEntity(HttpCharsets.`UTF-8`)
-    val request = RequestBuilding.Post(readAddress, httpEntity).withHeaders(AcceptHeader("application/json"))
+    val request =  queriesToHTTPPost(queries.toVector,readAddress)
     val responseF: Future[HttpResponse] = httpExt.singleRequest(request) //httpHandler(request)
     responseF
   }

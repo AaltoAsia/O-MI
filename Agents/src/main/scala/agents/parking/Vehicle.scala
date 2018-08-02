@@ -12,6 +12,7 @@ object VehicleType extends Enumeration{
     val vt = str.replace("mv:","")
     values.find( v => v.toString == vt ).getOrElse( Unknown )
   }
+  def toMvType( v: VehicleType ): String = s"mv:$v"
 }
 import agents.parking.VehicleType._
 

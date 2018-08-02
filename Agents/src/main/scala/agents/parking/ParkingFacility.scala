@@ -5,7 +5,7 @@ import types.odf._
 
 import scala.util.{Failure, Success, Try}
 
-class ParkingFacility(
+case class ParkingFacility(
   val name: String,
   val geo: Option[GeoCoordinates] = None,
   val address: Option[PostalAddress] = None,

@@ -101,6 +101,24 @@ case class ParkingSpace(
         typeAttribute = Some(s"mv:$nII"),
         values = Vector( StringValue( u, currentTimestamp ))
       )
+    }.toSeq ++ validForVehicle.headOption.map{ u => 
+      val nII = "validForVehicle"
+      
+      InfoItem( 
+        nII,
+        path / nII,
+        typeAttribute = Some(s"mv:$nII"),
+        values = Vector( StringValue( validForVehicle.map(VehicleType.toMvType(_)).mkString(","), currentTimestamp ))
+      )
+    }.toSeq ++ validUserGroups.headOption.map{ u => 
+      val nII = "validUserGroup"
+      
+      InfoItem( 
+        nII,
+        path / nII,
+        typeAttribute = Some(s"mv:$nII"),
+        values = Vector( StringValue( validUserGroups.map(UserGroup.toMvType(_)).mkString(","), currentTimestamp ))
+      )
     }.toSeq ++ 
     geo.map( g => g.toOdf( path )).toSeq.flatten ++ 
     chargers.flatMap(c => c.toOdf(path))
