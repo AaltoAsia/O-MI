@@ -4,6 +4,8 @@ import java.util.Date
 import java.sql.Timestamp
 import akka.actor.{ActorSystem, ActorRef, Actor, Props}
 import akka.http.scaladsl.model._
+import akka.http.scaladsl.HttpExt
+import akka.http.scaladsl.client.RequestBuilding
 import akka.pattern.ask
 import akka.util.Timeout
 import akka.testkit._
@@ -13,6 +15,7 @@ import scala.util.control.NonFatal
 import scala.concurrent.duration._
 import org.specs2.concurrent.ExecutionEnv
 import org.specs2.mutable._
+import org.specs2.mock.Mockito
 import http.{OmiConfig }
 import com.typesafe.config.ConfigFactory
 
@@ -23,7 +26,7 @@ import types.odf._
 import types.Path
 
 class InfluxDBTest( implicit ee: ExecutionEnv ) 
- extends Specification {
+ extends Specification with Mockito {
    
    def currentTimestamp = new Timestamp( new Date().getTime)
    def okResult = HttpResponse( 
@@ -56,9 +59,21 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
         (tester ? measurements).mapTo[HttpResponse]
       }
     }
-    def inTodo = { 1 === 2}.pendingUntilFixed
+
+   class MockitoInfluxDB(
+      final override val httpExt: HttpExt,
+     override protected val config: InfluxDBConfigExtension
+    )(
+       override implicit val system: ActorSystem,
+       override protected val singleStores: SingleStores
+    ) extends InfluxDBImplementation( config)(system,singleStores) {
+    }
     "InfluxDB " >> {
 
+      def dbFoundTest(httpExtMock: HttpExt, conf: InfluxDBConfigExtension) = {
+        val showDBsRequest = InfluxDBClient.queriesToHTTPPost(Vector(ShowDBs),conf.queryAddress)
+        httpExtMock.singleRequest( showDBsRequest) returns Future.successful(foundDBResult(conf.databaseName))
+      }
        implicit val timeout: Timeout = Timeout( 1 minutes )
         val loggerConf = ConfigFactory.parseString(
           """
@@ -73,6 +88,7 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
           stdout-loglevel = OFF
           loglevel = DEBUG
           loggers = ["testHelpers.SilentTestEventListener"]
+          #loggers = ["akka.testkit.TestEventListener"]
         }
         """ ) 
        def testInit(f: ActorSystem => _) = {
@@ -81,30 +97,6 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
        "should create new DB if configuret one not found" >> testInit{ implicit system: ActorSystem =>
         val singleStores = new DummySingleStores(OmiConfig(system))
         val conf: InfluxDBConfigExtension = new InfluxDBConfigExtension(system.settings.config)
-        val probe = 
-          system actorOf Props(new Actor {
-            def receive = {
-              case QueryPackage( queries: Vector[InfluxQuery]) => 
-                if( queries.length == 1 ){
-                  queries.headOption match{
-                    case Some( ShowDBs ) => 
-                      sender() ! HttpResponse( 
-                        StatusCodes.OK,
-                        entity = HttpEntity(s"""{"results":[{"statement_id":0,"series":[{"name":"databases","columns":["name"],"values":[["_internal"]]}]}]}""" )
-                      )
-                    case Some( CreateDB( name )) => 
-                      if( name == conf.databaseName ) {
-                        sender() ! okResult
-                      } else {
-                        sender() ! badRequestResult( "test failure" )
-                      }
-                    case Some( query ) => sender() ! badRequestResult( "wrong query, test failure" )
-                    case None => sender() ! badRequestResult( "wrong query, test failure" )
-                  }
-                }
-            }
-          }) 
-
         val source = s"InfluxClient:${conf.address}:${conf.databaseName}"
         val logFilters = Vector(
           EventFilter.debug(start = s"Found following databases: ",source = source, occurrences = 1),
@@ -115,42 +107,34 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
 
 
         filterEvents(logFilters){
-          new MockInfluxDB(
-            probe,
+          val httpExtMock = mock[HttpExt]
+          val showDBsRequest = InfluxDBClient.queriesToHTTPPost(Vector(ShowDBs),conf.queryAddress)
+          val showDBsResponse =  HttpResponse( 
+            StatusCodes.OK,
+            entity = HttpEntity(s"""{"results":[{"statement_id":0,"series":[{"name":"databases","columns":["name"],"values":[["_internal"]]}]}]}""" )
+          )
+          val createDBRequest = InfluxDBClient.queriesToHTTPPost(Vector(CreateDB(conf.databaseName)),conf.queryAddress)
+          httpExtMock.singleRequest( showDBsRequest) returns Future.successful(showDBsResponse)
+          httpExtMock.singleRequest( createDBRequest) returns Future.successful(okResult)
+
+          new MockitoInfluxDB(
+            httpExtMock,
             conf
           )(system,singleStores)
-
         }
       }
       "should find existing DB and use it" >> testInit{ implicit system: ActorSystem =>
         val singleStores = new DummySingleStores(OmiConfig(system))
         val conf: InfluxDBConfigExtension = new InfluxDBConfigExtension(system.settings.config)
-        val probe = 
-          system actorOf Props(new Actor {
-            def receive = {
-              case QueryPackage( queries: Vector[InfluxQuery] ) => 
-                if( queries.length == 1 ){
-                  queries.headOption match{
-                    case Some( ShowDBs ) => 
-                      sender() ! foundDBResult(conf.databaseName)
-                    case Some( CreateDB( name )) => 
-                      if( name == conf.databaseName ) {
-                        sender() ! okResult 
-                    } else {
-                      sender() ! badRequestResult( "test failure" )
-                    }
-                    case Some( query ) => sender() ! badRequestResult( "wrong query, test failure" )
-                    case None => sender() ! badRequestResult( "wrong query, test failure" )
-                  }
-                }
-            }
-          }) 
 
         filterEvents(
           initializationLogFilters( conf ) 
         ){
-          new MockInfluxDB(
-            probe,
+          val httpExtMock = mock[HttpExt]
+          dbFoundTest(httpExtMock, conf )
+
+          new MockitoInfluxDB(
+            httpExtMock,
             conf
           )(system,singleStores)
 
@@ -160,28 +144,6 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
        "send measurements in correct format" >> testInit{ implicit system: ActorSystem =>
           val singleStores = new DummySingleStores(OmiConfig(system))
           val conf: InfluxDBConfigExtension = new InfluxDBConfigExtension(system.settings.config)
-          val probe = 
-            system actorOf Props(new Actor {
-              def receive = {
-                case QueryPackage( queries: Vector[InfluxQuery] ) => 
-                  if( queries.length == 1 ){
-                    queries.headOption match{
-                      case Some( ShowDBs ) => 
-                        sender() ! foundDBResult(conf.databaseName)
-                      case Some( CreateDB( name )) => 
-                        if( name == conf.databaseName ) {
-                          sender() ! okResult
-                        } else {
-                          sender() ! badRequestResult( "test failure" )
-                        }
-                      case Some( query ) => sender() ! badRequestResult( "wrong query, test failure" )
-                      case None => sender() ! badRequestResult( "wrong query, test failure" )
-                    }
-                  }
-                case meas: String =>
-                  sender() ! okResult
-              }
-            }) 
 
           val source = s"InfluxClient:${conf.address}:${conf.databaseName}"
           filterEvents(
@@ -189,40 +151,24 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
             EventFilter.debug(s"Successful write to InfluxDB",source, occurrences = 1)
             )
           ){
-            val influx = new MockInfluxDB(
-              probe,
+            val iis = Vector( InfoItem( Path("Objects","Obj","II"), Vector( IntValue(13,currentTimestamp))))
+            val httpExtMock = mock[HttpExt]
+            val measurements = iis.flatMap{ ii => InfluxDBImplementation.infoItemToWriteFormat(ii) }.mkString("\n")
+            val request = RequestBuilding.Post(conf.writeAddress, measurements)
+            dbFoundTest(httpExtMock, conf )
+            httpExtMock.singleRequest( request) returns Future.successful(okResult)
+
+            val influx = new MockitoInfluxDB(
+              httpExtMock,
               conf
             )(system,singleStores)
-            val ii = Vector( InfoItem( Path("Objects","Obj","II"), Vector( IntValue(13,currentTimestamp))))
-            influx.writeMany(ii)
+            influx.writeMany(iis)
            }.map(_.returnCode) must beEqualTo( "200 OK").await 
         }
 
         "return 400 Bad Request status if write fails" >> testInit{ implicit system: ActorSystem =>
           val singleStores = new DummySingleStores(OmiConfig(system))
           val conf: InfluxDBConfigExtension = new InfluxDBConfigExtension(system.settings.config)
-          val probe = 
-            system actorOf Props(new Actor {
-              def receive = {
-                case QueryPackage( queries: Vector[InfluxQuery] ) => 
-                  if( queries.length == 1 ){
-                    queries.headOption match{
-                      case Some( ShowDBs ) => 
-                        sender() ! foundDBResult(conf.databaseName)
-                      case Some( CreateDB( name )) => 
-                        if( name == conf.databaseName ) {
-                          sender() ! okResult
-                        } else {
-                          sender() ! badRequestResult( "test failure" )
-                        }
-                      case Some( query ) => sender() ! badRequestResult( "wrong query, test failure" )
-                      case None => sender() ! badRequestResult( "wrong query, test failure" )
-                    }
-                  }
-                      case meas: String =>
-                        sender() ! badRequestResult( "test failure" )
-              }
-            }) 
 
           val source = s"InfluxClient:${conf.address}:${conf.databaseName}"
           val str = """{"error":"test failure"}"""
@@ -231,12 +177,18 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
               EventFilter.warning(s"Write returned 400 Bad Request with:\n $str",source, occurrences = 1)
             )
           ){
-              val influx = new MockInfluxDB(
-                probe,
+            val iis = Vector( InfoItem( Path("Objects","Obj","II"), Vector( IntValue(13,currentTimestamp))))
+            val httpExtMock = mock[HttpExt]
+            val measurements = iis.flatMap{ ii => InfluxDBImplementation.infoItemToWriteFormat(ii) }.mkString("\n")
+            val request = RequestBuilding.Post(conf.writeAddress, measurements)
+            dbFoundTest(httpExtMock, conf )
+            httpExtMock.singleRequest( request) returns Future.successful(badRequestResult("test failure"))
+
+              val influx = new MockitoInfluxDB(
+                httpExtMock,
                 conf
               )(system,singleStores)
-              val ii = Vector( InfoItem( Path("Objects","Obj","II"), Vector( IntValue(13,currentTimestamp))))
-              influx.writeMany(ii)
+              influx.writeMany(iis)
             }.map(_.returnCode) must beEqualTo( "400 Bad Request").await 
           }
       }
@@ -244,40 +196,20 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
        "prevent request with Oldest parameter" >>  testInit{ implicit system: ActorSystem =>
           val singleStores = new DummySingleStores(OmiConfig(system))
           val conf: InfluxDBConfigExtension = new InfluxDBConfigExtension(system.settings.config)
-          val probe = 
-            system actorOf Props(new Actor {
-              def receive = {
-                case QueryPackage( queries: Vector[InfluxQuery] ) => 
-                  if( queries.length == 1 ){
-                    queries.headOption match{
-                      case Some( ShowDBs ) => 
-                        sender() ! foundDBResult(conf.databaseName)
-                      case Some( CreateDB( name )) => 
-                        if( name == conf.databaseName ) {
-                          sender() ! okResult
-                        } else {
-                          sender() ! badRequestResult( "test failure" )
-                        }
-                      case Some( query ) => sender() ! badRequestResult( "wrong query, test failure" )
-                      case None => sender() ! badRequestResult( "wrong query, test failure" )
-                    }
-                }
-                case meas: String =>
-                  sender() ! badRequestResult( "test failure" )
-              }
-            }) 
 
           filterEvents(
             initializationLogFilters( conf )
           ){
-            val influx = new MockInfluxDB(
-              probe,
+            val n = 53
+            val iis = Vector( InfoItem( Path("Objects","Obj","II"), Vector( IntValue(13,currentTimestamp))))
+            val httpExtMock = mock[HttpExt]
+            dbFoundTest(httpExtMock, conf )
+
+            val influx = new MockitoInfluxDB(
+              httpExtMock,
               conf
             )(system,singleStores)
-
-            val n = 53
-            val ii = Vector( InfoItem( Path("Objects","Obj","II"), Vector( IntValue(13,currentTimestamp))))
-            influx.getNBetween(ii,None,None,None,Some(n))
+            influx.getNBetween(iis,None,None,None,Some(n))
           }.recover{ case NonFatal(t) => t.getMessage()} must beEqualTo("Oldest attribute is not allowed with InfluxDB.").await 
        }
        val timestamp = currentTimestamp
@@ -303,50 +235,21 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
             hierarchyStore = DummyHierarchyStore( odf )
           )
           val conf: InfluxDBConfigExtension = new InfluxDBConfigExtension(system.settings.config)
-          val serverprobe = 
-            system actorOf Props(new Actor {
-              def receive = {
-                case QueryPackage( queries: Vector[InfluxQuery] ) => 
-                  if( queries.length == 1 ){
-                    queries.headOption match{
-                      case Some( ShowDBs ) => 
-                        sender() ! foundDBResult(conf.databaseName)
-                      case Some( CreateDB( name )) => 
-                        if( name == conf.databaseName ) {
-                          sender() ! okResult
-                        } else {
-                          sender() ! badRequestResult( "test failure" )
-                        }
-                      case Some( select: SelectValue ) =>
-                        sender() ! badRequestResult( "No select queries needed!" )
-                      case Some( query ) => sender() ! badRequestResult( "wrong query, test failure" )
-                      case None => sender() ! badRequestResult( "wrong query, test failure" )
-                    }
-                  } else {
-                    queries.collect{
-                      case  select: SelectValue => select 
-                    }.headOption match {
-                      case Some( _ ) =>
-                        sender() ! badRequestResult( "No select queries needed!" )
-                      case None => ???
-                    }
-                  }
-                case meas: String =>
-                  sender() ! badRequestResult( "test failure" )
-              }
-            }) 
 
           filterEvents(
             initializationLogFilters( conf )
           ){
-            val influx = new MockInfluxDB(
-              serverprobe,
+            val httpExtMock = mock[HttpExt]
+            dbFoundTest(httpExtMock, conf )
+
+            val influx = new MockitoInfluxDB(
+              httpExtMock,
               conf
             )(system,singleStores)
 
             val leaf = Vector( Object( Path("Objects","Obj")))
             influx.getNBetween(leaf,None,None,None,None)
-            } must beEqualTo(
+          } must beEqualTo(
               Some(ImmutableODF(Vector(
                 Object( Path("Objects","Obj")).copy( descriptions= Set(Description("test"))),
               InfoItem( Path("Objects","Obj","II1"), Vector( IntValue(13,timestamp))).copy( descriptions=Set(Description("test"))),
@@ -359,136 +262,81 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
               InfoItem( Path("Objects","Obj","II1"), Vector( FloatValue(13.7f,timestamp))).copy( descriptions=Set(Description("test"))),
               InfoItem( Path("Objects","Obj","II2"), Vector( FloatValue(13.7f,timestamp)))
               )))
+       def response(results: Seq[String]):HttpResponse ={
+         HttpResponse( 
+           StatusCodes.OK,
+           entity = HttpEntity(s"""{"results":[${results.mkString(",\n")}]}""" )
+         )
+       }
        "send correct query with only begin parameter" >>  testInit{ implicit system: ActorSystem =>
           val singleStores = new DummySingleStores(OmiConfig(system),
             hierarchyStore = DummyHierarchyStore( odf )
           )
           val conf: InfluxDBConfigExtension = new InfluxDBConfigExtension(system.settings.config)
-          val serverprobe = 
-            system actorOf Props(new Actor {
-              def receive = {
-                case QueryPackage( queries: Vector[InfluxQuery] ) => 
-                  if( queries.length == 1 ){
-                    queries.headOption match{
-                      case Some( ShowDBs ) => 
-                        sender() ! foundDBResult(conf.databaseName)
-                      case Some( CreateDB( name )) => 
-                        if( name == conf.databaseName ) {
-                          sender() ! okResult
-                        } else {
-                          sender() ! badRequestResult( "test failure" )
-                        }
-                      case Some( select: SelectValue ) =>
-                        sender() ! badRequestResult( "No select queries needed!" )
-                      case Some( query ) => sender() ! badRequestResult( "wrong query, test failure" )
-                      case None => sender() ! badRequestResult( "wrong query, test failure" )
-                    }
-                  } else {
-                    val results = queries.collect{
-                      case  select @ SelectValue(
-                        measurement: String,
-                        whereClause: Option[WhereClause],
-                        orderByClause: Option[OrderByClause],
-                        limitClause: Option[LimitClause]
-                      ) if { 
-                        whereClause.exists{
-                          clause => 
-                            clause.expressions.size == 1 &&
-                            clause.expressions.contains( LowerTimeBoundExpression(timestamp))
-                      }  && limitClause.isEmpty && orderByClause.contains(DescTimeOrderByClause())} => select 
-                    }.zipWithIndex.map{
-                      case (select:SelectValue, index: Int) =>
-                        jsonFormat( select.measurement, index, timestamp, 13)
-                    }
-                    if( results.nonEmpty){
-                      sender() ! HttpResponse( 
-                        StatusCodes.OK,
-                        entity = HttpEntity(s"""{"results":[${results.mkString(",\n")}]}""" )
-                      )
-                    } else sender() ! badRequestResult( "Incorrect query" )
-                  }
-                case meas: String =>
-                  sender() ! badRequestResult( "test failure" )
-              }
-            }) 
 
           filterEvents(
             initializationLogFilters( conf )
           ){
-            val influx = new MockInfluxDB(
-              serverprobe,
+            val httpExtMock = mock[HttpExt]
+            dbFoundTest(httpExtMock, conf )
+            val queries = InfluxDBImplementation.createNBetweenInfoItemsQueries(
+                Vector( 
+                  InfoItem( Path("Objects","Obj","II2"), Vector.empty),
+                  InfoItem( Path("Objects","Obj","II1"), Vector.empty)
+                ), Some( timestamp ),None,None
+              )
+            val request = InfluxDBClient.queriesToHTTPPost(queries,conf.queryAddress)
+            val results = queries.collect{
+              case select: SelectValue => select
+            }.zipWithIndex.map{
+              case (select:SelectValue, index: Int) =>
+                jsonFormat( select.measurement, index, timestamp, 13)
+            }
+            httpExtMock.singleRequest( request) returns Future.successful(response(results))
+
+            val influx = new MockitoInfluxDB(
+              httpExtMock,
               conf
             )(system,singleStores)
 
             val leaf = Vector( Object( Path("Objects","Obj")))
             influx.getNBetween(leaf,Some(timestamp),None,None,None)
-            } must beEqualTo(
-              Some(ImmutableODF(Vector(
-                Object( Path("Objects","Obj")).copy( descriptions= Set(Description("test"))),
-              InfoItem( Path("Objects","Obj","II1"), Vector( ShortValue(13,timestamp))).copy( descriptions=Set(Description("test"))),
-              InfoItem( Path("Objects","Obj","II2"), Vector( ShortValue(13,timestamp)))
-              )))
-            ).await
+          } must beEqualTo(
+            Some(ImmutableODF(Vector(
+              Object( Path("Objects","Obj")).copy( descriptions= Set(Description("test"))),
+            InfoItem( Path("Objects","Obj","II1"), Vector( ShortValue(13,timestamp))).copy( descriptions=Set(Description("test"))),
+            InfoItem( Path("Objects","Obj","II2"), Vector( ShortValue(13,timestamp)))
+            )))
+          ).await
        }
        "send correct query with only end parameter" >> testInit{ implicit system: ActorSystem =>
           val singleStores = new DummySingleStores(OmiConfig(system),
             hierarchyStore = DummyHierarchyStore( odf )
           )
           val conf: InfluxDBConfigExtension = new InfluxDBConfigExtension(system.settings.config)
-          val serverprobe = 
-            system actorOf Props(new Actor {
-              def receive = {
-                case QueryPackage( queries: Vector[InfluxQuery] ) => 
-                  if( queries.length == 1 ){
-                    queries.headOption match{
-                      case Some( ShowDBs ) => 
-                        sender() ! foundDBResult(conf.databaseName)
-                      case Some( CreateDB( name )) => 
-                        if( name == conf.databaseName ) {
-                          sender() ! okResult
-                        } else {
-                          sender() ! badRequestResult( "test failure" )
-                        }
-                      case Some( select: SelectValue ) =>
-                        sender() ! badRequestResult( "No select queries needed!" )
-                      case Some( query ) => sender() ! badRequestResult( "wrong query, test failure" )
-                      case None => sender() ! badRequestResult( "wrong query, test failure" )
-                    }
-                  } else {
-                    val results = queries.collect{
-                      case  select @ SelectValue(
-                        measurement: String,
-                        whereClause: Option[WhereClause],
-                        orderByClause: Option[OrderByClause],
-                        limitClause: Option[LimitClause]
-                      ) if { 
-                        whereClause.exists{
-                          clause => 
-                            clause.expressions.size == 1 &&
-                            clause.expressions.contains( UpperTimeBoundExpression(timestamp))
-                      } && limitClause.isEmpty  && orderByClause.contains(DescTimeOrderByClause())
-                      } => select 
-                    }.zipWithIndex.map{
-                      case (select:SelectValue, index: Int) =>
-                        jsonFormat( select.measurement, index, timestamp, 13.7)
-                    }
-                    if( results.nonEmpty){
-                      sender() ! HttpResponse( 
-                        StatusCodes.OK,
-                        entity = HttpEntity(s"""{"results":[${results.mkString(",\n")}]}""" )
-                      )
-                    } else sender() ! badRequestResult( "Incorrect query" )
-                  }
-                case meas: String =>
-                  sender() ! badRequestResult( "test failure" )
-              }
-            }) 
 
           filterEvents(
             initializationLogFilters( conf )
           ){
-            val influx = new MockInfluxDB(
-              serverprobe,
+            val httpExtMock = mock[HttpExt]
+            dbFoundTest(httpExtMock, conf )
+            val queries = InfluxDBImplementation.createNBetweenInfoItemsQueries(
+                Vector( 
+                  InfoItem( Path("Objects","Obj","II2"), Vector.empty),
+                  InfoItem( Path("Objects","Obj","II1"), Vector.empty)
+                ), None, Some( timestamp ), None
+              )
+            val request = InfluxDBClient.queriesToHTTPPost(queries,conf.queryAddress)
+            val results = queries.collect{
+              case select: SelectValue => select
+            }.zipWithIndex.map{
+              case (select:SelectValue, index: Int) =>
+                jsonFormat( select.measurement, index, timestamp, 13.7)
+            }
+            httpExtMock.singleRequest( request) returns Future.successful(response(results))
+
+            val influx = new MockitoInfluxDB(
+              httpExtMock,
               conf
             )(system,singleStores)
 
@@ -504,137 +352,74 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
           )
           val n = 30
           val conf: InfluxDBConfigExtension = new InfluxDBConfigExtension(system.settings.config)
-          val serverprobe = 
-            system actorOf Props(new Actor {
-              def receive = {
-                case QueryPackage( queries: Vector[InfluxQuery] ) => 
-                  if( queries.length == 1 ){
-                    queries.headOption match{
-                      case Some( ShowDBs ) => 
-                        sender() ! foundDBResult(conf.databaseName)
-                      case Some( CreateDB( name )) => 
-                        if( name == conf.databaseName ) {
-                          sender() ! okResult
-                        } else {
-                          sender() ! badRequestResult( "test failure" )
-                        }
-                      case Some( select: SelectValue ) =>
-                        sender() ! badRequestResult( "No select queries needed!" )
-                      case Some( query ) => sender() ! badRequestResult( "wrong query, test failure" )
-                      case None => sender() ! badRequestResult( "wrong query, test failure" )
-                    }
-                  } else {
-                    val results = queries.collect{
-                      case  select @ SelectValue(
-                        measurement: String,
-                        whereClause: Option[WhereClause],
-                        orderByClause: Option[OrderByClause],
-                        limitClause: Option[LimitClause]
-                      ) if { 
-                        whereClause.isEmpty &&
-                        limitClause.exists( clause => clause.n == n ) && 
-                       orderByClause.contains(DescTimeOrderByClause())
-                      } => select 
-                    }.zipWithIndex.map{
-                      case (select:SelectValue, index: Int) =>
-                        jsonFormat( select.measurement, index, timestamp, 13.7)
-                    }
-                    if( results.nonEmpty){
-                      sender() ! HttpResponse( 
-                        StatusCodes.OK,
-                        entity = HttpEntity(s"""{"results":[${results.mkString(",\n")}]}""" )
-                      )
-                    } else {
-                      sender() ! badRequestResult( s"Incorrect query: ${queries.map(_.toString).mkString(",")}" )
-                    }
-                  }
-                case meas: String =>
-                  sender() ! badRequestResult( "test failure" )
-              }
-            }) 
 
           filterEvents(
             initializationLogFilters( conf )
           ){
-            val influx = new MockInfluxDB(
-              serverprobe,
+            val httpExtMock = mock[HttpExt]
+            dbFoundTest(httpExtMock, conf )
+            val queries = InfluxDBImplementation.createNBetweenInfoItemsQueries(
+                Vector( 
+                  InfoItem( Path("Objects","Obj","II2"), Vector.empty),
+                  InfoItem( Path("Objects","Obj","II1"), Vector.empty)
+                ), None, None, Some(n)
+              )
+            val request = InfluxDBClient.queriesToHTTPPost(queries,conf.queryAddress)
+            val results = queries.collect{
+              case select: SelectValue => select
+            }.zipWithIndex.map{
+              case (select:SelectValue, index: Int) =>
+                jsonFormat( select.measurement, index, timestamp, 13.7)
+            }
+            httpExtMock.singleRequest( request) returns Future.successful(response(results))
+
+            val influx = new MockitoInfluxDB(
+              httpExtMock,
               conf
             )(system,singleStores)
 
             val leaf = Vector( Object( Path("Objects","Obj")))
             influx.getNBetween(leaf,None,None,Some(n),None)
-            } must beEqualTo(
-              correctFloatResults
-            ).await
+          } must beEqualTo(
+            correctFloatResults
+          ).await
        }
        "send correct query with begin and end parameters" >> testInit{ implicit system: ActorSystem =>
           val singleStores = new DummySingleStores(OmiConfig(system),
             hierarchyStore = DummyHierarchyStore( odf )
           )
           val conf: InfluxDBConfigExtension = new InfluxDBConfigExtension(system.settings.config)
-          val serverprobe = 
-            system actorOf Props(new Actor {
-              def receive = {
-                case QueryPackage( queries: Vector[InfluxQuery] ) => 
-                  if( queries.length == 1 ){
-                    queries.headOption match{
-                      case Some( ShowDBs ) => 
-                        sender() ! foundDBResult(conf.databaseName)
-                      case Some( CreateDB( name )) => 
-                        if( name == conf.databaseName ) {
-                          sender() ! okResult
-                        } else {
-                          sender() ! badRequestResult( "test failure" )
-                        }
-                      case Some( select: SelectValue ) =>
-                        sender() ! badRequestResult( "No select queries needed!" )
-                      case Some( query ) => sender() ! badRequestResult( "wrong query, test failure" )
-                      case None => sender() ! badRequestResult( "wrong query, test failure" )
-                    }
-                  } else {
-                    val results = queries.collect{
-                      case  select @ SelectValue(
-                        measurement: String,
-                        whereClause: Option[WhereClause],
-                        orderByClause: Option[OrderByClause],
-                        limitClause: Option[LimitClause]
-                      ) if { 
-                        whereClause.exists{
-                          clause => 
-                            clause.expressions.size == 2 &&
-                            clause.expressions.contains( UpperTimeBoundExpression(timestamp))
-                            clause.expressions.contains( LowerTimeBoundExpression(timestamp))
-                      } && limitClause.isEmpty  && orderByClause.contains(DescTimeOrderByClause())
-                      } => select 
-                    }.zipWithIndex.map{
-                      case (select:SelectValue, index: Int) =>
-                        jsonFormat( select.measurement, index, timestamp, 13.7)
-                    }
-                    if( results.nonEmpty){
-                      sender() ! HttpResponse( 
-                        StatusCodes.OK,
-                        entity = HttpEntity(s"""{"results":[${results.mkString(",\n")}]}""" )
-                      )
-                    } else sender() ! badRequestResult( "Incorrect query" )
-                  }
-                case meas: String =>
-                  sender() ! badRequestResult( "test failure" )
-              }
-            }) 
 
           filterEvents(
             initializationLogFilters( conf )
           ){
-            val influx = new MockInfluxDB(
-              serverprobe,
+            val httpExtMock = mock[HttpExt]
+            dbFoundTest(httpExtMock, conf )
+            val queries = InfluxDBImplementation.createNBetweenInfoItemsQueries(
+                Vector( 
+                  InfoItem( Path("Objects","Obj","II2"), Vector.empty),
+                  InfoItem( Path("Objects","Obj","II1"), Vector.empty)
+                ), Some(timestamp), Some(timestamp), None, 
+              )
+            val request = InfluxDBClient.queriesToHTTPPost(queries,conf.queryAddress)
+            val results = queries.collect{
+              case select: SelectValue => select
+            }.zipWithIndex.map{
+              case (select:SelectValue, index: Int) =>
+                jsonFormat( select.measurement, index, timestamp, 13.7)
+            }
+            httpExtMock.singleRequest( request) returns Future.successful(response(results))
+
+            val influx = new MockitoInfluxDB(
+              httpExtMock,
               conf
             )(system,singleStores)
 
             val leaf = Vector( Object( Path("Objects","Obj")))
             influx.getNBetween(leaf,Some(timestamp),Some(timestamp),None,None)
-            } must beEqualTo(
-              correctFloatResults
-            ).await
+          } must beEqualTo(
+            correctFloatResults
+          ).await
        }
        "send correct query with begin and newest parameters" >>testInit{ implicit system: ActorSystem =>
           val singleStores = new DummySingleStores(OmiConfig(system),
@@ -642,72 +427,37 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
           )
           val n = 30
           val conf: InfluxDBConfigExtension = new InfluxDBConfigExtension(system.settings.config)
-          val serverprobe = 
-            system actorOf Props(new Actor {
-              def receive = {
-                case QueryPackage( queries: Vector[InfluxQuery] ) => 
-                  if( queries.length == 1 ){
-                    queries.headOption match{
-                      case Some( ShowDBs ) => 
-                        sender() ! foundDBResult(conf.databaseName)
-                      case Some( CreateDB( name )) => 
-                        if( name == conf.databaseName ) {
-                          sender() ! okResult
-                        } else {
-                          sender() ! badRequestResult( "test failure" )
-                        }
-                      case Some( select: SelectValue ) =>
-                        sender() ! badRequestResult( "No select queries needed!" )
-                      case Some( query ) => sender() ! badRequestResult( "wrong query, test failure" )
-                      case None => sender() ! badRequestResult( "wrong query, test failure" )
-                    }
-                  } else {
-                    val results = queries.collect{
-                      case  select @ SelectValue(
-                        measurement: String,
-                        whereClause: Option[WhereClause],
-                        orderByClause: Option[OrderByClause],
-                        limitClause: Option[LimitClause]
-                      ) if { 
-                        whereClause.exists{
-                          clause => 
-                            clause.expressions.size == 1 &&
-                            clause.expressions.contains( LowerTimeBoundExpression(timestamp))
-                        } &&
-                        limitClause.exists( clause => clause.n == n ) && 
-                       orderByClause.contains(DescTimeOrderByClause())
-                      } => select 
-                    }.zipWithIndex.map{
-                      case (select:SelectValue, index: Int) =>
-                        jsonFormat( select.measurement, index, timestamp, 13.7)
-                    }
-                    if( results.nonEmpty){
-                      sender() ! HttpResponse( 
-                        StatusCodes.OK,
-                        entity = HttpEntity(s"""{"results":[${results.mkString(",\n")}]}""" )
-                      )
-                    } else {
-                      sender() ! badRequestResult( s"Incorrect query: ${queries.map(_.toString).mkString(",")}" )
-                    }
-                  }
-                case meas: String =>
-                  sender() ! badRequestResult( "test failure" )
-              }
-            }) 
 
           filterEvents(
             initializationLogFilters( conf )
           ){
-            val influx = new MockInfluxDB(
-              serverprobe,
+            val httpExtMock = mock[HttpExt]
+            dbFoundTest(httpExtMock, conf )
+            val queries = InfluxDBImplementation.createNBetweenInfoItemsQueries(
+                Vector( 
+                  InfoItem( Path("Objects","Obj","II2"), Vector.empty),
+                  InfoItem( Path("Objects","Obj","II1"), Vector.empty)
+                ), Some(timestamp), None, Some(n), 
+              )
+            val request = InfluxDBClient.queriesToHTTPPost(queries,conf.queryAddress)
+            val results = queries.collect{
+              case select: SelectValue => select
+            }.zipWithIndex.map{
+              case (select:SelectValue, index: Int) =>
+                jsonFormat( select.measurement, index, timestamp, 13.7)
+            }
+            httpExtMock.singleRequest( request) returns Future.successful(response(results))
+
+            val influx = new MockitoInfluxDB(
+              httpExtMock,
               conf
             )(system,singleStores)
 
             val leaf = Vector( Object( Path("Objects","Obj")))
             influx.getNBetween(leaf,Some(timestamp),None,Some(n),None)
-            } must beEqualTo(
-              correctFloatResults
-            ).await
+          } must beEqualTo(
+            correctFloatResults
+          ).await
        }
        "send correct query with end and newest parameters" >>testInit{ implicit system: ActorSystem =>
           val singleStores = new DummySingleStores(OmiConfig(system),
@@ -715,72 +465,37 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
           )
           val n = 30
           val conf: InfluxDBConfigExtension = new InfluxDBConfigExtension(system.settings.config)
-          val serverprobe = 
-            system actorOf Props(new Actor {
-              def receive = {
-                case QueryPackage( queries: Vector[InfluxQuery] ) => 
-                  if( queries.length == 1 ){
-                    queries.headOption match{
-                      case Some( ShowDBs ) => 
-                        sender() ! foundDBResult(conf.databaseName)
-                      case Some( CreateDB( name )) => 
-                        if( name == conf.databaseName ) {
-                          sender() ! okResult
-                        } else {
-                          sender() ! badRequestResult( "test failure" )
-                        }
-                      case Some( select: SelectValue ) =>
-                        sender() ! badRequestResult( "No select queries needed!" )
-                      case Some( query ) => sender() ! badRequestResult( "wrong query, test failure" )
-                      case None => sender() ! badRequestResult( "wrong query, test failure" )
-                    }
-                  } else {
-                    val results = queries.collect{
-                      case  select @ SelectValue(
-                        measurement: String,
-                        whereClause: Option[WhereClause],
-                        orderByClause: Option[OrderByClause],
-                        limitClause: Option[LimitClause]
-                      ) if { 
-                        whereClause.exists{
-                          clause => 
-                            clause.expressions.size == 1 &&
-                            clause.expressions.contains( UpperTimeBoundExpression(timestamp))
-                        } &&
-                        limitClause.exists( clause => clause.n == n ) && 
-                       orderByClause.contains(DescTimeOrderByClause())
-                      } => select 
-                    }.zipWithIndex.map{
-                      case (select:SelectValue, index: Int) =>
-                        jsonFormat( select.measurement, index, timestamp, 13.7)
-                    }
-                    if( results.nonEmpty){
-                      sender() ! HttpResponse( 
-                        StatusCodes.OK,
-                        entity = HttpEntity(s"""{"results":[${results.mkString(",\n")}]}""" )
-                      )
-                    } else {
-                      sender() ! badRequestResult( s"Incorrect query: ${queries.map(_.toString).mkString(",")}" )
-                    }
-                  }
-                case meas: String =>
-                  sender() ! badRequestResult( "test failure" )
-              }
-            }) 
 
           filterEvents(
             initializationLogFilters( conf )
           ){
-            val influx = new MockInfluxDB(
-              serverprobe,
+            val httpExtMock = mock[HttpExt]
+            dbFoundTest(httpExtMock, conf )
+            val queries = InfluxDBImplementation.createNBetweenInfoItemsQueries(
+                Vector( 
+                  InfoItem( Path("Objects","Obj","II2"), Vector.empty),
+                  InfoItem( Path("Objects","Obj","II1"), Vector.empty)
+                ), None, Some(timestamp), Some(n), 
+              )
+            val request = InfluxDBClient.queriesToHTTPPost(queries,conf.queryAddress)
+            val results = queries.collect{
+              case select: SelectValue => select
+            }.zipWithIndex.map{
+              case (select:SelectValue, index: Int) =>
+                jsonFormat( select.measurement, index, timestamp, 13.7)
+            }
+            httpExtMock.singleRequest( request) returns Future.successful(response(results))
+
+            val influx = new MockitoInfluxDB(
+              httpExtMock,
               conf
             )(system,singleStores)
 
             val leaf = Vector( Object( Path("Objects","Obj")))
             influx.getNBetween(leaf,None,Some(timestamp),Some(n),None)
-            } must beEqualTo(
-              correctFloatResults
-            ).await
+          } must beEqualTo(
+            correctFloatResults
+          ).await
        }
        "send correct query with begin, end and newest parameters" >> testInit{ implicit system: ActorSystem =>
           val singleStores = new DummySingleStores(OmiConfig(system),
@@ -788,67 +503,35 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
           )
           val conf: InfluxDBConfigExtension = new InfluxDBConfigExtension(system.settings.config)
           val n = 53
-          val serverprobe = 
-            system actorOf Props(new Actor {
-              def receive = {
-                case QueryPackage( queries: Vector[InfluxQuery] ) => 
-                  if( queries.length == 1 ){
-                    queries.headOption match{
-                      case Some( ShowDBs ) => 
-                        sender() ! foundDBResult(conf.databaseName)
-                      case Some( CreateDB( name )) => 
-                        if( name == conf.databaseName ) {
-                          sender() ! okResult
-                        } else {
-                          sender() ! badRequestResult( "test failure" )
-                        }
-                      case Some( select: SelectValue ) =>
-                        sender() ! badRequestResult( "No select queries needed!" )
-                      case Some( query ) => sender() ! badRequestResult( "wrong query, test failure" )
-                      case None => sender() ! badRequestResult( "wrong query, test failure" )
-                    }
-                  } else {
-                    val results = queries.collect{
-                      case  select @ SelectValue(
-                        measurement: String,
-                        whereClause: Option[WhereClause],
-                        orderByClause: Option[OrderByClause],
-                        limitClause: Option[LimitClause]
-                      ) if { 
-                        whereClause.exists{
-                          clause => 
-                            clause.expressions.size == 2 &&
-                            clause.expressions.contains( UpperTimeBoundExpression(timestamp))
-                            clause.expressions.contains( LowerTimeBoundExpression(timestamp))
-                      } && limitClause.exists( clause => clause.n == n ) && orderByClause.contains(DescTimeOrderByClause())
-                      } => select 
-                    }.zipWithIndex.map{
-                      case (select:SelectValue, index: Int) =>
-                        jsonFormat( select.measurement, index, timestamp, 13.7)
-                    }
-                    if( results.nonEmpty){
-                      sender() ! HttpResponse( 
-                        StatusCodes.OK,
-                        entity = HttpEntity(s"""{"results":[${results.mkString(",\n")}]}""" )
-                      )
-                    } else sender() ! badRequestResult( "Incorrect query" )
-                  }
-                case meas: String =>
-                  sender() ! badRequestResult( "test failure" )
-              }
-            }) 
 
           filterEvents(
             initializationLogFilters( conf )
           ){
-            val influx = new MockInfluxDB(
-              serverprobe,
+            val httpExtMock = mock[HttpExt]
+            dbFoundTest(httpExtMock, conf )
+            val queries = InfluxDBImplementation.createNBetweenInfoItemsQueries(
+                Vector( 
+                  InfoItem( Path("Objects","Obj","II2"), Vector.empty),
+                  InfoItem( Path("Objects","Obj","II1"), Vector.empty)
+                ),  Some(timestamp), Some(timestamp), Some(n), 
+              )
+            val request = InfluxDBClient.queriesToHTTPPost(queries,conf.queryAddress)
+            val results = queries.collect{
+              case select: SelectValue => select
+            }.zipWithIndex.map{
+              case (select:SelectValue, index: Int) =>
+                jsonFormat( select.measurement, index, timestamp, 13.7)
+            }
+            httpExtMock.singleRequest( request) returns Future.successful(response(results))
+
+            val influx = new MockitoInfluxDB(
+              httpExtMock,
               conf
             )(system,singleStores)
 
             val leaf = Vector( Object( Path("Objects","Obj")))
             influx.getNBetween(leaf,Some(timestamp),Some(timestamp),Some(n),None)
-            } must beEqualTo(correctFloatResults).await
+          } must beEqualTo(correctFloatResults).await
        }
      }
      "Should send correct query for remove and remove correct data cache" >> testInit{ implicit system: ActorSystem =>
@@ -870,47 +553,24 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
           val singleStores = new DummySingleStores(OmiConfig(system),
             hierarchyStore = hierarchyProbe
           )
-          val serverprobe = 
-            system actorOf Props(new Actor {
-              def receive = {
-                case QueryPackage( queries: Vector[InfluxQuery] ) => 
-                  if( queries.length == 1 ){
-                    queries.headOption match{
-                      case Some( ShowDBs ) => 
-                        sender() ! foundDBResult(conf.databaseName)
-                      case Some( CreateDB( name )) => 
-                        if( name == conf.databaseName ) {
-                          sender() ! okResult
-                        } else {
-                          sender() ! badRequestResult( "test failure" )
-                        }
-                      case Some( DropMeasurement(name)) =>
-                        sender() ! okResult
-                      case Some( select: SelectValue ) =>
-                        sender() ! badRequestResult( "No select queries needed!" )
-                      case Some( query ) => sender() ! badRequestResult( "wrong query, test failure" )
-                      case None => sender() ! badRequestResult( "wrong query, test failure" )
-                    }
-                  } else {
-                    if( queries.collect{
-                      case DropMeasurement(name) => name 
-                    }.nonEmpty ) {
-                        sender() ! okResult
-                    } else{ 
-                        sender() ! badRequestResult( "No select queries needed!" )
-                    }
-
-                  }
-              }
-            }) 
-
-
-
           filterEvents(
             initializationLogFilters( conf )
           ){
-            val influx = new MockInfluxDB(
-              serverprobe,
+            val httpExtMock = mock[HttpExt]
+            dbFoundTest(httpExtMock, conf )
+            val queries = Vector( 
+              InfoItem( Path("Objects","Obj","II2"), Vector.empty),
+              InfoItem( Path("Objects","Obj","II1"), Vector.empty)
+            ).map{
+              ii => 
+                val mName = InfluxDBImplementation.pathToMeasurementName(ii.path)
+                DropMeasurement(mName)
+            }
+            val request = InfluxDBClient.queriesToHTTPPost(queries,conf.queryAddress)
+            httpExtMock.singleRequest( request) returns Future.successful(okResult)
+
+            val influx = new MockitoInfluxDB(
+              httpExtMock,
               conf
             )(system,singleStores)
 
