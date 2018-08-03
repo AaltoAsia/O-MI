@@ -21,22 +21,33 @@ class InfluxDBProtocolsTest( implicit ee: ExecutionEnv )
        "correctly format different data types from InfoItems" >> {
           val path = Path("Objects","Obj","II")
           def createInfoItem( value: Value[Any] ): InfoItem = InfoItem(path, Vector( value) )
+          def createMeasurement(  value: Value[Any] ) = Measurement(
+            pathToMeasurementName(path),
+            value.value match {
+              case odf: ImmutableODF => throw new Exception("Having O-DF inside value with InfluxDB is not supported.")
+              case str: String => s""""${str.replace("\"", "\\\"")}""""
+              case num @ (_: Double | _: Float | _: Int | _: Long | _:Short ) => num.toString 
+              case bool: Boolean => bool.toString
+              case any: Any => s""""${any.toString.replace("\"", "\\\"")}""""
+            },
+            value.timestamp
+          ) 
           def valStr[A](value: A) = s"""$path value=$value ${timestamp.getTime}"""
          "Double" >> {
-           val value: Double = 1234.5678
-           infoItemToWriteFormat( createInfoItem( DoubleValue( value, timestamp ))) shouldEqual( Vector(valStr(value)))
+           val value = DoubleValue( 1234.5678, timestamp)
+           infoItemToWriteFormat( createInfoItem( value )) shouldEqual( Vector(createMeasurement(value)))
          }
          "Int" >> {
-           val value: Int = 12345678
-           infoItemToWriteFormat( createInfoItem( IntValue( value, timestamp ))) shouldEqual( Vector(valStr(value)))
+           val value = IntValue(12345678,timestamp)
+           infoItemToWriteFormat( createInfoItem( value )) shouldEqual( Vector(createMeasurement(value)))
          }
          "String" >> {
-           val value: String = "testing"
-           infoItemToWriteFormat( createInfoItem( StringValue( value, timestamp ))) shouldEqual( Vector(s"""$path value="$value" ${timestamp.getTime}""" ))
+           val value = StringValue("testing",timestamp)
+           infoItemToWriteFormat( createInfoItem( value )) shouldEqual( Vector(createMeasurement(value)))
          }
          "Boolean" >> {
-           val value: Boolean = true
-           infoItemToWriteFormat( createInfoItem( BooleanValue( value, timestamp ))) shouldEqual( Vector(valStr(value)))
+           val value = BooleanValue(true,timestamp)
+           infoItemToWriteFormat( createInfoItem( value )) shouldEqual( Vector(createMeasurement(value)))
          }
        } 
      }

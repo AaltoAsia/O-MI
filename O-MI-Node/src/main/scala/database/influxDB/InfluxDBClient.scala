@@ -72,8 +72,8 @@ trait InfluxDBClient {
     responseF
   }
 
-  def sendMeasurements(measurements: String ): Future[HttpResponse] = {
-    val request = RequestBuilding.Post(writeAddress, measurements)
+  def sendMeasurements(measurements: Seq[Measurement] ): Future[HttpResponse] = {
+    val request = RequestBuilding.Post(writeAddress, measurements.map(_.formatStr).mkString("\n"))
     val response = httpExt.singleRequest(request)
     response
   }

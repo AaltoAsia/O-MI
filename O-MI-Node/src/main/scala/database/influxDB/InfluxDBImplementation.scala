@@ -63,11 +63,7 @@ class InfluxDBImplementation
                   _entity.toStrict(10.seconds).flatMap { stricted =>
                     Unmarshal(stricted).to[String].map {
                       str =>
-                        log
-                          .error(s"Database ${config.databaseName} could not be created to InfluxDB at address ${
-                            config
-                              .address
-                          }")
+                        log.error(s"Database ${config.databaseName} could not be created to InfluxDB at address ${config.address}")
                         log.warning(s"""InfluxQuery returned $status with:\n $str""")
                         throw new Exception(str)
                     }
@@ -89,12 +85,16 @@ class InfluxDBImplementation
   }
 
   def writeManyNewTypes(data: Seq[InfoItem]): Future[OmiReturn] = {
-    val valuesAsMeasurements = data.flatMap { ii: InfoItem => infoItemToWriteFormat(ii) }.mkString("\n")
-    val response = sendMeasurements(valuesAsMeasurements)
+    val response = Future{
+      data.flatMap { ii: InfoItem => infoItemToWriteFormat(ii) }
+    }.flatMap{
+      valuesAsMeasurements: Seq[Measurement] => sendMeasurements(valuesAsMeasurements)
+    }
+    
 
     response.failed.foreach {
       t: Throwable =>
-        log.error("Failed to communicate to InfluxDB", t)
+        log.error(s"Failed to communicate to InfluxDB: $t")
     }
     response.flatMap {
       case HttpResponse(status, headers, entity, protocol) if status.isSuccess =>
@@ -176,7 +176,7 @@ class InfluxDBImplementation
     }
     formatedResponse.failed.foreach {
       t: Throwable =>
-        log.error("Failed to communicate to InfluxDB.",t)
+        log.error(s"Failed to communicate to InfluxDB: $t")
         log.warning(t.getStackTrace.mkString("\n"))
     }
     formatedResponse
@@ -212,9 +212,13 @@ class InfluxDBImplementation
 
 }
 
+  case class Measurement(val measurement: String, val value: String, val time: Timestamp){
+    def formatStr: String = s"$measurement value=$value ${time.getTime}"
+  }
+
 object InfluxDBImplementation{
 
-  def infoItemToWriteFormat(ii: InfoItem): Seq[String] = {
+  def infoItemToWriteFormat(ii: InfoItem): Seq[Measurement] = {
     val measurement: String = pathToMeasurementName(ii.path).replace(" ", "\\ ")
     ii.values.map {
       value: Value[Any] =>
@@ -225,7 +229,7 @@ object InfluxDBImplementation{
           case bool: Boolean => bool.toString
           case any: Any => s""""${any.toString.replace("\"", "\\\"")}""""
         }
-        s"$measurement value=$valueStr ${value.timestamp.getTime}"
+        Measurement(measurement, valueStr, value.timestamp)
     }
   }
 
