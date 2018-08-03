@@ -28,6 +28,7 @@ class InfluxDBImplementation
     implicit val system: ActorSystem,
     protected val singleStores: SingleStores
   ) extends DB with InfluxDBClient {
+  import InfluxDBClient._
   import InfluxDBImplementation._
 
   log.info(s"Write address of InfluxDB instance $writeAddress")
@@ -38,7 +39,7 @@ class InfluxDBImplementation
   implicit val odfJsonFormatter: InfluxDBJsonProtocol.InfluxDBJsonODFFormat = new InfluxDBJsonProtocol.InfluxDBJsonODFFormat()
 
   def initialize(): Unit = {
-    val initialisation = httpResponseToStrict(sendQueries(Vector( ShowDBs ))).flatMap {
+    val initialisation = httpResponseToStrict(sendQueries(Vector( ShowDBs )),log).flatMap {
       entity: HttpEntity.Strict =>
         val ent = entity.copy(contentType = `application/json`)
 
@@ -162,7 +163,7 @@ class InfluxDBImplementation
   private def read(queries: Seq[InfluxQuery], requestedODF: ODF): Future[Option[ImmutableODF]] = {
     val responseF: Future[HttpResponse] = sendQueries(queries)
     //httpHandler(request)
-    val formatedResponse = httpResponseToStrict(responseF).flatMap {
+    val formatedResponse = httpResponseToStrict(responseF,log).flatMap {
       entity: HttpEntity.Strict =>
         val ent = entity.copy(contentType = `application/json`)
 

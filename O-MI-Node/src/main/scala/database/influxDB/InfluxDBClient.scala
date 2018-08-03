@@ -2,6 +2,7 @@ package database.influxDB
 
 import akka.actor.ActorSystem
 import akka.event.{LoggingAdapter, LogSource}
+import scala.concurrent.ExecutionContext
 import akka.stream.{ActorMaterializer, Materializer}
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.client.RequestBuilding
@@ -33,6 +34,20 @@ object InfluxDBClient {
     val httpEntity = FormData(("q", queries.map(_.query).mkString(";\n")) ).toEntity(HttpCharsets.`UTF-8`)
     RequestBuilding.Post(readAddress, httpEntity).withHeaders(AcceptHeader("application/json"))
   }
+  def httpResponseToStrict(futureResponse: Future[HttpResponse],log: LoggingAdapter)(implicit ec: ExecutionContext, materializer: Materializer): Future[HttpEntity.Strict] = {
+    futureResponse.flatMap {
+      case response@HttpResponse(status, headers, entity, protocol) if status.isSuccess =>
+        entity.toStrict(10.seconds)
+      case response@HttpResponse(status, headers, entity, protocol) if status.isFailure =>
+        entity.toStrict(10.seconds).flatMap { stricted =>
+          Unmarshal(stricted).to[String].map {
+            str =>
+              log.warning(s""" InfluxQuery returned $status with:\n $str""")
+              throw new Exception(str)
+          }
+        }
+    }
+  }
 }
 
 trait InfluxDBClient {
@@ -50,21 +65,6 @@ trait InfluxDBClient {
     def genString(a:InfluxDBClient) = s"InfluxClient:${a.config.address}:${a.config.databaseName}"
   }
   def log: LoggingAdapter
-
-  def httpResponseToStrict(futureResponse: Future[HttpResponse]): Future[HttpEntity.Strict] = {
-    futureResponse.flatMap {
-      case response@HttpResponse(status, headers, entity, protocol) if status.isSuccess =>
-        entity.toStrict(10.seconds)
-      case response@HttpResponse(status, headers, entity, protocol) if status.isFailure =>
-        entity.toStrict(10.seconds).flatMap { stricted =>
-          Unmarshal(stricted).to[String].map {
-            str =>
-              log.warning(s""" InfluxQuery returned $status with:\n $str""")
-              throw new Exception(str)
-          }
-        }
-    }
-  }
 
   def sendQueries(queries: Seq[InfluxQuery]): Future[HttpResponse] = {
     val request =  queriesToHTTPPost(queries.toVector,readAddress)
