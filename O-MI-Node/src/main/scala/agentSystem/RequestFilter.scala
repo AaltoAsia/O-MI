@@ -1,6 +1,5 @@
-package agentSystem
 
-import types.OmiTypes._
+package agentSystem
 
 object RequestFilter{
   def apply( str: String ): RequestFilter ={
@@ -31,35 +30,18 @@ object RequestFilter{
 }
 
 sealed trait RequestFilter{
-  def filter( request: OdfRequest ): Boolean 
 }
 
 sealed trait Delete extends RequestFilter {
-  def filter( request: OdfRequest ): Boolean = request match {
-    case delete: DeleteRequest => true
-    case other: OdfRequest => false
-  }
 }
 
 sealed trait Read extends RequestFilter {
-  def filter( request: OdfRequest ): Boolean = request match {
-    case read: ReadRequest => true
-    case other: OdfRequest => false
-  }
 }
 
 sealed trait Write extends RequestFilter {
-  def filter(request: OdfRequest): Boolean = request match {
-    case write: WriteRequest => true
-    case other: OdfRequest => false
-  }
 }
 
 sealed trait Call extends RequestFilter {
-  def filter(request: OdfRequest): Boolean = request match {
-    case call: CallRequest => true
-    case other: OdfRequest => false
-  }
 }
 
 final case class ReadFilter() extends Read
@@ -71,95 +53,34 @@ final case class WriteFilter() extends Write
 final case class CallFilter() extends Call
 
 final case class ReadWriteFilter() extends Read with Write{
-  override def filter( request: OdfRequest ): Boolean = request match {
-    case read: ReadRequest => true
-    case write: WriteRequest => true
-    case other: OdfRequest => false
-  }
 }
 
 final case class WriteCallFilter() extends Write with Call {
-  override def filter(request: OdfRequest): Boolean = request match {
-    case write: WriteRequest => true
-    case call: CallRequest => true
-    case other: OdfRequest => false
-  }
 }
 
 final case class ReadCallFilter() extends Read with Call {
-  override def filter(request: OdfRequest): Boolean = request match {
-    case read: ReadRequest => true
-    case call: CallRequest => true
-    case other: OdfRequest => false
-  }
 }
 
 final case class ReadWriteCallFilter() extends Read with Write with Call {
-  override def filter(request: OdfRequest): Boolean = request match {
-    case read: ReadRequest => true
-    case write: WriteRequest => true
-    case call: CallRequest => true
-    case other: OdfRequest => false
-  }
 }
 
 final case class ReadWriteDeleteFilter() extends Read with Write with Delete{
-  override def filter( request: OdfRequest ): Boolean = request match {
-    case read: ReadRequest => true
-    case delete: DeleteRequest => true
-    case write: WriteRequest => true
-    case other: OdfRequest => false
-  }
 }
 
 final case class WriteCallDeleteFilter() extends Write with Call with Delete{
-  override def filter( request: OdfRequest ): Boolean = request match {
-    case write: WriteRequest => true
-    case delete: DeleteRequest => true
-    case call: CallRequest => true
-    case other: OdfRequest => false
-  }
 }
 
 final case class ReadCallDeleteFilter() extends Read with Call with Delete{
-  override def filter( request: OdfRequest ): Boolean = request match {
-    case read: ReadRequest => true
-    case delete: DeleteRequest => true
-    case call: CallRequest => true
-    case other: OdfRequest => false
-  }
 }
 
 final case class ReadWriteCallDeleteFilter() extends Read with Write with Call with Delete{
-  override def filter( request: OdfRequest ): Boolean = request match {
-    case read: ReadRequest => true
-    case delete: DeleteRequest => true
-    case write: WriteRequest => true
-    case call: CallRequest => true
-    case other: OdfRequest => false
-  }
 }
 
 final case class ReadDeleteFilter() extends Read with Delete{
-  override def filter( request: OdfRequest ): Boolean = request match {
-    case read: ReadRequest => true
-    case delete: DeleteRequest => true
-    case other: OdfRequest => false
-  }
 }
 
 final case class WriteDeleteFilter() extends Write with Delete{
-  override def filter( request: OdfRequest ): Boolean = request match {
-    case delete: DeleteRequest => true
-    case write: WriteRequest => true
-    case other: OdfRequest => false
-  }
 }
 
 final case class CallDeleteFilter() extends Call with Delete{
-  override def filter( request: OdfRequest ): Boolean = request match {
-    case delete: DeleteRequest => true
-    case call: CallRequest => true
-    case other: OdfRequest => false
-  }
 }
