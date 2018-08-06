@@ -340,7 +340,7 @@ object Actorstest {
   val silentLoggerConfFull = silentLoggerConf.withFallback(ConfigFactory.load())
   val loggerConf = ConfigFactory.parseString(
     """
-    akka.loggers = ["testHelpers.SilentTestEventListener"]
+      akka.loggers = ["testHelpers.SilentTestEventListener"]
     """)
   def createAs() = ActorSystem("testsystem", loggerConf.withFallback(ConfigFactory.load()))
   def createSilentAs() = ActorSystem("testsystem", silentLoggerConfFull)

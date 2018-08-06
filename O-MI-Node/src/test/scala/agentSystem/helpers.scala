@@ -9,10 +9,15 @@ import types.OmiTypes.{CallRequest, ResponseRequest, Responses, WriteRequest}
 import scala.collection.mutable.{Map => MutableMap}
 import scala.concurrent.Future
 
+trait UnhandledReceive extends Actor{
+  def receive = {
+    case any: Any => unhandled(any)
+  }
+}
 class FailurePropsAgent(
                          protected val requestHandler: ActorRef,
                          protected val dbHandler: ActorRef
-                       ) extends ScalaInternalAgent {
+                       ) extends ScalaInternalAgent with UnhandledReceive {
 
   def config = ???
 }
@@ -26,40 +31,40 @@ object FailurePropsAgent extends PropsCreator {
 class FFAgent(
                protected val requestHandler: ActorRef,
                protected val dbHandler: ActorRef
-             ) extends ScalaInternalAgent {
+             ) extends ScalaInternalAgent with UnhandledReceive {
   def config = ???
 
-  throw StartFailed("Test failure.", None)
+  throw new Exception("Test failure.")
 
-  final override def stop: InternalAgentResponse = {
-    throw StopFailed("Test failure.", None)
+  override def postStop = {
+    throw new Exception("Test failure.")
   }
 }
 
 class FSAgent(
                protected val requestHandler: ActorRef,
                protected val dbHandler: ActorRef
-             ) extends ScalaInternalAgent {
+             ) extends ScalaInternalAgent  with UnhandledReceive {
   def config = ???
 
-  throw StartFailed("Test failure.", None)
+  throw new Exception("Test failure.")
 }
 
 class SFAgent(
                protected val requestHandler: ActorRef,
                protected val dbHandler: ActorRef
-             ) extends ScalaInternalAgent {
+             ) extends ScalaInternalAgent  with UnhandledReceive {
   def config = ???
 
-  final override def stop: InternalAgentResponse = {
-    throw StopFailed("Test failure.", None)
+  override def postStop = {
+    throw new Exception("Test failure.")
   }
 }
 
 class SSAgent(
                protected val requestHandler: ActorRef,
                protected val dbHandler: ActorRef
-             ) extends ScalaInternalAgent {
+             ) extends ScalaInternalAgent  with UnhandledReceive {
   def config = ???
 }
 
@@ -107,7 +112,7 @@ object FSAgent extends PropsCreator {
 class CompanionlessAgent(
                           protected val requestHandler: ActorRef,
                           protected val dbHandler: ActorRef
-                        ) extends ScalaInternalAgent {
+                        ) extends ScalaInternalAgent with UnhandledReceive {
   def config = ???
 }
 
@@ -128,7 +133,7 @@ object WrongInterfaceAgent {
 class NotPropsCreatorAgent(
                             protected val requestHandler: ActorRef,
                             protected val dbHandler: ActorRef
-                          ) extends ScalaInternalAgent {
+                          ) extends ScalaInternalAgent with UnhandledReceive {
   def config = ???
 }
 
@@ -141,6 +146,9 @@ class WrongPropsAgent(
                        protected val dbHandler: ActorRef
                      ) extends ScalaInternalAgent {
   def config = ???
+  def receive = {
+    case any: Any => unhandled(any)
+  }
 }
 
 object WrongPropsAgent extends PropsCreator {
@@ -193,10 +201,11 @@ class TestDummyDBHandler() extends Actor {
   }
 }
 
-class TestLoader(testConfig: AgentSystemConfigExtension,
-                 protected val dbHandler: ActorRef,
-                 protected val requestHandler: ActorRef
-                ) extends BaseAgentSystem with InternalAgentLoader {
+class TestLoader(
+  testConfig: AgentSystemConfigExtension,
+  protected val dbHandler: ActorRef,
+  protected val requestHandler: ActorRef
+) extends BaseAgentSystem with InternalAgentLoader {
   protected[this] val agents: scala.collection.mutable.Map[AgentName, AgentInfo] = MutableMap.empty
   override protected[this] val settings: AgentSystemConfigExtension = testConfig
 

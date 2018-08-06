@@ -21,7 +21,6 @@ import types.OmiTypes._
 import scala.concurrent.{Future, Promise}
 /**
   * Commands that can be received from InternalAgentLoader.
-  **/
 sealed trait InternalAgentCmd
 
 case class Start() extends InternalAgentCmd
@@ -35,20 +34,48 @@ trait InternalAgentResponse
 trait InternalAgentSuccess extends InternalAgentResponse
 
 case class CommandSuccessful() extends InternalAgentSuccess
+*/
 
-
-class InternalAgentFailure(msg: String, exp: Option[Throwable]) extends Exception(msg, exp.orNull) with
+/**
+ * Custom exception type for exceptions that can only be handle only restarting
+ * agent. Uses restart as SupervisorStrategy. Any other non-fatal exception
+ * causes agent to be stopped and fatal exceptions are escalated.
+ */
+class InternalAgentFailure(message: String) extends Exception(message) {
+  def this(message:String, cause: Throwable){
+    this(message)
+    initCause(cause)
+  }
+  def this(cause: Throwable){
+    this(Option(cause).map(_.toString).orNull,cause)
+  }
+  def this(){
+    this(null:String)
+  }
+}
+/*with
   InternalAgentResponse
+*/
+class InternalAgentConfigurationFailure(message: String) extends Exception(message) {
+  def this(message:String, cause: Throwable){
+    this(message)
+    initCause(cause)
+  }
+  def this(cause: Throwable){
+    this(Option(cause).map(_.toString).orNull,cause)
+  }
+  def this(){
+    this(null:String)
+  }
+}
 
-class InternalAgentConfigurationFailure(msg: String, exp: Option[Throwable]) extends InternalAgentFailure(msg, exp)
+//class CommandFailed(msg: String, exp: Option[Throwable]) extends InternalAgentFailure(msg, exp)
 
-class CommandFailed(msg: String, exp: Option[Throwable]) extends InternalAgentFailure(msg, exp)
+//case class StopFailed(msg: String, exp: Option[Throwable]) extends CommandFailed(msg, exp)
 
-case class StopFailed(msg: String, exp: Option[Throwable]) extends CommandFailed(msg, exp)
+//case class StartFailed(msg: String, exp: Option[Throwable]) extends InternalAgentFailure(msg, exp)
 
-case class StartFailed(msg: String, exp: Option[Throwable]) extends CommandFailed(msg, exp)
-
-sealed trait ResponsibleAgentMsg
+//sealed trait ResponsibleAgentMsg
 
 case class ResponsibleWrite(promise: Promise[ResponseRequest], write: WriteRequest)
 
@@ -69,13 +96,14 @@ trait ScalaInternalAgent extends InternalAgent with ActorLogging {
   protected def dbHandler: ActorRef
 
   //These need to be implemented
+  /*
   override def preStart: Unit = CommandSuccessful()
 
   override def postStop: Unit = CommandSuccessful()
-
   def receive: PartialFunction[Any, Unit] = {
     case any: Any => unhandled(any)
   }
+  */
 
   final def agentSystem: ActorRef = context.parent
 
@@ -121,6 +149,7 @@ trait ScalaInternalAgent extends InternalAgent with ActorLogging {
 
   final def writeToNode(write: WriteRequest): Future[ResponseRequest] = writeToDB(write)
 
+  /*
   @deprecated("Use Actor's preRestart and postRestart methods instead.", "o-mi-node-0.9.0")
   def restart: InternalAgentResponse = {
     CommandSuccessful()
@@ -134,5 +163,5 @@ trait ScalaInternalAgent extends InternalAgent with ActorLogging {
   @deprecated("Use Actor's postStop method instead.", "o-mi-node-0.9.0")
   def stop: InternalAgentResponse = {
     CommandSuccessful()
-  }
+  }*/
 }

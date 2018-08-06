@@ -165,7 +165,7 @@ class InternalAgentLoaderTest(implicit ee: ExecutionEnv) extends Specification {
   }
 
   def startTest = new NoisyActorstest(/*ActorSystem()*/) {
-    val exception: Throwable = StartFailed("Test failure.", None)
+    val exception = new Exception("Test failure.")
     val classname = "agentSystem.FFAgent"
     val configStr =
       s"""
@@ -180,7 +180,7 @@ class InternalAgentLoaderTest(implicit ee: ExecutionEnv) extends Specification {
    """
     val config = ConfigFactory.parseString(configStr)
     val warnings = Vector(
-      s"Agent FailureAgent encountered exception during creation."
+      s"Agent FailureAgent encountered exception during creation. $exception Agent is stopped."
     )
     logWarningTest(new AgentSystemSettings(config), warnings)
   }

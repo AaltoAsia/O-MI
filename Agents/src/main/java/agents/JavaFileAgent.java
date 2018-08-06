@@ -105,8 +105,7 @@ public class JavaFileAgent extends JavaInternalAgent {
       Either<Iterable<? extends ParseError>,OdfObjects> parseResult = OdfParser.parse(file);
       if( parseResult.isLeft() ){
         throw new InternalAgentConfigurationFailure( 
-          "Invalid O-DF structure",
-         scala.Option.empty()
+          "Invalid O-DF structure"
         );
       } else {
         odf = parseResult.right().get();
@@ -114,18 +113,15 @@ public class JavaFileAgent extends JavaInternalAgent {
       }
     } else if( !file.isFile()){
         throw new InternalAgentConfigurationFailure( 
-            "File to be read for O-DF structure is not e file.",
-            scala.Option.empty()
+            "File to be read for O-DF structure is not e file."
           );
     } else if( file.exists()){
         throw new InternalAgentConfigurationFailure( 
-          "File to be read for O-DF structure can not be read.",
-            scala.Option.empty()
+          "File to be read for O-DF structure can not be read."
           );
     } else {
         throw new InternalAgentConfigurationFailure( 
-          "File to be read for O-DF structure, does not exist.",
-         scala.Option.empty()
+          "File to be read for O-DF structure, does not exist."
         );
     } 
   }
