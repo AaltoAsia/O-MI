@@ -57,7 +57,7 @@ These are examples on how to use Auth API v2 of O-MI Node. They might be secure 
 Start with this to test how the modules work.
 
 **Versions used:**
-* O-MI Node: 0.13.0
+* O-MI Node: 1.0.2
 * O-MI Authentication: 1.0.0
 * O-MI Authorization: 1.0.0
 
