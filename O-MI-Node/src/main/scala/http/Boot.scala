@@ -63,7 +63,7 @@ class OmiServer extends OmiNode {
       settings
     )
     case "INFLUXDB" => new InfluxDBImplementation(
-      InfluxDBConfig(system)
+      settings
     )(system, singleStores)
     case "WARP10" => ???
 

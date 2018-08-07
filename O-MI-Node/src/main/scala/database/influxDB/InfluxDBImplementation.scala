@@ -2,7 +2,12 @@ package database.influxDB
 
 import java.sql.Timestamp
 
-import akka.actor.ActorSystem
+
+import scala.concurrent.duration._
+import scala.concurrent.{Await, Future}
+import scala.language.postfixOps
+
+import akka.actor.{ActorRef, ActorSystem}
 import akka.event.{Logging,LoggingAdapter}
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.model.ContentTypes._
@@ -10,24 +15,23 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.unmarshalling._
 import akka.pattern.ask
 import akka.util.Timeout
-import database.{DB, SingleStores}
+
+import database.{DB, SingleStores, SingleStoresMaintainer}
 import database.journal.Models.{ErasePathCommand, GetTree, MultipleReadCommand}
+import http.OmiConfigExtension
 import types.OmiTypes._
 import types.Path
 import types.Path._
 import types.odf._
 
-import scala.concurrent.duration._
-import scala.concurrent.{Await, Future}
-import scala.language.postfixOps
-
 class InfluxDBImplementation
 (
-  protected val config: InfluxDBConfigExtension
+  protected val settings: OmiConfigExtension
   )(
     implicit val system: ActorSystem,
     protected val singleStores: SingleStores
   ) extends DB with InfluxDBClient {
+    require( settings.influx.nonEmpty)
   import InfluxDBClient._
   import InfluxDBImplementation._
 
@@ -78,6 +82,7 @@ class InfluxDBImplementation
   }
 
   initialize()
+  val dbmaintainer: ActorRef = system.actorOf(SingleStoresMaintainer.props(singleStores, settings))
 
 
   def writeMany(infoItems: Seq[InfoItem]): Future[OmiReturn] = {

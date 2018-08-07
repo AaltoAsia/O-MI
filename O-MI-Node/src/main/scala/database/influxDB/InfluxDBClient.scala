@@ -14,6 +14,8 @@ import scala.concurrent.{Future}
 import scala.concurrent.duration._
 import scala.util.Try
 
+import http.OmiConfigExtension
+
 object InfluxDBClient {
   def queriesToHTTPPost( queries: Seq[InfluxQuery],readAddress: Uri): HttpRequest ={
     val httpEntity = FormData(("q", queries.map(_.query).mkString(";\n")) ).toEntity(HttpCharsets.`UTF-8`)
@@ -37,7 +39,9 @@ object InfluxDBClient {
 
 trait InfluxDBClient {
 
-  protected val config: InfluxDBConfigExtension
+  protected val settings: OmiConfigExtension
+  require( settings.influx.nonEmpty)
+  protected val config =settings.influx.getOrElse( throw new Exception("No InfluxDB config found"))
   protected val writeAddress: Uri = config.writeAddress //Get from config
   protected val readAddress: Uri = config.queryAddress //Get from config
 
