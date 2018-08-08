@@ -54,12 +54,6 @@ sealed trait OmiRequest extends RequestWrapper with JavaOmiRequest {
 
   implicit def asXML: NodeSeq = omiEnvelopeToXML(asOmiEnvelope)
 
-  val ttlLimit: Option[Timestamp]
-
-  def timeTTLLimit(begin: Timestamp = currentTimestamp): OmiRequest
-
-  def timedout: Boolean = ttlLimit.exists { ts => ts.before(currentTimestamp) }
-
   def parsed: OmiParseResult = Right(Iterable(this))
 
   def unwrapped: Try[OmiRequest] = Success(this)
@@ -298,11 +292,6 @@ case class ReadRequest(
   // ttl: Duration = 10.seconds) = this(odf,begin,end,newest,oldest,callback,ttl,None)
   def withCallback: Option[Callback] => ReadRequest = cb => this.copy(callback = cb)
 
-  def timeTTLLimit(begin: Timestamp = currentTimestamp): OmiRequest = {
-    if (ttlLimit.isEmpty) copy(ttlLimit = Some(new Timestamp(begin.getTime + ttl.toMillis)))
-    else this
-  }
-
   implicit def asReadRequest: xmlTypes.ReadRequestType = {
     xmlTypes.ReadRequestType(
       None,
@@ -351,11 +340,6 @@ case class PollRequest(
 
   def withCallback: Option[Callback] => PollRequest = cb => this.copy(callback = cb)
 
-  def timeTTLLimit(begin: Timestamp = currentTimestamp): OmiRequest = {
-    if (ttlLimit.isEmpty) copy(ttlLimit = Some(new Timestamp(begin.getTime + ttl.toMillis)))
-    else this
-  }
-
   implicit def asReadRequest: xmlTypes.ReadRequestType = xmlTypes.ReadRequestType(
     None,
     requestIDs.map {
@@ -395,11 +379,6 @@ case class SubscriptionRequest(
   user = user0
 
   def withCallback: Option[Callback] => SubscriptionRequest = cb => this.copy(callback = cb)
-
-  def timeTTLLimit(begin: Timestamp = currentTimestamp): OmiRequest = {
-    if (ttlLimit.isEmpty) copy(ttlLimit = Some(new Timestamp(begin.getTime + ttl.toMillis)))
-    else this
-  }
 
   implicit def asReadRequest: xmlTypes.ReadRequestType = xmlTypes.ReadRequestType(
     None,
@@ -445,11 +424,6 @@ case class WriteRequest(
 
   def withCallback: Option[Callback] => WriteRequest = cb => this.copy(callback = cb)
 
-  def timeTTLLimit(begin: Timestamp = currentTimestamp): OmiRequest = {
-    if (ttlLimit.isEmpty) copy(ttlLimit = Some(new Timestamp(begin.getTime + ttl.toMillis)))
-    else this
-  }
-
   implicit def asWriteRequest: xmlTypes.WriteRequestType = xmlTypes.WriteRequestType(
     None,
     Nil,
@@ -487,11 +461,6 @@ case class CallRequest(
   user = user0
 
   def withCallback: Option[Callback] => CallRequest = cb => this.copy(callback = cb)
-
-  def timeTTLLimit(begin: Timestamp = currentTimestamp): OmiRequest = {
-    if (ttlLimit.isEmpty) copy(ttlLimit = Some(new Timestamp(begin.getTime + ttl.toMillis)))
-    else this
-  }
 
   implicit def asCallRequest: xmlTypes.CallRequestType = xmlTypes.CallRequestType(
     None,
@@ -531,11 +500,6 @@ case class DeleteRequest(
 
   def withCallback: Option[Callback] => DeleteRequest = cb => this.copy(callback = cb)
 
-  def timeTTLLimit(begin: Timestamp = currentTimestamp): OmiRequest = {
-    if (ttlLimit.isEmpty) copy(ttlLimit = Some(new Timestamp(begin.getTime + ttl.toMillis)))
-    else this
-  }
-
   implicit def asDeleteRequest: xmlTypes.DeleteRequestType = xmlTypes.DeleteRequestType(
     None,
     Nil,
@@ -574,11 +538,6 @@ case class CancelRequest(
                         ) extends OmiRequest {
   user = user0
 
-  def timeTTLLimit(begin: Timestamp = currentTimestamp): OmiRequest = {
-    if (ttlLimit.isEmpty) copy(ttlLimit = Some(new Timestamp(begin.getTime + ttl.toMillis)))
-    else this
-  }
-
   implicit def asCancelRequest: xmlTypes.CancelRequestType = xmlTypes.CancelRequestType(
     None,
     requestIDs.map {
@@ -614,11 +573,6 @@ class ResponseRequest(
                        val ttlLimit: Option[Timestamp] = None
                      ) extends OmiRequest with PermissiveRequest with JavaResponseRequest {
   user = user0
-
-  def timeTTLLimit(begin: Timestamp = currentTimestamp): OmiRequest = {
-    if (ttlLimit.isEmpty) this.copy(ttlLimit = Some(new Timestamp(begin.getTime + ttl.toMillis)))
-    else this
-  }
 
   def resultsAsJava(): JIterable[OmiResult] = asJavaIterable(results)
 
