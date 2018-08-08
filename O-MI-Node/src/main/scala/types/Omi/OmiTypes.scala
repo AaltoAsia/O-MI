@@ -272,29 +272,6 @@ object RawRequestWrapper {
 import types.OmiTypes.RawRequestWrapper.MessageType
 
 /**
-  * Trait for subscription like classes. Offers a common interface for subscription types.
-  */
-trait SubLike {
-  // Note: defs can be implemented also as val and lazy val
-  def interval: Duration
-
-  def ttl: Duration
-
-  def isIntervalBased: Boolean = interval >= 0.milliseconds
-
-  def isEventBased: Boolean = interval == -1.seconds
-
-  def ttlToMillis: Long = ttl.toMillis
-
-  def intervalToMillis: Long = interval.toMillis
-
-  def isImmortal: Boolean = !ttl.isFinite
-
-  require(interval == -1.seconds || interval == -2.seconds || interval >= 0.seconds, s"Invalid interval: $interval")
-  require(ttl >= 0.seconds, s"Invalid ttl, should be positive (or +infinite): $interval")
-}
-
-/**
   * One-time-read request
   **/
 case class ReadRequest(
@@ -412,7 +389,9 @@ case class SubscriptionRequest(
                                 private val user0: UserInfo = UserInfo(),
                                 senderInformation: Option[SenderInformation] = None,
                                 ttlLimit: Option[Timestamp] = None
-                              ) extends OmiRequest with SubLike with OdfRequest {
+                              ) extends OmiRequest  with OdfRequest {
+  require(interval == -1.seconds || interval == -2.seconds || interval >= 0.seconds, s"Invalid interval: $interval")
+  require(ttl >= 0.seconds, s"Invalid ttl, should be positive (or +infinite): $ttl")
   user = user0
 
   def withCallback: Option[Callback] => SubscriptionRequest = cb => this.copy(callback = cb)
