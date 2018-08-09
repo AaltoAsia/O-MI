@@ -307,10 +307,10 @@ case class ReadRequest(
         callbackAsUri.map(c => "@callback" -> DataRecord(c)),
         Some("@msgformat" -> DataRecord("odf")),
         Some("@targetType" -> DataRecord(TargetTypeType.fromString("node", omiDefaultScope))),
-        oldest.map(t => "@oldest" -> DataRecord(t)),
+        oldest.map(t => "@oldest" -> DataRecord(BigInt(t))),
         begin.map(t => "@begin" -> DataRecord(timestampToXML(t))),
         end.map(t => "@end" -> DataRecord(timestampToXML(t))),
-        newest.map(t => "@newest" -> DataRecord(t))
+        newest.map(t => "@newest" -> DataRecord(BigInt(t)))
       ).flatten.toMap
     )
   }
