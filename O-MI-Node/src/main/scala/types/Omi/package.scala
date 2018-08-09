@@ -45,6 +45,10 @@ package object OmiTypes {
         scalaxb.DataRecord[xmlTypes.ReadRequestType](namespace, Some("read"), read)
       case write: xmlTypes.WriteRequestType =>
         scalaxb.DataRecord[xmlTypes.WriteRequestType](namespace, Some("write"), write)
+      case call: xmlTypes.CallRequestType =>
+        scalaxb.DataRecord[xmlTypes.CallRequestType](namespace, Some("call"), call)
+      case delete: xmlTypes.DeleteRequestType =>
+        scalaxb.DataRecord[xmlTypes.DeleteRequestType](namespace, Some("delete"), delete)
       case cancel: xmlTypes.CancelRequestType =>
         scalaxb.DataRecord[xmlTypes.CancelRequestType](namespace, Some("cancel"), cancel)
       case response: xmlTypes.ResponseListType =>

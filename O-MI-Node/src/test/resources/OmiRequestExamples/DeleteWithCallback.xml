@@ -1,0 +1,8 @@
+<omiEnvelope ttl="10" version="1.0" xmlns="http://www.opengroup.org/xsd/omi/1.0/">
+  <delete  msgformat="odf" callback="http://test.com">
+    <msg>
+      <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
+      </Objects>
+    </msg>
+  </delete>
+</omiEnvelope>

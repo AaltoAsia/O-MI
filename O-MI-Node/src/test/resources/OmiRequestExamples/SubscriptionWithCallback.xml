@@ -1,0 +1,7 @@
+<omiEnvelope ttl="10" version="1.0" xmlns="http://www.opengroup.org/xsd/omi/1.0/">
+  <read interval="360" msgformat="odf" callback="http://test.com">
+    <msg>
+      <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" />
+    </msg>
+  </read>
+</omiEnvelope>
