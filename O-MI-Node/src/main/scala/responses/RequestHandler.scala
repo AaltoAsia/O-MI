@@ -16,7 +16,7 @@
 package responses
 
 import agentSystem.AgentEvents._
-import agentSystem.{AgentName, AgentResponsibilities}
+import agentSystem.{AgentName, AgentResponsibilities, Responsible, ResponsibleAgent, ResponsibleNode}
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.pattern.ask
 import akka.util.Timeout
@@ -26,6 +26,7 @@ import types.OmiTypes._
 import scala.collection.mutable.{Map => MutableMap}
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
+import utils._
 
 object RequestHandler {
   def props(
@@ -134,9 +135,8 @@ class RequestHandler(
       responsibleToRequest.map{
         case (None, subrequest) =>  
           f(subrequest)
-        case (Some(agentName), subrequest: OmiRequest) => 
-          log.debug(s"Asking responsible Agent $agentName to handle part of request.")
-          askAgent(agentName,subrequest)
+        case (Some(responsible), subrequest: OmiRequest) => 
+          askResponsible(responsible,subrequest)
       }.map{
         future: Future[ResponseRequest] =>
           future.recover {
@@ -155,37 +155,6 @@ class RequestHandler(
   }
 
   def handleCallRequest( call: CallRequest) : Future[ResponseRequest] = {
-    /*
-     log.debug(s"RequestHandler handling call OdfRequest...")
-    
-    val responsibleToRequest = agentResponsibilities.splitRequestToResponsible( call )
-    val fSeq = Future.sequence(
-      responsibleToRequest.map {
-        case (None, subrequest) =>
-          //log.debug( "Call for serviceless path", subrequest.odf.asXML.toString)
-          Future.successful {
-            Responses.NotFound(
-              "Call request for path that do not have responsible agent for service.")
-
-          }
-        case (Some(agentName), subrequest: CallRequest) =>
-          log.debug(s"Asking responsible Agent $agentName to handle part of request.")
-          askAgent(agentName, subrequest)
-      }.map {
-        future: Future[ResponseRequest] =>
-          future.recover {
-            case e: Exception =>
-              Responses.InternalError(e)
-          }
-      }
-    )
-    fSeq.map {
-      responses =>
-        val results = responses.flatMap(response => response.results)
-        ResponseRequest(
-          Results.unionReduce(results.toVector)
-        )
-    }*/
    splitAndHandle(call){
      request: OdfRequest =>
           Future.successful{
@@ -226,7 +195,18 @@ class RequestHandler(
     agentResponsibilities.removeAgent(agentName)
   }
 
+  private def askResponsible(responsible: Responsible, request: OmiRequest): Future[ResponseRequest] = {
+    responsible match {
+      case ResponsibleAgent( agentName: AgentName ) => 
+        askAgent( agentName, request )
+      case ResponsibleNode( uri ) => 
+        Future.successful{
+          Responses.InternalError("Responsible external addresses not yet supported")
+        }
+    }
+  }
   private def askAgent(agentName: AgentName, request: OmiRequest): Future[ResponseRequest] = {
+    log.debug(s"Asking responsible Agent $agentName to handle part of request.")
     agents.get(agentName) match {
       case Some(ai: AgentInformation) if ai.running =>
         implicit val to: Timeout = Timeout(request.handleTTL)

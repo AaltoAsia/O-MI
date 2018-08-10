@@ -1,10 +1,12 @@
 package agentSystem
 
-import types.OmiTypes._
-import types.Path
 
 import scala.collection.immutable.{Map => ImmutableMap}
 import scala.collection.mutable.{Map => MutableMap}
+import akka.http.scaladsl.model.Uri
+
+import types.OmiTypes._
+import types.Path
 
 object AgentResponsibilities {
 
@@ -14,11 +16,16 @@ object AgentResponsibilities {
 
 import agentSystem.AgentResponsibilities._
 
+sealed trait Responsible
+case class ResponsibleAgent( name: AgentName ) extends Responsible
+case class ResponsibleNode( address: Uri ) extends Responsible
+
+
 
 class AgentResponsibilities() {
 
   val pathsToResponsible: MutableMap[Path, AgentResponsibility] = MutableMap.empty
-  def splitRequestToResponsible( request: OdfRequest ) :ImmutableMap[Option[AgentName], OdfRequest] ={
+  def splitRequestToResponsible( request: OdfRequest ) :ImmutableMap[Option[Responsible], OdfRequest] ={
     request match {
       case write: WriteRequest => splitCallAndWriteToResponsible(write)
       case call: CallRequest => splitCallAndWriteToResponsible(call)
@@ -27,13 +34,13 @@ class AgentResponsibilities() {
       case other: OdfRequest =>ImmutableMap( None -> other)
     }
   }
-  def splitReadAndDeleteToResponsible( request: OdfRequest ) : ImmutableMap[Option[AgentName], OdfRequest] ={
+  def splitReadAndDeleteToResponsible( request: OdfRequest ) : ImmutableMap[Option[Responsible], OdfRequest] ={
     //def filter: RequestFilter => Boolean = createFilter(request)
     //val odf = request.odf
     ???
   }
 
-  def splitCallAndWriteToResponsible( request: OdfRequest ) : ImmutableMap[Option[AgentName], OdfRequest] ={
+  def splitCallAndWriteToResponsible( request: OdfRequest ) : ImmutableMap[Option[Responsible], OdfRequest] ={
     if( pathsToResponsible.isEmpty ){
       return ImmutableMap( None -> request )
     }
@@ -78,18 +85,18 @@ class AgentResponsibilities() {
         }
         responsiblesTuple.map {
           case (path: Path, agentName: AgentName) =>
-            agentName
+            ResponsibleAgent(agentName)
         }
     }
 
     if( resp.size > 1 ){
       resp.map {
-        case (responsible: Option[AgentName], paths: Set[Path]) =>
+        case (responsible: Option[Responsible], paths: Set[Path]) =>
           responsible -> request.replaceOdf(odf.selectUpTree(paths))
       }
     } else {
       resp.headOption.map{
-        case (responsible: Option[AgentName], paths: Set[Path]) =>
+        case (responsible: Option[Responsible], paths: Set[Path]) =>
           responsible -> request
       }.toMap
     }
@@ -135,7 +142,7 @@ class AgentResponsibilities() {
 
   }
 
-  def add(agentResponsibilities: Seq[AgentResponsibility]): MutableMap[Path, AgentResponsibility]= {
+  def add(agentResponsibilities: Seq[AgentResponsibility]): Unit = {
     val newMappings = agentResponsibilities.map {
       case ar@AgentResponsibility(agentName: AgentName, path: Path, requestFilter: RequestFilter) =>
         path -> ar
@@ -188,7 +195,6 @@ class AgentResponsibilities() {
     //println( s"Permissien check:$result")
     result
   }
-
 
 }
 
