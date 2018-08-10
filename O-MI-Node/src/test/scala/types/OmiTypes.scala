@@ -176,13 +176,14 @@ class OmiTypesTest extends Specification with XmlMatchers{
         case RequestFileTest(description, request, filepath) =>
           s"$description" >> {
             val is = java.nio.file.Files.newInputStream(filepath)
-            val xml: Elem = OmiParser.XMLParser.loadString(setTimezoneToSystemLocale(OmiParser.XMLParser.load( is ).toString))
+            val timeCorrected = setTimezoneToSystemLocale(OmiParser.XMLParser.load( is ).toString)
+              val xml: Elem = OmiParser.XMLParser.loadString(timeCorrected)
             "to XML test" >> {
               request.asXML must beEqualToIgnoringSpace( xml )
             }
             //This may not be needed? 
             //Timestamp do not match 
-            //"from XML test" >> {OmiParser.parse(filepath) must beRight( beEqualTo( request ) )}.skipped
+            "from XML test" >> {OmiParser.parse(xml.toString) must beRight( contain( request ) )}
           }
       }
     )
