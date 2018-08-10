@@ -81,8 +81,7 @@ class OmiTypesTest extends Specification with XmlMatchers{
   )
   case class RequestFileTest(description: String, request: OmiRequest, filepath: java.nio.file.Path )
   def setTimezoneToSystemLocale(in: String): String = {
-    val date = """(end|begin)\s*=\s*"(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?)"""".r
-    //"((\+|\-)\d{2}:\d{2})?)"""".r
+    val date = """(end|begin)\s*=\s*"(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?(?:(?:\+|-)\d{2}:\d{2})?)"""".r
 
     val replaced = date replaceAllIn(in, _ match {
 
