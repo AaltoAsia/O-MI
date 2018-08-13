@@ -58,6 +58,7 @@ class ResponsibilityTest extends Specification{
           AgentResponsibility( "Writer6", Path( "Objects/WritableObj6"), ReadWriteDeleteFilter() ),
           AgentResponsibility( "Writer7", Path( "Objects/WritableObj7"), WriteCallDeleteFilter() ),
           AgentResponsibility( "Writer8", Path( "Objects/WritableObj8"), ReadWriteCallDeleteFilter() ),
+          AgentResponsibility( "WriterN", Path( "Objects/WritableObjN"), ReadWriteDeleteFilter() ),
           AgentResponsibility( "NonWriter", Path( "Objects/NonWritableObj"), ReadFilter())
         )
       ){
@@ -71,20 +72,101 @@ class ResponsibilityTest extends Specification{
               InfoItem( Path( "Objects/WritableObj5/II"), Vector(IntValue(1,testTime))),
               InfoItem( Path( "Objects/WritableObj6/II"), Vector(IntValue(1,testTime))),
               InfoItem( Path( "Objects/WritableObj7/II"), Vector(IntValue(1,testTime))),
-              InfoItem( Path( "Objects/WritableObj8/II"), Vector(IntValue(1,testTime)))
+              InfoItem( Path( "Objects/WritableObj8/II"), Vector(IntValue(1,testTime))),
+              Object( Path( "Objects/WritableObj9"))
             )
           )
         )
 
         val correctResult: Map[Option[Responsible],OdfRequest] = Map(
-          Some(ResponsibleAgent("Writer1")) -> WriteRequest( ImmutableODF( Vector( InfoItem( Path( "Objects/WritableObj1/II"), Vector(IntValue(1,testTime)))))),
-           Some(ResponsibleAgent("Writer2")) -> WriteRequest( ImmutableODF( Vector( InfoItem( Path( "Objects/WritableObj2/II"), Vector(IntValue(1,testTime)))))),
-           Some(ResponsibleAgent("Writer3")) -> WriteRequest( ImmutableODF( Vector( InfoItem( Path( "Objects/WritableObj3/II"), Vector(IntValue(1,testTime)))))),
-           Some(ResponsibleAgent("Writer4")) -> WriteRequest( ImmutableODF( Vector( InfoItem( Path( "Objects/WritableObj4/II"), Vector(IntValue(1,testTime)))))),
-           Some(ResponsibleAgent("Writer5")) -> WriteRequest( ImmutableODF( Vector( InfoItem( Path( "Objects/WritableObj5/II"), Vector(IntValue(1,testTime)))))),
-           Some(ResponsibleAgent("Writer6")) -> WriteRequest( ImmutableODF( Vector( InfoItem( Path( "Objects/WritableObj6/II"), Vector(IntValue(1,testTime)))))),
-           Some(ResponsibleAgent("Writer7")) -> WriteRequest( ImmutableODF( Vector( InfoItem( Path( "Objects/WritableObj7/II"), Vector(IntValue(1,testTime)))))),
-           Some(ResponsibleAgent("Writer8")) -> WriteRequest( ImmutableODF( Vector( InfoItem( Path( "Objects/WritableObj8/II"), Vector(IntValue(1,testTime))))))
+          Some(ResponsibleAgent("Writer1")) -> WriteRequest( 
+            ImmutableODF( Vector( InfoItem( Path( "Objects/WritableObj1/II"), Vector(IntValue(1,testTime)))))
+          ),
+           Some(ResponsibleAgent("Writer2")) -> WriteRequest( 
+             ImmutableODF( Vector( InfoItem( Path( "Objects/WritableObj2/II"), Vector(IntValue(1,testTime)))))
+           ),
+           Some(ResponsibleAgent("Writer3")) -> WriteRequest( 
+             ImmutableODF( Vector( InfoItem( Path( "Objects/WritableObj3/II"), Vector(IntValue(1,testTime)))))
+           ),
+           Some(ResponsibleAgent("Writer4")) -> WriteRequest( 
+             ImmutableODF( Vector( InfoItem( Path( "Objects/WritableObj4/II"), Vector(IntValue(1,testTime)))))
+           ),
+           Some(ResponsibleAgent("Writer5")) -> WriteRequest( 
+             ImmutableODF( Vector( InfoItem( Path( "Objects/WritableObj5/II"), Vector(IntValue(1,testTime)))))
+           ),
+           Some(ResponsibleAgent("Writer6")) -> WriteRequest( 
+             ImmutableODF( Vector( InfoItem( Path( "Objects/WritableObj6/II"), Vector(IntValue(1,testTime)))))
+           ),
+           Some(ResponsibleAgent("Writer7")) -> WriteRequest( 
+             ImmutableODF( Vector( InfoItem( Path( "Objects/WritableObj7/II"), Vector(IntValue(1,testTime)))))
+           ),
+           Some(ResponsibleAgent("Writer8")) -> WriteRequest( 
+             ImmutableODF( Vector( InfoItem( Path( "Objects/WritableObj8/II"), Vector(IntValue(1,testTime)))))
+           ),
+           None -> WriteRequest( 
+             ImmutableODF( Vector( Object( Path( "Objects/WritableObj9"))))
+           )
+        )
+        splitRequestTest(ar, request, correctResult)
+      }
+      "call request" >> new ARTest(
+        Vector( 
+          AgentResponsibility( "Caller1", Path( "Objects/CallObj1"), CallFilter() ),
+          AgentResponsibility( "Caller2", Path( "Objects/CallObj2"), ReadCallFilter() ),
+          AgentResponsibility( "Caller3", Path( "Objects/CallObj3"), WriteCallFilter() ),
+          AgentResponsibility( "Caller4", Path( "Objects/CallObj4"), CallDeleteFilter() ),
+          AgentResponsibility( "Caller5", Path( "Objects/CallObj5"), ReadWriteCallFilter() ),
+          AgentResponsibility( "Caller6", Path( "Objects/CallObj6"), ReadCallDeleteFilter() ),
+          AgentResponsibility( "Caller7", Path( "Objects/CallObj7"), WriteCallDeleteFilter() ),
+          AgentResponsibility( "Caller8", Path( "Objects/CallObj8"), ReadWriteCallDeleteFilter() ),
+          AgentResponsibility( "CallerN", Path( "Objects/CallObjN"), ReadCallDeleteFilter() ),
+          AgentResponsibility( "NonCaller", Path( "Objects/NonCallObj"), ReadFilter())
+        )
+      ){
+        val request: OdfRequest = CallRequest(
+          ImmutableODF(
+            Vector(
+              InfoItem( Path( "Objects/CallObj1/II"), Vector(IntValue(1,testTime))),
+              InfoItem( Path( "Objects/CallObj2/II"), Vector(IntValue(1,testTime))),
+              InfoItem( Path( "Objects/CallObj3/II"), Vector(IntValue(1,testTime))),
+              InfoItem( Path( "Objects/CallObj4/II"), Vector(IntValue(1,testTime))),
+              InfoItem( Path( "Objects/CallObj5/II"), Vector(IntValue(1,testTime))),
+              InfoItem( Path( "Objects/CallObj6/II"), Vector(IntValue(1,testTime))),
+              InfoItem( Path( "Objects/CallObj7/II"), Vector(IntValue(1,testTime))),
+              InfoItem( Path( "Objects/CallObj8/II"), Vector(IntValue(1,testTime))),
+              Object( Path( "Objects/CallObj9"))
+            )
+          )
+        )
+
+        val correctResult: Map[Option[Responsible],OdfRequest] = Map(
+          Some(ResponsibleAgent("Caller1")) -> CallRequest( 
+            ImmutableODF( Vector( InfoItem( Path( "Objects/CallObj1/II"), Vector(IntValue(1,testTime)))))
+          ),
+           Some(ResponsibleAgent("Caller2")) -> CallRequest( 
+             ImmutableODF( Vector( InfoItem( Path( "Objects/CallObj2/II"), Vector(IntValue(1,testTime)))))
+           ),
+           Some(ResponsibleAgent("Caller3")) -> CallRequest( 
+             ImmutableODF( Vector( InfoItem( Path( "Objects/CallObj3/II"), Vector(IntValue(1,testTime)))))
+           ),
+           Some(ResponsibleAgent("Caller4")) -> CallRequest( 
+             ImmutableODF( Vector( InfoItem( Path( "Objects/CallObj4/II"), Vector(IntValue(1,testTime)))))
+           ),
+           Some(ResponsibleAgent("Caller5")) -> CallRequest( 
+             ImmutableODF( Vector( InfoItem( Path( "Objects/CallObj5/II"), Vector(IntValue(1,testTime)))))
+           ),
+           Some(ResponsibleAgent("Caller6")) -> CallRequest( 
+             ImmutableODF( Vector( InfoItem( Path( "Objects/CallObj6/II"), Vector(IntValue(1,testTime)))))
+           ),
+           Some(ResponsibleAgent("Caller7")) -> CallRequest( 
+             ImmutableODF( Vector( InfoItem( Path( "Objects/CallObj7/II"), Vector(IntValue(1,testTime)))))
+           ),
+           Some(ResponsibleAgent("Caller8")) -> CallRequest( 
+             ImmutableODF( Vector( InfoItem( Path( "Objects/CallObj8/II"), Vector(IntValue(1,testTime)))))
+           ),
+           None -> CallRequest( 
+             ImmutableODF( Vector( Object( Path( "Objects/CallObj9"))))
+           )
         )
         splitRequestTest(ar, request, correctResult)
       }
