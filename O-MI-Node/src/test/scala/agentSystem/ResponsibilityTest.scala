@@ -50,7 +50,8 @@ class ResponsibilityTest extends Specification{
     "split correctly" >>{
       "write request" >> new ARTest(
         Vector( 
-          AgentResponsibility( "Writer1", Path( "Objects/WritableObj1"), WriteFilter() ),
+          AgentResponsibility( "Writer", Path( "Objects/WritableObj1"), WriteFilter() ),
+          AgentResponsibility( "Writer1", Path( "Objects/WritableObj1/II"), WriteFilter() ),
           AgentResponsibility( "Writer2", Path( "Objects/WritableObj2"), ReadWriteFilter() ),
           AgentResponsibility( "Writer3", Path( "Objects/WritableObj3"), WriteCallFilter() ),
           AgentResponsibility( "Writer4", Path( "Objects/WritableObj4"), WriteDeleteFilter() ),
@@ -111,7 +112,8 @@ class ResponsibilityTest extends Specification{
       }
       "call request" >> new ARTest(
         Vector( 
-          AgentResponsibility( "Caller1", Path( "Objects/CallObj1"), CallFilter() ),
+          AgentResponsibility( "Caller", Path( "Objects/CallObj1"), CallFilter() ),
+          AgentResponsibility( "Caller1", Path( "Objects/CallObj1/II"), CallFilter() ),
           AgentResponsibility( "Caller2", Path( "Objects/CallObj2"), ReadCallFilter() ),
           AgentResponsibility( "Caller3", Path( "Objects/CallObj3"), WriteCallFilter() ),
           AgentResponsibility( "Caller4", Path( "Objects/CallObj4"), CallDeleteFilter() ),
@@ -181,22 +183,69 @@ class ResponsibilityTest extends Specification{
         1 === 2
       }*/
     }
-    /*
     "check responsiblity correctly for" >>{
       
-      
-      "write request" >> {
-        1 === 2
+      "write request" >> new ARTest(
+        Vector( 
+          AgentResponsibility( "Writer", Path( "Objects/WritableObj1"), WriteFilter() ),
+          AgentResponsibility( "Writer1", Path( "Objects/WritableObj1/II"), WriteFilter() ),
+          AgentResponsibility( "Writer2", Path( "Objects/WritableObj2"), ReadWriteFilter() ),
+          AgentResponsibility( "Writer3", Path( "Objects/WritableObj3"), WriteCallFilter() ),
+          AgentResponsibility( "Writer4", Path( "Objects/WritableObj4"), WriteDeleteFilter() ),
+          AgentResponsibility( "Writer5", Path( "Objects/WritableObj5"), ReadWriteCallFilter() ),
+          AgentResponsibility( "Writer6", Path( "Objects/WritableObj6"), ReadWriteDeleteFilter() ),
+          AgentResponsibility( "Writer7", Path( "Objects/WritableObj7"), WriteCallDeleteFilter() ),
+          AgentResponsibility( "Writer8", Path( "Objects/WritableObj8"), ReadWriteCallDeleteFilter() ),
+          AgentResponsibility( "WriterN", Path( "Objects/WritableObjN"), ReadWriteDeleteFilter() ),
+          AgentResponsibility( "NonWriter", Path( "Objects/NonWritableObj"), ReadFilter())
+        )
+      ){
+        val request = WriteRequest(
+          ImmutableODF( Vector(
+              InfoItem( Path( "Objects/WritableObjAUAUUA/II1"), Vector(IntValue(1,testTime))),
+              InfoItem( Path( "Objects/WritableObj2/II1"), Vector(IntValue(1,testTime))),
+              InfoItem( Path( "Objects/WritableObj2/II2"), Vector(IntValue(1,testTime))),
+              InfoItem( Path( "Objects/WritableObj2/II3"), Vector(IntValue(1,testTime)))
+          ))
+        )
+        responsibilityCheckTest(ar, "Writer2", request, true) and 
+        responsibilityCheckTest(ar, "Unknown", request, false) and 
+        responsibilityCheckTest(ar, "", request, false) 
       } 
-      "call request" >> {
-        1 === 2
-      }
+      "call request" >> new ARTest(
+        Vector( 
+          AgentResponsibility( "Caller", Path( "Objects/CallObj1"), CallFilter() ),
+          AgentResponsibility( "Caller1", Path( "Objects/CallObj1/II"), CallFilter() ),
+          AgentResponsibility( "Caller2", Path( "Objects/CallObj2"), ReadCallFilter() ),
+          AgentResponsibility( "Caller3", Path( "Objects/CallObj3"), WriteCallFilter() ),
+          AgentResponsibility( "Caller4", Path( "Objects/CallObj4"), CallDeleteFilter() ),
+          AgentResponsibility( "Caller5", Path( "Objects/CallObj5"), ReadWriteCallFilter() ),
+          AgentResponsibility( "Caller6", Path( "Objects/CallObj6"), ReadCallDeleteFilter() ),
+          AgentResponsibility( "Caller7", Path( "Objects/CallObj7"), WriteCallDeleteFilter() ),
+          AgentResponsibility( "Caller8", Path( "Objects/CallObj8"), ReadWriteCallDeleteFilter() ),
+          AgentResponsibility( "CallerN", Path( "Objects/CallObjN"), ReadCallDeleteFilter() ),
+          AgentResponsibility( "NonCaller", Path( "Objects/NonCallObj"), ReadFilter())
+        )
+      ){
+        val request = CallRequest(
+          ImmutableODF( Vector(
+              InfoItem( Path( "Objects/CallObjAUAUUA/II1"), Vector(IntValue(1,testTime))),
+              InfoItem( Path( "Objects/CallObj2/II1"), Vector(IntValue(1,testTime))),
+              InfoItem( Path( "Objects/CallObj2/II2"), Vector(IntValue(1,testTime))),
+              InfoItem( Path( "Objects/CallObj2/II3"), Vector(IntValue(1,testTime)))
+          ))
+        )
+        responsibilityCheckTest(ar, "Caller2", request, true) and 
+        responsibilityCheckTest(ar, "Unknown", request, false) and
+        responsibilityCheckTest(ar, "", request, false) 
+      } 
+      /*
       "read request" >> {
         1 === 2
       }
       "delete request" >> {
         1 === 2
-      }
-    }*/ 
+      }*/
+    } 
   }
 }
