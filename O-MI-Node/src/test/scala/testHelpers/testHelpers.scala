@@ -317,6 +317,8 @@ class Actorstest
 class NoisyActorstest
   (as: ActorSystem = Actorstest.createAs()) extends Actorstest(as)
 
+class VeryNoisyActorstest
+  (as: ActorSystem = Actorstest.createNoisyAs()) extends Actorstest(as)
 object Actorstest {
   val silentLoggerConf = ConfigFactory.parseString(
     """
@@ -342,7 +344,12 @@ object Actorstest {
     """
       akka.loggers = ["testHelpers.SilentTestEventListener"]
     """)
+  val noisyLoggerConf = ConfigFactory.parseString(
+    """
+      akka.loggers = ["akka.testkit.TestEventListener"]
+    """)
   def createAs() = ActorSystem("testsystem", loggerConf.withFallback(ConfigFactory.load()))
+  def createNoisyAs() = ActorSystem("testsystem", noisyLoggerConf.withFallback(ConfigFactory.load()))
   def createSilentAs() = ActorSystem("testsystem", silentLoggerConfFull)
   def apply() = new Actorstest()
   def silent() = new Actorstest(createSilentAs())
