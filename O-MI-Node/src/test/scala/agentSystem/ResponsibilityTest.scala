@@ -52,6 +52,7 @@ class ResponsibilityTest extends Specification{
         Vector( 
           AgentResponsibility( "Writer", Path( "Objects/WritableObj1"), WriteFilter() ),
           AgentResponsibility( "Writer1", Path( "Objects/WritableObj1/II"), WriteFilter() ),
+          AgentResponsibility( "Writer0", Path( "Objects/WritableObj0"), ReadFilter() ),
           AgentResponsibility( "Writer2", Path( "Objects/WritableObj2"), ReadWriteFilter() ),
           AgentResponsibility( "Writer3", Path( "Objects/WritableObj3"), WriteCallFilter() ),
           AgentResponsibility( "Writer4", Path( "Objects/WritableObj4"), WriteDeleteFilter() ),
@@ -59,13 +60,14 @@ class ResponsibilityTest extends Specification{
           AgentResponsibility( "Writer6", Path( "Objects/WritableObj6"), ReadWriteDeleteFilter() ),
           AgentResponsibility( "Writer7", Path( "Objects/WritableObj7"), WriteCallDeleteFilter() ),
           AgentResponsibility( "Writer8", Path( "Objects/WritableObj8"), ReadWriteCallDeleteFilter() ),
-          AgentResponsibility( "WriterN", Path( "Objects/WritableObjN"), ReadWriteDeleteFilter() ),
+          AgentResponsibility( "WriterN", Path( "Objects/WritableObjN"), ReadDeleteFilter() ),
           AgentResponsibility( "NonWriter", Path( "Objects/NonWritableObj"), ReadFilter())
         )
       ){
         val request: OdfRequest = WriteRequest(
           ImmutableODF(
             Vector(
+              InfoItem( Path( "Objects/WritableObj0/II"), Vector(IntValue(1,testTime))),
               InfoItem( Path( "Objects/WritableObj1/II"), Vector(IntValue(1,testTime))),
               InfoItem( Path( "Objects/WritableObj2/II"), Vector(IntValue(1,testTime))),
               InfoItem( Path( "Objects/WritableObj3/II"), Vector(IntValue(1,testTime))),
@@ -105,7 +107,8 @@ class ResponsibilityTest extends Specification{
              ImmutableODF( Vector( InfoItem( Path( "Objects/WritableObj8/II"), Vector(IntValue(1,testTime)))))
            ),
            None -> WriteRequest( 
-             ImmutableODF( Vector( Object( Path( "Objects/WritableObj9"))))
+             ImmutableODF( Vector( Object( Path( "Objects/WritableObj9")),
+              InfoItem( Path( "Objects/WritableObj0/II"), Vector(IntValue(1,testTime))) ))
            )
         )
         splitRequestTest(ar, request, correctResult)
@@ -114,6 +117,7 @@ class ResponsibilityTest extends Specification{
         Vector( 
           AgentResponsibility( "Caller", Path( "Objects/CallObj1"), CallFilter() ),
           AgentResponsibility( "Caller1", Path( "Objects/CallObj1/II"), CallFilter() ),
+          AgentResponsibility( "Caller0", Path( "Objects/CallObj0"), ReadFilter() ),
           AgentResponsibility( "Caller2", Path( "Objects/CallObj2"), ReadCallFilter() ),
           AgentResponsibility( "Caller3", Path( "Objects/CallObj3"), WriteCallFilter() ),
           AgentResponsibility( "Caller4", Path( "Objects/CallObj4"), CallDeleteFilter() ),
@@ -128,6 +132,7 @@ class ResponsibilityTest extends Specification{
         val request: OdfRequest = CallRequest(
           ImmutableODF(
             Vector(
+              InfoItem( Path( "Objects/CallObj0/II"), Vector(IntValue(1,testTime))),
               InfoItem( Path( "Objects/CallObj1/II"), Vector(IntValue(1,testTime))),
               InfoItem( Path( "Objects/CallObj2/II"), Vector(IntValue(1,testTime))),
               InfoItem( Path( "Objects/CallObj3/II"), Vector(IntValue(1,testTime))),
@@ -167,7 +172,10 @@ class ResponsibilityTest extends Specification{
              ImmutableODF( Vector( InfoItem( Path( "Objects/CallObj8/II"), Vector(IntValue(1,testTime)))))
            ),
            None -> CallRequest( 
-             ImmutableODF( Vector( Object( Path( "Objects/CallObj9"))))
+             ImmutableODF( Vector( 
+               Object( Path( "Objects/CallObj9")),
+              InfoItem( Path( "Objects/CallObj0/II"), Vector(IntValue(1,testTime)))
+              ))
            )
         )
         splitRequestTest(ar, request, correctResult)
