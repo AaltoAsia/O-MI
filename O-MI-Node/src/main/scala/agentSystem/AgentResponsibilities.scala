@@ -3,9 +3,15 @@ package agentSystem
 
 import scala.collection.immutable.{Map => ImmutableMap}
 import scala.collection.mutable.{Map => MutableMap}
+import scala.concurrent.{Future, ExecutionContext}
+import akka.util.Timeout
+import akka.pattern.ask
 import akka.http.scaladsl.model.Uri
 
+import database.SingleStores
+import database.journal.Models.GetTree
 import types.OmiTypes._
+import types.odf._
 import types.Path
 
 object AgentResponsibilities {
@@ -22,27 +28,107 @@ case class ResponsibleNode( address: Uri ) extends Responsible
 
 
 
-class AgentResponsibilities() {
+class AgentResponsibilities( val singleStores: SingleStores) {
 
   val pathsToResponsible: MutableMap[Path, AgentResponsibility] = MutableMap.empty
-  def splitRequestToResponsible( request: OdfRequest ) :ImmutableMap[Option[Responsible], OdfRequest] ={
+  def splitRequestToResponsible( request: OdfRequest )(implicit ec: ExecutionContext) :Future[ImmutableMap[Option[Responsible], OdfRequest]] ={
     request match {
       case write: WriteRequest => splitCallAndWriteToResponsible(write)
       case call: CallRequest => splitCallAndWriteToResponsible(call)
       case delete: DeleteRequest => splitReadAndDeleteToResponsible(delete)
       case read: ReadRequest => splitReadAndDeleteToResponsible(read)
-      case other: OdfRequest =>ImmutableMap( None -> other)
+      case other: OdfRequest =>Future.successful(ImmutableMap( None -> other))
     }
   }
-  def splitReadAndDeleteToResponsible( request: OdfRequest ) : ImmutableMap[Option[Responsible], OdfRequest] ={
-    //def filter: RequestFilter => Boolean = createFilter(request)
-    //val odf = request.odf
-    ???
+  def splitReadAndDeleteToResponsible( request: OdfRequest )(implicit ec: ExecutionContext) : Future[ImmutableMap[Option[Responsible], OdfRequest]] ={
+    implicit val timeout = Timeout( request.handleTTL)
+    val cachedOdfF: Future[ImmutableODF] = (singleStores.hierarchyStore ? GetTree).mapTo[ImmutableODF]
+    def filter: RequestFilter => Boolean = createFilter(request)
+    val odf = request.odf
+    val responsibleToPathsWithoutNone: Map[Option[Responsible],Set[Path]]= pathsToResponsible.filter{
+      case (path, AgentResponsibility( agentName, _, rf) ) =>
+        lazy val pathFilter = {
+          request.odf.getPaths.exists{
+            relativePath => 
+              relativePath == path || 
+              relativePath.isAncestorOf(path) || 
+              relativePath.isDescendantOf(path)  
+          }
+        }
+        filter(rf) && pathFilter
+    }.groupBy{
+      case (path: Path, ar: AgentResponsibility) => ar.agentName
+    }.map{
+      case (agentName, tuples) => 
+        (Some(ResponsibleAgent(agentName)),tuples.map(_._1).toSet)
+    }
+    val responsiblePaths = responsibleToPathsWithoutNone.values.flatten
+    val sharedPaths: Set[Path] = odf.getLeafPaths.filterNot{
+      path: Path => 
+        responsiblePaths.exists{
+          responsiblePath: Path =>
+            responsiblePath == path ||
+            responsiblePath.isAncestorOf(path)
+        }
+    }
+    val responsibleToPaths = sharedPaths.headOption.map{
+      _ => None -> sharedPaths
+      }.toMap ++ responsibleToPathsWithoutNone
+    cachedOdfF.map{
+      cachedOdf =>
+      val result = responsibleToPaths.map{
+        case (responsible, paths) => 
+          val subResponsible = responsiblePaths.filter{
+            responsiblePath => 
+              paths.exists{
+                path => path.isAncestorOf( responsiblePath)
+              }
+          }
+          val selectedPaths = cachedOdf.subTreePaths(paths).filterNot{
+            path => 
+              subResponsible.exists{
+                responsiblePath => 
+                  path == responsiblePath ||
+                  responsiblePath.isAncestorOf(path)
+              }
+          } ++ paths.map( _.getAncestorsAndSelf ).flatten.toSet
+          responsible -> selectedPaths
+      }
+      val r = result.map{
+        case (responsible, paths) => 
+          val selectedPaths = paths.filter{
+            path => 
+              result.exists{
+                case (otherResponsible, otherPaths) => 
+                  otherResponsible != responsible &&
+                  otherPaths.contains(path.getParent)
+
+              }
+          }.flatMap(_.getAncestorsAndSelf).toSet
+          val nodes: Iterable[Node]= selectedPaths.flatMap{
+            path => 
+              cachedOdf.get(path).map{
+                case obj: Object =>
+                  odf.get(path).getOrElse{
+                      obj.copy(ids = obj.ids.filter( qlmID => qlmID.id == obj.path.last), typeAttribute = None, descriptions = Set.empty)
+                  }
+                case ii: InfoItem =>
+                  odf.get(path).getOrElse{
+                      ii.copy(names = ii.names.filter( qlmID => qlmID.id == ii.path.last), typeAttribute = None, descriptions = Set.empty, metaData = None, values = Vector.empty)
+                  }
+                case obj: Objects => 
+                  odf.get(path).getOrElse( obj )
+              }
+          }.toVector
+          responsible -> request.replaceOdf(ImmutableODF(nodes))
+      }
+       r
+    }
   }
 
-  def splitCallAndWriteToResponsible( request: OdfRequest ) : ImmutableMap[Option[Responsible], OdfRequest] ={
+  def splitCallAndWriteToResponsible( request: OdfRequest ) : Future[ImmutableMap[Option[Responsible], OdfRequest]] ={
     if( pathsToResponsible.isEmpty ){
-      return ImmutableMap( None -> request )
+      return Future.successful(ImmutableMap( None -> request ))
     }
     def filter: RequestFilter => Boolean = createFilter(request)
 
@@ -89,7 +175,7 @@ class AgentResponsibilities() {
         }
     }
 
-    if( resp.size > 1 ){
+    val results: Map[Option[Responsible],OdfRequest] = if( resp.size > 1 ){
       resp.map {
         case (responsible: Option[Responsible], paths: Set[Path]) =>
           responsible -> request.replaceOdf(odf.selectUpTree(paths))
@@ -100,6 +186,7 @@ class AgentResponsibilities() {
           responsible -> request
       }.toMap
     }
+    Future.successful(results)
   }
 
   private def createFilter(request: OdfRequest): RequestFilter => Boolean = {

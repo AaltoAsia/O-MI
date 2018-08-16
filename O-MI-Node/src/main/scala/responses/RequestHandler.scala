@@ -15,26 +15,30 @@
 
 package responses
 
-import agentSystem.AgentEvents._
-import agentSystem.{AgentName, AgentResponsibilities, Responsible, ResponsibleAgent, ResponsibleNode}
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.pattern.ask
 import akka.util.Timeout
-import http.OmiConfigExtension
-import types.OmiTypes._
 
 import scala.collection.mutable.{Map => MutableMap}
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
+
+import database.SingleStores
+import agentSystem.AgentEvents._
+import agentSystem.{AgentName, AgentResponsibilities, Responsible, ResponsibleAgent, ResponsibleNode}
+import http.OmiConfigExtension
+import types.OmiTypes._
 import utils._
 
 object RequestHandler {
   def props(
+             singleStores: SingleStores,
              subscriptionManager: ActorRef,
              dbHandler: ActorRef,
              settings: OmiConfigExtension
            ): Props = Props(
     new RequestHandler(
+      singleStores,
       subscriptionManager,
       dbHandler,
       settings
@@ -44,6 +48,7 @@ object RequestHandler {
 }
 
 class RequestHandler(
+                      protected val singleStores: SingleStores,
                       protected val subscriptionManager: ActorRef,
                       protected val dbHandler: ActorRef,
                       protected val settings: OmiConfigExtension
@@ -56,7 +61,7 @@ class RequestHandler(
 
   case class AgentInformation(agentName: AgentName, running: Boolean, actorRef: ActorRef)
 
-  private val agentResponsibilities: AgentResponsibilities = new AgentResponsibilities()
+  private val agentResponsibilities: AgentResponsibilities = new AgentResponsibilities(singleStores)
   private val agents: MutableMap[AgentName, AgentInformation] = MutableMap.empty
 
   def receive: PartialFunction[Any, Unit] = {
@@ -130,21 +135,24 @@ class RequestHandler(
    }
   }
   def splitAndHandle( request: OdfRequest )(f: OdfRequest => Future[ResponseRequest]): Future[ResponseRequest] ={
-    val responsibleToRequest = agentResponsibilities.splitRequestToResponsible( request )
-    val fSeq = Future.sequence(
-      responsibleToRequest.map{
-        case (None, subrequest) =>  
-          f(subrequest)
-        case (Some(responsible), subrequest: OmiRequest) => 
-          askResponsible(responsible,subrequest)
-      }.map{
-        future: Future[ResponseRequest] =>
-          future.recover {
-            case e: Exception =>
-              Responses.InternalError(e)
-          }
-      }
-    )
+    val responsibleToRequestF = agentResponsibilities.splitRequestToResponsible( request )
+    val fSeq = responsibleToRequestF.flatMap{
+      responsibleToRequest =>
+        Future.sequence(
+        responsibleToRequest.map{
+          case (None, subrequest) =>  
+            f(subrequest)
+          case (Some(responsible), subrequest: OmiRequest) => 
+            askResponsible(responsible,subrequest)
+        }.map{
+          future: Future[ResponseRequest] =>
+            future.recover {
+              case e: Exception =>
+                Responses.InternalError(e)
+            }
+        }
+      )
+    }
     fSeq.map {
       responses =>
         val results = responses.flatMap(response => response.results)

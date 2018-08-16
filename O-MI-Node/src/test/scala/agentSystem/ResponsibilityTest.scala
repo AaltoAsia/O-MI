@@ -2,52 +2,74 @@ package agentSystem
 
 import java.sql.Timestamp
 
+import akka.actor.ActorRef
+import org.specs2.concurrent.ExecutionEnv
 import org.specs2.mutable._
 import org.specs2.matcher._
+import org.specs2.specification.{Scope,AfterAll}
+import akka.pattern.ask
+import akka.util.Timeout
 import scala.collection.immutable._
+import scala.concurrent.Future
+import scala.concurrent.duration._
 
 import agentSystem.AgentResponsibilities._
 import types.odf._
 import types._
 import types.OmiTypes._
 import http.{OmiConfig, OmiConfigExtension}
+import database.journal.Models.GetTree
 import testHelpers._
 
-class ResponsibilityTest extends Specification{
+class ResponsibilityTest( implicit ee: ExecutionEnv )  extends Specification with AfterAll{
 
+  implicit val system = Actorstest.createSilentAs()
+  def afterAll: Unit ={
+    system.terminate
+  }
   class ARTest(
+    responsibilities: Seq[AgentResponsibility] = Vector.empty,
+    odf: ODF = ImmutableODF()
+  ) extends ARTestImpl(responsibilities, odf) {}
+  class ARTestImpl (
     val responsibilities: Seq[AgentResponsibility] = Vector.empty,
     val odf: ODF = ImmutableODF()
-  ) extends Actorstest{
+  ) extends Scope{
     val settings: OmiConfigExtension = OmiConfig(system)
+    val dummyHierarchyStore: ActorRef = DummyHierarchyStore(odf)
     val singleStores = new DummySingleStores(
       settings,
-      hierarchyStore= DummyHierarchyStore(odf)
+      hierarchyStore = dummyHierarchyStore
     ) 
-    val ar = new AgentResponsibilities()
+    val ar = new AgentResponsibilities(singleStores)
     ar.add(responsibilities)
-   
   }
 
-  def splitRequestTest(
-    ar: AgentResponsibilities,
-    request: OdfRequest,
-    correctResult: Map[Option[Responsible],OdfRequest]
-  ): MatchResult[Map[Option[Responsible],OdfRequest]]= {
-    ar.splitRequestToResponsible( request ) must beEqualTo( correctResult ) 
-  }
-  def responsibilityCheckTest(
-    ar: AgentResponsibilities,
-    agentName: AgentName,
-    request: OdfRequest,
-    result: Boolean
-  ): MatchResult[Boolean] ={
-    ar.checkResponsibilityFor( agentName, request) must beEqualTo(result)
-  }
+    def splitRequestTest(
+      ar: AgentResponsibilities,
+      request: OdfRequest,
+      correctResult: Map[Option[Responsible],OdfRequest]
+    ) = {
+      val result = ar.splitRequestToResponsible( request ) 
+      val k = result must haveKeys( correctResult.keys.toSeq:_* ).await
+      val v = result must haveValues(correctResult.values.toSeq:_*).await
+      //k and v and 
+      (result must beEqualTo( correctResult ).await)
+    }
+    def responsibilityCheckTest(
+      ar: AgentResponsibilities,
+      agentName: AgentName,
+      request: OdfRequest,
+      result: Boolean
+    ): MatchResult[Boolean] ={
+      ar.checkResponsibilityFor( agentName, request) must beEqualTo(result)
+    }
 
   val testTime: Timestamp = Timestamp.valueOf("2018-08-09 16:00:00")
   "AgentResponsibility" should {
+    sequential
     "split correctly" >>{
+      sequential
       "write request" >> new ARTest(
         Vector( 
           AgentResponsibility( "Writer", Path( "Objects/WritableObj1"), WriteFilter() ),
@@ -180,16 +202,150 @@ class ResponsibilityTest extends Specification{
         )
         splitRequestTest(ar, request, correctResult)
       }
-      /*
-      "call request" >>{
-        1 === 2
+      "read request" >> new ARTest(
+        Vector( 
+          AgentResponsibility( "Reader",  Path( "Objects/ReadObj1"), ReadFilter() ),
+          AgentResponsibility( "Reader1", Path( "Objects/ReadObj1/II"), ReadFilter() ),
+          AgentResponsibility( "Reader0", Path( "Objects/ReadObj0"), CallFilter() ),
+          AgentResponsibility( "Reader2", Path( "Objects/ReadObj2"), ReadCallFilter() ),
+          AgentResponsibility( "Reader3", Path( "Objects/ReadObj3"), ReadWriteFilter() ),
+          AgentResponsibility( "Reader4", Path( "Objects/ReadObj4"), ReadDeleteFilter() ),
+          AgentResponsibility( "Reader5", Path( "Objects/ReadObj5"), ReadWriteCallFilter() ),
+          AgentResponsibility( "Reader6", Path( "Objects/ReadObj6"), ReadCallDeleteFilter() ),
+          AgentResponsibility( "Reader7", Path( "Objects/ReadObj7"), ReadWriteDeleteFilter() ),
+          AgentResponsibility( "Reader8", Path( "Objects/ReadObj8"), ReadWriteCallDeleteFilter() )
+        ),
+          ImmutableODF(
+            Vector(
+              InfoItem( Path( "Objects/ReadObj0/II"), Vector(IntValue(1,testTime))),
+              InfoItem( Path( "Objects/ReadObj1/II"), Vector(IntValue(1,testTime))),
+              InfoItem( Path( "Objects/ReadObj1/II2"), Vector(IntValue(1,testTime))),
+              InfoItem( Path( "Objects/ReadObj2/II"), Vector(IntValue(1,testTime))),
+              InfoItem( Path( "Objects/ReadObj3/II"), Vector(IntValue(1,testTime))),
+              InfoItem( Path( "Objects/ReadObj4/II"), Vector(IntValue(1,testTime))),
+              InfoItem( Path( "Objects/ReadObj5/II"), Vector(IntValue(1,testTime))),
+              InfoItem( Path( "Objects/ReadObj6/II"), Vector(IntValue(1,testTime))),
+              InfoItem( Path( "Objects/ReadObj7/II"), Vector(IntValue(1,testTime))),
+              InfoItem( Path( "Objects/ReadObj8/II"), Vector(IntValue(1,testTime))),
+              Object( Path( "Objects/ReadObj9"))
+            )
+          )
+      ){
+        val request: OdfRequest = ReadRequest(
+          ImmutableODF(
+            Objects()
+          )
+        )
+
+        val correctResult: Map[Option[Responsible],OdfRequest] = Map(
+          Some(ResponsibleAgent("Reader")) -> ReadRequest( 
+            ImmutableODF( Vector( InfoItem( Path( "Objects/ReadObj1/II2"), Vector.empty)))
+          ),
+          Some(ResponsibleAgent("Reader1")) -> ReadRequest( 
+            ImmutableODF( Vector( InfoItem( Path( "Objects/ReadObj1/II"), Vector.empty)))
+          ),
+          Some(ResponsibleAgent("Reader2")) -> ReadRequest( 
+            ImmutableODF( Vector( Object( Path( "Objects/ReadObj2"))))
+          ),
+          Some(ResponsibleAgent("Reader3")) -> ReadRequest( 
+            ImmutableODF( Vector( Object( Path( "Objects/ReadObj3"))))
+          ),
+          Some(ResponsibleAgent("Reader4")) -> ReadRequest( 
+            ImmutableODF( Vector( Object( Path( "Objects/ReadObj4"))))
+          ),
+          Some(ResponsibleAgent("Reader5")) -> ReadRequest( 
+            ImmutableODF( Vector( Object( Path( "Objects/ReadObj5"))))
+          ),
+          Some(ResponsibleAgent("Reader6")) -> ReadRequest( 
+            ImmutableODF( Vector( Object( Path( "Objects/ReadObj6"))))
+          ),
+          Some(ResponsibleAgent("Reader7")) -> ReadRequest( 
+            ImmutableODF( Vector( Object( Path( "Objects/ReadObj7"))))
+          ),
+          Some(ResponsibleAgent("Reader8")) -> ReadRequest( 
+            ImmutableODF( Vector( Object( Path( "Objects/ReadObj8"))))
+          ),
+           None -> ReadRequest( 
+             ImmutableODF( Vector( 
+               Object( Path( "Objects/ReadObj9")),
+               Object( Path( "Objects/ReadObj0"))
+              ))
+           )
+        )
+        splitRequestTest(ar, request, correctResult)
       }
-      "delete request" >>{
-        1 === 2
+      "delete request" >> new ARTest(
+        Vector( 
+          AgentResponsibility( "Deleter",  Path( "Objects/DeleteObj1"), DeleteFilter() ),
+          AgentResponsibility( "Deleter1", Path( "Objects/DeleteObj1/II"), DeleteFilter() ),
+          AgentResponsibility( "Deleter0", Path( "Objects/DeleteObj0"), CallFilter() ),
+          AgentResponsibility( "Deleter2", Path( "Objects/DeleteObj2"), CallDeleteFilter() ),
+          AgentResponsibility( "Deleter3", Path( "Objects/DeleteObj3"), WriteDeleteFilter() ),
+          AgentResponsibility( "Deleter4", Path( "Objects/DeleteObj4"), ReadDeleteFilter() ),
+          AgentResponsibility( "Deleter5", Path( "Objects/DeleteObj5"), WriteCallDeleteFilter() ),
+          AgentResponsibility( "Deleter6", Path( "Objects/DeleteObj6"), ReadCallDeleteFilter() ),
+          AgentResponsibility( "Deleter7", Path( "Objects/DeleteObj7"), ReadWriteDeleteFilter() ),
+          AgentResponsibility( "Deleter8", Path( "Objects/DeleteObj8"), ReadWriteCallDeleteFilter() )
+        ),
+          ImmutableODF(
+            Vector(
+              InfoItem( Path( "Objects/DeleteObj0/II"), Vector(IntValue(1,testTime))),
+              InfoItem( Path( "Objects/DeleteObj1/II"), Vector(IntValue(1,testTime))),
+              InfoItem( Path( "Objects/DeleteObj1/II2"), Vector(IntValue(1,testTime))),
+              InfoItem( Path( "Objects/DeleteObj2/II"), Vector(IntValue(1,testTime))),
+              InfoItem( Path( "Objects/DeleteObj3/II"), Vector(IntValue(1,testTime))),
+              InfoItem( Path( "Objects/DeleteObj4/II"), Vector(IntValue(1,testTime))),
+              InfoItem( Path( "Objects/DeleteObj5/II"), Vector(IntValue(1,testTime))),
+              InfoItem( Path( "Objects/DeleteObj6/II"), Vector(IntValue(1,testTime))),
+              InfoItem( Path( "Objects/DeleteObj7/II"), Vector(IntValue(1,testTime))),
+              InfoItem( Path( "Objects/DeleteObj8/II"), Vector(IntValue(1,testTime))),
+              Object( Path( "Objects/DeleteObj9"))
+            )
+          )
+      ){
+        val request: OdfRequest = DeleteRequest(
+          ImmutableODF(
+            Objects()
+          )
+        )
+
+        val correctResult: Map[Option[Responsible],OdfRequest] = Map(
+          Some(ResponsibleAgent("Deleter")) -> DeleteRequest( 
+            ImmutableODF( Vector( InfoItem( Path( "Objects/DeleteObj1/II2"), Vector.empty)))
+          ),
+          Some(ResponsibleAgent("Deleter1")) -> DeleteRequest( 
+            ImmutableODF( Vector( InfoItem( Path( "Objects/DeleteObj1/II"), Vector.empty)))
+          ),
+          Some(ResponsibleAgent("Deleter2")) -> DeleteRequest( 
+            ImmutableODF( Vector( Object( Path( "Objects/DeleteObj2"))))
+          ),
+          Some(ResponsibleAgent("Deleter3")) -> DeleteRequest( 
+            ImmutableODF( Vector( Object( Path( "Objects/DeleteObj3"))))
+          ),
+          Some(ResponsibleAgent("Deleter4")) -> DeleteRequest( 
+            ImmutableODF( Vector( Object( Path( "Objects/DeleteObj4"))))
+          ),
+          Some(ResponsibleAgent("Deleter5")) -> DeleteRequest( 
+            ImmutableODF( Vector( Object( Path( "Objects/DeleteObj5"))))
+          ),
+          Some(ResponsibleAgent("Deleter6")) -> DeleteRequest( 
+            ImmutableODF( Vector( Object( Path( "Objects/DeleteObj6"))))
+          ),
+          Some(ResponsibleAgent("Deleter7")) -> DeleteRequest( 
+            ImmutableODF( Vector( Object( Path( "Objects/DeleteObj7"))))
+          ),
+          Some(ResponsibleAgent("Deleter8")) -> DeleteRequest( 
+            ImmutableODF( Vector( Object( Path( "Objects/DeleteObj8"))))
+          ),
+           None -> DeleteRequest( 
+             ImmutableODF( Vector( 
+               Object( Path( "Objects/DeleteObj0")),
+               Object( Path( "Objects/DeleteObj9"))
+              ))
+           )
+        )
+        splitRequestTest(ar, request, correctResult)
       }
-      "read request" >>{
-        1 === 2
-      }*/
     }
     "check responsiblity correctly for" >>{
       

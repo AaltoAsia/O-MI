@@ -70,7 +70,7 @@ class DBHandler(
       )
   }
 
-  protected val agentResponsibilities: AgentResponsibilities = new AgentResponsibilities()
+  protected val agentResponsibilities: AgentResponsibilities = new AgentResponsibilities(singleStores)
 
   case class AgentInformation(agentName: AgentName, running: Boolean, actorRef: ActorRef)
 

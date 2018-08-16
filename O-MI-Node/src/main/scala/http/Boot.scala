@@ -112,6 +112,7 @@ class OmiServer extends OmiNode {
 
   val requestHandler: ActorRef = system.actorOf(
     RequestHandler.props(
+      singleStores,
       subscriptionManager,
       dbHandler,
       settings
