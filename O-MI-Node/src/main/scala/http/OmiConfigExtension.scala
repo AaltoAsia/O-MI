@@ -17,20 +17,22 @@ package http
 import java.net.InetAddress
 import java.util.concurrent.TimeUnit
 
-import agentSystem.AgentSystemConfigExtension
-import akka.actor.{ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
-import akka.http.scaladsl.client.RequestBuilding
-import akka.http.scaladsl.client.RequestBuilding.{Get, Head, Options, Patch, Post, Put, RequestBuilder}
-import akka.http.scaladsl.model.Uri
-import com.typesafe.config.Config
-import org.slf4j.LoggerFactory
-import types.OmiTypes.RawRequestWrapper.MessageType
-import types.Path
-
 import scala.collection.JavaConverters._
 import scala.concurrent.duration._
 import scala.language.{implicitConversions, postfixOps}
 import scala.util.Try
+import akka.actor.{ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
+import akka.http.scaladsl.client.RequestBuilding
+import akka.http.scaladsl.client.RequestBuilding.{Get, Head, Options, Patch, Post, Put, RequestBuilder}
+import akka.http.scaladsl.model.Uri
+import com.typesafe.config.{Config, ConfigException}
+import org.slf4j.LoggerFactory
+
+import types.OmiTypes.RawRequestWrapper.MessageType
+import types.Path
+
+import agentSystem.AgentSystemConfigExtension
+import database.influxDB.InfluxDBConfigExtension
 
 class OmiConfigExtension(val config: Config) extends Extension
                                                      with AgentSystemConfigExtension {
@@ -210,6 +212,18 @@ class OmiConfigExtension(val config: Config) extends Extension
   val websocketQueueSize: Int = config.getInt("omi-service.websocket-queue-size")
 
   val databaseImplementation: String = config.getString("omi-service.database")
+  val influx: Option[InfluxDBConfigExtension] = if( databaseImplementation.toLowerCase.startsWith("influx" ) ) {
+    Try{
+      val influxConf = config.getConfig("influxDB-config")
+      Some(influxConf)
+    }.recover {
+      case exp: ConfigException.Missing => None
+    }.get.map{
+      case _: Config =>
+        new InfluxDBConfigExtension(config)
+    }
+  } else None
+
 }
 
 

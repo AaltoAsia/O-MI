@@ -14,6 +14,8 @@
 
 package agentSystem
 
+import scala.util.control.NonFatal
+
 import agentSystem.AgentResponsibilities._
 import akka.actor.SupervisorStrategy._
 import akka.actor.{Actor, ActorInitializationException, ActorLogging, ActorRef, OneForOneStrategy, Props, SupervisorStrategy, Terminated}
@@ -187,14 +189,15 @@ trait BaseAgentSystem extends Actor with ActorLogging {
   protected val connectedCLIs: MutableMap[String, ActorRef] = MutableMap.empty
   override val supervisorStrategy: OneForOneStrategy =
     OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1 minute) {
-      case fail: ActorInitializationException =>
-        log.warning(s"Agent ${sender().path.name} encountered exception during creation.")
-        SupervisorStrategy.Stop
-      case fail: StartFailed =>
+      case ActorInitializationException( actor, message, cause) =>
+        log.warning(s"Agent ${sender().path.name} encountered exception during creation. $cause Agent is stopped.")
         SupervisorStrategy.Stop
       case fail: InternalAgentFailure =>
-        log.warning("InternalAgent failure: " + sender().path.name)
+        log.warning(s"InternalAgent failure from ${sender().path.name}: $fail Agent is restarted.")
         SupervisorStrategy.Restart
+      case NonFatal(t) => 
+        log.warning(s"InternalAgent ${sender().path.name} caught unhandled non-fatal expection $t. Agent is stopped.")
+        SupervisorStrategy.Stop
       case t: Throwable =>
         log.warning(s"Agent ${sender().path.name} encountered exception $t")
         super.supervisorStrategy.decider.applyOrElse(t, (_: Any) => Escalate)

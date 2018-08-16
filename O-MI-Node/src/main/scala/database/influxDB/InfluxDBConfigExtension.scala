@@ -9,8 +9,9 @@ import scala.util.Try
 
 class InfluxDBConfigExtension(config: Config) extends Extension {
   //Warp10 tokens and address
-  val databaseName: String = config.getString("influxDB-config.database-name")
-  val address: Uri = Uri(config.getString("influxDB-config.address"))
+  val influxConfig = config.getConfig("influxDB-config")
+  val databaseName: String = influxConfig.getString("database-name")
+  val address: Uri = Uri(influxConfig.getString("address"))
   val userO: Option[String] = Try(Some(config.getString("influxDB-config.user"))).recover {
     case exp: ConfigException.Missing => None
   }.get

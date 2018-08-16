@@ -465,22 +465,23 @@ class ParkingAgent(
                           parkingSpace => 
                             parkingSpaceFilter(parkingSpace, vehicle, userGroups, charger, wantCharging)
                         }
+
+                        log.debug(s"Found following parking spaces from $path:\n${correctParkingSpaces.mkString("\n")}")
                         val correctCapacities = pf.capacities.filter{
                           capacity => capacityFilter( capacity, vehicle, userGroups)
                         }
+                        log.debug(s"Found following capacitios from $path:\n${correctCapacities.mkString("\n")}")
                         
-                        if( correctParkingSpaces.nonEmpty || correctCapacities.nonEmpty) 
+                        if( correctParkingSpaces.nonEmpty || correctCapacities.nonEmpty) { 
                           pf.copy(parkingSpaces = correctParkingSpaces, capacities = correctCapacities).toOdf(path.getParent)
-                        else Vector.empty
+                        } else { 
+                          log.debug(s"No matching parking spaces or capacities for $path")
+                          Vector.empty 
+                        }
                     }
                     val correctNodes = ImmutableODF(correctParkingFacilities)
 
-                    val removedPaths= (odf.nodesWithType("mv:ParkingSpace")++
-                        odf.nodesWithType("mv:Capacity")++
-                        odf.nodesWithType("mv:RealTimeCapacity")
-                      ).map(_.path)
-                    val nOdf = odf.removePaths(removedPaths.toSeq).union(correctNodes)
-                    nOdf
+                    correctNodes
                 }
             }.fold(ImmutableODF()){(l: ODF, r: ODF) => l.union(r).immutable}
             Responses.Success(objects = Some(newOdf))
@@ -562,13 +563,17 @@ class ParkingAgent(
   ) ={
     lazy val vehicleCheck = vehicle.forall{
       v => 
-        v.vehicleType == VehicleType.Vehicle || 
-        capacity.validForVehicle.contains(v.vehicleType) ||
-        (v.vehicleType == VehicleType.ElectricVehicle && capacity.validForVehicle.contains( Car))
+        log.debug( s" VT ${v.vehicleType} and ${capacity.validForVehicle.mkString("\n")}" )
+        val a = v.vehicleType == VehicleType.Vehicle  
+        val b = capacity.validForVehicle.contains(v.vehicleType) 
+        val c = (v.vehicleType == VehicleType.ElectricVehicle && capacity.validForVehicle.contains( VehicleType.Car))
+        log.debug( s"$a || $b || $c" )
+        a || b || c
     } 
     lazy val userGroupCheck =( capacity.validUserGroup.isEmpty || capacity.validUserGroup.exists{
           pug => userGroups.contains(pug)
         })
+    log.debug(s"Capacity checks $vehicleCheck && $userGroupCheck" )
     vehicleCheck && userGroupCheck
   }
 

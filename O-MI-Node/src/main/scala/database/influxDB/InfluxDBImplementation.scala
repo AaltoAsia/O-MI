@@ -2,7 +2,12 @@ package database.influxDB
 
 import java.sql.Timestamp
 
-import akka.actor.ActorSystem
+
+import scala.concurrent.duration._
+import scala.concurrent.{Await, Future}
+import scala.language.postfixOps
+
+import akka.actor.{ActorRef, ActorSystem}
 import akka.event.{Logging,LoggingAdapter}
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.model.ContentTypes._
@@ -10,24 +15,24 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.unmarshalling._
 import akka.pattern.ask
 import akka.util.Timeout
-import database.{DB, SingleStores}
+
+import database.{DB, SingleStores, SingleStoresMaintainer}
 import database.journal.Models.{ErasePathCommand, GetTree, MultipleReadCommand}
+import http.OmiConfigExtension
 import types.OmiTypes._
 import types.Path
 import types.Path._
 import types.odf._
 
-import scala.concurrent.duration._
-import scala.concurrent.{Await, Future}
-import scala.language.postfixOps
-
 class InfluxDBImplementation
 (
-  protected val config: InfluxDBConfigExtension
+  protected val settings: OmiConfigExtension
   )(
     implicit val system: ActorSystem,
     protected val singleStores: SingleStores
   ) extends DB with InfluxDBClient {
+    require( settings.influx.nonEmpty)
+  import InfluxDBClient._
   import InfluxDBImplementation._
 
   log.info(s"Write address of InfluxDB instance $writeAddress")
@@ -38,7 +43,7 @@ class InfluxDBImplementation
   implicit val odfJsonFormatter: InfluxDBJsonProtocol.InfluxDBJsonODFFormat = new InfluxDBJsonProtocol.InfluxDBJsonODFFormat()
 
   def initialize(): Unit = {
-    val initialisation = httpResponseToStrict(sendQueries(Vector( ShowDBs ))).flatMap {
+    val initialisation = httpResponseToStrict(sendQueries(Vector( ShowDBs )),log).flatMap {
       entity: HttpEntity.Strict =>
         val ent = entity.copy(contentType = `application/json`)
 
@@ -62,11 +67,7 @@ class InfluxDBImplementation
                   _entity.toStrict(10.seconds).flatMap { stricted =>
                     Unmarshal(stricted).to[String].map {
                       str =>
-                        log
-                          .error(s"Database ${config.databaseName} could not be created to InfluxDB at address ${
-                            config
-                              .address
-                          }")
+                        log.error(s"Database ${config.databaseName} could not be created to InfluxDB at address ${config.address}")
                         log.warning(s"""InfluxQuery returned $status with:\n $str""")
                         throw new Exception(str)
                     }
@@ -81,6 +82,7 @@ class InfluxDBImplementation
   }
 
   initialize()
+  val dbmaintainer: ActorRef = system.actorOf(SingleStoresMaintainer.props(singleStores, settings))
 
 
   def writeMany(infoItems: Seq[InfoItem]): Future[OmiReturn] = {
@@ -88,12 +90,16 @@ class InfluxDBImplementation
   }
 
   def writeManyNewTypes(data: Seq[InfoItem]): Future[OmiReturn] = {
-    val valuesAsMeasurements = data.flatMap { ii: InfoItem => infoItemToWriteFormat(ii) }.mkString("\n")
-    val response = sendMeasurements(valuesAsMeasurements)
+    val response = Future{
+      data.flatMap { ii: InfoItem => infoItemToWriteFormat(ii) }
+    }.flatMap{
+      valuesAsMeasurements: Seq[Measurement] => sendMeasurements(valuesAsMeasurements)
+    }
+    
 
     response.failed.foreach {
       t: Throwable =>
-        log.error("Failed to communicate to InfluxDB", t)
+        log.error(s"Failed to communicate to InfluxDB: $t")
     }
     response.flatMap {
       case HttpResponse(status, headers, entity, protocol) if status.isSuccess =>
@@ -162,7 +168,7 @@ class InfluxDBImplementation
   private def read(queries: Seq[InfluxQuery], requestedODF: ODF): Future[Option[ImmutableODF]] = {
     val responseF: Future[HttpResponse] = sendQueries(queries)
     //httpHandler(request)
-    val formatedResponse = httpResponseToStrict(responseF).flatMap {
+    val formatedResponse = httpResponseToStrict(responseF,log).flatMap {
       entity: HttpEntity.Strict =>
         val ent = entity.copy(contentType = `application/json`)
 
@@ -175,7 +181,7 @@ class InfluxDBImplementation
     }
     formatedResponse.failed.foreach {
       t: Throwable =>
-        log.error("Failed to communicate to InfluxDB.",t)
+        log.error(s"Failed to communicate to InfluxDB: $t")
         log.warning(t.getStackTrace.mkString("\n"))
     }
     formatedResponse
@@ -211,9 +217,13 @@ class InfluxDBImplementation
 
 }
 
+  case class Measurement(val measurement: String, val value: String, val time: Timestamp){
+    def formatStr: String = s"$measurement value=$value ${time.getTime}"
+  }
+
 object InfluxDBImplementation{
 
-  def infoItemToWriteFormat(ii: InfoItem): Seq[String] = {
+  def infoItemToWriteFormat(ii: InfoItem): Seq[Measurement] = {
     val measurement: String = pathToMeasurementName(ii.path).replace(" ", "\\ ")
     ii.values.map {
       value: Value[Any] =>
@@ -224,7 +234,7 @@ object InfluxDBImplementation{
           case bool: Boolean => bool.toString
           case any: Any => s""""${any.toString.replace("\"", "\\\"")}""""
         }
-        s"$measurement value=$valueStr ${value.timestamp.getTime}"
+        Measurement(measurement, valueStr, value.timestamp)
     }
   }
 

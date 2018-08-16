@@ -52,6 +52,14 @@ object OmiParser extends Parser[OmiParseResult] {
 
     parseTry(parsed)
   }
+  def parse(filepath: java.nio.file.Path): OmiParseResult = {
+    val parsed = Try{
+      val is = java.nio.file.Files.newInputStream(filepath)
+      XMLParser.load(is)
+    }
+
+    parseTry(parsed)
+  }
 
 
   /**
@@ -72,7 +80,7 @@ object OmiParser extends Parser[OmiParseResult] {
   private def parseTry(parsed: Try[Elem]): OmiParseResult = {
     parsed match {
       case Success(root) => parseOmi(root)
-      case Failure(f) => Left(Iterable(ScalaXMLError(f.getMessage)))
+      case Failure(f) => Left(Vector(ScalaXMLError(f.getMessage)))
     }
   }
 
@@ -95,7 +103,7 @@ object OmiParser extends Parser[OmiParseResult] {
         case Failure(e) =>
           //println( s"Exception: $e\nStackTrace:\n")
           e.printStackTrace()
-          Left(Iterable(ScalaxbError(e.getMessage)))
+          Left(Vector(ScalaxbError(e.getMessage)))
 
         case Success(envelope) =>
           Try {
@@ -126,11 +134,11 @@ object OmiParser extends Parser[OmiParseResult] {
           } match {
             case Success(res) => res
             case Failure(e: ParseError) =>
-              Left(Iterable(e))
+              Left(Vector(e))
             case Failure(e) =>
               //println( s"Exception: $e\nStackTrace:\n")
               e.printStackTrace()
-              Left(Iterable(OMIParserError(e.getMessage)))
+              Left(Vector(OMIParserError(e.getMessage)))
           }
       }
   }
@@ -171,7 +179,7 @@ object OmiParser extends Parser[OmiParseResult] {
   private[this] def parseRead(read: xmlTypes.ReadRequestType, ttl: Duration): OmiParseResult = {
     val callback = read.callback.map { addr => RawCallback(addr.toString) }
     if (read.requestID.nonEmpty) {
-      Right(Iterable(
+      Right(Vector(
         PollRequest(
           callback,
           OdfCollection(read.requestID.map(parseRequestID): _*),
@@ -187,9 +195,9 @@ object OmiParser extends Parser[OmiParseResult] {
               read.interval match {
                 case None =>
                   if (read.newest.nonEmpty && read.oldest.nonEmpty)
-                    Left(Iterable(OMIParserError("Invalid Read request, Can not query oldest and newest values at same time.")))
+                    Left(Vector(OMIParserError("Invalid Read request, Can not query oldest and newest values at same time.")))
                   else
-                    Right(Iterable(
+                    Right(Vector(
                                     ReadRequest(
                                                  odf,
                                                  gcalendarToTimestampOption(read.begin),
@@ -202,9 +210,9 @@ object OmiParser extends Parser[OmiParseResult] {
                                   ))
                 case Some(interval) =>
                   if (read.newest.nonEmpty && read.oldest.nonEmpty)
-                    Left(Iterable(OMIParserError("Invalid Read request, Can not query oldest and newest values at same time.")))
+                    Left(Vector(OMIParserError("Invalid Read request, Can not query oldest and newest values at same time.")))
                   else
-                    Right(Iterable(
+                    Right(Vector(
                                     SubscriptionRequest(
                                                          parseInterval(interval),
                                                          odf,
@@ -219,7 +227,7 @@ object OmiParser extends Parser[OmiParseResult] {
         }
         case None => {
           Left(
-            Iterable(
+            Vector(
               OMIParserError("Invalid Read request, needs either of \"omi:msg\" or \"omi:requestID\" elements.")
             )
           )
@@ -231,14 +239,14 @@ object OmiParser extends Parser[OmiParseResult] {
   private[this] def parseWrite(write: xmlTypes.WriteRequestType, ttl: Duration): OmiParseResult = {
     write.msg match {
       case None =>
-        Left(Iterable(OMIParserError("Write request without msg.")))
+        Left(Vector(OMIParserError("Write request without msg.")))
       case Some(msg: xmlTypes.MsgType) =>
         val odfParseResult = parseMsg(msg, write.msgformat)
         val callback = write.callback.map { addr => RawCallback(addr.toString) }
         odfParseResult match {
           case Left(errors)  => Left(errors.asScala.toVector)
           case Right(odf) =>
-            Right(Iterable(
+            Right(Vector(
               WriteRequest(
                 odf,
                 callback,
@@ -252,14 +260,14 @@ object OmiParser extends Parser[OmiParseResult] {
   private[this] def parseCall(call: xmlTypes.CallRequestType, ttl: Duration): OmiParseResult = {
     call.msg match {
       case None =>
-        Left(Iterable(OMIParserError("Call request without msg.")))
+        Left(Vector(OMIParserError("Call request without msg.")))
       case Some(msg: xmlTypes.MsgType) =>
         val odfParseResult = parseMsg(msg, call.msgformat)
         val callback = call.callback.map { addr => RawCallback(addr.toString) }
         odfParseResult match {
           case Left(errors)  => Left(errors.asScala.toVector)
           case Right(odf) =>
-            Right(Iterable(
+            Right(Vector(
               CallRequest(
                 odf,
                 callback,
@@ -273,14 +281,14 @@ object OmiParser extends Parser[OmiParseResult] {
   private[this] def parseDelete(delete: xmlTypes.DeleteRequestType, ttl: Duration): OmiParseResult = {
     delete.msg match {
       case None =>
-        Left(Iterable(OMIParserError("Delete request without msg.")))
+        Left(Vector(OMIParserError("Delete request without msg.")))
       case Some(msg: xmlTypes.MsgType) =>
         val odfParseResult = parseMsg(msg, delete.msgformat)
         val callback = delete.callback.map { addr => RawCallback(addr.toString) }
         odfParseResult match {
           case Left(errors)  => Left(errors.asScala.toVector)
           case Right(odf) =>
-            Right(Iterable(
+            Right(Vector(
               DeleteRequest(
                 odf,
                 callback,
@@ -292,7 +300,7 @@ object OmiParser extends Parser[OmiParseResult] {
   }
 
   private[this] def parseCancel(cancel: xmlTypes.CancelRequestType, ttl: Duration): OmiParseResult = {
-    Right(Iterable(
+    Right(Vector(
       CancelRequest(
         OdfCollection(cancel.requestID.map(parseRequestID): _*),
         ttl
@@ -301,7 +309,7 @@ object OmiParser extends Parser[OmiParseResult] {
   }
 
   private[this] def parseResponse(response: xmlTypes.ResponseListType, ttl: Duration): OmiParseResult = Try {
-    Iterable(
+    Vector(
       ResponseRequest(
         OdfCollection(response.result.map {
           result =>
@@ -326,13 +334,13 @@ object OmiParser extends Parser[OmiParseResult] {
     )
   } match {
     case Success(requests: Iterable[OmiRequest]) => Right(requests)
-    case Failure(error: ParseError) => Left(Iterable(error))
+    case Failure(error: ParseError) => Left(Vector(error))
     case Failure(t) => throw t
   }
 
   private[this] def parseMsg(msg: xmlGen.xmlTypes.MsgType, format: Option[String]): OdfParseResult = {
     if (msg.mixed.isEmpty)
-      Left(Iterable(OMIParserError("Empty msg element.")).asJava)
+      Left(Vector(OMIParserError("Empty msg element.")).asJava)
     else {
       val xmlMsg = xmlGen.scalaxb.toXML[xmlGen.xmlTypes.MsgType](msg, Some("omi.xsd"), Some("msg"), xmlGen.defaultScope)
 
@@ -350,11 +358,11 @@ object OmiParser extends Parser[OmiParseResult] {
         case (Some("odf.xsd"), Some(objects)) =>
           parseOdf(objects)
         case (Some("odf"), None) => 
-          Left(Iterable(OMIParserError("No Objects found in msg.")).asJava)
+          Left(Vector(OMIParserError("No Objects found in msg.")).asJava)
         case (Some("odf.xsd"), None) => 
-          Left(Iterable(OMIParserError("No Objects found in msg.")).asJava)
-        case (None,_) =>  Left(Iterable(OMIParserError("Empty msg element.")).asJava)
-        case (Some(str),_) =>  Left(Iterable(OMIParserError("Unknown format for msg.")).asJava)
+          Left(Vector(OMIParserError("No Objects found in msg.")).asJava)
+        case (None,_) =>  Left(Vector(OMIParserError("Empty msg element.")).asJava)
+        case (Some(str),_) =>  Left(Vector(OMIParserError("Unknown format for msg.")).asJava)
       }
     }
   }

@@ -74,6 +74,7 @@ class SubscriptionTest extends Specification with BeforeAfterAll {
   )
   val requestHandler = system.actorOf(
     RequestHandler.props(
+      singleStores,
       subscriptionManager,
       dbHandler,
       settings

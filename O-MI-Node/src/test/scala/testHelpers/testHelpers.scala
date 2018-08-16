@@ -1,10 +1,12 @@
 package testHelpers
 
 import scala.concurrent.{Await, Future, Promise}
+import scala.util.{Try}
 import scala.concurrent.duration._
 import scala.language.postfixOps
 import scala.xml.{Node, PrettyPrinter, SAXParser, XML}
 import scala.xml.parsing._
+import scala.util.Random
 
 import akka.testkit.TestEventListener
 import akka.Done
@@ -111,6 +113,7 @@ trait OmiServiceTestImpl extends OmiService with AnyActorSystem {
   )
   lazy val requestHandler = system.actorOf(
     RequestHandler.props(
+      singleStores,
       subscriptionManager,
       dbHandler,
       settings
@@ -308,7 +311,7 @@ class Actorstest
   Scope with
   ImplicitSender {
   //def after = system.shutdown()
-  def after = {
+  def after: Unit = {
     //TestKit.shutdownActorSystem(system)
     system.terminate
   }
@@ -317,6 +320,8 @@ class Actorstest
 class NoisyActorstest
   (as: ActorSystem = Actorstest.createAs()) extends Actorstest(as)
 
+class VeryNoisyActorstest
+  (as: ActorSystem = Actorstest.createNoisyAs()) extends Actorstest(as)
 object Actorstest {
   val silentLoggerConf = ConfigFactory.parseString(
     """
@@ -340,10 +345,15 @@ object Actorstest {
   val silentLoggerConfFull = silentLoggerConf.withFallback(ConfigFactory.load())
   val loggerConf = ConfigFactory.parseString(
     """
-    akka.loggers = ["testHelpers.SilentTestEventListener"]
+      akka.loggers = ["testHelpers.SilentTestEventListener"]
     """)
-  def createAs() = ActorSystem("testsystem", loggerConf.withFallback(ConfigFactory.load()))
-  def createSilentAs() = ActorSystem("testsystem", silentLoggerConfFull)
+  val noisyLoggerConf = ConfigFactory.parseString(
+    """
+      akka.loggers = ["akka.testkit.TestEventListener"]
+    """)
+  def createAs() = ActorSystem("testsystem"+Random.nextInt, loggerConf.withFallback(ConfigFactory.load()))
+  def createNoisyAs() = ActorSystem("testsystem"+Random.nextInt, noisyLoggerConf.withFallback(ConfigFactory.load()))
+  def createSilentAs() = ActorSystem("testsystem"+Random.nextInt, silentLoggerConfFull)
   def apply() = new Actorstest()
   def silent() = new Actorstest(createSilentAs())
 }
@@ -399,9 +409,13 @@ class TesterTest extends Specification
 {
     "test" >> {
       val t = Try{ throw new java.lang.IllegalArgumentException("test")}
-      t must beFailedTry.withThrowable[java.lang.IllegalArgumentException]("test")
+      t must beFailedTry.which{
+        case t: java.lang.IllegalArgumentException => ok
+        case t => ko
+      }//.withThrowable[java.lang.IllegalArgumentException]
     }
-}*/
+}
+ */
 
 class OmiServiceDummy extends OmiService with Mockito {
   override protected def requestHandler: ActorRef = ???

@@ -63,7 +63,7 @@ class OmiServer extends OmiNode {
       settings
     )
     case "INFLUXDB" => new InfluxDBImplementation(
-      InfluxDBConfig(system)
+      settings
     )(system, singleStores)
     case "WARP10" => ???
 
@@ -112,6 +112,7 @@ class OmiServer extends OmiNode {
 
   val requestHandler: ActorRef = system.actorOf(
     RequestHandler.props(
+      singleStores,
       subscriptionManager,
       dbHandler,
       settings

@@ -6,4 +6,5 @@ package object utils {
     smaller.foldLeft(bigger) { case (z, (k, v)) => z + (k -> mergef(v, z.get(k))) }
   }
 
+  implicit def asOption[A](a: A): Option[A] = Option(a)
 }
