@@ -128,6 +128,7 @@ class ParkingAgent(
         } yield GeoCoordinates( lat, lon)
         gps.foreach{
           gc =>
+            log.debug( s"Adding ${node.path} to Geo indexes" )
             latitudePFIndex.get( gc.latitude ) match{
               case Some( paths: Set[Path]) => 
                 latitudePFIndex.update(gc.latitude,paths ++ Set(node.path) )
@@ -432,6 +433,7 @@ class ParkingAgent(
         longitude: Double  => 
           longitudePFIndex.get(longitude) 
       }.flatten.toSet
+      log.debug( s"lat: $latP\nlong: $longP\ndeltaR $deltaR $maxDistance")
       val pfPaths: Set[Path] = latP.intersect(longP)
       if( pfPaths.isEmpty ){
         Future{ Responses.Success(objects= Some(ImmutableODF( Seq( Object(parkingFacilitiesPath))))) }
@@ -451,7 +453,7 @@ class ParkingAgent(
                 result.odf.map{
                   odf => 
                     log.debug( "Found Successful result with ODF")
-                    val correctParkingFacilities  = odf.nodesWithType("mv:ParkingFacility").collect{
+                    val correctParkingSpaceAndCapacityPaths  = odf.nodesWithType("mv:ParkingFacility").collect{
                       case obj: Object =>
                         ParkingFacility.parseOdf(obj.path, odf.immutable) match {
                           case Success( ps: ParkingFacility ) =>
@@ -473,17 +475,29 @@ class ParkingAgent(
                         log.debug(s"Found following capacitios from $path:\n${correctCapacities.mkString("\n")}")
                         
                         if( correctParkingSpaces.nonEmpty || correctCapacities.nonEmpty) { 
-                          pf.copy(parkingSpaces = correctParkingSpaces, capacities = correctCapacities).toOdf(path.getParent)
+                          correctParkingSpaces.map(
+                            path / "ParkingSpaces" / _.id
+                          ) ++ correctCapacities.map(
+                            path / "Capacities" / _.name
+                          )
                         } else { 
                           log.debug(s"No matching parking spaces or capacities for $path")
                           Vector.empty 
                         }
                     }
-                    val correctNodes = ImmutableODF(correctParkingFacilities)
+                    val unwantedCapacitiesAndSpaces = {
+                      odf.nodesWithType("mv:ParkingSpace") ++ 
+                      odf.nodesWithType("mv:Capacity") ++ 
+                      odf.nodesWithType("mv:RealTimeCapacity")
+                    }.map(_.path).filterNot{
+                      path => correctParkingSpaceAndCapacityPaths.contains(path)
+                    }
+
+                    val correctNodes = odf -- ( unwantedCapacitiesAndSpaces.toSeq)
 
                     correctNodes
                 }
-            }.fold(ImmutableODF()){(l: ODF, r: ODF) => l.union(r).immutable}
+            }.fold(ImmutableODF()){(l: ODF, r: ODF) => l.union(r).immutable }
             Responses.Success(objects = Some(newOdf))
         }
       }

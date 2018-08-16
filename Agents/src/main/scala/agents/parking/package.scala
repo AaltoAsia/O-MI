@@ -2,6 +2,7 @@ package agents
 
 import java.sql.Timestamp
 import java.util.Date
+import scala.util.Try
 
 import types._
 import types.odf._
@@ -29,12 +30,14 @@ package object parking{
       case ii:InfoItem =>
         ii.values.collectFirst {
           case value: ShortValue =>
-            value.value.toLong
+            Option(value.value.toLong)
           case value: IntValue =>
-            value.value.toLong
+            Option(value.value.toLong)
           case value: LongValue =>
-            value.value
-        }
+            Option(value.value)
+          case value: StringValue => Try{value.value.toLong}.toOption
+          case value: StringPresentedValue =>  Try{value.value.toLong}.toOption
+        }.flatten
       case ii:Node =>
         throw MVError( s"$name should be an InfoItem.")
     }
@@ -44,10 +47,18 @@ package object parking{
       case ii:InfoItem =>
         ii.values.collectFirst {
           case value: FloatValue =>
-            value.value.toDouble
+            Option(value.value.toDouble)
           case value: DoubleValue =>
-            value.value
-        }
+            Option(value.value)
+          case value: ShortValue =>
+            Option(value.value.toDouble)
+          case value: IntValue =>
+            Option(value.value.toDouble)
+          case value: LongValue =>
+            Option(value.value.toDouble)
+          case value: StringValue => Try{value.value.toDouble}.toOption
+          case value: StringPresentedValue =>  Try{value.value.toDouble}.toOption
+        }.flatten
       case ii:Node =>
         throw MVError( s"$name should be an InfoItem.")
     }

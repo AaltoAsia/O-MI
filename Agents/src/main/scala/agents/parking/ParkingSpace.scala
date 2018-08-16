@@ -62,7 +62,7 @@ case class ParkingSpace(
         values = Vector( LongValue( mph, currentTimestamp ))
       )
     }.toSeq ++ height.map{ h => 
-      val nII = "vehicleHeightLimitInM"
+      val nII = "vehicleHeightLimit"
       InfoItem( 
         nII,
         path / nII,
@@ -70,7 +70,7 @@ case class ParkingSpace(
         values = Vector( DoubleValue( h, currentTimestamp ))
       )
     }.toSeq ++ width.map{ w => 
-      val nII = "vehicleWidthLimitInM"
+      val nII = "vehicleWidthLimit"
       InfoItem( 
         nII,
         path / nII,
@@ -78,7 +78,7 @@ case class ParkingSpace(
         values = Vector( DoubleValue( w, currentTimestamp ))
       )
     }.toSeq ++ length.map{ l => 
-      val nII = "vehicleLengthLimitInM"
+      val nII = "vehicleLengthLimit"
       InfoItem( 
         nII,
         path / nII,
