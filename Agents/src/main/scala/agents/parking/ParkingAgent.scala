@@ -89,7 +89,7 @@ class ParkingAgent(
                   result: OmiResult =>
                     result.odf.foreach {
                       odf =>
-                        updateIndexesAndCapacities(odf, response)
+                        updateIndexesAndCapacities(odf.immutable, response)
                     }
                 }
               }
@@ -144,7 +144,7 @@ class ParkingAgent(
         }
     }
   }
-  def updateIndexesAndCapacities(odf: ODF, response: ResponseRequest): Future[ResponseRequest]={
+  def updateIndexesAndCapacities(odf: ImmutableODF, response: ResponseRequest): Future[ResponseRequest]={
     val facilities = odf.nodesWithType("mv:ParkingFacility").collect{ case obj: Object => obj}
     updateIndexes(facilities,odf)
     val availableWrite = odf.nodesWithType("mv:ParkingSpace").exists{
@@ -198,7 +198,7 @@ class ParkingAgent(
         }
         if( success.nonEmpty ){
           log.debug( s"Write successful")
-          updateIndexesAndCapacities( write.odf,response)
+          updateIndexesAndCapacities( write.odf.immutable,response)
         } else Future{ response }
     }
   }
@@ -450,8 +450,8 @@ class ParkingAgent(
             }
             val newOdf = succs.flatMap{
               result =>
-                result.odf.map{
-                  odf => 
+                result.odf.map(_.immutable).map{
+                  odf: ImmutableODF => 
                     log.debug( "Found Successful result with ODF")
                     val correctParkingSpaceAndCapacityPaths  = odf.nodesWithType("mv:ParkingFacility").collect{
                       case obj: Object =>
