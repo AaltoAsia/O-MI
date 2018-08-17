@@ -50,6 +50,27 @@ case class ImmutableODF private[odf](
     )
   }
 
+  lazy val typeIndex: Map[Option[String], Seq[Node]] = nodes.values.groupBy{
+    case obj: Objects => None
+    case ii: InfoItem => ii.typeAttribute
+    case obj: Object => obj.typeAttribute
+  }.mapValues(_.toSeq)
+  override def childsWithType(path:Path, typeStr: String): Set[Node] = {
+    nodesWithType(typeStr).filter{
+      node => 
+        val parent = node.path.getParent
+        paths.exists{ path => path == parent }
+    }
+  }
+  override def descendantsWithType(paths: Set[Path], typeStr: String): Set[Node] = {
+    nodesWithType(typeStr).filter{
+      node => paths.exists{ path =>  path.isAncestorOf(node.path) }
+    }
+  }
+
+  override def nodesWithType(typeStr: String): Set[Node] = {
+    typeIndex.get(Some(typeStr)).toSet.flatten
+  }
 
   def union[TM <: Map[Path, Node], TS <: SortedSet[Path]](that: ODF): ODF = {
     val pathIntersection: SortedSet[Path] = this.paths.intersect(that.paths)
