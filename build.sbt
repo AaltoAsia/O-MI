@@ -230,6 +230,7 @@ lazy val root = (project in file(".")).
     //Prevent aggregation of following commands to sub projects//
     /////////////////////////////////////////////////////////////
       aggregate in reStart := false,
+      javaOptions in reStart ++= Seq("-XX:+UseG1GC", "-Xms128m", "-Xmx4g", "-XX:+CMSClassUnloadingEnabled"),
       aggregate in reStop := false
       ): _*
   ).

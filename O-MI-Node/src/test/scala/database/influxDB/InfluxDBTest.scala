@@ -80,7 +80,7 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
        }
        "should create new DB if configuret one not found" >> testInit{ implicit system: ActorSystem =>
         val settings: OmiConfigExtension = OmiConfig(system)
-        val singleStores = new DummySingleStores(settings)
+        val singleStores = new DummySingleStores()
         val config = settings.influx.get
         val source = s"InfluxClient:${config.address}:${config.databaseName}"
         val logFilters = Vector(
@@ -110,7 +110,7 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
       }
        "should handle correctly DB creation failure" >> testInit{ implicit system: ActorSystem =>
         val settings: OmiConfigExtension = OmiConfig(system)
-        val singleStores = new DummySingleStores(settings)
+        val singleStores = new DummySingleStores()
         val config = settings.influx.get
         val source = s"InfluxClient:${config.address}:${config.databaseName}"
         val logFilters = Vector(
@@ -141,7 +141,7 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
       }
       "should find existing DB and use it" >> testInit{ implicit system: ActorSystem =>
         val settings: OmiConfigExtension = OmiConfig(system)
-        val singleStores = new DummySingleStores(settings)
+        val singleStores = new DummySingleStores()
         val config = settings.influx.get
 
         filterEvents(
@@ -160,7 +160,7 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
     "writeMany should" >> {
        "send measurements in correct format" >> testInit{ implicit system: ActorSystem =>
           val settings: OmiConfigExtension = OmiConfig(system)
-          val singleStores = new DummySingleStores(settings)
+          val singleStores = new DummySingleStores()
           val config = settings.influx.get
 
           val source = s"InfluxClient:${config.address}:${config.databaseName}"
@@ -186,7 +186,7 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
 
         "return 400 Bad Request status if write fails" >> testInit{ implicit system: ActorSystem =>
           val settings: OmiConfigExtension = OmiConfig(system)
-          val singleStores = new DummySingleStores(settings)
+          val singleStores = new DummySingleStores()
           val config = settings.influx.get
 
           val source = s"InfluxClient:${config.address}:${config.databaseName}"
@@ -212,7 +212,7 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
           }
         "log any exception during write" >> testInit{ implicit system: ActorSystem =>
           val settings: OmiConfigExtension = OmiConfig(system)
-          val singleStores = new DummySingleStores(settings)
+          val singleStores = new DummySingleStores()
           val config = settings.influx.get
 
           val source = s"InfluxClient:${config.address}:${config.databaseName}"
@@ -242,7 +242,7 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
      "getNBetween should" >>{
        "prevent request with Oldest parameter" >>  testInit{ implicit system: ActorSystem =>
           val settings: OmiConfigExtension = OmiConfig(system)
-          val singleStores = new DummySingleStores(settings)
+          val singleStores = new DummySingleStores()
           val config = settings.influx.get
 
           filterEvents(
@@ -279,7 +279,7 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
                   sender() ! tuples
               }
             }) 
-          val singleStores = new DummySingleStores(settings,
+          val singleStores = new DummySingleStores(
             latestStore = latestProbe,
             hierarchyStore = DummyHierarchyStore( odf )
           )
@@ -319,7 +319,7 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
        }
        "send correct query with only begin parameter" >>  testInit{ implicit system: ActorSystem =>
           val settings: OmiConfigExtension = OmiConfig(system)
-          val singleStores = new DummySingleStores(settings,
+          val singleStores = new DummySingleStores(
             hierarchyStore = DummyHierarchyStore( odf )
           )
           val config = settings.influx.get
@@ -361,7 +361,7 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
        }
        "send correct query with only end parameter" >> testInit{ implicit system: ActorSystem =>
           val settings: OmiConfigExtension = OmiConfig(system)
-          val singleStores = new DummySingleStores(settings,
+          val singleStores = new DummySingleStores(
             hierarchyStore = DummyHierarchyStore( odf )
           )
           val config = settings.influx.get
@@ -399,7 +399,7 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
        }
        "send correct query with only newest parameter" >> testInit{ implicit system: ActorSystem =>
           val settings: OmiConfigExtension = OmiConfig(system)
-          val singleStores = new DummySingleStores(settings,
+          val singleStores = new DummySingleStores(
             hierarchyStore = DummyHierarchyStore( odf )
           )
           val n = 30
@@ -438,7 +438,7 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
        }
        "send correct query with begin and end parameters" >> testInit{ implicit system: ActorSystem =>
           val settings: OmiConfigExtension = OmiConfig(system)
-          val singleStores = new DummySingleStores(settings,
+          val singleStores = new DummySingleStores(
             hierarchyStore = DummyHierarchyStore( odf )
           )
           val config = settings.influx.get
@@ -476,7 +476,7 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
        }
        "send correct query with begin and newest parameters" >>testInit{ implicit system: ActorSystem =>
           val settings: OmiConfigExtension = OmiConfig(system)
-          val singleStores = new DummySingleStores(settings,
+          val singleStores = new DummySingleStores(
             hierarchyStore = DummyHierarchyStore( odf )
           )
           val n = 30
@@ -515,7 +515,7 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
        }
        "send correct query with end and newest parameters" >>testInit{ implicit system: ActorSystem =>
           val settings: OmiConfigExtension = OmiConfig(system)
-          val singleStores = new DummySingleStores(settings,
+          val singleStores = new DummySingleStores(
             hierarchyStore = DummyHierarchyStore( odf )
           )
           val n = 30
@@ -554,7 +554,7 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
        }
        "send correct query with begin, end and newest parameters" >> testInit{ implicit system: ActorSystem =>
           val settings: OmiConfigExtension = OmiConfig(system)
-          val singleStores = new DummySingleStores(settings,
+          val singleStores = new DummySingleStores(
             hierarchyStore = DummyHierarchyStore( odf )
           )
           val config = settings.influx.get
@@ -591,7 +591,7 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
        }
        "log any execption during execution" >>  testInit{ implicit system: ActorSystem =>
           val settings: OmiConfigExtension = OmiConfig(system)
-          val singleStores = new DummySingleStores(settings,
+          val singleStores = new DummySingleStores(
             hierarchyStore = DummyHierarchyStore( odf )
           )
           val config = settings.influx.get
@@ -643,7 +643,7 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
            }
          }
          )
-         val singleStores = new DummySingleStores(settings,
+         val singleStores = new DummySingleStores(
            hierarchyStore = hierarchyProbe
            )
          filterEvents(
@@ -687,7 +687,7 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
            }
          }
          )
-         val singleStores = new DummySingleStores(settings,
+         val singleStores = new DummySingleStores(
            hierarchyStore = hierarchyProbe
            )
          filterEvents(

@@ -1,7 +1,6 @@
 package testHelpers
 
 import scala.concurrent.{Await, Future, Promise}
-import scala.util.{Try}
 import scala.concurrent.duration._
 import scala.language.postfixOps
 import scala.xml.{Node, PrettyPrinter, SAXParser, XML}
@@ -23,6 +22,7 @@ import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
 import org.specs2.matcher._
 import org.specs2.mock.Mockito
+import org.specs2.mock.Mockito.{mock,doReturn}
 import org.specs2.mutable._
 import org.specs2.specification.Scope
 import org.xml.sax.InputSource
@@ -441,10 +441,14 @@ object DummyHierarchyStore {
 }
 
 class DummySingleStores(
-  override protected val settings: OmiConfigExtension,
   override val latestStore: ActorRef = ActorRef.noSender,
   override val subStore: ActorRef =  ActorRef.noSender,
   override val pollDataStore: ActorRef =  ActorRef.noSender,
   override val hierarchyStore: ActorRef =  ActorRef.noSender,
-  )(implicit val system: ActorSystem)  extends SingleStores{
-}
+  )(implicit val system: ActorSystem)  extends {
+    override protected val settings: OmiConfigExtension = {
+      val s = mock[OmiConfigExtension]
+      doReturn(11.seconds).when(s).journalTimeout
+      s
+    }
+} with SingleStores

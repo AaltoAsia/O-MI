@@ -145,15 +145,15 @@ object SingleStores{
   def apply( settings: OmiConfigExtension)(implicit system: ActorSystem): SingleStores = {
     new SingleStoresImpl( settings)(system)
   }
-/**
-  * Contains all stores that requires only one instance for interfacing
-  */
-class SingleStoresImpl private[SingleStores] (
-  protected val settings: OmiConfigExtension)(implicit val system: ActorSystem) extends SingleStores{
+  /**
+    * Contains all stores that requires only one instance for interfacing
+    */
+  class SingleStoresImpl private[SingleStores] (
+    protected val settings: OmiConfigExtension)(implicit val system: ActorSystem) extends SingleStores{
 
-  val latestStore: ActorRef = system.actorOf(Props[journal.LatestStore])
-  val hierarchyStore: ActorRef = system.actorOf(Props[journal.HierarchyStore])
-  val subStore: ActorRef = system.actorOf(Props[journal.SubStore])
-  val pollDataStore: ActorRef = system.actorOf(Props[journal.PollDataStore])
-}
+    val latestStore: ActorRef = system.actorOf(Props[journal.LatestStore])
+    val hierarchyStore: ActorRef = system.actorOf(Props[journal.HierarchyStore])
+    val subStore: ActorRef = system.actorOf(Props[journal.SubStore])
+    val pollDataStore: ActorRef = system.actorOf(Props[journal.PollDataStore])
+  }
 } 
