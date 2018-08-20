@@ -7,18 +7,12 @@ import org.specs2.concurrent.ExecutionEnv
 import org.specs2.mutable._
 import org.specs2.matcher._
 import org.specs2.specification.{Scope,AfterAll}
-import akka.pattern.ask
-import akka.util.Timeout
 import scala.collection.immutable._
-import scala.concurrent.Future
-import scala.concurrent.duration._
 
 import agentSystem.AgentResponsibilities._
 import types.odf._
 import types._
 import types.OmiTypes._
-import http.{OmiConfig, OmiConfigExtension}
-import database.journal.Models.GetTree
 import testHelpers._
 
 class ResponsibilityTest( implicit ee: ExecutionEnv )  extends Specification with AfterAll{
@@ -35,10 +29,8 @@ class ResponsibilityTest( implicit ee: ExecutionEnv )  extends Specification wit
     val responsibilities: Seq[AgentResponsibility] = Vector.empty,
     val odf: ODF = ImmutableODF()
   ) extends Scope{
-    val settings: OmiConfigExtension = OmiConfig(system)
     val dummyHierarchyStore: ActorRef = DummyHierarchyStore(odf)
     val singleStores = new DummySingleStores(
-      settings,
       hierarchyStore = dummyHierarchyStore
     ) 
     val ar = new AgentResponsibilities(singleStores)
@@ -51,8 +43,8 @@ class ResponsibilityTest( implicit ee: ExecutionEnv )  extends Specification wit
       correctResult: Map[Option[Responsible],OdfRequest]
     ) = {
       val result = ar.splitRequestToResponsible( request ) 
-      val k = result must haveKeys( correctResult.keys.toSeq:_* ).await
-      val v = result must haveValues(correctResult.values.toSeq:_*).await
+      result must haveKeys( correctResult.keys.toSeq:_* ).await
+      result must haveValues(correctResult.values.toSeq:_*).await
       //k and v and 
       (result must beEqualTo( correctResult ).await)
     }
