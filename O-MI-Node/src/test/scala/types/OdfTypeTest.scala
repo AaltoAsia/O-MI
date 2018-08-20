@@ -5,14 +5,17 @@ import java.sql.Timestamp
 import java.util.GregorianCalendar
 
 import javax.xml.datatype.{DatatypeFactory, XMLGregorianCalendar}
-import org.specs2._
 import org.specs2.matcher.XmlMatchers._
+import org.specs2.mutable._
+import org.specs2.matcher._
+import org.specs2.specification.{Scope,AfterAll}
+
 import types.OdfTypes._
 import types.{Path => OdfPath}
 
 import scala.collection.immutable.HashMap
 
-class OdfTypesTest extends mutable.Specification {
+class OdfTypesTest extends Specification {
   val testTime: Timestamp = Timestamp.valueOf("2017-05-11 15:44:55")
   sequential
   "Object" should {
@@ -22,22 +25,6 @@ class OdfTypesTest extends mutable.Specification {
   "InfoItem" should {
     "union correctly" >> infoItemUnionTest
     "update correctly" >> infoItemUpdateTest
-  }
-  "ImmubtableODF" should {
-    val o_df = ImmutableODF(testingNodes)
-    "create all given paths and their ancestors" in createCorrect(o_df)
-    "return all SubTree paths when asked" in getCorrectSubTree(o_df)
-    "create correct XML presentation" in toXMLTest(o_df)
-    "add also missing ancestors when a Node is added" in addTest(o_df)
-  }
-  "MubtableODF" should {
-    val o_df = MutableODF(testingNodes)
-    "create all given paths and their ancestors" in createCorrect(o_df)
-    "return all SubTree paths when asked" in getCorrectSubTree(o_df)
-    "create correct XML presentation" in toXMLTest(o_df)
-    "add also missing ancestors when a Node is added" in addTest(o_df)
-    "be empty if contains only Objects" in emptyTestMutable
-    "be nonEmpty if contains any additional nodes to Objects" in nonEmptyTestMutable
   }
   "ODFParser" should {
     val o_df = ImmutableODF(testingNodes)
@@ -50,27 +37,94 @@ class OdfTypesTest extends mutable.Specification {
     "Convert from old to new and back to old and stay the same" in repeatedOldConvertTest
     "Convert from new to old and back to new and stay the same" in repeatedNewConvertTest
   }
+  class IODFTest (
+    val nodes: Seq[Node]
+  ) extends Scope{
+    val odf: ImmutableODF = ImmutableODF( nodes)
+  }
+  class MODFTest (
+    val nodes: Seq[Node]
+  ) extends Scope{
+    val odf: MutableODF = MutableODF( nodes)
+  }
 
-  def emptyTestMutable = {
-    val odf = MutableODF(
+  case class TestEntry(
+    desc: String, 
+    nodes: Seq[Node],
+    test: (ODF => MatchResult[_])
+  )
+  val objects = OdfPath("Objects")
+  val testsCollection = Vector(
+    TestEntry( "create all given paths and their ancestors", testingNodes, createCorrect),
+    TestEntry( "return all SubTree paths when asked", testingNodes, getCorrectSubTree),
+    TestEntry( "create correct XML presentation", testingNodes, toXMLTest),
+    TestEntry( "add also missing ancestors when a Node is added", testingNodes, addTest),
+    TestEntry(
+      "get correct childs for requested path", 
       Vector(
-        Objects()
-      )
+        InfoItem(objects / "Obj" / "test1", Vector.empty),
+        InfoItem(objects / "Obj" / "test2", Vector.empty),
+        InfoItem(objects / "Obj1" / "test2", Vector.empty),
+        Object(objects / "Obj" / "test3"),
+        Object(objects / "Obj" / "test4"),
+        Object(objects / "Obj1" / "test1")
+      ), 
+      getChildsTest
+    ),
+    TestEntry(
+      "get empty set of childs for nonexistent path", 
+      Vector(
+        InfoItem(objects / "Obj" / "test1", Vector.empty),
+        InfoItem(objects / "Obj" / "test2", Vector.empty),
+        InfoItem(objects / "Obj1" / "test2", Vector.empty),
+        Object(objects / "Obj" / "test3"),
+        Object(objects / "Obj" / "test4"),
+        Object(objects / "Obj1" / "test1")
+      ), 
+      getChildsOfNonExistingTest
     )
+  )
+  "MubtableODF" should {
+    org.specs2.specification.core.Fragments.empty.append(
+      testsCollection.map{
+        case TestEntry(desc, nodes,test) =>
+          s"$desc" >> new IODFTest( nodes){
+            test(odf)
+          }
+      }
+    )
+   
+  }
+  "ImmubtableODF" should {
+    org.specs2.specification.core.Fragments.empty.append(
+      testsCollection.map{
+        case TestEntry(desc, nodes,test) =>
+          s"$desc" >> new IODFTest( nodes){
+            test(odf)
+          }
+      }
+    )
+  }
+  def getChildsOfNonExistingTest( odf: ODF ) ={
+    odf.getChildPaths( objects / "NonExistent" ) must beEmpty
+  }
+  def getChildsTest( odf: ODF ) ={
+    odf.getChildPaths( objects / "Obj" ) must beEqualTo(
+      Set( 
+          objects / "Obj" / "test1",
+          objects / "Obj" / "test2",
+          objects / "Obj" / "test3",
+          objects / "Obj" / "test4"
+        )
+    )
+  }
+  def emptyTest(odf: ODF) = {
     odf.getPaths.size <= 1 and
       odf.getPaths.contains(OdfPath("Objects")) === true and
       odf.isEmpty === true
   }
 
-  def nonEmptyTestMutable = {
-    val odf = MutableODF(
-      Vector(
-        InfoItem(
-          "test",
-          OdfPath("Objects", "Obj", "test")
-        )
-      )
-    )
+  def nonEmptyTest(odf: ODF) = {
     odf.nonEmpty === true
   }
 
@@ -335,9 +389,9 @@ class OdfTypesTest extends mutable.Specification {
     checkObjectMatch(lObj.update(rObj), correct)
   }
 
-  def createCorrect[M <: scala.collection.Map[OdfPath, Node], S <: scala.collection.SortedSet[OdfPath]](
-                                                                                                         o_df: ODF
-                                                                                                       ) = {
+  def createCorrect(
+    o_df: ODF
+  ) = {
     val iIOdfPaths = testingNodes.collect {
       case iI: InfoItem => iI.path
     }.toSet
@@ -356,9 +410,9 @@ class OdfTypesTest extends mutable.Specification {
       createdObjOdfPaths should contain(objOdfPaths ++ automaticallyCreatedOdfPaths))
   }
 
-  def getCorrectSubTree[M <: scala.collection.Map[OdfPath, Node], S <: scala.collection.SortedSet[OdfPath]](
-                                                                                                             o_df: ODF
-                                                                                                           ) = {
+  def getCorrectSubTree(
+    o_df: ODF
+  ) = {
     o_df.selectSubTree(Set(OdfPath("Objects", "ObjectA"))).getPaths.toSet should contain(
       Set(
         OdfPath("Objects"),
@@ -369,9 +423,9 @@ class OdfTypesTest extends mutable.Specification {
     )
   }
 
-  def addTest[M <: scala.collection.Map[OdfPath, Node], S <: scala.collection.SortedSet[OdfPath]](
-                                                                                                   o_df: ODF
-                                                                                                 ) = {
+  def addTest(
+    o_df: ODF
+  ) = {
     val beAdded = InfoItem(
       "II1",
       OdfPath("Objects", "ObjectN", "SubObj", "II1"),
@@ -660,4 +714,38 @@ class OdfTypesTest extends mutable.Specification {
     cal.setTime(timestamp)
     DatatypeFactory.newInstance().newXMLGregorianCalendar(cal)
   }
+  /*
+  val descriptions = Set( Description( "testi", Some("fin")),Description( "test", Some("eng")) )
+  val values = Vector(
+    IntValue( 53, testTime),
+    StringValue( "test", testTime),
+    DoubleValue( 5.3, testTime)
+  )
+  def createQlmId(id: String) = QlmID(id,Some("testId"),Some("testTag"),Some(testTime),Some(testTime))
+  def createObj( id: String, parentPath: Path ) ={
+    Object(
+        Vector(createQlmId(id)),
+        parentPath / id, 
+        Some("testObj"),
+        descriptions
+      )
+  }
+  def createII( name: String, parentPath: Path, md: Boolean= true): InfoItem ={
+    InfoItem(
+      name,
+      parentPath / name,
+      Some("testII"),
+      Vector(createQlmId(name+"O")),
+      descriptions,
+      values,
+      if( md ) {
+        Some(MetaData(
+          Vector(
+            createII("II1",parentPath / name / "MetaData", false),
+            createII("II2",parentPath / name / "MetaData", false)
+          )
+        ))
+      } else None
+    )
+  }*/
 }
