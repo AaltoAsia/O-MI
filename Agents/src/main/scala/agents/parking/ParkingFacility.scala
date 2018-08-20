@@ -51,7 +51,8 @@ case class ParkingFacility(
     if( parkingSpaces.nonEmpty ){
       nodes = nodes ++ Seq(
         Object( 
-          path / "ParkingSpaces"
+          path / "ParkingSpaces",
+          Some("list")
         )
       ) ++ parkingSpaces.flatMap( ps => ps.toOdf( path / "ParkingSpaces" ) )
     }
