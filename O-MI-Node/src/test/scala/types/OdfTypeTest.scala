@@ -88,7 +88,7 @@ class OdfTypesTest extends Specification {
     org.specs2.specification.core.Fragments.empty.append(
       testsCollection.map{
         case TestEntry(desc, nodes,test) =>
-          s"$desc" >> new IODFTest( nodes){
+          s"$desc" >> new MODFTest( nodes){
             test(odf)
           }
       }
@@ -472,17 +472,17 @@ class OdfTypesTest extends Specification {
     )
   }
 
-  def toXMLTest[M <: scala.collection.Map[OdfPath, Node], S <: scala.collection.SortedSet[OdfPath]](
-                                                                                                     o_df: ODF
-                                                                                                   ) = {
+  def toXMLTest(
+    o_df: ODF
+  ) = {
     val p = new scala.xml.PrettyPrinter(120, 4)
     o_df.asXML showAs (ns =>
       "Generated:\n\n" + p.format(ns.head) + "\n") must beEqualToIgnoringSpace(testingNodesAsXML)
   }
 
-  def fromXMLTest[M <: scala.collection.Map[OdfPath, Node], S <: scala.collection.SortedSet[OdfPath]](
-                                                                                                       o_df: ODF
-                                                                                                     ) = {
+  def fromXMLTest(
+    o_df: ODF
+  ) = {
     ODFParser.parse(o_df.asXML.toString) should beRight {
       o: ImmutableODF =>
         val iODF = o_df.immutable
