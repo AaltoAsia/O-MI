@@ -147,7 +147,7 @@ object ParkingSpace{
           prefix: String =>
           obj.typeAttribute.contains(mvType(Some(prefix)))
         } =>
-          val geo = odf.get(path / "Geo").map{ 
+          val geo = odf.get(path / "geo").map{ 
             n: Node => 
             GeoCoordinates.parseOdf( n.path, odf, prefixes) match{
               case Success(gps:GeoCoordinates) => gps

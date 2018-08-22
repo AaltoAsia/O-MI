@@ -27,10 +27,10 @@ case class GeoCoordinates(
     val prefix = prefixes.get("http://www.schema.org/").map{
       str => if( str.endsWith(":") ) str else str + ":"
     }
-    val path: Path= parentPath / "Geo"
+    val path: Path= parentPath / "geo"
     Seq(
       Object( 
-        Vector( QlmID( "Geo")),
+        Vector( QlmID( "geo")),
         path,
         typeAttribute = Some(s"${mvType(prefix)}")
       ),

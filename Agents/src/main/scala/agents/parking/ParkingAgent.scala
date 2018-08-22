@@ -81,6 +81,7 @@ class ParkingAgent(
       throw  AgentConfigurationException(s"Could not get initial state for $name. Could not read file $startStateFile.")
     }
     
+    updatePrefixes(initialODF)
     val initialWrite: Future[ResponseRequest] = writeToDB( WriteRequest(initialODF,ttl = 10.minutes) ).flatMap{
       writeResponse: ResponseRequest =>
         val wfails = writeResponse.results.filterNot{
@@ -97,7 +98,12 @@ class ParkingAgent(
               else{
                 success.foreach {
                   result: OmiResult =>
-                    result.odf.foreach {
+                    result.odf.map{
+                      odf =>
+                        updatePrefixes(odf)
+                        setPrefixes(odf)
+                    
+                    }.foreach {
                       odf =>
                         updateIndexesAndCapacities(odf.immutable, response)
                     }
@@ -136,8 +142,8 @@ class ParkingAgent(
         node: Object =>
           log.debug( s"Create Geo ${node.path}" )
           val gps: Option[GeoCoordinates] = for{
-            lat <- getDoubleOption("latitude", node.path / "Geo",odf.immutable )
-            lon <- getDoubleOption("longitude", node.path / "Geo",odf.immutable )
+            lat <- getDoubleOption("latitude", node.path / "geo",odf.immutable )
+            lon <- getDoubleOption("longitude", node.path / "geo",odf.immutable )
           } yield GeoCoordinates( lat, lon )
           gps.foreach{
             gc =>
@@ -173,11 +179,16 @@ class ParkingAgent(
   override def handleWrite( write: WriteRequest):Future[ResponseRequest] = {
     log.info( s"Write received")
     if( write.odf.get(findParkingPath).nonEmpty ){
-      return Future{
+      return  Future.successful(
         Responses.InvalidRequest(Some(s"Writing to $findParkingPath is not allowed.")) 
-      }
+      )
     }
-    updatePrefixes(write.odf)
+    Try{
+      updatePrefixes(write.odf)
+    }.failed.foreach{
+      case NonFatal(e) => 
+       return Future.successful(Responses.InvalidRequest(Some(s"Prefix upadate failed with $e")))
+    }
     val wodf = setPrefixes(write.odf)
 
     {
@@ -217,11 +228,11 @@ class ParkingAgent(
         if( success.nonEmpty ){
           log.info( s"Write successful")
           updateIndexesAndCapacities( wodf.immutable,response)
-        } else Future{ response }
+        } else  Future.successful(response)
     }
   }
   def calculateCapacities(updatedPFs: Set[Path]) : Future[ResponseRequest]={
-    if( !calculateCapacitiesEnabled) return Future{ Responses.Success()}
+    if( !calculateCapacitiesEnabled) return  Future.successful(Responses.Success())
     
     val read = ReadRequest( ImmutableODF(updatedPFs.map{ path => Object(path)}.toSeq), ttl = 1.minutes)
     readFromDB(read).flatMap{
