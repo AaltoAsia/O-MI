@@ -9,6 +9,7 @@ case class GeoCoordinates(
                            latitude: Double,
   longitude: Double
 ){
+  import GeoCoordinates._
   def distanceTo( other: GeoCoordinates): Double= { 
     val radius: Double = 6371e3
     val a1 = other.latitude.toRadians 
@@ -21,35 +22,52 @@ case class GeoCoordinates(
     val distance = radius * c
     distance 
   }
-  def toOdf(parentPath: Path): Seq[Node] ={
-    val path: Path= parentPath / "geo"
+  def toOdf(parentPath: Path, prefixes: Map[String,String]): Seq[Node] ={
+    import GeoCoordinates.mvType
+    val prefix = prefixes.get("http://www.schema.org/").map{
+      str => if( str.endsWith(":") ) str else str + ":"
+    }
+    val path: Path= parentPath / "Geo"
     Seq(
       Object( 
-        Vector( QlmID( "geo")),
+        Vector( QlmID( "Geo")),
         path,
-        typeAttribute = Some(GeoCoordinates.mvType)
+        typeAttribute = Some(s"${mvType(prefix)}")
       ),
       InfoItem(
         "latitude",
         path / "latitude",
-        typeAttribute = Some( "schema:latitude" ),
+        typeAttribute = Some( s"${prefix.getOrElse("")}latitude" ),
         values = Vector( DoubleValue( latitude, currentTimestamp))
       ),
       InfoItem(
         "longitude",
         path / "longitude",
-        typeAttribute = Some( "schema:longitude" ),
+        typeAttribute = Some( s"${prefix.getOrElse("")}longitude" ),
         values = Vector( DoubleValue( longitude, currentTimestamp))
       )
     )  
   }
 }
 object GeoCoordinates{
-  def mvType = "schema:GeoCoordinates"
-  def parseOdf( path: Path, odf: ImmutableODF): Try[GeoCoordinates] ={
+  
+  def mvType(  prefix: Option[String] )={
+    val preStr = prefix.getOrElse("")
+    s"${preStr}GeoCoordinates"
+  }
+  def parseOdf( path: Path, odf: ImmutableODF, prefixes: Map[String,Set[String]]): Try[GeoCoordinates] ={
     Try{
+      val prefix = prefixes.get("http://www.schema.org/").map{
+        prefix: Set[String] => 
+          prefix.map{
+            str => if( str.endsWith(":") ) str else str + ":"
+          }
+      }.toSet.flatten
       odf.get(path) match{
-        case Some(obj: Object) if obj.typeAttribute.contains(mvType) =>
+        case Some(obj: Object) if prefix.exists{
+          prefix: String =>
+          obj.typeAttribute.contains(mvType(Some(prefix)))
+        } =>
          (odf.get( path / "latitude" ),odf.get( path / "longitude" )) match{
            case (Some(latII:InfoItem),Some(longII:InfoItem)) if latII.values.nonEmpty && longII.values.nonEmpty =>
              getDoubleOption(latII.path.last,path,odf).flatMap{
@@ -73,9 +91,9 @@ object GeoCoordinates{
          }
 
         case Some(obj: Object) => 
-          throw MVError( s"GeoCoordinates path $path has wrong type attribute ${obj.typeAttribute}")
+          throw MVError( s"GeoCoordinates path $path has wrong type attribute ${obj.typeAttribute}. ${mvType(None)} expected")
         case Some(obj: Node) => 
-          throw MVError( s"GeoCoordinates path $path should be Object with type $mvType")
+          throw MVError( s"GeoCoordinates path $path should be Object with type ${mvType(None)}")
         case None => 
           throw MVError( s"GeoCoordinates path $path not found from given O-DF")
       }

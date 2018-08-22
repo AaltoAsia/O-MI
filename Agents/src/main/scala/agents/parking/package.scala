@@ -3,6 +3,7 @@ package agents
 import java.sql.Timestamp
 import java.util.Date
 import scala.util.Try
+import scala.collection.mutable.{Map => MutableMap}
 
 import types._
 import types.odf._

@@ -8,11 +8,24 @@ import scala.util.Try
 object VehicleType extends Enumeration{
   type VehicleType = Value
   val Vehicle, Car, Truck, Coach, RecreationalVehicle, Bicycle, Motorbike, ElectricVehicle, BatteryElectricVehicle, PluginHybridElectricVehicle, Unknown = Value   
-  def apply( str: String ): VehicleType = {
-    val vt = str.replace("mv:","")
+  def apply( str: String, prefixes: Map[String,Set[String]] ): VehicleType = {
+    val prefix = prefixes.get("http://www.schema.mobivoc.org/").map{
+      prefix: Set[String] => 
+        prefix.map{
+          str => if( str.endsWith(":") ) str else str + ":"
+        }
+    }.toSet.flatten
+    val vt = prefix.fold(str){
+      case (v: String, prefix: String ) => v.replace(prefix,"")
+    }
     values.find( v => v.toString == vt ).getOrElse( Unknown )
   }
-  def toMvType( v: VehicleType ): String = s"mv:$v"
+  def toMvType( v: VehicleType, prefixes: Map[String,String]  ): String ={ 
+    val prefix = prefixes.get("http://www.schema.mobivoc.org/").map{
+      str => if( str.endsWith(":") ) str else str + ":"
+    }.getOrElse("")
+    s"${prefix}$v"
+  }
 }
 import agents.parking.VehicleType._
 
@@ -113,7 +126,7 @@ class PluginHybridElectricVehicle(
 }
 
 object Vehicle{
-  def parseOdf( path: Path, odf: ImmutableODF): Try[Vehicle]={
+  def parseOdf( path: Path, odf: ImmutableODF, prefixes: Map[String,Set[String]]): Try[Vehicle]={
     Try{
       odf.get(path) match{
         case Some( obj: Object) =>
@@ -121,7 +134,7 @@ object Vehicle{
           lazy val w = getDoubleOption( "width", obj.path, odf)
           lazy val h = getDoubleOption( "height", obj.path, odf)
 
-          obj.typeAttribute.map{ str => VehicleType(str) } match {
+          obj.typeAttribute.map{ str => VehicleType(str, prefixes) } match {
             case Some( VehicleType.ElectricVehicle ) => new ElectricVehicle(l,w,h)
             case Some( VehicleType.BatteryElectricVehicle ) => new BatteryElectricVehicle(l,w,h)
             case Some( VehicleType.PluginHybridElectricVehicle ) => new PluginHybridElectricVehicle(l,w,h)

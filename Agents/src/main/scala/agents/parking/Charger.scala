@@ -40,20 +40,24 @@ case class Charger(
     )
   }
 
-  def toOdf(parentPath: Path): Seq[Node] = {
+  import Charger._
+  def toOdf(parentPath: Path, prefixes: Map[String,String]): Seq[Node] = {
     val path: Path= parentPath / id
+    val prefix = prefixes.get("http://www.schema.mobivoc.org/").map{
+      str => if( str.endsWith(":") ) str else str + ":"
+    }
     Seq(
       Object( 
         Vector( QlmID( id)),
         path,
-        typeAttribute = Some(Charger.mvType)
+        typeAttribute = Some(s"${mvType(prefix)}")
       )
     ) ++ brand.map{ b => 
       val nII = "brand"
       InfoItem( 
         nII,
         path / nII,
-        typeAttribute = Some(s"mv:$nII"),
+        typeAttribute = Some(s"${prefix.getOrElse("")}$nII"),
         values = Vector( StringValue( b, currentTimestamp))
       )
     }.toSeq ++ model.map{ m => 
@@ -61,7 +65,7 @@ case class Charger(
       InfoItem( 
         nII,
         path / nII,
-        typeAttribute = Some(s"mv:$nII"),
+        typeAttribute = Some(s"${prefix.getOrElse("")}$nII"),
         values = Vector( StringValue( m, currentTimestamp))
       )
     } ++ currentInA.map{ m => 
@@ -69,7 +73,7 @@ case class Charger(
       InfoItem( 
         nII,
         path / nII,
-        typeAttribute = Some(s"mv:$nII"),
+        typeAttribute = Some(s"${prefix.getOrElse("")}$nII"),
         values = Vector( DoubleValue( m, currentTimestamp))
       )
     } ++ currentType.map{ m => 
@@ -77,7 +81,7 @@ case class Charger(
       InfoItem( 
         nII,
         path / nII,
-        typeAttribute = Some(s"mv:$nII"),
+        typeAttribute = Some(s"${prefix.getOrElse("")}$nII"),
         values = Vector( StringValue( m, currentTimestamp))
       )
     } ++ powerInkW.map{ m => 
@@ -85,7 +89,7 @@ case class Charger(
       InfoItem( 
         nII,
         path / nII,
-        typeAttribute = Some(s"mv:$nII"),
+        typeAttribute = Some(s"${prefix.getOrElse("")}$nII"),
         values = Vector( DoubleValue( m, currentTimestamp))
       )
     } ++ voltageInV.map{ m => 
@@ -93,7 +97,7 @@ case class Charger(
       InfoItem( 
         nII,
         path / nII,
-        typeAttribute = Some(s"mv:$nII"),
+        typeAttribute = Some(s"${prefix.getOrElse("")}$nII"),
         values = Vector( DoubleValue( m, currentTimestamp))
       )
     } ++ threePhasedCurrentAvailable.map{ m => 
@@ -101,7 +105,7 @@ case class Charger(
       InfoItem( 
         nII,
         path / nII,
-        typeAttribute = Some(s"mv:$nII"),
+        typeAttribute = Some(s"${prefix.getOrElse("")}$nII"),
         values = Vector( BooleanValue( m, currentTimestamp))
       )
     } ++ isFastChargeCapable.map{ m => 
@@ -109,23 +113,35 @@ case class Charger(
       InfoItem( 
         nII,
         path / nII,
-        typeAttribute = Some(s"mv:$nII"),
+        typeAttribute = Some(s"${prefix.getOrElse("")}$nII"),
         values = Vector( BooleanValue( m, currentTimestamp))
       )
-      } ++ plugs.flatMap{ p => p.toOdf(path)}
+      } ++ plugs.flatMap{ p => p.toOdf(path, prefixes )}
   }
 }
 
 object Charger{
-  def mvType = "mv:Charger"
-  def parseOdf(path: Path, odf: ImmutableODF): Try[Charger] ={
+  def mvType(  prefix: Option[String] = None)={
+    val preStr = prefix.getOrElse("")
+    s"${preStr}Charger"
+  }
+  def parseOdf(path: Path, odf: ImmutableODF, prefixes: Map[String,Set[String]] ): Try[Charger] ={
     Try{
+      val prefix = prefixes.get("http://www.schema.mobivoc.org/").map{
+        prefix: Set[String] => 
+          prefix.map{
+            str => if( str.endsWith(":") ) str else str + ":"
+          }
+      }.toSet.flatten
       odf.get(path) match{
-        case Some(obj: Object) if obj.typeAttribute.contains(mvType) =>
+        case Some(obj: Object) if prefix.exists{
+          prefix: String =>
+          obj.typeAttribute.contains(mvType(Some(prefix)))
+        } =>
           val plugs: Seq[Plug] = odf.get( path / "Plugs").map{
             case obj: Object => 
               val ( success, fails ) = odf.getChilds( path / "Plugs").map {
-                node: Node => Plug.parseOdf(node.path, odf)
+                node: Node => Plug.parseOdf(node.path, odf, prefixes )
               }.partition{ 
                 case Success(_) => true
                 case Failure(_) => false
@@ -135,7 +151,7 @@ object Charger{
                   fails.map{
                     case Failure( pe: ParseError ) => pe
                     case Failure( e ) => throw e
-                    case _ => throw new IllegalStateException("Failures should not contain Success")
+                    case _ => throw new IllegalStateException("Failures should not contain Succes")
                   }
                 )
                 
@@ -164,7 +180,7 @@ object Charger{
         case Some(obj: Object) => 
           throw MVError( s"Charger path $path has wrong type attribute ${obj.typeAttribute}")
         case Some(obj: Node) => 
-          throw MVError( s"Charger path $path should be Object with type $mvType")
+          throw MVError( s"Charger path $path should be Object with type ${mvType(None)}")
         case None => 
           throw MVError( s"Charger path $path not found from given O-DF")
       }

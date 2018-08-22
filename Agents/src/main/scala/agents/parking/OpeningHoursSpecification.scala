@@ -12,13 +12,17 @@ case class OpeningHoursSpecification(
   closes: Option[String],
   dayOfWeek: Option[String]
 ){
-  def toOdf(parentPath: Path): Seq[Node] ={
+  def toOdf(parentPath: Path, prefixes: Map[String,String]): Seq[Node] ={
+    import OpeningHoursSpecification.mvType
+    val prefix = prefixes.get("http://www.schema.org/").map{
+      str => if( str.endsWith(":") ) str else str + ":"
+    }
     val path: Path= parentPath / name
     Seq(
       Object( 
         Vector( QlmID( name)),
         path,
-        typeAttribute = Some(OpeningHoursSpecification.mvType)
+        typeAttribute = Some(s"${mvType(prefix)}")
       )
     ) ++ 
     opens.map{
@@ -26,7 +30,7 @@ case class OpeningHoursSpecification(
       InfoItem(
         "opens",
         path / "opens",
-        typeAttribute = Some( "schema:opens" ),
+        typeAttribute = Some( s"${prefix.getOrElse("")}opens" ),
         values = Vector( StringValue( str, currentTimestamp))
       )
     }.toSeq ++
@@ -35,7 +39,7 @@ case class OpeningHoursSpecification(
       InfoItem(
         "closes",
         path / "closes",
-        typeAttribute = Some( "schema:closes" ),
+        typeAttribute = Some( s"${prefix.getOrElse("")}closes" ),
         values = Vector( StringValue( str, currentTimestamp))
       )
     }.toSeq ++ 
@@ -44,7 +48,7 @@ case class OpeningHoursSpecification(
       InfoItem(
         "String",
         path / "String",
-        typeAttribute = Some("schema:DayOfWeek"),
+        typeAttribute = Some(s"${prefix.getOrElse("")}DayOfWeek"),
         values = Vector( StringValue( str, currentTimestamp))
       )
     }.toSeq  
@@ -52,11 +56,23 @@ case class OpeningHoursSpecification(
 }
 
 object OpeningHoursSpecification{
-  def mvType = "schema:OpeningHoursSpecification"
-  def parseOdf(path:Path, odf: ImmutableODF): Try[OpeningHoursSpecification] ={
+  def mvType(  prefix: Option[String] )={
+    val preStr = prefix.getOrElse("")
+    s"${preStr}OpeningHoursSpecification"
+  }
+  def parseOdf(path:Path, odf: ImmutableODF, prefixes: Map[String,Set[String]]): Try[OpeningHoursSpecification] ={
     Try{
+      val prefix = prefixes.get("http://www.schema.org/").map{
+        prefix: Set[String] => 
+          prefix.map{
+            str => if( str.endsWith(":") ) str else str + ":"
+          }
+      }.toSet.flatten
       odf.get(path) match{
-        case Some(obj: Object) if obj.typeAttribute.contains(mvType) =>
+        case Some(obj: Object) if prefix.exists{
+          prefix: String =>
+          obj.typeAttribute.contains(mvType(Some(prefix)))
+        } =>
           val closes = getStringOption("closes",path,odf)
           val opens = getStringOption("opens",path,odf)
           val dow = getStringOption("DayOfWeek",path,odf)
@@ -64,7 +80,7 @@ object OpeningHoursSpecification{
         case Some(obj: Object) => 
           throw MVError( s"OpeningHoursSpecification path $path has wrong type attribute ${obj.typeAttribute}")
         case Some(obj: Node) => 
-          throw MVError( s"OpeningHoursSpecification path $path should be Object with type $mvType")
+          throw MVError( s"OpeningHoursSpecification path $path should be Object with type ${mvType(None)}")
         case None => 
           throw MVError( s"OpeningHoursSpecification path $path not found from given O-DF")
       }

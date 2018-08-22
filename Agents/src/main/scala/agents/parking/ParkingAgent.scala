@@ -15,8 +15,9 @@ import types.odf._
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.concurrent.Future
+import scala.concurrent.duration._
 import scala.util.control.NonFatal
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 import scala.xml.XML
 
 object ParkingAgent extends PropsCreator{
@@ -52,6 +53,15 @@ class ParkingAgent(
   val latitudePFIndex: mutable.SortedMap[ Double, Set[Path] ] = mutable.SortedMap.empty
   val longitudePFIndex: mutable.SortedMap[ Double, Set[Path] ] = mutable.SortedMap.empty
 
+  val prefixes: mutable.Map[String,Set[String]] = mutable.Map(
+    "http://www.schema.org/" -> Set("schema:","sdo:"),
+    "http://www.schema.mobivoc.org/" -> Set("mv:")
+  )
+  val tmprefixes = Map(
+    "http://www.schema.org/" -> "schema:",
+    "http://www.schema.mobivoc.org/" -> "mv:"
+  )
+
   //File used to populate node with initial state
   {
     val startStateFile =  new File(config.getString("initialStateFile"))
@@ -71,19 +81,19 @@ class ParkingAgent(
       throw  AgentConfigurationException(s"Could not get initial state for $name. Could not read file $startStateFile.")
     }
     
-    val initialWrite: Future[ResponseRequest] = writeToDB( WriteRequest(initialODF) ).flatMap{
+    val initialWrite: Future[ResponseRequest] = writeToDB( WriteRequest(initialODF,ttl = 10.minutes) ).flatMap{
       writeResponse: ResponseRequest =>
         val wfails = writeResponse.results.filterNot{
           result => result.returnValue.returnCode.startsWith("2")
         }
-        if( wfails.nonEmpty) Future{ writeResponse }
+        if( wfails.nonEmpty) Future.successful{ writeResponse }
         else{
-          readFromDB(ReadRequest(odf = ImmutableODF(Seq(Object(servicePath))))).map{
+          readFromDB(ReadRequest(odf = ImmutableODF(Seq(Object(servicePath))), ttl = 10.minutes)).map{
             response: ResponseRequest => 
               val (success,fails) = response.results.partition{
                 result => result.returnValue.returnCode.startsWith("2")
               }
-              if( fails.nonEmpty) Future{ response }
+              if( fails.nonEmpty) Future.successful{ response }
               else{
                 success.foreach {
                   result: OmiResult =>
@@ -100,8 +110,7 @@ class ParkingAgent(
     initialWrite.recover{
       case e: Exception => 
         throw new Exception(s"Could not set initial state for $name. Initial write to DB failed.", e)
-      
-    }.map {
+    }.map{
       response: ResponseRequest =>
         response.results.foreach {
           result: OmiResult =>
@@ -116,38 +125,45 @@ class ParkingAgent(
     }
   }
   def updateIndexes(pfs:Set[Object], odf: ODF): Unit ={
-    pfs.filter{
+    val newPfs= pfs.filter{
       obj: Object => 
         !latitudePFIndex.values.flatten.toSet.contains(obj.path) && 
         !longitudePFIndex.values.flatten.toSet.contains(obj.path)
-    }.foreach{
-      node: Object =>
-        val gps: Option[GeoCoordinates] = for{
-          lat <- getDoubleOption("latitude", node.path / "geo",odf.immutable )
-          lon <- getDoubleOption("longitude", node.path / "geo",odf.immutable )
-        } yield GeoCoordinates( lat, lon)
-        gps.foreach{
-          gc =>
-            log.debug( s"Adding ${node.path} to Geo indexes" )
-            latitudePFIndex.get( gc.latitude ) match{
-              case Some( paths: Set[Path]) => 
-                latitudePFIndex.update(gc.latitude,paths ++ Set(node.path) )
-              case None =>
-                latitudePFIndex += gc.latitude -> Set(node.path)
-            }
-            longitudePFIndex.get( gc.longitude ) match{
-              case Some( paths: Set[Path]) => 
-                longitudePFIndex.update(gc.longitude,paths ++ Set(node.path) )
-              case None =>
-                longitudePFIndex += gc.longitude -> Set(node.path)
-            }
-        }
+    }
+    if( newPfs.size > 0 ){
+      log.info( s"Found ${newPfs.size} new PFs to be added to indexes" )
+      newPfs.foreach{
+        node: Object =>
+          log.debug( s"Create Geo ${node.path}" )
+          val gps: Option[GeoCoordinates] = for{
+            lat <- getDoubleOption("latitude", node.path / "Geo",odf.immutable )
+            lon <- getDoubleOption("longitude", node.path / "Geo",odf.immutable )
+          } yield GeoCoordinates( lat, lon )
+          gps.foreach{
+            gc =>
+              log.debug( s"Adding ${node.path} to Geo indexes" )
+              latitudePFIndex.get( gc.latitude ) match{
+                case Some( paths: Set[Path]) => 
+                  latitudePFIndex.update(gc.latitude,paths ++ Set(node.path) )
+                case None =>
+                  latitudePFIndex += gc.latitude -> Set(node.path)
+              }
+              longitudePFIndex.get( gc.longitude ) match{
+                case Some( paths: Set[Path]) => 
+                  longitudePFIndex.update(gc.longitude,paths ++ Set(node.path) )
+                case None =>
+                  longitudePFIndex += gc.longitude -> Set(node.path)
+              }
+          }
+      }
+      log.info( s"Current latitude index has: ${latitudePFIndex.values.map(_.size).sum} parking facilities")
+      log.info( s"Current longitude index has: ${longitudePFIndex.values.map(_.size).sum} parking facilities")
     }
   }
   def updateIndexesAndCapacities(odf: ImmutableODF, response: ResponseRequest): Future[ResponseRequest]={
-    val facilities = odf.nodesWithType("mv:ParkingFacility").collect{ case obj: Object => obj}
+    val facilities = odf.nodesWithType(ParkingFacility.mvType(Some("mv:"))).collect{ case obj: Object => obj}
     updateIndexes(facilities,odf)
-    val availableWrite = odf.nodesWithType("mv:ParkingSpace").exists{
+    val availableWrite = odf.nodesWithType(ParkingSpace.mvType(Some("mv"))).exists{
       obj: Node =>
         odf.get(obj.path / "available").nonEmpty
     }
@@ -155,58 +171,59 @@ class ParkingAgent(
     else Future{ response }
   }
   override def handleWrite( write: WriteRequest):Future[ResponseRequest] = {
+    log.info( s"Write received")
     if( write.odf.get(findParkingPath).nonEmpty ){
       return Future{
         Responses.InvalidRequest(Some(s"Writing to $findParkingPath is not allowed.")) 
       }
     }
+    updatePrefixes(write.odf)
+    val wodf = setPrefixes(write.odf)
+
     {
-      val facilities = write.odf.getChilds( parkingFacilitiesPath)
+      val facilities = wodf.getChilds( parkingFacilitiesPath)
       if( facilities.isEmpty ||
-         facilities.forall{
-          case node: Object => node.typeAttribute.isEmpty || !node.typeAttribute.contains("mv:ParkingFacility")
+        facilities.forall{
+          case node: Object => node.typeAttribute.isEmpty || !node.typeAttribute.contains(ParkingFacility.mvType(Some("mv:")))
           case node: InfoItem => true
         }
-      ) {
-        return Future{
-          Responses.InvalidRequest(Some(s"Only Object with type mv:ParkingFacility are allowed as childs of $parkingFacilitiesPath.")) 
+        ) {
+          return Future.successful{
+            Responses.InvalidRequest(Some(s"Only Object with type ${ParkingFacility.mvType(Some("mv:"))} are allowed as childs of $parkingFacilitiesPath.")) 
+          }
         }
-      }
-      facilities.collect{
-        case obj: Object => obj
-      }.foreach{
-        obj: Object => 
-          val psFormatCheck = write.odf.getChilds(obj.path / "ParkingSpaces").forall{
-            case node: Object => 
-              val temp = node.typeAttribute.contains("mv:ParkingSpace")
-              if( !temp) log.info("Not a parking space " +node.path)
-              temp 
-            case node: InfoItem =>  
-              false
+        facilities.collect{
+          case obj: Object => obj
+          }.foreach{
+            obj: Object => 
+              val path = obj.path / "ParkingSpaces"
+              val psFormatCheck = wodf.childsWithType(path,"mv:").forall{
+                case node: Object =>  true
+                case node: Objects =>  false
+                case node: InfoItem =>  false
+              }
+              if( !psFormatCheck){
+                return Future.successful{
+                  Responses.InvalidRequest(Some(s"Only Objects with type ${ParkingSpace.mvType(Some("mv:"))} are allowed as childs of ${obj.path / "ParkingSpaces"}.")) 
+                }
+              }
           }
-          if( !psFormatCheck){
-            return Future{
-              Responses.InvalidRequest(Some(s"Only Objects with type mv:ParkingSpace are allowed as childs of ${obj.path / "ParkingSpaces"}.")) 
-            }
-          }
-      }
     }
-    writeToDB(write).flatMap{
+    writeToDB(write.replaceOdf(wodf)).flatMap{
       response: ResponseRequest =>
         val success = response.results.filter{
           result => result.returnValue.returnCode.startsWith("2")
         }
         if( success.nonEmpty ){
-          log.debug( s"Write successful")
-          updateIndexesAndCapacities( write.odf.immutable,response)
+          log.info( s"Write successful")
+          updateIndexesAndCapacities( wodf.immutable,response)
         } else Future{ response }
     }
   }
   def calculateCapacities(updatedPFs: Set[Path]) : Future[ResponseRequest]={
     if( !calculateCapacitiesEnabled) return Future{ Responses.Success()}
     
-    log.debug( s"Calculating capacities")
-    val read = ReadRequest( ImmutableODF(updatedPFs.map{ path => Object(path)}.toSeq))
+    val read = ReadRequest( ImmutableODF(updatedPFs.map{ path => Object(path)}.toSeq), ttl = 1.minutes)
     readFromDB(read).flatMap{
       response: ResponseRequest =>
         val (success: Seq[OmiResult], failures: Seq[OmiResult]) = response.results.partition(_.returnValue.returnCode == "200")
@@ -214,11 +231,16 @@ class ParkingAgent(
           result: OmiResult => 
             result.odf.map{
               odf: ODF =>
-                val facilities = odf.nodesWithType("mv:ParkingFacility")
-                log.debug(s"Found ${facilities.size} facilities to calculate capacities.")
+                updatePrefixes(odf)
+                setPrefixes(odf).immutable
+            }.map{
+              odf: ImmutableODF =>
+                val facilities = odf.nodesWithType(ParkingFacility.mvType(Some("mv:")))
+                log.info(s"Found ${facilities.size} facilities to calculate capacities.")
                 facilities.collect{
                   case obj: Object =>
-                    ParkingFacility.parseOdf(obj.path, odf.immutable) match{
+
+                    ParkingFacility.parseOdf(obj.path, odf.immutable, prefixes.toMap) match{
                       case Success( ps: ParkingFacility ) =>
                         (obj.path,ps)
                       case Failure( NonFatal(e) ) =>
@@ -226,7 +248,7 @@ class ParkingAgent(
                     }
                 }.map{
                   case (path: Path, pf: ParkingFacility ) =>
-                    log.debug(s"Updating capacities of $path")
+                    //log.debug(s"Updating capacities of $path")
                     val newPF = new ParkingFacility(
                       pf.name,
                       capacities = pf.capacities.map{
@@ -250,7 +272,7 @@ class ParkingAgent(
                                 ps.available.nonEmpty &&
                                 ps.available.forall{ b: Boolean => b }
                             }.toLong
-                          log.debug( s"Updating ${capacity.name}: current ${capacity.current} to $current, max ${capacity.maximum} to ${spaces.length}")
+                          //log.debug( s"Updating ${capacity.name}: current ${capacity.current} to $current, max ${capacity.maximum} to ${spaces.length}")
                           capacity.copy(
                             current = Some(current),
                             maximum = Some(spaces.length)
@@ -258,7 +280,7 @@ class ParkingAgent(
                         
                       }
                     )
-                    ImmutableODF(newPF.toOdf(path.getParent))
+                    ImmutableODF(newPF.toOdf(path.getParent,tmprefixes))
               }.fold(ImmutableODF()){
                 case (l: ImmutableODF,r:ImmutableODF) =>
                   l.union(r).immutable
@@ -268,7 +290,7 @@ class ParkingAgent(
             case (l: ImmutableODF,r:ImmutableODF) =>
               l.union(r).immutable
           }.immutable
-      writeToDB(WriteRequest(capacityODF))
+      writeToDB(WriteRequest(capacityODF, ttl = 1.minutes))
     }
   }
 
@@ -280,15 +302,18 @@ class ParkingAgent(
   val validForUserGroupParamPath: Path = parameterPath / "ParkingUserGroup"
   val chargerParamPath: Path = parameterPath / "Charger"
   override def handleCall(call: CallRequest) : Future[ResponseRequest] = {
-    val r:Option[Future[ResponseRequest]] = call.odf.get( findParkingPath ).map{
+    updatePrefixes(call.odf)
+    val codf = setPrefixes(call.odf) 
+    val r:Option[Future[ResponseRequest]] = codf.get( findParkingPath ).map{
       case ii: InfoItem =>
         ii.values.collectFirst {
           case value: ODFValue =>
-            val odf: ImmutableODF = value.value.immutable
+            updatePrefixes(value.value.immutable)
+            val odf: ImmutableODF = setPrefixes(value.value.immutable).immutable
             val param = odf.get(parameterPath)
             param.map {
               case ii: InfoItem =>
-                Future {
+                Future.successful {
                   Responses
                     .InvalidRequest(Some(s"Found ${
                       ii
@@ -298,7 +323,7 @@ class ParkingAgent(
               case obj: Object =>
                 odf.get(destinationParamPath).map {
                   case ii: InfoItem =>
-                    return Future {
+                    return Future.successful {
                       Responses
                         .InvalidRequest(Some(s"Found ${
                           ii
@@ -306,13 +331,13 @@ class ParkingAgent(
                         } InfoItem from input when Object is expected. Refer to O-DF guidelines stored in MetaData."))
                     }
                   case obj: Object =>
-                    GeoCoordinates.parseOdf(obj.path, odf) match {
+                    GeoCoordinates.parseOdf(obj.path, odf, prefixes.toMap) match {
                       case Failure(e: ParseError) =>
-                        Future {
+                        Future.successful {
                           Responses.ParseErrors(Vector(e))
                         }
                       case Failure(NonFatal(e)) =>
-                        Future {
+                        Future.successful{
                           Responses.InternalError(e)
                         }
                       case Success(destination: GeoCoordinates) =>
@@ -323,13 +348,13 @@ class ParkingAgent(
                           str =>
                             str.split(",").map {
                               subStr =>
-                                val ug = UserGroup(subStr)
+                                val ug = UserGroup(subStr,prefixes.toMap)
                                 ug
                             }
                         }.toSeq.flatten.flatten
                         val vehicle = odf.get(vehicleParamPath).map {
                           case ii: InfoItem =>
-                            return Future {
+                            return Future.successful {
                               Responses
                                 .InvalidRequest(Some(s"Found ${
                                   ii
@@ -338,10 +363,10 @@ class ParkingAgent(
                                                        s"MetaData."))
                             }
                           case obj: Object =>
-                            Vehicle.parseOdf(obj.path, odf) match {
+                            Vehicle.parseOdf(obj.path, odf, prefixes.toMap) match {
                               case Success(v: Vehicle) => v
                               case Failure(e) =>
-                                return Future {
+                                return Future.successful {
                                   Responses.InvalidRequest(Some(s"Incorrect vehicle parameter format. ${e.getMessage}"))
                                 }
 
@@ -349,7 +374,7 @@ class ParkingAgent(
                         }
                         val charger = odf.get(chargerParamPath).map {
                           case ii: InfoItem =>
-                            return Future {
+                            return Future.successful {
                               Responses
                                 .InvalidRequest(Some(s"Found ${
                                   ii
@@ -358,10 +383,10 @@ class ParkingAgent(
                                                        s"MetaData."))
                             }
                           case obj: Object =>
-                            Charger.parseOdf(obj.path, odf) match {
+                            Charger.parseOdf(obj.path, odf, prefixes.toMap) match {
                               case Success(v: Charger) => v
                               case Failure(e) =>
-                                return Future {
+                                return Future.successful {
                                   Responses.InvalidRequest(Some(s"Incorrect Charger parameter format. ${e.getMessage}"))
                                 }
                             }
@@ -371,7 +396,7 @@ class ParkingAgent(
                         findParking(destination, distance, vehicle, userGroup, charger, wantCharging)
                     }
                 }.getOrElse {
-                  Future {
+                  Future.successful {
                     Responses
                       .InvalidRequest(Some(s"Could not find Destination Object from input. Refer to O-DF guidelines stored in MetaData."))
                   }
@@ -381,23 +406,23 @@ class ParkingAgent(
               */
 
             }.getOrElse {
-              Future {
+              Future.successful {
                 Responses
                   .InvalidRequest(Some(s"Could find Objects/Parameters Object from given O-DF input. Refer to O-DF guidelines stored in MetaData."))
               }
             }
         }.getOrElse{
-          Future{
+          Future.successful{
             Responses.InvalidRequest(Some(s"$findParkingPath path should contain value with type odf."))
           }
         }
       case n: Node =>
-        Future{
+        Future.successful{
           Responses.InvalidRequest(Some(s"$findParkingPath path should be InfoItem."))
         }
     }
     r.getOrElse{
-      Future{
+      Future.successful{
         Responses.InvalidRequest(Some(s"Call request doesn't contain $findParkingPath path."))
       }
     }
@@ -433,16 +458,16 @@ class ParkingAgent(
         longitude: Double  => 
           longitudePFIndex.get(longitude) 
       }.flatten.toSet
-      log.debug( s"lat: $latP\nlong: $longP\ndeltaR $deltaR $maxDistance")
       val pfPaths: Set[Path] = latP.intersect(longP)
+      log.info(s"Found ${pfPaths.size} parking facilities close to destination")
       if( pfPaths.isEmpty ){
-        Future{ Responses.Success(objects= Some(ImmutableODF( Seq( Object(parkingFacilitiesPath))))) }
+        Future.successful{ Responses.Success(objects= Some(ImmutableODF( Seq( Object(parkingFacilitiesPath))))) }
       } else {
         val request = ReadRequest(ImmutableODF(pfPaths.flatMap{
           facilityPath: Path =>
             val pf = new ParkingFacility( facilityPath.last )
-            pf.toOdf(facilityPath.getParent)
-        }))
+            pf.toOdf(facilityPath.getParent,Map("http://www.schema.mobivoc.org/" -> "mv:"))
+        }), ttl = 1.minutes)
         readFromDB(request).map{
           response: ResponseRequest =>
             val (succs, fails) = response.results.partition{
@@ -450,12 +475,16 @@ class ParkingAgent(
             }
             val newOdf = succs.flatMap{
               result =>
-                result.odf.map(_.immutable).map{
+                result.odf.map{
+                  odf: ODF => 
+                    updatePrefixes(odf)
+                    setPrefixes(odf).immutable
+                }.map{
                   odf: ImmutableODF => 
                     log.debug( "Found Successful result with ODF")
-                    val correctParkingSpaceAndCapacityPaths  = odf.nodesWithType("mv:ParkingFacility").collect{
+                    val correctParkingSpaceAndCapacityPaths  = odf.nodesWithType(ParkingFacility.mvType(Some("mv:"))).collect{
                       case obj: Object =>
-                        ParkingFacility.parseOdf(obj.path, odf.immutable) match {
+                        ParkingFacility.parseOdf(obj.path, odf.immutable, prefixes.toMap) match {
                           case Success( ps: ParkingFacility ) =>
                             obj.path -> ps
                           case Failure( e ) =>
@@ -468,11 +497,11 @@ class ParkingAgent(
                             parkingSpaceFilter(parkingSpace, vehicle, userGroups, charger, wantCharging)
                         }
 
-                        log.debug(s"Found following parking spaces from $path:\n${correctParkingSpaces.mkString("\n")}")
+                        log.debug(s"Found ${correctParkingSpaces.size} valid parking spaces from $path")
                         val correctCapacities = pf.capacities.filter{
                           capacity => capacityFilter( capacity, vehicle, userGroups)
                         }
-                        log.debug(s"Found following capacitios from $path:\n${correctCapacities.mkString("\n")}")
+                        log.debug(s"Found ${correctCapacities.size} valid capacites from $path")
                         
                         if( correctParkingSpaces.nonEmpty || correctCapacities.nonEmpty) { 
                           correctParkingSpaces.map(
@@ -485,10 +514,11 @@ class ParkingAgent(
                           Vector.empty 
                         }
                     }
+                    log.info(s"Found total ${correctParkingSpaceAndCapacityPaths.size} of valid parking spaces and capacities")
                     val unwantedCapacitiesAndSpaces = {
-                      odf.nodesWithType("mv:ParkingSpace") ++ 
-                      odf.nodesWithType("mv:Capacity") ++ 
-                      odf.nodesWithType("mv:RealTimeCapacity")
+                      odf.nodesWithType(ParkingSpace.mvType(Some("mv:"))) ++ 
+                      odf.nodesWithType(s"mv:Capacity") ++ 
+                      odf.nodesWithType(s"mv:RealTimeCapacity")
                     }.map(_.path).filterNot{
                       path => correctParkingSpaceAndCapacityPaths.contains(path)
                     }
@@ -591,4 +621,107 @@ class ParkingAgent(
     vehicleCheck && userGroupCheck
   }
 
+  def updatePrefixes(odf: ODF ): Unit = {
+    odf.nodesWithAttributes.filter{
+      node => node.attributes.contains("prefix")
+    }.flatMap{
+      node => node.attributes.get("prefix")
+    }.foreach{
+      prefixesStr: String =>
+        val splited = prefixesStr.split(" ").toVector
+        val pairs = splited.grouped(2).toVector
+        val formatCheck = pairs.forall{
+          group: Vector[String] =>
+            group.size == 2 &&
+            group.head.endsWith(":")
+        }
+        if( formatCheck ) {
+          pairs.foreach{ 
+            group => 
+              prefixes.get(group.last) match{
+                case Some(current: Set[String]) =>
+                    prefixes.update(group.last, current ++ Set(group.head))
+                case None =>
+                  prefixes += group.last -> Set(group.head)
+              }
+          }
+        } else {
+          throw new Exception( s"Malformet prefixes. Each prefix should end with : and have space before value. $prefixesStr")
+        }
+
+    }
+  }
+  def setPrefixes(odf: ODF): ODF = { 
+    val prefixToVoc: Map[String,String] = prefixes.map{
+      case (voc: String, prefixes: Set[String]) =>
+        prefixes.map{ prefix: String => prefix -> voc }
+    }.flatten.toMap
+    def fixAttributes(attributes: Map[String,String]): Map[String,String] ={
+      attributes.map{
+          case ( "prefix", value: String) =>
+            val splited = value.split(" ").toVector
+            val pairs = splited.grouped(2).toVector
+            val formatCheck = pairs.forall{
+              group: Vector[String] =>
+                group.size == 2 &&
+                group.head.endsWith(":")
+            }
+            if( formatCheck ) {
+              val newPairs = pairs.filter{ 
+                group => 
+                  group.last == "http://www.schema.org/" ||
+                  group.last == "http://www.schema.mobivoc.org/"
+              } ++ Vector( 
+                Vector("schema:", "http://www.schema.org/"),
+                Vector("mv:", "http://www.schema.mobivoc.org/")
+              )
+              val newPrefix = newPairs.map( group => group.mkString(" ")).mkString(" ")
+              "prefix" -> newPrefix
+            } else {
+              throw new Exception( s"Malformet prefixes. Each prefix should end with : and have space before value. $value")
+            }
+          case (key,value) => key -> value
+      }
+    }
+    ImmutableODF(odf.getNodes.map{
+      case obj: Object if obj.typeAttribute.nonEmpty =>
+        obj.copy( typeAttribute ={
+          obj.typeAttribute.map{
+            str =>
+              val t = str.split(":")
+              if( t.size < 2 )
+                t.mkString(":")
+              else
+                prefixToVoc.get(t.head) match{
+                  case None => t.mkString(":")
+                  case Some( "http://www.schema.org") => "schema:" + t.tail.mkString(":") 
+                    case Some( "http://www.schema.mobivoc.org") => "mv:" + t.tail.mkString(":") 
+                }
+          }
+        })
+      case ii: InfoItem if ii.typeAttribute.nonEmpty =>
+        ii.copy(typeAttribute ={
+          ii.typeAttribute.map{
+            str =>
+              val t = str.split(":")
+              if( t.size < 2 )
+                t.mkString(":")
+              else
+                prefixToVoc.get(t.head) match{
+                  case None => t.mkString(":")
+                  case Some( "http://www.schema.org") => "schema:" + t.tail.mkString(":") 
+                  case Some( "http://www.schema.mobivoc.org") => "mv:" + t.tail.mkString(":") 
+                }
+          }
+        })
+      case node: Node => node
+
+    }.map{
+      case ii: InfoItem if ii.attributes.contains("prefix") =>
+        ii.copy( attributes = fixAttributes(ii.attributes))
+      case obj: Object if obj.attributes.contains("prefix") =>
+        obj.copy( attributes = fixAttributes(obj.attributes))
+      case node: Node => node
+    })
+  }
 }

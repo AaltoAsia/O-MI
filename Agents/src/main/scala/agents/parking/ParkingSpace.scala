@@ -45,20 +45,24 @@ case class ParkingSpace(
        other.width.orElse( width )
      )
    }
-  def toOdf(parentPath: Path): Seq[Node] = {
+  def toOdf(parentPath: Path, prefixes: Map[String,String]): Seq[Node] = {
+    import ParkingSpace.mvType
     val path: Path= parentPath / id
+    val  prefix = prefixes.get("http://www.schema.mobivoc.org/").map{
+      str => if( str.endsWith(":") ) str else str + ":"
+    }.getOrElse("")
     Seq(
       Object( 
         Vector( QlmID( id)),
         path,
-        typeAttribute = Some(ParkingSpace.mvType)
+        typeAttribute = Some(s"${mvType(Some(prefix))}")
       )
     ) ++ maximumParkingHours.map{ mph => 
       val nII = "maximumParkingHours"
       InfoItem( 
         nII,
         path / nII,
-        typeAttribute = Some(s"mv:$nII"),
+        typeAttribute = Some(s"${prefix}$nII"),
         values = Vector( LongValue( mph, currentTimestamp ))
       )
     }.toSeq ++ height.map{ h => 
@@ -66,7 +70,7 @@ case class ParkingSpace(
       InfoItem( 
         nII,
         path / nII,
-        typeAttribute = Some(s"mv:$nII"),
+        typeAttribute = Some(s"${prefix}$nII"),
         values = Vector( DoubleValue( h, currentTimestamp ))
       )
     }.toSeq ++ width.map{ w => 
@@ -74,7 +78,7 @@ case class ParkingSpace(
       InfoItem( 
         nII,
         path / nII,
-        typeAttribute = Some(s"mv:$nII"),
+        typeAttribute = Some(s"${prefix}$nII"),
         values = Vector( DoubleValue( w, currentTimestamp ))
       )
     }.toSeq ++ length.map{ l => 
@@ -82,7 +86,7 @@ case class ParkingSpace(
       InfoItem( 
         nII,
         path / nII,
-        typeAttribute = Some(s"mv:$nII"),
+        typeAttribute = Some(s"${prefix}$nII"),
         values = Vector( DoubleValue( l, currentTimestamp ))
       )
     }.toSeq ++ available.map{ a => 
@@ -90,7 +94,7 @@ case class ParkingSpace(
       InfoItem( 
         nII,
         path / nII,
-        typeAttribute = Some(s"mv:$nII"),
+        typeAttribute = Some(s"${prefix}$nII"),
         values = Vector( BooleanValue( a, currentTimestamp ))
       )
     }.toSeq ++ user.map{ u => 
@@ -98,7 +102,7 @@ case class ParkingSpace(
       InfoItem( 
         nII,
         path / nII,
-        typeAttribute = Some(s"mv:$nII"),
+        typeAttribute = Some(s"${prefix}$nII"),
         values = Vector( StringValue( u, currentTimestamp ))
       )
     }.toSeq ++ validForVehicle.headOption.map{ u => 
@@ -107,8 +111,8 @@ case class ParkingSpace(
       InfoItem( 
         nII,
         path / nII,
-        typeAttribute = Some(s"mv:$nII"),
-        values = Vector( StringValue( validForVehicle.map(VehicleType.toMvType(_)).mkString(","), currentTimestamp ))
+        typeAttribute = Some(s"${prefix}$nII"),
+        values = Vector( StringValue( validForVehicle.map(VehicleType.toMvType(_, prefixes)).mkString(","), currentTimestamp ))
       )
     }.toSeq ++ validUserGroups.headOption.map{ u => 
       val nII = "validUserGroup"
@@ -116,31 +120,46 @@ case class ParkingSpace(
       InfoItem( 
         nII,
         path / nII,
-        typeAttribute = Some(s"mv:$nII"),
-        values = Vector( StringValue( validUserGroups.map(UserGroup.toMvType(_)).mkString(","), currentTimestamp ))
+        typeAttribute = Some(s"${prefix}$nII"),
+        values = Vector( StringValue( validUserGroups.map(UserGroup.toMvType(_, prefixes)).mkString(","), currentTimestamp ))
       )
     }.toSeq ++ 
-    geo.map( g => g.toOdf( path )).toSeq.flatten ++ 
-    chargers.flatMap(c => c.toOdf(path))
+    geo.map( g => g.toOdf( path, prefixes )).toSeq.flatten ++ 
+    chargers.flatMap(c => c.toOdf(path, prefixes))
   }
 }
 
 object ParkingSpace{
-  def mvType = "mv:ParkingSpace"
-  def parseOdf( path: Path, odf: ImmutableODF): Try[ParkingSpace] ={
+  def mvType(  prefix: Option[String] = None)={
+    val preStr = prefix.getOrElse("")
+    s"${preStr}ParkingSpace"
+  }
+  def parseOdf( path: Path, odf: ImmutableODF, prefixes: Map[String,Set[String]]): Try[ParkingSpace] ={
     Try{
+      val prefix = prefixes.get("http://www.schema.mobivoc.org/").map{
+        prefix: Set[String] => 
+          prefix.map{
+            str => if( str.endsWith(":") ) str else str + ":"
+          }
+      }.toSet.flatten
       odf.get(path) match{
-        case Some(obj: Object) if obj.typeAttribute.contains(mvType) =>
-          val geo = odf.get(path / "geo").map{ 
+        case Some(obj: Object) if prefix.exists{
+          prefix: String =>
+          obj.typeAttribute.contains(mvType(Some(prefix)))
+        } =>
+          val geo = odf.get(path / "Geo").map{ 
             n: Node => 
-            GeoCoordinates.parseOdf( n.path, odf) match{
+            GeoCoordinates.parseOdf( n.path, odf, prefixes) match{
               case Success(gps:GeoCoordinates) => gps
               case Failure(e) => throw e
             }
           }
           val chargers = odf.getChilds(path).collect{ 
-            case n: Object if n.typeAttribute.contains("mv:Charger") => 
-            Charger.parseOdf( n.path, odf) match{
+            case obj: Object if prefix.exists{
+              prefix: String =>
+                obj.typeAttribute.contains(s"${prefix}Charger")
+            } =>
+            Charger.parseOdf( obj.path, odf, prefixes) match{
               case Success(c: Charger) => c
               case Failure(e) => throw e
             } 
@@ -151,7 +170,7 @@ object ParkingSpace{
               vs => 
                 vs.split(",").map{
                   vStr =>
-                    val vt = VehicleType(vStr.replace("mv:","")) 
+                    val vt = VehicleType(vStr, prefixes) 
                     if( vt == VehicleType.Unknown ) throw MVError(s"Found $vStr for validForVehicle when it should contain only set of following types ${VehicleType.values}")
                     vt
                 }
@@ -160,7 +179,7 @@ object ParkingSpace{
               ugs => 
                 ugs.split(",").map{
                   ugStr =>
-                    val ug = UserGroup(ugStr.replace("mv:","")) 
+                    val ug = UserGroup(ugStr, prefixes) 
                     ug.getOrElse(throw MVError(s"Found $ugStr for validForUserGroup when it should contain only set of following types ${UserGroup.values}"))
                 }
             }.toSeq.flatten,
@@ -176,7 +195,7 @@ object ParkingSpace{
         case Some(obj: Object) => 
           throw MVError( s"ParkingSpace path $path has wrong type attribute ${obj.typeAttribute}")
         case Some(obj: Node) => 
-          throw MVError( s"ParkingSpace path $path should be Object with type $mvType")
+          throw MVError( s"ParkingSpace path $path should be Object with type ${mvType(None)}")
         case None => 
           throw MVError( s"ParkingSpace path $path not found from given O-DF")
       }

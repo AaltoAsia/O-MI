@@ -1,5 +1,5 @@
 <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
-  <Object type="ParkingService" prefix="schema http://www.schema.org/ mv http://www.schema.mobivoc.org/">
+  <Object type="ParkingService" prefix="schema: http://www.schema.org/ mv: http://www.schema.mobivoc.org/">
     <id>ParkingService</id>
     <InfoItem name="FindParking" method="odf" >
       <MetaData>
