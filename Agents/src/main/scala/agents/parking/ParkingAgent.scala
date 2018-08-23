@@ -208,7 +208,7 @@ class ParkingAgent(
           }.foreach{
             obj: Object => 
               val path = obj.path / "ParkingSpaces"
-              val psFormatCheck = wodf.childsWithType(path,"mv:").forall{
+              val psFormatCheck = wodf.childsWithType(path,ParkingSpace.mvType(Some("mv:"))).forall{
                 case node: Object =>  true
                 case node: Objects =>  false
                 case node: InfoItem =>  false
