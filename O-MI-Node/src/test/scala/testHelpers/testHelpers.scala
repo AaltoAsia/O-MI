@@ -37,10 +37,10 @@ import database.DBHandler
 import agentSystem._
 
 //class TestOmiServer(config: Config) extends OmiNode {
-class TestOmiServer() extends OmiNode with OmiServiceTestImpl with SilentActorSystem {
+class TestOmiServer() extends OmiNode with OmiServiceTestImpl {
 
   // we need an ActorSystem to host our application in
-  //implicit val system: ActorSystem = ActorSystem("on-core")
+  implicit val system: ActorSystem = ActorSystem("on-core")
   implicit val materializer: ActorMaterializer = ActorMaterializer()(system) // execution context for futures
 
 

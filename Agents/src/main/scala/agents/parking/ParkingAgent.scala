@@ -470,6 +470,7 @@ class ParkingAgent(
           longitudePFIndex.get(longitude) 
       }.flatten.toSet
       val pfPaths: Set[Path] = latP.intersect(longP)
+      log.info( s"Current indexes has: ${latitudePFIndex.values.map(_.size).sum} parking facilities")
       log.info(s"Found ${pfPaths.size} parking facilities close to destination")
       if( pfPaths.isEmpty ){
         Future.successful{ Responses.Success(objects= Some(ImmutableODF( Seq( Object(parkingFacilitiesPath))))) }
@@ -643,17 +644,17 @@ class ParkingAgent(
         val pairs = splited.grouped(2).toVector
         val formatCheck = pairs.forall{
           group: Vector[String] =>
-            group.size == 2 &&
-            group.head.endsWith(":")
+            group.size == 2 
         }
         if( formatCheck ) {
           pairs.foreach{ 
             group => 
-              prefixes.get(group.last) match{
+              val value = if(  group.head.endsWith(":") ) group.head else group.head + ":" 
+              prefixes.get(group.last) match {
                 case Some(current: Set[String]) =>
-                    prefixes.update(group.last, current ++ Set(group.head))
+                    prefixes.update(group.last, current ++ Set(value))
                 case None =>
-                  prefixes += group.last -> Set(group.head)
+                  prefixes += group.last -> Set(value)
               }
           }
         } else {
@@ -678,10 +679,14 @@ class ParkingAgent(
                 group.head.endsWith(":")
             }
             if( formatCheck ) {
-              val newPairs = pairs.filter{ 
+              val newPairs = pairs.filterNot{ 
                 group => 
                   group.last == "http://www.schema.org/" ||
                   group.last == "http://www.schema.mobivoc.org/"
+              }.map{
+                group => 
+                  val value = if(  group.head.endsWith(":") ) group.head else group.head + ":" 
+                  Vector( value, group.last)
               } ++ Vector( 
                 Vector("schema:", "http://www.schema.org/"),
                 Vector("mv:", "http://www.schema.mobivoc.org/")
