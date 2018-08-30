@@ -80,11 +80,11 @@ trait SilentActorSystem {
 }
 
 trait TestOmiService extends OmiServiceTestImpl {
-  implicit def default = RouteTestTimeout(5.second)
+  implicit def default = RouteTestTimeout(40.second)
 
 }
 trait OmiServiceTestImpl extends OmiService with AnyActorSystem {
-  lazy implicit val settings: OmiConfigExtension = OmiConfig(system)
+  lazy implicit val settings: OmiConfigExtension = OmiConfig(Actorstest.createSilentAs())
   lazy implicit val callbackHandler: CallbackHandler = new CallbackHandler(settings)(system, materializer)
   lazy implicit val singleStores: SingleStores = SingleStores(settings)
 
