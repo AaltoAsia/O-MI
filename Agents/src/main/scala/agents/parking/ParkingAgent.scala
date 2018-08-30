@@ -533,11 +533,16 @@ class ParkingAgent(
                       odf.nodesWithType(s"mv:RealTimeCapacity")
                     }.map(_.path).filterNot{
                       path => correctParkingSpaceAndCapacityPaths.contains(path)
-                    } ++ pfPaths.filterNot{
-                      path => correctParkingSpaceAndCapacityPaths.contains(path)
-                      correctParkingSpaceAndCapacityPaths.exists{
-                        foundPath => path.isAncestorOf(foundPath)
-                      }
+                    } ++ {
+                      if( wantCharging.getOrElse(false) ){
+                        pfPaths.filterNot{
+                          path =>
+                            correctParkingSpaceAndCapacityPaths.contains(path)
+                            correctParkingSpaceAndCapacityPaths.exists{
+                              foundPath => path.isAncestorOf(foundPath)
+                            }
+                        }
+                      } else Vector.empty
                     }
 
                     val correctNodes = odf -- ( unwantedCapacitiesAndSpaces.toSeq)
