@@ -63,6 +63,7 @@ trait DBReadHandler extends DBHandlerBase {
 
         val resultF = odfWithValuesO.flatMap {
           case Some(odfWithValues) =>
+            
             //Select requested O-DF from metadataTree and remove MetaDatas and descriptions
             val fmetaCombined: Future[ODF] = fodfWithMetaData.map(_.union(odfWithValues))
             for {
@@ -73,7 +74,9 @@ trait DBReadHandler extends DBHandlerBase {
               foundOdfAsPaths = metaCombined.getPaths
               notFound = requestsPaths.filterNot { path => foundOdfAsPaths.contains(path) }.toSet.toSeq
               found = metaCombined match {
-                case odf if odf.getPaths.exists(p => p != Path("Objects")) => Some(Results.Read(odf))
+                case odf if odf.getPaths.exists(p => p != Path("Objects")) => 
+                  log.info( "Voihan prkl:\n"+odf.getPaths.mkString("\n") )
+                  Some(Results.Read(odf))
                 case _ => None
               }
               nfResults = if (notFound.nonEmpty) {
