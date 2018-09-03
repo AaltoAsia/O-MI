@@ -473,7 +473,7 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
           val wsServer2 = new WsTestCallbackClient(wsProbe2.ref, "ws://localhost", 8080)
           wsServer1.offer(
             """<?xml version="1.0" encoding="UTF-8"?>
-            <omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="10">
+            <omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="40">
             <read msgformat="odf" interval="-1" callback="0">
               <msg>
                 <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/">
@@ -487,7 +487,7 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
           </omiEnvelope>""")
           wsServer2.offer(
             """<?xml version="1.0" encoding="UTF-8"?>
-            <omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="10">
+            <omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="40">
             <read msgformat="odf" interval="-1" callback="0">
               <msg>
                 <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/">
