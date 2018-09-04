@@ -564,7 +564,7 @@ class ParkingAgent(
     log.debug( "Checking " + ps.id )
     if( ps.available.isEmpty && ps.chargers.nonEmpty) log.debug(s"ParkingSpace without available, but has charger")
     if( ps.available.forall(b => b) ) {
-      lazy val validVehicle = ps.validForVehicle.exists{ 
+      lazy val validVehicle = ps.validForVehicle.isEmpty || ps.validForVehicle.exists{ 
         vt: VehicleType =>
           vehicle.forall{
             v =>
