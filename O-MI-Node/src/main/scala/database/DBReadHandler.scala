@@ -75,7 +75,6 @@ trait DBReadHandler extends DBHandlerBase {
               notFound = requestsPaths.filterNot { path => foundOdfAsPaths.contains(path) }.toSet.toSeq
               found = metaCombined match {
                 case odf if odf.getPaths.exists(p => p != Path("Objects")) => 
-                  log.info( "Voihan prkl:\n"+odf.getPaths.mkString("\n") )
                   Some(Results.Read(odf))
                 case _ => None
               }
