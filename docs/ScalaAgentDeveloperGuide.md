@@ -18,13 +18,7 @@ object ScalaAgent extends PropsCreator {
     requestHandler: ActorRef,
     dbHandler: ActorRef
   ) : Props = { 
-    Props(
-      new ScalaAgent(
-        config, 
-        requestHandler,
-        dbHandler
-      )
-    ) 
+    Props( new ScalaAgent( config, requestHandler, dbHandler ) ) 
   }  
 }
 
@@ -32,7 +26,7 @@ class ScalaAgent(
   val config: Config,
   requestHandler: ActorRef,
   dbHandler: ActorRef
-) extdends ScalaInternalAgentTemplate(
+) extends ScalaInternalAgentTemplate(
   requestHandler,
   dbHandler
 ){
