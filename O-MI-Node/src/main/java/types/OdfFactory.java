@@ -1,7 +1,11 @@
 package types;
 
-import scala.collection.immutable.HashMap;
-import types.OdfTypes.*;
+import java.util.Map;
+import java.util.List;
+import java.util.stream.Collectors;
+import scala.collection.JavaConverters;
+import scala.Tuple2;
+import types.odf.*;
 
 import java.sql.Timestamp;
 import java.util.Vector;
@@ -11,6 +15,14 @@ import java.util.Vector;
    */
 public class OdfFactory{
 
+  public static <K, V> scala.collection.immutable.Map<K, V> toScalaImmutableMap(java.util.Map<K, V> jmap) {
+    List<Tuple2<K, V>> tuples = jmap.entrySet()
+      .stream()
+      .map(e -> Tuple2.apply(e.getKey(), e.getValue()))
+      .collect(Collectors.toList());
+
+    return scala.collection.immutable.Map$.MODULE$.apply(JavaConverters.asScalaBuffer(tuples).toSeq());
+  }
   /**
    *
    * @param value Value inside of O-DF value element.
@@ -19,19 +31,17 @@ public class OdfFactory{
    *  Parameter value is cast to type specifed by typeValue parameter. If cast fails, value's
    *  type will be String.
    * @param timestamp Timestamp when value was measured or received.
-   * @return OdfValue
+   * @return Value
    */
-  public static OdfValue<Object> createOdfValue(
+  public static Value<java.lang.Object> createValue(
     String value,
     String typeValue,
     Timestamp timestamp
   ){
-    HashMap<String,String> attr = new HashMap<String,String>();
-    return OdfValue$.MODULE$.apply(
+    return Value$.MODULE$.apply(
         value,
         typeValue,
-        timestamp,
-        attr
+        timestamp
         );
   }
 
@@ -40,14 +50,13 @@ public class OdfFactory{
    *
    * @param value Value inside of O-DF value element.
    * @param timestamp Timestamp when value was measured or received.
-   * @return OdfValue
+   * @return Value
    */
-  public static OdfValue<Object> createOdfValue(
-    Object value,
+  public static Value<java.lang.Object> createValue(
+    java.lang.Object value,
     Timestamp timestamp
   ){
-    HashMap<String,String> attr = new HashMap<String,String>();
-    return OdfValue$.MODULE$.apply(
+    return Value$.MODULE$.apply(
         value,
         timestamp
         );
@@ -57,395 +66,80 @@ public class OdfFactory{
    *
    * @param path Path of O-DF InfoItem.
    * @param values Values stored in InfoItem.
-   * @param description Description of InfoItem.
+   * @param descriptions Description of InfoItem.
    * @param metaData MetaData of InfoItem.
    * @param typeValue type parameter of InfoItem.
-   * @return OdfInfoItem
+   * @return InfoItem
    */
-  public static OdfInfoItem createOdfInfoItem(
+  public static InfoItem createInfoItem(
     Path path,
-    Iterable<OdfValue<Object>> values,
-    OdfDescription description,
-    OdfMetaData metaData,
-    String typeValue
+    String typeValue,
+    Iterable<QlmID> names,
+    Iterable<Description> descriptions,
+    Iterable<Value<java.lang.Object>> values,
+    MetaData metaData,
+    java.util.Map<String,String> attr 
   ){
-    HashMap<String,String> attr = new HashMap<String,String>();
-    return new OdfInfoItem(
+    return new InfoItem(
+        path.toSeq().last(),
         path,
-        OdfTreeCollection.fromJava(values),
-        scala.Option.apply(description),
+        scala.Option.apply(typeValue),
+        OdfCollection.fromJava(names),
+        Description.unionReduce(OdfCollection.fromJava(descriptions).toSet()),
+        OdfCollection.fromJava(values),
         scala.Option.apply(metaData),
-        scala.Option.apply(typeValue),
-        attr
+        toScalaImmutableMap(attr)
         );
   }
 
   /**
    *
-   * @param path Path of O-DF InfoItem.
-   * @param values Values stored in InfoItem.
-   * @param description Description of InfoItem.
-   * @param metaData MetaData of InfoItem.
-   * @return OdfInfoItem
-   */
-  public static OdfInfoItem createOdfInfoItem(
-    Path path,
-    Iterable<OdfValue<Object>> values,
-    OdfDescription description,
-    OdfMetaData metaData
-  ){
-    HashMap<String,String> attr = new HashMap<String,String>();
-    return new OdfInfoItem(
-        path,
-        OdfTreeCollection.fromJava(values),
-        scala.Option.apply(description),
-        scala.Option.apply(metaData),
-        scala.Option.empty(),
-        attr
-        );
-  }
-
-  /**
-   *
-   * @param path Path of O-DF InfoItem.
-   * @param values Values stored in InfoItew.
-   * @param description Description of InfoItem.
-   * @return OdfInfoItem
-   */
-  public static OdfInfoItem createOdfInfoItem(
-    Path path,
-    Iterable<OdfValue<Object>> values,
-    OdfDescription description
-  ){
-    HashMap<String,String> attr = new HashMap<String,String>();
-    return new OdfInfoItem(
-        path,
-        OdfTreeCollection.fromJava(values),
-        scala.Option.apply(description),
-        scala.Option.empty(),//Look at type of MetaData.
-        scala.Option.empty(),
-        attr
-        );
-  }
-
-  /**
-   *
-   * @param path Path of O-DF InfoItem.
-   * @param values Values stored in InfoItew.
-   * @return OdfInfoItem
-   */
-  public static OdfInfoItem createOdfInfoItem(
-    Path path,
-    Iterable<OdfValue<Object>> values
-    ){
-    HashMap<String,String> attr = new HashMap<String,String>();
-    return new OdfInfoItem(
-        path,
-        OdfTreeCollection.fromJava(values),
-        scala.Option.empty(),
-        scala.Option.empty(),//Look at type of MetaData.
-        scala.Option.empty(),
-        attr
-        );
-    }
-
-  /**
-   *
-   * @param path Path of O-DF InfoItem.
-   * @param values Values stored in InfoItew.
-   * @return OdfInfoItem
-   */
-  public static OdfInfoItem createOdfInfoItem(
-      Path path,
-      Iterable<OdfValue<Object>> values,
-    OdfMetaData metaData
-  ){
-    HashMap<String,String> attr = new HashMap<String,String>();
-    return new OdfInfoItem(
-        path,
-        OdfTreeCollection.fromJava(values),
-        scala.Option.empty(),
-        scala.Option.apply(metaData),//Look at type of MetaData.
-        scala.Option.empty(),
-        attr
-        );
-  }
-
-  /**
-   *
-   * @param ids OdfQlmIDs of O-DF Object
+   * @param ids QlmIDs of O-DF Object
    * @param path Path of O-DF Object.
-   * @param infoitems Child O-DF InfoItems of created O-DF Object.
-   * @param objects Child O-DF Objects of created O-DF Object.
-   * @param description Description of O-DF Object.
+   * @param descriptions Description of O-DF Object.
    * @param typeValue Type of an O-DF Object
-   * @return OdfObject
+   * @return Object
    */
-  public static OdfObject createOdfObject(
-    Iterable<OdfQlmID> ids,
+  public static types.odf.Object createObject(
+    Iterable<QlmID> ids,
     Path path,
-    Iterable<OdfInfoItem> infoitems,
-    Iterable<OdfObject> objects,
-    OdfDescription description,
-    String typeValue
+    Iterable<Description> descriptions,
+    String typeValue,
+    java.util.Map<String,String> attr 
   ){
-    HashMap<String,String> attr = new HashMap<String,String>();
-    return new OdfObject(
-        OdfTreeCollection.fromJava(ids),
+    return new types.odf.Object(
+        OdfCollection.fromJava(ids),
         path,
-        OdfTreeCollection.fromJava(infoitems),
-        OdfTreeCollection.fromJava(objects),
-        scala.Option.apply(description),
         scala.Option.apply(typeValue),
-        attr
+        Description.unionReduce(OdfCollection.fromJava(descriptions).toSet()),
+        toScalaImmutableMap(attr)
     );
   }
 
   /**
    *
-   * @param path Path of O-DF Object.
-   * @param infoitems Child O-DF InfoItems of created O-DF Object.
-   * @param objects Child O-DF Objects of created O-DF Object.
-   * @param description Description of O-DF Object.
-   * @param typeValue Type of an O-DF Object
-   * @return OdfObject
+   * @param value Text of descriptions.
+   * @param language Language of descriptions.
+   * @return Description
    */
-  public static OdfObject createOdfObject(
-    Path path,
-    Iterable<OdfInfoItem> infoitems,
-    Iterable<OdfObject> objects,
-    OdfDescription description,
-    String typeValue
-  ){
-    Vector<OdfQlmID> ids = new Vector<OdfQlmID>();
-    OdfQlmID id = OdfFactory.createOdfQlmID(
-        path.toArray()[path.length()-1],
-        null,
-        null,
-        null,
-        null
-    );
-    ids.add(id);
-    HashMap<String,String> attr = new HashMap<String,String>();
-    return new OdfObject(
-        OdfTreeCollection.fromJava(ids),
-        path,
-        OdfTreeCollection.fromJava(infoitems),
-        OdfTreeCollection.fromJava(objects),
-        scala.Option.apply(description),
-        scala.Option.apply(typeValue),
-        attr
-    );
-  }
-
-  /**
-   *
-   * @param ids OdfQlmIDs of O-DF Object
-   * @param path Path of O-DF Object.
-   * @param infoitems Child O-DF InfoItems of created O-DF Object.
-   * @param objects Child O-DF Objects of created O-DF Object.
-   * @param typeValue Type of an O-DF Object
-   * @return OdfObject
-   */
-  public static OdfObject createOdfObject(
-    Iterable<OdfQlmID> ids,
-    Path path,
-    Iterable<OdfInfoItem> infoitems,
-    Iterable<OdfObject> objects,
-    String typeValue
-  ){
-    HashMap<String,String> attr = new HashMap<String,String>();
-    return new OdfObject(
-        OdfTreeCollection.fromJava(ids),
-        path,
-        OdfTreeCollection.fromJava(infoitems),
-        OdfTreeCollection.fromJava(objects),
-        scala.Option.empty(),
-        scala.Option.apply(typeValue),
-        attr
-    );
-  }
-
-  /**
-   *
-   * @param ids OdfQlmIDs of O-DF Object
-   * @param path Path of O-DF Object.
-   * @param infoitems Child O-DF InfoItems of created O-DF Object.
-   * @param objects Child O-DF Objects of created O-DF Object.
-   * @param description Description of O-DF Object.
-   * @return OdfObject
-   */
-  public static OdfObject createOdfObject(
-    Iterable<OdfQlmID> ids,
-    Path path,
-    Iterable<OdfInfoItem> infoitems,
-    Iterable<OdfObject> objects,
-    OdfDescription description
-  ){
-    HashMap<String,String> attr = new HashMap<String,String>();
-    return new OdfObject(
-        OdfTreeCollection.fromJava(ids),
-        path,
-        OdfTreeCollection.fromJava(infoitems),
-        OdfTreeCollection.fromJava(objects),
-        scala.Option.apply(description),
-        scala.Option.empty(),
-        attr
-    );
-  }
-
-  /**
-   *
-   * @param ids OdfQlmIDs of O-DF Object
-   * @param path Path of O-DF Object.
-   * @param infoitems Child O-DF InfoItems of created O-DF Object.
-   * @param objects Child O-DF Objects of created O-DF Object.
-   * @return OdfObject
-   */
-  public static OdfObject createOdfObject(
-    Iterable<OdfQlmID> ids,
-    Path path,
-    Iterable<OdfInfoItem> infoitems,
-    Iterable<OdfObject> objects
-  ){
-    HashMap<String,String> attr = new HashMap<String,String>();
-    return new OdfObject(
-        OdfTreeCollection.fromJava(ids),
-        path,
-        OdfTreeCollection.fromJava(infoitems),
-        OdfTreeCollection.fromJava(objects),
-        scala.Option.empty(),
-        scala.Option.empty(),
-        attr
-    );
-  }
-  /**
-   *
-   * @param path Path of O-DF Object.
-   * @param infoitems Child O-DF InfoItems of created O-DF Object.
-   * @param objects Child O-DF Objects of created O-DF Object.
-   * @param typeValue Type of an O-DF Object
-   * @return OdfObject
-   */
-  public static OdfObject createOdfObject(
-    Path path,
-    Iterable<OdfInfoItem> infoitems,
-    Iterable<OdfObject> objects,
-    String typeValue
-  ){
-    Vector<OdfQlmID> ids = new Vector<OdfQlmID>();
-    OdfQlmID id = OdfFactory.createOdfQlmID(
-        path.toArray()[path.length()-1],
-        null,
-        null,
-        null,
-        null
-    );
-    ids.add(id);
-    HashMap<String,String> attr = new HashMap<String,String>();
-    return new OdfObject(
-        OdfTreeCollection.fromJava(ids),
-        path,
-        OdfTreeCollection.fromJava(infoitems),
-        OdfTreeCollection.fromJava(objects),
-        scala.Option.empty(),
-        scala.Option.apply(typeValue),
-        attr
-    );
-  }
-
-  /**
-   *
-   * @param path Path of O-DF Object.
-   * @param infoitems Child O-DF InfoItems of created O-DF Object.
-   * @param objects Child O-DF Objects of created O-DF Object.
-   * @param description Description of O-DF Object.
-   * @return OdfObject
-   */
-  public static OdfObject createOdfObject(
-    Path path,
-    Iterable<OdfInfoItem> infoitems,
-    Iterable<OdfObject> objects,
-    OdfDescription description
-  ){
-    Vector<OdfQlmID> ids = new Vector<OdfQlmID>();
-    OdfQlmID id = OdfFactory.createOdfQlmID(
-        path.toArray()[path.length()-1],
-        null,
-        null,
-        null,
-        null
-    );
-    ids.add(id);
-    HashMap<String,String> attr = new HashMap<String,String>();
-    return new OdfObject(
-        OdfTreeCollection.fromJava(ids),
-        path,
-        OdfTreeCollection.fromJava(infoitems),
-        OdfTreeCollection.fromJava(objects),
-        scala.Option.apply(description),
-        scala.Option.empty(),
-        attr
-    );
-  }
-
-  /**
-   *
-   * @param path Path of O-DF Object.
-   * @param infoitems Child O-DF InfoItems of created O-DF Object.
-   * @param objects Child O-DF Objects of created O-DF Object.
-   * @return OdfObject
-   */
-  public static OdfObject createOdfObject(
-    Path path,
-    Iterable<OdfInfoItem> infoitems,
-    Iterable<OdfObject> objects
-  ){
-    Vector<OdfQlmID> ids = new Vector<OdfQlmID>();
-    OdfQlmID id = OdfFactory.createOdfQlmID(
-        path.toArray()[path.length()-1],
-        null,
-        null,
-        null,
-        null
-    );
-    ids.add(id);
-    HashMap<String,String> attr = new HashMap<String,String>();
-    return new OdfObject(
-        OdfTreeCollection.fromJava(ids),
-        path,
-        OdfTreeCollection.fromJava(infoitems),
-        OdfTreeCollection.fromJava(objects),
-        scala.Option.empty(),
-        scala.Option.empty(),
-        attr
-    );
-  }
-
-  /**
-   *
-   * @param value Text of description.
-   * @param language Language of description.
-   * @return OdfDescription
-   */
-  public static OdfDescription createOdfDescription(
+  public static Description createDescription(
     String value,
     String language
   ) {
-    return new OdfDescription(
+    return new Description(
         value,
         scala.Option.apply(language)
     );
   }
   /**
    *
-   * @param value Text of description.
-   * @return OdfDescription
+   * @param value Text of descriptions.
+   * @return Description
    */
-  public static OdfDescription createOdfDescription(
+  public static Description createDescription(
     String value
   ) {
-    return new OdfDescription(
+    return new Description(
         value,
         scala.Option.empty()
     );
@@ -453,73 +147,61 @@ public class OdfFactory{
 
   /**
    *
-   * @param objects Child O-DF Objects of O-DF Objects.
    * @param version Version of O-DF standard used.
-   * @return OdfObjects
+   * @return Objects
    */
-  public static OdfObjects createOdfObjects(
-    Iterable<OdfObject> objects,
-    String version
+  public static Objects createObjects(
+    String version,
+    Map<String,String> attr
   ){
-    HashMap<String,String> attr = new HashMap<String,String>();
-    return new OdfObjects(
-        OdfTreeCollection.fromJava(objects),
+    return new Objects(
         scala.Option.apply(version),
-        attr
+        toScalaImmutableMap(attr)
     );
   }
 
   /**
    *
-   * @param objects Child O-DF Objects of O-DF Objects.
-   * @return OdfObjects
+   * @return Objects
    */
-  public static OdfObjects createOdfObjects(
-    Iterable<OdfObject> objects
+  public static Objects createObjects(
+    Map<String,String> attr
   ){
-    HashMap<String,String> attr = new HashMap<String,String>();
-    return new OdfObjects(
-        OdfTreeCollection.fromJava(objects),
+    return new Objects(
         scala.Option.empty(),
-        attr
+        toScalaImmutableMap(attr)
     );
   }
 
-  public static OdfObjects fromPath(
-    String pathString,
-    String valueString
+  public static MetaData createMetaData(
+    Iterable<InfoItem> infoItems
   ){
-    Path path = new Path(pathString);
-    Vector<OdfValue<Object>> values = new Vector<OdfValue<Object>>();
-    OdfValue<Object> odfValue = createOdfValue(valueString, "xs:string", new Timestamp( new java.util.Date().getTime()));
-    values.add(odfValue);
-    OdfInfoItem infoItem = createOdfInfoItem(path, values);
-    return infoItem.createAncestors();
-  }
-
-  public static OdfMetaData createOdfMetaData(
-    Iterable<OdfInfoItem> infoItems
-  ){
-    return new OdfMetaData(
-        OdfTreeCollection.fromJava(infoItems)
+    return new MetaData(
+        OdfCollection.fromJava(infoItems)
     );
   }
 
-  public static OdfQlmID createOdfQlmID(
+  public static QlmID createQlmID(
       String id,
       String idType,
       String tagType,
       Timestamp startDate,
-      Timestamp endDate
+      Timestamp endDate,
+      Map<String,String> attr
   ){
-    HashMap<String,String> attr = new HashMap<String,String>();
-    return new OdfQlmID(
+    return new QlmID(
         id,
         scala.Option.apply(idType),
         scala.Option.apply(tagType),
         scala.Option.apply(startDate),
         scala.Option.apply(endDate),
-        attr
+        toScalaImmutableMap(attr)
     );
+  }
+
+  public static ImmutableODF createImmutableODF( 
+      Iterable<Node> nodes
+  ){
+    return ImmutableODF.apply(OdfCollection.fromJava(nodes));
   }
 }

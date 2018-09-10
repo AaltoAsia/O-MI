@@ -13,7 +13,7 @@ import scala.concurrent.Future;
 import scala.concurrent.duration.Duration;
 import scala.concurrent.duration.FiniteDuration;
 import scala.util.Random;
-import types.OdfFactory;
+import types.OldOdfFactory;
 import types.OdfTypes.OdfInfoItem;
 import types.OdfTypes.OdfObjects;
 import types.OdfTypes.OdfValue;
@@ -118,30 +118,30 @@ public class JavaAgent extends JavaInternalAgent {
     Vector<OdfValue<Object>> values = new Vector<>();
 
     //OdfValues value can be stored as: string, short, int, long, float or double
-    OdfValue<Object> value = OdfFactory.createOdfValue(
+    OdfValue<Object> value = OldOdfFactory.createOdfValue(
         newValueStr, typeStr, timestamp
     );
     values.add(value);
     //Create description
-    OdfDescription description = OdfFactory.createOdfDescription( "Temperature sensor in SensorBox");
+    OdfDescription description = OldOdfFactory.createOdfDescription( "Temperature sensor in SensorBox");
 
     // Create O-DF MetaData
     Vector<OdfInfoItem> metaItems = new Vector<>();
     Vector<OdfValue<Object>> metaValues = new Vector<>();
-    OdfValue<Object> metaValue = OdfFactory.createOdfValue(
+    OdfValue<Object> metaValue = OldOdfFactory.createOdfValue(
         "Celsius", "xs:string", timestamp
     );
     metaValues.add(metaValue);
-    OdfInfoItem metaItem = OdfFactory.createOdfInfoItem(
+    OdfInfoItem metaItem = OldOdfFactory.createOdfInfoItem(
         new Path( path + "/MetaData/Units"),
         metaValues
     );
     metaItems.add(metaItem);
-    OdfMetaData metaData = OdfFactory.createOdfMetaData(metaItems);
+    OdfMetaData metaData = OldOdfFactory.createOdfMetaData(metaItems);
 
 
     // Create OdfInfoItem to contain the value. 
-    OdfInfoItem infoItem = OdfFactory.createOdfInfoItem(
+    OdfInfoItem infoItem = OldOdfFactory.createOdfInfoItem(
         path, 
         values,
         description,
