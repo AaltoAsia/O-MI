@@ -1,6 +1,7 @@
 package types;
 
 import java.util.Map;
+import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
 import scala.collection.JavaConverters;
@@ -90,6 +91,85 @@ public class OdfFactory{
         scala.Option.apply(metaData),
         toScalaImmutableMap(attr)
         );
+  }
+
+  /**
+   *
+   * @param path Path of O-DF InfoItem.
+   * @param values Values stored in InfoItem.
+   * @param descriptions Description of InfoItem.
+   * @param metaData MetaData of InfoItem.
+   * @param typeValue type parameter of InfoItem.
+   * @return InfoItem
+   */
+  public static InfoItem createInfoItem(
+    Path path,
+    String typeValue,
+    Iterable<Description> descriptions,
+    Iterable<Value<java.lang.Object>> values,
+    MetaData metaData
+  ){
+    return createInfoItem(
+        path,
+        typeValue,
+        new Vector<QlmID>(),
+        descriptions,
+        values,
+        metaData,
+        new HashMap<>()
+    );
+  }
+
+  /**
+   *
+   * @param path Path of O-DF InfoItem.
+   * @param values Values stored in InfoItem.
+   * @param descriptions Description of InfoItem.
+   * @param metaData MetaData of InfoItem.
+   * @param typeValue type parameter of InfoItem.
+   * @return InfoItem
+   */
+  public static InfoItem createInfoItem(
+    Path path,
+    String typeValue,
+    Iterable<Description> descriptions,
+    Iterable<Value<java.lang.Object>> values,
+    MetaData metaData,
+    java.util.Map<String,String> attr 
+  ){
+    return createInfoItem(
+        path,
+        typeValue,
+        new Vector<QlmID>(),
+        descriptions,
+        values,
+        metaData,
+        attr
+    );
+  }
+
+  /**
+   *
+   * @param path Path of O-DF InfoItem.
+   * @param values Values stored in InfoItem.
+   * @param descriptions Description of InfoItem.
+   * @param metaData MetaData of InfoItem.
+   * @param typeValue type parameter of InfoItem.
+   * @return InfoItem
+   */
+  public static InfoItem createInfoItem(
+    Path path,
+    Iterable<Value<java.lang.Object>> values
+  ){
+    return createInfoItem(
+        path,
+        null,
+        new Vector<QlmID>(),
+        new Vector<Description>(),
+        values,
+        null,
+        new HashMap<>()
+    );
   }
 
   /**
