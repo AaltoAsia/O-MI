@@ -132,8 +132,8 @@ Native SBT commands
 Extra commands from plugins and other
 
 - We use sbt-revolver: run `sbt` and then write
-    - `re-start`: compile&run the project in background
-    - `re-stop`: close the background process
+    - `reStart`: compile&run the project in background
+    - `reStop`: close the background process
 - We use sbt-native-packager:
     - `sbt stage`: creates file structure, used in packaged version, to the `./target/universal/stage/` directory
     - `sbt debian:packageBin`: create release debian package (requires `dpkg` program installed)
