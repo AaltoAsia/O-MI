@@ -6,9 +6,9 @@ import parsing.xmlGen.scalaxb.DataRecord
 import parsing.xmlGen.xmlTypes._
 
 object Description {
-  def unionReduce(descs: Set[Description]): Seq[Description] = {
+  def unionReduce(descs: Set[Description]): Set[Description] = {
     descs.groupBy(_.language).mapValues(
-      descriptions => descriptions.foldLeft(Description(""))(_ union _)).values.toVector
+      descriptions => descriptions.foldLeft(Description(""))(_ union _)).values.toSet
   }
 
   def empty: Description = Description("")

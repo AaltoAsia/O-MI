@@ -8,7 +8,7 @@ import akka.japi.Creator;
 import com.typesafe.config.Config;
 import scala.concurrent.Future;
 import scala.concurrent.duration.Duration;
-import types.OdfFactory;
+import types.OldOdfFactory;
 import types.Path;
 import types.odf.NewTypeConverter;
 import types.odf.OldTypeConverter;
@@ -48,13 +48,13 @@ public class ResponsibleJavaAgentDemo extends ResponsibleJavaInternalAgent {
       OdfNode node = NewTypeConverter.convertODF(call.odf()).get( new Path( "Objects/Service/Greeter" ) ).get();
       OdfInfoItem ii = (OdfInfoItem)node;
       OdfValue<Object> value = ii.values().head();
-      OdfValue<Object> newValue = OdfFactory.createOdfValue(
+      OdfValue<Object> newValue = OldOdfFactory.createOdfValue(
           "Hello " + value.value().toString() + ", welcome to the Internet of Things.",
           new Timestamp(new java.util.Date().getTime())
       );  
       Vector<OdfValue<Object>> values = new Vector<>();
       values.add( newValue );
-      OdfInfoItem new_ii = OdfFactory.createOdfInfoItem(
+      OdfInfoItem new_ii = OldOdfFactory.createOdfInfoItem(
           new Path("Objects/Service/Greeting"),
           values 
       );

@@ -62,7 +62,6 @@ class StubDB(val singleStores: SingleStores, val system: ActorSystem, val settin
   def readLatestFromCache(leafPaths: Seq[Path])(implicit timeout: Timeout): Future[ImmutableODF] = {
     // NOTE: Might go off sync with tree or values if the request is large,
     // but it shouldn't be a big problem
-    log.info( s"Read from cache: $leafPaths")
     val fp2iis = (singleStores.hierarchyStore ? GetTree).mapTo[ImmutableODF].map(_.getInfoItems.collect {
       case ii: InfoItem if leafPaths.exists { path: Path => path.isAncestorOf(ii.path) || path == ii.path } =>
         ii.path -> ii
@@ -86,10 +85,6 @@ class StubDB(val singleStores: SingleStores, val system: ActorSystem, val settin
       }.toVector)
     } yield objectsWithValues
 
-    objectsWithValues.foreach{
-      case odf: ImmutableODF => 
-        log.info(odf.getPaths.mkString("\n"))
-    }
     objectsWithValues
   }
 

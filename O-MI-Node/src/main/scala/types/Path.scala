@@ -181,7 +181,12 @@ object Path {
 
   object PathOrdering extends scala.math.Ordering[Path] {
     def compare(l: Path, r: Path): Int = {
-      l.toString compare r.toString
+      val minlen = math.min(l.length,r.length)
+      for( i <- 0 until minlen){
+        val c = l(i) compare r(i)
+        if( c != 0) return c
+      }
+      l.length compare r.length
     }
   }
 
