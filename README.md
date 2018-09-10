@@ -167,6 +167,7 @@ for the defaults and configuration documentation.
 * In package releases: `/etc/o-mi-node/application.conf`
 * In tar and zip releases: `./conf/application.conf`
 * In development environment: `./O-MI-Node/src/main/resources/application.conf` (create a new file if not found)
+    * Default values are stored in `./O-MI-Node/src/main/resources/reference.conf`
 
 
 Library Config
