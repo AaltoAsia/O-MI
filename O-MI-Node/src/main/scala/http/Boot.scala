@@ -24,13 +24,11 @@ import akka.io.{IO, Tcp}
 import akka.pattern.ask
 import akka.stream.ActorMaterializer
 import akka.util.Timeout
-import analytics.AnalyticsStore
 import org.slf4j.{Logger, LoggerFactory}
-import responses.{CLIHelper, CLIHelperT}
+import responses.CLIHelper
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext, Future}
-import scala.language.postfixOps
 import scala.util.{Failure, Success, Try}
 //import akka.http.WebBoot
 //import akka.http.javadsl.ServerBinding
@@ -43,70 +41,67 @@ import http.OmiServer._
 import responses.{CallbackHandler, RequestHandler, SubscriptionManager}
 import types.OmiTypes.Returns.ReturnTypes._
 import types.OmiTypes._
-import types.Path
 import types.odf._
 
-class OmiServer extends OmiNode{
+class OmiServer extends OmiNode {
 
 
   // we need an ActorSystem to host our application in
-  implicit val system : ActorSystem = ActorSystem("on-core") 
+  implicit val system: ActorSystem = ActorSystem("on-core")
   implicit val materializer: ActorMaterializer = ActorMaterializer()(system) // execution context for future
 
   /**
-   * Settings loaded by akka (typesafe config) and our [[OmiConfigExtension]]
-   */
-  val settings : OmiConfigExtension = OmiConfig(system)
+    * Settings loaded by akka (typesafe config) and our [[OmiConfigExtension]]
+    */
+  val settings: OmiConfigExtension = OmiConfig(system)
 
-  val singleStores = new SingleStores(settings)
-  val dbConnection: DB  = settings.databaseImplementation.toUpperCase match {
+  val singleStores = SingleStores(settings)
+  val dbConnection: DB = settings.databaseImplementation.toUpperCase match {
     case "SLICK" => new DatabaseConnection()(
       system,
       singleStores,
       settings
     )
     case "INFLUXDB" => new InfluxDBImplementation(
-       InfluxDBConfig( system )
-      )( system, singleStores )
+                                                   settings
+                                                 )(system, singleStores)
     case "WARP10" => new Warp10Wrapper(settings)(
       system,
-      singleStores
-  )
+      singleStores)
 
-    case default => new StubDB(singleStores)
+    case default => new StubDB(singleStores, system, settings)
   }
-/*
-  val dbConnection: DB = new influxdb.InfluxDBImplementation(
-    InfluxDB(system)
-    )(
-    system,
-    singleStores
-  )*/
+  /*
+    val dbConnection: DB = new influxdb.InfluxDBImplementation(
+      InfluxDB(system)
+      )(
+      system,
+      singleStores
+    )*/
 
-  val callbackHandler: CallbackHandler = new CallbackHandler(settings)( system, materializer)
-  val analytics: Option[ActorRef] =
-    if(settings.enableAnalytics)
-      Some(
-        system.actorOf(AnalyticsStore.props(
-          singleStores,
-        settings
+  val callbackHandler: CallbackHandler = new CallbackHandler(settings)(system, materializer)
+  // val analytics: Option[ActorRef] =
+  //   if(settings.enableAnalytics)
+  //     Some(
+  //       system.actorOf(AnalyticsStore.props(
+  //         singleStores,
+  //       settings
 
-        )
-      )
-      )
-    else None
+  //       )
+  //     )
+  //     )
+  //   else None
 
   val dbHandler: ActorRef = system.actorOf(
-   DBHandler.props(
-     dbConnection,
-     singleStores,
-     callbackHandler,
-     analytics.filter(_ => settings.enableWriteAnalytics),
-     new CLIHelper(singleStores,dbConnection)
-   ),
-   "database-handler"
+    DBHandler.props(
+      dbConnection,
+      singleStores,
+      callbackHandler,
+      new CLIHelper(singleStores, dbConnection)
+    ),
+    "database-handler"
   )
-  
+
   val subscriptionManager: ActorRef = system.actorOf(
     SubscriptionManager.props(
       settings,
@@ -117,27 +112,26 @@ class OmiServer extends OmiNode{
   )
 
 
-  val requestHandler : ActorRef = system.actorOf(
+  val requestHandler: ActorRef = system.actorOf(
     RequestHandler.props(
+      singleStores,
       subscriptionManager,
       dbHandler,
-      settings,
-      analytics.filter(_ => settings.enableReadAnalytics)
+      settings
     ),
     "request-handler"
   )
 
   val agentSystem: ActorRef = system.actorOf(
-   AgentSystem.props(
-     analytics.filter(_ => settings.enableWriteAnalytics),
-     dbHandler,
-     requestHandler,
-     settings
-   ),
-   "agent-system"
+    AgentSystem.props(
+      dbHandler,
+      requestHandler,
+      settings
+    ),
+    "agent-system"
   )
 
-  val cliListener: ActorRef =system.actorOf(
+  val cliListener: ActorRef = system.actorOf(
     Props(
       new OmiNodeCLIListener(
         system,
@@ -149,7 +143,7 @@ class OmiServer extends OmiNode{
     "omi-node-cli-listener"
   )
 
-  saveSettingsOdf(system,requestHandler,settings)
+  saveSettingsOdf(system, requestHandler, settings)
 
   implicit val httpExt: HttpExt = Http()
   // create omi service actor
@@ -160,61 +154,65 @@ class OmiServer extends OmiNode{
     settings,
     singleStores,
     requestHandler,
-    callbackHandler,
-    analytics
+    callbackHandler
   )
 
 
   implicit val timeoutForBind: Timeout = Timeout(5.seconds)
 
 }
+
 trait OmiNode {
-  implicit def system : ActorSystem 
+  implicit def system: ActorSystem
+
   implicit def materializer: ActorMaterializer
-  
-  def requestHandler : ActorRef
-  def omiService : OmiService 
-  def settings : OmiConfigExtension 
-  def cliListener : ActorRef
- 
+
+  def requestHandler: ActorRef
+
+  def omiService: OmiService
+
+  def settings: OmiConfigExtension
+
+  def cliListener: ActorRef
+
   implicit def httpExt: HttpExt
 
-  implicit val timeoutForBind : Timeout
-  def bindTCP()(implicit ec: ExecutionContext): Unit= {
+  implicit val timeoutForBind: Timeout
+
+  def bindTCP(): Unit= {
     IO(Tcp)  ? Tcp.Bind(cliListener,
       new InetSocketAddress("localhost", settings.cliPort))
   }
 
   /** Start a new HTTP server on configured port with our service actor as the handler.
-   */
+    */
   def bindHTTP()(implicit ec: ExecutionContext): Future[ServerBinding] = {
 
     val bindingFuture =
       httpExt.bindAndHandle(omiService.myRoute, settings.interface, settings.webclientPort)
-    
-    bindingFuture.onFailure {
+    bindingFuture.failed.foreach {
       case ex: Exception =>
         system.log.error(ex, "Failed to bind to {}:{}!", settings.interface, settings.webclientPort)
 
     }
     bindingFuture
   }
-  def shutdown()(implicit ec: ExecutionContext): Future[akka.actor.Terminated] = {
 
+  def shutdown(): Future[akka.actor.Terminated] = {
     system.terminate()
   }
 
 }
 
 object OmiServer {
-  def apply() : OmiServer = {
-    
+  def apply(): OmiServer = {
+
     new OmiServer()
   }
 
-  def saveSettingsOdf(system: ActorSystem, requestHandler: ActorRef, settings: OmiConfigExtension) :Unit = {
-    if ( settings.settingsOdfPath.nonEmpty ) {
-      import system.dispatcher // execution context for futures
+  def saveSettingsOdf(system: ActorSystem, requestHandler: ActorRef, settings: OmiConfigExtension): Unit = {
+    if (settings.settingsOdfPath.nonEmpty) {
+      import system.dispatcher// execution context for futures
       // Same timestamp for all OdfValues of the settings
       val date = new Date()
       val currentTime = new java.sql.Timestamp(date.getTime)
@@ -229,62 +227,70 @@ object OmiServer {
       system.log.info("Testing InputPusher...")
 
       system.log.info("Create testing object")
-      val name =  "num-latest-values-stored"
+      val name = "num-latest-values-stored"
       val odf = ImmutableODF(Vector(
         InfoItem(
           name,
-          settings.settingsOdfPath / name, 
+          settings.settingsOdfPath / name,
           values = Vector(Value(settings.numLatestValues, "xs:integer", currentTime)),
           descriptions = Set(Description(numDescription))
         )))
       system.log.info(s"Testing object created. $odf")
-      
-      val write = WriteRequest( odf, None,  60  seconds)
+
+      implicit val timeout: Timeout = settings.journalTimeout
+      val write = WriteRequest(odf, None,settings.startTimeout)
       system.log.info("Write created")
-      implicit val timeout: Timeout = Timeout( 60 seconds)
-      val future : Future[ResponseRequest]= (requestHandler ? write ).mapTo[ResponseRequest]
+      val future: Future[ResponseRequest] = (requestHandler ? write).mapTo[ResponseRequest]
       system.log.info("Write started")
-      future.onSuccess{
-        case response: ResponseRequest=>
-        Results.unionReduce(response.results).forall {
-          result: OmiResult =>
-            result.returnValue match {
-              case _: Successful =>
-                system.log.debug("O-MI InputPusher system working.")
-                true
-              case _: OmiReturn =>
-                system.log.error(s"O-MI InputPusher system not working; $response")
-                false
-            }
-        }
+      future.foreach {
+        response: ResponseRequest =>
+          Results.unionReduce(response.results).forall {
+            result: OmiResult =>
+              result.returnValue match {
+                case _: Successful =>
+                  system.log.debug("O-MI InputPusher system working.")
+                  true
+                case _: OmiReturn =>
+                  system.log.error(s"O-MI InputPusher system not working; $response")
+                  false
+              }
+          }
       }
 
-      future.onFailure{
-        case e: Throwable => 
+      future.failed.foreach {
+        e: Throwable =>
           system.log.error(e, "O-MI InputPusher system not working; exception:")
       }
-      Await.result(future, 60 seconds)
+      Await.result(future, settings.startTimeout)
     }
   }
 
 }
 
 
-
 /**
- * Starting point of the stand-alone program.
- */
-object Boot /*extends Starter */{// with App{
+  * Starting point of the stand-alone program.
+  */
+object Boot /*extends Starter */ {
+  // with App{
   val log: Logger = LoggerFactory.getLogger("OmiServiceTest")
 
-  def main(args: Array[String]) : Unit= {
-    Try{
+  def time[R](message: String)(block: => R): R = {
+    val t0 = System.nanoTime()
+    val result = block    // call-by-name
+    val t1 = System.nanoTime()
+    log.info(s"$message took:\n${t1 - t0}ns")
+    result
+  }
+
+  def main(args: Array[String]): Unit = {
+    Try {
       val server: OmiServer = OmiServer()
       import server.system.dispatcher
       server.bindTCP()
       server.bindHTTP()
-    }match {
-      case Failure(ex)  =>  log.error( "Error during startup", ex)
+    } match {
+      case Failure(ex) => log.error("Error during startup", ex)
       case Success(_) => log.info("Server started successfully")
     }
   }
@@ -293,8 +299,8 @@ object Boot /*extends Starter */{// with App{
 
 
 /**
- * Starting point of the servlet program.
- */
+  * Starting point of the servlet program.
+  */
 //class ServletBoot extends Starter with WebBoot {
 //  override implicit val system = Boot.system
 //  val serviceActor = start()

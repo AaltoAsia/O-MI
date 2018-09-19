@@ -13,30 +13,30 @@
  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 
 package database
-import scala.language.postfixOps
 
 import java.net.InetAddress
 import java.sql.Timestamp
 import java.util.Date
 
-import scala.annotation.meta.field
-import scala.collection.immutable.{HashMap, SortedSet}
-import scala.collection.mutable
-import akka.actor.Cancellable
 import akka.http.scaladsl.model.Uri
-import org.prevayler._
+import journal.Models.PersistentSub
+import journal._
 import spray.json.{DefaultJsonProtocol, JsArray, JsNull, JsNumber, JsObject, JsString, JsValue, RootJsonFormat}
+import types.OmiTypes._
 import types._
 import types.odf._
-import types.OmiTypes._
-import collection.breakOut
-import scala.util.parsing.json.JSONObject
+
+import scala.collection.breakOut
+import scala.collection.immutable.HashMap
 import scala.concurrent.duration._
+import scala.language.postfixOps
 
 sealed trait SavedSub {
   val id: Long
   val endTime: Date
   val paths: Vector[Path]
+
+  def persist(): PersistentSub
 }
 
 trait NotNewEventSub extends PolledSub
@@ -60,7 +60,9 @@ case class PollNormalEventSub(
                                lastPolled: Timestamp,
                                startTime: Timestamp,
                                paths: Vector[Path]
-                             ) extends PolledEventSub with NotNewEventSub
+                             ) extends PolledEventSub with NotNewEventSub {
+  def persist() = PPollNormalEventSub(id, endTime.getTime, lastPolled.getTime, startTime.getTime, paths.map(_.toString))
+}
 
 case class PollNewEventSub(
                             id: Long,
@@ -68,7 +70,9 @@ case class PollNewEventSub(
                             lastPolled: Timestamp,
                             startTime: Timestamp,
                             paths: Vector[Path]
-                          ) extends PolledEventSub
+                          ) extends PolledEventSub {
+  def persist() = PPollNewEventSub(id, endTime.getTime, lastPolled.getTime, startTime.getTime, paths.map(_.toString))
+}
 
 case class PollIntervalSub(
                             id: Long,
@@ -77,7 +81,14 @@ case class PollIntervalSub(
                             lastPolled: Timestamp,
                             startTime: Timestamp,
                             paths: Vector[Path]
-                          ) extends NotNewEventSub
+                          ) extends NotNewEventSub {
+  def persist() = PPollIntervalSub(id,
+    endTime.getTime,
+    interval.toSeconds,
+    lastPolled.getTime,
+    startTime.getTime,
+    paths.map(_.toString))
+}
 
 case class IntervalSub(
                         id: Long,
@@ -86,14 +97,23 @@ case class IntervalSub(
                         callback: DefinedCallback,
                         interval: FiniteDuration,
                         startTime: Timestamp
-                      ) extends SavedSub
+                      ) extends SavedSub {
+  def persist() = PIntervalSub(id,
+    paths.map(_.toString),
+    endTime.getTime,
+    callback.persist(),
+    interval.toSeconds,
+    startTime.getTime)
+}
 
 case class NormalEventSub(
                            id: Long,
                            paths: Vector[Path],
                            endTime: Timestamp,
                            callback: DefinedCallback
-                         ) extends EventSub
+                         ) extends EventSub {
+  def persist() = PNormalEventSub(id, paths.map(_.toString), endTime.getTime, callback.persist())
+}
 
 //startTime: Duration) extends SavedSub
 
@@ -102,7 +122,9 @@ case class NewEventSub(
                         paths: Vector[Path],
                         endTime: Timestamp,
                         callback: DefinedCallback
-                      ) extends EventSub
+                      ) extends EventSub {
+  def persist() = PNewEventSub(id, paths.map(_.toString), endTime.getTime, callback.persist())
+}
 
 sealed trait EventSub extends SavedSub {
   val paths: Vector[Path]
@@ -128,16 +150,17 @@ object Subs {
     HashMap.empty)
 }
 
-case class PollSubData(
-                        idToData: collection.mutable.HashMap[Long, collection.mutable.HashMap[Path, List[Value[Any]]]])
+//case class PollSubData(
+//                        idToData: collection.mutable.HashMap[Long, collection.mutable.HashMap[Path, List[Value[Any]]]])
 
 case class SubData(
-                    pathData: HashMap[Path, List[Value[Any]]]
+                    pathData: Map[Path, Seq[Value[Any]]]
                   )
 
-object PollSubData {
-  def empty: PollSubData = PollSubData(collection.mutable.HashMap.empty)
-}
+//object PollSubData {
+//  def empty: PollSubData = PollSubData(collection.mutable.HashMap.empty)
+//}
+
 
 object CustomJsonProtocol extends DefaultJsonProtocol {
 
@@ -145,7 +168,7 @@ object CustomJsonProtocol extends DefaultJsonProtocol {
     private def createCB(address: String): DefinedCallback = {
       val uri = Uri(address)
       val hostAddress = uri.authority.host.address()
-      val ipAddress = InetAddress.getByName(hostAddress)
+      InetAddress.getByName(hostAddress)
       val scheme = uri.scheme
       scheme match {
         case "http" => HTTPCallback(uri)
@@ -171,18 +194,21 @@ object CustomJsonProtocol extends DefaultJsonProtocol {
       JsNumber(startTime),
       JsNumber(lastPolled),
       JsNull,
-      JsArray(paths: Vector[JsString]),
-      JsArray(data: Vector[JsObject])) => {
+      JsArray(pathsU),
+      JsArray(dataU)) => {
+        val paths = pathsU.collect{case s: JsString => s}
+        val data = dataU.collect{case d: JsObject=> d}
         val subData: Seq[(Path, List[Value[Any]])] = data.map(_.getFields("path", "values") match {
-          case Seq(JsString(path), JsArray(values: Vector[JsObject])) => (Path(path), values
-            .map(_.getFields("value", "typeValue", "timeStamp", "attributes") match {
+          case Seq(JsString(path), JsArray(valuesU)) =>
+            val values = valuesU.collect{case o:JsObject => o}
+            (Path(path), values
+            .map(_.getFields("value", "typeValue", "timeStamp") match {
               case Seq(JsString(value),
               JsString(typeValue),
-              JsNumber(timeStamp),
-              JsObject(attributes: Map[String, JsString])) => Value(value,
+              JsNumber(timeStamp)
+              ) => Value(value,
                 typeValue,
-                new Timestamp(timeStamp.toLong),
-                attributes.map { case (key, jsvalue) => (key, jsvalue.value) }(breakOut))
+                new Timestamp(timeStamp.toLong))
             }).toList)
         })
         if (interval.toLong == -1) { //normal poll sub
@@ -218,8 +244,9 @@ object CustomJsonProtocol extends DefaultJsonProtocol {
       JsNull,
       JsNull,
       JsString(callback),
-      JsArray(paths: Vector[JsString]),
+      JsArray(pathsU),
       JsNull) if interval.toLong == -1 || interval.toLong == -2 => { //EventSub
+        val paths = pathsU.collect{case s:JsString => s} //unchecked otherwise
         if (interval.toLong == -1) {
           (NormalEventSub(id.toLong,
             paths.map(p => Path(p.value)),
@@ -246,8 +273,9 @@ object CustomJsonProtocol extends DefaultJsonProtocol {
       JsNumber(startTime),
       JsNull,
       JsString(callback),
-      JsArray(paths: Vector[JsString]),
+      JsArray(pathsU),
       JsNull) => { //IntervalSub
+        val paths = pathsU.collect{case s: JsString => s}
         (IntervalSub(id.toLong,
           paths.map(p => Path(p.value)),
           new Timestamp(endTime.toLong),
@@ -268,8 +296,7 @@ object CustomJsonProtocol extends DefaultJsonProtocol {
                 JsObject(
                   "value" -> JsString(v.value.toString),
                   "typeValue" -> JsString(v.typeAttribute),
-                  "timeStamp" -> JsNumber(v.timestamp.getTime),
-                  "attributes" -> JsObject(v.attributes.mapValues(a => JsString(a)).toMap)
+                  "timeStamp" -> JsNumber(v.timestamp.getTime)
                 )
               ).toVector
             )
@@ -360,131 +387,10 @@ object CustomJsonProtocol extends DefaultJsonProtocol {
             "paths" -> JsArray(paths.map(p => JsString(p.toString))),
             "data" -> JsNull
           )
+        case other => throw new Exception(s"Uknown subscription type when serializing: $other" )
       }
     }
   }
 
 }
 
-/**
-  * Transaction for adding data for polled subscriptions. Does not check if the sub actually exists
-  *
-  * @param subId
-  * @param path
-  * @param value
-  */
-case class AddPollData(subId: Long, path: Path, value: Value[Any]) extends Transaction[PollSubData] {
-  def executeOn(p: PollSubData, date: Date): Unit = {
-    p.idToData.get(subId) match {
-      case Some(pathToValues) => pathToValues.get(path) match {
-        case Some(sd) =>
-          p.idToData(subId)(path) = value :: sd
-        case None =>
-          p.idToData(subId).update(path, List(value))
-      }
-      case None =>
-        p.idToData
-          .update(
-            subId,
-            collection.mutable.HashMap(path -> List(value)))
-    }
-  }
-}
-
-case class CheckSubscriptionData(subId: Long) extends Query[PollSubData, collection.mutable.HashMap[Path, List[Value[Any]]]] {
-  def query(p: PollSubData, date: Date): mutable.HashMap[Path, List[Value[Any]]] = p.idToData
-    .getOrElse(subId, collection.mutable.HashMap.empty[Path, List[Value[Any]]])
-}
-
-/**
-  * Used to Poll event subscription data from the prevayler. Can also used to remove data from subscription
-  *
-  * @param subId
-  */
-case class PollEventSubscription(subId: Long) extends TransactionWithQuery[PollSubData, collection.mutable.HashMap[Path, List[Value[Any]]]] {
-  def executeAndQuery(p: PollSubData, date: Date): collection.mutable.HashMap[Path, List[Value[Any]]] = {
-    p.idToData.remove(subId).getOrElse(collection.mutable.HashMap.empty[Path, List[Value[Any]]])
-  }
-}
-
-/**
-  * Used to poll an interval subscription with the given ID.
-  * Polling interval subscriptions leaves the newest value in the database
-  * so this can't be used to remove subscriptions.
-  *
-  * @param subId
-  */
-case class PollIntervalSubscription(subId: Long) extends TransactionWithQuery[PollSubData, collection.mutable.HashMap[Path, List[Value[Any]]]] {
-  def executeAndQuery(p: PollSubData, date: Date): mutable.HashMap[Path, List[Value[Any]]] = {
-    val removed = p.idToData.remove(subId)
-
-    removed match {
-      case Some(old) => {
-        //add the empty sub as placeholder
-        p.idToData += (subId -> mutable.HashMap.empty)
-        old.foreach {
-          case (path, oldValues) if oldValues.nonEmpty => {
-            val newest = oldValues.maxBy(_.timestamp.getTime)
-
-            //add latest value back to the database
-            p.idToData(subId).get(path) match {
-              case Some(oldV) => p.idToData(subId)(path) = newest :: oldV
-              case None => p.idToData(subId).update(path, newest :: Nil)
-            }
-          }
-          case _ =>
-        }
-        old
-      }
-
-      case None => mutable.HashMap.empty
-    }
-
-  }
-}
-
-/**
-  * Used to remove data from interval and event based poll subscriptions.
-  *
-  * @param subId ID of the sub to remove
-  */
-case class RemovePollSubData(subId: Long) extends Transaction[PollSubData] {
-  def executeOn(p: PollSubData, date: Date): Unit = {
-    p.idToData.remove(subId)
-  }
-}
-
-
-case class LookupEventSubs(path: Path) extends Query[Subs, Vector[NormalEventSub]] {
-  def query(es: Subs, d: Date): Vector[NormalEventSub] =
-    (path.getParentsAndSelf flatMap (p => es.eventSubs.get(p))).flatten.collect { case ns: NormalEventSub => ns }
-      .toVector // get for Map returns Option (safe)
-}
-
-
-case class LookupNewEventSubs(path: Path) extends Query[Subs, Vector[NewEventSub]] {
-  def query(es: Subs, d: Date): Vector[NewEventSub] =
-    (path.getParentsAndSelf flatMap (p => es.eventSubs.get(p))).flatten.collect { case ns: NewEventSub => ns }
-      .toVector // get for Map returns Option (safe)
-}
-
-case class RemoveWebsocketSubs() extends TransactionWithQuery[Subs, Unit] {
-  def executeAndQuery(store: Subs, d: Date): Unit = {
-    store.intervalSubs = store.intervalSubs.filter {
-      case (_, IntervalSub(_, _, _, cb: CurrentConnectionCallback, _, _)) => {
-        false
-      }
-      case _ => true
-    }
-    store.eventSubs = HashMap[Path, Vector[EventSub]](store.eventSubs.mapValues {
-      subs =>
-        subs.filter {
-          case NormalEventSub(_, _, _, callback: CurrentConnectionCallback) => false
-          case NewEventSub(_, _, _, callback: CurrentConnectionCallback) => false
-          case sub: EventSub => true
-        }
-    }.toSeq: _*)
-  }
-}
-
-// Other transactions are in responses/SubscriptionHandler.scala

@@ -14,66 +14,55 @@
 
 package responses
 
-import java.util.Date
+import akka.actor.{Actor, ActorLogging, ActorRef}
+import akka.pattern.ask
+import akka.util.Timeout
+import http.OmiConfigExtension
+import types.OmiTypes._
+import types.odf._
 
-import scala.collection.JavaConversions.iterableAsScalaIterable
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.control.NonFatal
-//import scala.collection.JavaConverters._ //JavaConverters provide explicit conversion methods
-//import scala.collection.JavaConversions.asJavaIterator
-import scala.xml.NodeSeq
-//import akka.http.StatusCode
 
-import akka.actor.{ActorRef, ActorLogging, Actor}
-import akka.pattern.ask
-import akka.util.Timeout
-import types.odf._
-import types.OmiTypes._
-import types._
-import http.{ActorSystemContext, Actors, Settings, OmiConfigExtension }
+trait PollHandler extends Actor with ActorLogging {
 
-trait PollHandler extends Actor with ActorLogging{
+  protected def subscriptionManager: ActorRef
 
-  protected def subscriptionManager : ActorRef
   protected implicit val settings: OmiConfigExtension
+
   /** Method for handling PollRequest.
+    *
     * @param poll request
     * @return (xml response, HTTP status code)
     */
   def handlePoll(poll: PollRequest): Future[ResponseRequest] = {
     val ttl = poll.handleTTL
     implicit val timeout: Timeout = Timeout(ttl)
-    val time = new Date().getTime
     val resultsFut =
-      Future.sequence(poll.requestIDs.map { id : RequestID=>
+      Future.sequence(poll.requestIDs.map { id: RequestID =>
 
-      val objectsF: Future[Option[ODF] ] = (subscriptionManager ? PollSubscription(id)).mapTo[Option[ODF]]
-      objectsF.recoverWith{
-        case NonFatal(e) =>
-          log.error( e.getMessage)
-          e.printStackTrace()
-          Future.failed(new RuntimeException(
-        s"Error when trying to poll subscription: ${e.getMessage}"))
-        case e: Throwable => 
-          Future.failed(new RuntimeException(
-        s"Error when trying to poll subscription: ${e.getMessage}"))
-      }
+        val objectsF: Future[Option[ODF]] = (subscriptionManager ? PollSubscription(id, ttl)).mapTo[Option[ODF]]
+        objectsF.recoverWith {
+          case NonFatal(e) =>
+            log.error(e.getMessage)
+            e.printStackTrace()
+            Future.failed(new RuntimeException(
+              s"Error when trying to poll subscription: ${e.getMessage}"))
+          case e: Throwable =>
+            Future.failed(new RuntimeException(
+              s"Error when trying to poll subscription: ${e.getMessage}"))
+        }
 
-      objectsF.map{
-        case Some(objects: ODF) =>
-          Results.Poll(id, objects)
-        case None =>
-          Results.NotFoundRequestIDs(Vector(id))
-        case Some(objects: OdfTypes.OdfObject) =>
-          Results.InternalError( Some("Wrong O-DF type when polled"))
-        //case Failure(e) =>
-        //  throw new RuntimeException(
-        //    s"Error when trying to poll subscription: ${e.getMessage}")
-      }
-    })
+        objectsF.map {
+          case Some(objects: ODF) =>
+            Results.Poll(id, objects)
+          case None =>
+            Results.NotFoundRequestIDs(Vector(id))
+        }
+      })
     val response = resultsFut.map(results =>
-        ResponseRequest(results)
+      ResponseRequest(results)
     )
 
     response

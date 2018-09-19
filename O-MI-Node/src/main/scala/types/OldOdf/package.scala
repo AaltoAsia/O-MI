@@ -19,35 +19,34 @@ package types
 import java.lang.{Iterable => JavaIterable}
 import java.sql.Timestamp
 import java.util.GregorianCalendar
-import javax.xml.datatype.{DatatypeFactory, XMLGregorianCalendar}
 
+import javax.xml.datatype.{DatatypeFactory, XMLGregorianCalendar}
 import parsing.xmlGen._
 import parsing.xmlGen.scalaxb.DataRecord
 
-import scala.language.existentials
 
 /**
- * Package containing classes presenting O-DF format internally and helper methods for them
- *
- */
+  * Package containing classes presenting O-DF format internally and helper methods for them
+  *
+  */
 package object OdfTypes {
-  type OdfParseResult = Either[JavaIterable[ParseError], OdfObjects]
+  type OdfParseResult = Either[JavaIterable[_ <: ParseError], OdfObjects]
 
   /**
-   * Collection type to be used as all children members in odf tree types
-   */
+    * Collection type to be used as all children members in odf tree types
+    */
   type OdfTreeCollection[T] = Vector[T]
 
-  def unionOption[T](a: Option[T], b: Option[T])(f: (T,T) => T): Option[T] = {
-    (a,b) match{
-        case (Some(_a), Some(_b)) => Some(f(_a,_b))
-        case (None, Some(_b)) => Some(_b)
-        case (Some(_a), None) => Some(_a)
-        case (None, None) => None
+  def unionOption[T](a: Option[T], b: Option[T])(f: (T, T) => T): Option[T] = {
+    (a, b) match {
+      case (Some(_a), Some(_b)) => Some(f(_a, _b))
+      case (None, Some(_b)) => Some(_b)
+      case (Some(_a), None) => Some(_a)
+      case (None, None) => None
     }
   }
 
-  
+
   /** Helper method for getting all leaf nodes of O-DF Structure */
   def getLeafs(obj: OdfObject): OdfTreeCollection[OdfNode] = {
     if (obj.infoItems.isEmpty && obj.objects.isEmpty)
@@ -58,6 +57,7 @@ package object OdfTypes {
           getLeafs(subobj)
       }
   }
+
   def getLeafs(objects: OdfObjects): OdfTreeCollection[OdfNode] = {
     if (objects.objects.nonEmpty)
       objects.objects.flatMap {
@@ -65,49 +65,57 @@ package object OdfTypes {
       }
     else OdfTreeCollection(objects)
   }
+
   /** Helper method for getting all OdfNodes found in given OdfNodes. Basically get list of all nodes in tree.  */
   def getOdfNodes(hasPaths: OdfNode*): Seq[OdfNode] = hasPaths.flatMap {
     case info: OdfInfoItem => Seq(info)
-    case obj: OdfObject => Seq(obj) ++ getOdfNodes(obj.objects.toSeq ++ obj.infoItems.toSeq: _*)
-    case objs: OdfObjects => Seq(objs) ++ getOdfNodes(objs.objects.toSeq: _*)
+    case obj: OdfObject => Seq(obj) ++ getOdfNodes(obj.objects ++ obj.infoItems: _*)
+    case objs: OdfObjects => Seq(objs) ++ getOdfNodes(objs.objects: _*)
   }
 
   /** Helper method for getting all OdfInfoItems found in OdfObjects */
-  def getInfoItems( objects: OdfObjects ) : OdfTreeCollection[OdfInfoItem] = {
-    getLeafs(objects).collect{ case info: OdfInfoItem => info}
+  def getInfoItems(objects: OdfObjects): OdfTreeCollection[OdfInfoItem] = {
+    getLeafs(objects).collect { case info: OdfInfoItem => info }
   }
 
-  def getInfoItems( _object: OdfObject ) : Vector[OdfInfoItem] = {
-    getLeafs(_object).collect{ case info: OdfInfoItem => info}
+  def getInfoItems(_object: OdfObject): Vector[OdfInfoItem] = {
+    getLeafs(_object).collect { case info: OdfInfoItem => info }
 
     /*nodes.flatMap {
    }.toVector*/
   }
-  def getInfoItems( nodes: OdfNode*) : Vector[OdfInfoItem] ={
-    nodes.flatMap{
+
+  def getInfoItems(nodes: OdfNode*): Vector[OdfInfoItem] = {
+    nodes.flatMap {
       case info: OdfInfoItem => Vector(info)
-      case obj: OdfObject    => getInfoItems(obj)
-      case objs: OdfObjects  => getInfoItems(objs)
+      case obj: OdfObject => getInfoItems(obj)
+      case objs: OdfObjects => getInfoItems(objs)
     }.toVector
   }
 
   /**
-   * Generates odf tree containing the ancestors of given object up to the root Objects level.
-   */
+    * Generates odf tree containing the ancestors of given object up to the root Objects level.
+    */
   @annotation.tailrec
   def createAncestors(last: OdfNode): OdfObjects = {
     val parentPath = last.path.dropRight(1)
 
     last match {
       case info: OdfInfoItem =>
-        val parent = OdfObject(OdfTreeCollection(OdfQlmID(parentPath.last)), parentPath, OdfTreeCollection(info), OdfTreeCollection())
+        val parent = OdfObject(OdfTreeCollection(OdfQlmID(parentPath.last)),
+          parentPath,
+          OdfTreeCollection(info),
+          OdfTreeCollection())
         createAncestors(parent)
 
       case obj: OdfObject =>
         if (parentPath.length == 1)
           OdfObjects(OdfTreeCollection(obj))
         else {
-          val parent = OdfObject(OdfTreeCollection(OdfQlmID(parentPath.last)),parentPath, OdfTreeCollection(), OdfTreeCollection(obj))
+          val parent = OdfObject(OdfTreeCollection(OdfQlmID(parentPath.last)),
+            parentPath,
+            OdfTreeCollection(),
+            OdfTreeCollection(obj))
           createAncestors(parent)
         }
 
@@ -115,6 +123,7 @@ package object OdfTypes {
         objs
     }
   }
+
   /** Method for generating parent OdfNode of this instance */
   def getParent(child: OdfNode): OdfNode = {
     val parentPath = child.path.dropRight(1)
@@ -136,17 +145,18 @@ package object OdfTypes {
     }
   }
 
-  def getPathValuePairs( objs: OdfObjects ) : OdfTreeCollection[(Path,OdfValue[Any])]={
-    getInfoItems(objs).flatMap{ infoitem => infoitem.values.map{ value => (infoitem.path, value)} }
+  def getPathValuePairs(objs: OdfObjects): OdfTreeCollection[(Path, OdfValue[Any])] = {
+    getInfoItems(objs).flatMap { infoitem => infoitem.values.map { value => (infoitem.path, value) } }
   }
-  def timestampToXML(timestamp: Timestamp): XMLGregorianCalendar ={
+
+  def timestampToXML(timestamp: Timestamp): XMLGregorianCalendar = {
     val cal = new GregorianCalendar()
     cal.setTime(timestamp)
     DatatypeFactory.newInstance().newXMLGregorianCalendar(cal)
   }
 
-  def attributesToDataRecord( attributes: Map[String,String] ) : Map[String,DataRecord[Any]] ={
-    attributes.map{
+  def attributesToDataRecord(attributes: Map[String, String]): Map[String, DataRecord[Any]] = {
+    attributes.map {
       case (key: String, value: String) =>
         if (key.startsWith("@"))
           key -> DataRecord(None, Some(key.tail), value)

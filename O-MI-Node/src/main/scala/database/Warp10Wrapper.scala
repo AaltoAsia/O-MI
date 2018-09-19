@@ -26,6 +26,7 @@ import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
 import akka.actor.ActorSystem
 import akka.event.slf4j.Logger
+import akka.pattern.ask
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.client.RequestBuilding
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
@@ -41,6 +42,7 @@ import types.{ParseError, Path, Warp10ParseError}
 import types.OmiTypes.{OmiReturn, Returns}
 import Warp10JsonProtocol.Warp10JsonFormat
 import types.OdfTypes.OdfQlmID
+import journal.Models.{GetTree,ReadAllCommand, MultipleReadCommand}
 import types.odf.{ImmutableODF, InfoItem, MetaData, NewTypeConverter, Node, ODF, Object, Objects, OldTypeConverter, Value}
 
 //serializer and deserializer for warp10 json formats
@@ -49,19 +51,21 @@ object Warp10JsonProtocol extends DefaultJsonProtocol {
   class Warp10JsonFormat(implicit singleStores: SingleStores) extends RootJsonFormat[Seq[(OdfObject,OdfObject)]] {
     //def warp10MetaData(path: Path) = Some(MetaData(OdfInfoItem(path / "type",OdfTreeCollection(OdfValue("ISO 6709","xs:String",new Timestamp(1470230717254L)))).asInfoItemType))
 
-    def getObject(path: Path) : OdfObject = {
-      val hTree = singleStores.hierarchyStore execute GetTree()
-      hTree.get(path.init) match {
-        case Some(obj: Object) => NewTypeConverter.convertObject(obj)
-        case Some(obj: OdfObject) => obj.copy(infoItems = OdfTreeCollection.empty,objects = OdfTreeCollection.empty)
-        case _ => {
-          val id = OdfTreeCollection(OdfQlmID(path.lastOption.getOrElse(
-            throw new DeserializationException(s"Found invalid path for Object: $path"))))
-
-          OdfObject(id,path)
+    def getObject(path: Path) : Future[OdfObject] = {
+      for(
+        hTree <- (singleStores.hierarchyStore ? GetTree).mapTo[ImmutableODF]
+        res = hTree.get(path.init) match {
+          case Some(obj: Object) => NewTypeConverter.convertObject(obj)
+          case Some(obj: OdfObject) => obj.copy(infoItems = OdfTreeCollection.empty,objects = OdfTreeCollection.empty)
+          case _ => {
+            val id =
+              OdfTreeCollection(OdfQlmID(path.lastOption.getOrElse(new DeserializationException(s"Found invalid path for Object: $path"))))
+            OdfObject(id,path)
         }
       }
+      ) yield res
     }
+
     def createInfoItems(
                          path: Path,
                          in: (OdfTreeCollection[OdfValue[Any]], OdfTreeCollection[Option[OdfValue[Any]]])): (OdfTreeCollection[OdfInfoItem], OdfTreeCollection[OdfInfoItem]) = {
@@ -285,29 +289,30 @@ class Warp10Wrapper( settings: OmiConfigExtension with Warp10ConfigExtension )(i
   ): Future[Option[ODF]] = {
    if((newest.isEmpty || newest.contains(1)) && (oldest.isEmpty && begin.isEmpty && end.isEmpty)){
      def getFromCache(): Seq[Option[ODF]] = {
-       lazy val hTree: ImmutableODF = singleStores.hierarchyStore execute GetTree()
+       lazy val hTreeF: Future[ImmutableODF] = (singleStores.hierarchyStore ? GetTree).mapTo[ImmutableODF]
        val objectData: Seq[Option[ODF]] = requests.collect{
 
          case obj:Objects => {
-
-           Some(singleStores.buildODFFromValues(
-             (singleStores.latestStore execute LookupAllDatas()).toSeq))
+           (singleStores.latestStore ? ReadAllCommand).mapTo[Map[Path,Value[Any]]]
+           .map(_.toSeq).map(n => Some(singleStores.buildODFFromValues(n)))
          }
 
          case obj @ Object(_,path, _, _, _) => {
-           val resultsO = for {
-             odfObject <- hTree.get(path).collect{
-               case o: OdfObject => o
-             }
-             paths = getLeafs(odfObject).map(_.path)
-             pathValues = singleStores.latestStore execute LookupSensorDatas(paths)
-           } yield singleStores.buildODFFromValues(pathValues)
+           hTreeF.flatMap{ hTree =>
+             val resultsO = for {
+               odfObject <- hTree.get(path).collect{
+                 case o: OdfObject => o
+               }
+               paths = getLeafs(odfObject).map(_.path)
+               pathValuesF = (singleStores.latestStore ? MultipleReadCommand(paths)).mapTo[Seq[(Path, Value[Any])]]
+             } yield pathValuesF.map(pathValues => singleStores.buildODFFromValues(pathValues))
 
-           //val paths = getLeafs(obj).map(_.path)
-           //val objs = singleStores.latestStore execute LookupSensorDatas(paths)
-           //val results = singleStores.buildOdfFromValues(objs)
+             //val paths = getLeafs(obj).map(_.path)
+             //val objs = singleStores.latestStore execute LookupSensorDatas(paths)
+             //val results = singleStores.buildOdfFromValues(objs)
 
-           resultsO
+             resultsO
+           }
          }
        }.toSeq
 

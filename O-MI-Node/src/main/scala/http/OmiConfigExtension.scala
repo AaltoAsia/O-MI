@@ -14,39 +14,60 @@
 
 package http
 
-import java.lang
+import java.net.InetAddress
 import java.util.concurrent.TimeUnit
-import java.net.{InetAddress, URLDecoder}
 
-import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
 import scala.concurrent.duration._
+import scala.language.{implicitConversions, postfixOps}
 import scala.util.Try
-import scala.language.implicitConversions
-import agentSystem.AgentSystemConfigExtension
 import akka.actor.{ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigException._
 import database.Warp10ConfigExtension
+import akka.http.scaladsl.client.RequestBuilding
+import akka.http.scaladsl.client.RequestBuilding.{Get, Head, Options, Patch, Post, Put, RequestBuilder}
+import akka.http.scaladsl.model.Uri
+import com.typesafe.config.{Config, ConfigException}
+import org.slf4j.LoggerFactory
+
+import types.OmiTypes.RawRequestWrapper.MessageType
 import types.Path
 
+import agentSystem.AgentSystemConfigExtension
+import database.influxDB.InfluxDBConfigExtension
 
-class OmiConfigExtension( val config: Config) extends Extension
-  with Warp10ConfigExtension
-  with AgentSystemConfigExtension {
+class OmiConfigExtension(val config: Config) extends Extension
+                                                     with Warp10ConfigExtension
+                                                     with AgentSystemConfigExtension {
+  val log = LoggerFactory.getLogger("Config")
+
+  /**
+    * Throws exceptions if invalid url, returns the input parameter if success
+    */
+  private def testUri(address: String): Uri = {
+    val uri = Uri(address)
+    val hostAddress = uri.authority.host.address
+    // Test address validity (throws exceptions when invalid)
+    InetAddress.getByName(hostAddress)
+
+    uri
+  }
 
   val callbackAuthorizationEnabled: Boolean = config.getBoolean("omi-service.callback-authorization-enabled")
+
   /**
-   * Implicit conversion from java.time.Duration to scala.concurrent.FiniteDuration
-   * @param dur duration as java.time.Duration
-   * @return given duration converted to FiniteDuration
-   */
+    * Implicit conversion from java.time.Duration to scala.concurrent.FiniteDuration
+    *
+    * @param dur duration as java.time.Duration
+    * @return given duration converted to FiniteDuration
+    */
   implicit def toFiniteDuration(dur: java.time.Duration): FiniteDuration = Duration.fromNanos(dur.toNanos)
+
   // Node special settings
-  val ports : Map[String, Int]= config.getObject("omi-service.ports").unwrapped().mapValues{
-    case port : java.lang.Integer => port.toInt
-    case port : java.lang.Object => 
-    throw new Exception("Configs omi-service.ports contain non integer values") 
-  }.toMap
+  val ports: Map[String, Int] = config.getObject("omi-service.ports").unwrapped().asScala.toMap.mapValues {
+    case port: java.lang.Integer => port.toInt
+    case port: java.lang.Object =>
+      throw new Exception("Configs omi-service.ports contain non integer values")
+  }
   val webclientPort: Int = config.getInt("omi-service.ports.webclient")
   val externalAgentPort: Int = ports("external-agents")
   val cliPort: Int = config.getInt("omi-service.ports.cli")
@@ -54,103 +75,170 @@ class OmiConfigExtension( val config: Config) extends Extension
   val numLatestValues: Int = config.getInt("omi-service.num-latest-values-stored")
 
   /** Minimum supported interval for interval based subscriptions */
-  val minSubscriptionInterval : FiniteDuration= config.getDuration("omi-service.min-subscription-interval", TimeUnit.SECONDS).seconds
+  val minSubscriptionInterval: FiniteDuration = config
+    .getDuration("omi-service.min-subscription-interval", TimeUnit.SECONDS).seconds
 
   /** Save some interesting setting values to this path */
 
-  val settingsOdfPath: Path =  Path(config.getString("omi-service.settings-read-odfpath"))
-    
+  val settingsOdfPath: Path = Path(config.getString("omi-service.settings-read-odfpath"))
 
-  val trimInterval : FiniteDuration = config.getDuration("omi-service.trim-interval")
 
-  val snapshotInterval: FiniteDuration  = config.getDuration("omi-service.snapshot-interval")
+  val trimInterval: FiniteDuration = config.getDuration("omi-service.trim-interval")
+
+  val snapshotInterval: FiniteDuration = config.getDuration("omi-service.snapshot-interval")
+  val oldestSavedSnapshot: FiniteDuration = config.getDuration("omi-service.snapshot-delete-older")
   /** fast journal databases paths */
-  val journalsDirectory: String = config.getString("journalDBs.directory")
-  val writeToDisk: Boolean = config.getBoolean("journalDBs.write-to-disk")
-  val maxJournalSizeBytes: lang.Long = config.getBytes("journalDBs.max-journal-filesize")
+  Try(config.getString("journalDBs.directory"))
+    .foreach(value =>
+               if (value != "./logs/journalDBs")
+                 log.error("Invalid setting found",
+                           new IllegalArgumentException("Illegal argument in application.conf: 'journalDBs.directory'" +
+                                                          " " +
+                                                          "setting is deprecated. Config location for journal and " +
+                                                          "snapshot directories can be found under akka.persistence " +
+                                                          "configuration path"))
+               else log
+                 .warn("deprecated setting found in config: journalDBs.directory. Directory location config moved to " +
+                         "under akka.persistence config path."))
+  val writeToDisk = config.getBoolean("journalDBs.write-to-disk")
+
+  Try(config.getBytes("journalDBs.max-journal-filesize"))
+    .foreach(value => log.warn("deprecated setting found in config: journalDBs.max-journal-filesize"))
+
   // Listen interfaces and ports
 
   val interface: String = config.getString("omi-service.interface")
-  //val port: Int = config.getInt("omi-service.port")
   val externalAgentInterface: String = config.getString("omi-service.external-agent-interface")
-  //val externalAgentPort: Int = config.getInt("omi-service.external-agent-port")
-  //val cliPort: Int = config.getInt("omi-service.agent-cli-port")
 
-  /** analytics settings */
-  val enableAnalytics: Boolean = config.getBoolean("analytics.enableAnalytics")
-  val analyticsMaxHistoryLength: Int = config.getInt("analytics.maxHistoryLength")
-  val updateInterval: FiniteDuration = config.getDuration("analytics.updateInterval")
-
-  val enableReadAnalytics: Boolean = config.getBoolean("analytics.read.enableAnalytics")
-  val enableWriteAnalytics: Boolean =config.getBoolean("analytics.write.enableAnalytics")
-  val enableUserAnalytics: Boolean = config.getBoolean("analytics.user.enableAnalytics")
-
-  val numReadSampleWindowLength: FiniteDuration = config.getDuration("analytics.read.windowLength")
-  val readAvgIntervalSampleSize: Int = config.getInt("analytics.read.intervalSampleSize")
-  val numberReadsInfoName: String = config.getString("analytics.read.numberOfReadsInfoItemName")
-  val averageReadIAnfoName: String = config.getString("analytics.read.averageReadIntervalInfoItemName")
-
-  val numWriteSampleWindowLength: FiniteDuration = config.getDuration("analytics.write.windowLength")
-  val writeAvgIntervalSampleSize: Int = config.getInt("analytics.write.intervalSampleSize")
-  val numberWritesInfoName: String = config.getString("analytics.write.numberOfWritesInfoItemName")
-  val averageWriteInfoName: String = config.getString("analytics.write.averageWriteIntervalInfoItemName")
-
-  val numUniqueUserSampleWindowLength: FiniteDuration = config.getDuration("analytics.user.windowLength")
-  val numberUsersInfoName: String = config.getString("analytics.user.averageNumberOfUsersInfoItemName")
   // Authorization
-  //External API
-  val enableExternalAuthorization: Boolean = config.getBoolean("omi-service.authorization.enable-external-authorization-service")
-  val externalAuthorizationPort: Int = config.getInt("omi-service.authorization.authorization-service-port")
-  val externalAuthUseHttps: Boolean = config.getBoolean("omi-service.authorization.use-https")
+  val allowedRequestTypes: Set[MessageType] = config.getStringList("omi-service.allowRequestTypesForAll").asScala
+    .map((x) => MessageType(x.toLowerCase)).toSet
+
+  // Old External AuthAPIService V1
+  val authAPIServiceV1: Config =
+    Try(config getConfig "omi-service.authorization") orElse
+      Try(config getConfig "omi-service.authAPI.v1") get
+
+  val enableExternalAuthorization: Boolean = authAPIServiceV1.getBoolean("enable-external-authorization-service")
+  val enableAuthAPIServiceV1: Boolean = authAPIServiceV1.getBoolean("enable-external-authorization-service")
+  val externalAuthorizationPort: Int = authAPIServiceV1.getInt("authorization-service-port")
+  val externalAuthUseHttps: Boolean = authAPIServiceV1.getBoolean("use-https")
+
+  // External AuthAPIService V2
+  case object AuthApiV2 {
+    val authAPIServiceV2: Config = config getConfig "omi-service.authAPI.v2"
+    val enable: Boolean = authAPIServiceV2.getBoolean("enable")
+    val authenticationEndpoint: Uri = testUri(authAPIServiceV2.getString("authentication.url"))
+    val omiHttpHeadersToAuthentication: Set[String] = authAPIServiceV2
+      .getStringList("authentication.copy-request-headers").asScala.toSet
+    val authorizationEndpoint: Uri = testUri(authAPIServiceV2.getString("authorization.url"))
+
+    type ParameterExtraction = Map[String, Map[String, String]]
+
+    def cmap(c: Config): Map[String, String] =
+      c.root().keySet.asScala.toSet.map {
+        key: String =>
+          key -> c.getString(key)
+      }.toMap
+
+    def mapmap(c: Config): ParameterExtraction = {
+      c.root().keySet.asScala.toSet.map {
+        key: String =>
+          val innerConfig = c.getConfig(key)
+          key.toLowerCase -> cmap(innerConfig)
+      }.toMap
+    }
+
+    val parameters: Config = authAPIServiceV2.getConfig("parameters")
+    val parametersFromRequest: ParameterExtraction = mapmap(parameters.getConfig("fromRequest"))
+    val parametersFromAuthentication: ParameterExtraction = mapmap(parameters.getConfig("fromAuthentication"))
+    val parametersToAuthentication: ParameterExtraction = mapmap(parameters.getConfig("toAuthentication"))
+    val parametersToAuthorization: ParameterExtraction = mapmap(parameters.getConfig("toAuthorization"))
+    val parametersConstants: Map[String, String] = cmap(parameters.getConfig("initial"))
+    val parametersSkipOnEmpty: Seq[String] = parameters.getStringList("skipAuthenticationOnEmpty").asScala
+
+    def toRequestBuilder(method: String): RequestBuilding.RequestBuilder = method.toLowerCase match {
+      case "get" => Get
+      case "post" => Post
+      case "patch" => Patch
+      case "put" => Put
+      case "head" => Head
+      case "options" => Options
+      case x => throw new MatchError(s"Invalid http method in configuration: $x")
+    }
+
+    val authenticationMethod: RequestBuilder = toRequestBuilder(authAPIServiceV2.getString("authentication.method"))
+    val authorizationMethod: RequestBuilder = toRequestBuilder(authAPIServiceV2.getString("authorization.method"))
+  }
+
 
   //IP
-  val inputWhiteListUsers: Vector[String]= config.getStringList("omi-service.input-whitelist-users").toVector
+  val inputWhiteListUsers: Vector[String] = config.getStringList("omi-service.input-whitelist-users").asScala.toVector
 
-  val inputWhiteListIps: Vector[Vector[Byte]] = config.getStringList("omi-service.input-whitelist-ips").map {
-    s: String =>
-      val ip = inetAddrToBytes(InetAddress.getByName(s))
-      ip.toVector
-  }.toVector
+  val inputWhiteListIps: Vector[Vector[Byte]] = config.getStringList("omi-service.input-whitelist-ips").asScala.toVector
+    .map {
+      s: String =>
+        val ip = inetAddrToBytes(InetAddress.getByName(s))
+        ip.toVector
+    }
 
-  val inputWhiteListSubnets : Map[InetAddress, Int] = config.getStringList("omi-service.input-whitelist-subnets").map{ 
-    case (str: String) => 
-    val parts = str.split("/")
-    require(parts.length == 2)
-    val mask = parts.head
-    val bits = parts.last
-    val ip = InetAddress.getByName(mask)//inetAddrToBytes(InetAddress.getByName(mask))
-    (ip, bits.toInt)
-  }.toMap 
-  private[this] def inetAddrToBytes(addr: InetAddress) : Seq[Byte] = {
-    addr.getAddress().toList
+  val inputWhiteListSubnets: Map[InetAddress, Int] = config.getStringList("omi-service.input-whitelist-subnets").asScala
+    .map {
+      case (str: String) =>
+        val parts = str.split("/")
+        require(parts.length == 2)
+        val mask = parts.head
+        val bits = parts.last
+        val ip = InetAddress.getByName(mask) //inetAddrToBytes(InetAddress.getByName(mask))
+        (ip, bits.toInt)
+    }.toMap
+
+  private[this] def inetAddrToBytes(addr: InetAddress): Seq[Byte] = {
+    addr.getAddress.toList
   }
- 
 
-  /** Time in seconds how long to wait until retrying sending.*/
-  val callbackDelay : FiniteDuration  = config.getDuration("omi-service.callback-delay", TimeUnit.SECONDS).seconds 
 
-  /** Time in milliseconds how long to keep trying to resend the messages to callback addresses in case of infinite durations*/
-  val callbackTimeout : FiniteDuration = config.getDuration("omi-service.callback-timeout", TimeUnit.MILLISECONDS).milliseconds
+  /** Time in seconds how long to wait until retrying sending. */
+  val callbackDelay: FiniteDuration = config.getDuration("omi-service.callback-delay", TimeUnit.SECONDS).seconds
+
+  /** Time in milliseconds how long to keep trying to resend the messages to callback addresses in case of infinite
+    * durations */
+  val callbackTimeout: FiniteDuration = config.getDuration("omi-service.callback-timeout", TimeUnit.MILLISECONDS)
+    .milliseconds
+  val startTimeout: FiniteDuration = config.getDuration("omi-service.start-timeout")
+  val journalTimeout: FiniteDuration = config.getDuration("omi-service.journal-ask-timeout", TimeUnit.MILLISECONDS)
+    .milliseconds
 
   //Haw many messages queued to be send via WS connection, if overflown
   //connection fails
-  val websocketQueueSize : Int = config.getInt("omi-service.websocket-queue-size")
+  val websocketQueueSize: Int = config.getInt("omi-service.websocket-queue-size")
 
-  val databaseImplementation : String = config.getString( "omi-service.database" )
+  val databaseImplementation: String = config.getString("omi-service.database")
+  val influx: Option[InfluxDBConfigExtension] = if( databaseImplementation.toLowerCase.startsWith("influx" ) ) {
+    Try{
+      val influxConf = config.getConfig("influxDB-config")
+      Some(influxConf)
+    }.recover {
+      case exp: ConfigException.Missing => None
+    }.get.map{
+      case _: Config =>
+        new InfluxDBConfigExtension(config)
+    }
+  } else None
+
 }
 
 
-
 object OmiConfig extends ExtensionId[OmiConfigExtension] with ExtensionIdProvider {
- 
+
   override def lookup: OmiConfig.type = OmiConfig
-   
-  override def createExtension(system: ExtendedActorSystem) : OmiConfigExtension =
+
+  override def createExtension(system: ExtendedActorSystem): OmiConfigExtension =
     new OmiConfigExtension(system.settings.config)
-   
+
   /**
-  * Java API: retrieve the Settings extension for the given system.
-  */
+    * Java API: retrieve the Settings extension for the given system.
+    */
   override def get(system: ActorSystem): OmiConfigExtension = super.get(system)
 }
 

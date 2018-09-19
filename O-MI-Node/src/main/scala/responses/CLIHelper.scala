@@ -15,51 +15,62 @@
  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 
 package responses
+
+import java.util.concurrent.TimeUnit
+
+import akka.actor.ActorSystem
+import akka.event.{LogSource, Logging, LoggingAdapter}
+import akka.pattern.ask
+import akka.util.Timeout
+import database._
+import journal.Models.{ErasePathCommand, GetTree, UnionCommand, WriteCommand}
+import types._
+import types.odf._
+
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import scala.concurrent.duration._
 import scala.util.{Failure, Success}
-import akka.event.{LogSource, Logging, LoggingAdapter}
-import akka.actor.ActorSystem
-import database._
-import types.odf._
-import types._
-import http.{ActorSystemContext, OmiServer}
 
-trait CLIHelperT{
+trait CLIHelperT {
   def handlePathRemove(parentPathS: Seq[Path]): Future[Seq[Int]]
+
+  def takeSnapshot(): Future[Any]
+
   def getAllData(): Future[Option[ODF]]
-  def writeOdf(odf: ImmutableODF): Unit
-  }
-class CLIHelper(val singleStores: SingleStores, dbConnection: DB )(implicit system: ActorSystem) extends CLIHelperT{
 
-  implicit val logSource: LogSource[CLIHelper]= new LogSource[CLIHelper] {
-      def genString( handler:  CLIHelper): String = handler.toString
-    }
-  protected val log: LoggingAdapter = Logging( system, this)
+  def writeOdf(odf: ImmutableODF): Future[Unit]
+}
 
+class CLIHelper(val singleStores: SingleStores, dbConnection: DB)(implicit system: ActorSystem) extends CLIHelperT {
+  implicit val timeout: Timeout = system.settings.config
+    .getDuration("omi-service.journal-ask-timeout",TimeUnit.MILLISECONDS).milliseconds
+
+  implicit val logSource: LogSource[CLIHelper] = (handler: CLIHelper) => handler.toString
+  protected val log: LoggingAdapter = Logging(system, this)
+  def takeSnapshot(): Future[Any] = singleStores.takeSnapshot
   def handlePathRemove(parentPaths: Seq[Path]): Future[Seq[Int]] = {
-    val odf = singleStores.hierarchyStore execute GetTree()
+    val odfF = (singleStores.hierarchyStore ? GetTree).mapTo[ImmutableODF]
+
     Future.sequence(parentPaths.map { parentPath =>
-      val nodeO = odf.get(parentPath)
-      nodeO match {
+      val nodeO = odfF.map(_.get(parentPath))
+      nodeO.flatMap {
         case Some(node) => {
 
-          val leafs = odf.getPaths.filter {
+          odfF.foreach(_.getPaths.filter {
             p: Path =>
               node.path.isAncestorOf(p)
-          }
-
-          singleStores.hierarchyStore execute TreeRemovePath(parentPath)
-
-          leafs.foreach { path =>
+          }.foreach { path =>
             log.info(s"removing $path")
-            singleStores.latestStore execute EraseSensorData(path)
-          }
+            singleStores.latestStore ! ErasePathCommand(path)
+          })
+
+          singleStores.hierarchyStore ! ErasePathCommand(parentPath)
 
           val dbRemoveFuture: Future[Int] = dbConnection.remove(parentPath).map(_.length)
 
           dbRemoveFuture.onComplete {
-            case Success(res) => log.info(s"Database successfully deleted $res nodes")
+            case Success(res) => log.debug(s"Database successfully deleted $res nodes")
             case Failure(error) => log.error(error, s"Failure when trying to remove $parentPath")
           }
 
@@ -72,32 +83,33 @@ class CLIHelper(val singleStores: SingleStores, dbConnection: DB )(implicit syst
   }
 
 
-
   /**
-    * method of getting all the data available from hierarchystore and dagabase, includes all metadata and descriptions
+    * method of getting all the data available from hierarchystore and database, includes all metadata and descriptions
     *
-    * method in this class because it has viisbility to singleStores and Database
+    * method in this class because it has visibility to singleStores and Database
+    *
     * @return
     */
   def getAllData(): Future[Option[ODF]] = {
-    val odf: ODF = singleStores.hierarchyStore execute GetTree()
-    val leafs = odf.getLeafs
-    dbConnection.getNBetween(leafs,None,None,Some(100),None).map{
-      o : Option[ODF]=>
-      o.map(_.union(odf))
-    }
+    val odfF: Future[ImmutableODF] = (singleStores.hierarchyStore ? GetTree).mapTo[ImmutableODF]
+    for {
+      odf <- odfF
+      leafs = odf.getLeafs
+      o: Option[ODF] <- dbConnection.getNBetween(leafs, None, None, Some(100), None)
+      res = o.map(_.union(odf))
+    } yield res
   }
 
-  def writeOdf(odf: ImmutableODF): Unit = {
+  def writeOdf(odf: ImmutableODF): Future[Unit] = {
     val infoItems: Seq[InfoItem] = odf.getInfoItems
-    dbConnection.writeMany(infoItems)
-    singleStores.hierarchyStore execute Union(odf.immutable)
-    val latestValues: Seq[(Path, Value[Any])] =
-      infoItems.collect{
-        case ii: InfoItem if ii.values.nonEmpty => (ii.path, ii.values.maxBy(_.timestamp.getTime()))
-      }
-    latestValues.foreach(pv => singleStores.latestStore execute SetSensorData(pv._1,pv._2))
-
+    for {
+      dbc <- dbConnection.writeMany(infoItems)
+      ret <- (singleStores.hierarchyStore ? UnionCommand(odf.immutable))
+      latestValues: Map[Path, Value[Any]] = infoItems.collect {
+        case ii: InfoItem if ii.values.nonEmpty => ii.path -> ii.values.maxBy(_.timestamp.getTime())
+      }.toMap //.map(pv => singleStores.latestStore ? SetSensorData(pv._1,pv._2))
+      res <- (singleStores.latestStore ? WriteCommand(latestValues)).mapTo[Unit]
+    } yield res
   }
 
 }

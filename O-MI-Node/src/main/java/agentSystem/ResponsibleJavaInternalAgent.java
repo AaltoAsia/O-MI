@@ -1,23 +1,19 @@
 package agentSystem;
 
-import java.util.concurrent.TimeUnit;
-
-
-import akka.util.Timeout;
-import akka.dispatch.*;
-import akka.dispatch.OnFailure;
-import static akka.pattern.Patterns.ask;
-
 import akka.actor.ActorRef;
-
-import scala.concurrent.duration.Duration;
-import scala.concurrent.Future;
+import akka.dispatch.Futures;
+import akka.dispatch.OnFailure;
+import akka.dispatch.OnSuccess;
+import akka.util.Timeout;
 import scala.concurrent.ExecutionContext;
-
-import types.OmiTypes.WriteRequest;
+import scala.concurrent.Future;
+import scala.concurrent.duration.Duration;
 import types.OmiTypes.CallRequest;
 import types.OmiTypes.ResponseRequest;
 import types.OmiTypes.Responses;
+import types.OmiTypes.WriteRequest;
+
+import java.util.concurrent.TimeUnit;
 
 public abstract class ResponsibleJavaInternalAgent extends JavaInternalAgent implements ResponsibleInternalAgent {
 

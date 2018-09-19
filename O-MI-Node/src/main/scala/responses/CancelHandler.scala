@@ -17,50 +17,45 @@
 package responses
 
 
-import scala.collection.JavaConversions.iterableAsScalaIterable
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
-import scala.concurrent.duration._
-
-import types.OmiTypes._
-import types._
-//import scala.collection.JavaConverters._ //JavaConverters provide explicit conversion methods
-//import scala.collection.JavaConversions.asJavaIterator
-import scala.xml.NodeSeq
-//import akka.http.StatusCode
-
 import akka.actor.ActorRef
 import akka.pattern.ask
 import akka.util.Timeout
-import http.{ActorSystemContext, Actors, Settings, OmiConfigExtension }
+import http.OmiConfigExtension
+import types.OmiTypes._
+
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
 trait CancelHandler {
 
-  protected def subscriptionManager : ActorRef 
+  protected def subscriptionManager: ActorRef
+
   protected implicit val settings: OmiConfigExtension
+
   /** Method for handling CancelRequest.
+    *
     * @param cancel request
     * @return (xml response, HTTP status code) wrapped in a Future
     */
   def handleCancel(cancel: CancelRequest): Future[ResponseRequest] = {
-    implicit val timeout: Timeout = Timeout(10.seconds) // NOTE: ttl will timeout from elsewhere
+    implicit val timeout: Timeout = cancel.handleTTL // NOTE: ttl will timeout from elsewhere
     val jobs: Future[Seq[OmiResult]] = Future.sequence(cancel.requestIDs.map {
       id =>
-      (subscriptionManager ? RemoveSubscription(id)).mapTo[Boolean].map( res =>
-        if(res){
-          Results.Success()
-        }else{
-          Results.NotFoundRequestIDs(Vector(id))
+        (subscriptionManager ? RemoveSubscription(id, cancel.handleTTL)).mapTo[Boolean].map(res =>
+          if (res) {
+            Results.Success()
+          } else {
+            Results.NotFoundRequestIDs(Vector(id))
+          }
+        ).recoverWith {
+          case e: Throwable => {
+            val error = "Error when trying to cancel subscription: "
+            Future.successful(Results.InternalError(Some(error + e.toString)))
+          }
         }
-      ).recoverWith{
-        case e : Throwable => {
-          val error = "Error when trying to cancel subscription: "
-          Future.successful(Results.InternalError(Some(error + e.toString)))
-        }
-      }
     })
 
-    jobs.map{
+    jobs.map {
       results => ResponseRequest(Results.unionReduce(results.toVector))
     }
   }

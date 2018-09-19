@@ -21,9 +21,6 @@ import akka.http.scaladsl.model.headers.HttpCookiePair;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.google.gson.JsonElement;
-
-import jdk.nashorn.internal.parser.JSONParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import parsing.xmlGen.odf.*;
@@ -31,9 +28,8 @@ import parsing.xmlGen.omi.MsgType;
 import parsing.xmlGen.omi.ObjectFactory;
 import parsing.xmlGen.omi.OmiEnvelopeType;
 import parsing.xmlGen.omi.WriteRequestType;
-import types.OmiTypes.OmiRequest;
-import types.Path;
 import types.OmiTypes.UserInfo;
+import types.Path;
 
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.Marshaller;
@@ -41,7 +37,6 @@ import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
-
 import java.util.Iterator;
 
 
@@ -281,17 +276,18 @@ public class AuthAPIService implements AuthApi {
     //    return  AuthApi$class.isAuthorizedForType(this, httpRequest, isWrite, paths);
     //}
 
+    /*
     public AuthorizationResult isAuthorizedForRequest(HttpRequest httpRequest,
                                    OmiRequest omiRequest) {
-        return AuthApi$class.isAuthorizedForRequest(this, httpRequest, omiRequest);
+        return AuthApi.isAuthorizedForRequest(this, httpRequest, omiRequest);
     }
 
     public AuthorizationResult isAuthorizedForRawRequest(HttpRequest httpRequest,
                                    String request) {
         logger.debug("isAuthorizedForRawRequest EXECUTED!");
         //System.out.println("isAuthorizedForRawRequest EXECUTED!");
-        return AuthApi$class.isAuthorizedForRawRequest(this, httpRequest, request);
-    }
+        return AuthApi.isAuthorizedForRawRequest(this, httpRequest, request);
+    }*/
 
 //    // TODO: FIXME: needs xml escaping and creating the O-MI request to transfer it
 //    public AuthorizationResult isAuthorizedForRawRequest(HttpRequest httpRequest,

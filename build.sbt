@@ -1,5 +1,4 @@
-import com.github.retronym.SbtOneJar
-import  Dependencies._
+import Dependencies._
 import NativePackagerHelper._
 import Path.relativeTo
 import LinuxPlugin._
@@ -8,7 +7,7 @@ import DebianConstants._
 lazy val separator = taskKey[Unit]("Prints seperating string")
 separator := println("########################################################\n\n\n\n")
 
-addCommandAlias("release", ";doc ;universal:packageBin ;universal:packageZipTarball ;debian:packageBin ;rpm:packageBin")
+addCommandAlias("release", ";unidoc ;universal:packageBin ;universal:packageZipTarball ;debian:packageBin ;rpm:packageBin")
 addCommandAlias("systemTest", "omiNode/testOnly http.SystemTest")
 
 //update Both when updating (windows has two %% for url escaping)
@@ -17,56 +16,57 @@ val windowsWarp10URL = "https://bintray.com/cityzendata/generic/download_file?fi
 
 def commonSettings(moduleName: String) = Seq(
   name := s"O-MI-$moduleName",
-  version := "0.12.1-warp10", // WARN: Release ver must be "x.y.z" (no dashes, '-')
-  scalaVersion := "2.11.8",
+  version := "1.0.5-warp10", // WARN: Release ver must be "x.y.z" (no dashes, '-')
+  scalaVersion := "2.12.6",
   scalacOptions := Seq("-unchecked", "-feature", "-deprecation", "-encoding", "utf8", "-Xlint"),
   scalacOptions in (Compile,doc) ++= Seq("-groups", "-deprecation", "-implicits", "-diagrams", "-diagrams-debug", "-encoding", "utf8"),
-  javacOptions += "-Xlint:unchecked",
+  //javacOptions += "-Xlint:unchecked",
   autoAPIMappings := true,
   exportJars := true,
+  Test / fork := true,
   EclipseKeys.withSource := true,
-  coverageExcludedPackages := "parsing.xmlGen.*;",
+  coverageExcludedPackages := "parsing.xmlGen.*;database\\.journal\\.P[A-Z].*;types.OdfTypes.*;",
 
   //ScoverageSbtPlugin.ScoverageKeys.coverageExcludedPackages := "parsing.xmlGen.*;"
   testFrameworks += new TestFramework("org.scalameter.ScalaMeterFramework"),
   logBuffered := false
 )
 
-lazy val JavaDoc = config("genjavadoc") extend Compile
+lazy val Javadoc = config("genjavadoc") extend Compile
 
-lazy val javadocSettings = inConfig(JavaDoc)(Defaults.configSettings) ++ Seq(
-  addCompilerPlugin("com.typesafe.genjavadoc" %% "genjavadoc-plugin" %
-    "0.9" cross CrossVersion.full),
+lazy val javadocSettings = inConfig(Javadoc)(Defaults.configSettings) ++ Seq(
+  addCompilerPlugin("com.typesafe.genjavadoc" %% "genjavadoc-plugin" % "0.11" cross CrossVersion.full),
   scalacOptions += s"-P:genjavadoc:out=${target.value}/java",
-  packageDoc in Compile := (packageDoc in JavaDoc).value,
-  sources in JavaDoc := 
-    (target.value / "java" ** "*.java").get ++ (sources in Compile).value.
-      filter(_.getName.endsWith(".java")),
-  javacOptions in JavaDoc := Seq(),
-  artifactName in packageDoc in JavaDoc :=
-    ((sv, mod, art) =>
-      "" + mod.name + "_" + sv.binary + "-" + mod.revision + "-javadoc.jar")
-)
+  packageDoc in Compile := (packageDoc in Javadoc).value,
+  sources in Javadoc :=
+    (target.value / "java" ** "*.java").get ++
+    (sources in Compile).value.filter(_.getName.endsWith(".java")),
+    javacOptions in Javadoc := Seq(),
+    artifactName in packageDoc in Javadoc := ((sv, mod, art) =>
+        "" + mod.name + "_" + sv.binary + "-" + mod.revision + "-javadoc.jar")
+      )
 
 lazy val omiNode = (project in file("O-MI-Node")).
-  //conf(JavaDoc).
+  enablePlugins(GenJavadocPlugin).
   settings(
     (commonSettings("Backend") ++ 
-     javadocSettings ++ Seq(
+     Seq(
       publish in Docker := {},
       parallelExecution in Test := false,
       //packageDoc in Compile += (baseDirectory).map( _ / html
       cleanFiles += {baseDirectory.value / "logs"},
       //cleanFiles <++= baseDirectory {_ * "*.db" get},
-      target in (Compile, doc) := baseDirectory.value / "html" / "api",
-      target in (JavaDoc, doc) := baseDirectory.value / "html" / "api" / "java",
+     // target in (JavaDoc, doc) := baseDirectory.value / "html" / "api" / "java",
+      PB.targets in Compile := Seq(
+        scalapb.gen() -> (sourceManaged in Compile).value
+        ),
       //Revolver.settings,
       libraryDependencies ++= commonDependencies ++ testDependencies)): _*)
 
 lazy val agents = (project in file("Agents")).
+  enablePlugins(GenJavadocPlugin).
   settings(commonSettings("Agents"): _*).
   settings(Seq(
-    libraryDependencies ++= commonDependencies,
     publish in Docker := {},
     crossTarget := (unmanagedBase in omiNode).value
     )).
@@ -78,9 +78,16 @@ lazy val root = (project in file(".")).
   enablePlugins(DockerPlugin).
   //enablePlugins(CodacyCoveragePlugin).
   enablePlugins(RpmPlugin).
+  enablePlugins(ScalaUnidocPlugin).
+  enablePlugins(JavaUnidocPlugin).
+  configs(Javadoc).
+  settings(javadocSettings: _*).
   settings(commonSettings("Node")).
   settings(
     Seq(
+      target in unidoc in JavaUnidoc := (baseDirectory in omiNode).value / "html" / "api" / "java",
+      target in unidoc in ScalaUnidoc := (baseDirectory in omiNode).value / "html" / "api",
+         //unidoc / target := baseDirectory.value / "html" / "api",
     /////////////////////////////////
     //Starting point of the program//
     /////////////////////////////////
@@ -89,7 +96,7 @@ lazy val root = (project in file(".")).
     ///////////////////////
     //Package information//
     ///////////////////////
-      maintainer := "Tuomas Kinnunen <tuomas.kinnunen@aalto.fi>; Andrea Buda <andrea.buda@aalto.fi>",
+      maintainer := "Tuomas Kinnunen <tuomas.kinnunen@aalto.fi>",
       packageDescription := "Internet of Things data server",
       packageSummary := """Internet of Things data server implementing Open Messaging Interface and Open Data Format""",
 
@@ -270,6 +277,44 @@ fi
       mappings in Universal := (mappings in Universal).value.distinct,
       //linuxPackageMappings := linuxPackageMappings.value.map{mapping => val filtered = mapping.mappings.toList.distinct;mapping.copy(mappings=filtered)},
       //linuxPackageMappings in Rpm := (linuxPackageMappings in Rpm).value.map{mapping => val filtered = mapping.mappings.toList.distinct;mapping.copy(mappings=filtered)},
+      /**
+       * TODO: Start using after sorting out possible issues and checking
+       * that structure is in wanted format. Should solve issues with wrong
+       * permissions preventing creating files.
+       */
+    /*
+    //Create empty database directory for Tar. Zip removes empty directories?
+    //TODO: Check Warp10
+    mappings in (Universal,packageZipTarball) ++= {
+      val base = baseDirectory.value
+      Seq( base -> "database/")
+    },
+    mappings in (Universal,packageBin) ++= {
+      val base = baseDirectory.value
+      Seq( base  -> "database/")
+    },
+    // Create directories to /var/lib/o-mi-node with correct permissions and add
+    // symlinks for them.
+      linuxPackageMappings ++= Seq(
+          packageTemplateMapping(
+            s"/var/lib/${normalizedName.value}/"
+          )() withUser( daemonUser.value ) withGroup( daemonGroup.value ),
+          packageTemplateMapping(
+            s"/var/lib/${normalizedName.value}/database"
+          )() withUser( daemonUser.value ) withGroup( daemonGroup.value ),
+          packageTemplateMapping(
+            s"/var/lib/${normalizedName.value}/journal"
+          )() withUser( daemonUser.value ) withGroup( daemonGroup.value ),
+          packageTemplateMapping(
+            s"/var/lib/${normalizedName.value}/snapshots"
+          )() withUser( daemonUser.value ) withGroup( daemonGroup.value )
+        ),
+      linuxPackageSymlinks ++=Seq(
+        LinuxSymlink( s"/usr/share/${normalizedName.value}/database", s"/var/lib/${normalizedName.value}/database"),
+        LinuxSymlink( s"/usr/share/${normalizedName.value}/journal", s"/var/lib/${normalizedName.value}/journal"),
+        LinuxSymlink( s"/usr/share/${normalizedName.value}/snapshost", s"/var/lib/${normalizedName.value}/snapshost")
+      ),
+    */
       linuxPackageMappings in Rpm := configWithNoReplace((linuxPackageMappings in Rpm).value),
       debianPackageDependencies in Debian ++= Seq("java8-runtime", "bash (>= 2.05a-11)"),
 
@@ -277,6 +322,7 @@ fi
     //Prevent aggregation of following commands to sub projects//
     /////////////////////////////////////////////////////////////
       aggregate in reStart := false,
+      javaOptions in reStart ++= Seq("-XX:+UseG1GC", "-Xms128m", "-Xmx4g", "-XX:+CMSClassUnloadingEnabled"),
       aggregate in reStop := false
       ): _*
   ).
@@ -284,6 +330,6 @@ fi
   dependsOn(agents)
 
 // Choose Tomcat or Jetty default settings and build a .war file with `sbt package`
-tomcat()
-// jetty()
+enablePlugins(TomcatPlugin)
+//enablePlugins(JettyPlugin)
   

@@ -14,49 +14,46 @@
 
 package database
 
-import java.io.{File, FilenameFilter}
+
+import akka.actor._
+import http.OmiConfigExtension
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
-import scala.util.{Failure, Success, Try}
 
-import akka.actor._
-import akka.dispatch.{BoundedMessageQueueSemantics, RequiresMessageQueue}
-import org.prevayler.Prevayler
-import http.OmiConfigExtension
-
-object DBMaintainer{
+object DBMaintainer {
   def props(
-             dbConnection : TrimmableDB,
-             singleStores : SingleStores,
-             settings : OmiConfigExtension
-  ) : Props = Props( new DBMaintainer(dbConnection, singleStores, settings) )
+             dbConnection: TrimmableDB,
+             singleStores: SingleStores,
+             settings: OmiConfigExtension
+           ): Props = Props(new DBMaintainer(dbConnection, singleStores, settings))
 }
+
 class DBMaintainer(
-                    protected val dbConnection : TrimmableDB,
-                    override protected val singleStores : SingleStores,
-                    override protected val settings : OmiConfigExtension
-)
-extends SingleStoresMaintainer(singleStores, settings)
-{
+                    protected val dbConnection: TrimmableDB,
+                    override protected val singleStores: SingleStores,
+                    override protected val settings: OmiConfigExtension
+                  )
+  extends SingleStoresMaintainer(singleStores, settings) {
 
   case object TrimDB
+
   private val trimInterval: FiniteDuration = settings.trimInterval
   log.info(s"scheduling database trimming every $trimInterval")
   scheduler.schedule(trimInterval, trimInterval, self, TrimDB)
+
   /**
-   * Function for handling InputPusherCmds.
-   *
-   */
+    * Function for handling InputPusherCmds.
+    *
+    */
   override def receive: Actor.Receive = {
-    case TrimDB                         => {
+    case TrimDB => {
       val numDel = dbConnection.trimDB()
-    numDel.map(n=>log.debug(s"DELETE returned ${n.sum}"))}
-    case TakeSnapshot                   => 
-      val snapshotDur: FiniteDuration = takeSnapshot
-      log.info(s"Taking Snapshot took $snapshotDur")
-      cleanPrevayler()
-    
+      numDel.map(n => log.debug(s"DELETE returned ${n.sum}"))
+    }
+    case TakeSnapshot =>
+      takeSnapshot
+
     case _ => log.warning("Unknown message received.")
 
   }

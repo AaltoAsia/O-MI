@@ -1,40 +1,24 @@
 package agents;
 
-import java.lang.Exception;
-import java.util.concurrent.TimeUnit;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.Vector;
-import java.sql.Timestamp;
-
-import scala.concurrent.duration.*;
-import scala.concurrent.Future;
-import scala.concurrent.ExecutionContext;
-import scala.collection.immutable.HashMap;
-import scala.collection.JavaConverters.*;
-import scala.util.*;
-import akka.actor.Props;
+import agentSystem.ResponsibleInternalAgent;
 import akka.actor.ActorRef;
-import akka.util.Timeout;
-import static akka.pattern.Patterns.ask;
-import akka.japi.Creator;
-import akka.dispatch.*;
-import akka.dispatch.OnSuccess;
+import akka.actor.Props;
+import akka.dispatch.Futures;
 import akka.dispatch.OnFailure;
-import akka.actor.Cancellable;
-
+import akka.dispatch.OnSuccess;
+import akka.japi.Creator;
 import com.typesafe.config.Config;
-
-import agentSystem.JavaInternalAgent; 
-import agentSystem.*;
-import types.Path;
-import types.OmiTypes.*;
-import types.OdfTypes.OdfValue;
-import types.OdfTypes.*;
-import types.OdfFactory;
-import types.OmiFactory;
+import scala.concurrent.ExecutionContext;
+import scala.concurrent.Future;
+import scala.concurrent.duration.Duration;
 import types.OmiTypes.OmiResult;
-import types.OdfTypes.OdfInfoItem;
+import types.OmiTypes.WriteRequest;
+import types.OmiTypes.ResponseRequest;
+import types.OmiTypes.CallRequest;
+import types.OmiTypes.Results;
+import types.OmiTypes.Responses;
+
+import java.util.concurrent.TimeUnit;
 
 /**
  * Pushes random numbers to given O-DF path at given interval.
@@ -110,7 +94,7 @@ public class ResponsibleJavaAgent extends JavaAgent implements ResponsibleIntern
     return Futures.successful( 
         Responses.NotImplemented(Duration.apply(10,TimeUnit.SECONDS))
     );
-  };
+  }
 
   /**
    * Method that is inherited from akka.actor.UntypedActor and handles incoming messages

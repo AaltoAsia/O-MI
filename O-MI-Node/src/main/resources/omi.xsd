@@ -30,6 +30,7 @@
 				<xs:union memberTypes="PositiveDouble DoubleMinusOne"/>
 			</xs:simpleType>
 		</xs:attribute>
+                <xs:anyAttribute processContents="lax" /> <!-- Added for authentication tokens and similar extensions -->
 	</xs:complexType>
 	<xs:simpleType name="PositiveDouble">
 		<xs:restriction base="xs:double">

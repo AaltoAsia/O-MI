@@ -12,6 +12,6 @@
  +    limitations under the License.                                              +
  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 
-package object agentSystem{
+package object agentSystem {
   type AgentName = String
 }

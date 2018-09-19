@@ -4,19 +4,20 @@ import Keys._
 object Dependencies {
 
   //Akka 
-  val akkaV = "2.4.20"
-  val akkaHttpV = "10.0.11"
+  val akkaV = "2.5.14"
+  val akkaHttpV = "10.1.3"
   val akkaActor    = "com.typesafe.akka" %% "akka-actor" % akkaV //
   val akkaSlf4j    = "com.typesafe.akka" %% "akka-slf4j" % akkaV
   val akkaStream   = "com.typesafe.akka" %% "akka-stream" % akkaV
+  val akkaPersistance = "com.typesafe.akka" %% "akka-persistence" % akkaV
 
   val http         = "com.typesafe.akka" %% "akka-http-core" % akkaHttpV
   val httpExperimnt= "com.typesafe.akka" %% "akka-http" % akkaHttpV
   val httpXml      = "com.typesafe.akka" %% "akka-http-xml" % akkaHttpV
   val sprayJson    = "com.typesafe.akka" %% "akka-http-spray-json" % akkaHttpV 
-  val httpCors     = "ch.megard"         %% "akka-http-cors" % "0.2.2"
+  val httpCors     = "ch.megard"         %% "akka-http-cors" % "0.3.0"
   //Test dependencies
-  val specs2V = "3.7.2"
+  val specs2V = "4.3.0"
   val specs2       = "org.specs2"        %% "specs2-core"   % specs2V   % "test"
   val specs2match  = "org.specs2"        %% "specs2-matcher-extra" % specs2V % "test"
   val mockito	     = "org.specs2"        %% "specs2-mock"   % specs2V   % "test"
@@ -25,22 +26,23 @@ object Dependencies {
   val httpTestkit  = "com.typesafe.akka" %% "akka-http-testkit" % akkaHttpV % "test"
 
   //Slick
-  val slickV = "3.1.1"
+  val slickV = "3.2.3"
   val slick        = "com.typesafe.slick" %% "slick" % slickV //common
   val slickCodegen = "com.typesafe.slick" %% "slick-codegen"  % slickV //common
   val hikariCP     = "com.typesafe.slick" %% "slick-hikaricp" % slickV
   //val sqliteJdbc   = "org.xerial"          % "sqlite-jdbc"    % "3.7.2" //common
   //"com.zaxxer"          % "HikariCP-java6" % "2.3.3" // XXX: manually updated dependency, slick had 2.0.1
-  val h2           = "com.h2database"      % "h2"             % "1.4.192" //common
-  val postgres     = "org.postgresql"      % "postgresql"      % "9.4.1211"
+  val h2           = "com.h2database"      % "h2"             % "1.4.197" //common
+  val leveldb      = "org.iq80.leveldb"    % "leveldb"        % "0.10"
+  val leveldbjni   = "org.fusesource.leveldbjni"   % "leveldbjni-all"   % "1.8"
   //val json4s       = "org.json4s"         %% "json4s-native"  % "3.3.0" //common
+  val postgres     = "org.postgresql"      % "postgresql"      % "9.4.1211"
+  val json4s       = "org.json4s"         %% "json4s-native"   % "3.5.4" //common
+  val json4sAkka   = "de.heikoseeberger"  %% "akka-http-json4s" % "1.21.0" //common
 
   //etc
-  val logback          = "ch.qos.logback" % "logback-classic" % "1.1.3"
-  val prevaylerV = "2.6"
-  val prevaylerCore    = "org.prevayler"  % "prevayler-core"   % prevaylerV
-  val prevaylerFactory = "org.prevayler"  % "prevayler-factory"% prevaylerV
-  val scalameter = "com.storm-enroute" %% "scalameter" % "0.7"
+  val logback          = "ch.qos.logback" % "logback-classic" % "1.2.3"
+  val scalaProto       = "com.thesamet.scalapb" %% "scalapb-runtime" % scalapb.compiler.Version.scalapbVersion % "protobuf"
 
 
 
@@ -50,20 +52,22 @@ object Dependencies {
   //Warp10 helpers
   val commonsio =       "commons-io"                   % "commons-io"       % "2.5"
   val commonscompress = "org.apache.commons"           % "commons-compress" % "1.12"
+  //val commonsLang  = "org.apache.commons" % "commons-lang3" % "3.7"
 
   //Scala XML      
   //val scalaXML     = "org.scala-lang.modules"      %% "scala-xml"    % "2.11.0-M4"
 
-  //STM            
+  //STM
   val stm          = "org.scala-stm"               %% "scala-stm"    % "0.8"
 
   //Java dependencies
-  val gson         = "com.google.code.gson"         % "gson"         % "2.6.2"
+  val gson         = "com.google.code.gson"         % "gson"         % "2.8.5"
   
     val commonDependencies: Seq[ModuleID] = Seq(
     akkaActor,
     akkaSlf4j,
     akkaStream,
+    akkaPersistance,
     logback,
     http,
     httpExperimnt,
@@ -75,14 +79,17 @@ object Dependencies {
     hikariCP,
     h2,
     postgres,
+    leveldb,
+    leveldbjni,
     stm,
-    sprayJson,//json4s,
+    sprayJson,
+    json4s,
+    json4sAkka,
     //scalaXML,
     commonsLang,
     commonscompress,
     commonsio,
-    prevaylerCore,
-    prevaylerFactory,
+    scalaProto,
     gson
   )
 
@@ -96,8 +103,7 @@ object Dependencies {
     mockito,
     nuValidator,
     akkaTestkit,
-    httpTestkit,
-    scalameter
+    httpTestkit
   )
 
 }

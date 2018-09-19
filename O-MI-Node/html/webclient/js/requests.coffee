@@ -107,6 +107,12 @@ requestsExt = (WebOmi) ->
       odf     : null
       msg     : false
 
+  my.defaults.delete = ->
+    $.extend {}, my.defaults.empty(),
+      name    : "delete"
+      request : "delete"
+      odf     : ["Objects"]
+
 
   # private; holds current params that should be also set in resulting CodeMirror
   # This is used to check if the parameter exists or not and is it the same as new

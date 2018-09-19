@@ -15,7 +15,7 @@ services:
 jdk:
   - oraclejdk8
 scala:
-  - 2.11.8
+  - 2.12.6
 notifications:
   flowdock:
     - 8fa39d3ba829b0083c135134658d0ac2
