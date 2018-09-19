@@ -1,6 +1,6 @@
 package database.journal
 
-import akka.actor.ActorLogging
+import akka.actor.{ActorLogging, Props}
 import akka.persistence._
 import database.journal.Models._
 import types.Path
@@ -12,9 +12,12 @@ import scala.util.{Failure, Success, Try}
 
 //Event and Commands are separate in case there is need to develop further and add Event and Command handlers
 
-
-class LatestStore extends PersistentActor with ActorLogging {
-  def persistenceId = "lateststore"
+object LatestStore {
+  //id given as parameter to make testing possible
+  def props(id: String = "lateststore"): Props = Props(new LatestStore(id))
+}
+class LatestStore(id: String) extends PersistentActor with ActorLogging {
+  override def persistenceId: String = id
 
   val oldestSavedSnapshot: Long =
     Duration(

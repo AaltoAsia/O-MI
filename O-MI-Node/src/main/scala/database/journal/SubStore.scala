@@ -4,7 +4,7 @@ import java.sql.Timestamp
 import java.util.Date
 
 import Models._
-import akka.actor.ActorLogging
+import akka.actor.{ActorLogging, Props}
 import akka.persistence._
 import database._
 import PAddSub.SubType._
@@ -14,9 +14,13 @@ import types.Path
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
-class SubStore extends PersistentActor with ActorLogging {
+object SubStore {
+  def props(id: String = "substore"):Props = Props(new SubStore(id))
+}
 
-  def persistenceId: String = "substore"
+class SubStore(id: String) extends PersistentActor with ActorLogging {
+
+  override def persistenceId: String = id
   val oldestSavedSnapshot: Long =
     Duration(
       context.system.settings.config.getDuration("omi-service.snapshot-delete-older").toMillis,

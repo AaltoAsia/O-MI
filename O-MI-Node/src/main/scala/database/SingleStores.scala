@@ -1,7 +1,7 @@
 package database
 
 
-import akka.actor.{ActorRef, ActorSystem, Props}
+import akka.actor.{ActorRef, ActorSystem}
 import akka.event.LoggingAdapter
 import akka.pattern.ask
 import akka.util.Timeout
@@ -9,6 +9,7 @@ import journal.Models.{GetTree, SaveSnapshot, SingleReadCommand}
 import http.OmiConfigExtension
 import types.Path
 import types.odf._
+import journal._
 
 import scala.concurrent.Future
 import scala.concurrent.duration.{Duration, FiniteDuration, MILLISECONDS}
@@ -151,9 +152,9 @@ object SingleStores{
   class SingleStoresImpl private[SingleStores] (
     protected val settings: OmiConfigExtension)(implicit val system: ActorSystem) extends SingleStores{
 
-    val latestStore: ActorRef = system.actorOf(Props[journal.LatestStore])
-    val hierarchyStore: ActorRef = system.actorOf(Props[journal.HierarchyStore])
-    val subStore: ActorRef = system.actorOf(Props[journal.SubStore])
-    val pollDataStore: ActorRef = system.actorOf(Props[journal.PollDataStore])
+    val latestStore: ActorRef = system.actorOf(LatestStore.props())
+    val hierarchyStore: ActorRef = system.actorOf(HierarchyStore.props())
+    val subStore: ActorRef = system.actorOf(SubStore.props())
+    val pollDataStore: ActorRef = system.actorOf(PollDataStore.props())
   }
 } 

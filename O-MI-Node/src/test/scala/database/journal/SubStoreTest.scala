@@ -3,7 +3,7 @@ package database.journal
 import java.sql.Timestamp
 
 import akka.actor.{ActorSystem, PoisonPill}
-import database.journal.Models.{AddPollSub, GetAllEventSubs}
+import database.journal.Models.{AddPollSub, GetAllPollSubs, PollSubCommand}
 import database.{PollIntervalSub, PollNewEventSub, PollNormalEventSub, PolledSub}
 import org.specs2.concurrent.ExecutionEnv
 import org.specs2.mutable.Specification
@@ -41,7 +41,6 @@ class SubStoreTest(implicit ee: ExecutionEnv) extends Specification with AfterAl
       val invalidIntervalPollSub = PollIntervalSub(6,startTime,1 second,startTime,startTime,paths)
       "persist adding subscriptions correctly" >> new Actorstest(system){
         val subStoreId = "sub-001"
-        implicit val timeout = new Timeout(10 seconds)
         val subStore1 = system.actorOf(SubStore.props(subStoreId))
         subStore1 ! AddPollSub(validNormalEventPollSub)
         subStore1 ! AddPollSub(validNewEventPollSub)
@@ -56,16 +55,33 @@ class SubStoreTest(implicit ee: ExecutionEnv) extends Specification with AfterAl
         subStore1 ! PoisonPill //kill first substore actor
         probe.expectTerminated(subStore1)
         val subStore2 = system.actorOf(SubStore.props(subStoreId)) //same id
-        subStore2 ! GetAllEventSubs
-        //val resp = expectMsgType[Set[PolledSub]]
-        //resp must have size(0)
-        //resp must contain(validNormalEventPollSub)
-        //resp must contain(validNewEventPollSub)
-        //resp must contain(validIntervalPollSub)
+        subStore2 ! GetAllPollSubs
+        val resp = expectMsgType[Set[PolledSub]]
+        resp must have size(3) //invalid subs not recovered
+        resp must contain(validNormalEventPollSub)
+        resp must contain(validNewEventPollSub)
+        resp must contain(validIntervalPollSub)
       }
-     // "persist polling subscriptions correctly" >> new Actorstest(system){
-
-     // }
+      "persist polling subscriptions correctly" >> new Actorstest(system){
+        val subStoreId = "sub-002"
+        val subStore1 = system.actorOf(SubStore.props(subStoreId))
+        subStore1 ! AddPollSub(validNormalEventPollSub)
+        subStore1 ! AddPollSub(validNewEventPollSub)
+        subStore1 ! AddPollSub(validIntervalPollSub)
+        receiveN(3)
+        subStore1 ! PollSubCommand(validNormalEventPollSub.id)
+        subStore1 ! PollSubCommand(validNewEventPollSub.id)
+        subStore1 ! PollSubCommand(validIntervalPollSub.id)
+        receiveN(3)
+        val probe = TestProbe()
+        probe watch subStore1
+        subStore1 ! PoisonPill //kill first substore actor
+        probe.expectTerminated(subStore1)
+        val subStore2 = system.actorOf(SubStore.props(subStoreId)) //same id
+        subStore2 ! GetAllPollSubs
+        val resp = expectMsgType[Set[PolledSub]]
+        resp.foreach(sub => (sub.lastPolled.after(startTime)) must beTrue)
+      }
      // "persist polling subscriptions correctly" >> new Actorstest(system){
 
     //  }
