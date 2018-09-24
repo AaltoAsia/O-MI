@@ -52,7 +52,8 @@ class SubStoreTest(implicit ee: ExecutionEnv) extends Specification with AfterAl
         subStore1 ! AddPollSub(invalidNormalEventPollSub)
         subStore1 ! AddPollSub(invalidNewEventPollSub)
         subStore1 ! AddPollSub(invalidIntervalPollSub)
-        receiveN(6)
+        subStore1 ! SaveSnapshot()
+        receiveN(7)
         val subStore2 = terminateAndStart(subStore1,subStoreId)
         subStore2 ! GetAllPollSubs
         val resp = expectMsgType[Set[PolledSub]]
@@ -71,7 +72,8 @@ class SubStoreTest(implicit ee: ExecutionEnv) extends Specification with AfterAl
         subStore1 ! PollSubCommand(validNormalEventPollSub.id)
         subStore1 ! PollSubCommand(validNewEventPollSub.id)
         subStore1 ! PollSubCommand(validIntervalPollSub.id)
-        receiveN(3)
+        subStore1 ! SaveSnapshot()
+        receiveN(4)
         val subStore2 = terminateAndStart(subStore1,subStoreId)
         subStore2 ! GetAllPollSubs
         val resp = expectMsgType[Set[PolledSub]]
@@ -89,7 +91,8 @@ class SubStoreTest(implicit ee: ExecutionEnv) extends Specification with AfterAl
         subStore1 ! RemovePollSub(validNormalEventPollSub.id)
         subStore1 ! RemovePollSub(validNewEventPollSub.id)
         subStore1 ! RemovePollSub(validIntervalPollSub.id)
-        receiveN(3)
+        subStore1 ! SaveSnapshot()
+        receiveN(4)
         val subStore2 = terminateAndStart(subStore1,subStoreId)
         subStore2 ! GetAllPollSubs
         val resp = expectMsgType[Set[PolledSub]]
@@ -111,7 +114,8 @@ class SubStoreTest(implicit ee: ExecutionEnv) extends Specification with AfterAl
         subStore1 ! AddEventSub(validNewEventSub)
         subStore1 ! AddEventSub(invalidNormalEventSub)
         subStore1 ! AddEventSub(invalidNewEventSub)
-        receiveN(4)
+        subStore1 ! SaveSnapshot()
+        receiveN(5)
         val subStore2 = terminateAndStart(subStore1,subStoreId)
         subStore2 ! GetAllEventSubs
         val resp = expectMsgType[Set[EventSub]]
@@ -129,7 +133,8 @@ class SubStoreTest(implicit ee: ExecutionEnv) extends Specification with AfterAl
         receiveN(4)
         subStore1 ! RemoveEventSub(validNormalEventSub.id)
         subStore1 ! RemoveEventSub(validNewEventSub.id)
-        receiveN(2)
+        subStore1 ! SaveSnapshot()
+        receiveN(3)
         val subStore2 = terminateAndStart(subStore1,subStoreId)
         subStore2 ! GetAllEventSubs
         val resp = expectMsgType[Set[EventSub]]
@@ -147,7 +152,8 @@ class SubStoreTest(implicit ee: ExecutionEnv) extends Specification with AfterAl
         val subStore1 = system.actorOf(SubStore.props(subStoreId))
         subStore1 ! AddIntervalSub(validIntervalSub)
         subStore1 ! AddIntervalSub(invalidIntervalSub)
-        receiveN(2)
+        subStore1 ! SaveSnapshot()
+        receiveN(3)
         val subStore2 = terminateAndStart(subStore1,subStoreId)
         subStore2 ! GetAllIntervalSubs
         val resp = expectMsgType[Set[IntervalSub]]
@@ -161,7 +167,8 @@ class SubStoreTest(implicit ee: ExecutionEnv) extends Specification with AfterAl
         subStore1 ! AddIntervalSub(validIntervalSub.copy(id=3))
         receiveN(2)
         subStore1 ! RemoveIntervalSub(validIntervalSub.id)
-        receiveN(1)
+        subStore1 ! SaveSnapshot()
+        receiveN(2)
         val subStore2 = terminateAndStart(subStore1,subStoreId)
         subStore2 ! GetAllIntervalSubs
         val resp = expectMsgType[Set[IntervalSub]]
