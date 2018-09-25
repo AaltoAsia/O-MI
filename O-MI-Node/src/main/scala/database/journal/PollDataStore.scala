@@ -3,6 +3,7 @@ package database.journal
 import akka.actor.{ActorLogging, Props}
 import akka.persistence._
 import database.journal.Models._
+import database.journal.PollDataStore._
 import types.Path
 import types.odf.Value
 import utils._
@@ -12,6 +13,18 @@ import scala.util.Try
 
 object PollDataStore {
   def props(id: String = "polldatastore"): Props = Props(new PollDataStore(id))
+
+  //PollData protocol
+  case class AddPollData(subId: Long, path: Path, value: Value[Any]) extends PersistentCommand
+
+  case class PollEventSubscription(subId: Long) extends PersistentCommand
+
+  case class PollIntervalSubscription(subId: Long) extends PersistentCommand
+
+  case class RemovePollSubData(subId: Long) extends PersistentCommand
+
+  case class CheckSubscriptionData(subId: Long) extends Command
+
 }
 
 class PollDataStore(id: String) extends PersistentActor with ActorLogging {

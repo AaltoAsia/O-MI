@@ -18,7 +18,6 @@ package responses
 import akka.pattern.ask
 import akka.util.Timeout
 import database._
-import journal.Models.{GetTree, SingleReadCommand}
 import parsing.xmlGen.{defaultScope, scalaxb, xmlTypes}
 import types._
 import types.odf.{ImmutableODF, InfoItem, Node, Object, Objects, Value}
@@ -75,7 +74,7 @@ object RESTHandler {
   def handle(request: RESTRequest)(implicit singleStores: SingleStores, timeout: Timeout): Future[Option[Either[String, xml.NodeSeq]]] = {
     request match {
       case RESTValue(path) =>
-        (singleStores.latestStore ? SingleReadCommand(path)).mapTo[Option[Value[Any]]]
+        singleStores.readValue(path)
           .map(_.map(value => Left(value.value.toString)))
 
       case RESTMetaData(path) =>
@@ -107,7 +106,7 @@ object RESTHandler {
         </InfoItem>)))
       // TODO: support for multiple name
       case RESTDescription(path) =>
-        (singleStores.hierarchyStore ? GetTree).mapTo[ImmutableODF].map(_.get(path).flatMap {
+        singleStores.getHierarchyTree().map(_.get(path).flatMap {
           case o: Object => Some(o.descriptions map (_.asDescriptionType))
           case ii: InfoItem => Some(ii.descriptions map (_.asDescriptionType))
           case n: Node => None
@@ -128,7 +127,7 @@ object RESTHandler {
 
           case Some(obj: Object) =>
             for {
-              odf <- (singleStores.hierarchyStore ? GetTree).mapTo[ImmutableODF]
+              odf <- singleStores.getHierarchyTree()
               elems = odf.getChilds(obj.path).collect {
                 case cobj: Object =>
                   cobj.copy(descriptions = Set.empty).asObjectType(Vector.empty, Vector.empty)
@@ -146,7 +145,7 @@ object RESTHandler {
 
           case Some(objs: Objects) =>
             for {
-              odf <- (singleStores.hierarchyStore ? GetTree).mapTo[ImmutableODF]
+              odf <- singleStores.getHierarchyTree()
               childs: Seq[xmlTypes.ObjectType] = odf.getChilds(objs.path).collect {
                 case obj: Object =>
                   obj.copy(descriptions = Set.empty).asObjectType(Vector.empty, Vector.empty)

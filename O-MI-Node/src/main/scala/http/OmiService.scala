@@ -31,7 +31,6 @@ import akka.util.Timeout
 import authorization.Authorization._
 import authorization.{AuthAPIService, _}
 import database.SingleStores
-import database.journal.Models.GetTree
 import org.slf4j.LoggerFactory
 import responses.CallbackHandler._
 import responses.{CallbackHandler, RESTHandler, RemoveSubscription}
@@ -182,8 +181,8 @@ trait OmiService
               case _path => _path
             }
 
-            val asReadRequestF: Future[Option[ReadRequest]] = (singleStores.hierarchyStore ? GetTree)
-              .mapTo[ImmutableODF].map(_.get(path).map {
+            val asReadRequestF: Future[Option[ReadRequest]] = singleStores.getHierarchyTree()
+              .map(_.get(path).map {
               n: Node => ImmutableODF(Vector(n))
             }.map {
               p =>

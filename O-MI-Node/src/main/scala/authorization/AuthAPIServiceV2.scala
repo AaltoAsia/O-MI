@@ -9,7 +9,7 @@ import akka.http.scaladsl.{Http, HttpExt}
 import akka.pattern.ask
 import akka.stream.ActorMaterializer
 import akka.util.{ByteString, Timeout}
-import database.journal.Models.GetTree
+import database.journal.HierarchyStore.GetTree
 import http.OmiConfigExtension
 import org.json4s.JsonDSL._
 import org.json4s.native.JsonMethods._

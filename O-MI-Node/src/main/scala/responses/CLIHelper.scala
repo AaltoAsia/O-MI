@@ -23,7 +23,6 @@ import akka.event.{LogSource, Logging, LoggingAdapter}
 import akka.pattern.ask
 import akka.util.Timeout
 import database._
-import journal.Models.{ErasePathCommand, GetTree, UnionCommand, WriteCommand}
 import types._
 import types.odf._
 
@@ -50,7 +49,7 @@ class CLIHelper(val singleStores: SingleStores, dbConnection: DB)(implicit syste
   protected val log: LoggingAdapter = Logging(system, this)
   def takeSnapshot(): Future[Any] = singleStores.takeSnapshot
   def handlePathRemove(parentPaths: Seq[Path]): Future[Seq[Int]] = {
-    val odfF = (singleStores.hierarchyStore ? GetTree).mapTo[ImmutableODF]
+    val odfF = singleStores.getHierarchyTree()
 
     Future.sequence(parentPaths.map { parentPath =>
       val nodeO = odfF.map(_.get(parentPath))
@@ -62,10 +61,10 @@ class CLIHelper(val singleStores: SingleStores, dbConnection: DB)(implicit syste
               node.path.isAncestorOf(p)
           }.foreach { path =>
             log.info(s"removing $path")
-            singleStores.latestStore ! ErasePathCommand(path)
+            singleStores.erasePathData(path)
           })
 
-          singleStores.hierarchyStore ! ErasePathCommand(parentPath)
+          singleStores.erasePathHierarchy(parentPath)
 
           val dbRemoveFuture: Future[Int] = dbConnection.remove(parentPath).map(_.length)
 
@@ -91,7 +90,7 @@ class CLIHelper(val singleStores: SingleStores, dbConnection: DB)(implicit syste
     * @return
     */
   def getAllData(): Future[Option[ODF]] = {
-    val odfF: Future[ImmutableODF] = (singleStores.hierarchyStore ? GetTree).mapTo[ImmutableODF]
+    val odfF: Future[ImmutableODF] = singleStores.getHierarchyTree()
     for {
       odf <- odfF
       leafs = odf.getLeafs
@@ -104,11 +103,11 @@ class CLIHelper(val singleStores: SingleStores, dbConnection: DB)(implicit syste
     val infoItems: Seq[InfoItem] = odf.getInfoItems
     for {
       dbc <- dbConnection.writeMany(infoItems)
-      ret <- (singleStores.hierarchyStore ? UnionCommand(odf.immutable))
+      ret <- singleStores.updateHierarchyTree(odf.immutable)
       latestValues: Map[Path, Value[Any]] = infoItems.collect {
         case ii: InfoItem if ii.values.nonEmpty => ii.path -> ii.values.maxBy(_.timestamp.getTime())
       }.toMap //.map(pv => singleStores.latestStore ? SetSensorData(pv._1,pv._2))
-      res <- (singleStores.latestStore ? WriteCommand(latestValues)).mapTo[Unit]
+      res <- singleStores.writeValues(latestValues)
     } yield res
   }
 

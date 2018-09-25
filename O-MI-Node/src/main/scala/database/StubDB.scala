@@ -7,7 +7,6 @@ import akka.actor.{ActorRef, ActorSystem}
 import akka.pattern.ask
 import akka.util.Timeout
 import com.typesafe.config.{Config, ConfigFactory}
-import journal.Models.{GetTree, MultipleReadCommand}
 import http.OmiConfigExtension
 import org.slf4j.{Logger, LoggerFactory}
 import slick.basic.DatabaseConfig
@@ -62,14 +61,14 @@ class StubDB(val singleStores: SingleStores, val system: ActorSystem, val settin
   def readLatestFromCache(leafPaths: Seq[Path])(implicit timeout: Timeout): Future[ImmutableODF] = {
     // NOTE: Might go off sync with tree or values if the request is large,
     // but it shouldn't be a big problem
-    val fp2iis = (singleStores.hierarchyStore ? GetTree).mapTo[ImmutableODF].map(_.getInfoItems.collect {
+    val fp2iis = singleStores.getHierarchyTree().map(_.getInfoItems.collect {
       case ii: InfoItem if leafPaths.exists { path: Path => path.isAncestorOf(ii.path) || path == ii.path } =>
         ii.path -> ii
     }.toMap)
     val objectsWithValues: Future[ImmutableODF] = for {
       p2iis <- fp2iis
       pathToValue  <-
-        (singleStores.latestStore ? MultipleReadCommand(p2iis.keys.toVector)).mapTo[Seq[(Path, Value[Any])]]
+        singleStores.readValues(p2iis.keys.toVector).mapTo[Seq[(Path, Value[Any])]]
       objectsWithValues = ImmutableODF(pathToValue.flatMap {
         case (path: Path, value: Value[Any]) =>
           val temp = p2iis.get(path).map {

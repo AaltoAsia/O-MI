@@ -20,7 +20,6 @@ import akka.actor.{ActorRef, ActorSystem}
 import akka.pattern.ask
 import akka.util.Timeout
 import com.typesafe.config.{Config, ConfigFactory}
-import journal.Models.{GetTree, MultipleReadCommand}
 import http.OmiConfigExtension
 import org.slf4j.{Logger, LoggerFactory}
 import slick.basic.DatabaseConfig

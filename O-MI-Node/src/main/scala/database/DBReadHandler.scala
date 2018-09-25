@@ -10,7 +10,6 @@ import scala.concurrent.Future
 //import akka.http.StatusCode
 
 import akka.pattern.ask
-import journal.Models.GetTree
 import types.OmiTypes._
 import types.Path
 import types.odf.{ImmutableODF, ODF}
@@ -56,7 +55,7 @@ trait DBReadHandler extends DBHandlerBase {
 
         // NOTE: Might go off sync with tree or values if the request is large,
         // but it shouldn't be a big problem
-        val fmetadataTree: Future[ImmutableODF] = (singleStores.hierarchyStore ? GetTree).mapTo[ImmutableODF]
+        val fmetadataTree: Future[ImmutableODF] = singleStores.getHierarchyTree()
 
 
         val fodfWithMetaData: Future[ODF] = fmetadataTree.map(_.readTo(requestedODF).valuesRemoved)

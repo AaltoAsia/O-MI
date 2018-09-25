@@ -2,6 +2,7 @@ package database.journal
 
 import akka.actor.{ActorLogging, Props}
 import akka.persistence._
+import database.journal.LatestStore._
 import database.journal.Models._
 import types.Path
 import types.odf._
@@ -15,6 +16,19 @@ import scala.util.{Failure, Success, Try}
 object LatestStore {
   //id given as parameter to make testing possible
   def props(id: String = "lateststore"): Props = Props(new LatestStore(id))
+
+  //Latest store protocol
+  case class SingleWriteCommand(path: Path, value: Value[Any]) extends PersistentCommand
+
+  case class WriteCommand(paths: Map[Path, Value[Any]]) extends PersistentCommand
+
+  case class ErasePathCommand(path: Path) extends PersistentCommand
+
+  case class SingleReadCommand(path: Path) extends Command
+
+  case class MultipleReadCommand(paths: Seq[Path]) extends Command
+
+  case object ReadAllCommand extends Command
 }
 class LatestStore(id: String) extends PersistentActor with ActorLogging {
   override def persistenceId: String = id

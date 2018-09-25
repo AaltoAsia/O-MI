@@ -2,6 +2,8 @@ package database.journal
 
 import akka.actor.{ActorLogging, Props}
 import akka.persistence._
+import database.journal.HierarchyStore.{GetTree, UnionCommand}
+import database.journal.LatestStore.ErasePathCommand
 import database.journal.Models._
 import types.Path
 import types.odf._
@@ -11,6 +13,10 @@ import scala.concurrent.duration.Duration
 object HierarchyStore {
   //id given as parameter to make testing possible
   def props(id: String = "hierarchystore"): Props = Props(new HierarchyStore(id))
+  //Hierarchy store protocol
+  case class UnionCommand(other: ImmutableODF) extends PersistentCommand
+
+  case object GetTree extends Command
 }
 class HierarchyStore(id: String) extends PersistentActor with ActorLogging {
   override def persistenceId: String = id

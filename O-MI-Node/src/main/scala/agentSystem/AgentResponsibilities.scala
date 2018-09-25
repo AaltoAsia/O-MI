@@ -9,7 +9,6 @@ import akka.pattern.ask
 import akka.http.scaladsl.model.Uri
 
 import database.SingleStores
-import database.journal.Models.GetTree
 import types.OmiTypes._
 import types.odf._
 import types.Path
@@ -42,7 +41,7 @@ class AgentResponsibilities( val singleStores: SingleStores) {
   }
   def splitReadAndDeleteToResponsible( request: OdfRequest )(implicit ec: ExecutionContext) : Future[ImmutableMap[Option[Responsible], OdfRequest]] ={
     implicit val timeout = Timeout( request.handleTTL)
-    val cachedOdfF: Future[ImmutableODF] = (singleStores.hierarchyStore ? GetTree).mapTo[ImmutableODF]
+    val cachedOdfF: Future[ImmutableODF] = singleStores.getHierarchyTree()
     def filter: RequestFilter => Boolean = createFilter(request)
     val odf = request.odf
     val responsibleToPathsWithoutNone: Map[Option[Responsible],Set[Path]]= pathsToResponsible.filter{

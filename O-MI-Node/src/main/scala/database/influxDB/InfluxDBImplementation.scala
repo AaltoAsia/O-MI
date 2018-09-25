@@ -17,7 +17,6 @@ import akka.pattern.ask
 import akka.util.Timeout
 
 import database.{DB, SingleStores, SingleStoresMaintainer}
-import database.journal.Models.{ErasePathCommand, GetTree, MultipleReadCommand}
 import http.OmiConfigExtension
 import types.OmiTypes._
 import types.Path
@@ -140,11 +139,11 @@ class InfluxDBImplementation
       Future.failed(new Exception("Oldest attribute is not allowed with InfluxDB."))
     } else {
       for {
-        cachedODF <- (singleStores.hierarchyStore ? GetTree).mapTo[ImmutableODF]
+        cachedODF <- singleStores.getHierarchyTree()
         requestedODF: ODF = cachedODF.select(requestODF)
         requestedIIs: Seq[InfoItem] = requestedODF.getInfoItems
         res: Option[ODF] <- (beginO, endO, newestO) match {
-          case (None, None, None) => (singleStores.latestStore ? MultipleReadCommand(requestedIIs.map(_.path)))
+          case (None, None, None) => singleStores.readValues(requestedIIs.map(_.path))
             .mapTo[Seq[(Path, Value[Any])]]
             .map(pathToValue => Some(ImmutableODF(
               pathToValue.map {
@@ -190,7 +189,7 @@ class InfluxDBImplementation
 
   def remove(path: Path)(implicit timeout: Timeout): Future[Seq[Int]] = {
     for {
-      cachedODF <- (singleStores.hierarchyStore ? GetTree).mapTo[ImmutableODF]
+      cachedODF <- singleStores.getHierarchyTree()
       removedIIs: Seq[InfoItem] = cachedODF.selectSubTree(Set(path)).getInfoItems
       queries = removedIIs.map {
         ii: InfoItem =>
@@ -200,10 +199,7 @@ class InfluxDBImplementation
       response: HttpResponse <- sendQueries(queries)
       res <- response match {
         case HttpResponse(status, headers, entity, protocol) if status.isSuccess => {
-          (singleStores.hierarchyStore ? ErasePathCommand(path)).map(_ =>
-            removedIIs.map {
-              ii: InfoItem => 1
-            }.toVector)
+          Future.successful(Seq(status.intValue))
         }
         case HttpResponse(status, headers, entity, protocol) if status.isFailure =>
           Unmarshal(entity).to[String].map {

@@ -22,7 +22,6 @@ import akka.pattern.ask
 import akka.util.Timeout
 import authorization.Authorization.{AuthorizationExtension, CombinedTest, UnauthorizedEx}
 import database._
-import journal.Models.GetTree
 import types.OdfTypes._
 import types.OmiTypes._
 import types.Path
@@ -127,7 +126,7 @@ trait AuthApiProvider extends AuthorizationExtension {
       (orgOmiRequest: RequestWrapper) =>
         implicit val timeout: Timeout = orgOmiRequest.handleTTL
         // for checking if path is infoitem or object
-        val currentTree = Await.result((singleStores.hierarchyStore ? GetTree).mapTo[ImmutableODF], orgOmiRequest.handleTTL)
+        val currentTree = Await.result(singleStores.getHierarchyTree(), orgOmiRequest.handleTTL)
 
         // helper function
         def convertToWrapper: Try[AuthorizationResult] => Try[RequestWrapper] = {
