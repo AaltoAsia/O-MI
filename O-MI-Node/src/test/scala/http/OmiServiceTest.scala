@@ -17,12 +17,10 @@ import org.specs2.specification.BeforeAfterAll
 import scala.concurrent.Await
 import scala.concurrent.duration.DurationInt
 import scala.xml._
-
 import database._
-import journal.Models.ErasePathCommand
-
 import types.Path
 import org.specs2.matcher.Expectable
+import journal.LatestStore.ErasePathCommand
 
 
 class OmiServiceTest

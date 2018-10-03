@@ -1,16 +1,11 @@
 package database
 
-import java.io.File
 import java.sql.Timestamp
 
 import akka.actor.{ActorRef, ActorSystem}
-import akka.pattern.ask
 import akka.util.Timeout
-import com.typesafe.config.{Config, ConfigFactory}
 import http.OmiConfigExtension
 import org.slf4j.{Logger, LoggerFactory}
-import slick.basic.DatabaseConfig
-import slick.jdbc.JdbcProfile
 import types.OmiTypes.{OmiReturn, ReturnCode}
 import types.Path
 import types.odf._
@@ -54,11 +49,11 @@ class StubDB(val singleStores: SingleStores, val system: ActorSystem, val settin
     }.toSeq).map(Some(_))
   }
 
-  def readLatestFromCache(requestedOdf: ODF)(implicit timeout: Timeout): Future[ImmutableODF] = {
+  def readLatestFromCache(requestedOdf: ODF): Future[ImmutableODF] = {
     readLatestFromCache(requestedOdf.getLeafPaths.toSeq)
   }
 
-  def readLatestFromCache(leafPaths: Seq[Path])(implicit timeout: Timeout): Future[ImmutableODF] = {
+  def readLatestFromCache(leafPaths: Seq[Path]): Future[ImmutableODF] = {
     // NOTE: Might go off sync with tree or values if the request is large,
     // but it shouldn't be a big problem
     val fp2iis = singleStores.getHierarchyTree().map(_.getInfoItems.collect {

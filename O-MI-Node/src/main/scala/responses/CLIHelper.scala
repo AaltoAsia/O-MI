@@ -20,7 +20,6 @@ import java.util.concurrent.TimeUnit
 
 import akka.actor.ActorSystem
 import akka.event.{LogSource, Logging, LoggingAdapter}
-import akka.pattern.ask
 import akka.util.Timeout
 import database._
 import types._

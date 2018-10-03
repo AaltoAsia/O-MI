@@ -2,7 +2,6 @@ package database
 
 import java.sql.Timestamp
 
-import akka.pattern.ask
 import akka.util.Timeout
 import http.OmiConfigExtension
 import org.slf4j.{Logger, LoggerFactory}
@@ -499,7 +498,7 @@ trait OdfDatabase extends Tables with DB with TrimmableDB {
     }
   }
 
-  def readLatestFromCache(leafPaths: Seq[Path])(implicit timeout: Timeout): Future[Option[ImmutableODF]] = {
+  def readLatestFromCache(leafPaths: Seq[Path]): Future[Option[ImmutableODF]] = {
     // NOTE: Might go off sync with tree or values if the request is large,
     // but it shouldn't be a big problem
     val p2iisF: Future[Map[Path, InfoItem]] = singleStores.getHierarchyTree()

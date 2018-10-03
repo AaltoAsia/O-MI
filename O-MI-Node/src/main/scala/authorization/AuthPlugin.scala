@@ -18,14 +18,11 @@ import java.lang.{Iterable => JavaIterable}
 
 import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.server.Directives.extract
-import akka.pattern.ask
-import akka.util.Timeout
 import authorization.Authorization.{AuthorizationExtension, CombinedTest, UnauthorizedEx}
 import database._
 import types.OdfTypes._
 import types.OmiTypes._
 import types.Path
-import types.odf.ImmutableODF
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
@@ -124,7 +121,6 @@ trait AuthApiProvider extends AuthorizationExtension {
     super.makePermissionTestFunction,
     extract { context => context.request } map { (httpRequest: HttpRequest) =>
       (orgOmiRequest: RequestWrapper) =>
-        implicit val timeout: Timeout = orgOmiRequest.handleTTL
         // for checking if path is infoitem or object
         val currentTree = Await.result(singleStores.getHierarchyTree(), orgOmiRequest.handleTTL)
 

@@ -1,8 +1,5 @@
 package database
 
-import akka.pattern.ask
-import akka.util.Timeout
-import journal.Models._
 import parsing.xmlGen._
 import responses.CallbackHandler._
 import types.OmiTypes._
@@ -17,7 +14,7 @@ import scala.util.control.NonFatal
 
 trait DBWriteHandler extends DBHandlerBase {
 
-  private def sendEventCallback(esub: EventSub, infoItems: Seq[InfoItem])(implicit timeout: Timeout): Unit = {
+  private def sendEventCallback(esub: EventSub, infoItems: Seq[InfoItem]): Unit = {
     val odf = ImmutableODF(infoItems)
     esub match {
       case ne: NewEventSub =>
@@ -30,7 +27,7 @@ trait DBWriteHandler extends DBHandlerBase {
     )
   }
 
-  private def sendEventCallback(esub: EventSub, odfWithoutTypes: ImmutableODF)(implicit timeout: Timeout): Unit = {
+  private def sendEventCallback(esub: EventSub, odfWithoutTypes: ImmutableODF): Unit = {
     log.debug("Sending event callbacks")
     val id = esub.id
     val callbackAddr = esub.callback
@@ -74,7 +71,7 @@ trait DBWriteHandler extends DBHandlerBase {
     }
   }
 
-  private def processEvents(events: Seq[InfoItemEvent])(implicit timeout: Timeout): Unit = {
+  private def processEvents(events: Seq[InfoItemEvent]): Unit = {
     log.debug("Processing events...")
 
     val esubListsF: Future[Seq[(EventSub, InfoItem)]] = Future.sequence(events.collect {
@@ -82,7 +79,7 @@ trait DBWriteHandler extends DBHandlerBase {
       case AttachEvent(infoItem) =>
         // val fpollNewSubs  = (singleStores.subStore ? GetNewEventSubsForPath(infoItem.path)).mapTo[Set[PollNewEventSub]]
         //.map(pollNewSubs => infoItem.values.headOption.map(value => pollNewSubs.map(pnes => (singleStores.pollDataPrevayler ? AddPollData(pnes.id, infoItem.path, value)))))
-        val pollnewSubs: Future[Set[_ >: Unit]] = infoItem.values.headOption.map(value =>
+        val pollnewSubs = infoItem.values.headOption.map(value =>
           for {
             pollNewSubs <- singleStores.getNewEventSubsForPath(infoItem.path)
             result <- Future.sequence(pollNewSubs.map(pnes =>
@@ -92,15 +89,15 @@ trait DBWriteHandler extends DBHandlerBase {
         val fesubs = singleStores.lookupEventSubs(infoItem.path)
         for {
           _ <- pollnewSubs
-          nesubs: Set[NewEventSub] <- fnesubs
-          esubs: Set[NormalEventSub] <- fesubs
-          resp: Set[(EventSub, InfoItem)] = (esubs ++ nesubs).map {
+          nesubs: Seq[NewEventSub] <- fnesubs
+          esubs: Seq[NormalEventSub] <- fesubs
+          resp: Seq[(EventSub, InfoItem)] = (esubs ++ nesubs).map {
             (_, infoItem)
           }
         } yield resp
       case ChangeEvent(infoItem) => // note: AttachEvent extends ChangeEvent
-        val fesubs: Future[Set[NormalEventSub]] = singleStores.lookupEventSubs(infoItem.path)
-        val res: Future[Set[(NormalEventSub, InfoItem)]] = fesubs.map(esubs => esubs.map {
+        val fesubs: Future[Seq[NormalEventSub]] = singleStores.lookupEventSubs(infoItem.path)
+        val res: Future[Seq[(NormalEventSub, InfoItem)]] = fesubs.map(esubs => esubs.map {
           (_, infoItem)
         }) // make tuplesres
         res
@@ -129,8 +126,7 @@ trait DBWriteHandler extends DBHandlerBase {
     * @param oldValueOpt
     * @return returns Sequence of SubValues to be added to database
     */
-  private def handlePollData(path: Path, newValue: Value[Any], oldValueOpt: Option[Value[Any]])
-                            (implicit timeout: Timeout) = {
+  private def handlePollData(path: Path, newValue: Value[Any], oldValueOpt: Option[Value[Any]]) = {
     //log.debug(s"Handling poll data... for $path")
     //TODO: Do this for multiple paths at the same time
     val relatedPollSubsF: Future[Set[NotNewEventSub]] = singleStores.getSubsForPath(path)
@@ -154,7 +150,6 @@ trait DBWriteHandler extends DBHandlerBase {
     val odf = write.odf
     // save only changed values
     log.debug("Check old values")
-    implicit val timeout: Timeout = write.handleTTL
     val (leafII, leafObjects) = odf.getLeafs.partition {
       case ii: InfoItem => true
       case obj: Object => false

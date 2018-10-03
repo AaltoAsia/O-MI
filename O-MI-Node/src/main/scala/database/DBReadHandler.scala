@@ -9,7 +9,6 @@ import scala.concurrent.Future
 //import scala.collection.JavaConversions.asJavaIterator
 //import akka.http.StatusCode
 
-import akka.pattern.ask
 import types.OmiTypes._
 import types.Path
 import types.odf.{ImmutableODF, ODF}

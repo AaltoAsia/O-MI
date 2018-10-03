@@ -15,12 +15,11 @@
 
 package responses
 
-import akka.pattern.ask
 import akka.util.Timeout
 import database._
 import parsing.xmlGen.{defaultScope, scalaxb, xmlTypes}
 import types._
-import types.odf.{ImmutableODF, InfoItem, Node, Object, Objects, Value}
+import types.odf.{InfoItem, Node, Object, Objects}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future

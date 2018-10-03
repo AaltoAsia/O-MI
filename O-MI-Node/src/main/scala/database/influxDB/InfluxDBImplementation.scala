@@ -13,7 +13,6 @@ import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.model.ContentTypes._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.unmarshalling._
-import akka.pattern.ask
 import akka.util.Timeout
 
 import database.{DB, SingleStores, SingleStoresMaintainer}
@@ -134,7 +133,7 @@ class InfluxDBImplementation
                            endO: Option[Timestamp],
                            newestO: Option[Int],
                            oldestO: Option[Int]
-                         )(implicit timeout: Timeout): Future[Option[ImmutableODF]] = {
+                         ): Future[Option[ImmutableODF]] = {
     if (oldestO.nonEmpty) {
       Future.failed(new Exception("Oldest attribute is not allowed with InfluxDB."))
     } else {

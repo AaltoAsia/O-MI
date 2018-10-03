@@ -100,11 +100,11 @@ trait SingleStores {
   def addSub(pollSub: PolledSub): Future[Unit] =
     (subStore ? AddPollSub(pollSub)).mapTo[Unit]
 
-  def lookupEventSubs(path: Path): Future[Set[NormalEventSub]] =
-    (subStore ? LookupEventSubs).mapTo[Set[NormalEventSub]]
+  def lookupEventSubs(path: Path): Future[Seq[NormalEventSub]] =
+    (subStore ? LookupEventSubs(path)).mapTo[Seq[NormalEventSub]]
 
-  def lookupNewEventSubs(path: Path): Future[Set[NewEventSub]] =
-    (subStore ? LookupNewEventSubs).mapTo[Set[NewEventSub]]
+  def lookupNewEventSubs(path: Path): Future[Seq[NewEventSub]] =
+    (subStore ? LookupNewEventSubs(path)).mapTo[Seq[NewEventSub]]
 
   def removeIntervalSub(id: Long): Future[Boolean] =
     (subStore ? RemoveIntervalSub(id)).mapTo[Boolean]
@@ -141,13 +141,13 @@ trait SingleStores {
     (pollDataStore ? AddPollData(id,path,value)).mapTo[Unit]
 
   def pollEventSubscrpition(id: Long): Future[Map[Path,Seq[Value[Any]]]] =
-    (pollDataStore ? PollEventSubscription).mapTo[Map[Path,Seq[Value[Any]]]]
+    (pollDataStore ? PollEventSubscription(id)).mapTo[Map[Path,Seq[Value[Any]]]]
 
   def pollIntervalSubscription(id: Long): Future[Map[Path,Seq[Value[Any]]]] =
-    (pollDataStore ? PollIntervalSubscription).mapTo[Map[Path,Seq[Value[Any]]]]
+    (pollDataStore ? PollIntervalSubscription(id)).mapTo[Map[Path,Seq[Value[Any]]]]
 
   def removePollSubData(id: Long): Future[Unit] =
-    (pollDataStore ? RemovePollSubData).mapTo[Unit]
+    (pollDataStore ? RemovePollSubData(id)).mapTo[Unit]
 
   def checkSubData(id: Long): Future[Map[Path,Seq[Value[Any]]]] =
     (pollDataStore ? CheckSubscriptionData(id)).mapTo[Map[Path,Seq[Value[Any]]]]

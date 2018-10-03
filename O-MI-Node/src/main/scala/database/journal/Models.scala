@@ -3,7 +3,7 @@ package database.journal
 import java.sql.Timestamp
 
 import database.journal.PPersistentNode.NodeType.{Ii, Obj, Objs}
-import database.{EventSub, IntervalSub, PolledSub}
+import database.EventSub
 import types.Path
 import types.odf.{BooleanValue, Description, DoubleValue, FloatValue, ImmutableODF, InfoItem, IntValue, LongValue, MetaData, ODFParser, ODFValue, Object, Objects, QlmID, ShortValue, Value}
 import utils._

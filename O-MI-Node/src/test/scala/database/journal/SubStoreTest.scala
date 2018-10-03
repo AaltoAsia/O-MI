@@ -16,6 +16,7 @@ import akka.testkit.TestProbe
 import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
 import types.OmiTypes.{HTTPCallback, RawCallback}
+import SubStore._
 
 import scala.concurrent.Future
 import scala.concurrent.duration._

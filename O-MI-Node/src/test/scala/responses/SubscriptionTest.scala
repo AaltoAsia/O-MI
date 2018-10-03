@@ -19,7 +19,8 @@ import java.sql.Timestamp
 import java.util.{Calendar, TimeZone}
 
 import database._
-import journal.Models.{ErasePathCommand, GetTree}
+import journal.LatestStore.ErasePathCommand
+import journal.HierarchyStore.GetTree
 import http.OmiConfig
 import types.OdfTypes._
 import types.OmiTypes._

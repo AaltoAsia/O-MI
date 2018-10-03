@@ -4,8 +4,6 @@ package agentSystem
 import scala.collection.immutable.{Map => ImmutableMap}
 import scala.collection.mutable.{Map => MutableMap}
 import scala.concurrent.{Future, ExecutionContext}
-import akka.util.Timeout
-import akka.pattern.ask
 import akka.http.scaladsl.model.Uri
 
 import database.SingleStores
@@ -40,7 +38,6 @@ class AgentResponsibilities( val singleStores: SingleStores) {
     }
   }
   def splitReadAndDeleteToResponsible( request: OdfRequest )(implicit ec: ExecutionContext) : Future[ImmutableMap[Option[Responsible], OdfRequest]] ={
-    implicit val timeout = Timeout( request.handleTTL)
     val cachedOdfF: Future[ImmutableODF] = singleStores.getHierarchyTree()
     def filter: RequestFilter => Boolean = createFilter(request)
     val odf = request.odf
