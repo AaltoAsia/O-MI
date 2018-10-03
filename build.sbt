@@ -225,6 +225,8 @@ lazy val root = (project in file(".")).
     */
       linuxPackageMappings in Rpm := configWithNoReplace((linuxPackageMappings in Rpm).value),
       debianPackageDependencies in Debian ++= Seq("java8-runtime", "bash (>= 2.05a-11)"),
+      //debianNativeBuildOptions in Debian := Nil, // dpkg-deb's default compression (currently xz)
+      debianNativeBuildOptions in Debian := Seq("-Zgzip", "-z3"), // gzip compression at level 3
 
     /////////////////////////////////////////////////////////////
     //Prevent aggregation of following commands to sub projects//
