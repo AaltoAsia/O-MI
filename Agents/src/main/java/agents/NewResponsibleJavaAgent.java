@@ -85,22 +85,12 @@ public class NewResponsibleJavaAgent extends ResponsibleJavaInternalAgent {
    * from other Actors.
    */
   @Override
-  public void onReceive(Object message){
-    if( message instanceof String) {
-      String str = (String) message;
-      if( str.equals("Update"))
-        update();
-      else super.onReceive(message);
-    } else super.onReceive(message);
-  }
-
-  /*
   public Receive createReceive(){
     return receiveBuilder()
       .matchEquals("Update",s -> update())
       .build()
       .orElse(super.createReceive());
-  }*/
+  }
 
 
   //Random for generating new values for path.

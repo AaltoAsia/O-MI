@@ -24,25 +24,20 @@ public abstract class ResponsibleJavaInternalAgent extends JavaInternalAgent imp
     return writeToDB(write);
   }
 
-    public Future<ResponseRequest> handleCall(CallRequest call){
+  public Future<ResponseRequest> handleCall(CallRequest call){
     return Futures.successful( 
         Responses.NotImplemented(Duration.apply(10,TimeUnit.SECONDS))
     );
   }
-
-    //public abstract void handleCall(CallRequest call);
-  /*
-  @Override
-  public void onReceive(Object message) {
-    if( message instanceof WriteRequest ){
-      WriteRequest write = (WriteRequest) message;
-      respondFuture(handleWrite(write));
-    } else if( message instanceof CallRequest ){
-      CallRequest call = (CallRequest) message;
-      respondFuture(handleCall(call));
-    } else unhandled(message);
-  }*/
   
+  @Override
+  public Receive createReceive(){
+    return receiveBuilder()
+      .match( WriteRequest.class, write -> respondFuture(handleWrite(write)))
+      .match( CallRequest.class, call -> respondFuture(handleCall(call)))
+      .build().orElse(super.createReceive());
+  }
+
   final protected void passWrite(WriteRequest write){
     Timeout timeout = new Timeout( write.handleTTL() );
     ActorRef senderRef = getSender();

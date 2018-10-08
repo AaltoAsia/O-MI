@@ -91,4 +91,8 @@ public abstract class JavaInternalAgent extends AbstractActor implements Interna
       ec
     ); 
   }
+
+  public Receive createReceive(){
+    return receiveBuilder().matchAny( s -> log.warning("Received unknown message: " + s.toString())).build();
+  }
 }
