@@ -31,6 +31,7 @@ public abstract class ResponsibleJavaInternalAgent extends JavaInternalAgent imp
   }
 
     //public abstract void handleCall(CallRequest call);
+  /*
   @Override
   public void onReceive(Object message) {
     if( message instanceof WriteRequest ){
@@ -40,7 +41,7 @@ public abstract class ResponsibleJavaInternalAgent extends JavaInternalAgent imp
       CallRequest call = (CallRequest) message;
       respondFuture(handleCall(call));
     } else unhandled(message);
-  }
+  }*/
   
   final protected void passWrite(WriteRequest write){
     Timeout timeout = new Timeout( write.handleTTL() );
