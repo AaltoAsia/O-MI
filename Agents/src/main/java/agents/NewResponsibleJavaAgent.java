@@ -1,9 +1,11 @@
 package agents;
 
-import agentSystem.JavaInternalAgent;
+import agentSystem.ResponsibleJavaInternalAgent;
 import akka.actor.ActorRef;
+import akka.actor.AbstractActor.Receive;
 import akka.actor.Cancellable;
 import akka.actor.Props;
+import akka.dispatch.Futures;
 import akka.dispatch.OnFailure;
 import akka.dispatch.OnSuccess;
 import akka.japi.Creator;
@@ -13,16 +15,20 @@ import scala.concurrent.Future;
 import scala.concurrent.duration.Duration;
 import scala.concurrent.duration.FiniteDuration;
 import scala.util.Random;
-import types.OldOdfFactory;
-import types.OdfTypes.OdfInfoItem;
-import types.OdfTypes.OdfObjects;
-import types.OdfTypes.OdfValue;
-import types.OdfTypes.OdfDescription;
-import types.OdfTypes.OdfMetaData;
+import types.OdfFactory;
+import types.odf.Node;
+import types.odf.ImmutableODF;
+import types.odf.InfoItem;
+import types.odf.Objects;
+import types.odf.Value;
+import types.odf.Description;
+import types.odf.MetaData;
 import types.OmiFactory;
 import types.OmiTypes.OmiResult;
 import types.OmiTypes.WriteRequest;
+import types.OmiTypes.CallRequest;
 import types.OmiTypes.ResponseRequest;
+import types.OmiTypes.Responses;
 import types.OmiTypes.Results;
 import types.Path;
 
@@ -34,7 +40,7 @@ import java.util.concurrent.TimeUnit;
  * Pushes random numbers to given O-DF path at given interval.
  * Can be used in testing or as a base for other agents.
  */
-public class JavaAgent extends JavaInternalAgent {
+public class NewResponsibleJavaAgent extends ResponsibleJavaInternalAgent {
   /**
    *  THIS STATIC METHOD MUST EXISTS FOR JavaInternalAgent. 
    *  WITHOUT IT JavaInternalAgent CAN NOT BE INITIALIZED.
@@ -44,14 +50,7 @@ public class JavaAgent extends JavaInternalAgent {
    *  @param _config Contains configuration for this agent, as given in application.conf.
    */
   static public Props props(final Config _config, final ActorRef requestHandler, final ActorRef dbHandler) {
-    return Props.create(new Creator<JavaAgent>() {
-      private static final long serialVersionUID = 3573L;
-
-      @Override
-      public JavaAgent create() throws Exception {
-        return new JavaAgent(_config, requestHandler, dbHandler);
-      }
-    });
+    return Props.create(NewResponsibleJavaAgent.class, () -> new NewResponsibleJavaAgent(_config, requestHandler, dbHandler));
   }
 
   protected Config config;
@@ -60,7 +59,7 @@ public class JavaAgent extends JavaInternalAgent {
   protected Cancellable intervalJob;
 
   // Constructor
-  public JavaAgent(Config conf, final ActorRef requestHandler, final ActorRef dbHandler){
+  public NewResponsibleJavaAgent(Config conf, final ActorRef requestHandler, final ActorRef dbHandler){
     super(requestHandler,dbHandler);
     config = conf;
 
@@ -95,6 +94,15 @@ public class JavaAgent extends JavaInternalAgent {
     } else super.onReceive(message);
   }
 
+  /*
+  public Receive createReceive(){
+    return receiveBuilder()
+      .matchEquals("Update",s -> update())
+      .build()
+      .orElse(super.createReceive());
+  }*/
+
+
   //Random for generating new values for path.
   protected Random rnd = new Random();
 
@@ -105,7 +113,7 @@ public class JavaAgent extends JavaInternalAgent {
    */
   public void update() {
 
-    // Generate new OdfValue<Object> 
+    // Generate new Value<Object> 
 
     // timestamp for the value
     Timestamp timestamp =  new Timestamp(new java.util.Date().getTime());
@@ -115,42 +123,47 @@ public class JavaAgent extends JavaInternalAgent {
     String newValueStr = rnd.nextDouble() +""; 
 
     // Multiple values can be added at the same time but we add one
-    Vector<OdfValue<Object>> values = new Vector<>();
+    Vector<Value<java.lang.Object>> values = new Vector<>();
 
-    //OdfValues value can be stored as: string, short, int, long, float or double
-    OdfValue<Object> value = OldOdfFactory.createOdfValue(
+    //Values value can be stored as: string, short, int, long, float or double
+    Value<java.lang.Object> value = OdfFactory.createValue(
         newValueStr, typeStr, timestamp
     );
     values.add(value);
     //Create description
-    OdfDescription description = OldOdfFactory.createOdfDescription( "Temperature sensor in SensorBox");
+    Vector<Description> descriptions = new Vector<Description>();
+    Description description = OdfFactory.createDescription( "Temperature sensor in SensorBox", "english");
+    descriptions.add(description);
 
     // Create O-DF MetaData
-    Vector<OdfInfoItem> metaItems = new Vector<>();
-    Vector<OdfValue<Object>> metaValues = new Vector<>();
-    OdfValue<Object> metaValue = OldOdfFactory.createOdfValue(
+    Vector<InfoItem> metaItems = new Vector<InfoItem>();
+    Vector<Value<java.lang.Object>> metaValues = new Vector<Value<java.lang.Object>>();
+    Value<java.lang.Object> metaValue = OdfFactory.createValue(
         "Celsius", "xs:string", timestamp
     );
     metaValues.add(metaValue);
-    OdfInfoItem metaItem = OldOdfFactory.createOdfInfoItem(
+    InfoItem metaItem = OdfFactory.createInfoItem(
         new Path( path + "/MetaData/Units"),
         metaValues
     );
     metaItems.add(metaItem);
-    OdfMetaData metaData = OldOdfFactory.createOdfMetaData(metaItems);
+    MetaData metaData = OdfFactory.createMetaData(metaItems);
 
 
-    // Create OdfInfoItem to contain the value. 
-    OdfInfoItem infoItem = OldOdfFactory.createOdfInfoItem(
-        path, 
+    // Create InfoItem to contain the value. 
+    InfoItem infoItem = OdfFactory.createInfoItem(
+        path,
+        null,
+        descriptions,
         values,
-        description,
         metaData
     );
 
-    // createAncestors generates O-DF structure from the path of an OdfNode 
-    // and returns the root, OdfObjects
-    OdfObjects objects = infoItem.createAncestors();
+    Vector<Node> nodes = new Vector<Node>();
+    nodes.add(infoItem);
+    // createAncestors generates O-DF structure from the path of an Node 
+    // and returns the root, Objects
+    ImmutableODF odf = OdfFactory.createImmutableODF(nodes);
 
     // This sends debug log message to O-MI Node logs if
     // debug level is enabled (in logback.xml and application.conf)
@@ -160,7 +173,7 @@ public class JavaAgent extends JavaInternalAgent {
     // interval as time to live
     WriteRequest write = OmiFactory.createWriteRequest(
         interval, // ttl
-        objects   // O-DF
+        odf   // O-DF
     );
     
 
@@ -200,6 +213,41 @@ public class JavaAgent extends JavaInternalAgent {
       }
   }
 
+  @Override
+  public Future<ResponseRequest> handleWrite(WriteRequest write) {
+    
+    Future<ResponseRequest> future = writeToDB(write);
+
+    ExecutionContext ec = context().system().dispatcher();
+    future.onSuccess(new LogResult(), ec);
+    future.onFailure(new LogFailure(), ec);
+    return future;
+  }
+
+  @Override
+  public Future<ResponseRequest> handleCall(CallRequest call){
+    Timestamp timestamp =  new Timestamp(new java.util.Date().getTime());
+    Vector<Value<java.lang.Object>> values = new Vector<>();
+
+    //Values value can be stored as: string, short, int, long, float or double
+    Value<java.lang.Object> value = OdfFactory.createValue(
+        "Hello O-MI user", "xs:string", timestamp
+    );
+    values.add(value);
+    InfoItem infoItem = OdfFactory.createInfoItem(
+        path,
+        values
+    );
+
+    Vector<Node> nodes = new Vector<Node>();
+    nodes.add(infoItem);
+    // createAncestors generates O-DF structure from the path of an Node 
+    // and returns the root, Objects
+    ImmutableODF odf = OdfFactory.createImmutableODF(nodes);
+    return Futures.successful( 
+        Responses.Success(scala.Option.apply(odf),Duration.apply(10,TimeUnit.SECONDS))
+    );
+  }
 
 
   /**

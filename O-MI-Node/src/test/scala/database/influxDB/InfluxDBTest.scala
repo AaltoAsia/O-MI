@@ -2,24 +2,25 @@ package database.influxDB
 
 import java.util.Date
 import java.sql.Timestamp
-import akka.actor.{ActorSystem, Actor, Props}
+
+import akka.actor.{Actor, ActorSystem, Props}
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.HttpExt
 import akka.http.scaladsl.client.RequestBuilding
 import akka.util.Timeout
 import akka.testkit._
 
-import scala.concurrent.{Future}
+import scala.concurrent.Future
 import scala.util.control.NonFatal
 import scala.concurrent.duration._
 import org.specs2.concurrent.ExecutionEnv
 import org.specs2.mutable._
 import org.specs2.mock.Mockito
 import com.typesafe.config.ConfigFactory
-
-import http.{OmiConfig,OmiConfigExtension }
+import http.{OmiConfig, OmiConfigExtension}
 import database.SingleStores
-import database.journal.Models.{ErasePathCommand, GetTree, MultipleReadCommand}
+import database.journal.HierarchyStore.GetTree
+import database.journal.LatestStore.{ErasePathCommand, MultipleReadCommand}
 import testHelpers._
 import types.odf._
 import types.Path
@@ -668,7 +669,7 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
            )(system,singleStores)
 
            influx.remove(Path("Objects","Obj"))
-         } must beEqualTo(Vector(1,1)).await
+         } must beEqualTo(Seq(200)).await
        }
        "should handle failure correctly" >> testInit{ implicit system: ActorSystem =>
          val settings: OmiConfigExtension = OmiConfig(system)

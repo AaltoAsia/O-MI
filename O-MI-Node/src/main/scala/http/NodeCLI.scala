@@ -28,6 +28,7 @@ import akka.pattern.ask
 import akka.util.{ByteString, Timeout}
 import database._
 import responses._
+import types.OmiTypes.{DefinedCallback, HTTPCallback}
 import types.Path
 import types.odf._
 
@@ -268,7 +269,7 @@ class OmiNodeCLI(
   private def backUpAllData() = {
   }
   private def backUpSubscriptions() = {
-    val allSubs: Future[AllSubscriptions] = (subscriptionManager ? ListSubsCmd()).mapTo[AllSubscriptions]
+    val allSubs: Future[AllSubscriptions] = (subscriptionManager ? ListSubsCmd(10 seconds)).mapTo[AllSubscriptions]
     allSubs.map{case AllSubscriptions(interv, event, poll) =>{
       val writer = new PrintWriter(new File("subscriptions")) //TODO -2 event sub!!
       interv.foreach(i => writer.write(s"${i.id} | ${i.endTime.getTime} | ${i.interval.toSeconds} | ${i.startTime.getTime} | | ${i.callback} | ${i.paths.mkString(" | ")}\n"))

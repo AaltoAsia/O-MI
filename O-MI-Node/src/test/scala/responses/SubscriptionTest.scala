@@ -19,7 +19,8 @@ import java.sql.Timestamp
 import java.util.{Calendar, TimeZone}
 
 import database._
-import journal.Models.{ErasePathCommand, GetTree}
+import journal.LatestStore.ErasePathCommand
+import journal.HierarchyStore.GetTree
 import http.OmiConfig
 import types.OdfTypes._
 import types.OmiTypes._
@@ -312,6 +313,7 @@ class SubscriptionTest extends Specification with BeforeAfterAll {
 
     "subscription should be removed when the ttl expired" >> {
       val subId = addSub(1, 5, Seq(Path("p", "1"))).asXML.\\("requestID").text.toInt
+      Thread.sleep(100)
       pollSub(subId).asXML must \("response") \ ("result") \ ("return", "returnCode" -> "200")
       Thread.sleep(2000)
       pollSub(subId).asXML must \("response") \ ("result") \ ("return", "returnCode" -> "404")

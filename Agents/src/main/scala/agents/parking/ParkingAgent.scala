@@ -208,7 +208,7 @@ class ParkingAgent(
           }.foreach{
             obj: Object => 
               val path = obj.path / "ParkingSpaces"
-              val psFormatCheck = wodf.childsWithType(path,"mv:").forall{
+              val psFormatCheck = wodf.childsWithType(path,ParkingSpace.mvType(Some("mv:"))).forall{
                 case node: Object =>  true
                 case node: Objects =>  false
                 case node: InfoItem =>  false
@@ -470,6 +470,7 @@ class ParkingAgent(
           longitudePFIndex.get(longitude) 
       }.flatten.toSet
       val pfPaths: Set[Path] = latP.intersect(longP)
+      log.info( s"Current indexes has: ${latitudePFIndex.values.map(_.size).sum} parking facilities")
       log.info(s"Found ${pfPaths.size} parking facilities close to destination")
       if( pfPaths.isEmpty ){
         Future.successful{ Responses.Success(objects= Some(ImmutableODF( Seq( Object(parkingFacilitiesPath))))) }
@@ -532,6 +533,16 @@ class ParkingAgent(
                       odf.nodesWithType(s"mv:RealTimeCapacity")
                     }.map(_.path).filterNot{
                       path => correctParkingSpaceAndCapacityPaths.contains(path)
+                    } ++ {
+                      if( wantCharging.getOrElse(false) ){
+                        pfPaths.filterNot{
+                          path =>
+                            correctParkingSpaceAndCapacityPaths.contains(path)
+                            correctParkingSpaceAndCapacityPaths.exists{
+                              foundPath => path.isAncestorOf(foundPath)
+                            }
+                        }
+                      } else Vector.empty
                     }
 
                     val correctNodes = odf -- ( unwantedCapacitiesAndSpaces.toSeq)
@@ -553,7 +564,7 @@ class ParkingAgent(
     log.debug( "Checking " + ps.id )
     if( ps.available.isEmpty && ps.chargers.nonEmpty) log.debug(s"ParkingSpace without available, but has charger")
     if( ps.available.forall(b => b) ) {
-      lazy val validVehicle = ps.validForVehicle.exists{ 
+      lazy val validVehicle = ps.validForVehicle.isEmpty || ps.validForVehicle.exists{ 
         vt: VehicleType =>
           vehicle.forall{
             v =>
@@ -643,17 +654,17 @@ class ParkingAgent(
         val pairs = splited.grouped(2).toVector
         val formatCheck = pairs.forall{
           group: Vector[String] =>
-            group.size == 2 &&
-            group.head.endsWith(":")
+            group.size == 2 
         }
         if( formatCheck ) {
           pairs.foreach{ 
             group => 
-              prefixes.get(group.last) match{
+              val value = if(  group.head.endsWith(":") ) group.head else group.head + ":" 
+              prefixes.get(group.last) match {
                 case Some(current: Set[String]) =>
-                    prefixes.update(group.last, current ++ Set(group.head))
+                    prefixes.update(group.last, current ++ Set(value))
                 case None =>
-                  prefixes += group.last -> Set(group.head)
+                  prefixes += group.last -> Set(value)
               }
           }
         } else {
@@ -678,10 +689,14 @@ class ParkingAgent(
                 group.head.endsWith(":")
             }
             if( formatCheck ) {
-              val newPairs = pairs.filter{ 
+              val newPairs = pairs.filterNot{ 
                 group => 
                   group.last == "http://www.schema.org/" ||
                   group.last == "http://www.schema.mobivoc.org/"
+              }.map{
+                group => 
+                  val value = if(  group.head.endsWith(":") ) group.head else group.head + ":" 
+                  Vector( value, group.last)
               } ++ Vector( 
                 Vector("schema:", "http://www.schema.org/"),
                 Vector("mv:", "http://www.schema.mobivoc.org/")

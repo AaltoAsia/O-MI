@@ -21,7 +21,7 @@ import java.util.Date
 
 import scala.annotation.tailrec
 import scala.collection.immutable.HashMap
-import scala.concurrent.Future
+import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
 import akka.actor.ActorSystem
@@ -41,10 +41,11 @@ import types.OdfTypes._
 import types.{ParseError, Path, Warp10ParseError}
 import types.OmiTypes.{OmiReturn, Returns}
 import Warp10JsonProtocol.Warp10JsonFormat
+import akka.util.Timeout
 import types.OdfTypes.OdfQlmID
-import journal.Models.{GetTree,ReadAllCommand, MultipleReadCommand}
 import types.odf.{ImmutableODF, InfoItem, MetaData, NewTypeConverter, Node, ODF, Object, Objects, OldTypeConverter, Value}
 
+import scala.concurrent.ExecutionContext.Implicits.global
 //serializer and deserializer for warp10 json formats
 object Warp10JsonProtocol extends DefaultJsonProtocol {
 
@@ -52,18 +53,18 @@ object Warp10JsonProtocol extends DefaultJsonProtocol {
     //def warp10MetaData(path: Path) = Some(MetaData(OdfInfoItem(path / "type",OdfTreeCollection(OdfValue("ISO 6709","xs:String",new Timestamp(1470230717254L)))).asInfoItemType))
 
     def getObject(path: Path) : Future[OdfObject] = {
-      for(
-        hTree <- (singleStores.hierarchyStore ? GetTree).mapTo[ImmutableODF]
+      for{
+        hTree <- singleStores.getHierarchyTree()
         res = hTree.get(path.init) match {
           case Some(obj: Object) => NewTypeConverter.convertObject(obj)
           case Some(obj: OdfObject) => obj.copy(infoItems = OdfTreeCollection.empty,objects = OdfTreeCollection.empty)
           case _ => {
             val id =
-              OdfTreeCollection(OdfQlmID(path.lastOption.getOrElse(new DeserializationException(s"Found invalid path for Object: $path"))))
+              OdfTreeCollection(OdfQlmID(path.lastOption.getOrElse(throw new DeserializationException(s"Found invalid path for Object: $path"))))
             OdfObject(id,path)
         }
       }
-      ) yield res
+    } yield res
     }
 
     def createInfoItems(
@@ -142,21 +143,21 @@ object Warp10JsonProtocol extends DefaultJsonProtocol {
             case None => OdfValue(v, "xs:string", timestamp, typeVal)
           }
         }
-        case JsBoolean(v) => OdfValue(v, timestamp, typeVal - "type")
+        case JsBoolean(v) => OdfBooleanValue(v, timestamp)
         case JsNumber(n) => {
           if (n.ulp == 1) //if no decimal separator, parse to long
-            OdfValue(n.toLong, timestamp, typeVal - "type")
+            OdfValue(n.toLong, timestamp)
           else
-            OdfValue(n.toDouble, timestamp, typeVal - "type")
+            OdfValue(n.toDouble, timestamp)
         }
         case _ => throw new DeserializationException("Invalid type, could not cast into string, boolean, or number")
       }
 
       (warp10Value, createLocationValue(timestamp, lat,lon,elev))
     }
-    def parseObjects(in: Seq[JsObject])(implicit singleStores: SingleStores): Seq[(OdfObject, OdfObject)] = in match {
+    def parseObjects(in: Seq[JsObject])(implicit singleStores: SingleStores): Future[Seq[(OdfObject, OdfObject)]] = in match {
        case jsObjs: Seq[JsObject] => {
-         val idPathValuesTuple = jsObjs.map { jsobj =>
+         val idPathValuesTuple: Seq[(Option[String], Option[String], Vector[(OdfValue[Any], Option[OdfValue[Any]])])] = jsObjs.map { jsobj =>
            val path = fromField[Option[String]](jsobj, "c")
            val labels = fromField[Option[JsObject]](jsobj,"l")
            val vals = fromField[JsArray](jsobj,"v")
@@ -192,13 +193,13 @@ object Warp10JsonProtocol extends DefaultJsonProtocol {
           (id, path , values)
 
         }
-        val infoIs = idPathValuesTuple.groupBy(_._1).collect {
+        val infoIs: Seq[Future[(OdfObject, OdfObject)]] = idPathValuesTuple.groupBy(_._1).collect {
           case (None , ii) => ii.map{
             case (_, Some(_path), _infoItems ) => {
               val path = Path(_path)
-              val parentObj = getObject(path) //TODO what happens if not in hierarchystore
+              val parentObjF: Future[OdfObject] = getObject(path) //TODO what happens if not in hierarchystore
               val (infoItems, locations) = createInfoItems(path, _infoItems.unzip)
-              (parentObj.copy(infoItems=infoItems), parentObj.copy(infoItems=locations))
+              parentObjF.map(parentObj => (parentObj.copy(infoItems=infoItems), parentObj.copy(infoItems=locations)))
             }
             case _ => throw new DeserializationException("No Path found when deserializing")
           }
@@ -208,26 +209,26 @@ object Warp10JsonProtocol extends DefaultJsonProtocol {
             val path = Path(ii.collectFirst{ case (_, Some(p),_) => p}
               .getOrElse(throw new DeserializationException("Was not able to match id to path while deserializing")))
 
-            val parentObj = getObject(path) //TODO what happens if not in hierarchystore
+            val parentObjF = getObject(path) //TODO what happens if not in hierarchystore
             //val infoItems = createInfoItems(path, infoItems)
 
             val (infoItems, locations) = createInfoItems(
               path,
               ii.foldLeft(Vector[(OdfValue[Any], Option[OdfValue[Any]])]())((col ,next ) => col ++ next._3).unzip)
 
-            Seq((parentObj.copy(infoItems = infoItems), parentObj.copy(infoItems = locations)))
+            Seq(parentObjF.map(parentObj=> (parentObj.copy(infoItems = infoItems), parentObj.copy(infoItems = locations))))
 
           }
           case _ => throw new DeserializationException("Unknown format")
         }(collection.breakOut).flatten
 
-        infoIs
+        Future.sequence(infoIs)
       }
     }
 
     def read(v: JsValue): Seq[(OdfObject, OdfObject)] = v match {
-      case JsArray(Vector(JsArray(in: Vector[JsObject]))) => parseObjects(in) //sometimes a array of arrays?
-      case JsArray(in: Vector[JsObject]) => parseObjects(in)
+      case JsArray(Vector(JsArray(in: Vector[JsObject]))) => Await.result(parseObjects(in),30 seconds) //sometimes a array of arrays?
+      case JsArray(in: Vector[JsObject]) => Await.result(parseObjects(in), 30 seconds)
       case _ => throw new DeserializationException("Unknown format")
     }
     def write(o: Seq[(OdfObject, OdfObject)]): JsValue = ??? //not in use
@@ -277,6 +278,7 @@ class Warp10Wrapper( settings: OmiConfigExtension with Warp10ConfigExtension )(i
  import system.dispatcher // execution context for futures
  val httpExt = Http(system)
  implicit val mat: Materializer = ActorMaterializer()
+  implicit val timeout: Timeout = 30 seconds
  def log = system.log
 
 
@@ -286,56 +288,71 @@ class Warp10Wrapper( settings: OmiConfigExtension with Warp10ConfigExtension )(i
     end: Option[Timestamp],
     newest: Option[Int],
     oldest: Option[Int]
-  ): Future[Option[ODF]] = {
+  )(implicit timeout: Timeout): Future[Option[ODF]] = {
    if((newest.isEmpty || newest.contains(1)) && (oldest.isEmpty && begin.isEmpty && end.isEmpty)){
-     def getFromCache(): Seq[Option[ODF]] = {
-       lazy val hTreeF: Future[ImmutableODF] = (singleStores.hierarchyStore ? GetTree).mapTo[ImmutableODF]
-       val objectData: Seq[Option[ODF]] = requests.collect{
+     def getFromCache(): Seq[Future[Option[ODF]]] = {
+       lazy val hTreeF: Future[ImmutableODF] = singleStores.getHierarchyTree()
+       val objectData: Seq[Future[Option[ODF]]] = requests.collect{
 
          case obj:Objects => {
-           (singleStores.latestStore ? ReadAllCommand).mapTo[Map[Path,Value[Any]]]
-           .map(_.toSeq).map(n => Some(singleStores.buildODFFromValues(n)))
+           (singleStores.readAll()
+           .map(_.toSeq).map(n => Some(singleStores.buildODFFromValues(n))))
          }
 
          case obj @ Object(_,path, _, _, _) => {
            hTreeF.flatMap{ hTree =>
-             val resultsO = for {
-               odfObject <- hTree.get(path).collect{
-                 case o: OdfObject => o
+             val resultsO =hTree.get(path).collect{case o: OdfObject => o}
+             val pathsO = resultsO.map(odfObject=> getLeafs(odfObject).map(_.path))
+             val pathValuesF: Future[Option[Seq[(Path, Value[Any])]]] =
+               pathsO.map(paths => singleStores.readValues(paths)) match{
+                 case Some(f) => f.map(Some(_))
+                 case None => Future.successful(None)
                }
-               paths = getLeafs(odfObject).map(_.path)
-               pathValuesF = (singleStores.latestStore ? MultipleReadCommand(paths)).mapTo[Seq[(Path, Value[Any])]]
-             } yield pathValuesF.map(pathValues => singleStores.buildODFFromValues(pathValues))
+             val res: Future[Option[ODF]] =
+               pathValuesF.map(pathValuesO =>
+                                 pathValuesO.map(pathValues =>
+                                                   singleStores.buildODFFromValues(pathValues)))
+             res
+             //for {
+             //  odfObject: OdfObject <- hTree.get(path).coll.collect{
+             //    case o: OdfObject => o
+             //  }
+             //  paths = getLeafs(odfObject).map(_.path)
+             //  pathValues <- (singleStores.readValues(paths))
+             //  res = singleStores.buildODFFromValues(pathValues)
+             //} yield res
 
              //val paths = getLeafs(obj).map(_.path)
              //val objs = singleStores.latestStore execute LookupSensorDatas(paths)
              //val results = singleStores.buildOdfFromValues(objs)
 
-             resultsO
+             //resultsO
+
            }
          }
        }.toSeq
 
        // And then get all InfoItems with the same call
        val reqInfoItems = requests collect {case ii: InfoItem => ii}
-       val paths = reqInfoItems map (_.path)
+       val paths = reqInfoItems.map(_.path).toSeq
 
-       val infoItemData = singleStores.latestStore execute LookupSensorDatas(paths.toVector)
-       val foundPaths = (infoItemData map { case (path,_) => path }).toSet
 
-       val resultOdf = singleStores.buildODFFromValues(infoItemData)
-
-       objectData :+ Some(
-         reqInfoItems.foldLeft(resultOdf){(result, info) =>
+       val infoItemDataF: Future[Seq[(Path, Value[Any])]] = singleStores.readValues(paths)
+       val reqObjs: Future[Option[ODF]] =
+         for{
+           infoItemData <- infoItemDataF
+           foundPaths = (infoItemData.map{ case (path,_) => path }).toSet
+           resultOdf = singleStores.buildODFFromValues(infoItemData)
+         } yield Some(reqInfoItems.foldLeft(resultOdf){(result,info)=>
            info match {
              case qry @ InfoItem(_,path,_,_,_,_,_,_) if foundPaths contains path =>
                result union ImmutableODF(Seq(qry))
              case _ => result // else discard
            }
-         }
-       )
+         })
+       objectData :+ reqObjs
      }
-     Future{getFromCache().flatten.reduceOption(_.union(_))}
+     Future.sequence(getFromCache()).map(odf => odf.flatten.reduceOption(_.union(_)))
    } else {
      val locationsSeparated = requests.groupBy(_.path.last == "location")
      val locations: Map[Path, Node] = locationsSeparated
@@ -483,7 +500,7 @@ class Warp10Wrapper( settings: OmiConfigExtension with Warp10ConfigExtension )(i
    }
 
  }
-  def remove(path: Path): Future[Seq[Int]] = ???
+  def remove(path: Path)(implicit timeout: Timeout): Future[Seq[Int]] = ???
   private def warp10MetaData(path: Path) = Some(
     MetaData(
       OdfTreeCollection(
@@ -491,7 +508,7 @@ class Warp10Wrapper( settings: OmiConfigExtension with Warp10ConfigExtension )(i
           "type",
           path / "MetaData" / "type",
           values = OdfTreeCollection(
-            Value("ISO 6709","xs:String",new Timestamp(1470230717254L),HashMap.empty)
+            Value("ISO 6709","xs:String",new Timestamp(1470230717254L))
           )
         )
       )
@@ -504,7 +521,7 @@ class Warp10Wrapper( settings: OmiConfigExtension with Warp10ConfigExtension )(i
       s"'$str'"
     }
     def updateHierarchy = {
-      singleStores.hierarchyStore execute Union(ImmutableODF(Seq(InfoItem("location", path.init / "location", metaData = warp10MetaData(path)))))
+      singleStores.updateHierarchyTree(ImmutableODF(Seq(InfoItem("location", path.getParent / "location", metaData = warp10MetaData(path)))))
     }
 
     val unixEpochTime = odfValue.timestamp.getTime * 1000

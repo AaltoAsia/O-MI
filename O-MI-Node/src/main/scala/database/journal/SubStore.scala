@@ -4,19 +4,56 @@ import java.sql.Timestamp
 import java.util.Date
 
 import Models._
-import akka.actor.ActorLogging
+import akka.actor.{ActorLogging, Props}
 import akka.persistence._
-import database._
 import PAddSub.SubType._
+import database._
 import types.OmiTypes.HTTPCallback
 import types.Path
+import SubStore._
 
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
-class SubStore extends PersistentActor with ActorLogging {
+object SubStore {
 
-  def persistenceId: String = "substore"
+  def props(id: String = "substore"):Props = Props(new SubStore(id))
+
+  //Sub store protocol
+  case class AddEventSub(eventSub: EventSub) extends PersistentCommand
+
+  case class AddIntervalSub(intervalSub: IntervalSub) extends PersistentCommand
+
+  case class AddPollSub(pollsub: PolledSub) extends PersistentCommand
+
+  case class LookupEventSubs(path: Path) extends Command
+
+  case class LookupNewEventSubs(path: Path) extends Command
+
+  case class RemoveIntervalSub(id: Long) extends PersistentCommand
+
+  case class RemoveEventSub(id: Long) extends PersistentCommand
+
+  case class RemovePollSub(id: Long) extends PersistentCommand
+
+  case class PollSubCommand(id: Long) extends PersistentCommand
+
+  case object GetAllEventSubs extends Command
+
+  case object GetAllIntervalSubs extends Command
+
+  case object GetAllPollSubs extends Command
+
+  case class GetIntervalSub(id: Long) extends Command
+
+  case class GetSubsForPath(path: Path) extends Command
+
+  case class GetNewEventSubsForPath(path: Path) extends Command
+}
+
+class SubStore(id: String) extends PersistentActor with ActorLogging {
+
+  override def persistenceId: String = id
   val oldestSavedSnapshot: Long =
     Duration(
       context.system.settings.config.getDuration("omi-service.snapshot-delete-older").toMillis,
@@ -166,7 +203,7 @@ class SubStore extends PersistentActor with ActorLogging {
 
     }
     case p: PersistentCommand => p match {
-      case Models.AddEventSub(es) => es match {
+      case AddEventSub(es) => es match {
         case ne: NormalEventSub =>
           val persisted = ne.persist()
           if (persisted.callback.isEmpty) {
@@ -187,7 +224,7 @@ class SubStore extends PersistentActor with ActorLogging {
           }
         case _ =>
       }
-      case Models.AddIntervalSub(is) => {
+      case AddIntervalSub(is) => {
         val persisted = is.persist()
         if (persisted.callback.isEmpty) {
           addIntervalSub(is)
@@ -197,7 +234,7 @@ class SubStore extends PersistentActor with ActorLogging {
           }
         }
       }
-      case Models.AddPollSub(pollSub: PolledSub) => pollSub match {
+      case AddPollSub(pollSub: PolledSub) => pollSub match {
         case ps: PollNormalEventSub =>
           persist(PAddSub(PpollEvent(ps.persist()))) { event =>
             addPollSub(ps)
@@ -353,60 +390,60 @@ class SubStore extends PersistentActor with ActorLogging {
     case DeleteSnapshotsFailure(crit, ex) =>
       log.error(ex, s"Failed to delete old snapshots for $persistenceId with criteria: $crit")
 
-    case aEventS@Models.AddEventSub(eventSub: EventSub) =>
+    case aEventS@AddEventSub(eventSub: EventSub) =>
       val res = updateState(aEventS)
       sender() ! res
-    case aIntervalS@Models.AddIntervalSub(intervalSub: IntervalSub) =>
+    case aIntervalS@AddIntervalSub(intervalSub: IntervalSub) =>
       sender() ! updateState(aIntervalS)
-    case aPollS@Models.AddPollSub(pollsub: PolledSub) =>
+    case aPollS@AddPollSub(pollsub: PolledSub) =>
       sender() ! updateState(aPollS)
-    case rIntervalS@Models.RemoveIntervalSub(id: Long) =>
+    case rIntervalS@RemoveIntervalSub(id: Long) =>
       persist(PRemoveIntervalSub(id)) { event =>
         sender() ! removeSub(event)
       }
-    case rEventS@Models.RemoveEventSub(id: Long) =>
+    case rEventS@RemoveEventSub(id: Long) =>
       persist(PRemoveEventSub(id)) { event =>
         sender() ! removeSub(event)
       }
-    case rPollS@Models.RemovePollSub(id: Long) =>
+    case rPollS@RemovePollSub(id: Long) =>
       persist(PRemovePollSub(id)) { event =>
         sender() ! removeSub(event)
       }
-    case pollS@Models.PollSubCommand(id: Long) =>
+    case pollS@PollSubCommand(id: Long) =>
       persist(PPollSub(id)) { event =>
         sender() ! pollSub(event)
       }
-    case Models.LookupEventSubs(path: Path) =>
+    case LookupEventSubs(path: Path) =>
       val resp: Seq[NormalEventSub] = path.getParentsAndSelf
         .flatMap(p => eventSubs.get(p))
         .flatten.collect { case ns: NormalEventSub => ns }
         .toVector
       sender() ! resp
-    case Models.LookupNewEventSubs(path: Path) =>
+    case LookupNewEventSubs(path: Path) =>
       val resp: Seq[NewEventSub] = path.getParentsAndSelf
         .flatMap(p => eventSubs.get(p))
         .flatten.collect { case ns: NewEventSub => ns }
         .toVector
       sender() ! resp
-    case Models.GetAllEventSubs =>
+    case GetAllEventSubs =>
       val result: Set[EventSub] = eventSubs.values.flatten.toSet
       sender() ! result
-    case Models.GetAllIntervalSubs =>
+    case GetAllIntervalSubs =>
       val result: Set[IntervalSub] = intervalSubs.values.toSet
       sender() ! result
-    case Models.GetAllPollSubs =>
+    case GetAllPollSubs =>
       val result: Set[PolledSub] = idToSub.values.toSet
       sender() ! result
-    case Models.GetIntervalSub(id: Long) =>
+    case GetIntervalSub(id: Long) =>
       sender() ! intervalSubs.get(id)
-    case Models.GetSubsForPath(path: Path) =>
+    case GetSubsForPath(path: Path) =>
       val ids: Set[NotNewEventSub] = path.inits.flatMap(path => pathToSubs.get(path)).toSet.flatten.map(idToSub(_))
         .collect {
           case events: PollNormalEventSub => events
           case intervals: PollIntervalSub => intervals
         }
       sender() ! ids
-    case Models.GetNewEventSubsForPath(path: Path) =>
+    case GetNewEventSubsForPath(path: Path) =>
       val ids: Set[PollNewEventSub] = path.inits
         .flatMap(path => pathToSubs.get(path)).toSet
         .flatten

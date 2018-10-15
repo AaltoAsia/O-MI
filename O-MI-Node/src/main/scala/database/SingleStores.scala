@@ -1,18 +1,24 @@
 package database
 
 
-import akka.actor.{ActorRef, ActorSystem, Props}
+import akka.actor.{ActorRef, ActorSystem}
 import akka.event.LoggingAdapter
 import akka.pattern.ask
 import akka.util.Timeout
-import journal.Models.{GetTree, SaveSnapshot, SingleReadCommand}
+import journal.Models.SaveSnapshot
 import http.OmiConfigExtension
 import types.Path
 import types.odf._
+import journal._
 
 import scala.concurrent.Future
 import scala.concurrent.duration.{Duration, FiniteDuration, MILLISECONDS}
 import scala.util.{Failure, Success}
+import LatestStore._
+import HierarchyStore._
+import SubStore._
+import PollDataStore._
+
 trait SingleStores {
   implicit val system: ActorSystem
   import system.dispatcher
@@ -55,10 +61,101 @@ trait SingleStores {
     res
   }
 
-  val latestStore: ActorRef   
-  val hierarchyStore: ActorRef   
-  val subStore: ActorRef    
-  val pollDataStore: ActorRef    
+  //LatestStore
+  def writeValue(path: Path, value: Value[Any]): Future[Unit] =
+    (latestStore ? SingleWriteCommand(path,value)).mapTo[Unit]
+
+  def writeValues(values: Map[Path, Value[Any]]): Future[Unit] =
+    (latestStore ? WriteCommand(values)).mapTo[Unit]
+
+  def erasePathData(path: Path): Future[Unit] =
+    (latestStore ? ErasePathCommand(path)).mapTo[Unit]
+
+  def readValue(path: Path): Future[Option[Value[Any]]] =
+    (latestStore ? SingleReadCommand(path)).mapTo[Option[Value[Any]]]
+
+  def readValues(paths: Seq[Path]): Future[Seq[(Path,Value[Any])]] =
+    (latestStore ? MultipleReadCommand(paths)).mapTo[Seq[(Path,Value[Any])]]
+
+  def readAll(): Future[Map[Path, Value[Any]]] =
+    (latestStore ? ReadAllCommand).mapTo[Map[Path,Value[Any]]]
+
+  //HierarchyStore
+  def updateHierarchyTree(tree: ImmutableODF): Future[Unit] =
+    (hierarchyStore ? UnionCommand(tree)).mapTo[Unit]
+
+  def getHierarchyTree(): Future[ImmutableODF] =
+    (hierarchyStore ? GetTree).mapTo[ImmutableODF]
+
+  def erasePathHierarchy(path: Path): Future[Unit] =
+    (hierarchyStore ? ErasePathCommand(path)).mapTo[Unit]
+
+  //SubStore
+  def addSub(eventSub: EventSub): Future[Unit] =
+    (subStore ? AddEventSub(eventSub)).mapTo[Unit]
+
+  def addSub(intervalSub: IntervalSub): Future[Unit] =
+    (subStore ? AddIntervalSub(intervalSub)).mapTo[Unit]
+
+  def addSub(pollSub: PolledSub): Future[Unit] =
+    (subStore ? AddPollSub(pollSub)).mapTo[Unit]
+
+  def lookupEventSubs(path: Path): Future[Seq[NormalEventSub]] =
+    (subStore ? LookupEventSubs(path)).mapTo[Seq[NormalEventSub]]
+
+  def lookupNewEventSubs(path: Path): Future[Seq[NewEventSub]] =
+    (subStore ? LookupNewEventSubs(path)).mapTo[Seq[NewEventSub]]
+
+  def removeIntervalSub(id: Long): Future[Boolean] =
+    (subStore ? RemoveIntervalSub(id)).mapTo[Boolean]
+
+  def removeEventSub(id: Long): Future[Boolean] =
+    (subStore ? RemoveEventSub(id)).mapTo[Boolean]
+
+  def removePollSub(id: Long): Future[Boolean] =
+    (subStore ? RemovePollSub(id)).mapTo[Boolean]
+
+  def pollSubscription(id: Long): Future[Option[PolledSub]] =
+    (subStore ? PollSubCommand(id)).mapTo[Option[PolledSub]]
+
+  def getAllEventSubs(): Future[Set[EventSub]] =
+    (subStore ? GetAllEventSubs).mapTo[Set[EventSub]]
+
+  def getAllIntervalSubs(): Future[Set[IntervalSub]] =
+    (subStore ? GetAllIntervalSubs).mapTo[Set[IntervalSub]]
+
+  def getAllPollSubs(): Future[Set[PolledSub]] =
+    (subStore ? GetAllPollSubs).mapTo[Set[PolledSub]]
+
+  def getIntervalSub(id: Long): Future[Option[IntervalSub]] =
+    (subStore ? GetIntervalSub(id)).mapTo[Option[IntervalSub]]
+
+  def getSubsForPath(path: Path): Future[Set[NotNewEventSub]] =
+    (subStore ? GetSubsForPath(path)).mapTo[Set[NotNewEventSub]]
+
+  def getNewEventSubsForPath(path: Path): Future[Set[PollNewEventSub]] =
+    (subStore ? GetNewEventSubsForPath(path)).mapTo[Set[PollNewEventSub]]
+
+  //PollDataStore
+  def addPollData(id: Long, path: Path, value: Value[Any]): Future[Unit] =
+    (pollDataStore ? AddPollData(id,path,value)).mapTo[Unit]
+
+  def pollEventSubscrpition(id: Long): Future[Map[Path,Seq[Value[Any]]]] =
+    (pollDataStore ? PollEventSubscription(id)).mapTo[Map[Path,Seq[Value[Any]]]]
+
+  def pollIntervalSubscription(id: Long): Future[Map[Path,Seq[Value[Any]]]] =
+    (pollDataStore ? PollIntervalSubscription(id)).mapTo[Map[Path,Seq[Value[Any]]]]
+
+  def removePollSubData(id: Long): Future[Unit] =
+    (pollDataStore ? RemovePollSubData(id)).mapTo[Unit]
+
+  def checkSubData(id: Long): Future[Map[Path,Seq[Value[Any]]]] =
+    (pollDataStore ? CheckSubscriptionData(id)).mapTo[Map[Path,Seq[Value[Any]]]]
+
+  val latestStore: ActorRef
+  val hierarchyStore: ActorRef
+  val subStore: ActorRef
+  val pollDataStore: ActorRef
 
   def buildODFFromValues(items: Seq[(Path, Value[Any])]): ODF = {
     ImmutableODF(items map { case (path, value) =>
@@ -151,9 +248,9 @@ object SingleStores{
   class SingleStoresImpl private[SingleStores] (
     protected val settings: OmiConfigExtension)(implicit val system: ActorSystem) extends SingleStores{
 
-    val latestStore: ActorRef = system.actorOf(Props[journal.LatestStore])
-    val hierarchyStore: ActorRef = system.actorOf(Props[journal.HierarchyStore])
-    val subStore: ActorRef = system.actorOf(Props[journal.SubStore])
-    val pollDataStore: ActorRef = system.actorOf(Props[journal.PollDataStore])
+    val latestStore: ActorRef = system.actorOf(LatestStore.props())
+    val hierarchyStore: ActorRef = system.actorOf(HierarchyStore.props())
+    val subStore: ActorRef = system.actorOf(SubStore.props())
+    val pollDataStore: ActorRef = system.actorOf(PollDataStore.props())
   }
 } 

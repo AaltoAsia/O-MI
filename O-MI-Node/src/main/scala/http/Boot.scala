@@ -67,7 +67,8 @@ class OmiServer extends OmiNode {
                                                  )(system, singleStores)
     case "WARP10" => new Warp10Wrapper(settings)(
       system,
-      singleStores)
+      singleStores,
+      )
 
     case default => new StubDB(singleStores, system, settings)
   }
