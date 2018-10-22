@@ -173,20 +173,24 @@ class RawRequestWrapper(val rawRequest: String, private val user0: UserInfo) ext
 
   }
 
-  private val parseSingle: () => EvElemStart = {
+  private val parseSingle: Boolean => EvElemStart = {
     val src = io.Source.fromString(rawRequest)
     val er = new XMLEventReader(src)
 
-    { () =>
+    { close =>
       // skip to the interesting parts
-      er.collectFirst {
+      val result = er.collectFirst {
         case e: EvElemStart => e
       } getOrElse parseError("no xml elements found")
+      if(close){
+        er.stop()
+      }
+      result
     }
   }
   // NOTE: Order is important
-  val omiEnvelope: Element = new Element(parseSingle())
-  val omiVerb: Element = new Element(parseSingle())
+  val omiEnvelope: Element = new Element(parseSingle(false))
+  val omiVerb: Element = new Element(parseSingle(true))
 
   require(omiEnvelope.label == "omiEnvelope", "Pre-parsing: omiEnvelope not found!")
 
