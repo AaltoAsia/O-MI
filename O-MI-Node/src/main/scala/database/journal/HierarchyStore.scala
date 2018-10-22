@@ -1,15 +1,25 @@
 package database.journal
 
-import akka.actor.ActorLogging
+import akka.actor.{ActorLogging, Props}
 import akka.persistence._
+import database.journal.HierarchyStore.{GetTree, UnionCommand}
+import database.journal.LatestStore.ErasePathCommand
 import database.journal.Models._
 import types.Path
 import types.odf._
 
 import scala.concurrent.duration.Duration
 
-class HierarchyStore extends PersistentActor with ActorLogging {
-  def persistenceId = "hierarchystore"
+object HierarchyStore {
+  //id given as parameter to make testing possible
+  def props(id: String = "hierarchystore"): Props = Props(new HierarchyStore(id))
+  //Hierarchy store protocol
+  case class UnionCommand(other: ImmutableODF) extends PersistentCommand
+
+  case object GetTree extends Command
+}
+class HierarchyStore(id: String) extends PersistentActor with ActorLogging {
+  override def persistenceId: String = id
   val oldestSavedSnapshot: Long =
     Duration(
       context.system.settings.config.getDuration("omi-service.snapshot-delete-older").toMillis,

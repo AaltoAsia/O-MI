@@ -136,9 +136,14 @@ set +e
 systemctl is-active o-mi-node.service
 if [ $? -eq 0 ]
 then
-  { sed "/Success/ q"; kill "$!"; } < <(exec sh -c " (echo 'backup /usr/share/o-mi-node/logs/$DATES-subs /usr/share/o-mi-node/logs/$DATES-odf' && cat) | nc localhost 8180" )
+  read -p "o-mi-node service is running. Backup can be used to migrate data. Do you want to make a full data backup? [y/n]" -n 1 -r
+  echo
+  if [[ $REPLY =~ ^[Yy]$ ]]
+  then
+      { sed "/Success/ q"; kill "$!"; } < <(exec sh -c " (echo 'backup /usr/share/o-mi-node/logs/$DATES-subs /usr/share/o-mi-node/logs/$DATES-odf' && cat) | nc localhost 8180" )
+  fi
 else
-  read -p "o-mi-node service not running! unable to do backup. Do you wan't to continue? [y/n]" -n 1 -r
+  read -p "o-mi-node service not running! unable to do backup. Do you want to continue? [y/n]" -n 1 -r
   echo
   if [[ ! $REPLY =~ ^[Yy]$ ]]
   then

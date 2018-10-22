@@ -1,9 +1,12 @@
 package types.OmiTypes
 
+import java.net.URL
 import java.text.SimpleDateFormat
 import java.util.TimeZone
 import java.sql.Timestamp
+
 import parsing.OmiParser
+
 import scala.xml.Elem
 import scala.concurrent.duration._
 import org.specs2.concurrent.ExecutionEnv
@@ -17,10 +20,10 @@ class OmiTypesTest extends Specification with XmlMatchers{
   val testTime: Timestamp = Timestamp.valueOf("2018-08-09 16:00:00")
   val countForRead: Int  = 785634129
   val callback = RawCallback("http://test.com")
-  val exampleDirStr = "O-MI-Node/src/test/resources/OmiRequestExamples"
-  val exampleDir = java.nio.file.Paths.get(exampleDirStr)
-  require( java.nio.file.Files.exists(exampleDir), s"$exampleDirStr does not exist" )
-  require( java.nio.file.Files.isDirectory(exampleDir), s"$exampleDirStr is not directory" )
+  val exampleDirStr = "/OmiRequestExamples"
+  //val exampleDir = java.nio.file.Paths.get(exampleDirStr)
+  //require( java.nio.file.Files.exists(exampleDir), s"$exampleDirStr does not exist" )
+  //require( java.nio.file.Files.isDirectory(exampleDir), s"$exampleDirStr is not directory" )
 
   val descriptions = Set( Description( "testi", Some("fin")),Description( "test", Some("eng")) )
   val values = Vector(
@@ -79,7 +82,7 @@ class OmiTypesTest extends Specification with XmlMatchers{
       */
     )
   )
-  case class RequestFileTest(description: String, request: OmiRequest, filepath: java.nio.file.Path )
+  case class RequestFileTest(description: String, request: OmiRequest, filepath: URL )
   def setTimezoneToSystemLocale(in: String): String = {
     val date = """(end|begin)\s*=\s*"(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?(?:(?:\+|-)\d{2}:\d{2})?)"""".r
 
@@ -112,8 +115,8 @@ class OmiTypesTest extends Specification with XmlMatchers{
         Some(countForRead),
         None,
         Some(callback)
-      ), 
-      java.nio.file.Paths.get( exampleDirStr, "ReadWithTimewindowNewestAndCallback.xml")
+      ),
+      getClass.getResource(exampleDirStr + "/ReadWithTimewindowNewestAndCallback.xml" )
     ),
     RequestFileTest(
       "Read with begin, end, oldest and callback", 
@@ -125,7 +128,7 @@ class OmiTypesTest extends Specification with XmlMatchers{
         Some(countForRead),
         Some(callback)
       ), 
-      java.nio.file.Paths.get( exampleDirStr, "ReadWithTimewindowOldestAndCallback.xml")
+      getClass.getResource( exampleDirStr + "/ReadWithTimewindowOldestAndCallback.xml")
     ), 
     RequestFileTest(
       "Poll with callback", 
@@ -133,7 +136,7 @@ class OmiTypesTest extends Specification with XmlMatchers{
         Some(callback),
         Vector(countForRead:Long)
       ), 
-      java.nio.file.Paths.get( exampleDirStr, "PollWithCallback.xml")
+      getClass.getResource( exampleDirStr + "/PollWithCallback.xml")
     ), 
     RequestFileTest(
       "Subscription with callback", 
@@ -142,7 +145,7 @@ class OmiTypesTest extends Specification with XmlMatchers{
         odf,
         callback = Some(callback)
       ), 
-      java.nio.file.Paths.get( exampleDirStr, "SubscriptionWithCallback.xml")
+      getClass.getResource( exampleDirStr + "/SubscriptionWithCallback.xml")
     ), 
     RequestFileTest(
       "Write with callback", 
@@ -150,7 +153,7 @@ class OmiTypesTest extends Specification with XmlMatchers{
         odf,
         Some(callback)
       ), 
-      java.nio.file.Paths.get( exampleDirStr, "WriteWithCallback.xml")
+      getClass.getResource( exampleDirStr + "/WriteWithCallback.xml")
     ), 
     RequestFileTest(
       "Call with callback", 
@@ -158,7 +161,7 @@ class OmiTypesTest extends Specification with XmlMatchers{
         odf,
         Some(callback)
       ), 
-      java.nio.file.Paths.get( exampleDirStr, "CallWithCallback.xml")
+      getClass.getResource( exampleDirStr + "/CallWithCallback.xml")
     ), 
     RequestFileTest(
       "Delete with callback", 
@@ -166,16 +169,15 @@ class OmiTypesTest extends Specification with XmlMatchers{
         odf,
         Some(callback)
       ), 
-      java.nio.file.Paths.get( exampleDirStr, "DeleteWithCallback.xml")
+      getClass.getResource( exampleDirStr + "/DeleteWithCallback.xml")
     )  
   )
   "OmiTypes" >> {
     org.specs2.specification.core.Fragments.empty.append(
       requestFileTests.map{
-        case RequestFileTest(description, request, filepath) =>
+        case RequestFileTest(description, request, fileUrl) =>
           s"$description" >> {
-            val is = java.nio.file.Files.newInputStream(filepath)
-            val timeCorrected = setTimezoneToSystemLocale(OmiParser.XMLParser.load( is ).toString)
+            val timeCorrected = setTimezoneToSystemLocale(OmiParser.XMLParser.load( fileUrl ).toString)
               val xml: Elem = OmiParser.XMLParser.loadString(timeCorrected)
             "to XML test" >> {
               request.asXML must beEqualToIgnoringSpace( xml )

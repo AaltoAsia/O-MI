@@ -17,9 +17,11 @@ import org.specs2.specification.BeforeAfterAll
 import scala.concurrent.Await
 import scala.concurrent.duration.DurationInt
 import scala.xml._
-
 import database._
-import journal.Models.ErasePathCommand
+import types.Path
+import org.specs2.matcher.Expectable
+import journal.LatestStore.ErasePathCommand
+
 
 class OmiServiceTest
   extends Specification
@@ -28,7 +30,6 @@ class OmiServiceTest
     with BeforeAfterAll
     with testHelpers.TestOmiService
 {
-
 
   val printer = new scala.xml.PrettyPrinter(80, 2)
 
@@ -44,7 +45,7 @@ class OmiServiceTest
   override def afterAll = {
     dbConnection.destroy()
     Await
-      .ready((singleStores.hierarchyStore.?(ErasePathCommand(types.Path("Objects")))(new Timeout(5 seconds))),
+      .ready((singleStores.hierarchyStore.?(ErasePathCommand(Path("Objects")))(new Timeout(5 seconds))),
         10 seconds)
     system.terminate()
     //XXX: DID NOT WORK
@@ -52,10 +53,24 @@ class OmiServiceTest
 
   }
 
+  def isXml = mediaType === `text/xml`
+  def isOkXml = {
+    isXml
+    status === OK
+  }
+  def omiReturn(response: Expectable[xml.Node], code:String) = response must \("response") \("result") \("return", "returnCode" -> code)
+  def omiReturn200(response: Expectable[xml.Node]) = omiReturn(response, "200")
+  def omiReturn400(response: Expectable[xml.Node]) = omiReturn(response, "400")
+
+
+
+
+
   "Data discovery, GET: OmiService" >> {
 
     "respond with hello message for GET request to the root path" >> {
       Get() ~> myRoute ~> check {
+        status === OK
         mediaType === `text/html`
         responseAs[String] must contain("Say hello to <i>O-MI Node service")
 
@@ -64,22 +79,20 @@ class OmiServiceTest
 
     "respond successfully to GET to /Objects" >> {
       Get("/Objects").withHeaders(`Remote-Address`(localHost)) ~> myRoute ~> check {
-        mediaType === `text/xml`
-        status === OK
+        isOkXml
         responseAs[NodeSeq].headOption must
           beSome.which(_.label == "Objects") // => ??? }((_: Node).label == "Objects")//.head.label === "Objects"
       }
     }
     "respond successfully to GET to /Objects/" >> {
       Get("/Objects/").withHeaders(`Remote-Address`(localHost)) ~> myRoute ~> check {
-        mediaType === `text/xml`
-        status === OK
+        isOkXml
         responseAs[NodeSeq].headOption must beSome.which(_.label == "Objects")
       }
     }
     "respond with error to non existing path" >> {
       Get("/Objects/nonexsistent7864057").withHeaders(`Remote-Address`(localHost)) ~> myRoute ~> check {
-        mediaType === `text/xml`
+        isXml
         status === NotFound
         responseAs[NodeSeq].headOption must beSome.which(_.label == "error")
       }
@@ -102,8 +115,7 @@ class OmiServiceTest
       Get(settingsPath).withHeaders(`Remote-Address`(localHost)) ~>
         myRoute ~>
         check { // this didn't work without / at start
-          status === OK
-          mediaType === `text/xml`
+          isOkXml
           responseAs[NodeSeq] must \("id") \> "Settings"
         }
     }
@@ -112,8 +124,7 @@ class OmiServiceTest
       Get(settingsPath).withHeaders(`Remote-Address`(localHost)) ~>
         myRoute ~>
         check { // this didn't work without / at start
-          status === OK
-          mediaType === `text/xml`
+          isOkXml
           responseAs[NodeSeq] must \("InfoItem", "name" -> "num-latest-values-stored")
         }
     }
@@ -121,7 +132,6 @@ class OmiServiceTest
   }
 
   "request, POST: OmiService" >> {
-    sequential
     "respond correctly to read request with invalid omi" >> {
       val request: NodeSeq =
       // NOTE: The type needed for compiler to recognize the right Marhshaller later
@@ -139,13 +149,12 @@ class OmiServiceTest
         </omiEnvelope>
 
       Post("/", request).withHeaders(`Remote-Address`(localHost)) ~> myRoute ~> check {
-        mediaType === `text/xml`
+        isOkXml
         val resp = responseAs[NodeSeq].head
         val response = resp showAs (n =>
           "Request:\n" + request + "\n\n" + "Response:\n" + printer.format(n))
-        status === OK
 
-        response must \("response") \ ("result") \ ("return", "returnCode" -> "400")
+        omiReturn400(response)
         val description = resp.\("response").\("result").\("return").\@("description")
         description must startWith("Schema error:")
       }
@@ -168,14 +177,13 @@ class OmiServiceTest
         </omiEnvelope>
 
       Post("/", request).withHeaders(`Remote-Address`(localHost)) ~> myRoute ~> check {
-        mediaType === `text/xml`
-        status === OK
+        isOkXml
         val resp = responseAs[NodeSeq].head
         val response = resp showAs (n =>
           "Request:\n" + request + "\n\n" + "Response:\n" + printer.format(n))
 
 
-        response must \("response") \ ("result") \ ("return", "returnCode" -> "400")
+        omiReturn400(response)
         val description = resp.\("response").\("result").\("return").\@("description")
         description must startWith("Schema error:")
       }
@@ -198,14 +206,13 @@ class OmiServiceTest
         </omiEnvelope>
 
       Post("/", request).withHeaders(`Remote-Address`(localHost)) ~> myRoute ~> check {
-        mediaType === `text/xml`
-        status === OK
+        isOkXml
         val resp = responseAs[NodeSeq].head
         val response = resp showAs (n =>
           "Request:\n" + request + "\n\n" + "Response:\n" + printer.format(n))
 
 
-        val nf = response must \("response") \ ("result") \ ("return", "returnCode" -> "404")
+        val nf = omiReturn(response, "404")
         val description = resp.\("response").\("result").\("return").\@("description") ===
           "Some parts of O-DF not found. msg element contains missing O-DF structure."
         val id = resp must \("response").\("result").\("msg").\("Objects").\("Object").\("id").\>("non-existing")
@@ -225,8 +232,7 @@ class OmiServiceTest
         </omiEnvelope>
 
       Post("/", request).withHeaders(`Remote-Address`(localHost)) ~> myRoute ~> check {
-        mediaType === `text/xml`
-        status === OK
+        isOkXml
         val resp = responseAs[NodeSeq].head
         val response = resp showAs (n =>
           "Request:\n" + request + "\n\n" + "Response:\n" + printer.format(n))
@@ -261,28 +267,25 @@ class OmiServiceTest
 
       "respond correctly to write request with whitelisted IPv4-addresses" >> {
         Post("/", XML.loadString(request)).withHeaders(`Remote-Address`(localHost)) ~> myRoute ~> check {
-          mediaType === `text/xml`
-          status === OK
+          isOkXml
           val resp = responseAs[NodeSeq].head
           val response = resp showAs (n =>
             "Request:\n" + request + "\n\n" + "Response:\n" + printer.format(n))
 
-
-          response must \("response") \ ("result") \ ("return", "returnCode" -> "200")
+          omiReturn200(response)
         }
 
         Post("/", XML.loadString(request.replaceAll("testSensor", "testSensor1")))
           .withHeaders(`Remote-Address`(RemoteAddress(InetAddress.getByName("127.255.255.255")))) ~> myRoute ~> check {
 
-          mediaType === `text/xml`
-          status === OK
+          isOkXml
           val resp = responseAs[NodeSeq].head
           val response = resp showAs (n =>
             "Request:\n" + request + "\n\n" + "Response:\n" + printer.format(n))
 
           //println(printer.format(resp))
 
-          response must \("response") \ ("result") \ ("return", "returnCode" -> "200")
+          omiReturn200(response)
         }
       }
 
@@ -290,14 +293,13 @@ class OmiServiceTest
         Post("/", XML.loadString(request.replaceAll("testSensor", "testSensor2")))
           .withHeaders(`Remote-Address`(RemoteAddress(InetAddress.getByName("192.65.127.80")))) ~> myRoute ~> check {
 
-          mediaType === `text/xml`
-          status === OK
+          isOkXml
           val resp = responseAs[NodeSeq].head
           val response = resp showAs (n =>
             "Request:\n" + request + "\n\n" + "Response:\n" + printer.format(n))
 
 
-          response must \("response") \ ("result") \ ("return", "returnCode" -> "401")
+          omiReturn(response, "401")
           val description = resp.\("response").\("result").\("return").\@("description")
           description startsWith ("Unauthorized")
         }
@@ -305,14 +307,13 @@ class OmiServiceTest
         Post("/", XML.loadString(request.replaceAll("testSensor", "testSensor3")))
           .withHeaders(`Remote-Address`(RemoteAddress(InetAddress.getByName("128.0.0.1")))) ~> myRoute ~> check {
 
-          mediaType === `text/xml`
-          status === OK
+          isOkXml
           val resp = responseAs[NodeSeq].head
           val response = resp showAs (n =>
             "Request:\n" + request + "\n\n" + "Response:\n" + printer.format(n))
 
 
-          response must \("response") \ ("result") \ ("return", "returnCode" -> "401")
+          omiReturn(response, "401")
           val description = resp.\("response").\("result").\("return").\@("description")
           description startsWith ("Unauthorized")
         }
@@ -323,43 +324,40 @@ class OmiServiceTest
         Post("/", XML.loadString(request.replaceAll("testSensor", "testSensor4")))
           .withHeaders(`Remote-Address`(RemoteAddress(InetAddress.getByName("0:0:0:0:0:0:0:1")))) ~> myRoute ~> check {
 
-          mediaType === `text/xml`
-          status === OK
+          isOkXml
           val resp = responseAs[NodeSeq].head
           val response = resp showAs (n =>
             "Request:\n" + request + "\n\n" + "Response:\n" + printer.format(n))
 
 
-          response must \("response") \ ("result") \ ("return", "returnCode" -> "200")
+          omiReturn200(response)
         }
         Post("/", XML.loadString(request.replaceAll("testSensor", "testSensor5")))
           .withHeaders(`Remote-Address`(RemoteAddress(InetAddress.getByName("0:0:0:FFFF:FFFF:FFFF:FFFF:FFFF")))) ~>
           myRoute ~>
           check {
 
-            mediaType === `text/xml`
-            status === OK
+            isOkXml
             val resp = responseAs[NodeSeq].head
             val response = resp showAs (n =>
               "Request:\n" + request + "\n\n" + "Response:\n" + printer.format(n))
 
 
-            response must \("response") \ ("result") \ ("return", "returnCode" -> "200")
+            omiReturn200(response)
           }
       }
       "respond correctly to write request with non-whitelisted IPv6-addresses" >> {
         Post("/", XML.loadString(request.replaceAll("testSensor", "testSensor4")))
           .withHeaders(`Remote-Address`(RemoteAddress(InetAddress.getByName("0:0:1:0:0:0:0:0")))) ~> myRoute ~> check {
 
-          mediaType === `text/xml`
-          status === OK
+          isOkXml
           val resp = responseAs[NodeSeq].head
           val response = resp showAs (n =>
             "Request:\n" + request + "\n\n" + "Response:\n" + printer.format(n))
 
           //          println(printer.format(resp))
 
-          response must \("response") \ ("result") \ ("return", "returnCode" -> "401")
+          omiReturn(response, "401")
           val description = resp.\("response").\("result").\("return").\@("description")
           description startsWith ("Unauthorized")
         }
@@ -369,13 +367,12 @@ class OmiServiceTest
           myRoute ~>
           check {
 
-            mediaType === `text/xml`
-            status === OK
+            isOkXml
             val resp = responseAs[NodeSeq].head
             val response = resp showAs (n =>
               "Request:\n" + request + "\n\n" + "Response:\n" + printer.format(n))
 
-            response must \("response") \ ("result") \ ("return", "returnCode" -> "401")
+            omiReturn(response, "401")
             val description = resp.\("response").\("result").\("return").\@("description")
             description startsWith ("Unauthorized")
           }
@@ -394,26 +391,24 @@ class OmiServiceTest
         Post("/", XML.loadString(request))
           .withHeaders(`Remote-Address`(RemoteAddress(InetAddress.getByName("192.65.127.80")))) ~> myRoute ~> check {
 
-          mediaType === `text/xml`
-          status === OK
+          isOkXml
           val resp = responseAs[NodeSeq].head
           val response = resp showAs (n =>
             "Request:\n" + request + "\n\n" + "Response:\n" + printer.format(n))
 
-          response must \("response") \ ("result") \ ("return", "returnCode" -> "200")
+          omiReturn200(response)
           response must \("response") \ ("result") \ ("msg") \ ("Objects") \ ("Object")
         }
         Post("/", XML.loadString(request))
           .withHeaders(`Remote-Address`(RemoteAddress(InetAddress.getByName("187.42.74.1"))),
             RawHeader("HTTP_EPPN", "someNonExistentUser@cheatOrganization.zw")) ~> myRoute ~> check {
 
-          mediaType === `text/xml`
-          status === OK
+          isOkXml
           val resp = responseAs[NodeSeq].head
           val response = resp showAs (n =>
             "Request:\n" + request + "\n\n" + "Response:\n" + printer.format(n))
 
-          response must \("response") \ ("result") \ ("return", "returnCode" -> "200")
+          omiReturn200(response)
           response must \("response") \ ("result") \ ("msg") \ ("Objects") \ ("Object")
         }
       }
@@ -422,13 +417,12 @@ class OmiServiceTest
           .withHeaders(`Remote-Address`(RemoteAddress(InetAddress.getByName("192.65.127.80"))),
             RawHeader("HTTP_EPPN", "someNonExistentUser@cheatOrganization.zw")) ~> myRoute ~> check {
 
-          mediaType === `text/xml`
-          status === OK
+          isOkXml
           val resp = responseAs[NodeSeq].head
           val response = resp showAs (n =>
             "Request:\n" + request + "\n\n" + "Response:\n" + printer.format(n))
 
-          response must \("response") \ ("result") \ ("return", "returnCode" -> "401")
+          omiReturn(response, "401")
           val description = resp.\("response").\("result").\("return").\@("description")
           description startsWith ("Unauthorized")
         }
@@ -438,20 +432,47 @@ class OmiServiceTest
           .withHeaders(`Remote-Address`(RemoteAddress(InetAddress.getByName("192.65.127.80"))),
             RawHeader("HTTP_EPPN", "myself@testshib.org")) ~> myRoute ~> check {
 
-          mediaType === `text/xml`
-          status === OK
+          isOkXml
 
           val resp = responseAs[NodeSeq].head
           val response = resp showAs (n =>
             "Request:\n" + request + "\n\n" + "Response:\n" + printer.format(n))
 
-
-          response must \("response") \ ("result") \ ("return", "returnCode" -> "200")
+          omiReturn200(response)
         }
       }
     }
+    "accept empty Object in write request (issue #8)" >> {
+      val emptyObjWrite: String =
+        """
+        <omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="0">
+          <write msgformat="odf">
+            <msg >
+              <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
+                <Object type="myEmptyObj">
+                  <id>emptyObject</id>
+                </Object>
+              </Objects>
+            </msg>
+          </write>
+        </omiEnvelope>"""
 
-    /**
+      Post("/", XML.loadString(emptyObjWrite)).withHeaders(`Remote-Address`(localHost)) ~> myRoute ~> check {
+        isOkXml
+        val resp = responseAs[NodeSeq].head
+        val response = resp showAs (n =>
+          "Request:\n" + emptyObjWrite + "\n\n" + "Response:\n" + printer.format(n))
+        omiReturn200(response)
+      }
+      Get("/Objects/emptyObject") ~> myRoute ~> check {
+        isOkXml
+        val resp = responseAs[NodeSeq].head
+        resp must \("id") \> "emptyObject"
+        resp \@("type") === "myEmptyObj"
+      }
+    }
+
+    /*
       * EXAMPLES:
       *
       * "return a greeting for GET requests to the root path" in {

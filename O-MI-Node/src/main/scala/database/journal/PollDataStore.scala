@@ -1,8 +1,9 @@
 package database.journal
 
-import akka.actor.ActorLogging
+import akka.actor.{ActorLogging, Props}
 import akka.persistence._
 import database.journal.Models._
+import database.journal.PollDataStore._
 import types.Path
 import types.odf.Value
 import utils._
@@ -10,8 +11,25 @@ import utils._
 import scala.concurrent.duration.Duration
 import scala.util.Try
 
-class PollDataStore extends PersistentActor with ActorLogging {
-  def persistenceId: String = "polldatastore"
+object PollDataStore {
+  def props(id: String = "polldatastore"): Props = Props(new PollDataStore(id))
+
+  //PollData protocol
+  case class AddPollData(subId: Long, path: Path, value: Value[Any]) extends PersistentCommand
+
+  case class PollEventSubscription(subId: Long) extends PersistentCommand
+
+  case class PollIntervalSubscription(subId: Long) extends PersistentCommand
+
+  case class RemovePollSubData(subId: Long) extends PersistentCommand
+
+  case class CheckSubscriptionData(subId: Long) extends Command
+
+}
+
+class PollDataStore(id: String) extends PersistentActor with ActorLogging {
+  override def persistenceId: String = id
+  //"polldatastore"
   val oldestSavedSnapshot: Long =
     Duration(
       context.system.settings.config.getDuration("omi-service.snapshot-delete-older").toMillis,

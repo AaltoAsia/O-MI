@@ -28,14 +28,15 @@ addCommandAlias("systemTest", "omiNode/testOnly http.SystemTest")
 
 def commonSettings(moduleName: String) = Seq(
   name := s"O-MI-$moduleName",
-  version := "1.0.5", // WARN: Release ver must be "x.y.z" (no dashes, '-')
+  version := "1.0.6.dev", // WARN: Release ver must be "x.y.z" (no dashes, '-')
   scalaVersion := "2.12.6",
-  scalacOptions := Seq("-unchecked", "-feature", "-deprecation", "-encoding", "utf8", "-Xlint"),
+  scalacOptions := Seq("-unchecked", "-feature", "-deprecation", "-encoding", "utf8", "-Xlint", s"-P:genjavadoc:out=${target.value}/java"),
   scalacOptions in (Compile,doc) ++= Seq("-groups", "-deprecation", "-implicits", "-diagrams", "-diagrams-debug", "-encoding", "utf8"),
   //javacOptions += "-Xlint:unchecked",
   autoAPIMappings := true,
   exportJars := true,
   EclipseKeys.withSource := true,
+  Test / fork := true,
   coverageExcludedPackages := "parsing.xmlGen.*;database\\.journal\\.P[A-Z].*;types.OdfTypes.*;",
 
   //ScoverageSbtPlugin.ScoverageKeys.coverageExcludedPackages := "parsing.xmlGen.*;"
@@ -47,7 +48,6 @@ lazy val Javadoc = config("genjavadoc") extend Compile
 
 lazy val javadocSettings = inConfig(Javadoc)(Defaults.configSettings) ++ Seq(
   addCompilerPlugin("com.typesafe.genjavadoc" %% "genjavadoc-plugin" % "0.11" cross CrossVersion.full),
-  scalacOptions += s"-P:genjavadoc:out=${target.value}/java",
   packageDoc in Compile := (packageDoc in Javadoc).value,
   sources in Javadoc :=
     (target.value / "java" ** "*.java").get ++
@@ -225,6 +225,8 @@ lazy val root = (project in file(".")).
     */
       linuxPackageMappings in Rpm := configWithNoReplace((linuxPackageMappings in Rpm).value),
       debianPackageDependencies in Debian ++= Seq("java8-runtime", "bash (>= 2.05a-11)"),
+      //debianNativeBuildOptions in Debian := Nil, // dpkg-deb's default compression (currently xz)
+      debianNativeBuildOptions in Debian := Seq("-Zgzip", "-z3"), // gzip compression at level 3
 
     /////////////////////////////////////////////////////////////
     //Prevent aggregation of following commands to sub projects//

@@ -12,7 +12,7 @@ import akka.pattern.ask
 import akka.testkit.TestProbe
 import akka.util.Timeout
 import database._
-import journal.Models.ErasePathCommand
+import journal.LatestStore.ErasePathCommand
 import org.specs2.concurrent.ExecutionEnv
 import org.specs2.mutable._
 import org.specs2.specification.BeforeAfterAll
@@ -36,7 +36,7 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
   // TODO: better cleaning after tests
   def beforeAll() = {
     Await
-      .ready((singleStores.hierarchyStore ? ErasePathCommand(types.Path("/Objects"))) (new Timeout(20 seconds)),
+      .ready(singleStores.erasePathHierarchy(types.Path("/Objects")),
         20 seconds)
   }
 
@@ -123,7 +123,7 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
     Await.ready(future, 2 seconds)
     dbConnection.destroy()
     Await
-      .ready((singleStores.hierarchyStore ? ErasePathCommand(types.Path("/Objects"))) (new Timeout(20 seconds)),
+      .ready(singleStores.erasePathHierarchy(types.Path("/Objects")),
         20 seconds)
   }
 
@@ -473,7 +473,7 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
           val wsServer2 = new WsTestCallbackClient(wsProbe2.ref, "ws://localhost", 8080)
           wsServer1.offer(
             """<?xml version="1.0" encoding="UTF-8"?>
-            <omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="10">
+            <omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="40">
             <read msgformat="odf" interval="-1" callback="0">
               <msg>
                 <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/">
@@ -487,7 +487,7 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
           </omiEnvelope>""")
           wsServer2.offer(
             """<?xml version="1.0" encoding="UTF-8"?>
-            <omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="10">
+            <omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="40">
             <read msgformat="odf" interval="-1" callback="0">
               <msg>
                 <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/">

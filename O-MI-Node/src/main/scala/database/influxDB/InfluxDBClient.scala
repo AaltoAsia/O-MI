@@ -12,7 +12,6 @@ import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.unmarshalling._
 import scala.concurrent.{Future}
 import scala.concurrent.duration._
-import scala.util.Try
 
 import http.OmiConfigExtension
 

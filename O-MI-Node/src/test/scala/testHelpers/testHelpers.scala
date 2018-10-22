@@ -6,7 +6,6 @@ import scala.language.postfixOps
 import scala.xml.{Node, PrettyPrinter, SAXParser, XML}
 import scala.xml.parsing._
 import scala.util.Random
-
 import akka.testkit.TestEventListener
 import akka.Done
 import akka.actor._
@@ -22,19 +21,18 @@ import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
 import org.specs2.matcher._
 import org.specs2.mock.Mockito
-import org.specs2.mock.Mockito.{mock,doReturn}
+import org.specs2.mock.Mockito.{doReturn, mock}
 import org.specs2.mutable._
 import org.specs2.specification.Scope
 import org.xml.sax.InputSource
-
 import types.odf._
 import responses._
 import http._
-import database.journal.Models.GetTree
 import database.SingleStores
 import database.TestDB
 import database.DBHandler
 import agentSystem._
+import database.journal.HierarchyStore.GetTree
 
 //class TestOmiServer(config: Config) extends OmiNode {
 class TestOmiServer() extends OmiNode with OmiServiceTestImpl {
@@ -80,11 +78,11 @@ trait SilentActorSystem {
 }
 
 trait TestOmiService extends OmiServiceTestImpl {
-  implicit def default = RouteTestTimeout(5.second)
+  implicit def default = RouteTestTimeout(40.second)
 
 }
 trait OmiServiceTestImpl extends OmiService with AnyActorSystem {
-  lazy implicit val settings: OmiConfigExtension = OmiConfig(system)
+  lazy implicit val settings: OmiConfigExtension = OmiConfig(Actorstest.createSilentAs())
   lazy implicit val callbackHandler: CallbackHandler = new CallbackHandler(settings)(system, materializer)
   lazy implicit val singleStores: SingleStores = SingleStores(settings)
 
@@ -140,11 +138,7 @@ class SystemTestCallbackServer(destination: ActorRef, interface: String, port: I
 
   val prettyPrint = new PrettyPrinter(80, 2)
   val route = formFields("msg".as[String]) { msg =>
-
     //val pretty = prettyPrint.format( XML.loadString(msg))
-    //println("\n\n")
-    //println(msg)
-    //println("\n\n")
     destination ! Option(XML.loadString(msg))
     //entity(as[NodeSeq]) { data =>
     //destination ! Option(data)

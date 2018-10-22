@@ -1,8 +1,5 @@
 package database
 
-import akka.pattern.ask
-import akka.util.Timeout
-import journal.Models._
 import parsing.xmlGen._
 import responses.CallbackHandler._
 import types.OmiTypes._
@@ -17,7 +14,7 @@ import scala.util.control.NonFatal
 
 trait DBWriteHandler extends DBHandlerBase {
 
-  private def sendEventCallback(esub: EventSub, infoItems: Seq[InfoItem])(implicit timeout: Timeout): Unit = {
+  private def sendEventCallback(esub: EventSub, infoItems: Seq[InfoItem]): Unit = {
     val odf = ImmutableODF(infoItems)
     esub match {
       case ne: NewEventSub =>
@@ -30,11 +27,11 @@ trait DBWriteHandler extends DBHandlerBase {
     )
   }
 
-  private def sendEventCallback(esub: EventSub, odfWithoutTypes: ImmutableODF)(implicit timeout: Timeout): Unit = {
+  private def sendEventCallback(esub: EventSub, odfWithoutTypes: ImmutableODF): Unit = {
     log.debug("Sending event callbacks")
     val id = esub.id
     val callbackAddr = esub.callback
-    val fhTree: Future[ImmutableODF] = (singleStores.hierarchyStore ? GetTree).mapTo[ImmutableODF]
+    val fhTree: Future[ImmutableODF] = singleStores.getHierarchyTree()
 
     val fodf: Future[ODF] = fhTree.map(hTree =>
       hTree.selectSubTree(odfWithoutTypes.getLeafPaths).descriptionsRemoved.metaDatasRemoved.union(odfWithoutTypes))
@@ -66,7 +63,7 @@ trait DBWriteHandler extends DBHandlerBase {
       case fail@MissingConnection(callback) =>
         log.warning(
           s"Callback failed; subscription id:${esub.id}, reason: ${fail.toString}, subscription is removed.")
-        singleStores.subStore ! RemoveEventSub(esub.id)
+        singleStores.removeEventSub(esub.id)
       case fail: CallbackFailure =>
         failed(fail.toString)
       case e: Throwable =>
@@ -74,7 +71,7 @@ trait DBWriteHandler extends DBHandlerBase {
     }
   }
 
-  private def processEvents(events: Seq[InfoItemEvent])(implicit timeout: Timeout): Unit = {
+  private def processEvents(events: Seq[InfoItemEvent]): Unit = {
     log.debug("Processing events...")
 
     val esubListsF: Future[Seq[(EventSub, InfoItem)]] = Future.sequence(events.collect {
@@ -82,14 +79,14 @@ trait DBWriteHandler extends DBHandlerBase {
       case AttachEvent(infoItem) =>
         // val fpollNewSubs  = (singleStores.subStore ? GetNewEventSubsForPath(infoItem.path)).mapTo[Set[PollNewEventSub]]
         //.map(pollNewSubs => infoItem.values.headOption.map(value => pollNewSubs.map(pnes => (singleStores.pollDataPrevayler ? AddPollData(pnes.id, infoItem.path, value)))))
-        val pollnewSubs: Future[Set[Any]] = infoItem.values.headOption.map(value =>
+        val pollnewSubs = infoItem.values.headOption.map(value =>
           for {
-            pollNewSubs <- (singleStores.subStore ? GetNewEventSubsForPath(infoItem.path)).mapTo[Set[PollNewEventSub]]
+            pollNewSubs <- singleStores.getNewEventSubsForPath(infoItem.path)
             result <- Future.sequence(pollNewSubs.map(pnes =>
-              (singleStores.pollDataStore ? AddPollData(pnes.id, infoItem.path, value))))
+              (singleStores.addPollData(pnes.id, infoItem.path, value))))
           } yield result).getOrElse(Future.successful(Set.empty[Any]))
-        val fnesubs = (singleStores.subStore ? LookupNewEventSubs(infoItem.path)).mapTo[Seq[NewEventSub]]
-        val fesubs = (singleStores.subStore ? LookupEventSubs(infoItem.path)).mapTo[Seq[NormalEventSub]]
+        val fnesubs = singleStores.lookupNewEventSubs(infoItem.path)
+        val fesubs = singleStores.lookupEventSubs(infoItem.path)
         for {
           _ <- pollnewSubs
           nesubs: Seq[NewEventSub] <- fnesubs
@@ -99,14 +96,12 @@ trait DBWriteHandler extends DBHandlerBase {
           }
         } yield resp
       case ChangeEvent(infoItem) => // note: AttachEvent extends ChangeEvent
-        val fesubs: Future[Seq[NormalEventSub]] = (singleStores.subStore ? LookupEventSubs(infoItem.path))
-          .mapTo[Seq[NormalEventSub]]
-        val res: Future[Seq[(NormalEventSub, InfoItem)]] = fesubs.map(esubs => esubs map {
+        val fesubs: Future[Seq[NormalEventSub]] = singleStores.lookupEventSubs(infoItem.path)
+        val res: Future[Seq[(NormalEventSub, InfoItem)]] = fesubs.map(esubs => esubs.map {
           (_, infoItem)
         }) // make tuplesres
         res
     }).map(_.flatten)
-    //.flatten
     // Aggregate events under same subscriptions (for optimized callbacks)
     val esubAggregationF: Future[Map[EventSub, Seq[(EventSub, InfoItem)]]] /*: Map[EventSub, Seq[(EventSub, OdfInfoItem)]]*/ =
     esubListsF.map(_.groupBy { case (eventSub, _) => eventSub })
@@ -131,34 +126,20 @@ trait DBWriteHandler extends DBHandlerBase {
     * @param oldValueOpt
     * @return returns Sequence of SubValues to be added to database
     */
-  private def handlePollData(path: Path, newValue: Value[Any], oldValueOpt: Option[Value[Any]])
-                            (implicit timeout: Timeout) = {
+  private def handlePollData(path: Path, newValue: Value[Any], oldValueOpt: Option[Value[Any]]) = {
     //log.debug(s"Handling poll data... for $path")
     //TODO: Do this for multiple paths at the same time
-    val relatedPollSubsF: Future[Set[NotNewEventSub]] = (singleStores.subStore ? GetSubsForPath(path))
-      .mapTo[Set[NotNewEventSub]]
+    val relatedPollSubsF: Future[Set[NotNewEventSub]] = singleStores.getSubsForPath(path)
     for {
       relatedPollSubs <- relatedPollSubsF
       readyFuture <- Future.sequence(relatedPollSubs.collect {
         case sub if oldValueOpt.forall(oldValue =>
           singleStores.valueShouldBeUpdated(oldValue, newValue) &&
             (oldValue.timestamp.before(sub.startTime) || oldValue.value != newValue.value)) => {
-          (singleStores.pollDataStore ? AddPollData(sub.id, path, newValue))
+          singleStores.addPollData(sub.id, path, newValue)
         }
       })
     } yield readyFuture
-    // log.debug(s"Related poll subs: ${relatedPollSubs.size} ")
-    // frelatedPollSubs.foreach(relatedPollSubs =>
-    //   relatedPollSubs.collect {
-    //     //if no old value found for path or start time of subscription is after last value timestamp
-    //     //if new value is updated value. forall for option returns true if predicate is true or the value is None
-    //     case sub if oldValueOpt.forall(oldValue =>
-    //       singleStores.valueShouldBeUpdated(oldValue, newValue) &&
-    //         (oldValue.timestamp.before(sub.startTime) || oldValue.value != newValue.value)) => {
-    //       (singleStores.pollDataPrevayler ? AddPollData(sub.id, path, newValue))
-    //     }
-    //   }
-    // )
   }
 
   protected def handleWrite(write: WriteRequest): Future[ResponseRequest] = {
@@ -169,7 +150,6 @@ trait DBWriteHandler extends DBHandlerBase {
     val odf = write.odf
     // save only changed values
     log.debug("Check old values")
-    implicit val timeout: Timeout = write.handleTTL
     val (leafII, leafObjects) = odf.getLeafs.partition {
       case ii: InfoItem => true
       case obj: Object => false
@@ -179,7 +159,7 @@ trait DBWriteHandler extends DBHandlerBase {
     val pathValueOldValueTuples = for {
       info <- leafInfoItems
       path = info.path
-      oldValueOpt = (singleStores.latestStore ? SingleReadCommand(path)).mapTo[Option[Value[Any]]]
+      oldValueOpt = singleStores.readValue(path)
       value <- info.values
     } yield (path, value, oldValueOpt)
     val pollFuture = Future.sequence(pathValueOldValueTuples.map {
@@ -257,14 +237,14 @@ trait DBWriteHandler extends DBHandlerBase {
           updatedCache <- updatedStaticItemsO match {
             case Some(nodes) => {
               val updateTree: ImmutableODF = ImmutableODF(nodes)
-              (singleStores.hierarchyStore ? UnionCommand(updateTree))
+              singleStores.updateHierarchyTree(updateTree)
 
             }
             case None => Future.successful[Unit](Unit)
           }
           triggeringEvents <- ftriggeringEvents
           latestF <- {
-            singleStores.latestStore ? WriteCommand(
+            singleStores.writeValues(
               triggeringEvents.flatMap(iie =>
                 iie.infoItem.values.headOption.map(newValue => iie.infoItem.path -> newValue)).toMap
                   )

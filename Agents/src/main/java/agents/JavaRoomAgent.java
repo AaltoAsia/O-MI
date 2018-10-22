@@ -15,7 +15,7 @@ import scala.concurrent.duration.Duration;
 import scala.concurrent.duration.FiniteDuration;
 import scala.util.Random;
 import types.JavaHelpers;
-import types.OdfFactory;
+import types.OldOdfFactory;
 import types.OmiFactory;
 import types.OdfTypes.OdfObjects;
 import types.OdfTypes.OdfObject;
@@ -118,7 +118,7 @@ public class JavaRoomAgent extends JavaInternalAgent {
     objects.add( createExampleRoom() );
     
     //Create O-DF Objects
-    return OdfFactory.createOdfObjects(objects); 
+    return OldOdfFactory.createOdfObjects(objects); 
   }
 
   /**
@@ -128,7 +128,7 @@ public class JavaRoomAgent extends JavaInternalAgent {
 
     Path path = new Path( "Objects/ExampleRoom" );
 
-    OdfDescription description = OdfFactory.createOdfDescription(
+    OdfDescription description = OldOdfFactory.createOdfDescription(
         "Example room filled with examples"
     );
 
@@ -142,7 +142,7 @@ public class JavaRoomAgent extends JavaInternalAgent {
     objects.add( createSensorBox(path));
 
     //Create an actual O-DF Object
-    return OdfFactory.createOdfObject(
+    return OldOdfFactory.createOdfObject(
         path,
         infoItems,
         objects,
@@ -164,7 +164,7 @@ public class JavaRoomAgent extends JavaInternalAgent {
     String parentId = parentArray[ parentArray.length - 1];//Last
 
     //Create a description
-    OdfDescription description = OdfFactory.createOdfDescription(
+    OdfDescription description = OldOdfFactory.createOdfDescription(
         "SensorBox in " + parentId
     );
 
@@ -178,7 +178,7 @@ public class JavaRoomAgent extends JavaInternalAgent {
     Vector<OdfObject> objects = new Vector<>();
 
     //Create O-DY Object for SensorBox
-    return OdfFactory.createOdfObject(
+    return OldOdfFactory.createOdfObject(
         path,
         infoItems,
         objects,
@@ -218,36 +218,36 @@ public class JavaRoomAgent extends JavaInternalAgent {
     // String, Short, Int, Long, Float and Double.
     // Any other type is converted to String with toString(),
     // but typeStr is not changed.
-    OdfValue<Object> value = OdfFactory.createOdfValue(
+    OdfValue<Object> value = OldOdfFactory.createOdfValue(
         newValueStr, typeStr, timestamp
     );
     values.add(value);
 
     //Create Unit meta data for the sensor. 
     Vector<OdfValue<Object>> metaValues = new Vector<>();
-    OdfValue<Object> metaValue = OdfFactory.createOdfValue(
+    OdfValue<Object> metaValue = OldOdfFactory.createOdfValue(
         unit, "xs:string", timestamp
     );
     metaValues.add(metaValue);
 
     Vector<OdfInfoItem> metaInfoItems = new Vector<>();
-    OdfInfoItem metaInfoItem = OdfFactory.createOdfInfoItem(
+    OdfInfoItem metaInfoItem = OldOdfFactory.createOdfInfoItem(
        new Path( path.toString() +"/MetaData/Unit"), 
        metaValues
     );
     metaInfoItems.add(metaInfoItem);
 
-    OdfMetaData metaData = OdfFactory.createOdfMetaData(
+    OdfMetaData metaData = OldOdfFactory.createOdfMetaData(
       metaInfoItems    
     );
 
     //Create description for the sensor.
-    OdfDescription description = OdfFactory.createOdfDescription(
+    OdfDescription description = OldOdfFactory.createOdfDescription(
         name + " sensor of " + parentId
     );
 
     // Create O-DF InfoItem for the sensor. 
-    return OdfFactory.createOdfInfoItem(
+    return OldOdfFactory.createOdfInfoItem(
         path, 
         values,
         description,
@@ -289,36 +289,36 @@ public class JavaRoomAgent extends JavaInternalAgent {
     // String, Short, Int, Long, Float and Double.
     // Any other type is converted to String with toString(),
     // but type attribute of O-DF InfoItem is not changed.
-    OdfValue<Object> value = OdfFactory.createOdfValue(
+    OdfValue<Object> value = OldOdfFactory.createOdfValue(
         newValueStr, timestamp
     );
     values.add(value);
 
     //Create type meta data about location.
     Vector<OdfValue<Object>> metaValues = new Vector<>();
-    OdfValue<Object> metaValue = OdfFactory.createOdfValue(
+    OdfValue<Object> metaValue = OldOdfFactory.createOdfValue(
         "ISO 6709", timestamp
     );
     metaValues.add(metaValue);
 
     Vector<OdfInfoItem> metaInfoItems = new Vector<>();
-    OdfInfoItem metaInfoItem = OdfFactory.createOdfInfoItem(
+    OdfInfoItem metaInfoItem = OldOdfFactory.createOdfInfoItem(
        new Path( path.toString() +"/MetaData/type"), 
        metaValues
     );
     metaInfoItems.add(metaInfoItem);
 
-    OdfMetaData metaData = OdfFactory.createOdfMetaData(
+    OdfMetaData metaData = OldOdfFactory.createOdfMetaData(
       metaInfoItems    
     );
 
     //Create description for the location.
-    OdfDescription description = OdfFactory.createOdfDescription(
+    OdfDescription description = OldOdfFactory.createOdfDescription(
         "Location of " + parentId
     );
 
     // Create O-DF InfoItem for location.
-    return OdfFactory.createOdfInfoItem(
+    return OldOdfFactory.createOdfInfoItem(
         path, 
         values,
         description,
@@ -431,7 +431,7 @@ public class JavaRoomAgent extends JavaInternalAgent {
 
       // Multiple values can be added at the same time but we add one
       Vector<OdfValue<Object>> newValues = new Vector<>();
-      OdfValue<Object> value = OdfFactory.createOdfValue(
+      OdfValue<Object> value = OldOdfFactory.createOdfValue(
           newValueStr, typeStr, timestamp
       );
       newValues.add(value);

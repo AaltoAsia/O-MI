@@ -69,7 +69,7 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
   )
 
   def getChildPaths(wantedPath: Path): Set[Path] = {
-    val wantedLength = wantedPath.length +1
+    val wantedLength = wantedPath.length
     paths
       .keysIteratorFrom( wantedPath )
       .drop(1)
