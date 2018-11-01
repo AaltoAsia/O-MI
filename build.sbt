@@ -145,7 +145,7 @@ lazy val root = (project in file(".")).
     ///////////////////////////////////////////////////////////////////////
       bashScriptExtraDefines += """addJava "-Dconfig.file=${app_home}/../conf/application.conf"""",
       bashScriptExtraDefines += """addJava "-Dlogback.configurationFile=${app_home}/../conf/logback.xml"""",
-      bashScriptExtraDefines += """cd  ${app_home}/..""",
+      bashScriptExtraDefines += """cd  "${app_home}/.."""",
       batScriptExtraDefines += """set _JAVA_OPTS=%_JAVA_OPTS% -Dconfig.file=%O_MI_NODE_HOME%\\conf\\application.conf""", 
       batScriptExtraDefines += """set _JAVA_OPTS=%_JAVA_OPTS% -Dlogback.configurationFile=%O_MI_NODE_HOME%\\conf\\logback.xml""", 
       batScriptExtraDefines += """cd "%~dp0\.."""",
