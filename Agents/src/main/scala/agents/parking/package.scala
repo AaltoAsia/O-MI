@@ -72,6 +72,11 @@ package object parking{
           case value: StringValue if value.value.toLowerCase == "false" => false
           case value: StringPresentedValue if value.value.toLowerCase == "true" => true
           case value: StringPresentedValue if value.value.toLowerCase == "false" => false
+          case value: StringValue if value.value == "1" => true
+          case value: StringValue if value.value == "0" => false
+          case value: StringPresentedValue if value.value == "1" => true
+          case value: StringPresentedValue if value.value == "0" => false
+          case value: IntValue => value.value == 1
           case value: BooleanValue =>
             value.value
         }

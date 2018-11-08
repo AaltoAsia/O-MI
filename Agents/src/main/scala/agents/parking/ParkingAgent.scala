@@ -171,7 +171,8 @@ class ParkingAgent(
     updateIndexes(facilities,odf)
     val availableWrite = odf.nodesWithType(ParkingSpace.mvType(Some("mv"))).exists{
       obj: Node =>
-        odf.get(obj.path / "available").nonEmpty
+        odf.get(obj.path / "available").nonEmpty ||
+        odf.get(obj.path / "isOccupied").nonEmpty // isOccupied !
     }
     if( calculateCapacitiesEnabled && availableWrite && facilities.nonEmpty ) calculateCapacities(facilities.map(_.path))
     else Future{ response }
@@ -280,7 +281,7 @@ class ParkingAgent(
 
                           val current = spaces.count{
                               ps: ParkingSpace =>
-                                ps.available.nonEmpty &&
+                                ps.available.nonEmpty && // isOccupied fixed in ParkingSpace parsing
                                 ps.available.forall{ b: Boolean => b }
                             }.toLong
                           //log.debug( s"Updating ${capacity.name}: current ${capacity.current} to $current, max ${capacity.maximum} to ${spaces.length}")
