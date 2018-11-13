@@ -163,9 +163,9 @@ trait DBWriteHandler extends DBHandlerBase {
       value <- info.values
     } yield (path, value, oldValueOpt)
     val pollFuture = Future.sequence(pathValueOldValueTuples.map {
-      case (path, oldValue, fvalue) =>
-        fvalue.flatMap(value =>
-          handlePollData(path, oldValue, value))
+      case (path,value , oldValueOpt) =>
+        oldValueOpt.flatMap(oldValue =>
+          handlePollData(path, value, oldValue))
     }) //Add values to pollsubs in this method
     pollFuture.failed.foreach {
       t: Throwable => log.error(t, "Error when adding poll values to database")
