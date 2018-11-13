@@ -59,6 +59,20 @@ class OdfTypesTest extends Specification {
     TestEntry( "return all SubTree paths when asked", testingNodes, getCorrectSubTree),
     TestEntry( "create correct XML presentation", testingNodes, toXMLTest),
     TestEntry( "add also missing ancestors when a Node is added", testingNodes, addTest),
+    TestEntry( "be nonempty when there is more nodes than just root Objects", testingNodes, nonEmptyTest),
+    TestEntry( "be asked if it contains some path and return correct answer", testingNodes, containsTest),
+    TestEntry( "be able to return only nodes that have prorietary/user defined attributes", testingNodes, nodesWithAttributesTest),
+    TestEntry( "be able to return only paths of InfoItems that have MetaData", testingNodes, pathsOfInfoItemsWithMetaDataTest),
+    TestEntry( "be able to return only InfoItems that have MetaData", testingNodes, infoItemsWithMetaDataTest),
+    TestEntry( "be able to return only nodes that have descriptions", testingNodes, nodesWithDescriptionTest),
+    TestEntry( "be able to return only nodes that have given type", testingNodes, nodesWithTypeTest),
+    TestEntry( "be able to return only Objects that have given type", testingNodes, objectsWithTypeTest),
+    TestEntry( "be able to return only paths that have given type", testingNodes, pathsWithTypeTest),
+    TestEntry( "be able to return only nodes that have given type and are childs of given path", testingNodes, childsWithTypeTest),
+    TestEntry( "be able to return only nodes that have given type and are descendants of given path", testingNodes, descendantsWithTypeTest),
+    TestEntry( "be able to return only paths of nodes that have descriptions", testingNodes, pathsOfNodesWithDescriptionTest),
+    TestEntry( "be root only when only Objects is present", Vector(Objects()), isRootOnlyTest),
+    TestEntry( "be equal to other ODF with same nodes and unequal with Any thing other than classes implementing ODF trait", testingNodes, equalsTest),
     TestEntry(
       "get correct childs for requested path", 
       Vector(
@@ -126,6 +140,111 @@ class OdfTypesTest extends Specification {
 
   def nonEmptyTest(odf: ODF) = {
     odf.nonEmpty === true
+  }
+  def isRootOnlyTest(odf: ODF) = {
+    odf.isRootOnly === true
+  }
+  def containsTest(odf: ODF) ={
+    (odf.contains(OdfPath("Objects", "ObjectA", "II2")) === true) and
+    (odf.contains(OdfPath("Objects", "ObjectA")) === true) and
+    (odf.contains(OdfPath("Objects")) === true) and
+    (odf.contains(OdfPath("Objects", "NonExistent")) === false) 
+  }
+  def nodesWithAttributesTest(odf: ODF) ={
+    odf.nodesWithAttributes.toSet should beEqualTo(
+      testingNodes.filter{
+        node: Node => node.attributes.nonEmpty
+      }.toSet
+    )
+  }
+
+  def infoItemsWithMetaDataTest(odf: ODF) ={
+    odf.infoItemsWithMetaData.toSet should beEqualTo(
+      testingNodes.filter{
+        case ii: InfoItem => ii.metaData.nonEmpty
+        case node: Node => false
+      }.toSet
+    )
+  }
+
+  def pathsOfInfoItemsWithMetaDataTest(odf: ODF) ={
+    odf.pathsOfInfoItemsWithMetaData.toSet should beEqualTo(
+      testingNodes.filter{
+        case ii: InfoItem => ii.metaData.nonEmpty
+        case node: Node => false
+      }.map(_.path).toSet
+    )
+  }
+  def pathsOfNodesWithDescriptionTest(odf: ODF) ={
+    odf.pathsOfNodesWithDescription.toSet should beEqualTo(
+      testingNodes.filter{
+        case obj: Object => obj.descriptions.nonEmpty
+        case ii: InfoItem => ii.descriptions.nonEmpty
+        case node: Node => false
+      }.map(_.path).toSet
+    )
+  }
+
+  def nodesWithDescriptionTest(odf: ODF) ={
+    odf.nodesWithDescription.toSet should beEqualTo(
+      testingNodes.filter{
+        case obj: Object => obj.descriptions.nonEmpty
+        case ii: InfoItem => ii.descriptions.nonEmpty
+        case node: Node => false
+      }.toSet
+    )
+  }
+
+  def objectsWithTypeTest(odf: ODF) ={
+    odf.objectsWithType("TestingType").toSet should beEqualTo(
+      testingNodes.filter{
+        case obj: Object => obj.typeAttribute.contains("TestingType")
+        case node: Node => false
+      }.toSet
+    )
+  }
+
+
+  def pathsWithTypeTest(odf: ODF) ={
+    odf.pathsWithType("TestingType").toSet should beEqualTo(
+      testingNodes.filter{
+        case obj: Object => obj.typeAttribute.contains("TestingType")
+        case ii: InfoItem => ii.typeAttribute.contains("TestingType")
+        case node: Node => false
+      }.map(_.path).toSet
+    )
+  }
+  def nodesWithTypeTest(odf: ODF) ={
+    odf.nodesWithType("TestingType").toSet should beEqualTo(
+      testingNodes.filter{
+        case obj: Object => obj.typeAttribute.contains("TestingType")
+        case ii: InfoItem => ii.typeAttribute.contains("TestingType")
+        case node: Node => false
+      }.toSet
+    )
+  }
+  def childsWithTypeTest(odf: ODF) ={
+    val parent = OdfPath("Objects", "ObjectA")
+    val correctNodes = testingNodes.filter{
+        case obj: Object => obj.typeAttribute.contains("TestingType") && obj.path.isChildOf( parent)
+        case ii: InfoItem => ii.typeAttribute.contains("TestingType") && ii.path.isChildOf( parent)
+        case node: Node => false
+      }.toSet
+
+    val nodes = odf.childsWithType(parent,"TestingType").toSet 
+    (nodes.map(_.path) should beEqualTo(correctNodes.map(_.path))) and
+    (nodes should beEqualTo(correctNodes)) 
+  }
+  //XXX: Should check for multiple paths and more complex structures
+  def descendantsWithTypeTest(odf: ODF) ={
+    val paths = Set(OdfPath("Objects", "ObjectA"),OdfPath("Objects", "ObjectC"))
+    odf.descendantsWithType(paths,"TestingType").toSet should beEqualTo(
+      testingNodes.filter{
+        case obj: Object => obj.typeAttribute.contains("TestingType") && paths.exists( path => obj.path.isDescendantOf( path) )
+        case ii: InfoItem => ii.typeAttribute.contains("TestingType") && paths.exists( path => ii.path.isDescendantOf( path) )
+        case node: Node => false
+      }.toSet
+    )
   }
 
   def convertedNewHasSameXML = {
@@ -422,6 +541,17 @@ class OdfTypesTest extends Specification {
       )
     )
   }
+  def equalsTest(
+    o_df: ODF
+  ) = {
+    val otherI = ImmutableODF(o_df.getNodesMap.values.toVector)
+    val otherM = MutableODF(o_df.getNodesMap.values.toVector)
+    ((o_df == otherI) should beEqualTo(true)) and 
+    ((o_df == otherM) should beEqualTo(true)) and 
+    ((o_df == 13) should beEqualTo(false) ) and
+    (otherI should beEqualTo(o_df)) and 
+    (otherM should beEqualTo(o_df))  
+  }
 
   def addTest(
     o_df: ODF
@@ -531,7 +661,7 @@ class OdfTypesTest extends Specification {
       <Object>
         <id>ObjectA</id>
         <InfoItem name="II1"/>
-        <InfoItem name="II2">
+        <InfoItem name="II2" type="TestingType" testing="true">
           <name>II2</name>
           <name tagType="TestTag" idType="TestID">II2O1</name>
           <name tagType="TestTag" idType="TestID">II2O2</name>
@@ -557,7 +687,7 @@ class OdfTypesTest extends Specification {
       </Object>
       <Object>
         <id>ObjectC</id>
-        <Object type="TestingType">
+        <Object type="TestingType" testing="true">
           <id tagType="TestTag" idType="TestID">ObjectCC</id>
           <id tagType="TestTag" idType="TestID">OCC</id>
           <description lang="English">Testing</description>
@@ -603,7 +733,9 @@ class OdfTypesTest extends Specification {
             "B",
             OdfPath("Objects", "ObjectA", "II2", "MetaData", "B")
           ))
-      ))
+      )),
+      attributes = testingAttributes,
+      typeAttribute = Some("TestingType"),
     ),
     InfoItem(
       "II1",
@@ -624,7 +756,8 @@ class OdfTypesTest extends Specification {
       ),
       OdfPath("Objects", "ObjectC", "ObjectCC"),
       typeAttribute = Some("TestingType"),
-      descriptions = testingDescription
+      descriptions = testingDescription,
+      attributes = testingAttributes
     )
   )
 

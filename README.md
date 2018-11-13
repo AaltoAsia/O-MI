@@ -94,7 +94,7 @@ Setup development environment
 2. [Install sbt](http://www.scala-sbt.org/0.13/tutorial/Setup.html)
 3. (windows: logout, or put sbt into PATH yourself)
 4. Open a cmd or shell to the `O-MI` project directory
-5. Then run `sbt` and in opened the ">" prompt run `re-start` to compile and run the Node
+5. Then run `sbt` and in opened the ">" prompt run `reStart` to compile and run the Node
 6. Visit http://localhost:8080/ to see that it's working
 
 You can check the [Simple Build Tool cheat sheet](#simple-build-tool-cheat-sheet) section to learn more
@@ -132,8 +132,8 @@ Native SBT commands
 Extra commands from plugins and other
 
 - We use sbt-revolver: run `sbt` and then write
-    - `re-start`: compile&run the project in background
-    - `re-stop`: close the background process
+    - `reStart`: compile&run the project in background
+    - `reStop`: close the background process
 - We use sbt-native-packager:
     - `sbt stage`: creates file structure, used in packaged version, to the `./target/universal/stage/` directory
     - `sbt debian:packageBin`: create release debian package (requires `dpkg` program installed)
@@ -167,6 +167,7 @@ for the defaults and configuration documentation.
 * In package releases: `/etc/o-mi-node/application.conf`
 * In tar and zip releases: `./conf/application.conf`
 * In development environment: `./O-MI-Node/src/main/resources/application.conf` (create a new file if not found)
+    * Default values are stored in `./O-MI-Node/src/main/resources/reference.conf`
 
 
 Library Config

@@ -26,13 +26,13 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
   //def copy( nodes : scala.collection.Map[Path,Node] ): ODF
 
 
-  def isEmpty: Boolean = paths.isEmpty || (paths.size == 1 && paths.contains(Path("Objects")))
+  final def isEmpty: Boolean = paths.isEmpty || (paths.size == 1 && paths.contains(Path("Objects")))
 
-  def nonEmpty: Boolean = !isEmpty
+  final def nonEmpty: Boolean = !isEmpty
 
-  def isRootOnly: Boolean = isEmpty
+  final def isRootOnly: Boolean = isEmpty
 
-  def contains(path: Path): Boolean = paths.contains(path)
+  final def contains(path: Path): Boolean = paths.contains(path)
 
 
   def select(that: ODF): ODF
@@ -48,27 +48,27 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
 
   def mutable: MutableODF
 
-  def getPaths: Seq[Path] = paths.toVector
+  final def getPaths: Seq[Path] = paths.toVector
 
-  def getNodes: Seq[Node] = nodes.values.toVector
+  final def getNodes: Seq[Node] = nodes.values.toVector
 
-  def getInfoItems: Seq[InfoItem] = nodes.values.collect {
+  final def getInfoItems: Seq[InfoItem] = nodes.values.collect {
     case ii: InfoItem => ii
   }.toVector
 
-  def getObjects: Seq[Object] = nodes.values.collect {
+  final def getObjects: Seq[Object] = nodes.values.collect {
     case obj: Object => obj
   }.toVector
 
-  def nodesWithStaticData: Vector[Node] = nodes.values.filter(_.hasStaticData).toVector
+  final def nodesWithStaticData: Vector[Node] = nodes.values.filter(_.hasStaticData).toVector
 
-  def nodesWithAttributes: Vector[Node] = nodes.values.filter(_.attributes.nonEmpty).toVector
+  final def nodesWithAttributes: Vector[Node] = nodes.values.filter(_.attributes.nonEmpty).toVector
 
   def getNodesMap: Map[Path, Node] = ImmutableHashMap(
     nodes.toVector: _*
   )
 
-  def getChildPaths(wantedPath: Path): Set[Path] = {
+  final def getChildPaths(wantedPath: Path): Set[Path] = {
     val wantedLength = wantedPath.length
     paths
       .keysIteratorFrom( wantedPath )
@@ -83,15 +83,15 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
       .toSet
   }
 
-  def getChilds(path: Path): Seq[Node] = {
+  final def getChilds(path: Path): Seq[Node] = {
     getChildPaths(path).flatMap { p: Path => nodes.get(p) }.toVector
   }
 
-  def getLeafs: Vector[Node] = {
+  final def getLeafs: Vector[Node] = {
     getLeafPaths.flatMap(nodes.get(_)).toVector.sortBy(_.path)(Path.PathOrdering)
   }
 
-  def getLeafPaths: Set[Path] = {
+  final def getLeafPaths: Set[Path] = {
     val ps: Seq[(Path, Int)] = paths.toSeq.zipWithIndex
     ps.collect {
       case (path: Path, index: Int) if{
@@ -104,71 +104,71 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
     }.toSet
   }
 
-  def pathsOfInfoItemsWithMetaData: Set[Path] = {
+  final def pathsOfInfoItemsWithMetaData: Set[Path] = {
     nodes.values.collect {
       case ii: InfoItem if ii.metaData.nonEmpty => ii.path
     }.toSet
   }
 
-  def infoItemsWithMetaData: Set[InfoItem] = {
+  final def infoItemsWithMetaData: Set[InfoItem] = {
     nodes.values.collect {
       case ii: InfoItem if ii.metaData.nonEmpty => ii
     }.toSet
   }
 
-  def nodesWithDescription: Set[Node] = {
+  final def nodesWithDescription: Set[Node] = {
     nodes.values.collect {
       case ii: InfoItem if ii.descriptions.nonEmpty => ii
       case obj: Object if obj.descriptions.nonEmpty => obj
     }.toSet
   }
 
-  def pathsOfNodesWithDescription: Set[Path] = {
+  final def pathsOfNodesWithDescription: Set[Path] = {
     nodes.values.collect {
       case ii: InfoItem if ii.descriptions.nonEmpty => ii.path
       case obj: Object if obj.descriptions.nonEmpty => obj.path
     }.toSet
   }
 
-  def objectsWithType(typeStr: String): Vector[Object] = {
+  final def objectsWithType(typeStr: String): Vector[Object] = {
     nodes.values.collect {
       case obj: Object if obj.typeAttribute.contains(typeStr) => obj
     }.toVector
   }
 
-  def pathsWithType(typeStr: String): Set[Path] = {
+  final def pathsWithType(typeStr: String): Set[Path] = {
     nodes.values.collect {
       case ii: InfoItem if ii.typeAttribute.contains(typeStr) => ii.path
       case obj: Object if obj.typeAttribute.contains(typeStr) => obj.path
     }.toSet
   }
-  def childsWithType(path:Path, typeStr: String): Set[Node] = {
+  final def childsWithType(path:Path, typeStr: String): Set[Node] = {
     getChilds(path).collect {
       case ii: InfoItem if ii.typeAttribute.contains(typeStr) => ii
       case obj: Object if obj.typeAttribute.contains(typeStr) => obj
     }.toSet
   }
-  def descendantsWithType(paths: Set[Path], typeStr: String): Set[Node] = {
+  final def descendantsWithType(paths: Set[Path], typeStr: String): Set[Node] = {
     subTreePaths(paths).flatMap( nodes.get(_) ).collect {
       case ii: InfoItem if ii.typeAttribute.contains(typeStr) => ii
       case obj: Object if obj.typeAttribute.contains(typeStr) => obj
     }.toSet
   }
 
-  def nodesWithType(typeStr: String): Set[Node] = {
+  final def nodesWithType(typeStr: String): Set[Node] = {
     nodes.values.collect {
       case ii: InfoItem if ii.typeAttribute.contains(typeStr) => ii
       case obj: Object if obj.typeAttribute.contains(typeStr) => obj
     }.toSet
   }
 
-  def get(path: Path): Option[Node] = nodes.get(path)
+  final def get(path: Path): Option[Node] = nodes.get(path)
 
   /**
     * Find given paths and all paths of the descendants.
     * Same as [[selectSubTreePaths]] but doesn't add ancestors of the subtrees
     */
-  def subTreePaths(pathsToGet: Set[Path]): Set[Path] = (pathsToGet.flatMap {
+  final def subTreePaths(pathsToGet: Set[Path]): Set[Path] = (pathsToGet.flatMap {
     wantedPath: Path =>
       paths.keysIteratorFrom(wantedPath).takeWhile {
         path: Path => path == wantedPath || path.isDescendantOf(wantedPath)
@@ -178,7 +178,7 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
   /**
     * Same as [[subTreePaths]] but adds ancestors of the subtrees
     */
-  def selectSubTreePaths(pathsToGet: Set[Path]): Set[Path] = {
+  final def selectSubTreePaths(pathsToGet: Set[Path]): Set[Path] = {
     subTreePaths(pathsToGet) ++ pathsToGet.flatMap{
         path => path.getAncestors
         //case path: Path if (paths.contains(path)) =>
@@ -221,7 +221,7 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
 
   def metaDatasRemoved: ODF
 
-  def createObjectType(obj: Object): ObjectType = {
+  final def createObjectType(obj: Object): ObjectType = {
     val (objects, infoItems) = getChilds(obj.path).partition {
       case obj: Object => true
       case ii: InfoItem => false
@@ -237,7 +237,7 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
     )
   }
 
-  implicit def asXML: NodeSeq = {
+  final implicit def asXML: NodeSeq = {
     val xml = scalaxb.toXML[ObjectsType](asObjectsType, None, Some("Objects"), odfDefaultScope)
     xml //.asInstanceOf[Elem] % new UnprefixedAttribute("xmlns","odf.xsd", Node.NoAttributes)
   }
