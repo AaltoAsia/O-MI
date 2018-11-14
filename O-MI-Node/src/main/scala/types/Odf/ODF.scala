@@ -37,11 +37,10 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
 
   def select(that: ODF): ODF
 
-  def union[TM <: Map[Path, Node], TS <: SortedSet[Path]](that: ODF): ODF
+  def union(that: ODF): ODF
 
-  def removePaths(pathsToRemove: Seq[Path]): ODF = {
-    removePaths(pathsToRemove.toSet)
-  }
+  def removePaths(pathsToRemove: Seq[Path]): ODF = removePaths(pathsToRemove.toSet)
+  
   def removePaths(pathsToRemove: Set[Path]): ODF
 
   def immutable: ImmutableODF
@@ -213,13 +212,14 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
     }
   }
 
-  def update[TM <: Map[Path, Node], TS <: SortedSet[Path]](that: ODF): ODF
+  def update(that: ODF): ODF
 
   def valuesRemoved: ODF
 
   def descriptionsRemoved: ODF
 
   def metaDatasRemoved: ODF
+  def attributesRemoved: ODF
 
   final def createObjectType(obj: Object): ObjectType = {
     val (objects, infoItems) = getChilds(obj.path).partition {

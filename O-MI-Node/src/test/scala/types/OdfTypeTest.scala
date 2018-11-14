@@ -60,6 +60,12 @@ class OdfTypesTest extends Specification {
     TestEntry( "create correct XML presentation", testingNodes, toXMLTest),
     TestEntry( "add also missing ancestors when a Node is added", testingNodes, addTest),
     TestEntry( "be nonempty when there is more nodes than just root Objects", testingNodes, nonEmptyTest),
+    TestEntry( "be able removed all Values", testingNodes, valuesRemovedTest),
+    TestEntry( "be able removed all attributes", testingNodes, attributesRemovedTest),
+    TestEntry( "be able removed all MetaDatas", testingNodes, metaDatasRemovedTest),
+    TestEntry( "be able removed all Descriptions", testingNodes, descriptionsRemovedTest),
+    TestEntry( "be castable to immutable", testingNodes, immutableCastTest),
+    TestEntry( "be castable to mutable", testingNodes, mutableCastTest),
     TestEntry( "be asked if it contains some path and return correct answer", testingNodes, containsTest),
     TestEntry( "be able to return only nodes that have prorietary/user defined attributes", testingNodes, nodesWithAttributesTest),
     TestEntry( "be able to return only paths of InfoItems that have MetaData", testingNodes, pathsOfInfoItemsWithMetaDataTest),
@@ -245,6 +251,60 @@ class OdfTypesTest extends Specification {
         case node: Node => false
       }.toSet
     )
+  }
+  def immutableCastTest( odf: ODF ) ={
+    val nodes = odf.getNodes
+    val correct = ImmutableODF(nodes)
+    val res = odf.immutable 
+    (res must haveClass[ImmutableODF]) and (res === correct)
+  }
+  def mutableCastTest( odf: ODF ) ={
+    val nodes = odf.getNodes
+    val correct = MutableODF(nodes)
+    val res = odf.mutable 
+    (res must haveClass[MutableODF]) and (res === correct)
+  }
+  def metaDatasRemovedTest( odf: ODF ) ={
+    val nodes = odf.getNodes
+    val valueless = nodes.collect{
+      case ii: InfoItem => ii.copy( metaData = None)
+      case node: Node => node
+    }
+    val iodf = ImmutableODF(valueless)
+    val result = odf.metaDatasRemoved
+    (result === iodf )
+  }
+  def valuesRemovedTest( odf: ODF ) ={
+    val nodes = odf.getNodes
+    val valueless = nodes.collect{
+      case ii: InfoItem => ii.copy( values = Vector())
+      case node: Node => node
+    }
+    val iodf = ImmutableODF(valueless)
+    val result = odf.valuesRemoved
+    (result === iodf ) 
+  }
+  def descriptionsRemovedTest( odf: ODF ) ={
+    val nodes = odf.getNodes
+    val valueless = nodes.collect{
+      case ii: InfoItem => ii.copy( descriptions = Set())
+      case obj: Object => obj.copy( descriptions = Set())
+      case node: Node => node
+    }
+    val iodf = ImmutableODF(valueless)
+    val result = odf.descriptionsRemoved
+    (result === iodf ) 
+  }
+  def attributesRemovedTest( odf: ODF ) ={
+    val nodes = odf.getNodes
+    val valueless = nodes.collect{
+      case ii: InfoItem => ii.copy( typeAttribute = None, attributes = HashMap())
+      case obj: Object => obj.copy( typeAttribute = None, attributes = HashMap())
+      case obj: Objects => obj.copy( attributes = HashMap())
+    }
+    val iodf = ImmutableODF(valueless)
+    val result = odf.attributesRemoved
+    (result === iodf ) 
   }
 
   def convertedNewHasSameXML = {
@@ -544,8 +604,8 @@ class OdfTypesTest extends Specification {
   def equalsTest(
     o_df: ODF
   ) = {
-    val otherI = ImmutableODF(o_df.getNodesMap.values.toVector)
-    val otherM = MutableODF(o_df.getNodesMap.values.toVector)
+    val otherI = ImmutableODF(o_df.getNodes.toVector)
+    val otherM = MutableODF(o_df.getNodes.toVector)
     ((o_df == otherI) should beEqualTo(true)) and 
     ((o_df == otherM) should beEqualTo(true)) and 
     ((o_df == 13) should beEqualTo(false) ) and
