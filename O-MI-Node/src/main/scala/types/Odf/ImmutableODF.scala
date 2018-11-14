@@ -10,14 +10,10 @@ import scala.collection.{Map, Seq, SortedSet}
 case class ImmutableODF private[odf](
                                       nodes: ImmutableHashMap[Path, Node]
                                     ) extends ODF {
-  //[ImmutableHashMap[Path,Node],ImmutableTreeSet[Path]] {
-
-  type M = ImmutableHashMap[Path, Node]
-  type S = ImmutableTreeSet[Path]
 
   override val getNodesMap: ImmutableHashMap[Path, Node] = nodes
 
-  def select(that: ODF): ODF = {
+  def select(that: ODF): ImmutableODF = {
     ImmutableODF(
       paths.filter {
         path: Path =>
@@ -31,11 +27,11 @@ case class ImmutableODF private[odf](
       }.toVector)
   }
 
-  def readTo(to: ODF): ODF = ImmutableODF(readToNodes(to))
+  def readTo(to: ODF): ImmutableODF = ImmutableODF(readToNodes(to))
 
   protected[odf] val paths: ImmutableTreeSet[Path] = ImmutableTreeSet(nodes.keys.toSeq: _*)(PathOrdering)
 
-  def update[TM <: Map[Path, Node], TS <: SortedSet[Path]](that: ODF): ODF = {
+  def update(that: ODF): ImmutableODF = {
     ImmutableODF(
       nodes.mapValues {
         node: Node =>
@@ -56,7 +52,7 @@ case class ImmutableODF private[odf](
     case obj: Object => obj.typeAttribute
   }.mapValues(_.toSeq)
 
-  def union[TM <: Map[Path, Node], TS <: SortedSet[Path]](that: ODF): ODF = {
+  def union(that: ODF): ImmutableODF = {
     val pathIntersection: SortedSet[Path] = this.paths.intersect(that.paths)
     val thisOnlyNodes: Set[Node] = (paths -- pathIntersection).flatMap {
       p: Path =>
@@ -89,17 +85,17 @@ case class ImmutableODF private[odf](
     )
   }
 
-  def removePaths(pathsToRemove: Set[Path]): ODF = {
+  def removePaths(pathsToRemove: Set[Path]): ImmutableODF = {
     val subTrees = subTreePaths(pathsToRemove)
     this.copy(nodes -- subTrees)
   }
 
-  def removePath(path: Path): ODF = {
+  def removePath(path: Path): ImmutableODF = {
     val subtreeP = subTreePaths(Set(path))
     this.copy(nodes -- subtreeP)
   }
 
-  def add(node: Node): ODF = {
+  def add(node: Node): ImmutableODF = {
 
     val newNodes: ImmutableHashMap[Path, Node] = if (nodes.contains(node.path)) {
       (nodes.get(node.path), node) match {
@@ -126,7 +122,7 @@ case class ImmutableODF private[odf](
     this.copy(newNodes)
   }
 
-  def selectUpTree(pathsToGet: Set[Path]): ODF = {
+  def selectUpTree(pathsToGet: Set[Path]): ImmutableODF = {
     ImmutableODF(
       pathsToGet.flatMap{
         path: Path =>
@@ -139,7 +135,7 @@ case class ImmutableODF private[odf](
   }
 
 
-  def selectSubTree(pathsToGet: Set[Path]): ODF = {
+  def selectSubTree(pathsToGet: Set[Path]): ImmutableODF = {
     val ps = selectSubTreePaths(pathsToGet)
     ImmutableODF(
       ps.flatMap {
@@ -149,28 +145,28 @@ case class ImmutableODF private[odf](
     )
   }
 
-  def valuesRemoved: ODF = this.copy(ImmutableHashMap(nodes.mapValues {
+  def valuesRemoved: ImmutableODF = this.copy(ImmutableHashMap(nodes.mapValues {
     case ii: InfoItem => ii.copy(values = Vector())
     case obj: Object => obj
     case obj: Objects => obj
   }.toVector: _*))
 
-  def descriptionsRemoved: ODF = this.copy(ImmutableHashMap(nodes.mapValues {
+  def descriptionsRemoved: ImmutableODF = this.copy(ImmutableHashMap(nodes.mapValues {
     case ii: InfoItem => ii.copy(descriptions = Set.empty)
     case obj: Object => obj.copy(descriptions = Set.empty)
     case obj: Objects => obj
   }.toVector: _*))
 
-  def metaDatasRemoved: ODF = this.copy(ImmutableHashMap(nodes.mapValues {
+  def metaDatasRemoved: ImmutableODF = this.copy(ImmutableHashMap(nodes.mapValues {
     case ii: InfoItem => ii.copy(metaData = None)
     case obj: Object => obj
     case obj: Objects => obj
   }.toVector: _*))
 
-  def attributesRemoved: ODF = this.copy(ImmutableHashMap(nodes.mapValues {
+  def attributesRemoved: ImmutableODF = this.copy(ImmutableHashMap(nodes.mapValues {
     case ii: InfoItem => ii.copy(typeAttribute = None, attributes = ImmutableHashMap())
     case obj: Object => obj.copy(typeAttribute = None, attributes = ImmutableHashMap())
-    case obj: Objects => obj
+    case obj: Objects => obj.copy( attributes = ImmutableHashMap())
   }.toVector: _*))
 
   def immutable: ImmutableODF = this
@@ -179,7 +175,7 @@ case class ImmutableODF private[odf](
     nodes.values.toVector
   )
 
-  def addNodes(nodesToAdd: Seq[Node]): ODF = {
+  def addNodes(nodesToAdd: Seq[Node]): ImmutableODF = {
     val mutableHMap: MutableHashMap[Path, Node] = MutableHashMap(nodes.toVector: _*)
     val sorted = nodesToAdd.sortBy(_.path)(PathOrdering)
     sorted.foreach {
@@ -210,15 +206,6 @@ case class ImmutableODF private[odf](
         mutableHMap.toVector: _*
       )
     )
-  }
-
-  override def equals(that: Any): Boolean = {
-    that match {
-      case another: ODF =>
-        (paths equals another.paths) && (nodes equals another.nodes)
-      case _: Any =>
-        false
-    }
   }
 
   override lazy val hashCode: Int = this.nodes.hashCode
