@@ -281,7 +281,9 @@ object ODFParser extends parsing.Parser[OdfParseResult] {
                  timeSolver(valueType, requestProcessTime)
                )
         } else {
-          Value(valueType.mixed.head.value,typeValue,timeSolver(valueType,requestProcessTime))
+          println(valueType)
+          val valueO = valueType.mixed.headOption.map(_.value)
+          Value(valueO.getOrElse(""),typeValue,timeSolver(valueType,requestProcessTime)) //if empty then empty string
         }
     }
 
