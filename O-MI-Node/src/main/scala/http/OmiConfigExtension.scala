@@ -211,6 +211,7 @@ class OmiConfigExtension(val config: Config) extends Extension
   //connection fails
   val websocketQueueSize: Int = config.getInt("omi-service.websocket-queue-size")
 
+  val kamonEnabled: Boolean = config.getBoolean("omi-service.kamon-enabled")
   val databaseImplementation: String = config.getString("omi-service.database")
   val influx: Option[InfluxDBConfigExtension] = if( databaseImplementation.toLowerCase.startsWith("influx" ) ) {
     Try{
