@@ -35,7 +35,7 @@ class HierarchyStore(id: String) extends PersistentActor with ActorLogging {
 
     }
     case p: PersistentCommand => p match {
-      case UnionCommand(other) => state = state.union(other).valuesRemoved.immutable
+      case UnionCommand(other) => state = state.union(other.valuesRemoved).immutable
       case ErasePathCommand(path) => state = state.removePath(path).immutable
       case _ =>
 

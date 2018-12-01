@@ -63,7 +63,11 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
 
   final def nodesWithAttributes: Vector[Node] = nodes.values.filter(_.attributes.nonEmpty).toVector
 
+  @deprecated("use nodesMap instead (bad naming)", "1.0.8")
   def getNodesMap: Map[Path, Node] = ImmutableHashMap(
+    nodes.toVector: _*
+  )
+  def nodesMap: ImmutableHashMap[Path, Node] = ImmutableHashMap(
     nodes.toVector: _*
   )
 

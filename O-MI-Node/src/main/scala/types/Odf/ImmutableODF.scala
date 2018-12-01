@@ -8,10 +8,19 @@ import scala.collection.mutable.{HashMap => MutableHashMap}
 import scala.collection.{Map, Seq, SortedSet}
 
 case class ImmutableODF private[odf](
-                                      nodes: ImmutableHashMap[Path, Node]
+                                      nodes: ImmutableHashMap[Path, Node],
+                                      protected[odf] val paths: ImmutableTreeSet[Path]
                                     ) extends ODF {
 
+  /** Assume sorted nodes
+    */
+  protected[odf] def this(sortedNodes: ImmutableHashMap[Path, Node]) =
+    this(sortedNodes, ImmutableTreeSet(sortedNodes.keys.toSeq: _*)(PathOrdering))
+
+  @deprecated("use nodesMap instead (bad naming)", "1.0.8")
   override val getNodesMap: ImmutableHashMap[Path, Node] = nodes
+
+  override val nodesMap: ImmutableHashMap[Path, Node] = nodes
 
   def select(that: ODF): ImmutableODF = {
     ImmutableODF(
@@ -29,7 +38,6 @@ case class ImmutableODF private[odf](
 
   def readTo(to: ODF): ImmutableODF = ImmutableODF(readToNodes(to))
 
-  protected[odf] val paths: ImmutableTreeSet[Path] = ImmutableTreeSet(nodes.keys.toSeq: _*)(PathOrdering)
 
   def update(that: ODF): ImmutableODF = {
     ImmutableODF(
@@ -46,53 +54,45 @@ case class ImmutableODF private[odf](
     )
   }
 
+
   lazy val typeIndex: Map[Option[String], Seq[Node]] = nodes.values.groupBy{
     case obj: Objects => None
     case ii: InfoItem => ii.typeAttribute
     case obj: Object => obj.typeAttribute
   }.mapValues(_.toSeq)
 
+
+
+  /** Merge two ODF trees together.
+    */
   def union(that: ODF): ImmutableODF = {
-    val pathIntersection: SortedSet[Path] = this.paths.intersect(that.paths)
-    val thisOnlyNodes: Set[Node] = (paths -- pathIntersection).flatMap {
-      p: Path =>
-        nodes.get(p)
-    }
-    val thatOnlyNodes: Set[Node] = (that.paths -- pathIntersection).flatMap {
-      p: Path =>
-        that.nodes.get(p)
-    }.toSet
-    val intersectingNodes: Set[Node] = pathIntersection.flatMap {
-      path: Path =>
-        (this.nodes.get(path), that.nodes.get(path)) match {
-          case (Some(node: Node), Some(otherNode: Node)) =>
-            (node, otherNode) match {
-              case (ii: InfoItem, oii: InfoItem) =>
-                Some(ii.union(oii))
-              case (obj: Object, oo: Object) =>
-                Some(obj.union(oo))
-              case (obj: Objects, oo: Objects) =>
-                Some(obj.union(oo))
-              case (_, _) =>
-                throw new Exception("Found two different types in same Path when tried to create union.")
-            }
-          case (t, o) => t.orElse(o)
+
+    val newNodes = nodes.merged(that.nodesMap){
+      case ((path, node), (_, otherNode)) =>
+        (node, otherNode) match {
+          case (ii: InfoItem, oii: InfoItem) =>
+            (path, ii.union(oii))
+          case (obj: Object, oo: Object) =>
+            (path, obj.union(oo))
+          case (obj: Objects, oo: Objects) =>
+            (path, obj.union(oo))
+          case (_, _) =>
+            throw new Exception("Found two different elements in the same Path when tried to create union of O-DF trees.")
         }
-    }.toSet
-    val allNodes = thisOnlyNodes ++ thatOnlyNodes ++ intersectingNodes
-    ImmutableODF(
-      allNodes.toVector
-    )
+    }
+    val newPaths = paths ++ that.paths
+
+    new ImmutableODF(newNodes, newPaths)
   }
 
   def removePaths(pathsToRemove: Set[Path]): ImmutableODF = {
     val subTrees = subTreePaths(pathsToRemove)
-    this.copy(nodes -- subTrees)
+    this.copy(nodes -- subTrees, paths -- subTrees)
   }
 
   def removePath(path: Path): ImmutableODF = {
     val subtreeP = subTreePaths(Set(path))
-    this.copy(nodes -- subtreeP)
+    this.copy(nodes -- subtreeP, paths -- subtreeP)
   }
 
   def add(node: Node): ImmutableODF = {
@@ -119,7 +119,7 @@ case class ImmutableODF private[odf](
       }
       ImmutableHashMap(mutableHMap.toVector: _*)
     }
-    this.copy(newNodes)
+    new ImmutableODF(newNodes)
   }
 
   def selectUpTree(pathsToGet: Set[Path]): ImmutableODF = {
@@ -145,25 +145,25 @@ case class ImmutableODF private[odf](
     )
   }
 
-  def valuesRemoved: ImmutableODF = this.copy(ImmutableHashMap(nodes.mapValues {
+  def valuesRemoved: ImmutableODF = new ImmutableODF(ImmutableHashMap(nodes.mapValues {
     case ii: InfoItem => ii.copy(values = Vector())
     case obj: Object => obj
     case obj: Objects => obj
   }.toVector: _*))
 
-  def descriptionsRemoved: ImmutableODF = this.copy(ImmutableHashMap(nodes.mapValues {
+  def descriptionsRemoved: ImmutableODF = new ImmutableODF(ImmutableHashMap(nodes.mapValues {
     case ii: InfoItem => ii.copy(descriptions = Set.empty)
     case obj: Object => obj.copy(descriptions = Set.empty)
     case obj: Objects => obj
   }.toVector: _*))
 
-  def metaDatasRemoved: ImmutableODF = this.copy(ImmutableHashMap(nodes.mapValues {
+  def metaDatasRemoved: ImmutableODF = new ImmutableODF(ImmutableHashMap(nodes.mapValues {
     case ii: InfoItem => ii.copy(metaData = None)
     case obj: Object => obj
     case obj: Objects => obj
   }.toVector: _*))
 
-  def attributesRemoved: ImmutableODF = this.copy(ImmutableHashMap(nodes.mapValues {
+  def attributesRemoved: ImmutableODF = new ImmutableODF(ImmutableHashMap(nodes.mapValues {
     case ii: InfoItem => ii.copy(typeAttribute = None, attributes = ImmutableHashMap())
     case obj: Object => obj.copy(typeAttribute = None, attributes = ImmutableHashMap())
     case obj: Objects => obj.copy( attributes = ImmutableHashMap())
@@ -201,7 +201,7 @@ case class ImmutableODF private[odf](
           }
         }
     }
-    this.copy(
+    new ImmutableODF(
       ImmutableHashMap(
         mutableHMap.toVector: _*
       )
@@ -212,6 +212,12 @@ case class ImmutableODF private[odf](
 }
 
 object ImmutableODF {
+
+  /** Warning this constructor might be very slow on large trees!
+    *
+    *  Constructs ImmutableODF from O-DF Nodes, which involves sorting of
+    *  Paths, automatic duplicate handling and automatic parent creation.
+    */
   def apply(
              nodes: Iterable[Node] = Vector.empty
            ): ImmutableODF = {
@@ -248,5 +254,10 @@ object ImmutableODF {
       )
     )
   }
+
+  /** Unoptimized, but easy to use constructor for single O-DF Node.
+    *
+    *  Automatically creates parents.
+    */
   def apply(single: Node): ImmutableODF = apply(Vector(single))
 }

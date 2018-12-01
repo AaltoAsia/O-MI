@@ -47,7 +47,7 @@ class AuthAPIServiceMock(
   override val httpExtension = mock[HttpExt]
 }
 class AuthServiceTestEnv extends Specification with AfterAll with Mockito {
-  implicit val system = Actorstest.createSilentAs()
+  implicit val system = Actorstest.createAs()
 
   def afterAll = {
     system.terminate()
