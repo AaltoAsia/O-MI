@@ -29,7 +29,7 @@ class HierarchyStore(id: String) extends PersistentActor with ActorLogging {
 
   def updateState(event: PersistentMessage): Unit = event match {
     case e: Event => e match {
-      case PUnion(another) => state = state.union(buildImmutableOdfFromProtobuf(another)).valuesRemoved.immutable
+      case PUnion(another) => state = state.union(buildImmutableOdfFromProtobuf(another).valuesRemoved).immutable
       case PErasePath(path) => state = state.removePath(Path(path)).immutable
       case _ =>
 

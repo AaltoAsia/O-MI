@@ -45,6 +45,19 @@ object Dependencies {
   val scalaProto       = "com.thesamet.scalapb" %% "scalapb-runtime" % scalapb.compiler.Version.scalapbVersion % "protobuf"
 
 
+  //Kamon
+  val kamonDepencies = Seq(
+    "io.kamon" %% "kamon-core" % "1.1.3",
+    "io.kamon" %% "kamon-logback" % "1.0.2",
+    "io.kamon" %% "kamon-akka-2.5" % "1.1.2",
+    "io.kamon" %% "kamon-akka-http-2.5" % "1.1.1",
+    "io.kamon" %% "kamon-scala-future" % "1.0.0",
+    "io.kamon" %% "kamon-jdbc" % "1.0.2",
+    "io.kamon" %% "kamon-system-metrics" % "1.0.0",
+    "io.kamon" %% "kamon-akka-2.5" % "1.1.2",
+    "io.kamon" %% "kamon-influxdb" % "1.0.2"
+  )
+  
 
 
   //val schwatcher   = "com.beachape.filemanagement" %% "schwatcher"   % "0.3.1" //common
@@ -85,7 +98,7 @@ object Dependencies {
     //commonsLang,
     scalaProto,
     gson
-  )
+  ) ++ kamonDepencies
 
   //val servletDependencies: Seq[ModuleID] = Seq(
   //  sprayServlet,
