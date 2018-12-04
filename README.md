@@ -70,7 +70,7 @@ More Information in the [Configuration](#Configuration) section.
 Compiling and packaging
 -----------------------
 1. Follow the instructions 1-4 in [Setup development environment](#setup-development-environment) below
-2. run `sbt release`
+2. run `sbt universal:packageBin` (For other package types, use `sbt release`)
 3. Result can be found in `./target/universal/o-mi-Node-version.zip`
 
 
