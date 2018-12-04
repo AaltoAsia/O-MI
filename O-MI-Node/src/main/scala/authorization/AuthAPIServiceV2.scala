@@ -226,7 +226,7 @@ class AuthAPIServiceV2(
           // Constructor builds missing ancestors
           val filteredOdf = ImmutableODF(filteredNodes.values)
 
-          log.debug(s"FILTERODF \n original $originalRequest \n filteredNodes $filteredNodes \n filteredOdf $filteredOdf")
+          //log.debug(s"FILTERODF \n original $originalRequest \n filteredNodes $filteredNodes \n filteredOdf $filteredOdf")
 
           // TODO: Cleaner code
           //if (filteredOdf.isEmpty && !(originalRequest.odf.isEmpty && filters.allow.contains(Path("Objects"))))
