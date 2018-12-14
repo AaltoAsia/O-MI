@@ -174,7 +174,7 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
   final def subTreePaths(pathsToGet: Set[Path]): Set[Path] = (pathsToGet.flatMap {
     wantedPath: Path =>
       paths.keysIteratorFrom(wantedPath).takeWhile {
-        path: Path => path == wantedPath || path.isDescendantOf(wantedPath)
+        path: Path => path.startsWith(wantedPath)
       }
   })
 

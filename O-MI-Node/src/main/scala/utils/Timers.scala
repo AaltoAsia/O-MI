@@ -35,13 +35,6 @@ case class LapTimer(logFun: String => Unit) {
 }
 
 object SingleTimer {
-  def timeF[T](action: Future[T], logFun: String => Unit, message:String)(implicit ex: ExecutionContext) ={
-    val s = System.currentTimeMillis()
-    action.onComplete{
-      _ => logFun(message + s": ${(System.currentTimeMillis() - s) / 1000.0} seconds")
-    }
-    action
-  }
   def apply[T](action: => T, logFun: String => Unit, message: String): T = {
     val s = System.currentTimeMillis()
     val r = action
@@ -50,4 +43,14 @@ object SingleTimer {
     logFun(message + s": $time seconds")
     r
   }
+}
+object FutureTimer {
+  def apply[T](action: Future[T], logFun: String => Unit, message:String)(implicit ex: ExecutionContext) ={
+    val s = System.currentTimeMillis()
+    action.onComplete{
+      _ => logFun(message + s": ${(System.currentTimeMillis() - s) / 1000.0} seconds")
+    }
+    action
+  }
+
 }

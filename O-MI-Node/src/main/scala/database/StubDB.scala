@@ -9,6 +9,7 @@ import org.slf4j.{Logger, LoggerFactory}
 import types.OmiTypes.{OmiReturn, ReturnCode}
 import types.Path
 import types.odf._
+import utils.SingleTimer
 
 import scala.concurrent.Future
 
@@ -54,29 +55,12 @@ class StubDB(val singleStores: SingleStores, val system: ActorSystem, val settin
   }
 
   def readLatestFromCache(leafPaths: Seq[Path]): Future[ImmutableODF] = {
-    // NOTE: Might go off sync with tree or values if the request is large,
-    // but it shouldn't be a big problem
-    val fp2iis = singleStores.getHierarchyTree().map(_.getInfoItems.collect {
-      case ii: InfoItem if leafPaths.exists { path: Path => path.isAncestorOf(ii.path) || path == ii.path } =>
-        ii.path -> ii
-    }.toMap)
+    val fp2iis: Future[Set[Path]] = singleStores.getHierarchyTree().map(hTree => hTree.subTreePaths(leafPaths.toSet))
     val objectsWithValues: Future[ImmutableODF] = for {
-      p2iis <- fp2iis
+      p2iis: Set[Path] <- fp2iis
       pathToValue  <-
-        singleStores.readValues(p2iis.keys.toVector).mapTo[Seq[(Path, Value[Any])]]
-      objectsWithValues = ImmutableODF(pathToValue.flatMap {
-        case (path: Path, value: Value[Any]) =>
-          val temp = p2iis.get(path).map {
-            ii: InfoItem =>
-              ii.copy(
-                names = Vector.empty,
-                descriptions = Set.empty,
-                metaData = None,
-                values = Vector(value)
-              )
-          }
-          temp
-      }.toVector)
+        singleStores.readValues(p2iis.toSeq)
+      objectsWithValues = ImmutableODF.createFromNodes(pathToValue.map(pv => InfoItem(pv._1,Vector(pv._2))))
     } yield objectsWithValues
 
     objectsWithValues
