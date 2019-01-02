@@ -732,9 +732,17 @@ window.WebOmi = formLogicExt($, window.WebOmi || {})
           if not isCallbackReq
             ui.callback.set null
             ui.callback.ref.trigger "input"
+          if reqName == "subscription"
+            ui.callback.set "0"
+            ui.callback.ref.trigger "input"
+          else
+            ui.callback.set null
+            ui.callback.ref.trigger "input"
           ui.requestID.ref.prop('disabled', not isRequestIdReq)
           ui.interval.ref.prop('disabled', reqName != 'subscription')
           ui.interval.set null
+          if reqName == "subscription"
+            ui.interval.set -1
           ui.interval.ref.trigger "input"
 
           formLogic.modifyRequest ->
