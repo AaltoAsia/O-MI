@@ -79,6 +79,10 @@ class OdfTypesTest extends Specification {
     TestEntry( "be able to return only paths of nodes that have descriptions", testingNodes, pathsOfNodesWithDescriptionTest),
     TestEntry( "be root only when only Objects is present", Vector(Objects()), isRootOnlyTest),
     TestEntry( "be equal to other ODF with same nodes and unequal with Any thing other than classes implementing ODF trait", testingNodes, equalsTest),
+    TestEntry( "remove multiple paths", testingNodes ++ Set(
+        InfoItem(objects / "TestObj" / "RemoveObj" /"test1", Vector.empty),
+        InfoItem(objects / "TestObj" / "RemoveII", Vector.empty)
+      ), removeTest),
     TestEntry(
       "get correct childs for requested path", 
       Vector(
@@ -339,6 +343,19 @@ class OdfTypesTest extends Specification {
           "Converted:\n\n" + p.format(ns.head) + "\n"
 
     } must beEqualToIgnoringSpace(oldType.asXML)
+  }
+  def removeTest(odf: ODF) = {
+    val removedPaths = Set(
+      OdfPath( "Objects","TestObj", "RemoveII"),
+      OdfPath( "Objects","TestObj", "RemoveObj")
+    )
+    val removedSubPath = OdfPath( "Objects","TestObj", "RemoveObj", "test1")
+    val correctPaths = odf.getPaths.toSet -- removedPaths - removedSubPath
+    lazy val nodf = odf.removePaths(removedPaths)
+    lazy val remainingPaths = nodf.getPaths
+
+    (remainingPaths must not contain( removedPaths )) and
+    (remainingPaths must contain( correctPaths ))
   }
 
   def repeatedNewConvertTest = {
