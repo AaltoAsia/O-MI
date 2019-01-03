@@ -77,6 +77,9 @@ class OdfTypesTest extends Specification {
     TestEntry( "be able to return only nodes that have given type and are childs of given path", testingNodes, childsWithTypeTest),
     TestEntry( "be able to return only nodes that have given type and are descendants of given path", testingNodes, descendantsWithTypeTest),
     TestEntry( "be able to return only paths of nodes that have descriptions", testingNodes, pathsOfNodesWithDescriptionTest),
+    TestEntry( "union with other ODF", testingNodes, unionTest),
+    TestEntry( "update with other ODF", testingNodes, updateTest),
+    TestEntry( "add with existing nodes", testingNodes, addExistingTest),
     TestEntry( "be root only when only Objects is present", Vector(Objects()), isRootOnlyTest),
     TestEntry( "be equal to other ODF with same nodes and unequal with Any thing other than classes implementing ODF trait", testingNodes, equalsTest),
     TestEntry( "remove multiple paths", testingNodes ++ Set(
@@ -356,6 +359,298 @@ class OdfTypesTest extends Specification {
 
     (remainingPaths must not contain( removedPaths )) and
     (remainingPaths must contain( correctPaths ))
+  }
+
+  def updateTest( odf: ODF) ={
+    val initNodes: Vector[Node] = Vector(
+      InfoItem(
+        "II3",
+        OdfPath("Objects", "ObjectU", "II3"),
+        names = Vector(
+          QlmID(
+            "II2O1",
+            Some("TestID"),
+            Some("TestTag")
+          ),
+          QlmID(
+            "II2O2",
+            Some("TestID"),
+            Some("TestTag")
+          )
+        ),
+        descriptions = testingDescription,
+        values = Vector(
+          Value(93, testTime),
+          Value("51.9", "xs:float", testTime),
+          Value("81.5", testTime)
+        ),
+        metaData = Some(MetaData(
+          Vector(
+            InfoItem(
+              "A",
+              OdfPath("Objects", "ObjectA", "II2", "MetaData", "A")
+            ),
+            InfoItem(
+              "B",
+              OdfPath("Objects", "ObjectA", "II2", "MetaData", "B")
+            ))
+        )),
+        attributes = testingAttributes,
+        typeAttribute = Some("TestingType"),
+      ),
+      InfoItem(
+        "II3",
+        OdfPath("Objects", "ObjectA", "II3"),
+        names = Vector(
+          QlmID(
+            "II2O1",
+            Some("TestID"),
+            Some("TestTag")
+          ),
+          QlmID(
+            "II2O2",
+            Some("TestID"),
+            Some("TestTag")
+          )
+        ),
+        descriptions = testingDescription,
+        values = Vector(
+          Value(93, testTime),
+          Value("51.9", "xs:float", testTime),
+          Value("81.5", testTime)
+        ),
+        metaData = Some(MetaData(
+          Vector(
+            InfoItem(
+              "A",
+              OdfPath("Objects", "ObjectA", "II2", "MetaData", "A")
+            ),
+            InfoItem(
+              "B",
+              OdfPath("Objects", "ObjectA", "II2", "MetaData", "B")
+            ))
+        )),
+        attributes = testingAttributes,
+        typeAttribute = Some("TestingType"),
+      ),
+      Object(
+        Vector(
+          QlmID(
+            "ObjectD",
+            Some("TestID"),
+            Some("TestTag")
+          )
+        ),
+        OdfPath("Objects", "ObjectC", "ObjectD"),
+        typeAttribute = Some("TestingType"),
+        descriptions = testingDescription,
+        attributes = testingAttributes
+      )
+    )
+    val otherOdf = ImmutableODF(initNodes)
+    val otherNodes = otherOdf.getNodes.toVector
+    val nodes = odf.getNodes.toVector
+    val updated = odf.update(otherOdf)
+    val unodes = updated.getNodes.toSet
+    (unodes.map(_.path) must contain(nodes.map(_.path).toSet)) and 
+    (unodes.map(_.path) must contain(otherNodes.map(_.path).toSet)) and 
+    (unodes must contain(nodes.toSet)) and 
+    (unodes must contain(otherNodes.toSet)) 
+
+  }
+  def addExistingTest( odf: ODF) ={
+    val initNodes: Vector[Node] = Vector(
+      InfoItem(
+        "II3",
+        OdfPath("Objects", "ObjectU", "II3"),
+        names = Vector(
+          QlmID(
+            "II2O1",
+            Some("TestID"),
+            Some("TestTag")
+          ),
+          QlmID(
+            "II2O2",
+            Some("TestID"),
+            Some("TestTag")
+          )
+        ),
+        descriptions = testingDescription,
+        values = Vector(
+          Value(93, testTime),
+          Value("51.9", "xs:float", testTime),
+          Value("81.5", testTime)
+        ),
+        metaData = Some(MetaData(
+          Vector(
+            InfoItem(
+              "A",
+              OdfPath("Objects", "ObjectA", "II2", "MetaData", "A")
+            ),
+            InfoItem(
+              "B",
+              OdfPath("Objects", "ObjectA", "II2", "MetaData", "B")
+            ))
+        )),
+        attributes = testingAttributes,
+        typeAttribute = Some("TestingType"),
+      ),
+      InfoItem(
+        "II3",
+        OdfPath("Objects", "ObjectA", "II3"),
+        names = Vector(
+          QlmID(
+            "II2O1",
+            Some("TestID"),
+            Some("TestTag")
+          ),
+          QlmID(
+            "II2O2",
+            Some("TestID"),
+            Some("TestTag")
+          )
+        ),
+        descriptions = testingDescription,
+        values = Vector(
+          Value(93, testTime),
+          Value("51.9", "xs:float", testTime),
+          Value("81.5", testTime)
+        ),
+        metaData = Some(MetaData(
+          Vector(
+            InfoItem(
+              "A",
+              OdfPath("Objects", "ObjectA", "II2", "MetaData", "A")
+            ),
+            InfoItem(
+              "B",
+              OdfPath("Objects", "ObjectA", "II2", "MetaData", "B")
+            ))
+        )),
+        attributes = testingAttributes,
+        typeAttribute = Some("TestingType"),
+      ),
+      Object(
+        Vector(
+          QlmID(
+            "ObjectD",
+            Some("TestID"),
+            Some("TestTag")
+          )
+        ),
+        OdfPath("Objects", "ObjectC", "ObjectD"),
+        typeAttribute = Some("TestingType"),
+        descriptions = testingDescription,
+        attributes = testingAttributes
+      )
+    )
+    val otherOdf = ImmutableODF(initNodes)
+    val otherNodes = otherOdf.getNodes.toVector
+    val nodes = odf.getNodes.toVector
+    val added = odf.addNodes(otherNodes)
+    val unodes = added.getNodes.toSet
+    (unodes.map(_.path) must contain(nodes.map(_.path).toSet)) and 
+    (unodes.map(_.path) must contain(otherNodes.map(_.path).toSet)) and 
+    (unodes must contain(nodes.toSet)) and 
+    (unodes must contain(otherNodes.toSet)) 
+
+  }
+  def unionTest( odf: ODF) ={
+    val initNodes: Vector[Node] = Vector(
+      InfoItem(
+        "II3",
+        OdfPath("Objects", "ObjectU", "II3"),
+        names = Vector(
+          QlmID(
+            "II2O1",
+            Some("TestID"),
+            Some("TestTag")
+          ),
+          QlmID(
+            "II2O2",
+            Some("TestID"),
+            Some("TestTag")
+          )
+        ),
+        descriptions = testingDescription,
+        values = Vector(
+          Value(93, testTime),
+          Value("51.9", "xs:float", testTime),
+          Value("81.5", testTime)
+        ),
+        metaData = Some(MetaData(
+          Vector(
+            InfoItem(
+              "A",
+              OdfPath("Objects", "ObjectA", "II2", "MetaData", "A")
+            ),
+            InfoItem(
+              "B",
+              OdfPath("Objects", "ObjectA", "II2", "MetaData", "B")
+            ))
+        )),
+        attributes = testingAttributes,
+        typeAttribute = Some("TestingType"),
+      ),
+      InfoItem(
+        "II3",
+        OdfPath("Objects", "ObjectA", "II3"),
+        names = Vector(
+          QlmID(
+            "II2O1",
+            Some("TestID"),
+            Some("TestTag")
+          ),
+          QlmID(
+            "II2O2",
+            Some("TestID"),
+            Some("TestTag")
+          )
+        ),
+        descriptions = testingDescription,
+        values = Vector(
+          Value(93, testTime),
+          Value("51.9", "xs:float", testTime),
+          Value("81.5", testTime)
+        ),
+        metaData = Some(MetaData(
+          Vector(
+            InfoItem(
+              "A",
+              OdfPath("Objects", "ObjectA", "II2", "MetaData", "A")
+            ),
+            InfoItem(
+              "B",
+              OdfPath("Objects", "ObjectA", "II2", "MetaData", "B")
+            ))
+        )),
+        attributes = testingAttributes,
+        typeAttribute = Some("TestingType"),
+      ),
+      Object(
+        Vector(
+          QlmID(
+            "ObjectD",
+            Some("TestID"),
+            Some("TestTag")
+          )
+        ),
+        OdfPath("Objects", "ObjectC", "ObjectD"),
+        typeAttribute = Some("TestingType"),
+        descriptions = testingDescription,
+        attributes = testingAttributes
+      )
+    )
+    val otherOdf = ImmutableODF(initNodes)
+    val otherNodes = otherOdf.getNodes.toVector
+    val nodes = odf.getNodes.toVector
+    val union = odf.union(otherOdf)
+    val unodes = union.getNodes.toSet
+    (unodes.map(_.path) must contain(nodes.map(_.path).toSet)) and 
+    (unodes.map(_.path) must contain(otherNodes.map(_.path).toSet)) and 
+    (unodes must contain(nodes.toSet)) and 
+    (unodes must contain(otherNodes.toSet)) 
+
   }
 
   def repeatedNewConvertTest = {
@@ -773,6 +1068,7 @@ class OdfTypesTest extends Specification {
       </Object>
     </Objects>
   }
+
 
   def testingNodes: Vector[Node] = Vector(
     InfoItem(
