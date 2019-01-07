@@ -733,7 +733,8 @@ window.WebOmi = formLogicExt($, window.WebOmi || {})
             ui.callback.set null
             ui.callback.ref.trigger "input"
           if reqName == "subscription"
-            ui.callback.set "0"
+            if consts.serverUrl.val().startsWith("ws")
+              ui.callback.set "0"
             ui.callback.ref.trigger "input"
           else
             ui.callback.set null
