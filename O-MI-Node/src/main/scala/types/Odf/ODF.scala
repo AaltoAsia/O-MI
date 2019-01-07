@@ -6,6 +6,7 @@ import parsing.xmlGen.xmlTypes.{ObjectType, ObjectsType, InfoItemType}
 import parsing.xmlGen.{odfDefaultScope, scalaxb}
 
 import scala.collection.immutable.{HashMap => ImmutableHashMap}
+import scala.collection.mutable.{ Buffer }
 import scala.collection.{Map, Seq, SortedSet}
 import scala.xml.NodeSeq
 
@@ -203,12 +204,16 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
   def addNodes(nodesToAdd: Seq[Node]): ODF
 
   implicit def asObjectsType: ObjectsType = {
-    val groups = nodes.values.groupBy{
-        case ii: InfoItem => 2
-        case obj: Object => 1
-        case obj: Objects => 0
+    val iis: Buffer[InfoItem] = Buffer.empty
+    val objs: Buffer[Object] = Buffer.empty
+    var objects = Objects()
+    for( n <- nodes.values ){
+      n match {
+        case ii: InfoItem => iis += ii
+        case obj: Object => objs += obj
+        case obj: Objects => objects = obj
       }
-    val iis: Seq[InfoItem] = groups.get(2).toSeq.flatten.collect{ case i: InfoItem => i}
+    }
     val parentPath2IIt: Map[Path,Seq[InfoItemType]] = iis.map{
         case ii: InfoItem => 
           ii.path -> ii.asInfoItemType
@@ -216,7 +221,6 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
         case iis: Seq[Tuple2[Path,InfoItemType]] => 
           iis.map(_._2)
       }
-    val objs: Seq[Object] = groups.get(1).toSeq.flatten.collect{ case o:Object => o}
     val parentPath2Objs: Map[Path,Seq[Tuple2[Path,ObjectType]]] = objs.map{
       case obj: Object => 
         obj.path -> obj.asObjectType( parentPath2IIt.get(obj.path).toSeq.flatten, Seq.empty)
@@ -231,7 +235,7 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
       case (path: Path, obj: ObjectType) =>  temp(path, obj) 
         
     }
-    groups.get(0).collect{ case o: Objects => o }.getOrElse(Objects()).asObjectsType( topObjects)
+    objects.asObjectsType( topObjects)
     //TODO: remove if newer is faster
     /*
     val firstLevelObjects = getChilds(new Path("Objects"))
