@@ -36,6 +36,9 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
   final def contains(path: Path): Boolean = paths.contains(path)
 
 
+  /*
+   * Select exactly the paths in that ODF from this ODF.
+   */
   def select(that: ODF): ODF
 
   def union(that: ODF): ODF
@@ -191,8 +194,14 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
     }
   }
 
+  /*
+   * Select paths and their descedants from this ODF.
+   */
   def selectSubTree(pathsToGet: Set[Path]): ODF
 
+  /*
+   * Select paths and their ancestors from this ODF.
+   */
   def selectUpTree(pathsToGet: Set[Path]): ODF
 
   def --(removedPaths: Seq[Path]): ODF = removePaths(removedPaths)

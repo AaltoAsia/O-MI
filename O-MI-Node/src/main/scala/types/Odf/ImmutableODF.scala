@@ -22,15 +22,19 @@ case class ImmutableODF private[odf](
 
   override val nodesMap: ImmutableHashMap[Path, Node] = nodes
 
+  /*
+   * Select exactly the paths in that ODF from this ODF.
+   */
   def select(that: ODF): ImmutableODF = {
+    val leafs =  that.getLeafPaths
     ImmutableODF(
       paths.filter {
         path: Path =>
-          that.paths.contains(path) || that.getLeafPaths.exists {
+          that.paths.contains(path) || leafs.exists {
             ancestorPath: Path =>
               ancestorPath.isAncestorOf(path)
           }
-      }.flatMap {
+      }.flatMap{
         path: Path =>
           this.nodes.get(path)
       }.toVector)
@@ -120,6 +124,9 @@ case class ImmutableODF private[odf](
     new ImmutableODF(newNodes)
   }
 
+  /*
+   * Select paths and their ancestors from this ODF.
+   */
   def selectUpTree(pathsToGet: Set[Path]): ImmutableODF = {
     ImmutableODF(
       pathsToGet.flatMap{
@@ -132,7 +139,9 @@ case class ImmutableODF private[odf](
     )
   }
 
-
+  /*
+   * Select paths and their descedants from this ODF.
+   */
   def selectSubTree(pathsToGet: Set[Path]): ImmutableODF = {
     val ps = selectSubTreePaths(pathsToGet)
     ImmutableODF(

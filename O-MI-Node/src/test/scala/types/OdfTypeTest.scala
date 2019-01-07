@@ -77,6 +77,8 @@ class OdfTypesTest extends Specification {
     TestEntry( "be able to return only nodes that have given type and are childs of given path", testingNodes, childsWithTypeTest),
     TestEntry( "be able to return only nodes that have given type and are descendants of given path", testingNodes, descendantsWithTypeTest),
     TestEntry( "be able to return only paths of nodes that have descriptions", testingNodes, pathsOfNodesWithDescriptionTest),
+    TestEntry( "be able to return correct up tree", testingNodes, getCorrectUpTree),
+    TestEntry( "be able to select correct tree", testingNodes, selectCorrectTree),
     TestEntry( "union with other ODF", testingNodes, unionTest),
     TestEntry( "update with other ODF", testingNodes, updateTest),
     TestEntry( "add with existing nodes", testingNodes, addExistingTest),
@@ -900,16 +902,51 @@ class OdfTypesTest extends Specification {
     (createdIIOdfPaths should contain(iIOdfPaths)) and (
       createdObjOdfPaths should contain(objOdfPaths ++ automaticallyCreatedOdfPaths))
   }
-
   def getCorrectSubTree(
     o_df: ODF
   ) = {
-    o_df.selectSubTree(Set(OdfPath("Objects", "ObjectA"))).getPaths.toSet should contain(
+    o_df.selectUpTree(Set(OdfPath("Objects", "ObjectA"))).getPaths.toSet should contain(
       Set(
         OdfPath("Objects"),
         OdfPath("Objects", "ObjectA"),
         OdfPath("Objects", "ObjectA", "II1"),
         OdfPath("Objects", "ObjectA", "II2")
+      )
+    )
+  }
+  def getCorrectUpTree(
+    o_df: ODF
+  ) = {
+    o_df.selectSubTree(Set(
+      OdfPath("Objects", "ObjectA"),
+      OdfPath("Objects", "ObjectB", "ObjectB", "II1")
+      )).getPaths.toSet should contain(
+      Set(
+        OdfPath("Objects"),
+        OdfPath("Objects", "ObjectA"),
+        OdfPath("Objects", "ObjectB"),
+        OdfPath("Objects", "ObjectB", "ObjectB"),
+        OdfPath("Objects", "ObjectB", "ObjectB", "II1")
+      )
+    )
+  }
+
+  def selectCorrectTree(
+    o_df: ODF
+  ) = {
+    val selector = ImmutableODF(
+      Set(
+        InfoItem.build(OdfPath("Objects", "ObjectB", "ObjectB", "II1")),
+        Object(OdfPath("Objects", "ObjectA"))
+      )
+    )
+    o_df.select( selector ).getPaths.toSet should contain(
+      Set(
+        OdfPath("Objects"),
+        OdfPath("Objects", "ObjectA"),
+        OdfPath("Objects", "ObjectB"),
+        OdfPath("Objects", "ObjectB", "ObjectB"),
+        OdfPath("Objects", "ObjectB", "ObjectB", "II1")
       )
     )
   }

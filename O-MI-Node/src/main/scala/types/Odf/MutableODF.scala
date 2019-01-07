@@ -28,11 +28,15 @@ class MutableODF private[odf](
     this
   }
 
+  /*
+   * Select exactly the paths in that ODF from this ODF.
+   */
   def select(that: ODF): MutableODF = {
+    val leafs =  that.getLeafPaths
     MutableODF(
       paths.filter {
         path: Path =>
-          that.paths.contains(path) || that.getLeafPaths.exists {
+          that.paths.contains(path) ||  leafs.exists {
             ancestorPath: Path =>
               ancestorPath.isAncestorOf(path)
           }
@@ -43,6 +47,9 @@ class MutableODF private[odf](
   }
 
 
+  /*
+   * Select paths and their ancestors from this ODF.
+   */
   def selectUpTree(pathsToGet: Set[Path]): MutableODF = {
     MutableODF(
       paths.filter {
@@ -174,6 +181,9 @@ class MutableODF private[odf](
     this
   }
 
+  /*
+   * Select paths and their descedants from this ODF.
+   */
   def selectSubTree(pathsToGet: Set[Path]): MutableODF = {
     MutableODF(
       nodes.values.filter {
