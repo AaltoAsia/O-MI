@@ -18,14 +18,14 @@ O-MI Node Server
 2. [Resources](#resources)
 3. [Dependencies](#dependencies)
 4. [Running](#running)
-5. [Compiling and Packaging](#compiling)
-6. [Setting up a development environment](#setup)
-    1. [Setting up IDE](#idesetup)
-7. [sbt help](#sbtguide)
+5. [Compiling and Packaging](#compiling-and-packaging)
+6. [Setting up a development environment](#setting-up-a-development-environment)
+    1. [Setting up IDE](#setting-up-ide)
+7. [sbt help](#simple-build-tool-cheat-sheet)
 8. [Configuration](#configuration)
-9. [Extensions](#extensions)
+9. [Extensions](#o-mi-extensions)
 
-Introduction <a name="introduction"></a>
+Introduction
 ------------
 
 Internet of Things data server.
@@ -81,7 +81,7 @@ This will run O-MI Node with configuration in `/conf/application.conf`.
 By default it will start at url [http://localhost:8080/](http://localhost:8080/) and has some example and demo agents.
 More Information in the [Configuration](#Configuration) section.
 
-Compiling and packaging <a name="compiling"></a>
+Compiling and packaging
 -----------------------
 1. Follow the instructions 1-4 in [Setup development environment](#setup-development-environment) below
 2. run `sbt universal:packageBin` (For other package types, use `sbt release`)
@@ -101,7 +101,7 @@ for more packaging methods.
 
 --->
 
-Setting up a development environment <a name="setup"></a>
+Setting up a development environment
 -----------------------------
 
 1. `git clone`
@@ -113,7 +113,7 @@ Setting up a development environment <a name="setup"></a>
 
 You can check the [Simple Build Tool cheat sheet](#simple-build-tool-cheat-sheet) section to learn more
 
-### Setting up IDE <a name="idesetup"></a>
+### Setting up IDE
 
 * IntelliJ IDEA
    1. Install the IDE
@@ -132,7 +132,7 @@ You can check the [Simple Build Tool cheat sheet](#simple-build-tool-cheat-sheet
    3. Select File->import `Existing Projects into Workspace`
 
 
-Simple Build Tool cheat sheet <a name="sbtguide"></a>
+Simple Build Tool cheat sheet
 -----------------------------
 
 Native SBT commands
@@ -193,7 +193,7 @@ Library Config
 - [Akka HTTP](http://doc.akka.io/docs/akka-http/10.0.9/scala/http/configuration.html)
 - [Slick forConfig docs](http://slick.typesafe.com/doc/3.0.0-RC2/api/index.html#slick.jdbc.JdbcBackend$DatabaseFactoryDef@forConfig\(String,Config,Driver\):Database)
 
-O-MI Extensions <a name="extensions"></a>
+O-MI Extensions
 ===============
 
 This server supports the following extensions to O-MI v1.0:
