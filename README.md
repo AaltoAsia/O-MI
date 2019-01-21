@@ -13,6 +13,20 @@ O-MI Node Server
 -->
 <img src="https://cdn.rawgit.com/AaltoAsia/O-MI/3a3b3192/O-MI%20Node/html/0-MI.svg" height=100 /><img src="https://cdn.rawgit.com/AaltoAsia/O-MI/3a3b3192/O-MI%20Node/html/0-DF.svg" height=100 />
 
+# Table of Contents
+1. [Introduction](#introduction)
+2. [Resources](#resources)
+3. [Dependencies](#dependencies)
+4. [Running](#running)
+5. [Compiling and Packaging](#compiling)
+6. [Setting up a development environment](#setup)
+    1. [Setting up IDE](#idesetup)
+7. [sbt help](#sbtguide)
+8. [Configuration](#configuration)
+9. [Extensions](#extensions)
+
+Introduction <a name="introduction"></a>
+------------
 
 Internet of Things data server.
 Implementation of O-MI Node as specified in [Open Messaging Interface](http://www.opengroup.org/iot/omi/index.htm) ([pdf](https://www2.opengroup.org/ogsys/catalog/C14B)) v1.0 standard with [Open Data Format](http://www.opengroup.org/iot/odf/index.htm) ([pdf](https://www2.opengroup.org/ogsys/catalog/C14A)) standard. It is intended to be as reference implementation that shows how these standards work in more detail. Missing features and differences to the standard are collected to [this](https://docs.google.com/spreadsheets/d/1duj-cX7dL9QR0igVMLNq9cBytSA196Ogiby-MWMetGw/edit?pref=2&pli=1#gid=1927687927) (work in progress) document. Questions or problems with the server or the standards can be posted to [Issues](https://github.com/AaltoAsia/O-MI/issues), email or [gitter chat](https://gitter.im/AaltoAsia/O-MI?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge).
@@ -67,7 +81,7 @@ This will run O-MI Node with configuration in `/conf/application.conf`.
 By default it will start at url [http://localhost:8080/](http://localhost:8080/) and has some example and demo agents.
 More Information in the [Configuration](#Configuration) section.
 
-Compiling and packaging
+Compiling and packaging <a name="compiling"></a>
 -----------------------
 1. Follow the instructions 1-4 in [Setup development environment](#setup-development-environment) below
 2. run `sbt universal:packageBin` (For other package types, use `sbt release`)
@@ -87,7 +101,7 @@ for more packaging methods.
 
 --->
 
-Setup development environment
+Setting up a development environment <a name="setup"></a>
 -----------------------------
 
 1. `git clone`
@@ -99,7 +113,7 @@ Setup development environment
 
 You can check the [Simple Build Tool cheat sheet](#simple-build-tool-cheat-sheet) section to learn more
 
-### Setting up IDE
+### Setting up IDE <a name="idesetup"></a>
 
 * IntelliJ IDEA
    1. Install the IDE
@@ -118,7 +132,7 @@ You can check the [Simple Build Tool cheat sheet](#simple-build-tool-cheat-sheet
    3. Select File->import `Existing Projects into Workspace`
 
 
-Simple Build Tool cheat sheet
+Simple Build Tool cheat sheet <a name="sbtguide"></a>
 -----------------------------
 
 Native SBT commands
@@ -179,7 +193,7 @@ Library Config
 - [Akka HTTP](http://doc.akka.io/docs/akka-http/10.0.9/scala/http/configuration.html)
 - [Slick forConfig docs](http://slick.typesafe.com/doc/3.0.0-RC2/api/index.html#slick.jdbc.JdbcBackend$DatabaseFactoryDef@forConfig\(String,Config,Driver\):Database)
 
-O-MI Extensions
+O-MI Extensions <a name="extensions"></a>
 ===============
 
 This server supports the following extensions to O-MI v1.0:
