@@ -354,7 +354,7 @@ Lets take previous `JavaAgent` and extend it to support responsibility. Create
 new `ResponsibleJavaAgent` that extends `JavaAgent` and implements required
 `ResponsibleInternalAgent` interface. Following code is covered previously:
 
-```
+```java
 /**
  * Pushes random numbers to given O-DF path at given interval.
  * Can be used in testing or as a base for other agents.
@@ -420,7 +420,7 @@ handlers required by `ResponsibleInternalAgent` interface. `respondFuture` is
 helper method that makes sure, that agent responds correctly to sender of
 request and does it asynchronously.
 
-```
+```java
   /**
    * Method that is inherited from akka.actor.UntypedActor and handles incoming messages
    * from other Actors.
@@ -449,7 +449,7 @@ Becaouse we do not have to check anything about request or act based of its'
 contents, we can just pass it to database. We also need to define `handleCall`
 method for `ResponsibleInternalAgent` interface.
 
-```
+```java
   @Override
   public Future<ResponseRequest> handleWrite(WriteRequest write) {
     
@@ -469,7 +469,8 @@ method for `ResponsibleInternalAgent` interface.
   }
 ```
 Last step is to configure agent in `application.conf` to run it.
-```
+
+```java
     {
       name = "ResponsibleJavaAgent" 
       class = "agents.ResponsibleJavaAgent"
