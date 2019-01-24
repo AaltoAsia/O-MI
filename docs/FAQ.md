@@ -2,9 +2,17 @@
 
 ## How to modify or delete existing value(s)
 ## only 50 values in DB?
+By default server stores only 50 values per InfoItem, but this can be adjusted
+with `num-latest-values-stored` in `application.conf`. This is done to assure
+that if program is used only for testing it will not create lot of unrequired
+data.  
+
 ## How to use a different DB
 ## How to publish other file/query format endpoints?
 ## Which requests are optimized?
+For all InfoItem program has cached the latest value they have. Thus, optimising
+all read request that only access them.
+
 ## Java responsible agent
 ## Callback response history in WebClient
 ## How to run on ARM architecture
@@ -20,11 +28,16 @@ For Windows: [O_MI_NODE_config.txt](https://github.com/AaltoAsia/O-MI/blob/maste
 
 ## authz configuration for Kong authentication
 ## DB file locations, location settings, roles, why logs dir? move db from logs dir without breaking linux packages
-## performance improvements (by disabling history database)
 ## what is development status? (warnings)
 ## How to deploy (linux and docker)
 ## macOS compilation problems (newer java version problems?)
 ## related software components and link to connecting manual (authorization, influxdb, warp10)
 ## code of coduct (CONTRIBUTING.md)
-## How to increase timeouts for large requests?
 ## How to enable write request to docker version?
+
+## Request are taking too long or timeout requently. What can be done?
+### Increase timeouts for large requests
+### Disable history database
+If you do not need large amounts of data stored or are willing to store data
+somewhere else, then you disable database and only have latest values stored in
+cache. This is done by setting `omi-service.database` to `none`.
