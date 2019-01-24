@@ -44,7 +44,7 @@ Java agent example
 To implement *internal agent* using Java you need to create a class extending 
 `JavaInternalAgent`. `JavaInternalAgent` is an abstract class providing some 
 default and utility members. It also extends Akka's `UntypedActor`. 
-We enforce AKka's recommended practice for `Props` creation by requiring every 
+We enforce Akka's recommended practice for `Props` creation by requiring every 
 `JavaInternalAgent` to have `public static 
 Props props(final `[Config](https://github.com/typesafehub/config)` config)`.
 
@@ -344,5 +344,152 @@ Finally you need to restart O-MI Node to update its configuration.
 
 Responsibility
 ----------------------
-Agent can be "responsible" for some O-DF paths. This means that the node will direct `write` or `call` request of those O-DF paths to the agent instead of normal operation. The agent can then do anything with the received data and then decide if the request is considered as a success or reject it with an error message.
-...TODO
+Agent can be "responsible" for some O-DF paths. This means that the node will 
+direct `write` or `call` request of those O-DF paths to the agent instead of 
+normal operation. The agent can then do anything with the received data and 
+then decide if the request is considered as a success or reject it with an 
+error message.
+
+Lets take previous `JavaAgent` and extend it to support responsibility. Create
+new `ResponsibleJavaAgent` that extends `JavaAgent` and implements required
+`ResponsibleInternalAgent` interface. Following code is covered previously:
+
+```
+/**
+ * Pushes random numbers to given O-DF path at given interval.
+ * Can be used in testing or as a base for other agents.
+ */
+public class ResponsibleJavaAgent extends JavaAgent implements ResponsibleInternalAgent {
+  /**
+   *  THIS STATIC METHOD MUST EXISTS FOR JavaInternalAgent. 
+   *  WITHOUT IT JavaInternalAgent CAN NOT BE INITIALIZED.
+   *  Implement it in way that
+   *  <a href="http://doc.akka.io/docs/akka/current/java/untyped-actors.html#Recommended_Practices">Akka recommends to</a>.
+   *
+   *  @param _config Contains configuration for this agent, as given in application.conf.
+   */
+  static public Props props(final Config _config, final ActorRef requestHandler, final ActorRef dbHandler) {
+    return Props.create(new Creator<ResponsibleJavaAgent>() {
+      private static final long serialVersionUID = 355173L;
+
+      @Override
+      public ResponsibleJavaAgent create() throws Exception {
+        return new ResponsibleJavaAgent(_config, requestHandler, dbHandler);
+      }
+    });
+  }
+  
+  // Constructor
+  public ResponsibleJavaAgent(
+      Config conf,
+      final ActorRef requestHandler, 
+      final ActorRef dbHandler) {
+    super(conf, requestHandler, dbHandler);
+  }
+
+
+  // Contains function for the asynchronous handling of write result
+  public final class LogResult extends OnSuccess<ResponseRequest> {
+      @Override public final void onSuccess(ResponseRequest response) {
+        Iterable<OmiResult> results = response.resultsAsJava() ;
+        for( OmiResult result : results ){
+          if( result instanceof Results.Success ){
+            // This sends debug log message to O-MI Node logs if
+            // debug level is enabled (in logback.xml and application.conf)
+            log.debug(name() + " wrote paths successfully.");
+          } else {
+            log.warning(
+                "Something went wrong when " + name() + " wrote, " + result.toString()
+                );
+          }
+        }
+      }
+  }
+  // Contains function for the asynchronous handling of write failure
+  public final class LogFailure extends OnFailure{
+      @Override public final void onFailure(Throwable t) {
+          log.warning(
+            name() + "'s write future failed, error: " + t.getMessage()
+          );
+      }
+  }
+```
+To have our new agent to react corretly to received `write` and `call` request
+we need to change `onReceive` method to check for them and call corresponding
+handlers required by `ResponsibleInternalAgent` interface. `respondFuture` is
+helper method that makes sure, that agent responds correctly to sender of
+request and does it asynchronously.
+
+```
+  /**
+   * Method that is inherited from akka.actor.UntypedActor and handles incoming messages
+   * from other Actors.
+   */
+  @Override
+  public void onReceive(Object message){
+    if( message instanceof WriteRequest ){
+      WriteRequest write = (WriteRequest) message;
+      respondFuture(handleWrite(write));
+    }  else if( message instanceof CallRequest ){
+
+      CallRequest call = (CallRequest) message;
+      respondFuture(handleCall(call));
+
+    } else if( message instanceof String) {
+      String str = (String) message;
+      if( str.equals("Update"))
+        update();
+      else super.onReceive(message);
+    } else super.onReceive(message);
+  }
+```
+
+Next we have to define what our agent does when write request is received.
+Becaouse we do not have to check anything about request or act based of its'
+contents, we can just pass it to database. We also need to define `handleCall`
+method for `ResponsibleInternalAgent` interface.
+
+```
+  @Override
+  public Future<ResponseRequest> handleWrite(WriteRequest write) {
+    
+    Future<ResponseRequest> future = writeToDB(write);
+
+    ExecutionContext ec = context().system().dispatcher();
+    future.onSuccess(new LogResult(), ec);
+    future.onFailure(new LogFailure(), ec);
+    return future;
+  }
+
+  @Override
+  public Future<ResponseRequest> handleCall(CallRequest call){
+    return Futures.successful( 
+        Responses.NotImplemented(Duration.apply(10,TimeUnit.SECONDS))
+    );
+  }
+```
+Last step is to configure agent in `application.conf` to run it.
+```
+    {
+      name = "ResponsibleJavaAgent" 
+      class = "agents.ResponsibleJavaAgent"
+      language = "java"
+      responsible = {
+        "Objects/RJAgent/" = "w"
+      }
+      path = "Objects/RJAgent/sensor"
+      interval = 60 seconds
+    }
+```
+The "w" assigned to path means that our agent is only responsible for 
+`WriteRequest`s and does not receive or handle `CallRequest`s for given path.
+
+Now restart O-MI Node to update its configuration.
+
+###Prefered: Responsiblity using `ResponsibleJavaInternalAgent`
+
+You can create responsible java agent by extending
+`ResponsibleJavaInternalAgent`, that has some utility methods ready. This is
+prefered way of doing responsibility in java.
+
+
