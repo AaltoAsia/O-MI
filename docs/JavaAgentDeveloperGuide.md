@@ -486,8 +486,8 @@ The "w" assigned to path means that our agent is only responsible for
 
 Now restart O-MI Node to update its configuration.
 
-###Prefered: Responsiblity using `ResponsibleJavaInternalAgent`
-
+Prefered: Responsiblity using `ResponsibleJavaInternalAgent`
+------
 You can create responsible java agent by extending
 `ResponsibleJavaInternalAgent`, that has some utility methods ready. This is
 prefered way of doing responsibility in java.
