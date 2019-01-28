@@ -17,14 +17,14 @@ To run O-MI Node run the corresponding startup script from the bin directory for
 2. `o-mi-node` for Unix and Mac
 3. Visit http://localhost:8080/ to see that it's working
 
-This will run O-MI Node with configuration in application.conf.
+This will run O-MI Node with configuration in conf/application.conf.
 By default it has some example and demo agents.
 More Information in the next section.
 
 Basic configuration
 -------------------
 
-See `application.conf` for the defaults and configuration documentation.
+See `conf/application.conf` for the defaults and configuration documentation.
 
 
 Library Config
