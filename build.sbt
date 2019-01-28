@@ -28,7 +28,7 @@ addCommandAlias("systemTest", "omiNode/testOnly http.SystemTest")
 
 def commonSettings(moduleName: String) = Seq(
   name := s"O-MI-$moduleName",
-  version := "1.0.5.dev", // WARN: Release ver must be "x.y.z" (no dashes, '-')
+  version := "1.0.9", // WARN: Release ver must be "x.y.z" (no dashes, '-')
   scalaVersion := "2.12.6",
   scalacOptions := Seq("-unchecked", "-feature", "-deprecation", "-encoding", "utf8", "-Xlint", s"-P:genjavadoc:out=${target.value}/java"),
   scalacOptions in (Compile,doc) ++= Seq("-groups", "-deprecation", "-implicits", "-diagrams", "-diagrams-debug", "-encoding", "utf8"),
@@ -145,7 +145,7 @@ lazy val root = (project in file(".")).
     ///////////////////////////////////////////////////////////////////////
       bashScriptExtraDefines += """addJava "-Dconfig.file=${app_home}/../conf/application.conf"""",
       bashScriptExtraDefines += """addJava "-Dlogback.configurationFile=${app_home}/../conf/logback.xml"""",
-      bashScriptExtraDefines += """cd  ${app_home}/..""",
+      bashScriptExtraDefines += """cd  "${app_home}/.."""",
       batScriptExtraDefines += """set _JAVA_OPTS=%_JAVA_OPTS% -Dconfig.file=%O_MI_NODE_HOME%\\conf\\application.conf""", 
       batScriptExtraDefines += """set _JAVA_OPTS=%_JAVA_OPTS% -Dlogback.configurationFile=%O_MI_NODE_HOME%\\conf\\logback.xml""", 
       batScriptExtraDefines += """cd "%~dp0\.."""",
@@ -190,6 +190,9 @@ lazy val root = (project in file(".")).
        * that structure is in wanted format. Should solve issues with wrong
        * permissions preventing creating files.
        */
+      //AspectJWeaver for Kamon to run with native-packager
+      javaAgents += "org.aspectj" % "aspectjweaver" % "1.8.13",
+      javaOptions in Universal += "-Dorg.aspectj.tracing.factory=default",
     /*
     //Create empty database directory for Tar. Zip removes empty directories?
     //TODO: Check Warp10
@@ -225,6 +228,8 @@ lazy val root = (project in file(".")).
     */
       linuxPackageMappings in Rpm := configWithNoReplace((linuxPackageMappings in Rpm).value),
       debianPackageDependencies in Debian ++= Seq("java8-runtime", "bash (>= 2.05a-11)"),
+      //debianNativeBuildOptions in Debian := Nil, // dpkg-deb's default compression (currently xz)
+      debianNativeBuildOptions in Debian := Seq("-Zgzip", "-z3"), // gzip compression at level 3
 
     /////////////////////////////////////////////////////////////
     //Prevent aggregation of following commands to sub projects//

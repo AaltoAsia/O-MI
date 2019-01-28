@@ -14,6 +14,7 @@ case class ParkingSpace(
   geo: Option[GeoCoordinates],
   maximumParkingHours: Option[Long],
   available: Option[Boolean],
+  isOccupied: Option[Boolean],
   user: Option[String],
   chargers: Seq[Charger],
   height: Option[Double],
@@ -29,6 +30,7 @@ case class ParkingSpace(
        other.geo.orElse( geo ),
        other.maximumParkingHours.orElse( maximumParkingHours ),
        other.available.orElse( available ),
+       other.isOccupied.orElse( isOccupied ),
        other.user.orElse( user ),
       other.chargers.groupBy(_.id).mapValues(_.head).foldLeft(chargers.groupBy(_.id).mapValues(_.head)){
         case (current:Map[String,Charger], (id: String, charger: Charger)) =>
@@ -91,6 +93,14 @@ case class ParkingSpace(
       )
     }.toSeq ++ available.map{ a => 
       val nII = "available"
+      InfoItem( 
+        nII,
+        path / nII,
+        typeAttribute = Some(s"${prefix}$nII"),
+        values = Vector( BooleanValue( a, currentTimestamp ))
+      )
+    }.toSeq ++ isOccupied.map{ a => 
+      val nII = "isOccupied"
       InfoItem( 
         nII,
         path / nII,
@@ -164,6 +174,10 @@ object ParkingSpace{
               case Failure(e) => throw e
             } 
           }
+          val available = getBooleanOption("available",path,odf)
+          val occupied = getBooleanOption("isOccupied",path,odf)
+          val availabilityResult = available.orElse(occupied.map(!_))
+          
           ParkingSpace(
             obj.path.last,
             getStringOption("validForVehicle",path,odf).map{
@@ -185,7 +199,8 @@ object ParkingSpace{
             }.toSeq.flatten,
             geo,
             getLongOption("maximumParkingHours",path,odf),
-            getBooleanOption("available",path,odf),
+            availabilityResult,         // NOTE: this will add extra infoitem if isOccupied is used
+            availabilityResult.map(!_), // NOTE: ^
             getStringOption("user",path,odf),
             chargers,
             getDoubleOption("vehicleHeightLimit",path,odf),

@@ -139,7 +139,7 @@ By default, O-MI Node allows anyone to make any read requests. If some parts of 
     * put this outside server block to extract CN for the username (*remove "_legacy" if using older than v1.11.6*) and support websockets
         ```
         map $ssl_client_s_dn_legacy $ssl_client_s_dn_cn {
-            default "should_not_happen";
+            default "";
             ~/CN=(?<CN>[^/]+) $CN;
         }  
         
@@ -187,3 +187,25 @@ By default, O-MI Node allows anyone to make any read requests. If some parts of 
         }
         ```
 5. (re)Start o-mi-node, o-mi-authorization and nginx
+
+## Authentication in Kong API manager
+
+If you are using [the authentication plugins of Kong](https://docs.konghq.com/hub/#authentication) you can use the upstream headers set by the plugin(s). For example, there is "X-Consumer-ID" or "X-Credential-Username". Now in O-MI Node you only need a quite usual authz configuration like this:
+
+```
+omi-service.authAPI.v2 {
+  enable = true
+  authentication.url = ""  # skip; already done at this point
+  authorization.url = "http://localhost:8001/v1/get-permissions"  # fill this as usual
+
+  parameters {
+    fromRequest.headers {
+      X-Consumer-ID = "username" # select header to use for "username" in Authorization module
+    }
+    toAuthorization.jsonbody {   # as usual
+      username = "username"
+      request = "requestTypeChar"
+    }
+  }
+}
+```

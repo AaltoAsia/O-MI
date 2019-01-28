@@ -17,15 +17,13 @@ import java.io.File
 import java.sql.Timestamp
 
 import akka.actor.{ActorRef, ActorSystem}
-import akka.pattern.ask
 import akka.util.Timeout
 import com.typesafe.config.{Config, ConfigFactory}
-import journal.Models.{GetTree, MultipleReadCommand}
 import http.OmiConfigExtension
 import org.slf4j.{Logger, LoggerFactory}
 import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
-import types.OmiTypes.{OmiReturn, ReturnCode}
+import types.OmiTypes.OmiReturn
 import types.Path
 import types.odf._
 

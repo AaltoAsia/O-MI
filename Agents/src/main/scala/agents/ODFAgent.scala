@@ -24,6 +24,16 @@ object ODFAgent extends PropsCreator{
   }
 }
 // Scala XML contains also parsing package
+/**
+  * Agent that reads a XML file from given config path and writes the contents to the server with customizable interval.
+  * Values of the xml have updated timestamps with every write and values are also changed for some types:
+  * "xs:int" -> value is randomply incremented/decremented by 1 every interval
+  * "xs:double" -> value is incremented by gaussian random variable and rounded to 2 decimal points
+  * "xs:boolean" -> boolean value is changed with 20% probability every write
+  * @param config config containing the XML-file path and write interval information.
+  * @param requestHandler
+  * @param dbHandler
+  */
 class ODFAgent(
   val config: Config,
   requestHandler: ActorRef, 
@@ -77,7 +87,7 @@ class ODFAgent(
       odf =>
 
       // Collect metadata 
-      val updated = odf.getInfoItems.map{ 
+      val updated = odf.getInfoItems.map{
         infoItem: InfoItem  => 
           val newVal = infoItem.values.lastOption.map{
             value: Value[Any] => 
@@ -122,13 +132,15 @@ class ODFAgent(
         case sval: StringPresentedValue => sval.copy( timestamp = nts )
         case sval: StringValue => sval.copy( timestamp = nts )
         case bval: BooleanValue => 
-          if( math.abs(Random.nextGaussian) > 1 ){
+          if(rnd.nextDouble < 0.20 ){
             Value(!bval.value,nts)
           } else bval.copy(timestamp =nts)
         case nval: Value[Any] =>
           nval.value match{
             case oldValue: Int => 
-              Value(oldValue + (Random.nextGaussian*oldValue*0.10), nts )
+              Value(oldValue + rnd.nextInt%2 , nts )
+            case oldValue: Double =>
+              Value( (((oldValue + rnd.nextGaussian*0.5)*100).toInt / 100.0), nts )
             case v => Value(v, nts)
           }
     }

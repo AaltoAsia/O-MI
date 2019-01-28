@@ -11,7 +11,8 @@ Releasing
 2. Change version number in `/build.sbt` only
 3. Merge master->development: `git pull origin master` (contains usually readme/docs changes)
 4. Check that tests succeed: `sbt test`
-5. Merge development->master `git checkout master && git merge development`
+5. Commit
+6. Merge development->master `git checkout master && git merge development`
 
 **Automatic release packages:**
 ----------------------

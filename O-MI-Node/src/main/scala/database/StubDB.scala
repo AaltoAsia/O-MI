@@ -1,20 +1,15 @@
 package database
 
-import java.io.File
 import java.sql.Timestamp
 
 import akka.actor.{ActorRef, ActorSystem}
-import akka.pattern.ask
 import akka.util.Timeout
-import com.typesafe.config.{Config, ConfigFactory}
-import journal.Models.{GetTree, MultipleReadCommand}
 import http.OmiConfigExtension
 import org.slf4j.{Logger, LoggerFactory}
-import slick.basic.DatabaseConfig
-import slick.jdbc.JdbcProfile
 import types.OmiTypes.{OmiReturn, ReturnCode}
 import types.Path
 import types.odf._
+import utils.SingleTimer
 
 import scala.concurrent.Future
 
@@ -55,34 +50,17 @@ class StubDB(val singleStores: SingleStores, val system: ActorSystem, val settin
     }.toSeq).map(Some(_))
   }
 
-  def readLatestFromCache(requestedOdf: ODF)(implicit timeout: Timeout): Future[ImmutableODF] = {
+  def readLatestFromCache(requestedOdf: ODF): Future[ImmutableODF] = {
     readLatestFromCache(requestedOdf.getLeafPaths.toSeq)
   }
 
-  def readLatestFromCache(leafPaths: Seq[Path])(implicit timeout: Timeout): Future[ImmutableODF] = {
-    // NOTE: Might go off sync with tree or values if the request is large,
-    // but it shouldn't be a big problem
-    val fp2iis = (singleStores.hierarchyStore ? GetTree).mapTo[ImmutableODF].map(_.getInfoItems.collect {
-      case ii: InfoItem if leafPaths.exists { path: Path => path.isAncestorOf(ii.path) || path == ii.path } =>
-        ii.path -> ii
-    }.toMap)
+  def readLatestFromCache(leafPaths: Seq[Path]): Future[ImmutableODF] = {
+    val fp2iis: Future[Set[Path]] = singleStores.getHierarchyTree().map(hTree => hTree.subTreePaths(leafPaths.toSet))
     val objectsWithValues: Future[ImmutableODF] = for {
-      p2iis <- fp2iis
+      p2iis: Set[Path] <- fp2iis
       pathToValue  <-
-        (singleStores.latestStore ? MultipleReadCommand(p2iis.keys.toVector)).mapTo[Seq[(Path, Value[Any])]]
-      objectsWithValues = ImmutableODF(pathToValue.flatMap {
-        case (path: Path, value: Value[Any]) =>
-          val temp = p2iis.get(path).map {
-            ii: InfoItem =>
-              ii.copy(
-                names = Vector.empty,
-                descriptions = Set.empty,
-                metaData = None,
-                values = Vector(value)
-              )
-          }
-          temp
-      }.toVector)
+        singleStores.readValues(p2iis.toSeq)
+      objectsWithValues = ImmutableODF.createFromNodes(pathToValue.map(pv => InfoItem(pv._1,Vector(pv._2))))
     } yield objectsWithValues
 
     objectsWithValues

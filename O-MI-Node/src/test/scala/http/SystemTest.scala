@@ -12,7 +12,7 @@ import akka.pattern.ask
 import akka.testkit.TestProbe
 import akka.util.Timeout
 import database._
-import journal.Models.ErasePathCommand
+import journal.LatestStore.ErasePathCommand
 import org.specs2.concurrent.ExecutionEnv
 import org.specs2.mutable._
 import org.specs2.specification.BeforeAfterAll
@@ -36,7 +36,7 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
   // TODO: better cleaning after tests
   def beforeAll() = {
     Await
-      .ready((singleStores.hierarchyStore ? ErasePathCommand(types.Path("/Objects"))) (new Timeout(20 seconds)),
+      .ready(singleStores.erasePathHierarchy(types.Path("/Objects")),
         20 seconds)
   }
 
@@ -123,7 +123,7 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
     Await.ready(future, 2 seconds)
     dbConnection.destroy()
     Await
-      .ready((singleStores.hierarchyStore ? ErasePathCommand(types.Path("/Objects"))) (new Timeout(20 seconds)),
+      .ready(singleStores.erasePathHierarchy(types.Path("/Objects")),
         20 seconds)
   }
 

@@ -2,9 +2,7 @@ package database
 
 import java.sql.Timestamp
 
-import akka.pattern.ask
 import akka.util.Timeout
-import journal.Models.{GetTree, MultipleReadCommand}
 import http.OmiConfigExtension
 import org.slf4j.{Logger, LoggerFactory}
 import slick.jdbc.meta.MTable
@@ -114,16 +112,8 @@ trait OdfDatabase extends Tables with DB with TrimmableDB {
       //log.info( s"Initialized DB successfully. ${path2DBPath.single.length} paths in DB." )
       case Failure(t) =>
         log.error("DB initialization failed.", t)
-      /*
-      logAllTables.flatMap{
-        case u: Unit =>
-          logPathsTable
-      }.map{
-        case u: Unit =>
-          logValueTables
-      }*/
     }
-    Await.result(initialization, 1 minutes)
+    Await.result(initialization, settings.startTimeout)
   }
 
   override def writeMany(odf: ImmutableODF): Future[OmiReturn] = {
@@ -500,10 +490,10 @@ trait OdfDatabase extends Tables with DB with TrimmableDB {
     }
   }
 
-  def readLatestFromCache(leafPaths: Seq[Path])(implicit timeout: Timeout): Future[Option[ImmutableODF]] = {
+  def readLatestFromCache(leafPaths: Seq[Path]): Future[Option[ImmutableODF]] = {
     // NOTE: Might go off sync with tree or values if the request is large,
     // but it shouldn't be a big problem
-    val p2iisF: Future[Map[Path, InfoItem]] = (singleStores.hierarchyStore ? GetTree).mapTo[ImmutableODF]
+    val p2iisF: Future[Map[Path, InfoItem]] = singleStores.getHierarchyTree()
       .map(_.getInfoItems.collect {
         case ii: InfoItem if leafPaths.exists { path: Path => path.isAncestorOf(ii.path) || path == ii.path } =>
           ii.path -> ii
@@ -511,7 +501,7 @@ trait OdfDatabase extends Tables with DB with TrimmableDB {
 
     for {
       p2iis <- p2iisF
-      pathToValue: Seq[(Path, Value[Any])] <- (singleStores.latestStore ? MultipleReadCommand(p2iis.keys.toSeq))
+      pathToValue: Seq[(Path, Value[Any])] <- singleStores.readValues(p2iis.keys.toSeq)
         .mapTo[Seq[(Path, Value[Any])]]
       objectsWithValues = Some(ImmutableODF(pathToValue.flatMap { //why option??
         case (path: Path, value) =>

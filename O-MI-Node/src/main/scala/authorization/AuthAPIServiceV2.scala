@@ -9,7 +9,7 @@ import akka.http.scaladsl.{Http, HttpExt}
 import akka.pattern.ask
 import akka.stream.ActorMaterializer
 import akka.util.{ByteString, Timeout}
-import database.journal.Models.GetTree
+import database.journal.HierarchyStore.GetTree
 import http.OmiConfigExtension
 import org.json4s.JsonDSL._
 import org.json4s.native.JsonMethods._
@@ -197,7 +197,7 @@ class AuthAPIServiceV2(
 
           val filteredOdf = ImmutableODF(
               (allowedRequestPaths -- denyPaths)
-                .flatMap(originalRequest.odf.getNodesMap.get(_))
+                .flatMap(originalRequest.odf.nodesMap.get(_))
                 .toSeq
             )
             .addNodes(allowedChildrenPaths.iterator.flatMap(odfTree.get).map{
@@ -209,7 +209,7 @@ class AuthAPIServiceV2(
           //    .removePaths(childDenyPaths union nonAllowPaths union otherDenyPaths) addNodes newChildrenPaths.toSeq
 
 
-          //log.debug(s"FILTERODF \n original $originalRequest \n allowedRequestPaths $allowedRequestPaths \n denyPaths $denyPaths \n newChildrenPaths $newChildrenPaths \n filteredOdf $filteredOdf")
+          //println(s"FILTERODF \n original $originalRequest \n allowedRequestPaths $allowedRequestPaths \n denyPaths $denyPaths \n newChildrenPaths $newChildrenPaths \n filteredOdf $filteredOdf")
 
           // TODO: Cleaner code
           if (filteredOdf.isEmpty && !(originalRequest.odf.isEmpty && filters.allow.contains(Path("Objects"))))
@@ -218,7 +218,7 @@ class AuthAPIServiceV2(
             Some(originalRequest replaceOdf filteredOdf)
 
         case _ => // requests with new tree, requires permissions to parents and overwriting items
-          val filteredNodes = originalRequest.odf.getNodesMap.filterKeys{ p =>
+          val filteredNodes = originalRequest.odf.nodesMap.filterKeys{ p =>
             filters.allow.exists(a => (a isAncestorOf p) || p == a) &&
             !filters.deny.exists(d => (d isAncestorOf p) || p == d)
           }
@@ -230,7 +230,7 @@ class AuthAPIServiceV2(
 
           // TODO: Cleaner code
           //if (filteredOdf.isEmpty && !(originalRequest.odf.isEmpty && filters.allow.contains(Path("Objects"))))
-          if (filteredOdf.getNodesMap.size < originalRequest.odf.getNodesMap.size)
+          if (filteredOdf.nodesMap.size < originalRequest.odf.nodesMap.size)
             None
           else
             //Some(originalRequest replaceOdf filteredOdf)

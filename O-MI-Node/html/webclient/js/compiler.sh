@@ -1,3 +1,3 @@
 
-~/node_modules/coffee-script/bin/coffee -wc .
+~/.node_modules/bin/coffee -wc .
 

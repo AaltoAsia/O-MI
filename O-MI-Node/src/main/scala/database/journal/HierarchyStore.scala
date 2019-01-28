@@ -2,6 +2,8 @@ package database.journal
 
 import akka.actor.{ActorLogging, Props}
 import akka.persistence._
+import database.journal.HierarchyStore.{GetTree, UnionCommand}
+import database.journal.LatestStore.ErasePathCommand
 import database.journal.Models._
 import types.Path
 import types.odf._
@@ -11,6 +13,10 @@ import scala.concurrent.duration.Duration
 object HierarchyStore {
   //id given as parameter to make testing possible
   def props(id: String = "hierarchystore"): Props = Props(new HierarchyStore(id))
+  //Hierarchy store protocol
+  case class UnionCommand(other: ImmutableODF) extends PersistentCommand
+
+  case object GetTree extends Command
 }
 class HierarchyStore(id: String) extends PersistentActor with ActorLogging {
   override def persistenceId: String = id
@@ -23,13 +29,13 @@ class HierarchyStore(id: String) extends PersistentActor with ActorLogging {
 
   def updateState(event: PersistentMessage): Unit = event match {
     case e: Event => e match {
-      case PUnion(another) => state = state.union(buildImmutableOdfFromProtobuf(another)).valuesRemoved.immutable
+      case PUnion(another) => state = state.union(buildImmutableOdfFromProtobuf(another).valuesRemoved).immutable
       case PErasePath(path) => state = state.removePath(Path(path)).immutable
       case _ =>
 
     }
     case p: PersistentCommand => p match {
-      case UnionCommand(other) => state = state.union(other).valuesRemoved.immutable
+      case UnionCommand(other) => state = state.union(other.valuesRemoved).immutable
       case ErasePathCommand(path) => state = state.removePath(path).immutable
       case _ =>
 
