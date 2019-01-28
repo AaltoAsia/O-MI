@@ -173,7 +173,7 @@ We also schedule a repeated sending of message `"Update"` to ourself.
 ```
 
 To have our `JavaAgent` to react on `"Update"` message we override the method 
-`void onReceive` to check if received message is type of `String` and is equal
+`Receive createReceive` to check if received message is type of `String` and is equal
 to `"Update"`. If message matches, then method `update()` is called.
 
 ```Java
@@ -182,13 +182,10 @@ to `"Update"`. If message matches, then method `update()` is called.
    * from other Actors.
    */
   @Override
-  public void onReceive(Object message){
-    if( message instanceof String) {
-      String str = (String) message;
-      if( str.equals("Update"))
-        update();
-      else super.onReceive(message);
-    } else super.onReceive(message);
+  public Receive createReceive(){
+    return receiveBuilder().matchEquals(
+        "Update", s -> update()
+    ).build().orElse( super.createReceive() );
   }
 ```
 
@@ -415,7 +412,7 @@ public class ResponsibleJavaAgent extends JavaAgent implements ResponsibleIntern
   }
 ```
 To have our new agent to react corretly to received `write` and `call` request
-we need to change `onReceive` method to check for them and call corresponding
+we need to change `createReceive` method to check for them and call respective
 handlers required by `ResponsibleInternalAgent` interface. `respondFuture` is
 helper method that makes sure, that agent responds correctly to sender of
 request and does it asynchronously.
@@ -426,21 +423,13 @@ request and does it asynchronously.
    * from other Actors.
    */
   @Override
-  public void onReceive(Object message){
-    if( message instanceof WriteRequest ){
-      WriteRequest write = (WriteRequest) message;
-      respondFuture(handleWrite(write));
-    }  else if( message instanceof CallRequest ){
-
-      CallRequest call = (CallRequest) message;
-      respondFuture(handleCall(call));
-
-    } else if( message instanceof String) {
-      String str = (String) message;
-      if( str.equals("Update"))
-        update();
-      else super.onReceive(message);
-    } else super.onReceive(message);
+  public Receive createReceive(){
+    return receiveBuilder()
+      .match(WriteRequest.class,write -> respondFuture(handleWrite(write)))
+      .match(CallRequest.class,call -> respondFuture(handleCall(call)))
+      .matchEquals("Update",s -> update())
+      .build()
+      .orElse(super.createReceive());
   }
 ```
 
