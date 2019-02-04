@@ -43,7 +43,9 @@ Development status
 
 All important features are working, but the project is in kind of beta phase where things are not yet very optimized and malicious requests might use too much memory.
 
-See `development` branch for latest progress.
+For large amounts of data, it is not recommended to use the default value history database. Instead, it can be disabled or changed to InfluxDB, see [FAQ](https://github.com/AaltoAsia/O-MI/blob/master/docs/FAQ.md#how-to-use-a-different-db) for instructions.
+
+See [`development`](https://github.com/AaltoAsia/O-MI/tree/development) branch for latest progress.
 
 Resources
 ---------
