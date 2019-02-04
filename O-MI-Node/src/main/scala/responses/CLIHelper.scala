@@ -63,9 +63,11 @@ class CLIHelper(val singleStores: SingleStores, dbConnection: DB)(implicit syste
             singleStores.erasePathData(path)
           })
 
-          singleStores.erasePathHierarchy(parentPath)
 
-          val dbRemoveFuture: Future[Int] = dbConnection.remove(parentPath).map(_.length)
+          val dbRemoveFuture: Future[Int] = dbConnection.remove(parentPath).map(_.length).flatMap{
+            n =>
+              singleStores.erasePathHierarchy(parentPath).map( _ => n)
+          }
 
           dbRemoveFuture.onComplete {
             case Success(res) => log.debug(s"Database successfully deleted $res nodes")
