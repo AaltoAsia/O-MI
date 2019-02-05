@@ -101,20 +101,12 @@ public class ResponsibleJavaAgent extends JavaAgent implements ResponsibleIntern
    * from other Actors.
    */
   @Override
-  public void onReceive(Object message){
-    if( message instanceof WriteRequest ){
-      WriteRequest write = (WriteRequest) message;
-      respondFuture(handleWrite(write));
-    }  else if( message instanceof CallRequest ){
-
-      CallRequest call = (CallRequest) message;
-      respondFuture(handleCall(call));
-
-    } else if( message instanceof String) {
-      String str = (String) message;
-      if( str.equals("Update"))
-        update();
-      else super.onReceive(message);
-    } else super.onReceive(message);
+  public Receive createReceive(){
+    return receiveBuilder()
+      .match(WriteRequest.class,write -> respondFuture(handleWrite(write)))
+      .match(CallRequest.class,call -> respondFuture(handleCall(call)))
+      .matchEquals("Update",s -> update())
+      .build()
+      .orElse(super.createReceive());
   }
 }

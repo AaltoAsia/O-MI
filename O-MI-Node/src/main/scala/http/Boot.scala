@@ -17,6 +17,10 @@ package http
 import java.net.InetSocketAddress
 import java.util.Date
 
+import kamon.influxdb.InfluxDBReporter
+import kamon.Kamon
+import kamon.system.SystemMetrics
+
 import akka.actor.{ActorRef, ActorSystem, Props}
 import akka.http.scaladsl.Http.ServerBinding
 import akka.http.scaladsl.{Http, HttpExt}
@@ -55,6 +59,25 @@ class OmiServer extends OmiNode {
     */
   val settings: OmiConfigExtension = OmiConfig(system)
 
+  settings.kamonEnabled match {
+    //TODO: Add other reporters? Additional depncies...
+    case true =>
+      Kamon.addReporter(new InfluxDBReporter())
+      system.log.info(s"Started influxdb reporter for Kamon.") 
+      //Enablest system metric monitoring with Kamon, but needs Sigar to work
+      //TODO: Add Sigar to depencies?
+      Try{
+        SystemMetrics.startCollecting()
+        system.registerOnTermination{ a: Unit => SystemMetrics.stopCollecting()}
+      } match {
+        case Failure(ex) => 
+          system.log.warning(s"Starting system metrics collection failed because: $ex") 
+          system.log.warning(s"System metrics will not be collected.") 
+        case Success(_) =>
+      }
+    case false => 
+  }
+
   val singleStores = SingleStores(settings)
   val dbConnection: DB = settings.databaseImplementation.toUpperCase match {
     case "SLICK" => new DatabaseConnection()(
@@ -70,7 +93,10 @@ class OmiServer extends OmiNode {
       singleStores,
       )
 
-    case default => new StubDB(singleStores, system, settings)
+    case "NONE" => 
+      new StubDB(singleStores, system, settings)
+    case str: String =>
+      throw new Exception(s"Unknown omi-service.database parameter. Should be one of slick, influxdb, warp10 or none. Was $str")
   }
   /*
     val dbConnection: DB = new influxdb.InfluxDBImplementation(
@@ -200,7 +226,8 @@ trait OmiNode {
   }
 
   def shutdown(): Future[akka.actor.Terminated] = {
-    system.terminate()
+    val f = system.terminate()
+    f
   }
 
 }

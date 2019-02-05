@@ -97,7 +97,7 @@ case class InfoItem(
       nameAttribute,
       path,
       that.typeAttribute.orElse(typeAttribute),
-      QlmID.unionReduce(that.names ++ names).toVector.filter { id => id.id.nonEmpty },
+      QlmID.unionReduce(names ++ that.names).toVector.filter { id => id.id.nonEmpty },
       Description.unionReduce(descriptions ++ that.descriptions).toVector.filter(desc => desc.text.nonEmpty).toSet,
       if (that.values.nonEmpty) that.values else values,
       that.metaData.flatMap {

@@ -268,17 +268,22 @@ object ODFParser extends parsing.Parser[OdfParseResult] {
           }.foldLeft("")( _ + _)
           */
       case str: String =>
-        val xmlValue = valueType.mixed.map {
-          dr: xmlGen.scalaxb.DataRecord[_] =>
-            xmlGen.scalaxb.DataRecord.toXML(dr, None, None, xmlGen.odfDefaultScope, typeAttribute = false)
-        }.foldLeft(NodeSeq.Empty) {
-          case (res: NodeSeq, ns: NodeSeq) => res ++ ns
+        if(valueType.mixed.length > 1) {
+          val xmlValue = valueType.mixed.map {
+            dr: xmlGen.scalaxb.DataRecord[_] =>
+              xmlGen.scalaxb.DataRecord.toXML(dr, None, None, xmlGen.odfDefaultScope, typeAttribute = false)
+          }.foldLeft(NodeSeq.Empty) {
+            case (res: NodeSeq, ns: NodeSeq) => res ++ ns
+          }
+          Value(
+                 xmlValue.toString,
+                 typeValue,
+                 timeSolver(valueType, requestProcessTime)
+               )
+        } else {
+          val valueO = valueType.mixed.headOption.map(_.value)
+          Value(valueO.getOrElse(""),typeValue,timeSolver(valueType,requestProcessTime)) //if empty then empty string
         }
-        Value(
-          xmlValue.toString,
-          typeValue,
-          timeSolver(valueType, requestProcessTime)
-        )
     }
 
   }

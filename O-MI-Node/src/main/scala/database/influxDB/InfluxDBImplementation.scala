@@ -5,6 +5,7 @@ import java.sql.Timestamp
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
+import scala.util.{Try, Success, Failure}
 import scala.language.postfixOps
 
 import akka.actor.{ActorRef, ActorSystem}
@@ -224,8 +225,15 @@ object InfluxDBImplementation{
       value: Value[Any] =>
         val valueStr: String = value.value match {
           case odf: ImmutableODF => throw new Exception("Having O-DF inside value with InfluxDB is not supported.")
-          case str: String => s""""${str.replace("\"", "\\\"")}""""
           case num @ (_: Double | _: Float | _: Int | _: Long | _:Short ) => num.toString 
+          case str: String => 
+            Try{
+              str.toInt.toString
+            }.orElse{
+              Try{str.toDouble.toString}
+            }.getOrElse{
+              s""""${str.replace("\"", "\\\"")}""""
+            }
           case bool: Boolean => bool.toString
           case any: Any => s""""${any.toString.replace("\"", "\\\"")}""""
         }

@@ -16,7 +16,7 @@ val windowsWarp10URL = "https://bintray.com/cityzendata/generic/download_file?fi
 
 def commonSettings(moduleName: String) = Seq(
   name := s"O-MI-$moduleName",
-  version := "1.0.6-warp10", // WARN: Release ver must be "x.y.z" (no dashes, '-')
+  version := "1.0.9-warp10", // WARN: Release ver must be "x.y.z" (no dashes, '-')
   scalaVersion := "2.12.6",
   scalacOptions := Seq("-unchecked", "-feature", "-deprecation", "-encoding", "utf8", "-Xlint", s"-P:genjavadoc:out=${target.value}/java"),
   scalacOptions in (Compile,doc) ++= Seq("-groups", "-deprecation", "-implicits", "-diagrams", "-diagrams-debug", "-encoding", "utf8"),
@@ -237,7 +237,7 @@ fi
     ///////////////////////////////////////////////////////////////////////
       bashScriptExtraDefines += """addJava "-Dconfig.file=${app_home}/../conf/application.conf"""",
       bashScriptExtraDefines += """addJava "-Dlogback.configurationFile=${app_home}/../conf/logback.xml"""",
-      bashScriptExtraDefines += """cd  ${app_home}/..""",
+      bashScriptExtraDefines += """cd  "${app_home}/.."""",
       batScriptExtraDefines += """set _JAVA_OPTS=%_JAVA_OPTS% -Dconfig.file=%O_MI_NODE_HOME%\\conf\\application.conf""", 
       batScriptExtraDefines += """set _JAVA_OPTS=%_JAVA_OPTS% -Dlogback.configurationFile=%O_MI_NODE_HOME%\\conf\\logback.xml""", 
       batScriptExtraDefines += """cd "%~dp0\.."""",
@@ -282,6 +282,9 @@ fi
        * that structure is in wanted format. Should solve issues with wrong
        * permissions preventing creating files.
        */
+      //AspectJWeaver for Kamon to run with native-packager
+      javaAgents += "org.aspectj" % "aspectjweaver" % "1.8.13",
+      javaOptions in Universal += "-Dorg.aspectj.tracing.factory=default",
     /*
     //Create empty database directory for Tar. Zip removes empty directories?
     //TODO: Check Warp10

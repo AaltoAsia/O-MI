@@ -112,16 +112,8 @@ trait OdfDatabase extends Tables with DB with TrimmableDB {
       //log.info( s"Initialized DB successfully. ${path2DBPath.single.length} paths in DB." )
       case Failure(t) =>
         log.error("DB initialization failed.", t)
-      /*
-      logAllTables.flatMap{
-        case u: Unit =>
-          logPathsTable
-      }.map{
-        case u: Unit =>
-          logValueTables
-      }*/
     }
-    Await.result(initialization, 1 minutes)
+    Await.result(initialization, settings.startTimeout)
   }
 
   override def writeMany(odf: ImmutableODF): Future[OmiReturn] = {

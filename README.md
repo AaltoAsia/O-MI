@@ -13,34 +13,45 @@ O-MI Node Server
 -->
 <img src="https://cdn.rawgit.com/AaltoAsia/O-MI/3a3b3192/O-MI%20Node/html/0-MI.svg" height=100 /><img src="https://cdn.rawgit.com/AaltoAsia/O-MI/3a3b3192/O-MI%20Node/html/0-DF.svg" height=100 />
 
+# Table of Contents
+1. [Introduction](#introduction)
+2. [Development status](#development-status)
+2. [Resources](#resources)
+3. [Dependencies](#dependencies)
+4. [Running](#running)
+5. [Compiling and Packaging](#compiling-and-packaging)
+6. [Setting up a development environment](#setting-up-a-development-environment)
+    1. [Setting up IDE](#setting-up-ide)
+7. [sbt help](#simple-build-tool-cheat-sheet)
+8. [Configuration](#configuration)
+
+Introduction
+------------
 
 Internet of Things data server.
-Implementation of O-MI Node as specified in [Open Messaging Interface](http://www.opengroup.org/iot/omi/index.htm) ([pdf](https://www2.opengroup.org/ogsys/catalog/C14B)) v1.0 standard with [Open Data Format](http://www.opengroup.org/iot/odf/index.htm) ([pdf](https://www2.opengroup.org/ogsys/catalog/C14A)) standard. It is intended to be as reference implementation that shows how these standards work in more detail. Missing features and differences to the standard are collected to [this](https://docs.google.com/spreadsheets/d/1duj-cX7dL9QR0igVMLNq9cBytSA196Ogiby-MWMetGw/edit?pref=2&pli=1#gid=1927687927) (work in progress) document. Questions or problems with the server or the standards can be posted to [Issues](https://github.com/AaltoAsia/O-MI/issues), email or [gitter chat](https://gitter.im/AaltoAsia/O-MI?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge).
+Implementation of O-MI Node as specified in [Open Messaging Interface (O-MI)](http://www.opengroup.org/iot/omi/index.htm) v1.0 standard with [Open Data Format (O-DF)](http://www.opengroup.org/iot/odf/index.htm) standard. It is intended to be as reference implementation that shows how these standards work in more detail. See [Features.md](https://github.com/AaltoAsia/O-MI/blob/master/docs/Features.md) for more details.
 
-Supported communication protocols:
+O-MI can be used to query or update data, but also to set up data streams with *subscriptions*. It means that the standard can be used to make peer-to-peer like connections, but it can also be used just as traditional client-server setups. O-MI standardises the requests with XML, which can be sent with almost any protocol. This implementation supports http, https and websocket.
 
-* HTTP (`http://`)
-* HTTPS (`https://`)
-* [WebSocket](#o-mi-extensions) (`ws://`)
-* WebSocket Secure (`wss://`)
+O-DF is a simple object hierarchy format defined in XML. O-DF is used as data payload in O-MI. O-MI supports use of any text based data format, but request semantics might be more ambigious. Payloads other than O-DF are not yet supported in this implementation.
 
-This project also includes:
+Questions or problems with the server or the standards can be posted to [Issues](https://github.com/AaltoAsia/O-MI/issues), email or [gitter chat](https://gitter.im/AaltoAsia/O-MI?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge). [![Join the chat at https://gitter.im/AaltoAsia/O-MI](https://badges.gitter.im/AaltoAsia/O-MI.svg)](https://gitter.im/AaltoAsia/O-MI?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-* a developer webapp for building and sending O-MI/O-DF messages.
-* some experimental extensions for the server which can be found in other branches:
-  - `omisec-omi-interface` has O-MI/O-DF interface for authorization of O-MI messages in external service.
-  - `warp10integration` has integration to [Warp10](http://www.warp10.io/) as the DB backend.
 
-See `development` branch for latest progress.
+Development status
+-----------------
 
-Chat with dev team: [![Join the chat at https://gitter.im/AaltoAsia/O-MI](https://badges.gitter.im/AaltoAsia/O-MI.svg)](https://gitter.im/AaltoAsia/O-MI?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+All important features are working, but the project is in kind of beta phase where things are not yet very optimized and malicious requests might use too much memory.
 
+For large amounts of data, it is not recommended to use the default value history database. Instead, it can be disabled or changed to InfluxDB, see [FAQ](https://github.com/AaltoAsia/O-MI/blob/master/docs/FAQ.md#how-to-use-a-different-db) for instructions.
+
+See [`development`](https://github.com/AaltoAsia/O-MI/tree/development) branch for latest progress.
 
 Resources
 ---------
 
-* [O-MI Specification (html)](http://www.opengroup.org/iot/omi/index.htm)
-* [O-DF Specification (html)](http://www.opengroup.org/iot/odf/index.htm)
+* [O-MI Specification (html)](http://www.opengroup.org/iot/omi/index.htm) ([pdf](https://www2.opengroup.org/ogsys/catalog/C14B)) 
+* [O-DF Specification (html)](http://www.opengroup.org/iot/odf/index.htm) ([pdf](https://www2.opengroup.org/ogsys/catalog/C14A))
 * [API Documentation ScalaDoc](https://otaniemi3d.cs.hut.fi/omi/node/html/api/index.html)
 * [API Documentation JavaDoc](https://otaniemi3d.cs.hut.fi/omi/node/html/api/java/index.html)
 * [Examples of requests and responses, as handled by this server](https://otaniemi3d.cs.hut.fi/omi/node/html/ImplementationDetails.html)
@@ -50,8 +61,10 @@ Resources
 
 Dependencies
 ------------
+
 * Java 1.8
 * For building: SBT (Simple Build Tool) http://www.scala-sbt.org/ or SBT enabled IDE
+
 
 Running
 -------
@@ -70,7 +83,7 @@ More Information in the [Configuration](#Configuration) section.
 Compiling and packaging
 -----------------------
 1. Follow the instructions 1-4 in [Setup development environment](#setup-development-environment) below
-2. run `sbt release`
+2. run `sbt universal:packageBin` (For other package types, use `sbt release`)
 3. Result can be found in `./target/universal/o-mi-Node-version.zip`
 
 
@@ -87,12 +100,12 @@ for more packaging methods.
 
 --->
 
-Setup development environment
+Setting up a development environment
 -----------------------------
 
 1. `git clone`
 2. [Install sbt](http://www.scala-sbt.org/0.13/tutorial/Setup.html)
-3. (windows: logout, or put sbt into PATH yourself)
+3. (on windows: logout, or put sbt into PATH yourself)
 4. Open a cmd or shell to the `O-MI` project directory
 5. Then run `sbt` and in opened the ">" prompt run `reStart` to compile and run the Node
 6. Visit http://localhost:8080/ to see that it's working
@@ -179,16 +192,9 @@ Library Config
 - [Akka HTTP](http://doc.akka.io/docs/akka-http/10.0.9/scala/http/configuration.html)
 - [Slick forConfig docs](http://slick.typesafe.com/doc/3.0.0-RC2/api/index.html#slick.jdbc.JdbcBackend$DatabaseFactoryDef@forConfig\(String,Config,Driver\):Database)
 
-O-MI Extensions
-===============
 
-This server supports the following extensions to O-MI v1.0:
+Optional components
+-------------------
 
-1. Websockets
-  * Client can initiate websocket connection to O-MI Node server by connecting to the same root path as POST requests with http connection upgrade request. (url conventions: `ws://` or secure `wss://`)
-  * During a websocket connection the server accepts requests as in normal http communication. Immediate responses are sent in the same order as the corresponding requests were received.
-  * During a websocket connection callback can be set to `"0"` in an O-MI message to tell O-MI Node to use current websocket connection as the callback target.
-  * Keep in mind that depending on client and server configuration, a websocket connection will timeout if there is long period of inactivity. (Default is usually 1 minute). No callbacks can be sent after a timeout occurs (as websockets are always initiated by a client).
-    - If your ws client library doesn't support the native ws ping, sending an empty websocket message is allowed for the purpose of keeping the connection alive and server will not send any special response for that.
-2. Delete operation
-  * Delete operation is currently an extension until it is released in O-MI standard version 2.0
+- branch `warp10integration` has experimental integration to [Warp10](http://www.warp10.io/) as the DB backend.
+
