@@ -2,7 +2,7 @@
 package agentSystem;
 
 import akka.actor.ActorRef;
-import akka.actor.UntypedActor;
+import akka.actor.AbstractActor;
 import akka.dispatch.Foreach;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
@@ -13,7 +13,7 @@ import types.OmiTypes.*;
 
 import static akka.pattern.Patterns.ask;
 
-public abstract class JavaInternalAgent extends UntypedActor implements InternalAgent{
+public abstract class JavaInternalAgent extends AbstractActor implements InternalAgent{
   /**
    *  static public Props props(final Config _config)
    *  THIS STATIC METHOD MUST EXISTS FOR JavaInternalAgent. 
@@ -74,9 +74,6 @@ public abstract class JavaInternalAgent extends UntypedActor implements Internal
     return requestFromDB(write);
   }
 
-  @Override
-  public void onReceive(Object message) {
-  }
       
   final ExecutionContext ec = context().dispatcher();
   final protected void respond(Object msg ){
@@ -93,5 +90,9 @@ public abstract class JavaInternalAgent extends UntypedActor implements Internal
       },
       ec
     ); 
+  }
+
+  public Receive createReceive(){
+    return receiveBuilder().matchAny( s -> log.warning("Received unknown message: " + s.toString())).build();
   }
 }
