@@ -55,10 +55,12 @@ Increase the timeouts listed under `akka.http.server` object in `application.con
 ## How to publish other file/query format endpoints?
 Not possible easily at the moment. Improvements to this matter has been planned.
 
-## How to run on ARM architecture
+## How to run on ARM architecture (Raspberry pi)
 
 LevelDB used in journal does not have ARM compatible version at the moment, 
 so to run on devices with ARM architecture that database needs to be disabled from the [these lines of reference.conf](https://github.com/AaltoAsia/O-MI/blob/development/O-MI-Node/src/main/resources/reference.conf#L432-L437) file. Comment the lines with LevelDB configurations and uncomment the in-memory configuration.
+
+Note that this also creates a risk of losing up to [snapshot-interval](https://github.com/AaltoAsia/O-MI/blob/development/O-MI-Node/src/main/resources/reference.conf#L44) of journal data (changes O-DF structure and subscriptions) if o-mi-node is killed.
 
 ## How to change JVM heap settings
 
