@@ -7,7 +7,7 @@ import DebianConstants._
 lazy val separator = taskKey[Unit]("Prints seperating string")
 separator := println("########################################################\n\n\n\n")
 
-addCommandAlias("release", ";unidoc ;universal:packageBin ;universal:packageZipTarball ;debian:packageBin ;rpm:packageBin")
+addCommandAlias("release", ";universal:packageBin ;universal:packageZipTarball ;debian:packageBin ;rpm:packageBin ;unidoc ")
 addCommandAlias("systemTest", "omiNode/testOnly http.SystemTest")
 
 //mapGenericFilesToLinux
@@ -162,10 +162,12 @@ lazy val root = (project in file(".")).
         Seq(
           conf / "reference.conf" -> "conf/application.conf",
           conf / "logback.xml" -> "conf/logback.xml")},
+      /*
       mappings in Universal ++= {
         println((doc in Compile in omiNode).value)
         val base = (baseDirectory in omiNode).value
         directory(base / "html" / "api").map(n => (n._1, "html/" + n._2))},
+      */
       mappings in Universal ++= {
         val base = baseDirectory.value
         Seq(
