@@ -31,9 +31,9 @@ Introduction
 Internet of Things data server.
 Implementation of O-MI Node as specified in [Open Messaging Interface (O-MI)](http://www.opengroup.org/iot/omi/index.htm) v1.0 standard with [Open Data Format (O-DF)](http://www.opengroup.org/iot/odf/index.htm) standard. It is intended to be as reference implementation that shows how these standards work in more detail. See [Features.md](https://github.com/AaltoAsia/O-MI/blob/master/docs/Features.md) for more details.
 
-O-MI can be used to query or update data, but also to set up data streams with *subscriptions*. It means that the standard can be used to make peer-to-peer like connections, but it can also be used just as traditional client-server setups. O-MI standardises the requests with XML, which can be sent with almost any protocol. This implementation supports http, https and websocket.
+O-MI can be used to query or update data, but also to set up data streams with *subscriptions*. It means that the standard can be used to make peer-to-peer like connections, but it can also be used in traditional client-server setup. O-MI standardises the requests with XML, and they can be sent with almost any text based protocol. This implementation supports http, https and websocket.
 
-O-DF is a simple object hierarchy format defined in XML. O-DF is used as data payload in O-MI. O-MI supports use of any text based data format, but request semantics might be more ambigious. Payloads other than O-DF are not yet supported in this implementation.
+O-DF is a simple object hierarchy format defined in XML. O-DF is used as data payload in O-MI. O-DF can be thought as a file structure with directories which are `Object`s and files which are `InfoItem`s. O-MI also supports use of any text based data format, but request semantics might be more ambigious. Payloads other than O-DF are not yet supported in this implementation.
 
 Questions or problems with the server or the standards can be posted to [Issues](https://github.com/AaltoAsia/O-MI/issues), email or [gitter chat](https://gitter.im/AaltoAsia/O-MI?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge). [![Join the chat at https://gitter.im/AaltoAsia/O-MI](https://badges.gitter.im/AaltoAsia/O-MI.svg)](https://gitter.im/AaltoAsia/O-MI?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
@@ -41,9 +41,11 @@ Questions or problems with the server or the standards can be posted to [Issues]
 Development status
 -----------------
 
-All important features are working, but the project is in kind of beta phase where things are not yet very optimized and malicious requests might use too much memory.
+All important features are working, but the project is in kind of beta phase where things are not yet very optimized and malicious requests might cause crashing. However, the project can be used in production if the server has low risk profile or authentication.
 
 For large amounts of data, it is not recommended to use the default value history database. Instead, it can be disabled or changed to InfluxDB, see [FAQ](https://github.com/AaltoAsia/O-MI/blob/master/docs/FAQ.md#how-to-use-a-different-db) for instructions.
+
+O-MI Node can be extended with special request logic which can be implemented with "agents". Different authentication and authorization mechanisms can be implemented via auth apis. New databases can be implemented with DB interface. Other payloads than O-DF cannot yet be implemented.
 
 See [`development`](https://github.com/AaltoAsia/O-MI/tree/development) branch for latest progress.
 
