@@ -52,8 +52,10 @@ cache. This is done by setting `omi-service.database` to `none`.
 Increase the timeouts listed under `akka.http.server` object in `application.conf`. You can try to inspect what timeout is being triggered from error responses or logs.
 
 
-## How to publish other file/query format endpoints?
+## How to publish other file/query format O-MI endpoints?
 Not possible easily at the moment. Improvements to this matter has been planned.
+
+If you are looking for how to connect other protocols to O-MI you might want to check Agent development guide or make a small O-MI Write client.
 
 ## How to run on ARM architecture (Raspberry pi)
 
