@@ -64,7 +64,7 @@ so to run on devices with ARM architecture that database needs to be disabled fr
 
 Note that this also creates a risk of losing up to [snapshot-interval](https://github.com/AaltoAsia/O-MI/blob/development/O-MI-Node/src/main/resources/reference.conf#L44) of journal data (changes O-DF structure and subscriptions) if o-mi-node is killed.
 
-## How to change JVM heap settings
+## How to change JVM settings? (e.g. jvm memory/heap)
 
 For Linux and Mac: [conf/application.ini](https://github.com/AaltoAsia/O-MI/blob/master/src/universal/conf/application.ini) 
 
