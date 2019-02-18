@@ -85,7 +85,7 @@ lazy val agents = (project in file("Agents")).
 
 lazy val root = (project in file(".")).
   enablePlugins(JavaServerAppPackaging, SystemdPlugin).
-  enablePlugins(JavaAgent).//Kamon
+  //enablePlugins(JavaAgent).//Kamon
   enablePlugins(DockerPlugin).
   //enablePlugins(CodacyCoveragePlugin).
   enablePlugins(RpmPlugin).
@@ -193,8 +193,8 @@ lazy val root = (project in file(".")).
        * permissions preventing creating files.
        */
       //AspectJWeaver for Kamon to run with native-packager
-      javaAgents += "org.aspectj" % "aspectjweaver" % "1.8.13",
-      javaOptions in Universal += "-Dorg.aspectj.tracing.factory=default",
+      //javaAgents += "org.aspectj" % "aspectjweaver" % "1.8.13",
+      //javaOptions in Universal += "-Dorg.aspectj.tracing.factory=default",
     /*
     //Create empty database directory for Tar. Zip removes empty directories?
     //TODO: Check Warp10
