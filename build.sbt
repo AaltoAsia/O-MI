@@ -2,6 +2,7 @@ import Dependencies._
 import NativePackagerHelper._
 import Path.relativeTo
 import LinuxPlugin._
+import com.typesafe.sbt.packager.linux.LinuxSymlink
 import WindowsPlugin._//import com.typesafe.sbt.packager.archetypes.systemloader.ServerLoader.{Systemd,SystemV,Upstart}
 import DebianConstants._
 lazy val separator = taskKey[Unit]("Prints seperating string")
@@ -129,7 +130,13 @@ lazy val root = (project in file(".")).
           base / "html" / "api",
           base / "lib",
           base / "logs",
-          file("logs"))},
+          base / "database",
+          base / "database" / "valuehistorydb",
+          base / "database" /"journaldb",
+          file("logs"),
+          file("database"),
+          file("valuehistorydb"),
+          file("journaldb"))},
     
     ////////////////////////////////////////////////////////////////////////
     //Update version file so that the web browser displays current version//
@@ -153,6 +160,9 @@ lazy val root = (project in file(".")).
     ////////////////////////////
     //Native packager settings//
     ////////////////////////////
+      //AspectJWeaver for Kamon to run with native-packager
+      //javaAgents += "org.aspectj" % "aspectjweaver" % "1.8.13",
+      //javaOptions in Universal += "-Dorg.aspectj.tracing.factory=default",
     //Mappings tells the plugin which files to include in package and in what directory
       mappings in Universal ++= { directory((baseDirectory in omiNode).value / "html")},
       mappings in Universal ++= {directory(baseDirectory.value / "conf")},
@@ -192,12 +202,8 @@ lazy val root = (project in file(".")).
        * that structure is in wanted format. Should solve issues with wrong
        * permissions preventing creating files.
        */
-      //AspectJWeaver for Kamon to run with native-packager
-      //javaAgents += "org.aspectj" % "aspectjweaver" % "1.8.13",
-      //javaOptions in Universal += "-Dorg.aspectj.tracing.factory=default",
-    /*
     //Create empty database directory for Tar. Zip removes empty directories?
-    //TODO: Check Warp10
+    //TODO: Check Warp10, uses database directory.
     mappings in (Universal,packageZipTarball) ++= {
       val base = baseDirectory.value
       Seq( base -> "database/")
@@ -216,18 +222,16 @@ lazy val root = (project in file(".")).
             s"/var/lib/${normalizedName.value}/database"
           )() withUser( daemonUser.value ) withGroup( daemonGroup.value ),
           packageTemplateMapping(
-            s"/var/lib/${normalizedName.value}/journal"
+            s"/var/lib/${normalizedName.value}/database/valuehistorydb"
           )() withUser( daemonUser.value ) withGroup( daemonGroup.value ),
           packageTemplateMapping(
-            s"/var/lib/${normalizedName.value}/snapshots"
+            s"/var/lib/${normalizedName.value}/database/journaldb"
           )() withUser( daemonUser.value ) withGroup( daemonGroup.value )
         ),
       linuxPackageSymlinks ++=Seq(
-        LinuxSymlink( s"/usr/share/${normalizedName.value}/database", s"/var/lib/${normalizedName.value}/database"),
-        LinuxSymlink( s"/usr/share/${normalizedName.value}/journal", s"/var/lib/${normalizedName.value}/journal"),
-        LinuxSymlink( s"/usr/share/${normalizedName.value}/snapshost", s"/var/lib/${normalizedName.value}/snapshost")
+        LinuxSymlink( s"/usr/share/${normalizedName.value}/database/valuehistorydb", s"/var/lib/${normalizedName.value}/database/valuehistorydb"),
+        LinuxSymlink( s"/usr/share/${normalizedName.value}/database/journaldb", s"/var/lib/${normalizedName.value}/database/journaldb"),
       ),
-    */
       linuxPackageMappings in Rpm := configWithNoReplace((linuxPackageMappings in Rpm).value),
       debianPackageDependencies in Debian ++= Seq("java8-runtime", "bash (>= 2.05a-11)"),
       //debianNativeBuildOptions in Debian := Nil, // dpkg-deb's default compression (currently xz)
