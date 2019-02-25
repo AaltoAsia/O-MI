@@ -157,8 +157,8 @@
       shim: {
         '$.fn.modal': ['jQuery'],
         'jQuery.jstree': ['jQuery'],
-        codeMirrorExtension: ['CodeMirror', 'jQuery'],
         'CodeMirror.modes.xml': ['CodeMirror'],
+        codeMirrorExtension: ['CodeMirror', 'jQuery', 'CodeMirror.modes.xml'],
         '$.fn.datetimepicker': ['jQuery', 'moment'],
         Initialize: ['jQuery', 'CodeMirror', '$.fn.modal', 'jQuery.jstree', '$.fn.datetimepicker'],
         FormLogic: ['jQuery', 'Initialize','CodeMirror'],
