@@ -63,7 +63,8 @@ class TestOmiServer() extends OmiNode with OmiServiceTestImpl {
     settings,
     singleStores,
     requestHandler,
-    callbackHandler
+    callbackHandler,
+    requestStorage
   )
 
 
@@ -109,12 +110,16 @@ trait OmiServiceTestImpl extends OmiService with AnyActorSystem {
     ),
     "database-handler"
   )
+  lazy val requestStorage =system.actorOf(
+    RequestStore.props
+  )
   lazy val requestHandler = system.actorOf(
     RequestHandler.props(
       singleStores,
       subscriptionManager,
       dbHandler,
-      settings
+      settings,
+      requestStorage
     ),
     "RequestHandler"
   )
@@ -413,6 +418,7 @@ class TesterTest extends Specification
 
 class OmiServiceDummy extends OmiService with Mockito {
   override protected def requestHandler: ActorRef = ???
+  override protected def requestStorage: ActorRef = ???
 
   override val callbackHandler: CallbackHandler = mock[CallbackHandler]
   override protected val system: ActorSystem = Actorstest.createAs()

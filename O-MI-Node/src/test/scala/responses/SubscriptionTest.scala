@@ -22,6 +22,7 @@ import database._
 import journal.LatestStore.ErasePathCommand
 import journal.HierarchyStore.GetTree
 import http.OmiConfig
+import http.RequestStore
 import types.OdfTypes._
 import types.OmiTypes._
 import types._
@@ -73,12 +74,16 @@ class SubscriptionTest extends Specification with BeforeAfterAll {
     ),
     "database-handler"
   )
+  lazy val requestStore =system.actorOf(
+    RequestStore.props
+  )
   val requestHandler = system.actorOf(
     RequestHandler.props(
       singleStores,
       subscriptionManager,
       dbHandler,
-      settings
+      settings,
+      requestStore
     ),
     "RequestHandler"
   )
