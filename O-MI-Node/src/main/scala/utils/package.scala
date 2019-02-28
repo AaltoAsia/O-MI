@@ -1,4 +1,6 @@
 import scala.language.implicitConversions
+import java.sql.Timestamp
+import java.util.Date
 
 package object utils {
   def merge[A, B](a: Map[A, B], b: Map[A, B])(mergef: (B, Option[B]) => B): Map[A, B] = {
@@ -7,4 +9,5 @@ package object utils {
   }
 
   implicit def asOption[A](a: A): Option[A] = Option(a)
+  def currentTimestamp: Timestamp = new Timestamp( new Date().getTime())
 }

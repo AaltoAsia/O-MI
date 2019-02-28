@@ -36,8 +36,8 @@ trait SubscriptionHandler {
   def handleSubscription(_subscription: SubscriptionRequest): Future[ResponseRequest] = {
     //if interval is below allowed values, set it to minimum allowed value
     val subscription: SubscriptionRequest = _subscription match {
-      case SubscriptionRequest(interval, _, _, _, _, _, _, _, _) if interval < settings.minSubscriptionInterval &&
-        interval.toSeconds >= 0 =>
+      case s: SubscriptionRequest if s.interval < settings.minSubscriptionInterval &&
+        s.interval.toSeconds >= 0 =>
         _subscription.copy(interval = settings.minSubscriptionInterval)
       case s: SubscriptionRequest => s
     }

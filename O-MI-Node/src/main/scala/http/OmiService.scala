@@ -45,6 +45,8 @@ import scala.concurrent.{Future, Promise, TimeoutException}
 import scala.language.postfixOps
 import scala.util.{Failure, Success, Try}
 import scala.xml.NodeSeq
+import util._
+import RequestStore._
 
 trait OmiServiceAuthorization
   extends ExtensibleAuthorization
@@ -66,7 +68,8 @@ class OmiServiceImpl(
                       val settings: OmiConfigExtension,
                       val singleStores: SingleStores,
                       protected val requestHandler: ActorRef,
-                      protected val callbackHandler: CallbackHandler
+                      protected val callbackHandler: CallbackHandler,
+                      protected val requestStorage: ActorRef
                     )
   extends {
     // Early initializer needed (-- still doesn't seem to work)
@@ -102,6 +105,7 @@ trait OmiService
 
   protected def log: org.slf4j.Logger
 
+  protected def requestStorage: ActorRef
   protected def requestHandler: ActorRef
 
   protected def callbackHandler: CallbackHandler
@@ -275,10 +279,13 @@ trait OmiService
                      hasPermissionTest: PermissionTest,
                      requestString: String,
                      currentConnectionCallback: Option[Callback] = None,
-                     remote: RemoteAddress
+                     remote: RemoteAddress,
+                     requestID: Long
                    ): Future[NodeSeq] = {
     try {
 
+      requestStorage ! AddRequest( requestID )
+      requestStorage ! AddInfos( requestID, Seq( RequestTimestampInfo("start-time",  currentTimestamp)))
       //val eitherOmi = OmiParser.parse(requestString)
 
       //XXX: Corrected namespaces
@@ -299,13 +306,23 @@ trait OmiService
       val responseF: Future[ResponseRequest] = hasPermissionTest(originalReq) match {
         case Success((req: RequestWrapper, user: UserInfo)) => { // Authorized
           req.user = UserInfo(user.remoteAddress, user.name) //Copy user info to requestwrapper
-          req.parsed match {
+          requestStorage ! AddInfos( requestID, Seq( RequestTimestampInfo("pre-parse-time",  currentTimestamp)))
+          val parsed = req.parsed
+          requestStorage ! AddInfos( requestID, Seq( RequestTimestampInfo("post-parse-time",  currentTimestamp)))
+          parsed match {
             case Right(requests) =>
               val unwrappedRequest = req.unwrapped // NOTE: Be careful when implementing multi-request messages
               unwrappedRequest match {
                 case Success(request: OmiRequest) =>
                   defineCallbackForRequest(request, currentConnectionCallback).flatMap {
-                    request: OmiRequest => handleRequest(request)
+                    request: OmiRequest => 
+                      requestStorage ! AddInfos( requestID, Seq( RequestTimestampInfo("callback-time",  currentTimestamp)/*, RequestStringInfo("omi-version", request.version)*/))
+                      val handle = handleRequest(request.withRequestID(Some(requestID)))
+                      handle.foreach{
+                        response =>
+                        requestStorage ! AddInfos( requestID, Seq( RequestTimestampInfo("handle-end-time",  currentTimestamp)))
+                      }
+                      handle
                   }.recover {
                     case e: TimeoutException => Responses.TTLTimeout(Some(e.getMessage))
                     case e: IllegalArgumentException => Responses.InvalidRequest(Some(e.getMessage))
@@ -349,7 +366,10 @@ trait OmiService
             log.debug(s"Error code $statusO with received request")
           }
 
-          response.asXML // return
+          requestStorage ! AddInfos( requestID, Seq( RequestTimestampInfo("toXML-start-time",  currentTimestamp)))
+          val xmlResponse = response.asXML // return
+          requestStorage ! AddInfos( requestID, Seq( RequestTimestampInfo("toXML-end-time",  currentTimestamp)))
+          xmlResponse
       }
 
     } catch {
@@ -447,8 +467,16 @@ trait OmiService
       entity(as[String]) { requestString => // XML and O-MI parsed later
         extractClientIP { user =>
           //val xmlH = XML.loadString("""<?xml version="1.0" encoding="UTF-8"?>""" )
-          val response = handleRequest(hasPermissionTest, requestString, remote = user) //.map{ ns => xmlH ++ ns }
+          val requestID = (user,requestString.hashCode,currentTimestamp).hashCode
+          log.info( s"Testing: $requestID" )
+          requestStorage ! AddInfos( requestID, Seq( RequestTimestampInfo("route-time",  currentTimestamp), RequestLongInfo("request-hash",requestString.hashCode),RequestStringInfo("user",user.toString)))
+          val response = handleRequest(hasPermissionTest, requestString, remote = user, requestID = requestID) //.map{ ns => xmlH ++ ns }
           //val marshal = ToResponseMarshallable(response)(Marshaller.futureMarshaller(xmlCT))
+          response.foreach{
+            _ =>
+              requestStorage ! AddInfos( requestID, Seq( RequestTimestampInfo("final-time",  currentTimestamp)))
+              requestStorage ! RemoveRequest( requestID )
+          }
           complete(response)
         }
       }
@@ -462,8 +490,17 @@ trait OmiService
     makePermissionTestFunction() { hasPermissionTest =>
       formFields("msg".as[String]) { requestString =>
         extractClientIP { user =>
+
+          val requestID = (user,requestString.hashCode,currentTimestamp).hashCode
+          log.info( s"Testing: $requestID" )
+          requestStorage ! AddInfos( requestID, Seq( RequestTimestampInfo("route-time",  currentTimestamp), RequestLongInfo("request-hash",requestString.hashCode),RequestStringInfo("user",user.toString)))
           //val xmlH = XML.loadString("""<?xml version="1.0" encoding="UTF-8"?>""" )
-          val response = handleRequest(hasPermissionTest, requestString, remote = user) //.map{ ns => xmlH ++ ns }
+          val response = handleRequest(hasPermissionTest, requestString, remote = user, requestID = requestID) //.map{ ns => xmlH ++ ns }
+          response.foreach{
+            _ =>
+              requestStorage ! AddInfos( requestID, Seq( RequestTimestampInfo("final-time",  currentTimestamp)))
+              requestStorage ! RemoveRequest( requestID )
+          }
           complete(response)
         }
       }
@@ -594,10 +631,21 @@ trait WebSocketOMISupport {
         case "" => //Keep alive 
           queueSend(Future.successful(NodeSeq.Empty))
         case requestString: String =>
+
+        val requestID = (user,requestString.hashCode,currentTimestamp).hashCode
+          log.info( s"Testing: $requestID" )
+          requestStorage ! AddInfos( requestID, Seq( RequestTimestampInfo("ws-time",  currentTimestamp), RequestLongInfo("request-hash",requestString.hashCode),RequestStringInfo("user",user.toString)) )
           val futureResponse: Future[NodeSeq] = handleRequest(hasPermissionTest,
             requestString,
             createZeroCallback,
-            user)
+            user,
+            requestID
+          )
+          futureResponse.foreach{
+            _ =>
+              requestStorage ! AddInfos( requestID, Seq( RequestTimestampInfo("final-time",  currentTimestamp)))
+              requestStorage ! RemoveRequest( requestID.hashCode )
+          }
           queueSend(futureResponse)
       }
     }

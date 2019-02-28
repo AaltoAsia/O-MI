@@ -28,6 +28,7 @@ import agentSystem.AgentEvents._
 import agentSystem.{AgentName, AgentResponsibilities, Responsible, ResponsibleAgent, ResponsibleNode}
 import http.OmiConfigExtension
 import types.OmiTypes._
+import http.RequestStore._
 import utils._
 
 object RequestHandler {
@@ -35,13 +36,15 @@ object RequestHandler {
              singleStores: SingleStores,
              subscriptionManager: ActorRef,
              dbHandler: ActorRef,
-             settings: OmiConfigExtension
+             settings: OmiConfigExtension,
+             requestStore: ActorRef
            ): Props = Props(
     new RequestHandler(
       singleStores,
       subscriptionManager,
       dbHandler,
-      settings
+      settings,
+      requestStore
     )
   )
 
@@ -51,7 +54,8 @@ class RequestHandler(
                       protected val singleStores: SingleStores,
                       protected val subscriptionManager: ActorRef,
                       protected val dbHandler: ActorRef,
-                      protected val settings: OmiConfigExtension
+                      protected val settings: OmiConfigExtension,
+                      protected val requestStore: ActorRef
                     ) extends Actor with ActorLogging
   with SubscriptionHandler
   with PollHandler
@@ -76,6 +80,18 @@ class RequestHandler(
 
   def handleReadRequest(read: ReadRequest): Future[ResponseRequest] = {
     implicit val to: Timeout = Timeout(read.handleTTL)
+    read.requestID.foreach{
+      id =>
+      requestStore ! AddInfos(id,Vector( 
+        RequestStringInfo( "request-type", "read"),
+        RequestStringInfo( "begin-attribute", read.begin.toString),
+        RequestStringInfo( "end-attribute", read.end.toString),
+        RequestStringInfo( "newest-attribute", read.newest.toString),
+        RequestStringInfo( "oldest-attribute", read.oldest.toString),
+        RequestStringInfo( "callback-attribute", read.callback.toString)
+      ))
+    } 
+    //TODO: Split request and send responsible.
     val responseFuture = (dbHandler ? read).mapTo[ResponseRequest]
     responseFuture.onComplete {
       case Failure(t) =>
@@ -95,47 +111,28 @@ class RequestHandler(
   }
 
   def handleWriteRequest( write: WriteRequest) : Future[ResponseRequest] = {
-    /*
-    log.debug(s"RequestHandler handling write OdfRequest...")
-    val responsibleToRequest = agentResponsibilities.splitRequestToResponsible(write)
-    val responsesFromResponsible = responsibleToRequest.map {
-      case (None, subrequest) =>
-        implicit val to: Timeout = Timeout(subrequest.handleTTL)
-        log.debug(s"Asking DBHandler to handle request parts that are not owned by an Agent.")
-        (dbHandler ? subrequest).mapTo[ResponseRequest]
-      case (Some(agentName), subrequest) =>
-        log.debug(s"Asking responsible Agent $agentName to handle part of request.")
-        askAgent(agentName, subrequest)
-    }
-    val fSeq = Future.sequence(
-      responsesFromResponsible.map {
-        future: Future[ResponseRequest] =>
-
-          val recovered = future.recover {
-            case e: Exception =>
-              log.error(e, "DBHandler returned exception")
-              Responses.InternalError(e)
-          }
-          recovered
-      }
-    )
-    fSeq.map {
-      responses: Iterable[ResponseRequest] =>
-        val results = responses.flatMap(response => response.results)
-        ResponseRequest(
-          Results.unionReduce(results.toVector)
-        )
-    }
-    */
    splitAndHandle(write){
      request: OdfRequest =>
        implicit val to: Timeout = Timeout(request.handleTTL)
+       write.requestID.foreach{
+         id =>
+           requestStore ! AddInfos(id,Vector( 
+             RequestStringInfo( "request-type", "write"),
+             RequestStringInfo( "callback-attribute", write.callback.toString)
+           ))
+       } 
        log.debug(s"Asking DBHandler to handle request parts that are not owned by an Agent.")
        (dbHandler ? request).mapTo[ResponseRequest]
    }
   }
   def splitAndHandle( request: OdfRequest )(f: OdfRequest => Future[ResponseRequest]): Future[ResponseRequest] ={
     val responsibleToRequestF = agentResponsibilities.splitRequestToResponsible( request )
+    request.requestID.foreach{
+      id =>
+        requestStore ! AddInfos(id,Vector( 
+          RequestStringInfo( "odf-version", request.odf.getRoot.flatMap{ obj => obj.version }.toString),
+        ))
+    } 
     val fSeq = responsibleToRequestF.flatMap{
       responsibleToRequest =>
         Future.sequence(
@@ -219,7 +216,8 @@ class RequestHandler(
       case Some(ai: AgentInformation) if ai.running =>
         implicit val to: Timeout = Timeout(request.handleTTL)
         val f = ai.actorRef ? request.withSenderInformation(ActorSenderInformation(self.path.name, self))
-        f.mapTo[ResponseRequest]
+        val responseF = f.mapTo[ResponseRequest]
+        responseF
 
       case Some(ai: AgentInformation) if !ai.running =>
         Future.successful(

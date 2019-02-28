@@ -62,6 +62,9 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
   final def getObjects: Seq[Object] = nodes.values.collect {
     case obj: Object => obj
   }.toVector
+  final def getRoot: Option[Objects] = nodes.get(Path("Objects")).collect{
+    case obj: Objects => obj
+  }
 
   final def nodesWithStaticData: Vector[Node] = nodes.values.filter(_.hasStaticData).toVector
 
