@@ -100,7 +100,7 @@ class RequestHandler(
     }
     responseFuture
   }
-  def handleWriteRequest( delete: DeleteRequest) : Future[ResponseRequest] = {
+  def handleDeleteRequest( delete: DeleteRequest) : Future[ResponseRequest] = {
    splitAndHandle(delete){
      request: OdfRequest =>
        implicit val to: Timeout = Timeout(request.handleTTL)
