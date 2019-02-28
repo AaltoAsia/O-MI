@@ -22,7 +22,7 @@ trait DBReadHandler extends DBHandlerBase {
   def handleRead(read: ReadRequest): Future[ResponseRequest] = {
     implicit val timeout: Timeout = read.handleTTL
     read match {
-      case ReadRequest(_, _, begin, end, Some(newest), Some(oldest), _, _, _, _) =>
+      case read: ReadRequest if read.newest.nonEmpty && read.oldest.nonEmpty=>
         Future.successful(
           ResponseRequest(Vector(
             Results.InvalidRequest(
