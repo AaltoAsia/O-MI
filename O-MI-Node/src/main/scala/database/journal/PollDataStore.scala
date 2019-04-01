@@ -6,7 +6,7 @@ import database.journal.Models._
 import database.journal.PollDataStore._
 import types.Path
 import types.odf.Value
-import utils._
+//import utils._
 
 import scala.concurrent.duration.Duration
 import scala.util.Try
@@ -36,6 +36,10 @@ class PollDataStore(id: String) extends PersistentActor with ActorLogging {
       scala.concurrent.duration.MILLISECONDS).toMillis
 
   var state: Map[Long, Map[String, Seq[PPersistentValue]]] = Map()
+  private def merge[A, B](a: Map[A, B], b: Map[A, B])(mergef: (B, Option[B]) => B): Map[A, B] = {
+    val (bigger, smaller) = if (a.size > b.size) (a, b) else (b, a)
+    smaller.foldLeft(bigger) { case (z, (k, v)) => z + (k -> mergef(v, z.get(k))) }
+  }
 
   def mergeValues(a: Map[String, Seq[PPersistentValue]],
                   b: Map[String, Seq[PPersistentValue]]): Map[String, Seq[PPersistentValue]] = {

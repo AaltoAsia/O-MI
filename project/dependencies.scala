@@ -44,6 +44,7 @@ object Dependencies {
   val logback          = "ch.qos.logback" % "logback-classic" % "1.2.3"
   val scalaProto       = "com.thesamet.scalapb" %% "scalapb-runtime" % scalapb.compiler.Version.scalapbVersion % "protobuf"
 
+  val redis = "com.safety-data" %% "akka-persistence-redis" % "0.4.1"
 
   //Kamon
   val kamonDepencies = Seq(
@@ -97,7 +98,8 @@ object Dependencies {
     //scalaXML,
     //commonsLang,
     scalaProto,
-    gson
+    gson,
+    redis
   ) ++ kamonDepencies
 
   //val servletDependencies: Seq[ModuleID] = Seq(
