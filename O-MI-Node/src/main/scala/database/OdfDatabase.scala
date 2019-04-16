@@ -309,53 +309,56 @@ trait OdfDatabase extends Tables with DB with TrimmableDB {
       )
 
     } else {
-      val iiIOAs = pathToDBPath.single.values.filter { // FIXME: filter is not how you use a Map?
-        dbPath: DBPath =>
-          nodes.exists {
-            node: Node =>
-              dbPath.path == node.path ||
-                dbPath.path.isDescendantOf(node.path)
-          }
-      }.collect {
-        case DBPath(Some(id), path, true) =>
-          val valueTable = valueTables.get(path) match { //Is table stored?
-            case Some(pathValues) => //Found table/ TableQuery
-              pathValues
-            case None => //No TableQuery found for table. Create one for it
-              val pathValues = new PathValues(path, id)
-              valueTables += path -> pathValues
-              pathValues
-          }
+      val leafPaths = nodes.map {
+        node => node.path
+      }.toSet
+      singleStores.getHierarchyTree().flatMap{
+        odf: ODF => 
+          var t = odf.subTreePaths(leafPaths).toVector
+          //Filter only leafs
+          val iiIOAs = t.flatMap{
+            path => pathToDBPath.single.get(path)
+          }.collect {
+              case DBPath(Some(id), path, true) =>
+                val valueTable = valueTables.get(path) match { //Is table stored?
+                  case Some(pathValues) => //Found table/ TableQuery
+                    pathValues
+                  case None => //No TableQuery found for table. Create one for it
+                    val pathValues = new PathValues(path, id)
+                    valueTables += path -> pathValues
+                    pathValues
+                }
 
-          val getNBetweenResults = tableByNameExists(valueTable.name).flatMap {
-            case true =>
-              valueTable.selectNBetween(beginO, endO, newestO, oldestO)
-            case false =>
-              valueTable.schema.create.flatMap {
-                u: Unit =>
-                  valueTable.selectNBetween(beginO, endO, newestO, oldestO)
-              }
-          }
-          getNBetweenResults.map {
-            tvs: Seq[TimedValue] =>
-              val ii = InfoItem(
-                path,
-                values = tvs.map {
-                  tv => Value(tv.value, tv.valueType, tv.timestamp)
-                }.toVector
-              )
-              ii
-          }
+                val getNBetweenResults = tableByNameExists(valueTable.name).flatMap {
+                  case true =>
+                    valueTable.selectNBetween(beginO, endO, newestO, oldestO)
+                  case false =>
+                    valueTable.schema.create.flatMap {
+                      u: Unit =>
+                        valueTable.selectNBetween(beginO, endO, newestO, oldestO)
+                    }
+                }
+                getNBetweenResults.map {
+                  tvs: Seq[TimedValue] =>
+                    val ii = InfoItem(
+                      path,
+                      values = tvs.map {
+                        tv => Value(tv.value, tv.valueType, tv.timestamp)
+                      }.toVector
+                      )
+                    ii
+                }
+            }
+            //Create OdfObjects from InfoItems and union them to one with parameter ODF
+            val finalAction = DBIO.sequence(iiIOAs).map {
+              case iis: Seq[InfoItem] if iis.nonEmpty =>
+                Some(ImmutableODF(iis.toVector))
+              case iis: Seq[InfoItem] if iis.isEmpty => None
+              case _ => None
+            }
+            val r = db.run(finalAction.transactionally)
+            r
       }
-      //Create OdfObjects from InfoItems and union them to one with parameter ODF
-      val finalAction = DBIO.sequence(iiIOAs).map {
-        case iis: Seq[InfoItem] if iis.nonEmpty =>
-          Some(ImmutableODF(iis.toVector))
-        case iis: Seq[InfoItem] if iis.isEmpty => None
-        case _ => None
-      }
-      val r = db.run(finalAction.transactionally)
-      r
     }
   }
 
@@ -493,11 +496,19 @@ trait OdfDatabase extends Tables with DB with TrimmableDB {
   def readLatestFromCache(leafPaths: Seq[Path]): Future[Option[ImmutableODF]] = {
     // NOTE: Might go off sync with tree or values if the request is large,
     // but it shouldn't be a big problem
-    val p2iisF: Future[Map[Path, InfoItem]] = singleStores.getHierarchyTree()
-      .map(_.getInfoItems.collect {
-        case ii: InfoItem if leafPaths.exists { path: Path => path.isAncestorOf(ii.path) || path == ii.path } =>
-          ii.path -> ii
-      }.toMap)
+    val p2iisF: Future[Map[Path, InfoItem]] = singleStores.getHierarchyTree().map{
+      odf => 
+        var t = odf.subTreePaths(leafPaths.toSet)
+        t.filterNot{
+            path => t.exists{
+              op => path.isAncestorOf(op)
+            }
+        }.toIterator.flatMap{
+          path => odf.get(path).collect{
+            case ii: InfoItem => ii.path -> ii
+          }
+        }.toMap
+    }
 
     for {
       p2iis <- p2iisF
