@@ -1,5 +1,7 @@
 package database
 
+import java.sql.Timestamp
+import java.util.Date
 import akka.util.Timeout
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -12,8 +14,10 @@ import scala.concurrent.Future
 import types.OmiTypes._
 import types.Path
 import types.odf.{ImmutableODF, ODF}
+import utils._
 
 trait DBReadHandler extends DBHandlerBase {
+  def currentTimestamp = new Timestamp( new Date().getTime)
   /** Method for handling ReadRequest.
     *
     * @param read request
@@ -41,7 +45,9 @@ trait DBReadHandler extends DBHandlerBase {
         )
 
         val requestedODF = read.odf
+        val timer = LapTimer(log.info)
         val leafs = requestedODF.getLeafs
+        timer.step("Got leafs")
 
         //Get values from database
         val odfWithValuesO: Future[Option[ODF]] = dbConnection.getNBetween(
@@ -54,22 +60,41 @@ trait DBReadHandler extends DBHandlerBase {
 
         // NOTE: Might go off sync with tree or values if the request is large,
         // but it shouldn't be a big problem
+        val mdtimer = LapTimer(log.info)
         val fmetadataTree: Future[ImmutableODF] = singleStores.getHierarchyTree()
 
 
-        val fodfWithMetaData: Future[ODF] = fmetadataTree.map(_.readTo(requestedODF).valuesRemoved)
+        val fodfWithMetaData: Future[ODF] = fmetadataTree.map{
+          mdOdf =>
+          mdtimer.step("Got MD ODF")
+          val tmp = mdOdf.readTo(requestedODF)
+          mdtimer.step("Read MD ODF")
+          val tmp1 = tmp.valuesRemoved
+          mdtimer.step("MD ODF values removed")
+          tmp1
+        }
 
         val resultF = odfWithValuesO.flatMap {
           case Some(odfWithValues) =>
+          timer.step("Got value ODF")
             
             //Select requested O-DF from metadataTree and remove MetaDatas and descriptions
-            val fmetaCombined: Future[ODF] = fodfWithMetaData.map(_.union(odfWithValues))
-            for {
+            val fmetaCombined: Future[ODF] = fodfWithMetaData.map{
+              mdOdf =>
+              mdtimer.step("Got MD ODF ready")
+              val t = mdOdf.union(odfWithValues)
+              mdtimer.step("MD value union ODF")
+              mdtimer.total()
+
+              t
+            }
+            fmetaCombined.foreach{ _ => timer.step("metacompined")}
+            val result = for {
               metaCombined <- fmetaCombined
               requestsPaths = leafs.map {
                 _.path
               }
-              foundOdfAsPaths = metaCombined.getPaths
+              foundOdfAsPaths = metaCombined.getPaths.toSet
               notFound = requestsPaths.filterNot { path => foundOdfAsPaths.contains(path) }.toSet.toSeq
               found = metaCombined match {
                 case odf if odf.getPaths.exists(p => p != Path("Objects")) => 
@@ -83,6 +108,12 @@ trait DBReadHandler extends DBHandlerBase {
               omiResults = nfResults ++ found.toVector
 
             } yield ResponseRequest(omiResults)
+            result.foreach{
+              r =>
+                timer.step("result")
+                timer.total()
+            }
+            result
 
           case None =>
             Future.successful(ResponseRequest(Vector(Results.NotFoundPaths(requestedODF))))

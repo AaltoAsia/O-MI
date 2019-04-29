@@ -29,6 +29,7 @@ import scala.collection.JavaConverters._
 import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
 import scala.xml.{NamespaceBinding, NodeSeq}
+import utils._
 
 trait JavaOmiRequest {
   def callbackAsJava(): JIterable[Callback]
@@ -53,7 +54,15 @@ sealed trait OmiRequest extends RequestWrapper with JavaOmiRequest {
   //def user(): Option[UserInfo]
   implicit def asOmiEnvelope: xmlTypes.OmiEnvelopeType
 
-  implicit def asXML: NodeSeq = omiEnvelopeToXML(asOmiEnvelope)
+  implicit def asXML: NodeSeq = {
+    val timer = LapTimer(println)
+    val envelope = asOmiEnvelope
+    timer.step("OmiRequest asXML: asEnvelope")
+    val t = omiEnvelopeToXML(envelope)
+    timer.step("OmiRequest asXML: EnvelopeToXML")
+    timer.total()
+    t
+  }
 
   def parsed: OmiParseResult = Right(Iterable(this))
 

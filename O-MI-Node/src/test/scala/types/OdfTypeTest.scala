@@ -149,7 +149,7 @@ class OdfTypesTest extends Specification {
   }
   def emptyTest(odf: ODF) = {
     odf.getPaths.size <= 1 and
-      odf.getPaths.contains(OdfPath("Objects")) === true and
+      odf.getPaths.toSet.contains(OdfPath("Objects")) === true and
       odf.isEmpty === true
   }
 

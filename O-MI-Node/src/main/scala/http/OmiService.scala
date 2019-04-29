@@ -46,6 +46,7 @@ import scala.language.postfixOps
 import scala.util.{Failure, Success, Try}
 import scala.xml.NodeSeq
 import util._
+import utils._
 import RequestStore._
 
 trait OmiServiceAuthorization
@@ -289,8 +290,10 @@ trait OmiService
       //val eitherOmi = OmiParser.parse(requestString)
 
       //XXX: Corrected namespaces
+      val timer = LapTimer(log.info)
       val correctedRequestString = requestString.replace("\"omi.xsd\"", "\"http://www.opengroup.org/xsd/omi/1.0/\"")
         .replace("\"odf.xsd\"", "\"http://www.opengroup.org/xsd/odf/1.0/\"")
+      timer.step("Corrected wrong schema")
       val originalReq = RawRequestWrapper(correctedRequestString, UserInfo(remoteAddress = Some(remote)))
       val ttlPromise = Promise[ResponseRequest]()
       originalReq.ttl match {
@@ -303,23 +306,30 @@ trait OmiService
         case _ => //noop
       }
 
+      timer.step("Request wrapping")
       val responseF: Future[ResponseRequest] = hasPermissionTest(originalReq) match {
         case Success((req: RequestWrapper, user: UserInfo)) => { // Authorized
+          timer.step("Permission test")
           req.user = UserInfo(user.remoteAddress, user.name) //Copy user info to requestwrapper
           requestStorage ! AddInfos( requestID, Seq( RequestTimestampInfo("pre-parse-time",  currentTimestamp)))
           val parsed = req.parsed
+          timer.step("Parsed")
           requestStorage ! AddInfos( requestID, Seq( RequestTimestampInfo("post-parse-time",  currentTimestamp)))
           parsed match {
             case Right(requests) =>
               val unwrappedRequest = req.unwrapped // NOTE: Be careful when implementing multi-request messages
               unwrappedRequest match {
                 case Success(request: OmiRequest) =>
+                  
+                  timer.step("Unwrapped request")
                   defineCallbackForRequest(request, currentConnectionCallback).flatMap {
                     request: OmiRequest => 
+                      timer.step("Callback defined")
                       requestStorage ! AddInfos( requestID, Seq( RequestTimestampInfo("callback-time",  currentTimestamp)/*, RequestStringInfo("omi-version", request.version)*/))
                       val handle = handleRequest(request.withRequestID(Some(requestID)))
                       handle.foreach{
                         response =>
+                        timer.step("Request handled")
                         requestStorage ! AddInfos( requestID, Seq( RequestTimestampInfo("handle-end-time",  currentTimestamp)))
                       }
                       handle
@@ -360,6 +370,8 @@ trait OmiService
       // if timeoutfuture completes first then timeout is returned
       Future.firstCompletedOf(Seq(responseF, ttlPromise.future)) map {
         response: ResponseRequest =>
+          
+          timer.step("Omi response ready")
           // check the error code for logging
           val statusO = response.results.map { result => result.returnValue.returnCode }
           if (statusO exists (_ != "200")) {
@@ -367,8 +379,11 @@ trait OmiService
           }
 
           requestStorage ! AddInfos( requestID, Seq( RequestTimestampInfo("toXML-start-time",  currentTimestamp)))
+          timer.step("Omi response status check")
           val xmlResponse = response.asXML // return
+          timer.step("Omi response to XML")
           requestStorage ! AddInfos( requestID, Seq( RequestTimestampInfo("toXML-end-time",  currentTimestamp)))
+          timer.total()
           xmlResponse
       }
 

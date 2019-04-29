@@ -1,6 +1,7 @@
 package database
 
 import java.sql.Timestamp
+import java.util.Date
 
 import akka.actor.{ActorRef, ActorSystem}
 import akka.util.Timeout
@@ -9,7 +10,7 @@ import org.slf4j.{Logger, LoggerFactory}
 import types.OmiTypes.{OmiReturn, ReturnCode}
 import types.Path
 import types.odf._
-import utils.SingleTimer
+import utils._
 
 import scala.concurrent.Future
 
@@ -54,8 +55,17 @@ class StubDB(val singleStores: SingleStores, val system: ActorSystem, val settin
     readLatestFromCache(requestedOdf.getLeafPaths.toSeq)
   }
 
+  def currentTimestamp = new Timestamp( new Date().getTime)
   def readLatestFromCache(leafPaths: Seq[Path]): Future[ImmutableODF] = {
-    val fp2iis: Future[Set[Path]] = singleStores.getHierarchyTree().map(hTree => hTree.subTreePaths(leafPaths.toSet))
+    val timer = LapTimer(log.info)
+    val fp2iis: Future[Set[Path]] = singleStores.getHierarchyTree().map{
+      hTree => 
+        timer.step("Got HT ODF")
+        val stp = hTree.subTreePaths(leafPaths.toSet)
+        timer.step("HT ODF STP")
+        stp
+    }
+
     val objectsWithValues: Future[ImmutableODF] = for {
       p2iis: Set[Path] <- fp2iis
       pathToValue  <-
@@ -63,6 +73,9 @@ class StubDB(val singleStores: SingleStores, val system: ActorSystem, val settin
       objectsWithValues = ImmutableODF.createFromNodes(pathToValue.map(pv => InfoItem(pv._1,Vector(pv._2))))
     } yield objectsWithValues
 
+    objectsWithValues.foreach{
+      t => timer.step("objectsWithValues")
+    }
     objectsWithValues
   }
 

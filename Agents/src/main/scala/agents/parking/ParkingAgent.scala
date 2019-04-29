@@ -1,6 +1,7 @@
 package agents.parking
 
 import java.io.File
+import java.sql.Timestamp
 
 import agentSystem._
 import agents.parking.UserGroup._
@@ -19,6 +20,7 @@ import scala.concurrent.duration._
 import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
 import scala.xml.XML
+import utils._
 
 object ParkingAgent extends PropsCreator{
   /**
@@ -313,9 +315,13 @@ class ParkingAgent(
   val distanceFromDestinationParamPath: Path = parameterPath / "DistanceFromDestination"
   val validForUserGroupParamPath: Path = parameterPath / "ParkingUserGroup"
   val chargerParamPath: Path = parameterPath / "Charger"
+  var lastTime: Timestamp = currentTimestamp
   override def handleCall(call: CallRequest) : Future[ResponseRequest] = {
+    val timer = LapTimer(log.info)
     updatePrefixes(call.odf)
+    timer.step("update prefixes")
     val codf = setPrefixes(call.odf) 
+    timer.step("set prefixes")
     val r:Option[Future[ResponseRequest]] = codf.get( findParkingPath ).map{
       case ii: InfoItem =>
         ii.values.collectFirst {
@@ -405,6 +411,7 @@ class ParkingAgent(
 
                         }
                         log.debug("FindParking parameters parsed")
+                        timer.step("FindParking parameters parsed")
                         findParking(destination, distance, vehicle, userGroup, charger, wantCharging)
                     }
                 }.getOrElse {
@@ -433,11 +440,17 @@ class ParkingAgent(
           Responses.InvalidRequest(Some(s"$findParkingPath path should be InfoItem."))
         }
     }
-    r.getOrElse{
+    val t = r.getOrElse{
       Future.successful{
         Responses.InvalidRequest(Some(s"Call request doesn't contain $findParkingPath path."))
       }
     }
+    t.foreach{
+      _ => 
+        timer.step("find parking")
+        timer.total()
+    }
+    t
   }
 
   def findParking(
@@ -448,6 +461,7 @@ class ParkingAgent(
     charger: Option[Charger], 
     wantCharging: Option[Boolean]
   ):Future[ResponseRequest] ={
+      val timer = LapTimer(log.info)
       val radius: Double = 6371e3
       val deltaR = maxDistance / radius 
       val latP: Set[Path]  = latitudePFIndex.keySet.dropWhile{
@@ -471,6 +485,7 @@ class ParkingAgent(
           longitudePFIndex.get(longitude) 
       }.flatten.toSet
       val pfPaths: Set[Path] = latP.intersect(longP)
+      timer.step("position filtered")
       log.info( s"Current indexes has: ${latitudePFIndex.values.map(_.size).sum} parking facilities")
       log.info(s"Found ${pfPaths.size} parking facilities close to destination")
       if( pfPaths.isEmpty ){
@@ -481,19 +496,25 @@ class ParkingAgent(
             val pf = new ParkingFacility( facilityPath.last )
             pf.toOdf(facilityPath.getParent,Map("http://www.schema.mobivoc.org/" -> "mv:"))
         }), ttl = 1.minutes)
+        timer.step("request created")
         readFromDB(request).map{
           response: ResponseRequest =>
+            timer.step("response received")
             val (succs, fails) = response.results.partition{
               result => result.returnValue.returnCode == "200"
             }
+            timer.step("result partition")
             val newOdf = succs.flatMap{
               result =>
-                result.odf.map{
+                result.odf/*.map{
                   odf: ODF => 
+                    timer.step("pre filtering responses")
                     updatePrefixes(odf)
-                    setPrefixes(odf).immutable
-                }.map{
-                  odf: ImmutableODF => 
+                    val t = setPrefixes(odf).immutable
+                    timer.step("result prefixes")
+                    t
+                }*/.map{
+                  odf: ODF => 
                     log.debug( "Found Successful result with ODF")
                     val correctParkingSpaceAndCapacityPaths  = odf.nodesWithType(ParkingFacility.mvType(Some("mv:"))).collect{
                       case obj: Object =>
@@ -527,6 +548,7 @@ class ParkingAgent(
                           Vector.empty 
                         }
                     }
+                    timer.step("correct PS Cap filtered")
                     log.info(s"Found total ${correctParkingSpaceAndCapacityPaths.size} of valid parking spaces and capacities")
                     val unwantedCapacitiesAndSpaces = {
                       odf.nodesWithType(ParkingSpace.mvType(Some("mv:"))) ++ 
@@ -546,11 +568,14 @@ class ParkingAgent(
                       } else Vector.empty
                     }
 
+                    timer.step("unwanted Cap collected")
                     val correctNodes = odf -- ( unwantedCapacitiesAndSpaces.toSeq)
 
                     correctNodes
                 }
             }.fold(ImmutableODF()){(l: ODF, r: ODF) => l.union(r).immutable }
+            timer.step("response filtered")
+            timer.total()
             Responses.Success(objects = Some(newOdf))
         }
       }
@@ -645,7 +670,7 @@ class ParkingAgent(
   }
 
   def updatePrefixes(odf: ODF ): Unit = {
-    odf.nodesWithAttributes.filter{
+    odf.nodesWithAttributes.view.filter{
       node => node.attributes.contains("prefix")
     }.flatMap{
       node => node.attributes.get("prefix")
@@ -710,7 +735,7 @@ class ParkingAgent(
           case (key,value) => key -> value
       }
     }
-    ImmutableODF(odf.getNodes.map{
+    ImmutableODF(odf.getNodes.view.map{
       case obj: Object if obj.typeAttribute.nonEmpty =>
         obj.copy( typeAttribute ={
           obj.typeAttribute.map{

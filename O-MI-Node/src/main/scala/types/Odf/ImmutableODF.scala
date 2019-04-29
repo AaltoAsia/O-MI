@@ -6,6 +6,7 @@ import types.Path._
 import scala.collection.immutable.{HashMap => ImmutableHashMap, TreeSet => ImmutableTreeSet}
 import scala.collection.mutable.{HashMap => MutableHashMap}
 import scala.collection.{Map, Seq, SortedSet}
+import utils._
 
 case class ImmutableODF private[odf](
                                       nodes: ImmutableHashMap[Path, Node],
@@ -40,7 +41,69 @@ case class ImmutableODF private[odf](
       }.toVector)
   }
 
-  def readTo(to: ODF): ImmutableODF = ImmutableODF(readToNodes(to))
+  def readTo(to: ODF): ImmutableODF = {
+    val timer = LapTimer(println)
+    val leafs = to.getLeafPaths
+    timer.step("leafs")
+    val sstp =selectSubTreePaths(leafs)
+    timer.step("sstp")
+    val intersect = sstp.intersect(paths)
+    timer.step("intersect")
+    val wantedPaths: ImmutableTreeSet[Path] = intersect match { 
+      case its: ImmutableTreeSet[Path] => 
+        its.ordering match{
+          case op: PathOrdering.type => its
+          case el: Ordering[Path] =>
+            val vec = intersect.toSeq
+            timer.step("to seq,wrong ordering")
+            ImmutableTreeSet(vec:_*)(PathOrdering)
+        }
+      case _: Set[Path] =>
+        val vec = intersect.toSeq
+        timer.step("to seq")
+        ImmutableTreeSet(vec:_*)(PathOrdering)
+    }
+    timer.step("wanted paths")
+    val wantedNodes = wantedPaths.view.map {
+      path: Path =>
+        (nodes.get(path), to.nodes.get(path)) match {
+          case (None, _) => throw new Exception(s"Existing path does not map to node. $path")
+          case (Some(obj: Object), None) =>
+            obj.copy(
+              descriptions = {
+                if (obj.descriptions.nonEmpty) Set(Description("")) else Set.empty
+              }
+            )
+          case (Some(ii: InfoItem), None) =>
+            ii.copy(
+              names = {
+                if (ii.names.nonEmpty) Vector(QlmID("")) else Vector.empty
+              },
+              descriptions = {
+                if (ii.descriptions.nonEmpty) Set(Description("")) else Set.empty
+              },
+              metaData = {
+                if (ii.metaData.nonEmpty) Some(MetaData.empty) else None
+              }
+            )
+          case (Some(obj:Objects),None) => obj.copy()
+          case (Some(obj:Object),Some(toObj:Object)) => obj.readTo(toObj)
+          case (Some(ii:InfoItem),Some(toIi:InfoItem)) => ii.readTo(toIi)
+          case (Some(obj:Objects),Some(toObj:Objects)) => obj.readTo(toObj)
+          case (Some(f:Node), Some(t:Node)) => throw new Exception("Missmatching types in ODF when reading.")
+          case (Some(f:Node),None) => throw new Exception("Found unknown Node type.")
+        }
+    }
+    timer.step("wanted nodes")
+    val nodesmap = ImmutableHashMap(
+      wantedNodes.map{
+      case node: Node =>
+        node.path -> node
+    }.toSeq: _*)
+    timer.step("nodes map")
+    timer.total()
+    new ImmutableODF(nodesmap, wantedPaths)
+  }
   def update(that: ODF): ImmutableODF = {
     ImmutableODF(
       nodes.mapValues {
@@ -229,19 +292,21 @@ object ImmutableODF {
              nodes: Iterable[Node] = Vector.empty
            ): ImmutableODF = {
     val mutableHMap: MutableHashMap[Path, Node] = MutableHashMap.empty
+    val timer = LapTimer(println)
     val sorted = nodes.toSeq.sortBy {
       n: Node => n.path
     }(PathOrdering)
+    timer.step(s"IODF ${nodes.size} paths sorted")
     sorted.foreach {
       node: Node =>
         if (mutableHMap.contains(node.path)) {
           (node, mutableHMap.get(node.path)) match {
             case (ii: InfoItem, Some(oii: InfoItem)) =>
-              mutableHMap(ii.path) = ii.union(oii)
+              mutableHMap.update(ii.path, ii.union(oii))
             case (obj: Object, Some(oo: Object)) =>
-              mutableHMap(obj.path) = obj.union(oo)
+              mutableHMap.update(obj.path,obj.union(oo))
             case (obj: Objects, Some(oo: Objects)) =>
-              mutableHMap(obj.path) = obj.union(oo)
+              mutableHMap.update(obj.path,obj.union(oo))
             case (n, on) =>
               throw new Exception(
                 "Found two different types for same Path when tried to create ImmutableODF."
@@ -255,6 +320,7 @@ object ImmutableODF {
           }
         }
     }
+    timer.step("IODF populated MMap")
     new ImmutableODF(
       ImmutableHashMap(
         mutableHMap.toVector: _*

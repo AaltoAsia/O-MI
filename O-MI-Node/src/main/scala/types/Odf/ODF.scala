@@ -5,10 +5,12 @@ package odf
 import parsing.xmlGen.xmlTypes.{ObjectType, ObjectsType, InfoItemType}
 import parsing.xmlGen.{odfDefaultScope, scalaxb}
 
-import scala.collection.immutable.{HashMap => ImmutableHashMap}
-import scala.collection.mutable.{ Buffer }
-import scala.collection.{Map, Seq, SortedSet}
+import scala.collection.immutable.{HashMap => ImmutableHashMap, TreeSet => ImmutableTreeSet, SortedSet}
+import scala.collection.mutable.{ Buffer, Map => MutableMap }
+import scala.collection.{Map, Seq, SortedSet => CSortedSet}
 import scala.xml.NodeSeq
+import types.Path._
+import utils._
 
 /** O-DF structure
   */
@@ -23,7 +25,7 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
     * A/, A/a, A/a/1, A/b/, A/b/1, Aa/ ..
     *
     */
-  protected[odf] def paths: SortedSet[Path] //= TreeSet( nodes.keys.toSeq:_* )(PathOrdering)
+  protected[odf] def paths: CSortedSet[Path] //= TreeSet( nodes.keys.toSeq:_* )(PathOrdering)
   //def copy( nodes : scala.collection.Map[Path,Node] ): ODF
 
 
@@ -51,7 +53,7 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
 
   def mutable: MutableODF
 
-  final def getPaths: Seq[Path] = paths.toVector
+  final def getPaths: Iterable[Path] = paths.toSet
 
   final def getNodes: Seq[Node] = nodes.values.toVector
 
@@ -101,9 +103,9 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
     getLeafPaths.flatMap(nodes.get(_)).toVector.sortBy(_.path)(Path.PathOrdering)
   }
 
-  final def getLeafPaths: Set[Path] = {
+  final def getLeafPaths: SortedSet[Path] = {
     val ps: Seq[(Path, Int)] = paths.toSeq.zipWithIndex
-    ps.collect {
+    ImmutableTreeSet(ps.collect {
       case (path: Path, index: Int) if{
         val nextIndex = index + 1
         if (nextIndex < ps.size) {
@@ -111,7 +113,7 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
           !path.isAncestorOf(nextPath)
         } else true
       } => path
-    }.toSet
+    }:_*)(PathOrdering)
   }
 
   final def pathsOfInfoItemsWithMetaData: Set[Path] = {
@@ -178,17 +180,19 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
     * Find given paths and all paths of the descendants.
     * Same as [[selectSubTreePaths]] but doesn't add ancestors of the subtrees
     */
-  final def subTreePaths(pathsToGet: Set[Path]): Set[Path] = (pathsToGet.flatMap {
-    wantedPath: Path =>
+  final def subTreePaths(pathsToGet: Set[Path]): SortedSet[Path] = (
+    ImmutableTreeSet( pathsToGet.flatMap {
+      wantedPath: Path =>
       paths.keysIteratorFrom(wantedPath).takeWhile {
         path: Path => path.startsWith(wantedPath)
       }
-  })
+    }.toSeq:_*)(PathOrdering)
+  )
 
   /**
     * Same as [[subTreePaths]] but adds ancestors of the subtrees
     */
-  final def selectSubTreePaths(pathsToGet: Set[Path]): Set[Path] = {
+  final def selectSubTreePaths(pathsToGet: Set[Path]): SortedSet[Path] = {
     subTreePaths(pathsToGet) ++ pathsToGet.flatMap{
         path => path.getAncestors
         //case path: Path if (paths.contains(path)) =>
@@ -216,27 +220,26 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
   def addNodes(nodesToAdd: Seq[Node]): ODF
 
   implicit def asObjectsType: ObjectsType = {
-    val iis: Buffer[InfoItem] = Buffer.empty
+    val timer = LapTimer(println)
+    val parentPath2IIt: MutableMap[Path,Seq[InfoItemType]] = MutableMap.empty
     val objs: Buffer[Object] = Buffer.empty
     var objects = Objects()
+    timer.step("aOT: init")
     for( n <- nodes.values ){
       n match {
-        case ii: InfoItem => iis += ii
+        case ii: InfoItem => 
+          val parent = ii.path.getParent
+          parentPath2IIt.update(parent, (parentPath2IIt.get(parent).toVector.flatten ++ Vector(ii.asInfoItemType) ))
         case obj: Object => objs += obj
         case obj: Objects => objects = obj
       }
     }
-    val parentPath2IIt: Map[Path,Seq[InfoItemType]] = iis.map{
-        case ii: InfoItem => 
-          ii.path -> ii.asInfoItemType
-      }.groupBy(_._1.getParent).mapValues{
-        case iis: Seq[Tuple2[Path,InfoItemType]] => 
-          iis.map(_._2)
-      }
+    timer.step("aOT: node grouping")
     val parentPath2Objs: Map[Path,Seq[Tuple2[Path,ObjectType]]] = objs.map{
       case obj: Object => 
         obj.path -> obj.asObjectType( parentPath2IIt.get(obj.path).toSeq.flatten, Seq.empty)
     }.groupBy(_._1.getParent)  
+    timer.step("aOT: IIs to parents")
     def temp(path:Path, obj: ObjectType): ObjectType ={
       val cobjs: Seq[ObjectType] = parentPath2Objs.get(path).toSeq.flatten.map{
         case ( p: Path, ot: ObjectType) => temp(p,ot)
@@ -247,20 +250,11 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
       case (path: Path, obj: ObjectType) =>  temp(path, obj) 
         
     }
-    objects.asObjectsType( topObjects)
-    //TODO: remove if newer is faster
-    /*
-    val firstLevelObjects = getChilds(new Path("Objects"))
-    val objectTypes = firstLevelObjects.map {
-      case obj: Object =>
-        createObjectType(obj)
-    }
-    nodes.get(new Path("Objects")).collect {
-      case objs: Objects =>
-        objs.asObjectsType(objectTypes)
-    }.getOrElse {
-      Objects().asObjectsType(objectTypes)
-    }*/
+    timer.step("aOT: Objs to top object s")
+    val objsT =objects.asObjectsType( topObjects)
+    timer.step("Objects type")
+    timer.total()
+    objsT
   }
 
   def update(that: ODF): ODF
@@ -291,7 +285,12 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
   }*/
 
   final implicit def asXML: NodeSeq = {
-    val xml = scalaxb.toXML[ObjectsType](asObjectsType, None, Some("Objects"), odfDefaultScope)
+    val timer = LapTimer(println)
+    val objsType = asObjectsType
+    timer.step("as XML, as ObjectType")
+    val xml = scalaxb.toXML[ObjectsType](objsType, None, Some("Objects"), odfDefaultScope)
+    timer.step("as XML, scalaxb.toXML")
+    timer.total()
     xml //.asInstanceOf[Elem] % new UnprefixedAttribute("xmlns","odf.xsd", Node.NoAttributes)
   }
 
@@ -316,14 +315,12 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
 
   def readTo(to: ODF): ODF
 
-  def readToNodes(to: ODF): Seq[Node] = {
-    val wantedPaths: SortedSet[Path] =
-      to.paths.intersect(paths) ++ selectSubTreePaths(to.getLeafPaths).intersect(paths)
-
-    val wantedNodes: Seq[Node] = wantedPaths.toSeq.map {
+  def readToNodes(to: ODF): Iterable[Node] = {
+    val wantedPaths: SortedSet[Path] = SortedSet(selectSubTreePaths(to.getLeafPaths).intersect(paths).toSeq:_*)(PathOrdering)
+    val wantedNodes: Iterable[Node] = wantedPaths.map {
       path: Path =>
         (nodes.get(path), to.nodes.get(path)) match {
-          case (None, _) => throw new Exception("Existing path does not map to node.")
+          case (None, _) => throw new Exception(s"Existing path does not map to node. $path")
           case (Some(obj: Object), None) =>
             obj.copy(
               descriptions = {

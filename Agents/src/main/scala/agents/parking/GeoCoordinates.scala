@@ -3,7 +3,7 @@ package agents.parking
 import types._
 import types.odf._
 
-import scala.util.Try
+import scala.util.{Try, Success, Failure}
 
 case class GeoCoordinates(
                            latitude: Double,
@@ -56,47 +56,45 @@ object GeoCoordinates{
     s"${preStr}GeoCoordinates"
   }
   def parseOdf( path: Path, odf: ImmutableODF, prefixes: Map[String,Set[String]]): Try[GeoCoordinates] ={
-    Try{
-      val prefix = prefixes.get("http://www.schema.org/").map{
-        prefix: Set[String] => 
-          prefix.map{
-            str => if( str.endsWith(":") ) str else str + ":"
-          }
-      }.toSet.flatten
-      odf.get(path) match{
-        case Some(obj: Object) if prefix.exists{
-          prefix: String =>
-          obj.typeAttribute.contains(mvType(Some(prefix)))
-        } =>
-         (odf.get( path / "latitude" ),odf.get( path / "longitude" )) match{
-           case (Some(latII:InfoItem),Some(longII:InfoItem)) if latII.values.nonEmpty && longII.values.nonEmpty =>
-             getDoubleOption(latII.path.last,path,odf).flatMap{
-                lat: Double =>
-                  getDoubleOption(longII.path.last,path,odf).map{
-                    long: Double =>
-                      GeoCoordinates( lat, long )
-                  }
-              }.getOrElse( throw  MVError( s"Latitude or longitude should have double or float value"))
-           case (Some(latII:InfoItem),Some(longII:InfoItem)) =>
-            throw MVError( s"Latitude and longitude should have a value.")
-          case ( Some(n:Node), _) =>
-            throw MVError( s"Latitude and longitude should both be InfoItems.")
-          case ( _, Some(n:Node)) =>
-            throw MVError( s"Latitude and longitude should both be InfoItems.")
-          case (  _, None ) =>
-            throw MVError( s"GeoCoordinates path $path needs both latitude and longitude.")
-          case ( None, _) =>
-            throw MVError( s"GeoCoordinates path $path needs both latitude and longitude.")
-             
-         }
+    val prefix = prefixes.get("http://www.schema.org/").map{
+      prefix: Set[String] => 
+        prefix.map{
+          str => if( str.endsWith(":") ) str else str + ":"
+        }
+    }.toSet.flatten
+  odf.get(path) match{
+    case Some(obj: Object) if prefix.exists{
+      prefix: String =>
+        obj.typeAttribute.contains(mvType(Some(prefix)))
+    } =>
+    (odf.get( path / "latitude" ),odf.get( path / "longitude" )) match{
+      case (Some(latII:InfoItem),Some(longII:InfoItem)) if latII.values.nonEmpty && longII.values.nonEmpty =>
+        getDoubleOption(latII.path.last,path,odf).flatMap{
+          lat: Double =>
+            getDoubleOption(longII.path.last,path,odf).map{
+              long: Double =>
+                Success(GeoCoordinates( lat, long ))
+            }
+        }.getOrElse( Failure(  MVError( s"Latitude or longitude should have double or float value")))
+      case (Some(latII:InfoItem),Some(longII:InfoItem)) =>
+        Failure( MVError( s"Latitude and longitude should have a value."))
+      case ( Some(n:Node), _) =>
+        Failure( MVError( s"Latitude and longitude should both be InfoItems."))
+      case ( _, Some(n:Node)) =>
+        Failure( MVError( s"Latitude and longitude should both be InfoItems."))
+      case (  _, None ) =>
+        Failure( MVError( s"GeoCoordinates path $path needs both latitude and longitude."))
+      case ( None, _) =>
+        Failure( MVError( s"GeoCoordinates path $path needs both latitude and longitude."))
 
-        case Some(obj: Object) => 
-          throw MVError( s"GeoCoordinates path $path has wrong type attribute ${obj.typeAttribute}. ${mvType(None)} expected")
-        case Some(obj: Node) => 
-          throw MVError( s"GeoCoordinates path $path should be Object with type ${mvType(None)}")
-        case None => 
-          throw MVError( s"GeoCoordinates path $path not found from given O-DF")
-      }
     }
+
+      case Some(obj: Object) => 
+        Failure( MVError( s"GeoCoordinates path $path has wrong type attribute ${obj.typeAttribute}. ${mvType(None)} expected"))
+      case Some(obj: Node) => 
+        Failure( MVError( s"GeoCoordinates path $path should be Object with type ${mvType(None)}"))
+      case None => 
+        Failure( MVError( s"GeoCoordinates path $path not found from given O-DF"))
+  }
   }
 }
