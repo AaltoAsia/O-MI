@@ -24,6 +24,7 @@ O-MI Node Server
     1. [Setting up IDE](#setting-up-ide)
 7. [sbt help](#simple-build-tool-cheat-sheet)
 8. [Configuration](#configuration)
+9. [FAQ](https://github.com/AaltoAsia/O-MI/blob/master/docs/FAQ.md)
 
 Introduction
 ------------
