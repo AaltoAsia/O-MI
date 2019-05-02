@@ -82,9 +82,9 @@ requestsExt = (WebOmi) ->
     $.extend {}, my.defaults.empty(),
       name    : "subscription"
       request : "read"
-      interval: 5
-      ttl     : 60
+      interval: -1
       odf     : ["Objects"]
+      callback : "0"
 
   my.defaults.poll = ->
     $.extend {}, my.defaults.empty(),

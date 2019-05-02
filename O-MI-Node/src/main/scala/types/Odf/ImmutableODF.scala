@@ -37,8 +37,6 @@ case class ImmutableODF private[odf](
   }
 
   def readTo(to: ODF): ImmutableODF = ImmutableODF(readToNodes(to))
-
-
   def update(that: ODF): ImmutableODF = {
     ImmutableODF(
       nodes.mapValues {
@@ -254,7 +252,9 @@ object ImmutableODF {
       )
     )
   }
-
+  def createFromNodes(nodes:Seq[Node]):ImmutableODF = {
+    new ImmutableODF(ImmutableHashMap(nodes.map(node => node.path -> node):_*))
+  }
   /** Unoptimized, but easy to use constructor for single O-DF Node.
     *
     *  Automatically creates parents.

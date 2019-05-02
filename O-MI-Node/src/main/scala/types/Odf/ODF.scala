@@ -2,10 +2,11 @@ package types
 package odf
 
 
-import parsing.xmlGen.xmlTypes.{ObjectType, ObjectsType}
+import parsing.xmlGen.xmlTypes.{ObjectType, ObjectsType, InfoItemType}
 import parsing.xmlGen.{odfDefaultScope, scalaxb}
 
 import scala.collection.immutable.{HashMap => ImmutableHashMap}
+import scala.collection.mutable.{ Buffer }
 import scala.collection.{Map, Seq, SortedSet}
 import scala.xml.NodeSeq
 
@@ -174,7 +175,7 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
   final def subTreePaths(pathsToGet: Set[Path]): Set[Path] = (pathsToGet.flatMap {
     wantedPath: Path =>
       paths.keysIteratorFrom(wantedPath).takeWhile {
-        path: Path => path == wantedPath || path.isDescendantOf(wantedPath)
+        path: Path => path.startsWith(wantedPath)
       }
   })
 
@@ -203,6 +204,40 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
   def addNodes(nodesToAdd: Seq[Node]): ODF
 
   implicit def asObjectsType: ObjectsType = {
+    val iis: Buffer[InfoItem] = Buffer.empty
+    val objs: Buffer[Object] = Buffer.empty
+    var objects = Objects()
+    for( n <- nodes.values ){
+      n match {
+        case ii: InfoItem => iis += ii
+        case obj: Object => objs += obj
+        case obj: Objects => objects = obj
+      }
+    }
+    val parentPath2IIt: Map[Path,Seq[InfoItemType]] = iis.map{
+        case ii: InfoItem => 
+          ii.path -> ii.asInfoItemType
+      }.groupBy(_._1.getParent).mapValues{
+        case iis: Seq[Tuple2[Path,InfoItemType]] => 
+          iis.map(_._2)
+      }
+    val parentPath2Objs: Map[Path,Seq[Tuple2[Path,ObjectType]]] = objs.map{
+      case obj: Object => 
+        obj.path -> obj.asObjectType( parentPath2IIt.get(obj.path).toSeq.flatten, Seq.empty)
+    }.groupBy(_._1.getParent)  
+    def temp(path:Path, obj: ObjectType): ObjectType ={
+      val cobjs: Seq[ObjectType] = parentPath2Objs.get(path).toSeq.flatten.map{
+        case ( p: Path, ot: ObjectType) => temp(p,ot)
+      }
+      obj.copy( ObjectValue = cobjs ) 
+    }
+    val topObjects: Seq[ObjectType] = parentPath2Objs.get( Path("Objects") ).toSeq.flatten.map{
+      case (path: Path, obj: ObjectType) =>  temp(path, obj) 
+        
+    }
+    objects.asObjectsType( topObjects)
+    //TODO: remove if newer is faster
+    /*
     val firstLevelObjects = getChilds(new Path("Objects"))
     val objectTypes = firstLevelObjects.map {
       case obj: Object =>
@@ -213,7 +248,7 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
         objs.asObjectsType(objectTypes)
     }.getOrElse {
       Objects().asObjectsType(objectTypes)
-    }
+    }*/
   }
 
   def update(that: ODF): ODF
@@ -225,6 +260,8 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
   def metaDatasRemoved: ODF
   def attributesRemoved: ODF
 
+  //TODO: remove if newer is faster
+  /*
   final def createObjectType(obj: Object): ObjectType = {
     val (objects, infoItems) = getChilds(obj.path).partition {
       case obj: Object => true
@@ -239,7 +276,7 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
           createObjectType(obj)
       }
     )
-  }
+  }*/
 
   final implicit def asXML: NodeSeq = {
     val xml = scalaxb.toXML[ObjectsType](asObjectsType, None, Some("Objects"), odfDefaultScope)

@@ -1,6 +1,7 @@
 package utils
 
 import collection.mutable.ArrayBuffer
+import scala.concurrent.{ExecutionContext, Future}
 
 case class LapTimer(logFun: String => Unit) {
   val s = System.currentTimeMillis()
@@ -42,4 +43,14 @@ object SingleTimer {
     logFun(message + s": $time seconds")
     r
   }
+}
+object FutureTimer {
+  def apply[T](action: Future[T], logFun: String => Unit, message:String)(implicit ex: ExecutionContext) ={
+    val s = System.currentTimeMillis()
+    action.onComplete{
+      _ => logFun(message + s": ${(System.currentTimeMillis() - s) / 1000.0} seconds")
+    }
+    action
+  }
+
 }
