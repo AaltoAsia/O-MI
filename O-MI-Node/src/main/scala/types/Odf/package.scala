@@ -1,6 +1,7 @@
 package types
 
 import java.lang.{Iterable => JavaIterable}
+import java.time.{ZoneId, OffsetDateTime}
 import java.sql.Timestamp
 import java.util.{Dictionary, GregorianCalendar}
 
@@ -23,6 +24,9 @@ package object odf extends InfoItem.Builders {
     DatatypeFactory.newInstance().newXMLGregorianCalendar(cal)
   }
 
+  def timestampToDateTimeString(timestamp: Timestamp): String = {
+    OffsetDateTime.ofInstant(timestamp.toInstant(), ZoneId.systemDefault()).toString
+  }
   def attributesToDataRecord(attributes: Map[String, String]): ImmutableMap[String, DataRecord[String]] = {
     attributes.map {
       case (key: String, value: String) =>

@@ -7,6 +7,7 @@ import database.journal.PPersistentValue
 import database.journal.PPersistentValue.ValueTypeOneof.{ProtoBoolValue, ProtoDoubleValue, ProtoLongValue, ProtoStringValue}
 import parsing.xmlGen._
 import parsing.xmlGen.scalaxb.XMLStandardTypes._
+import akka.stream.alpakka.xml._
 import parsing.xmlGen.scalaxb._
 import parsing.xmlGen.xmlTypes.{ValueType, _}
 
@@ -50,6 +51,19 @@ trait Value[+V] {
       ProtoStringValue(odf.asXML.toString())
     case a: Any => ProtoStringValue(a.toString)
   })
+  def asXMLEvents: Seq[ParseEvent] = {
+    Seq(
+      StartElement( "value",
+        List(
+            Attribute("type",typeAttribute),
+            Attribute("unixTime",(timestamp.getTime / 1000).toString),
+            Attribute("dateTime",timestampToDateTimeString(timestamp))
+          )
+      ),
+      Characters( value.toString ),
+      EndElement("value")
+    )
+  }
 }
 
 case class ODFValue(
@@ -61,6 +75,21 @@ case class ODFValue(
   def valueAsDataRecord: DataRecord[ObjectsType] = DataRecord(None, Some("Objects"), value.asObjectsType)
 
   def retime(newTimestamp: Timestamp): ODFValue = this.copy(timestamp = newTimestamp)
+  override def asXMLEvents: Seq[ParseEvent] = {
+    Seq(
+      StartElement( "value",
+        List(
+            Attribute("type",typeAttribute),
+            Attribute("unixTime",(timestamp.getTime / 1000).toString),
+            Attribute("dateTime",timestampToDateTimeString(timestamp))
+          )
+      )
+      ) ++
+    value.asXMLEvents ++
+    Seq(
+      EndElement("value")
+    )
+  }
 }
 
 case class StringValue(

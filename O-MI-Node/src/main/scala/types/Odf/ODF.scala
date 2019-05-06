@@ -2,14 +2,17 @@ package types
 package odf
 
 
+import java.sql.Timestamp
 import parsing.xmlGen.xmlTypes.{ObjectType, ObjectsType, InfoItemType}
 import parsing.xmlGen.{odfDefaultScope, scalaxb}
 
 import scala.collection.immutable.{HashMap => ImmutableHashMap, TreeSet => ImmutableTreeSet, SortedSet}
-import scala.collection.mutable.{ Buffer, Map => MutableMap }
+import scala.collection.mutable.{ Buffer, Map => MutableMap, Stack => MStack, Queue => MQueue}
 import scala.collection.{Map, Seq, SortedSet => CSortedSet}
+import akka.stream.alpakka.xml._
 import scala.xml.NodeSeq
-import types.Path._
+import types.Path.PathOrdering
+import types.Path
 import utils._
 
 /** O-DF structure
@@ -283,6 +286,88 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
       }
     )
   }*/
+
+  final implicit def asXMLEvents: Seq[ParseEvent] = {
+    val parentStack: MStack[Path] = MStack.empty[Path]
+    
+    object ResponseOrdering extends scala.math.Ordering[Node] {
+      def compare(l: Node, r: Node): Int = {
+        if( l.path.getParent == r.path.getParent ){
+          (l,r) match {
+            case (ii:InfoItem,obj: Object) => -1
+            case (obj: Object, ii: InfoItem) => 1
+            case (nl: Node, nr: Node) => 
+              PathOrdering.compare(nl.path,nr.path)
+          }
+        } else {
+              PathOrdering.compare(l.path,r.path)
+        }
+      }
+    }
+    val sortedNodes = nodes.values.toVector.sorted(ResponseOrdering)
+    val queue: MQueue[ParseEvent] = MQueue.empty
+    sortedNodes.foreach{
+      case objs: Objects =>
+        parentStack.push(objs.path)
+        queue.enqueue(
+          StartElement(
+            "Objects"
+          ))
+      case obj: Object =>
+         while( parentStack.head != obj.path.getParent ){
+           Option(parentStack.pop()) match{
+             case Some(path) =>
+               queue.enqueue(EndElement("Object"))
+             case None =>
+           }
+         }
+        parentStack.push(obj.path)
+        queue.enqueue(
+          StartElement(
+            "Object",
+            obj.typeAttribute.map{
+              str: String =>
+              Attribute("type",str)
+            }.toList ++obj.attributes.map{
+              case (key: String, value: String) => Attribute(key,value)
+            }.toList
+
+          ))
+        obj.ids.foreach{
+          case id: QlmID =>
+            queue.enqueue(
+              StartElement( "id",
+                id.tagType.map{
+                  str: String =>
+                    Attribute("tagType",str)
+                }.toList ++ id.idType.map{
+                  str: String =>
+                    Attribute("idType",str)
+                }.toList ++  id.startDate.map{
+                  timestamp: Timestamp =>
+                  Attribute("startDate",timestampToDateTimeString(timestamp))
+                }.toList ++  id.endDate.map{
+                  timestamp: Timestamp =>
+                  Attribute("endDate",timestampToDateTimeString(timestamp))
+                }.toList ++ id.attributes.map{
+                  case (key: String, value: String) => Attribute(key,value)
+                }.toList
+              ),
+              Characters( id.id ),
+              EndElement("id")
+            )
+        }
+        obj.descriptions.foreach{
+          case desc: Description =>
+            desc.asXMLEvents
+        }      
+      case ii: InfoItem =>
+        queue.enqueue(ii.asXMLEvents.toSeq:_*)
+
+    }
+    queue.enqueue(EndElement("Objects"))
+    queue.toSeq
+  }
 
   final implicit def asXML: NodeSeq = {
     val timer = LapTimer(println)
