@@ -24,6 +24,7 @@ O-MI Node Server
     1. [Setting up IDE](#setting-up-ide)
 7. [sbt help](#simple-build-tool-cheat-sheet)
 8. [Configuration](#configuration)
+9. [FAQ](https://github.com/AaltoAsia/O-MI/blob/master/docs/FAQ.md)
 
 Introduction
 ------------
@@ -200,3 +201,8 @@ Optional components
 
 - branch `warp10integration` has experimental integration to [Warp10](http://www.warp10.io/) as the DB backend.
 
+
+Acknowledgements
+---------------
+
+Sections of this project has been developed as part of the [bIoTope Project](www.bIoTope-project.eu), which has received funding from the European Union’s Horizon 2020 Research and Innovation Programme under grant agreement No. 688203.

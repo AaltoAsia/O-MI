@@ -202,6 +202,13 @@ lazy val root = (project in file(".")).
        * that structure is in wanted format. Should solve issues with wrong
        * permissions preventing creating files.
        */
+      //AspectJWeaver for Kamon to run with native-packager
+      javaAgents += "org.aspectj" % "aspectjweaver" % "1.8.13",
+      
+      // WARNING ON COMPILE, CONFLICTS WITH application.ini
+      //javaOptions in Universal += "-Dorg.aspectj.tracing.factory=default",
+
+    /*
     //Create empty database directory for Tar. Zip removes empty directories?
     //TODO: Check Warp10, uses database directory.
     mappings in (Universal,packageZipTarball) ++= {
