@@ -2,6 +2,7 @@ package types
 package odf
 
 import database.journal.PDescription
+import scala.collection.SeqView
 import parsing.xmlGen.scalaxb.DataRecord
 import parsing.xmlGen.xmlTypes._
 import akka.stream.alpakka.xml._
@@ -39,7 +40,7 @@ case class Description(
 
   def persist(): PDescription = PDescription(text, language.getOrElse(""))
 
-  final def asXMLEvents: Seq[ParseEvent] = {
+  final implicit def asXMLEvents: SeqView[ParseEvent,Seq[_]] = {
     Seq(
       StartElement( "description",
         language.map{
@@ -49,6 +50,6 @@ case class Description(
       ),
       Characters( text ),
       EndElement("description")
-    )
+    ).view
   }
 }

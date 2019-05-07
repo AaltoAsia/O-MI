@@ -8,7 +8,7 @@ import parsing.xmlGen.{odfDefaultScope, scalaxb}
 
 import scala.collection.immutable.{HashMap => ImmutableHashMap, TreeSet => ImmutableTreeSet, SortedSet}
 import scala.collection.mutable.{ Buffer, Map => MutableMap, Stack => MStack, Queue => MQueue}
-import scala.collection.{Map, Seq, SortedSet => CSortedSet}
+import scala.collection.{Map, Seq, SortedSet => CSortedSet, SeqView}
 import akka.stream.alpakka.xml._
 import scala.xml.NodeSeq
 import types.Path.PathOrdering
@@ -287,8 +287,7 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
     )
   }*/
 
-  final implicit def asXMLEvents: Seq[ParseEvent] = {
-    val parentStack: MStack[Path] = MStack.empty[Path]
+  final implicit def asXMLEvents: SeqView[ParseEvent,Seq[_]] = {
     
     object ResponseOrdering extends scala.math.Ordering[Node] {
       def compare(l: Node, r: Node): Int = {
@@ -305,24 +304,24 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
       }
     }
     val sortedNodes = nodes.values.toVector.sorted(ResponseOrdering)
-    val queue: MQueue[ParseEvent] = MQueue.empty
-    sortedNodes.foreach{
+    val parentStack: MStack[Path] = MStack.empty[Path]
+    sortedNodes.view.flatMap{
       case objs: Objects =>
         parentStack.push(objs.path)
-        queue.enqueue(
+        Vector(
           StartElement(
             "Objects"
           ))
       case obj: Object =>
-         while( parentStack.head != obj.path.getParent ){
-           Option(parentStack.pop()) match{
-             case Some(path) =>
-               queue.enqueue(EndElement("Object"))
-             case None =>
-           }
-         }
-        parentStack.push(obj.path)
-        queue.enqueue(
+        var count: Int = 0
+        while( parentStack.head != obj.path.getParent ){
+          Option(parentStack.pop()) match{
+            case Some(path) =>
+              count = count + 1
+            case None =>
+          }
+        }
+        Vector.fill(count)( EndElement("Object") ) ++ Vector(
           StartElement(
             "Object",
             obj.typeAttribute.map{
@@ -332,10 +331,9 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
               case (key: String, value: String) => Attribute(key,value)
             }.toList
 
-          ))
-        obj.ids.foreach{
+          )) ++ obj.ids.view.flatMap{
           case id: QlmID =>
-            queue.enqueue(
+            Vector(
               StartElement( "id",
                 id.tagType.map{
                   str: String =>
@@ -356,17 +354,14 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
               Characters( id.id ),
               EndElement("id")
             )
-        }
-        obj.descriptions.foreach{
+        } ++ obj.descriptions.view.flatMap{
           case desc: Description =>
             desc.asXMLEvents
         }      
       case ii: InfoItem =>
-        queue.enqueue(ii.asXMLEvents.toSeq:_*)
+        ii.asXMLEvents
 
-    }
-    queue.enqueue(EndElement("Objects"))
-    queue.toSeq
+    } ++ Vector(EndElement("Objects")).view
   }
 
   final implicit def asXML: NodeSeq = {

@@ -8,8 +8,10 @@ import parsing.xmlGen.xmlTypes._
 import parsing.xmlGen.{omiDefaultScope, xmlTypes}
 import types.odf._
 
+import scala.collection.SeqView
 import scala.collection.JavaConverters._
 import scala.concurrent.duration._
+import akka.stream.alpakka.xml._
 import scala.util.Try
 
 trait JavaOmiResult {
@@ -86,6 +88,28 @@ class OmiResult(
 
   }
 
+  def asXMLEvents: SeqView[ParseEvent,Seq[_]] ={
+        Vector(
+          StartElement("result",
+            odf.map{
+              _ => Attribute("msgformat","odf")
+            }.toList
+            
+          )
+        ).view ++ returnValue.asXMLEvents ++
+        requestIDs.view.flatMap{
+          rid =>
+            Vector(
+              StartElement("requestID"),
+              Characters(rid.toString),
+              EndElement("requestID")
+            )
+        } ++ odf.view.flatMap{
+          o_df => o_df.asXMLEvents
+        } ++ Vector(
+          EndElement("result")
+        )
+  }
 }
 
 trait UnionableResult {

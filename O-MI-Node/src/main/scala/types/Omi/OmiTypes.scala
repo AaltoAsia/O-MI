@@ -26,9 +26,11 @@ import parsing.xmlGen.{omiDefaultScope, xmlTypes}
 import types.odf._
 
 import scala.collection.JavaConverters._
+import scala.collection.SeqView
 import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
 import scala.xml.{NamespaceBinding, NodeSeq}
+import akka.stream.alpakka.xml._
 import utils._
 
 trait JavaOmiRequest {
@@ -668,6 +670,29 @@ class ResponseRequest(
   }
 
   val requestVerb: MessageType.Response.type = MessageType.Response
+  def asXMLEvents: SeqView[ParseEvent,Seq[_]] ={
+    Vector(
+      StartElement("omiEnvelope",
+        List(
+          Attribute("ttl", (ttl.toNanos / 1000.0 ).toString)
+        )
+        
+      ),
+      StartElement("response")
+    ).view ++ requestID.view.flatMap{
+      rid =>
+        Vector(
+          StartElement("requestID"),
+          Characters(rid.toString),
+          EndElement("requestID")
+        )
+    } ++ results.view.flatMap{
+      result => result.asXMLEvents
+    } ++ Vector(
+      EndElement("response"),
+      EndElement("omiEnvelope")
+    )
+  }
 }
 
 

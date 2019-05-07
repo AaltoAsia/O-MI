@@ -12,6 +12,7 @@ import parsing.xmlGen.scalaxb._
 import parsing.xmlGen.xmlTypes.{ValueType, _}
 
 import scala.collection.immutable.HashMap
+import scala.collection.SeqView
 import scala.util.{Failure, Success, Try}
 
 trait Value[+V] {
@@ -51,7 +52,7 @@ trait Value[+V] {
       ProtoStringValue(odf.asXML.toString())
     case a: Any => ProtoStringValue(a.toString)
   })
-  def asXMLEvents: Seq[ParseEvent] = {
+  def asXMLEvents: SeqView[ParseEvent,Seq[_]] = {
     Seq(
       StartElement( "value",
         List(
@@ -62,7 +63,7 @@ trait Value[+V] {
       ),
       Characters( value.toString ),
       EndElement("value")
-    )
+    ).view
   }
 }
 
@@ -75,7 +76,7 @@ case class ODFValue(
   def valueAsDataRecord: DataRecord[ObjectsType] = DataRecord(None, Some("Objects"), value.asObjectsType)
 
   def retime(newTimestamp: Timestamp): ODFValue = this.copy(timestamp = newTimestamp)
-  override def asXMLEvents: Seq[ParseEvent] = {
+  override def asXMLEvents: SeqView[ParseEvent,Seq[_]] = {
     Seq(
       StartElement( "value",
         List(
@@ -84,7 +85,7 @@ case class ODFValue(
             Attribute("dateTime",timestampToDateTimeString(timestamp))
           )
       )
-      ) ++
+      ).view ++
     value.asXMLEvents ++
     Seq(
       EndElement("value")

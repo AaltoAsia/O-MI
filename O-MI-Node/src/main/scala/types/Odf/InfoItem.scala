@@ -10,6 +10,7 @@ import parsing.xmlGen.xmlTypes.InfoItemType
 
 import akka.stream.alpakka.xml._
 import scala.collection.immutable.{HashMap, Map => IMap}
+import scala.collection.SeqView
 
 object InfoItem {
   sealed trait Parameters {
@@ -289,7 +290,7 @@ case class InfoItem(
                                                        descriptions.map(_.persist()).toSeq,
                                                        metaData.map(_.persist()),
                                                        attributes))
-  final def asXMLEvents: Seq[ParseEvent] = {
+  final implicit def asXMLEvents: SeqView[ParseEvent,Seq[_]] = {
     Seq(
       StartElement(
         "InfoItem",
@@ -302,7 +303,7 @@ case class InfoItem(
           case (key: String, value: String) => Attribute(key,value)
         }.toList
       )
-    ) ++ names.flatMap{
+    ).view ++ names.view.flatMap{
       case id: QlmID =>
         Seq(
           StartElement( "name",
@@ -326,10 +327,10 @@ case class InfoItem(
           Characters( id.id ),
           EndElement("name")
         )
-    } ++ descriptions.flatMap{
+    } ++ descriptions.view.flatMap{
       case desc: Description =>
         desc.asXMLEvents
-    } ++ values.flatMap{
+    } ++ values.view.flatMap{
       case value: Value[_] =>
         value.asXMLEvents
     } ++ Seq(
