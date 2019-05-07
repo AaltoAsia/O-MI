@@ -675,8 +675,8 @@ class ResponseRequest(
       StartElement("omiEnvelope",
         List(
           Attribute("ttl", (ttl.toNanos / 1000.0 ).toString)
-        )
-        
+        ),
+        namespaceCtx = List(Namespace("http://www.opengroup.org/xsd/omi/2.0/",None))
       ),
       StartElement("response")
     ).view ++ requestID.view.flatMap{

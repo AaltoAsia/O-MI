@@ -310,7 +310,16 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
         parentStack.push(objs.path)
         Vector(
           StartElement(
-            "Objects"
+            "Objects",
+             objs.version.map{
+               ver: String =>
+                 Attribute("version", ver)
+             }.toList ++ objs.attributes.map{
+               case (key: String, value: String) => 
+                 Attribute(key,value)
+             },
+            namespaceCtx = List(
+              Namespace(s"http://www.opengroup.org/xsd/omi/${objs.version.getOrElse("1.0")}/",None))
           ))
       case obj: Object =>
         var count: Int = 0
