@@ -704,7 +704,6 @@ class ResponseRequest(
     .fromIterator(() => asXMLEvents.iterator)
     .via( XmlWriting.writer )
     .filter(_.length != 0)
-    //.toMat(Sink.fold[ByteString, ByteString](Bytestring())((t, u) => t + u))(Keep.right)
   
   final implicit def asXMLSource: Source[String, NotUsed] = asXMLByteSource.map[String](_.utf8String)
 

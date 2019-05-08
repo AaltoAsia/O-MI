@@ -441,9 +441,7 @@ trait OmiService
   def chunkedStream(resp: Future[ResponseRequest]): ResponseEntity = {
     val chunkStream =
       Source.fromFutureSource(resp.map(_.asXMLByteSource))
-      .grouped(5) // FIXME: add setting to application.conf and change to 512
-      .map(_.reduce(_ ++ _))
-      .map(HttpEntity.ChunkStreamPart.apply)
+        .map(HttpEntity.ChunkStreamPart.apply)
 
     HttpEntity.Chunked(ContentTypes.`text/xml(UTF-8)`, chunkStream)
   }

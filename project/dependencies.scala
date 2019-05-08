@@ -45,9 +45,7 @@ object Dependencies {
   val scalaProto       = "com.thesamet.scalapb" %% "scalapb-runtime" % scalapb.compiler.Version.scalapbVersion % "protobuf"
 
   val redis = "com.safety-data" %% "akka-persistence-redis" % "0.4.1"
-  val alpakka= Seq(
-    "com.lightbend.akka" %% "akka-stream-alpakka-xml" % "1.0.0"
-  )
+  val alpakka = "com.lightbend.akka" %% "akka-stream-alpakka-xml" % "1.0.0"
 
   //Kamon
   val kamonDepencies = Seq(
@@ -102,8 +100,9 @@ object Dependencies {
     //commonsLang,
     scalaProto,
     gson,
-    redis
-  ) ++ kamonDepencies ++ alpakka
+    redis,
+    alpakka
+  ) ++ kamonDepencies
 
   //val servletDependencies: Seq[ModuleID] = Seq(
   //  sprayServlet,
