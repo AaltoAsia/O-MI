@@ -287,7 +287,7 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
     )
   }*/
 
-  final implicit def asXMLEvents: SeqView[ParseEvent,Seq[_]] = {
+  final implicit def asXMLEvents: SeqView[ParseEvent, Seq[_]] = {
     
     object ResponseOrdering extends scala.math.Ordering[Node] {
       def compare(l: Node, r: Node): Int = {
@@ -323,7 +323,7 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
           ))
       case obj: Object =>
         var count: Int = 0
-        while( parentStack.head != obj.path.getParent ){
+        while(parentStack.length > 0 && parentStack.head != obj.path.getParent){
           Option(parentStack.pop()) match{
             case Some(path) =>
               count = count + 1

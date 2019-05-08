@@ -18,6 +18,7 @@ import java.lang.{Iterable => JIterable}
 import java.net.URI
 import java.sql.Timestamp
 
+import akka.NotUsed
 import akka.actor.ActorRef
 import akka.http.scaladsl.model.RemoteAddress
 import parsing.xmlGen.scalaxb.DataRecord
@@ -30,7 +31,10 @@ import scala.collection.SeqView
 import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
 import scala.xml.{NamespaceBinding, NodeSeq}
+import akka.util.ByteString
+import akka.stream.scaladsl._
 import akka.stream.alpakka.xml._
+import akka.stream.alpakka.xml.scaladsl.XmlWriting
 import utils._
 
 trait JavaOmiRequest {
@@ -693,6 +697,14 @@ class ResponseRequest(
       EndElement("omiEnvelope")
     )
   }
+
+  final implicit def asXMLByteSource: Source[ByteString, NotUsed] = Source
+    .fromIterator(() => asXMLEvents.iterator)
+    .via( XmlWriting.writer )
+    //.toMat(Sink.fold[ByteString, ByteString](Bytestring())((t, u) => t + u))(Keep.right)
+  
+  final implicit def asXMLSource: Source[String, NotUsed] = asXMLByteSource.map[String](_.utf8String)
+
 }
 
 
