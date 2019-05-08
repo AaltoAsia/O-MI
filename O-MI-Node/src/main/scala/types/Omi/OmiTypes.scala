@@ -676,6 +676,7 @@ class ResponseRequest(
   val requestVerb: MessageType.Response.type = MessageType.Response
   def asXMLEvents: SeqView[ParseEvent,Seq[_]] ={
     Vector(
+      StartDocument,
       StartElement("omiEnvelope",
         List(
           Attribute("ttl", (ttl.toNanos / 1000.0 ).toString)
@@ -694,13 +695,15 @@ class ResponseRequest(
       result => result.asXMLEvents
     } ++ Vector(
       EndElement("response"),
-      EndElement("omiEnvelope")
+      EndElement("omiEnvelope"),
+      EndDocument
     )
   }
 
   final implicit def asXMLByteSource: Source[ByteString, NotUsed] = Source
     .fromIterator(() => asXMLEvents.iterator)
     .via( XmlWriting.writer )
+    .filter(_.length != 0)
     //.toMat(Sink.fold[ByteString, ByteString](Bytestring())((t, u) => t + u))(Keep.right)
   
   final implicit def asXMLSource: Source[String, NotUsed] = asXMLByteSource.map[String](_.utf8String)
