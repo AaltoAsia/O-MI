@@ -319,7 +319,7 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
                  Attribute(key,value)
              },
             namespaceCtx = List(
-              Namespace(s"http://www.opengroup.org/xsd/omi/${objs.version.getOrElse("1.0")}/",None))
+              Namespace(s"http://www.opengroup.org/xsd/odf/${objs.version.getOrElse("1.0")}/",None))
           ))
       case obj: Object =>
         var count: Int = 0
@@ -330,6 +330,7 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
             case None =>
           }
         }
+        parentStack.push(obj.path)
         Vector.fill(count)( EndElement("Object") ) ++ Vector(
           StartElement(
             "Object",
