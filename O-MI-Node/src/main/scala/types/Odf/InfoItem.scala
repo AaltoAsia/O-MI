@@ -330,6 +330,9 @@ case class InfoItem(
     } ++ descriptions.view.flatMap{
       case desc: Description =>
         desc.asXMLEvents
+    } ++ metaData.view.flatMap{
+      case meta: MetaData =>
+        meta.asXMLEvents
     } ++ values.view.flatMap{
       case value: Value[_] =>
         value.asXMLEvents

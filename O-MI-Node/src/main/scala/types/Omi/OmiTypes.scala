@@ -679,7 +679,8 @@ class ResponseRequest(
       StartDocument,
       StartElement("omiEnvelope",
         List(
-          Attribute("ttl", (ttl.toNanos / 1000000000.0 ).toString)
+          Attribute("ttl", (ttl.toNanos / 1000000000.0 ).toString.replaceAll(".0$","")),
+          Attribute("version", "1.0")
         ),
         namespaceCtx = List(Namespace("http://www.opengroup.org/xsd/omi/1.0/",None))
       ),
