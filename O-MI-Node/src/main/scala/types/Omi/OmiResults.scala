@@ -105,7 +105,10 @@ class OmiResult(
               EndElement("requestID")
             )
         } ++ odf.view.flatMap{
-          o_df => o_df.asXMLEvents
+          o_df =>
+            Vector(StartElement("msg")).view ++
+            (o_df.asXMLEvents) ++
+            Vector(EndElement("msg")).view
         } ++ Vector(
           EndElement("result")
         )
