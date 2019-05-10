@@ -291,16 +291,17 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
     
     object ResponseOrdering extends scala.math.Ordering[Node] {
       def compare(l: Node, r: Node): Int = {
-        if( l.path.getParent == r.path.getParent ){
+        if( PathOrdering.compare(l.path.getParent, r.path.getParent) == 0){
           (l,r) match {
             case (ii:InfoItem,obj: Object) => -1
             case (obj: Object, ii: InfoItem) => 1
             case (nl: Node, nr: Node) => 
-              PathOrdering.compare(nl.path,nr.path)
+              PathOrdering.compare(l.path,r.path)
           }
         } else {
               PathOrdering.compare(l.path,r.path)
         }
+              PathOrdering.compare(l.path,r.path)
       }
     }
     val sortedNodes = nodes.values.toVector.sorted(ResponseOrdering)
@@ -369,7 +370,15 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
             desc.asXMLEvents
         }      
       case ii: InfoItem =>
-        ii.asXMLEvents
+        var count: Int = 0
+        while(parentStack.length > 0 && parentStack.head != ii.path.getParent){
+          Option(parentStack.pop()) match{
+            case Some(path) =>
+              count = count + 1
+            case None =>
+          }
+        }
+        Vector.fill(count)( EndElement("Object") ) ++ ii.asXMLEvents
 
     } ++ Vector(EndElement("Objects")).view
   }

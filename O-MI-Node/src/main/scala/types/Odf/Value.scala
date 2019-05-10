@@ -53,13 +53,13 @@ trait Value[+V] {
     case a: Any => ProtoStringValue(a.toString)
   })
   def asXMLEvents: SeqView[ParseEvent,Seq[_]] = {
+    val tpAttr = if( typeAttribute == "xs:string" ) None else Some(Attribute("type",typeAttribute))
     Seq(
       StartElement( "value",
         List(
-            Attribute("type",typeAttribute),
             Attribute("unixTime",(timestamp.getTime / 1000).toString),
             Attribute("dateTime",timestampToDateTimeString(timestamp))
-          )
+          ) ++ tpAttr.toSeq
       ),
       Characters( value.toString ),
       EndElement("value")

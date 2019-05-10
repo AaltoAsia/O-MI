@@ -106,12 +106,12 @@ class OmiResult(
             )
         } ++ odf.view.flatMap{
           o_df =>
-            Vector(StartElement("msg")).view ++
-            (o_df.asXMLEvents) ++
-            Vector(EndElement("msg")).view
+            Vector(StartElement("msg")) ++
+            o_df.asXMLEvents ++
+            Vector(EndElement("msg"))
         } ++ Vector(
           EndElement("result")
-        )
+        ).view
   }
 }
 
