@@ -26,6 +26,8 @@ Table of Contents
     1. [Setting up IDE](#setting-up-ide)
 7. [Configuration](#configuration)
 8. [FAQ](https://github.com/AaltoAsia/O-MI/blob/master/docs/FAQ.md)
+9. [Optional Components](#optional-components)
+10. [Directory structure](#directory-structure)
 
 ### Other
 1. [sbt help](#simple-build-tool-cheat-sheet)
@@ -85,8 +87,8 @@ Running
 File to choose:
 
 * `o-mi-node-x.y.z.zip` for Windows
-* `o-mi-node-x.y.z.deb` for Ubuntu, Debian or other linux with dpkg (use `dpkg -i o-mi-node-x.y.z.deb`)
-* `o-mi-node-x.y.z.rpm` for Red Hat linux (use `rpm -i o-mi-node-x.y.z.rpm`)
+* `o-mi-node-x.y.z.deb` for Ubuntu, Debian or other linux with dpkg
+* `o-mi-node-x.y.z.rpm` for Red Hat linux
 * `o-mi-node-x.y.z.tgz` for Mac or other Unix
 
 **For zip or tgz file:**
@@ -104,6 +106,11 @@ This will run O-MI Node with configuration in `/conf/application.conf`.
 
 More Information in the [Configuration](#Configuration) section.
 
+**For linux packages**
+
+1. `dpkg -i o-mi-node-x.y.z.deb` or `rpm -i o-mi-node-x.y.z.rpm`
+2. `sudo systemctl start o-mi-node`
+3. If it needs to start after a reboot: `sudo systemctl enable o-mi-node`
 
 **With docker**
 
@@ -185,6 +192,21 @@ Optional components
 - [Authentication and/or Authorization module](https://github.com/AaltoAsia/O-MI/blob/master/docs/AuthenticationAuthorization.md#o-mi-authentication-and-authorization-reference-implementations)
 - InfluxDB as value history db. Install it separately and see [this guide](https://github.com/AaltoAsia/O-MI/blob/master/docs/FAQ.md#how-to-use-a-different-db)
 - Warp10 as value history db. Branch `warp10integration` has experimental integration to [Warp10](http://www.warp10.io/) as the DB backend. Download `-warp10` version from releases.
+
+Directory structure
+----------------------
+
+- `O-MI-Node/` - Main directory for the o-mi-node server
+    - `src/main` - Server source code
+    - `src/test` - Source code of automatic tests
+    - `html/` - Developer web app source
+- `Agents/` - Sources for all internal agent examples
+- `tools/` - Some scripts and examples for working with O-DF/O-MI
+- `database/` - Database location when running
+- `project/dependencies.scala` - Library dependencies list and versions
+- `build.sbt` - Build system settings and instructions
+- `src/` - Only some specific files for releases, see `O-MI-Node/src` for real sources
+
 
 Acknowledgements
 ---------------
