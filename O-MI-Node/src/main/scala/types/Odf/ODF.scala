@@ -305,17 +305,25 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
       }
     }
     def sort = {
+      val timer = LapTimer(println)
       var iis: List[InfoItem] = List.empty
       var objs: List[Node] = List.empty
       nodes.values.foreach{
-        case ii: InfoItem => iis = iis :+ ii
-        case node: Node => objs = objs :+ node
+        case ii: InfoItem => iis = ii :: iis
+        case node: Node => objs = node :: objs
       }
+      timer.step("Partition")
       val parent2IIs: Map[Path,Seq[InfoItem]] = iis.groupBy{ ii: InfoItem => ii.path.getParent}
-      objs.sortBy(_.path)(PathOrdering).flatMap{
+      timer.step("Group by")
+      val sorted = objs.sortBy(_.path)(PathOrdering)
+      timer.step("sort")
+      val res = sorted.flatMap{
         case node: Node =>
           Seq(node) ++ parent2IIs.get(node.path).toSeq.flatten
       }.toVector
+      timer.step("flat map")
+      timer.total()
+      res
     }
     
     val sortedNodes = sort 
