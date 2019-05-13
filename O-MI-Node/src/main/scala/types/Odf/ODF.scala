@@ -292,6 +292,7 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
     object ResponseOrdering extends scala.math.Ordering[Node] {
       def compare(l: Node, r: Node): Int = {
         if( PathOrdering.compare(l.path.getParent, r.path.getParent) == 0){
+
           (l,r) match {
             case (ii:InfoItem,obj: Object) => -1
             case (obj: Object, ii: InfoItem) => 1
@@ -301,13 +302,35 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
         } else {
               PathOrdering.compare(l.path,r.path)
         }
-              PathOrdering.compare(l.path,r.path)
       }
     }
-    val sortedNodes = nodes.values.toVector.sorted(ResponseOrdering)
+    def sort = {
+      var iis: List[InfoItem] = List.empty
+      var objs: List[Node] = List.empty
+      nodes.values.foreach{
+        case ii: InfoItem => iis = iis :+ ii
+        case node: Node => objs = objs :+ node
+      }
+      val parent2IIs: Map[Path,Seq[InfoItem]] = iis.groupBy{ ii: InfoItem => ii.path.getParent}
+      objs.sortBy(_.path)(PathOrdering).flatMap{
+        case node: Node =>
+          Seq(node) ++ parent2IIs.get(node.path).toSeq.flatten
+      }.toVector
+    }
+    
+    val sortedNodes = sort 
+
     val parentStack: MStack[Path] = MStack.empty[Path]
-    val events = sortedNodes.view.flatMap{
-      case objs: Objects =>
+    def handleEnd( index: Int ) = {
+      if( index == sortedNodes.size - 1 ){
+        val count = Math.max(parentStack.length-1,0)
+        Vector.fill(count)( EndElement("Object") ) ++ Vector(EndElement("Objects"))
+      } else {
+        Vector.empty[ParseEvent]
+      }
+    }
+    val events = sortedNodes.zipWithIndex.view.flatMap{
+      case (objs: Objects, index: Int) =>
         parentStack.push(objs.path)
         Vector(
           StartElement(
@@ -321,8 +344,9 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
              },
             namespaceCtx = List(
               Namespace(s"http://www.opengroup.org/xsd/odf/${objs.version.getOrElse("1.0")}/",None))
-          ))
-      case obj: Object =>
+          )
+        ) ++ handleEnd(index)
+      case (obj: Object, index: Int) =>
         var count: Int = 0
         while(parentStack.length > 0 && parentStack.head != obj.path.getParent){
           Option(parentStack.pop()) match{
@@ -368,10 +392,10 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
         } ++ obj.descriptions.view.flatMap{
           case desc: Description =>
             desc.asXMLEvents
-        }      
-      case ii: InfoItem =>
+        } ++ handleEnd(index)      
+      case (ii: InfoItem, index: Int) =>
+
         var count: Int = 0
-        println(s"II: ${ii.path} Stack: ${parentStack.mkString("\n")}")
         while(parentStack.length > 0 && parentStack.head != ii.path.getParent){
           Option(parentStack.pop()) match{
             case Some(path) =>
@@ -379,13 +403,10 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
             case None =>
           }
         }
-        Vector.fill(count)( EndElement("Object") ) ++ ii.asXMLEvents
+        Vector.fill(count)( EndElement("Object") ) ++ ii.asXMLEvents ++ handleEnd(index)
 
     } 
-    println(s"Stack: ${parentStack.mkString("\n")}")
-    lazy val count = Math.max(parentStack.length-1,0)
-    def endEvents(count: => Int) = Vector.fill(count)( EndElement("Object") ) ++ Vector(EndElement("Objects")).view
-    events ++ endEvents(count) 
+    events 
   }
 
   final implicit def asXML: NodeSeq = {
