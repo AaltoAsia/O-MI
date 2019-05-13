@@ -692,7 +692,7 @@ class ResponseRequest(
           Characters(rid.toString),
           EndElement("requestID")
         )
-    } ++ results.flatMap{
+    } ++ results.view.flatMap{
       result => result.asXMLEvents
     } ++ Vector(
       EndElement("response"),

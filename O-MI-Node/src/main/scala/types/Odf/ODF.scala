@@ -306,7 +306,7 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
     }
     val sortedNodes = nodes.values.toVector.sorted(ResponseOrdering)
     val parentStack: MStack[Path] = MStack.empty[Path]
-    sortedNodes.view.flatMap{
+    val events = sortedNodes.view.flatMap{
       case objs: Objects =>
         parentStack.push(objs.path)
         Vector(
@@ -371,6 +371,7 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
         }      
       case ii: InfoItem =>
         var count: Int = 0
+        println(s"II: ${ii.path} Stack: ${parentStack.mkString("\n")}")
         while(parentStack.length > 0 && parentStack.head != ii.path.getParent){
           Option(parentStack.pop()) match{
             case Some(path) =>
@@ -380,7 +381,11 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
         }
         Vector.fill(count)( EndElement("Object") ) ++ ii.asXMLEvents
 
-    } ++ Vector(EndElement("Objects")).view
+    } 
+    println(s"Stack: ${parentStack.mkString("\n")}")
+    lazy val count = Math.max(parentStack.length-1,0)
+    def endEvents(count: => Int) = Vector.fill(count)( EndElement("Object") ) ++ Vector(EndElement("Objects")).view
+    events ++ endEvents(count) 
   }
 
   final implicit def asXML: NodeSeq = {
