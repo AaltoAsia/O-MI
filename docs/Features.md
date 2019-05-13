@@ -4,6 +4,7 @@ Feature highlights
 * A developer webapp for building and sending O-MI/O-DF messages.
 * Agent system for writing extensions in JVM compatible language.
 * Builtin authentication and authorization APIs
+* Value database can be changed from configuration or easily extended.
 
 Other features
 --------------
