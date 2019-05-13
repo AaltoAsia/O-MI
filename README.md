@@ -24,11 +24,11 @@ Table of Contents
 5. [Compiling and Packaging](#compiling-and-packaging)
 6. [Setting up a development environment](#setting-up-a-development-environment)
     1. [Setting up IDE](#setting-up-ide)
-8. [Configuration](#configuration)
-9. [FAQ](https://github.com/AaltoAsia/O-MI/blob/master/docs/FAQ.md)
+7. [Configuration](#configuration)
+8. [FAQ](https://github.com/AaltoAsia/O-MI/blob/master/docs/FAQ.md)
 
 ### Other
-7. [sbt help](#simple-build-tool-cheat-sheet)
+1. [sbt help](#simple-build-tool-cheat-sheet)
 
 
 
