@@ -4,6 +4,7 @@ Feature highlights
 * A developer webapp for building and sending O-MI/O-DF messages.
 * Agent system for writing extensions in JVM compatible language.
 * Builtin authentication and authorization APIs
+* Value database can be changed from configuration or easily extended.
 
 Other features
 --------------
@@ -42,3 +43,10 @@ Planned
 
 * Json support
 
+Details of specific features
+============================
+
+* O-DF extra (unknown/proprietary) xml attributes as allowed by the O-DF schema:
+   - They can be added to the stored O-DF with a normal O-MI write request
+   - They will be left untouched when writing without any of the attributes
+   - They will be removed only if rewritten with an empty string as value

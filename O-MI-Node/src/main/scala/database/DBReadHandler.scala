@@ -63,33 +63,16 @@ trait DBReadHandler extends DBHandlerBase {
         val mdtimer = LapTimer(log.info)
         val fmetadataTree: Future[ImmutableODF] = singleStores.getHierarchyTree()
 
-
-        val fodfWithMetaData: Future[ODF] = fmetadataTree.map{
-          mdOdf =>
-          mdtimer.step("Got MD ODF")
-          val tmp = mdOdf.readTo(requestedODF)
-          mdtimer.step("Read MD ODF")
-          val tmp1 = tmp.valuesRemoved
-          mdtimer.step("MD ODF values removed")
-          tmp1
-        }
+        val fodfWithMetaData: Future[ODF] = fmetadataTree.map(_.readTo(requestedODF).valuesRemoved)
+        log.debug( s" Requested paths: " + leafs.map{ _.path}.mkString("\n"))
 
         val resultF = odfWithValuesO.flatMap {
           case Some(odfWithValues) =>
-          timer.step("Got value ODF")
+            log.debug("Odf with values found.")
             
             //Select requested O-DF from metadataTree and remove MetaDatas and descriptions
-            val fmetaCombined: Future[ODF] = fodfWithMetaData.map{
-              mdOdf =>
-              mdtimer.step("Got MD ODF ready")
-              val t = mdOdf.union(odfWithValues)
-              mdtimer.step("MD value union ODF")
-              mdtimer.total()
-
-              t
-            }
-            fmetaCombined.foreach{ _ => timer.step("metacompined")}
-            val result = for {
+            val fmetaCombined: Future[ODF] = fodfWithMetaData.map(_.union(odfWithValues))
+            val responseF = for {
               metaCombined <- fmetaCombined
               requestsPaths = leafs.map {
                 _.path
@@ -108,15 +91,18 @@ trait DBReadHandler extends DBHandlerBase {
               omiResults = nfResults ++ found.toVector
 
             } yield ResponseRequest(omiResults)
-            result.foreach{
-              r =>
-                timer.step("result")
-                timer.total()
+          
+            responseF.foreach{
+              response => log.debug(s"Response with ${response.results.size} results")
             }
-            result
+            responseF
 
           case None =>
-            Future.successful(ResponseRequest(Vector(Results.NotFoundPaths(requestedODF))))
+            log.debug("Odf with values not found.")
+            val results =Vector(Results.NotFoundPaths(requestedODF))
+            val response = ResponseRequest(results)
+            log.debug(s"Response with ${results.size} results: " + results.mkString("\n"))
+            Future.successful(response)
         }
         resultF
     }

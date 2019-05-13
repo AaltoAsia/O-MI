@@ -39,6 +39,7 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
   final def isRootOnly: Boolean = isEmpty
 
   final def contains(path: Path): Boolean = paths.contains(path)
+  final def contains( _paths: Seq[Path]): Boolean = _paths.forall{ path => paths.contains(path)}
 
 
   /*

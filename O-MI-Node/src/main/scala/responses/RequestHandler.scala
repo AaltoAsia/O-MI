@@ -28,6 +28,8 @@ import agentSystem.AgentEvents._
 import agentSystem.{AgentName, AgentResponsibilities, Responsible, ResponsibleAgent, ResponsibleNode}
 import http.OmiConfigExtension
 import types.OmiTypes._
+import types.odf.ImmutableODF
+import types.Path
 import http.RequestStore._
 import utils._
 
@@ -71,6 +73,7 @@ class RequestHandler(
   def receive: PartialFunction[Any, Unit] = {
     case read: ReadRequest => respond(handleReadRequest(read))
     case write: WriteRequest => respond(handleWriteRequest(write))
+    case delete: DeleteRequest => respond(handleDeleteRequest(delete))
     case call: CallRequest => respond(handleCallRequest(call))
     case response: ResponseRequest => respond(handleResponse(response))
     case omiRequest: OmiRequest => respond(handleNonOdfRequest(omiRequest))
@@ -79,7 +82,6 @@ class RequestHandler(
   }
 
   def handleReadRequest(read: ReadRequest): Future[ResponseRequest] = {
-    implicit val to: Timeout = Timeout(read.handleTTL)
     read.requestID.foreach{
       id =>
       requestStore ! AddInfos(id,Vector( 
@@ -91,22 +93,73 @@ class RequestHandler(
         RequestStringInfo( "callback-attribute", read.callback.toString)
       ))
     } 
-    //TODO: Split request and send responsible.
-    val responseFuture = (dbHandler ? read).mapTo[ResponseRequest]
-    responseFuture.onComplete {
-      case Failure(t) =>
-        log.debug(s"RequestHandler failed to receive response from DBHandler: $t")
-      case Success(response) =>
+    val ottl: Timeout = Timeout(read.handleTTL)
+    checkForNotFound(read).flatMap{
+      case (Some(response),None) =>  
+        Future.successful(response)
+      case (notFoundResponse,Some(read)) => 
+        splitAndHandle(read){
+          request: OdfRequest =>
+            log.debug("Handling shared paths: "+ request.odf.getLeafPaths.mkString("\n"))
+            implicit val to: Timeout = Timeout(request.handleTTL)
+            val responseFuture = (dbHandler ? request).mapTo[ResponseRequest]
+            responseFuture.onComplete {
+              case Failure(t) =>
+                log.debug(s"RequestHandler failed to receive response from DBHandler: $t")
+              case Success(response) =>
+            }
+            notFoundResponse match{
+              case None => responseFuture
+              case Some(nfResponse) =>
+                responseFuture.map{
+                  response => 
+                    response.union(nfResponse)
+                }
+            }
+            
+        }
     }
-    responseFuture
+  }
+  def checkForNotFound(request: OdfRequest ): Future[Tuple2[Option[ResponseRequest],Option[OdfRequest]]] ={
+    singleStores.getHierarchyTree().map{
+      cachedOdf =>
+        val notFoundPaths = request.odf.getLeafPaths.filterNot{
+          path: Path =>
+            cachedOdf.contains(path)
+        }
+        if( notFoundPaths.isEmpty ){
+          (None,Some(request))
+        } else if( notFoundPaths.toSet == request.odf.getLeafPaths.toSet){
+          (Some(Responses.NotFoundPaths(request.odf)),None)
+        } else {
+          val nfOdf= ImmutableODF(notFoundPaths.flatMap{ 
+            path: Path =>
+              request.odf.get(path)
+          }.toVector)
+          (Some(Responses.NotFoundPaths(nfOdf)),Some(request.replaceOdf(request.odf.removePaths(notFoundPaths))))
+        }
+    }
   }
   def handleDeleteRequest( delete: DeleteRequest) : Future[ResponseRequest] = {
-   splitAndHandle(delete){
-     request: OdfRequest =>
-       implicit val to: Timeout = Timeout(request.handleTTL)
-       log.debug(s"Asking DBHandler to handle request parts that are not owned by an Agent.")
-       (dbHandler ? request).mapTo[ResponseRequest]
-   }
+    checkForNotFound(delete).flatMap{
+      case (Some(response),None) =>  Future.successful(response)
+      case (notFoundResponse,Some(delete)) => 
+        splitAndHandle(delete){
+          request: OdfRequest =>
+            implicit val to: Timeout = Timeout(request.handleTTL)
+            log.debug(s"Asking DBHandler to handle request parts that are not owned by an Agent.")
+            log.debug(s"Requested following paths: ${request.odf.getPaths.mkString("\n")}")
+            val future = (dbHandler ? request).mapTo[ResponseRequest]
+            notFoundResponse match{
+              case None => future
+              case Some(nfResponse) =>
+                future.map{
+                  response => 
+                    response.union(nfResponse)
+                }
+            }
+        }
+    }
     
   }
 
@@ -152,7 +205,13 @@ class RequestHandler(
     }
     fSeq.map {
       responses =>
-        val results = responses.flatMap(response => response.results)
+        log.debug( s"Received ${responses.size} responses: " + responses.mkString("\n"))
+        val results = responses.flatMap{
+          response => 
+            log.debug( s"Received response with ${response.results.size} results: ")
+            response.results
+        }
+        log.debug( s"Received ${results.size} results: " + results.mkString("\n"))
         ResponseRequest(
           Results.unionReduce(results.toVector)
         )
@@ -160,12 +219,20 @@ class RequestHandler(
   }
 
   def handleCallRequest( call: CallRequest) : Future[ResponseRequest] = {
-   splitAndHandle(call){
-     request: OdfRequest =>
-          Future.successful{
+    checkForNotFound(call).flatMap{
+      case (Some(response),None) => Future.successful(response)
+      case (notFoundResponse,Some(call)) => 
+      splitAndHandle(call){
+        request: OdfRequest =>
+          val f = Future.successful{
             Responses.NotFound(
               "Call request for path that do not have responsible agent for service.")
           }
+          notFoundResponse match{
+            case None => f
+            case Some(nfResponse) => f.map{ response => response.union(nfResponse)}
+          }
+      }
    }
 
   }
@@ -179,10 +246,6 @@ class RequestHandler(
       case subscription: SubscriptionRequest => handleSubscription(subscription)
       case poll: PollRequest => handlePoll(poll)
       case cancel: CancelRequest => handleCancel(cancel)
-      case delete: DeleteRequest => {
-        implicit val to: Timeout = Timeout(delete.handleTTL)
-        (dbHandler ? delete).mapTo[ResponseRequest]
-      }
       case other => {
         log.warning(s"Unexpected non-O-DF request: $other")
         Future.failed(new Exception(s"Unexpected non-O-DF request"))

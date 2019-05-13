@@ -411,6 +411,7 @@ public class ResponsibleJavaAgent extends JavaAgent implements ResponsibleIntern
       }
   }
 ```
+
 To have our new agent to react corretly to received `write` and `call` request
 we need to change `createReceive` method to check for them and call respective
 handlers required by `ResponsibleInternalAgent` interface. `respondFuture` is
@@ -457,6 +458,12 @@ method for `ResponsibleInternalAgent` interface.
     );
   }
 ```
+
+Note that `DBWriteHandler` updates current values stored in journals and 
+creates events that trigger event subscriptions.
+Thus, you need to use `writeToDB` to have cached values and subscriptions
+working correctly.
+
 Last step is to configure agent in `application.conf` to run it.
 
 ```java

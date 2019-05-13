@@ -31,8 +31,9 @@ trait ResponsibleScalaInternalAgent
   import context.dispatcher
 
   protected def handleWrite(write: WriteRequest): Future[ResponseRequest] = writeToDB(write)
+  protected def handleDelete(delete: DeleteRequest): Future[ResponseRequest] = requestFromDB(delete)
 
-  //protected def handleRead( read: ReadRequest ) : Future[ResponseRequest] = readFromDB(read)
+  protected def handleRead( read: ReadRequest ) : Future[ResponseRequest] = readFromDB(read)
   protected def handleCall(call: CallRequest): Future[ResponseRequest] = {
     Future {
       Responses.NotImplemented()
@@ -41,7 +42,8 @@ trait ResponsibleScalaInternalAgent
 
   override def receive: PartialFunction[Any, Unit] = {
     case write: WriteRequest => respondFuture(handleWrite(write))
-    //case read: ReadRequest => respondFuture(handleRead(read))
+    case delete: DeleteRequest => respondFuture(handleDelete(delete))
+    case read: ReadRequest => respondFuture(handleRead(read))
     case call: CallRequest => respondFuture(handleCall(call))
   }
 

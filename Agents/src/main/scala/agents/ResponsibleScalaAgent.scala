@@ -75,6 +75,8 @@ class ResponsibleScalaAgent(
   override  def receive : Actor.Receive = {
     //Following are inherited from ResponsibleScalaInternalActor.
     case write: WriteRequest => respondFuture(handleWrite(write))
+    case read: ReadRequest => respondFuture(handleRead(read))
+    case delete: DeleteRequest => respondFuture(handleDelete(delete))
     //ScalaAgent specific messages
     case Update() => update()
   }
