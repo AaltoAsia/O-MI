@@ -91,7 +91,7 @@ File to choose:
 
 **For zip or tgz file:**
 
-1. Extract the file
+1. Download and extract the file
 2. Navigate to the `bin` directory
 3. Run O-MI Node run the corresponding startup script from the bin directory for your OS:
 
@@ -104,6 +104,11 @@ This will run O-MI Node with configuration in `/conf/application.conf`.
 
 More Information in the [Configuration](#Configuration) section.
 
+
+**With docker**
+
+1. `docker pull aaltoasia/o-mi`
+2. `docker run docker run -p 8080:8080 aaltoasia/o-mi`
 
 
 Setting up a development environment
