@@ -256,6 +256,11 @@ Let's create class `ResponsibleScalaAgent` that extends `ScalaAgent` with
   }
 ```
 
+Note that `DBWriteHandler` updates current values stored in journals and 
+creates events that trigger event subscriptions.
+Thus, you need to use `writeToDB` to have cached values and subscriptions
+working correctly.
+
 We also need to modify our receive to call `handleWrite` when `WriteRequest` is
 received. With `respondFuture` method we make sure that `WriteRequest` is
 answered correctly. 

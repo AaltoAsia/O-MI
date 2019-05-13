@@ -32,11 +32,20 @@ class AgentResponsibilities( val singleStores: SingleStores) {
     request match {
       case write: WriteRequest => splitCallAndWriteToResponsible(write)
       case call: CallRequest => splitCallAndWriteToResponsible(call)
-      case delete: DeleteRequest => splitReadAndDeleteToResponsible(delete)
-      case read: ReadRequest => splitReadAndDeleteToResponsible(read)
+      case delete: DeleteRequest => splitDeleteToResponsible(delete)
+      case read: ReadRequest => splitReadToResponsible(read)
       case other: OdfRequest =>Future.successful(ImmutableMap( None -> other))
     }
   }
+  /*
+   * Currently when requesting path ../A/ that has two subpaths
+   * ../A/A and ../A/B that have different responsible agents
+   * splitting creates two request, one for ../A/A  and other for ../A/B.
+   * This works for read but for delete this doesn't actually remove ../A.
+   * Also two new request have all descedants of their path ( ../A/A or ../A/B)
+   * Todo: split method to read and delete
+   *
+   */
   def splitReadAndDeleteToResponsible( request: OdfRequest )(implicit ec: ExecutionContext) : Future[ImmutableMap[Option[Responsible], OdfRequest]] ={
     val cachedOdfF: Future[ImmutableODF] = singleStores.getHierarchyTree()
     def filter: RequestFilter => Boolean = createFilter(request)
@@ -67,13 +76,14 @@ class AgentResponsibilities( val singleStores: SingleStores) {
             responsiblePath.isAncestorOf(path)
         }
     }
-    val responsibleToPaths = sharedPaths.headOption.map{
-      _ => None -> sharedPaths
+    val responsibleToPaths: Map[Option[Responsible],Set[Path]] = sharedPaths.headOption.map{
+      _ => 
+        None -> sharedPaths
       }.toMap ++ responsibleToPathsWithoutNone
     cachedOdfF.map{
       cachedOdf =>
       val result = responsibleToPaths.map{
-        case (responsible, paths) => 
+        case (responsible: Option[Responsible], paths: Set[Path]) => 
           val subResponsible = responsiblePaths.filter{
             responsiblePath => 
               paths.exists{
@@ -91,9 +101,10 @@ class AgentResponsibilities( val singleStores: SingleStores) {
           responsible -> selectedPaths
       }
       val r = result.map{
-        case (responsible, paths) => 
+        case (responsible: Option[Responsible], paths: Set[Path]) => 
           val selectedPaths = paths.filter{
             path => 
+              result.size == 1 ||
               result.exists{
                 case (otherResponsible, otherPaths) => 
                   otherResponsible != responsible &&
@@ -101,7 +112,7 @@ class AgentResponsibilities( val singleStores: SingleStores) {
 
               }
           }.flatMap(_.getAncestorsAndSelf).toSet
-          val nodes: Iterable[Node]= selectedPaths.flatMap{
+          val nodes: Vector[Node]= selectedPaths.flatMap{
             path => 
               cachedOdf.get(path).map{
                 case obj: Object =>
@@ -114,11 +125,240 @@ class AgentResponsibilities( val singleStores: SingleStores) {
                   }
                 case obj: Objects => 
                   odf.get(path).getOrElse( obj )
+              }.orElse{
+                odf.get(path)
               }
           }.toVector
           responsible -> request.replaceOdf(ImmutableODF(nodes))
       }
        r
+    }
+  }
+  def splitDeleteToResponsible( request: DeleteRequest )(implicit ec: ExecutionContext) : Future[ImmutableMap[Option[Responsible], OdfRequest]] ={
+    val cachedOdfF: Future[ImmutableODF] = singleStores.getHierarchyTree()
+    def filter: RequestFilter => Boolean = createFilter(request)
+    val odf = request.odf
+    val requestedLeafPaths = odf.getLeafPaths
+    val responsibleToPathsWithoutNone: Map[Option[Responsible],Set[Path]]= pathsToResponsible.filter{
+      case (path, AgentResponsibility( agentName, _, rf) ) =>
+        lazy val pathFilter = {
+          requestedLeafPaths.exists{
+            relativePath => 
+              relativePath == path || 
+              relativePath.isAncestorOf(path) || 
+              relativePath.isDescendantOf(path)  
+          }
+        }
+        filter(rf) && pathFilter
+    }.groupBy{
+      case (path: Path, ar: AgentResponsibility) => ar.agentName
+    }.map{
+      case (agentName, tuples) => 
+        (Some(ResponsibleAgent(agentName)),tuples.map(_._1).toSet)
+    }
+    val responsiblePaths = responsibleToPathsWithoutNone.values.flatten
+    val sharedPaths: Set[Path] = odf.getLeafPaths.filterNot{
+      path: Path => 
+        responsiblePaths.exists{
+          responsiblePath: Path =>
+            responsiblePath == path ||
+            responsiblePath.isAncestorOf(path)
+        }
+    }
+    val responsibleToPaths: Map[Option[Responsible],Set[Path]] = sharedPaths.headOption.map{
+      _ => 
+        None -> sharedPaths
+      }.toMap ++ responsibleToPathsWithoutNone
+    cachedOdfF.map{
+      cachedOdf =>
+      val result = responsibleToPaths.map{
+        case (responsible: Option[Responsible], paths: Set[Path]) => 
+          val subResponsible = responsiblePaths.filter{
+            responsiblePath => 
+              paths.exists{
+                path => path.isAncestorOf( responsiblePath)
+              }
+          }
+          val selectedPaths = cachedOdf.subTreePaths(paths).filterNot{
+            path => 
+              subResponsible.exists{
+                responsiblePath => 
+                  path == responsiblePath ||
+                  responsiblePath.isAncestorOf(path)
+              }
+          } ++ paths.map( _.getAncestorsAndSelf ).flatten.toSet
+          responsible -> selectedPaths
+      }
+      val requestedPaths =odf.getPaths
+      val r = result.map{
+        case (responsible: Option[Responsible], paths: Set[Path]) => 
+          val selectedPaths = paths.filter{
+            path => 
+              if( result.size == 1 ){
+                requestedPaths.contains(path)
+              } else {
+                result.exists{
+                  case (otherResponsible, otherPaths) => 
+                    otherResponsible != responsible &&
+                    otherPaths.contains(path.getParent)
+                }
+              }
+          }.flatMap(_.getAncestorsAndSelf).toSet
+          val nodes: Vector[Node]= selectedPaths.flatMap{
+            path => 
+              cachedOdf.get(path).map{
+                case obj: Object =>
+                  odf.get(path).getOrElse{
+                      obj.copy(ids = obj.ids.filter( qlmID => qlmID.id == obj.path.last), typeAttribute = None, descriptions = Set.empty)
+                  }
+                case ii: InfoItem =>
+                  odf.get(path).getOrElse{
+                      ii.copy(names = ii.names.filter( qlmID => qlmID.id == ii.path.last), typeAttribute = None, descriptions = Set.empty, metaData = None, values = Vector.empty)
+                  }
+                case obj: Objects => 
+                  odf.get(path).getOrElse( obj )
+              }.orElse{
+                odf.get(path)
+              }
+          }.toVector
+          responsible -> request.replaceOdf(ImmutableODF(nodes))
+      }
+       r
+    }
+  }
+  def splitReadToResponsible( request: ReadRequest )(implicit ec: ExecutionContext) : Future[ImmutableMap[Option[Responsible], OdfRequest]] ={
+    val cachedOdfF: Future[ImmutableODF] = singleStores.getHierarchyTree()
+    def filter: RequestFilter => Boolean = createFilter(request)
+    val odf = request.odf
+    val requestedLeafPaths = odf.getLeafPaths
+    val responsibleToPathsWithoutNone: Map[Option[Responsible],Set[Path]]= pathsToResponsible.filter{
+      case (path, AgentResponsibility( agentName, _, rf) ) =>
+        lazy val pathFilter = requestedLeafPaths.exists{
+            relativePath => 
+              relativePath == path || 
+              relativePath.isAncestorOf(path) || 
+              relativePath.isDescendantOf(path)  
+          }
+        filter(rf) && pathFilter
+    }.groupBy{
+      case (path: Path, ar: AgentResponsibility) => ar.agentName
+    }.map{
+      case (agentName, tuples) => 
+        (Some(ResponsibleAgent(agentName)),tuples.map(_._1).toSet)
+    }
+    val responsiblePaths = responsibleToPathsWithoutNone.values.flatten
+    val sharedPaths: Set[Path] = requestedLeafPaths.filterNot{
+      path: Path => 
+        responsiblePaths.exists{
+          responsiblePath: Path =>
+            responsiblePath == path ||
+            responsiblePath.isAncestorOf(path)
+        }
+    }
+    val responsibleToPaths: Map[Option[Responsible],Set[Path]] = sharedPaths.headOption.map{
+      _ => 
+        None -> sharedPaths
+      }.toMap ++ responsibleToPathsWithoutNone
+    cachedOdfF.map{
+      cachedOdf =>
+      val result = responsibleToPaths.map{
+        case (responsible: Option[Responsible], paths: Set[Path]) => 
+          val subResponsible = responsiblePaths.filter{
+            responsiblePath => 
+              paths.exists{
+                path => path.isAncestorOf( responsiblePath)
+              }
+          }
+          val selectedPaths = cachedOdf.subTreePaths(paths).filterNot{
+            path => 
+              subResponsible.exists{
+                responsiblePath => 
+                  path == responsiblePath ||
+                  responsiblePath.isAncestorOf(path)
+              }
+          } ++ paths.map( _.getAncestorsAndSelf ).flatten.toSet
+          responsible -> selectedPaths
+      }
+      val r = result.map{
+        case (responsible: Option[Responsible], paths: Set[Path]) => 
+          responsible -> paths.filter{
+            path => 
+              if( result.size == 1 ){
+                requestedLeafPaths.contains(path)
+              } else {
+                result.exists{
+                  case (otherResponsible, otherPaths) => 
+                    otherResponsible != responsible &&
+                    otherPaths.contains(path.getParent)
+                }
+              }
+          }.flatMap(_.getAncestorsAndSelf).toSet
+      }
+      r.flatMap{
+        case (None, paths: Set[Path]) => 
+          if( paths.isEmpty ){
+            None
+          } else if( result.size == 1 ){
+            Some(None -> paths)
+          
+          } else {
+            println( "paths: " + paths.mkString("\n"))
+            val filteredChilds = paths.flatMap{ path => cachedOdf.getChildPaths(path)}.filterNot{
+              path: Path => 
+                r.exists{
+                    case (None, _) => false 
+                    case (Some(responsible), otherPaths) => 
+                      otherPaths.exists{
+                        opath: Path => 
+                          path == opath || path.isAncestorOf(opath)
+                      }
+
+                }
+            }
+            println( "filtered childs: " + filteredChilds.mkString("\n"))
+            val f2 = filteredChilds.filterNot{
+              path: Path => 
+                filteredChilds.exists{
+                  apath: Path => 
+                   apath.isAncestorOf(path) 
+                }
+            }.filter{
+              path: Path =>
+                requestedLeafPaths.exists{
+                  leaf: Path =>
+                    path.isAncestorOf(leaf) ||
+                    leaf.isAncestorOf(path) ||
+                    path == leaf
+                }
+            }
+            println( "f2: " + f2.mkString("\n"))
+            if( f2.nonEmpty ){
+              Some(None -> f2)
+            } else None
+          }
+        case (responsible: Option[Responsible], paths: Set[Path]) => 
+          Some(responsible -> paths)
+      }.map{
+        case (responsible: Option[Responsible], paths: Set[Path]) => 
+          val nodes: Vector[Node]= paths.flatMap{
+            path => 
+              cachedOdf.get(path).map{
+                case obj: Object =>
+                  odf.get(path).getOrElse{
+                      obj.copy(ids = obj.ids.filter( qlmID => qlmID.id == obj.path.last), typeAttribute = None, descriptions = Set.empty)
+                  }
+                case ii: InfoItem =>
+                  odf.get(path).getOrElse{
+                      ii.copy(names = ii.names.filter( qlmID => qlmID.id == ii.path.last), typeAttribute = None, descriptions = Set.empty, metaData = None, values = Vector.empty)
+                  }
+                case obj: Objects => 
+                  odf.get(path).getOrElse( obj )
+              }.orElse{
+                odf.get(path)
+              }
+          }.toVector
+          responsible -> request.replaceOdf(ImmutableODF(nodes))
+      }
     }
   }
 
