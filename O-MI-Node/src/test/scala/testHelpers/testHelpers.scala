@@ -175,7 +175,6 @@ class WsTestCallbackClient(destination: ActorRef, interface: String, port: Int, 
       case message: TextMessage.Strict => {
         //val pretty = prettyPrint.format( XML.loadString(message.text) )
         //println(s"$interface:$port received: $pretty")
-        println("Got MSG: "+ message.text)
         destination ! message.text
       }
       case message: TextMessage.Streamed => {
@@ -185,7 +184,6 @@ class WsTestCallbackClient(destination: ActorRef, interface: String, port: Int, 
         }
       }
       case any: Any =>
-        println("Got nonMSG: "+ any.toString)
     }
   }
   val outgoingSourceQueue = akka.stream.scaladsl.Source.queue[Message](5,
