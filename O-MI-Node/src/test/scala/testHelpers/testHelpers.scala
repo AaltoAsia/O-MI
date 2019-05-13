@@ -163,7 +163,7 @@ class SystemTestCallbackServer(destination: ActorRef, interface: String, port: I
   }
 }
 
-class WsTestCallbackClient(destination: ActorRef, interface: String, port: Int)(implicit system: ActorSystem) {
+class WsTestCallbackClient(destination: ActorRef, interface: String, port: Int, timeout: FiniteDuration = 5.seconds)(implicit system: ActorSystem) {
   //send messages received from ws connection to the given actor
   implicit val materializer = ActorMaterializer()
 
@@ -175,9 +175,17 @@ class WsTestCallbackClient(destination: ActorRef, interface: String, port: Int)(
       case message: TextMessage.Strict => {
         //val pretty = prettyPrint.format( XML.loadString(message.text) )
         //println(s"$interface:$port received: $pretty")
+        println("Got MSG: "+ message.text)
         destination ! message.text
       }
-      case _ =>
+      case message: TextMessage.Streamed => {
+        message.toStrict(timeout).foreach{
+          strict =>
+            destination ! strict.text
+        }
+      }
+      case any: Any =>
+        println("Got nonMSG: "+ any.toString)
     }
   }
   val outgoingSourceQueue = akka.stream.scaladsl.Source.queue[Message](5,
