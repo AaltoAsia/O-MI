@@ -120,6 +120,7 @@ lazy val root = (project in file(".")).
       dockerExposedVolumes := Seq("/opt/docker/logs"),
       dockerRepository := Some("aaltoasia"),
       //dockerUsername := Some("aaltoasia"),
+      dockerUpdateLatest := true,
 
     ////////////////////////////////////////////////
     //Locations to be cleared when using sbt clean//
