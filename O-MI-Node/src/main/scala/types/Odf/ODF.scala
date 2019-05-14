@@ -57,9 +57,9 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
 
   def mutable: MutableODF
 
-  final def getPaths: Iterable[Path] = paths.toSet
+  def getPaths: Set[Path] = paths.toSet
 
-  final def getNodes: Seq[Node] = nodes.values.toVector
+  def getNodes: Seq[Node] = nodes.values.toVector
 
   final def getInfoItems: Seq[InfoItem] = nodes.values.collect {
     case ii: InfoItem => ii
@@ -224,11 +224,11 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
   def addNodes(nodesToAdd: Seq[Node]): ODF
 
   implicit def asObjectsType: ObjectsType = {
-    val timer = LapTimer(println)
+    //val timer = LapTimer(println)
     val parentPath2IIt: MutableMap[Path,Seq[InfoItemType]] = MutableMap.empty
     val objs: Buffer[Object] = Buffer.empty
     var objects = Objects()
-    timer.step("aOT: init")
+    //timer.step("aOT: init")
     for( n <- nodes.values ){
       n match {
         case ii: InfoItem => 
@@ -238,12 +238,12 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
         case obj: Objects => objects = obj
       }
     }
-    timer.step("aOT: node grouping")
+    //timer.step("aOT: node grouping")
     val parentPath2Objs: Map[Path,Seq[Tuple2[Path,ObjectType]]] = objs.map{
       case obj: Object => 
         obj.path -> obj.asObjectType( parentPath2IIt.get(obj.path).toSeq.flatten, Seq.empty)
     }.groupBy(_._1.getParent)  
-    timer.step("aOT: IIs to parents")
+    //timer.step("aOT: IIs to parents")
     def temp(path:Path, obj: ObjectType): ObjectType ={
       val cobjs: Seq[ObjectType] = parentPath2Objs.get(path).toSeq.flatten.map{
         case ( p: Path, ot: ObjectType) => temp(p,ot)
@@ -254,10 +254,10 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
       case (path: Path, obj: ObjectType) =>  temp(path, obj) 
         
     }
-    timer.step("aOT: Objs to top object s")
+    //timer.step("aOT: Objs to top object s")
     val objsT =objects.asObjectsType( topObjects)
-    timer.step("Objects type")
-    timer.total()
+    //timer.step("Objects type")
+    //timer.total()
     objsT
   }
 
@@ -306,24 +306,24 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
       }
     }
     def sort = {
-      val timer = LapTimer(println)
+      //val timer = LapTimer(println)
       var iis: List[InfoItem] = List.empty
       var objs: List[Node] = List.empty
       nodes.values.foreach{
         case ii: InfoItem => iis = ii :: iis
         case node: Node => objs = node :: objs
       }
-      timer.step("Partition")
+      //timer.step("Partition")
       val parent2IIs: Map[Path,Seq[InfoItem]] = iis.groupBy{ ii: InfoItem => ii.path.getParent}
-      timer.step("Group by")
+      //timer.step("Group by")
       val sorted = objs.sortBy(_.path)(PathOrdering)
-      timer.step("sort")
+      //timer.step("sort")
       val res = sorted.flatMap{
         case node: Node =>
           Seq(node) ++ parent2IIs.get(node.path).toSeq.flatten
       }.toVector
-      timer.step("flat map")
-      timer.total()
+      //timer.step("flat map")
+      //timer.total()
       res
     }
     
@@ -419,12 +419,12 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
   }
 
   final implicit def asXML: NodeSeq = {
-    val timer = LapTimer(println)
+    //val timer = LapTimer(println)
     val objsType = asObjectsType
-    timer.step("as XML, as ObjectType")
+    //timer.step("as XML, as ObjectType")
     val xml = scalaxb.toXML[ObjectsType](objsType, None, Some("Objects"), odfDefaultScope)
-    timer.step("as XML, scalaxb.toXML")
-    timer.total()
+    //timer.step("as XML, scalaxb.toXML")
+    //timer.total()
     xml //.asInstanceOf[Elem] % new UnprefixedAttribute("xmlns","odf.xsd", Node.NoAttributes)
   }
 

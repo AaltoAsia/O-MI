@@ -13,6 +13,9 @@ case class ImmutableODF private[odf](
                                       protected[odf] val paths: ImmutableTreeSet[Path]
                                     ) extends ODF {
 
+  override def getPaths = paths
+
+
   /** Assume sorted nodes
     */
   protected[odf] def this(sortedNodes: ImmutableHashMap[Path, Node]) =
@@ -42,28 +45,28 @@ case class ImmutableODF private[odf](
   }
 
   def readTo(to: ODF): ImmutableODF = {
-    val timer = LapTimer(println)
+    //val timer = LapTimer(println)
     val leafs = to.getLeafPaths
-    timer.step("leafs")
+    //timer.step("leafs")
     val sstp =selectSubTreePaths(leafs)
-    timer.step("sstp")
+    //timer.step("sstp")
     val intersect = sstp.intersect(paths)
-    timer.step("intersect")
+    //timer.step("intersect")
     val wantedPaths: ImmutableTreeSet[Path] = intersect match { 
       case its: ImmutableTreeSet[Path] => 
         its.ordering match{
           case op: PathOrdering.type => its
           case el: Ordering[Path] =>
             val vec = intersect.toSeq
-            timer.step("to seq,wrong ordering")
+            //timer.step("to seq,wrong ordering")
             ImmutableTreeSet(vec:_*)(PathOrdering)
         }
       case _: Set[Path] =>
         val vec = intersect.toSeq
-        timer.step("to seq")
+        //timer.step("to seq")
         ImmutableTreeSet(vec:_*)(PathOrdering)
     }
-    timer.step("wanted paths")
+    //timer.step("wanted paths")
     val wantedNodes = wantedPaths.view.map {
       path: Path =>
         (nodes.get(path), to.nodes.get(path)) match {
@@ -94,14 +97,14 @@ case class ImmutableODF private[odf](
           case (Some(f:Node),None) => throw new Exception("Found unknown Node type.")
         }
     }
-    timer.step("wanted nodes")
+    //timer.step("wanted nodes")
     val nodesmap = ImmutableHashMap(
       wantedNodes.map{
       case node: Node =>
         node.path -> node
     }.toSeq: _*)
-    timer.step("nodes map")
-    timer.total()
+    //timer.step("nodes map")
+    //timer.total()
     new ImmutableODF(nodesmap, wantedPaths)
   }
   def update(that: ODF): ImmutableODF = {
@@ -292,11 +295,11 @@ object ImmutableODF {
              nodes: Iterable[Node] = Vector.empty
            ): ImmutableODF = {
     val mutableHMap: MutableHashMap[Path, Node] = MutableHashMap.empty
-    val timer = LapTimer(println)
+    //val timer = LapTimer(println)
     val sorted = nodes.toSeq.sortBy {
       n: Node => n.path
     }(PathOrdering)
-    timer.step(s"IODF ${nodes.size} paths sorted")
+    //timer.step(s"IODF ${nodes.size} paths sorted")
     sorted.foreach {
       node: Node =>
         if (mutableHMap.contains(node.path)) {
@@ -320,7 +323,7 @@ object ImmutableODF {
           }
         }
     }
-    timer.step("IODF populated MMap")
+    //timer.step("IODF populated MMap")
     new ImmutableODF(
       ImmutableHashMap(
         mutableHMap.toVector: _*

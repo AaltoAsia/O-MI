@@ -61,12 +61,12 @@ sealed trait OmiRequest extends RequestWrapper with JavaOmiRequest {
   implicit def asOmiEnvelope: xmlTypes.OmiEnvelopeType
 
   implicit def asXML: NodeSeq = {
-    val timer = LapTimer(println)
+    //val timer = LapTimer(println)
     val envelope = asOmiEnvelope
-    timer.step("OmiRequest asXML: asEnvelope")
+    //timer.step("OmiRequest asXML: asEnvelope")
     val t = omiEnvelopeToXML(envelope)
-    timer.step("OmiRequest asXML: EnvelopeToXML")
-    timer.total()
+    //timer.step("OmiRequest asXML: EnvelopeToXML")
+    //timer.total()
     t
   }
 

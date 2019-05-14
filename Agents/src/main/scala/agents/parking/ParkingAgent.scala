@@ -317,11 +317,11 @@ class ParkingAgent(
   val chargerParamPath: Path = parameterPath / "Charger"
   var lastTime: Timestamp = currentTimestamp
   override def handleCall(call: CallRequest) : Future[ResponseRequest] = {
-    val timer = LapTimer(log.info)
+    //val timer = LapTimer(log.info)
     updatePrefixes(call.odf)
-    timer.step("update prefixes")
+    //timer.step("update prefixes")
     val codf = setPrefixes(call.odf) 
-    timer.step("set prefixes")
+    //timer.step("set prefixes")
     val r:Option[Future[ResponseRequest]] = codf.get( findParkingPath ).map{
       case ii: InfoItem =>
         ii.values.collectFirst {
@@ -411,7 +411,7 @@ class ParkingAgent(
 
                         }
                         log.debug("FindParking parameters parsed")
-                        timer.step("FindParking parameters parsed")
+                        //timer.step("FindParking parameters parsed")
                         findParking(destination, distance, vehicle, userGroup, charger, wantCharging)
                     }
                 }.getOrElse {
@@ -445,11 +445,11 @@ class ParkingAgent(
         Responses.InvalidRequest(Some(s"Call request doesn't contain $findParkingPath path."))
       }
     }
-    t.foreach{
-      _ => 
-        timer.step("find parking")
-        timer.total()
-    }
+    //t.foreach{
+      //_ => 
+        //timer.step("find parking")
+        //timer.total()
+    //}
     t
   }
 
