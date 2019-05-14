@@ -12,6 +12,8 @@ import types.OmiTypes.CallRequest;
 import types.OmiTypes.ResponseRequest;
 import types.OmiTypes.Responses;
 import types.OmiTypes.WriteRequest;
+import types.OmiTypes.ReadRequest;
+import types.OmiTypes.DeleteRequest;
 
 import java.util.concurrent.TimeUnit;
 
@@ -23,7 +25,13 @@ public abstract class ResponsibleJavaInternalAgent extends JavaInternalAgent imp
   public Future<ResponseRequest> handleWrite(WriteRequest write){
     return writeToDB(write);
   }
+  public Future<ResponseRequest> handleRead(ReadRequest read){
+    return readFromDB(read);
+  }
 
+  public Future<ResponseRequest> handleDelete(DeleteRequest delete){
+    return requestFromDB(delete);
+  }
   public Future<ResponseRequest> handleCall(CallRequest call){
     return Futures.successful( 
         Responses.NotImplemented(Duration.apply(10,TimeUnit.SECONDS))

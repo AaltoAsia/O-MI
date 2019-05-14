@@ -12,7 +12,7 @@ In `application.conf` you can change `omi-service.database` parameter, that has
 release).
 
 If parameter is set to `slick`, O-MI Node uses SQL database defined in
-`slick-config`. Check [Slick documentation](http://slick.lightbend.com/doc/3.2.3/database.htmli).
+`slick-config`. Check [Slick documentation](http://slick.lightbend.com/doc/3.2.3/database.html).
 
 If parameter is set to `influxdb`, O-MI Node uses InfluxDB and needs
 configuration in `influx-config`, where only `database-name` and `address` are

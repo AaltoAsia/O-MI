@@ -36,7 +36,7 @@ We have also these DBs available:
 They can be activated by the `database` option under `omi-service` in the application.conf file:
 ```
 # Determines which database implementation is used: Slick, InfluxDB or Warp10
-atabase = "slick"
+database = "slick"
 ```
 
 After that you can tweak settings under the respective configuration object.
@@ -57,9 +57,9 @@ Used database is read from boot.scala from `dbConnection` variable. You will nee
 
 Currently there are three different implementations for the DB trait:
 
-- [default](https://github.com/AaltoAsia/O-MI/blob/master/O-MI%20Node/src/main/scala/database/DBInterface.scala#L207 "Default database implemntation")
-- [warp10](https://github.com/AaltoAsia/O-MI/blob/warp10integration/O-MI%20Node/src/main/scala/database/Warp10Wrapper.scala#L237 "Wrapper for warp10 database")
-- [influxDB](https://github.com/AaltoAsia/O-MI/tree/master/O-MI%20Node/src/main/scala/database/influxDB)
+- [default](https://github.com/AaltoAsia/O-MI/blob/master/O-MI-Node/src/main/scala/database/DBInterface.scala#L207 "Default database implemntation")
+- [warp10](https://github.com/AaltoAsia/O-MI/blob/warp10integration/O-MI-Node/src/main/scala/database/Warp10Wrapper.scala#L237 "Wrapper for warp10 database")
+- [influxDB](https://github.com/AaltoAsia/O-MI/tree/master/O-MI-Node/src/main/scala/database/influxDB)
 
 
 

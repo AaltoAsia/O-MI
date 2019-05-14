@@ -13,6 +13,8 @@ import scala.concurrent.Future;
 import scala.concurrent.duration.Duration;
 import types.OmiTypes.OmiResult;
 import types.OmiTypes.WriteRequest;
+import types.OmiTypes.DeleteRequest;
+import types.OmiTypes.ReadRequest;
 import types.OmiTypes.ResponseRequest;
 import types.OmiTypes.CallRequest;
 import types.OmiTypes.Results;
@@ -91,6 +93,20 @@ public class ResponsibleJavaAgent extends JavaAgent implements ResponsibleIntern
 
   @Override
   public Future<ResponseRequest> handleCall(CallRequest call){
+    return Futures.successful( 
+        Responses.NotImplemented(Duration.apply(10,TimeUnit.SECONDS))
+    );
+  }
+
+  @Override
+  public Future<ResponseRequest> handleDelete( DeleteRequest delete){
+    return Futures.successful( 
+        Responses.NotImplemented(Duration.apply(10,TimeUnit.SECONDS))
+    );
+  }
+
+  @Override
+  public Future<ResponseRequest> handleRead(ReadRequest read){
     return Futures.successful( 
         Responses.NotImplemented(Duration.apply(10,TimeUnit.SECONDS))
     );
