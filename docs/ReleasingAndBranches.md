@@ -12,15 +12,16 @@ Releasing
 3. Merge master->development: `git pull origin master` (contains usually readme/docs changes)
 4. Check that tests succeed: `sbt test`
 5. Commit `git add build.sbt && git commit -m "Increasing version to $(cat O-MI-Node/html/VERSION)"`
-6. Merge development->master `git checkout master && git merge development`
+6. `git push`
+7. Merge development->master `git checkout master && git merge development`
 
 **Automatic release packages:**
 ----------------------
 
-7. Create an annotated git tag on latest commit: `git tag -a $(cat O-MI-Node/html/VERSION) HEAD`
-8. Push the tag to remote repository: `git push origin $(cat O-MI-Node/html/VERSION)`
-9. Travis will now create the release binaries and upload them to docker and GitHub.
-10. On Github releases page: check that the release draft tag is right, write release notes and publish.
+8. Create an annotated git tag on latest commit: `git tag -a $(cat O-MI-Node/html/VERSION) HEAD`
+9. Push the tag to remote repository: `git push origin $(cat O-MI-Node/html/VERSION)`
+10. Travis will now create the release binaries and upload them to docker and GitHub.
+11. On Github releases page: check that the release draft tag is right, write release notes and publish.
 
 **Manual release packages:**
 ----------------------------
