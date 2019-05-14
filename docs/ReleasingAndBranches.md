@@ -13,7 +13,7 @@ Releasing
 4. Check that tests succeed: `sbt test`
 5. Commit `git add build.sbt && git commit -m "Increasing version to $(cat O-MI-Node/html/VERSION)"`
 6. `git push`
-7. Merge development->master `git checkout master && git merge development`
+7. Merge development->master `git checkout master && git merge development && git push`
 
 **Automatic release packages:**
 ----------------------
