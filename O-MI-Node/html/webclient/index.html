@@ -123,6 +123,14 @@
         integrity: 'sha384-mI1i+5bF+TYgQF8N8dkD0SMg7GvluVQZ1o0L3hjexA3lqGr6ra40KPNp9uXNYV/m',
         crossorigin:'anonymous'
       },
+      'CodeMirror.modes.javascript' : {
+        urls: [
+          '//cdnjs.cloudflare.com/ajax/libs/codemirror/5.15.2/mode/javascript/javascript.min.js',
+          'lib/javascript.min.js'
+        ],
+        integrity: 'sha384-YCMwdC7Wdu3MSHPCTwsBAHJE8dfdgjGUpMLwIYIm8v3DSsW0UwePNRdTBEGMvtWb',
+        crossorigin: 'anonymous'
+      },
       Initialize : {
         urls: [
           'js/initialize.js'
@@ -152,13 +160,19 @@
         urls: [
                 'js/newInfoItemForm.js'
         ]
+      },
+      jsonConverter : {
+        urls: [
+          'js/xmljsonconverter.js'
+        ]
       }
     }, {
       shim: {
         '$.fn.modal': ['jQuery'],
         'jQuery.jstree': ['jQuery'],
         'CodeMirror.modes.xml': ['CodeMirror'],
-        codeMirrorExtension: ['CodeMirror', 'jQuery', 'CodeMirror.modes.xml'],
+        'CodeMirror.modes.javascript': ['CodeMirror'],
+        codeMirrorExtension: ['CodeMirror', 'jQuery', 'CodeMirror.modes.xml', 'CodeMirror.modes.javascript'],
         '$.fn.datetimepicker': ['jQuery', 'moment'],
         Initialize: ['jQuery', 'CodeMirror', '$.fn.modal', 'jQuery.jstree', '$.fn.datetimepicker'],
         FormLogic: ['jQuery', 'Initialize','CodeMirror'],
@@ -558,6 +572,10 @@
                   Send
                   <span class="glyphicon glyphicon-send" aria-hidden="true"></span>
                 </button>
+                <label class="checkbox" style="float:right;margin-right:1em;">
+                  <input id="convertXml" type="checkbox" >
+                  Json
+                </label>
               </h4>
               <div class="well request">
                 <textarea id="requestArea" tabindex="0" spellcheck="false" autocapitalize="off" autocorrect="off" wrap="off"></textarea>

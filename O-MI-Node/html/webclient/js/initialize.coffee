@@ -365,6 +365,7 @@ constsExt = ($, parent, util) ->
     my.resetAllBtn  = $ '#resetall'
     my.progressBar  = $ '.response .progress-bar'
     my.sortOdfTreeCheckbox = $ '#sortOdfTree'
+    my.convertXmlCheckbox = $ '#convertXml'
 
     loc = window.location
     proto = if loc.protocol == "https:" then "wss:" else "ws:"

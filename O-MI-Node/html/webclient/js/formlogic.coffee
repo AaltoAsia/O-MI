@@ -669,7 +669,48 @@ window.WebOmi = formLogicExt($, window.WebOmi || {})
           tree.sort root, true
           tree.redraw_node root, true
         else
-          tree.settings.sort = (a,b) -> -1
+          tmpTree.settings.sort = (a,b) -> -1
+
+    consts.convertXmlCheckbox
+      .on 'change', ->
+        if this.checked
+          window.requestXml = WebOmi.consts.requestCodeMirror.getValue()
+          jsonRequest = WebOmi.jsonConverter.parseOmiEnvelope(WebOmi.omi.parseXml(window.requestXml))
+          if not jsonRequest?
+            alert("Invalid O-MI/O-DF")
+          else
+            WebOmi.consts.requestCodeMirror.setOption("mode","application/json")
+            WebOmi.consts.requestCodeMirror.setOption("readOnly",true)
+
+            formLogic.setRequest = (json) ->
+              mirror = WebOmi.consts.requestCodeMirror
+              if not json?
+                mirror.setValue ""
+              else if typeof json == "string"
+                mirror.setValue json
+              else
+                window.requestXml = new XMLSerializer().serializeToString json
+                mirror.setValue JSON.stringify(WebOmi.jsonConverter.parseOmiEnvelope(json), null, 2)
+
+            formLogic.setRequest( JSON.stringify(jsonRequest, null, 2))
+
+
+
+        else
+          WebOmi.consts.requestCodeMirror.setOption("mode","xml")
+          WebOmi.consts.requestCodeMirror.setOption("readOnly", false)
+          formLogic.setRequest = (xml) ->
+            mirror = WebOmi.consts.requestCodeMirror
+            if not xml?
+              mirror.setValue ""
+            else if typeof xml == "string"
+              mirror.setValue xml
+            else
+              mirror.setValue new XMLSerializer().serializeToString xml
+            
+            mirror.autoFormatAll()
+
+          formLogic.setRequest(window.requestXml)
 
 
     # TODO: maybe move these to centralized place consts.ui._.something
