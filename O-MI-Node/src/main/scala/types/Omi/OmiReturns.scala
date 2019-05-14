@@ -1,9 +1,11 @@
 package types
 package OmiTypes
 
+import scala.collection.SeqView
 import parsing.xmlGen.scalaxb.DataRecord
 import parsing.xmlGen.xmlTypes
 import types.OdfTypes.OdfTreeCollection
+import akka.stream.alpakka.xml._
 
 object ReturnCode extends Enumeration {
   type ReturnCode = String
@@ -59,6 +61,22 @@ class OmiReturn(
         "@description" -> DataRecord(description)
       ) ++ types.OdfTypes.attributesToDataRecord(extraAttributes)
     )
+  }
+  def asXMLEvents: SeqView[ParseEvent,Seq[_]] ={
+    Vector(
+      StartElement("return",
+        List(
+          Attribute("returnCode", returnCode)
+        ) ++ description.map{
+          desc: String => 
+            Attribute("description",desc)
+        } ++ extraAttributes.map{
+          case (key: String, value: String)  => 
+            Attribute(key,value)
+        }
+      ),
+      EndElement("return")
+    ).view
   }
 }
 

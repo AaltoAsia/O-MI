@@ -28,7 +28,7 @@ case class LapTimer(logFun: String => Unit) {
     val e = System.currentTimeMillis()
     val total = (e - s).toDouble / 1000
     for ((m, t) <- laps)
-      logFun(f"${t/total*100}%3.0f %% $t%10.5f seconds - " + m)
+      logFun(f"${t/total*100}%3.0f %% $t%10.3f seconds - " + m)
     logFun(message + s": $total seconds")
     m = e
   }

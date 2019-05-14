@@ -3,8 +3,10 @@ package odf
 
 import database.journal.PMetaData
 import parsing.xmlGen.xmlTypes.MetaDataType
+import akka.stream.alpakka.xml._
 
 import scala.collection.immutable.Set
+import scala.collection.SeqView
 
 object MetaData {
   def empty: MetaData = MetaData(Vector.empty)
@@ -71,4 +73,10 @@ case class MetaData(
   def persist(): PMetaData = PMetaData(infoItems.map(ii => ii.path.toString -> ii.persist.ii).collect {
     case (ipath, Some(infoi)) => ipath -> infoi
   }.toMap)
+
+  final implicit def asXMLEvents: SeqView[ParseEvent,Seq[_]] = {
+    Seq(StartElement("MetaData")).view ++
+    infoItems.view.flatMap(_.asXMLEvents) ++
+    Seq(EndElement("MetaData"))
+  }
 }

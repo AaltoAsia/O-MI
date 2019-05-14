@@ -1,13 +1,16 @@
 package types
 package odf
 
+import java.sql.Timestamp
 import scala.language.implicitConversions
 import database.journal.PPersistentNode.NodeType.Ii
 import database.journal.{PInfoItem, PPersistentNode}
 import parsing.xmlGen.scalaxb.DataRecord
 import parsing.xmlGen.xmlTypes.InfoItemType
 
+import akka.stream.alpakka.xml._
 import scala.collection.immutable.{HashMap, Map => IMap}
+import scala.collection.SeqView
 
 object InfoItem {
   sealed trait Parameters {
@@ -287,4 +290,56 @@ case class InfoItem(
                                                        descriptions.map(_.persist()).toSeq,
                                                        metaData.map(_.persist()),
                                                        attributes))
+  final implicit def asXMLEvents: SeqView[ParseEvent,Seq[_]] = {
+    Seq(
+      StartElement(
+        "InfoItem",
+        List(
+          Attribute("name",nameAttribute),
+        ) ++ typeAttribute.map{
+          str: String =>
+          Attribute("type",str)
+        }.toList ++ attributes.map{
+          case (key: String, value: String) => Attribute(key,value)
+        }.toList
+      )
+    ).view ++ names.view.flatMap{
+      case id: QlmID =>
+        Seq(
+          StartElement( "name",
+            id.tagType.map{
+              str: String =>
+                Attribute("tagType",str)
+              }.toList ++ id.idType.map{
+                str: String =>
+                Attribute("idType",str)
+              }.toList ++ id.startDate.map{
+                timestamp: Timestamp =>
+                Attribute("startDate",timestampToDateTimeString(timestamp))
+              }.toList ++  id.endDate.map{
+                timestamp: Timestamp =>
+                Attribute("endDate",timestampToDateTimeString(timestamp))
+              }.toList ++ id.attributes.map{
+                case (key: String, value: String) => Attribute(key,value)
+              }.toList
+
+          ),
+          Characters( id.id ),
+          EndElement("name")
+        )
+    } ++ descriptions.view.flatMap{
+      case desc: Description =>
+        desc.asXMLEvents
+    } ++ metaData.view.flatMap{
+      case meta: MetaData =>
+        meta.asXMLEvents
+    } ++ values.view.flatMap{
+      case value: Value[_] =>
+        value.asXMLEvents
+    } ++ Seq(
+      EndElement(
+        "InfoItem"
+      )
+    )
+  }
 }

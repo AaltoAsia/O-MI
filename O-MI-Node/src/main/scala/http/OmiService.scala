@@ -28,6 +28,7 @@ import akka.pattern.ask
 import akka.stream.scaladsl._
 import akka.stream.{ActorMaterializer, _}
 import akka.util.Timeout
+
 import authorization.Authorization._
 import authorization.{AuthAPIService, _}
 import database.SingleStores
@@ -46,6 +47,7 @@ import scala.language.postfixOps
 import scala.util.{Failure, Success, Try}
 import scala.xml.NodeSeq
 import util._
+import utils._
 import RequestStore._
 
 trait OmiServiceAuthorization
@@ -281,7 +283,7 @@ trait OmiService
                      currentConnectionCallback: Option[Callback] = None,
                      remote: RemoteAddress,
                      requestID: Long
-                   ): Future[NodeSeq] = {
+                   ): Future[ResponseRequest] = {
     try {
 
       requestStorage ! AddRequest( requestID )
@@ -289,8 +291,10 @@ trait OmiService
       //val eitherOmi = OmiParser.parse(requestString)
 
       //XXX: Corrected namespaces
+      //val timer = LapTimer(log.info)
       val correctedRequestString = requestString.replace("\"omi.xsd\"", "\"http://www.opengroup.org/xsd/omi/1.0/\"")
         .replace("\"odf.xsd\"", "\"http://www.opengroup.org/xsd/odf/1.0/\"")
+      //timer.step("Corrected wrong schema")
       val originalReq = RawRequestWrapper(correctedRequestString, UserInfo(remoteAddress = Some(remote)))
       val ttlPromise = Promise[ResponseRequest]()
       originalReq.ttl match {
@@ -303,23 +307,30 @@ trait OmiService
         case _ => //noop
       }
 
+      //timer.step("Request wrapping")
       val responseF: Future[ResponseRequest] = hasPermissionTest(originalReq) match {
         case Success((req: RequestWrapper, user: UserInfo)) => { // Authorized
+          //timer.step("Permission test")
           req.user = UserInfo(user.remoteAddress, user.name) //Copy user info to requestwrapper
           requestStorage ! AddInfos( requestID, Seq( RequestTimestampInfo("pre-parse-time",  currentTimestamp)))
           val parsed = req.parsed
+          //timer.step("Parsed")
           requestStorage ! AddInfos( requestID, Seq( RequestTimestampInfo("post-parse-time",  currentTimestamp)))
           parsed match {
             case Right(requests) =>
               val unwrappedRequest = req.unwrapped // NOTE: Be careful when implementing multi-request messages
               unwrappedRequest match {
                 case Success(request: OmiRequest) =>
+                  
+                  //timer.step("Unwrapped request")
                   defineCallbackForRequest(request, currentConnectionCallback).flatMap {
                     request: OmiRequest => 
+                      //timer.step("Callback defined")
                       requestStorage ! AddInfos( requestID, Seq( RequestTimestampInfo("callback-time",  currentTimestamp)/*, RequestStringInfo("omi-version", request.version)*/))
                       val handle = handleRequest(request.withRequestID(Some(requestID)))
                       handle.foreach{
                         response =>
+                        //timer.step("Request handled")
                         requestStorage ! AddInfos( requestID, Seq( RequestTimestampInfo("handle-end-time",  currentTimestamp)))
                       }
                       handle
@@ -360,23 +371,36 @@ trait OmiService
       // if timeoutfuture completes first then timeout is returned
       Future.firstCompletedOf(Seq(responseF, ttlPromise.future)) map {
         response: ResponseRequest =>
+          
+          //timer.step("Omi response ready")
           // check the error code for logging
           val statusO = response.results.map { result => result.returnValue.returnCode }
           if (statusO exists (_ != "200")) {
             log.debug(s"Error code $statusO with received request")
           }
 
-          requestStorage ! AddInfos( requestID, Seq( RequestTimestampInfo("toXML-start-time",  currentTimestamp)))
-          val xmlResponse = response.asXML // return
-          requestStorage ! AddInfos( requestID, Seq( RequestTimestampInfo("toXML-end-time",  currentTimestamp)))
-          xmlResponse
+          //requestStorage ! AddInfos( requestID, Seq( RequestTimestampInfo("toXML-start-time",  currentTimestamp)))
+          //timer.step("Omi response status check")
+          //val xmlResponse = response.asXML // return
+          ////timer.step("Omi response to XML")
+          //requestStorage ! AddInfos( requestID, Seq( RequestTimestampInfo("toXML-end-time",  currentTimestamp)))
+          //timer.total()
+
+          //val xmlStream = Source
+          //  .fromIterator(() => xmlResponse.iterator)
+          //  .via( XmlWriting.writer )
+          //  .toMat(Sink.fold[ByteString, ByteString](Bytestring())((t, u) => t + u))(Keep.right)
+
+          //HttpEntity.Strict(ContentType.`text/xml(UTF-8)`, xmlStream)
+          //HttpEntity.CloseDelimited(ContentType.`text/xml(UTF-8)`, xmlStream)
+          response
       }
 
     } catch {
 
       case ex: IllegalArgumentException => {
         log.debug(ex.getMessage)
-        Future.successful(Responses.InvalidRequest(Some(ex.getMessage)).asXML)
+        Future.successful(Responses.InvalidRequest(Some(ex.getMessage)))
       }
       case ex: Throwable => { // Catch fatal errors for logging
         log.error("Fatal server error", ex)
@@ -413,6 +437,15 @@ trait OmiService
         }
     }
   }
+
+  def chunkedStream(resp: Future[ResponseRequest]): ResponseEntity = {
+    val chunkStream =
+      Source.fromFutureSource(resp.map(_.asXMLByteSource))
+        .map(HttpEntity.ChunkStreamPart.apply)
+
+    HttpEntity.Chunked(ContentTypes.`text/xml(UTF-8)`, chunkStream)
+  }
+
 
   def defineCallbackForRequest(
                                 request: OmiRequest,
@@ -477,7 +510,7 @@ trait OmiService
               requestStorage ! AddInfos( requestID, Seq( RequestTimestampInfo("final-time",  currentTimestamp)))
               requestStorage ! RemoveRequest( requestID )
           }
-          complete(response)
+          complete(HttpResponse(entity=chunkedStream(response)))
         }
       }
     }
@@ -501,7 +534,7 @@ trait OmiService
               requestStorage ! AddInfos( requestID, Seq( RequestTimestampInfo("final-time",  currentTimestamp)))
               requestStorage ! RemoveRequest( requestID )
           }
-          complete(response)
+          complete(HttpResponse(entity=chunkedStream(response)))
         }
       }
     }
@@ -565,6 +598,7 @@ trait WebSocketOMISupport {
     (s, p.future)
   }
 
+
   // akka.stream
   protected def createInSinkAndOutSource(hasPermissionTest: PermissionTest,
                                          user: RemoteAddress): (InSink, OutSource) = {
@@ -574,7 +608,7 @@ trait WebSocketOMISupport {
 
     // keepalive? http://doc.akka.io/docs/akka/2.4.8/scala/stream/stream-cookbook.html#Injecting_keep-alive_messages_into_a_stream_of_ByteStrings
 
-    def queueSend(futureResponse: Future[NodeSeq]): Future[QueueOfferResult] = {
+		def queueSend(futureResponse: Future[ws.TextMessage], ids: Seq[RequestID]=Vector.empty): Future[QueueOfferResult] = {
       val result = for {
         response <- futureResponse
         //if (response.nonEmpty)
@@ -582,31 +616,21 @@ trait WebSocketOMISupport {
         queue <- futureQueue
 
         // TODO: check what happens when sending empty String
-        resultMessage = ws.TextMessage(response.toString)
-        queueResult <- queue offer resultMessage
+        queueResult <- queue offer response
       } yield queueResult
 
+
       def removeRelatedSub() = {
-        futureResponse.map {
-          response =>
-            val ids = (response \\ "requestID").map {
-              node =>
-                node.text.toLong
-            }
-            ids.foreach {
-              id =>
-                subscriptionManager ! RemoveSubscription(id, 2 minutes)
-            }
+        ids.foreach {
+          id =>
+            subscriptionManager ! RemoveSubscription(id, 2 minutes)
         }
       }
 
       result onComplete {
         case Success(QueueOfferResult.Enqueued) => // Ok
-        case Success(e: QueueOfferResult) => // Others mean failure
+        case e @ (Success(_: QueueOfferResult) | Failure(_)) => // Others mean failure
           log.warn(s"WebSocket response queue failed, reason: $e")
-          removeRelatedSub()
-        case Failure(e) => // exceptions
-          log.warn("WebSocket response queue failed, reason: ", e)
           removeRelatedSub()
       }
       result
@@ -614,7 +638,8 @@ trait WebSocketOMISupport {
 
     val connectionIdentifier = futureQueue.hashCode
 
-    def sendHandler = (response: ResponseRequest) => queueSend(Future(response.asXML)) map { _ => () }
+    def sendHandler = (response: ResponseRequest) =>
+      queueSend(Future.successful(ws.TextMessage.Streamed(response.asXMLSource)), Vector(connectionIdentifier)) map { _ => () }
 
     val wsConnection = CurrentConnection(connectionIdentifier, sendHandler)
 
@@ -629,18 +654,20 @@ trait WebSocketOMISupport {
     val msgSink = Sink.foreach[Future[String]] { future: Future[String] =>
       future.flatMap {
         case "" => //Keep alive 
-          queueSend(Future.successful(NodeSeq.Empty))
+          queueSend(Future.successful(ws.TextMessage("")))
         case requestString: String =>
 
-        val requestID = (user,requestString.hashCode,currentTimestamp).hashCode
+          val requestID = (user,requestString.hashCode,currentTimestamp).hashCode
           log.info( s"Testing: $requestID" )
           requestStorage ! AddInfos( requestID, Seq( RequestTimestampInfo("ws-time",  currentTimestamp), RequestLongInfo("request-hash",requestString.hashCode),RequestStringInfo("user",user.toString)) )
-          val futureResponse: Future[NodeSeq] = handleRequest(hasPermissionTest,
+
+          val futureResponse: Future[ws.TextMessage] = handleRequest(hasPermissionTest,
             requestString,
             createZeroCallback,
             user,
             requestID
-          )
+          ).map(r => ws.TextMessage.Streamed(r.asXMLSource))
+
           futureResponse.foreach{
             _ =>
               requestStorage ! AddInfos( requestID, Seq( RequestTimestampInfo("final-time",  currentTimestamp)))

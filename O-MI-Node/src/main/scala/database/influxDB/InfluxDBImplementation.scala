@@ -174,7 +174,7 @@ class InfluxDBImplementation
         Unmarshal(ent).to[ImmutableODF].map {
           odf: ImmutableODF =>
             log.debug(s"Influx O-DF:\n$odf")
-            if (odf.getPaths.length < 2 && requestedODF.getPaths.length < 2) None
+            if (odf.getPaths.size < 2 && requestedODF.getPaths.size < 2) None
             else Some(requestedODF.union(odf).immutable)
         }
     }

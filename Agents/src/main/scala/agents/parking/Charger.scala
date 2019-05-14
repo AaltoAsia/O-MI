@@ -126,7 +126,6 @@ object Charger{
     s"${preStr}Charger"
   }
   def parseOdf(path: Path, odf: ImmutableODF, prefixes: Map[String,Set[String]] ): Try[Charger] ={
-    Try{
       val prefix = prefixes.get("http://www.schema.mobivoc.org/").map{
         prefix: Set[String] => 
           prefix.map{
@@ -138,52 +137,54 @@ object Charger{
           prefix: String =>
           obj.typeAttribute.contains(mvType(Some(prefix)))
         } =>
-          val plugs: Seq[Plug] = odf.get( path / "Plugs").map{
-            case obj: Object => 
-              val ( success, fails ) = odf.getChilds( path / "Plugs").map {
-                node: Node => Plug.parseOdf(node.path, odf, prefixes )
-              }.partition{ 
-                case Success(_) => true
-                case Failure(_) => false
-              }
-              if( fails.nonEmpty ){
-                throw ParseError.combineErrors(
-                  fails.map{
-                    case Failure( pe: ParseError ) => pe
-                    case Failure( e ) => throw e
-                    case _ => throw new IllegalStateException("Failures should not contain Succes")
-                  }
-                )
-                
-              } else {
-                success.collect{
-                  case Success( plug: Plug ) => plug
+          Try{
+            val plugs: Seq[Plug] = odf.get( path / "Plugs").map{
+              case obj: Object => 
+                val ( success, fails ) = odf.getChilds( path / "Plugs").map {
+                  node: Node => 
+                    Plug.parseOdf(node.path, odf, prefixes )
+                }.partition{ 
+                  case Success(_) => true
+                  case Failure(_) => false
                 }
-              }
+                if( fails.nonEmpty ){
+                  throw ParseError.combineErrors(
+                    fails.map{
+                      case Failure( pe: ParseError ) => pe
+                      case Failure( e ) => throw e
+                      case _ => throw new IllegalStateException("Failures should not contain Succes")
+                    }
+                  )
+                  
+                } else {
+                  success.collect{
+                    case Success( plug: Plug ) => plug
+                  }
+                }
 
-            case obj: Node => 
-              throw MVError( s"Plugs path $path/Plugs should be Object.")
-          }.toSeq.flatten
-          Charger(
-            path.last,
-            getStringOption("brand",path,odf),
-            getStringOption("model",path,odf),
-            getStringOption("lidStatus",path,odf),
-            getDoubleOption("currentInA",path,odf),
-            getStringOption("currentType",path,odf),
-            getDoubleOption("powerInkW",path,odf),
-            getDoubleOption("voltageInV",path,odf),
-            getBooleanOption("threePhasedCurrentAvailable",path,odf),
-            getBooleanOption("isFastChargeCapable",path,odf),
-            plugs
-          )
+              case obj: Node => 
+                throw MVError( s"Plugs path $path/Plugs should be Object.")
+            }.toSeq.flatten
+            Charger(
+              path.last,
+              getStringOption("brand",path,odf),
+              getStringOption("model",path,odf),
+              getStringOption("lidStatus",path,odf),
+              getDoubleOption("currentInA",path,odf),
+              getStringOption("currentType",path,odf),
+              getDoubleOption("powerInkW",path,odf),
+              getDoubleOption("voltageInV",path,odf),
+              getBooleanOption("threePhasedCurrentAvailable",path,odf),
+              getBooleanOption("isFastChargeCapable",path,odf),
+              plugs
+            )
+          }
         case Some(obj: Object) => 
-          throw MVError( s"Charger path $path has wrong type attribute ${obj.typeAttribute}")
+          Failure(MVError( s"Charger path $path has wrong type attribute ${obj.typeAttribute}") )
         case Some(obj: Node) => 
-          throw MVError( s"Charger path $path should be Object with type ${mvType(None)}")
+          Failure( MVError( s"Charger path $path should be Object with type ${mvType(None)}") )
         case None => 
-          throw MVError( s"Charger path $path not found from given O-DF")
+          Failure( MVError( s"Charger path $path not found from given O-DF") )
       }
-    }
   }
 }

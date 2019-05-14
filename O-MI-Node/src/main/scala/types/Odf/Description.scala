@@ -2,8 +2,10 @@ package types
 package odf
 
 import database.journal.PDescription
+import scala.collection.SeqView
 import parsing.xmlGen.scalaxb.DataRecord
 import parsing.xmlGen.xmlTypes._
+import akka.stream.alpakka.xml._
 
 object Description {
   def unionReduce(descs: Set[Description]): Set[Description] = {
@@ -38,4 +40,16 @@ case class Description(
 
   def persist(): PDescription = PDescription(text, language.getOrElse(""))
 
+  final implicit def asXMLEvents: SeqView[ParseEvent,Seq[_]] = {
+    Seq(
+      StartElement( "description",
+        language.map{
+          lang: String =>
+            Attribute("lang",lang)
+        }.toList
+      ),
+      Characters( text ),
+      EndElement("description")
+    ).view
+  }
 }

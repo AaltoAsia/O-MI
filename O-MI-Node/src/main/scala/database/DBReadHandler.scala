@@ -1,5 +1,7 @@
 package database
 
+import java.sql.Timestamp
+import java.util.Date
 import akka.util.Timeout
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -12,8 +14,10 @@ import scala.concurrent.Future
 import types.OmiTypes._
 import types.Path
 import types.odf.{ImmutableODF, ODF}
+import utils._
 
 trait DBReadHandler extends DBHandlerBase {
+  def currentTimestamp = new Timestamp( new Date().getTime)
   /** Method for handling ReadRequest.
     *
     * @param read request
@@ -41,7 +45,9 @@ trait DBReadHandler extends DBHandlerBase {
         )
 
         val requestedODF = read.odf
+        val timer = LapTimer(log.info)
         val leafs = requestedODF.getLeafs
+        timer.step("Got leafs")
 
         //Get values from database
         val odfWithValuesO: Future[Option[ODF]] = dbConnection.getNBetween(
@@ -54,8 +60,8 @@ trait DBReadHandler extends DBHandlerBase {
 
         // NOTE: Might go off sync with tree or values if the request is large,
         // but it shouldn't be a big problem
+        val mdtimer = LapTimer(log.info)
         val fmetadataTree: Future[ImmutableODF] = singleStores.getHierarchyTree()
-
 
         val fodfWithMetaData: Future[ODF] = fmetadataTree.map(_.readTo(requestedODF).valuesRemoved)
         log.debug( s" Requested paths: " + leafs.map{ _.path}.mkString("\n"))
@@ -71,7 +77,7 @@ trait DBReadHandler extends DBHandlerBase {
               requestsPaths = leafs.map {
                 _.path
               }
-              foundOdfAsPaths = metaCombined.getPaths
+              foundOdfAsPaths = metaCombined.getPaths.toSet
               notFound = requestsPaths.filterNot { path => foundOdfAsPaths.contains(path) }.toSet.toSeq
               found = metaCombined match {
                 case odf if odf.getPaths.exists(p => p != Path("Objects")) => 
@@ -85,6 +91,7 @@ trait DBReadHandler extends DBHandlerBase {
               omiResults = nfResults ++ found.toVector
 
             } yield ResponseRequest(omiResults)
+          
             responseF.foreach{
               response => log.debug(s"Response with ${response.results.size} results")
             }

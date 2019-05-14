@@ -3,7 +3,7 @@ package agents.parking
 import types._
 import types.odf._
 
-import scala.util.Try
+import scala.util.{Try, Success, Failure}
 
 object VehicleType extends Enumeration{
   type VehicleType = Value
@@ -127,35 +127,33 @@ class PluginHybridElectricVehicle(
 
 object Vehicle{
   def parseOdf( path: Path, odf: ImmutableODF, prefixes: Map[String,Set[String]]): Try[Vehicle]={
-    Try{
-      odf.get(path) match{
-        case Some( obj: Object) =>
-          lazy val l = getDoubleOption( "length", obj.path, odf)
-          lazy val w = getDoubleOption( "width", obj.path, odf)
-          lazy val h = getDoubleOption( "height", obj.path, odf)
+    odf.get(path) match{
+      case Some( obj: Object) =>
+        lazy val l = getDoubleOption( "length", obj.path, odf)
+        lazy val w = getDoubleOption( "width", obj.path, odf)
+        lazy val h = getDoubleOption( "height", obj.path, odf)
 
-          obj.typeAttribute.map{ str => VehicleType(str, prefixes) } match {
-            case Some( VehicleType.ElectricVehicle ) => new ElectricVehicle(l,w,h)
-            case Some( VehicleType.BatteryElectricVehicle ) => new BatteryElectricVehicle(l,w,h)
-            case Some( VehicleType.PluginHybridElectricVehicle ) => new PluginHybridElectricVehicle(l,w,h)
-            case Some( VehicleType.Vehicle ) => new Vehicle( l,w,h)
-            case Some(VehicleType.Truck) => Truck( l,w,h)
-            case Some(VehicleType.RecreationalVehicle ) => RecreationalVehicle( l,w,h)
-            case Some(VehicleType.Motorbike) => Motorbike( l,w,h)
-            case Some(VehicleType.Coach) => Coach( l,w,h)
-            case Some(VehicleType.Car) => Car( l,w,h)
-            case Some(VehicleType.Bicycle) => Bicycle( l,w,h)
-            case Some(VehicleType.Unknown ) =>
-              throw MVError( s"Vehicle path $path has wrong type attribute ${obj.typeAttribute}")
-            case Some(other) => throw MVError(s"Vehicle path $path has unknown type attribute ${obj.typeAttribute}")
-            case None =>
-              throw MVError( s"Vehicle path $path has wrong type attribute ${obj.typeAttribute}")
-          }
+        obj.typeAttribute.map{ str => VehicleType(str, prefixes) } match {
+          case Some( VehicleType.ElectricVehicle ) => Success( new ElectricVehicle(l,w,h))
+          case Some( VehicleType.BatteryElectricVehicle ) => Success( new BatteryElectricVehicle(l,w,h))
+          case Some( VehicleType.PluginHybridElectricVehicle ) => Success( new PluginHybridElectricVehicle(l,w,h))
+          case Some( VehicleType.Vehicle ) => Success( new Vehicle( l,w,h))
+          case Some(VehicleType.Truck) => Success( Truck( l,w,h))
+          case Some(VehicleType.RecreationalVehicle ) => Success( RecreationalVehicle( l,w,h))
+          case Some(VehicleType.Motorbike) => Success( Motorbike( l,w,h))
+          case Some(VehicleType.Coach) =>Success( Coach( l,w,h))
+          case Some(VehicleType.Car) => Success( Car( l,w,h))
+          case Some(VehicleType.Bicycle) => Success( Bicycle( l,w,h) )
+          case Some(VehicleType.Unknown ) =>
+            Failure(MVError( s"Vehicle path $path has wrong type attribute ${obj.typeAttribute}"))
+          case Some(other) => Failure(MVError(s"Vehicle path $path has unknown type attribute ${obj.typeAttribute}"))
+          case None =>
+            Failure(MVError( s"Vehicle path $path has wrong type attribute ${obj.typeAttribute}"))
+        }
         case Some(obj: Node) => 
-          throw MVError( s"Vehicle path $path should be Object with type mv:Vehicle or some sub class of it")
+          Failure(MVError( s"Vehicle path $path should be Object with type mv:Vehicle or some sub class of it"))
         case None => 
-          throw MVError( s"Vehicle path $path not found from given O-DF")
-      }
+          Failure(MVError( s"Vehicle path $path not found from given O-DF"))
     }
   }
 }

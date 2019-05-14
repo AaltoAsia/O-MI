@@ -26,6 +26,7 @@ import parsing.xmlGen.xmlTypes._
 import scala.collection.Iterable
 import scala.collection.JavaConverters._
 import scala.xml.NodeSeq
+import utils._
 
 /**
   * Package containing classes presenting O-MI request internally.
@@ -82,6 +83,5 @@ package object OmiTypes {
     </omi:msg>
   }
 
-  def currentTimestamp: Timestamp = new Timestamp(new Date().getTime)
 }
 

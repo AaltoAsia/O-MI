@@ -1,6 +1,7 @@
 package types
 
 import java.lang.{Iterable => JavaIterable}
+import java.time.{ZoneId, OffsetDateTime}
 import java.sql.Timestamp
 import java.util.{Dictionary, GregorianCalendar}
 
@@ -8,7 +9,7 @@ import javax.xml.datatype.{DatatypeFactory, XMLGregorianCalendar}
 import parsing.xmlGen.scalaxb._
 
 import scala.collection.JavaConverters._
-import scala.collection.Map
+import scala.collection.{Map}
 import scala.collection.immutable.{Map => ImmutableMap}
 
 package object odf extends InfoItem.Builders {
@@ -16,13 +17,15 @@ package object odf extends InfoItem.Builders {
   type OdfParseResult = Either[JavaIterable[_ <:ParseError], ImmutableODF]
   type OdfCollection[T] = Vector[T]
 
-
   def timestampToXML(timestamp: Timestamp): XMLGregorianCalendar = {
     val cal = new GregorianCalendar()
     cal.setTime(timestamp)
     DatatypeFactory.newInstance().newXMLGregorianCalendar(cal)
   }
 
+  def timestampToDateTimeString(timestamp: Timestamp): String = {
+    OffsetDateTime.ofInstant(timestamp.toInstant(), ZoneId.systemDefault()).toString
+  }
   def attributesToDataRecord(attributes: Map[String, String]): ImmutableMap[String, DataRecord[String]] = {
     attributes.map {
       case (key: String, value: String) =>

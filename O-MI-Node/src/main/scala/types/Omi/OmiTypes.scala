@@ -18,6 +18,7 @@ import java.lang.{Iterable => JIterable}
 import java.net.URI
 import java.sql.Timestamp
 
+import akka.NotUsed
 import akka.actor.ActorRef
 import akka.http.scaladsl.model.RemoteAddress
 import parsing.xmlGen.scalaxb.DataRecord
@@ -26,9 +27,15 @@ import parsing.xmlGen.{omiDefaultScope, xmlTypes}
 import types.odf._
 
 import scala.collection.JavaConverters._
+import scala.collection.SeqView
 import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
 import scala.xml.{NamespaceBinding, NodeSeq}
+import akka.util.ByteString
+import akka.stream.scaladsl._
+import akka.stream.alpakka.xml._
+import akka.stream.alpakka.xml.scaladsl.XmlWriting
+import utils._
 
 trait JavaOmiRequest {
   def callbackAsJava(): JIterable[Callback]
@@ -53,7 +60,15 @@ sealed trait OmiRequest extends RequestWrapper with JavaOmiRequest {
   //def user(): Option[UserInfo]
   implicit def asOmiEnvelope: xmlTypes.OmiEnvelopeType
 
-  implicit def asXML: NodeSeq = omiEnvelopeToXML(asOmiEnvelope)
+  implicit def asXML: NodeSeq = {
+    //val timer = LapTimer(println)
+    val envelope = asOmiEnvelope
+    //timer.step("OmiRequest asXML: asEnvelope")
+    val t = omiEnvelopeToXML(envelope)
+    //timer.step("OmiRequest asXML: EnvelopeToXML")
+    //timer.total()
+    t
+  }
 
   def parsed: OmiParseResult = Right(Iterable(this))
 
@@ -659,6 +674,40 @@ class ResponseRequest(
   }
 
   val requestVerb: MessageType.Response.type = MessageType.Response
+  def asXMLEvents: SeqView[ParseEvent,Seq[_]] ={
+    Vector(
+      StartDocument,
+      StartElement("omiEnvelope",
+        List(
+          Attribute("ttl", ttlAsSeconds.toString),//.toString.replaceAll(".0$","")),
+          Attribute("version", "1.0")
+        ),
+        namespaceCtx = List(Namespace("http://www.opengroup.org/xsd/omi/1.0/",None))
+      ),
+      StartElement("response")
+    ).view ++ requestID.view.flatMap{
+      rid =>
+        Vector(
+          StartElement("requestID"),
+          Characters(rid.toString),
+          EndElement("requestID")
+        )
+    } ++ results.view.flatMap{
+      result => result.asXMLEvents
+    } ++ Vector(
+      EndElement("response"),
+      EndElement("omiEnvelope"),
+      EndDocument
+    )
+  }
+
+  final implicit def asXMLByteSource: Source[ByteString, NotUsed] = Source
+    .fromIterator(() => asXMLEvents.iterator)
+    .via( XmlWriting.writer )
+    .filter(_.length != 0)
+  
+  final implicit def asXMLSource: Source[String, NotUsed] = asXMLByteSource.map[String](_.utf8String)
+
 }
 
 
