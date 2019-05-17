@@ -39,7 +39,7 @@ after_success:
   - sbt "project omiNode" coverageReport coveralls codacyCoverage
 before_deploy:
   - sbt release
-  - zip -9 target/apidoc-${TRAVIS_TAG}.zip O-MI-Node/html/api/*
+  - zip -r9 target/apidoc-${TRAVIS_TAG}.zip O-MI-Node/html/api/*
 deploy:
   - provider: releases
     api_key:
