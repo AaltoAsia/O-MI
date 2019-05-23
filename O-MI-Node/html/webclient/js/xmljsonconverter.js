@@ -672,7 +672,6 @@
         ids = null;
         console.log("Object Id missing");
       }
-      console.log(ids);
       try {
         type = my.exSingleAtt(my.evaluateXPath(xml, "./@type"));
       } catch (error) {
