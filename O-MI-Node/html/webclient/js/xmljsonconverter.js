@@ -843,40 +843,42 @@
       }
       try {
         content = my.exSingleNode(xml);
-        content = (function() {
-          switch (type.toLowerCase()) {
-            case "xs:string":
-              return content;
-            case "xs:integer":
-              return Number(content);
-            case "xs:int":
-              return Number(content);
-            case "xs:long":
-              return Number(content);
-            case "xs:decimal":
-              return Number(content);
-            case "xs:double":
-              return Number(content);
-            case "xs:integer":
-              return Number(content);
-            case "xs:boolean":
-              switch (content.toLowerCase()) {
-                case "true":
-                  return true;
-                case "false":
-                  return false;
-                case "1":
-                  return true;
-                case "0":
-                  return false;
-                default:
-                  return false;
-              }
-              break;
-            default:
-              return content;
-          }
-        })();
+        if (type != null) {
+          content = (function() {
+            switch (type.toLowerCase()) {
+              case "xs:string":
+                return content;
+              case "xs:integer":
+                return Number(content);
+              case "xs:int":
+                return Number(content);
+              case "xs:long":
+                return Number(content);
+              case "xs:decimal":
+                return Number(content);
+              case "xs:double":
+                return Number(content);
+              case "xs:integer":
+                return Number(content);
+              case "xs:boolean":
+                switch (content.toLowerCase()) {
+                  case "true":
+                    return true;
+                  case "false":
+                    return false;
+                  case "1":
+                    return true;
+                  case "0":
+                    return false;
+                  default:
+                    return false;
+                }
+                break;
+              default:
+                return content;
+            }
+          })();
+        }
       } catch (error) {
         ex = error;
         content = null;

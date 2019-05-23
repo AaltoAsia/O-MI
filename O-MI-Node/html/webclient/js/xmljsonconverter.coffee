@@ -727,21 +727,22 @@ xmlConverter = (WebOmi) ->
 
     try
       content = my.exSingleNode(xml)
-      content = switch type.toLowerCase()
-        when "xs:string" then content
-        when "xs:integer" then Number(content)
-        when "xs:int" then Number(content)
-        when "xs:long" then Number(content)
-        when "xs:decimal" then Number(content)
-        when "xs:double" then Number(content)
-        when "xs:integer" then Number(content)
-        when "xs:boolean" then switch content.toLowerCase()
-          when "true" then true
-          when "false" then false
-          when "1" then true
-          when "0" then false
-          else false
-        else content
+      if type?
+        content = switch type.toLowerCase()
+          when "xs:string" then content
+          when "xs:integer" then Number(content)
+          when "xs:int" then Number(content)
+          when "xs:long" then Number(content)
+          when "xs:decimal" then Number(content)
+          when "xs:double" then Number(content)
+          when "xs:integer" then Number(content)
+          when "xs:boolean" then switch content.toLowerCase()
+            when "true" then true
+            when "false" then false
+            when "1" then true
+            when "0" then false
+            else false
+          else content
     catch ex
       content = null
 
