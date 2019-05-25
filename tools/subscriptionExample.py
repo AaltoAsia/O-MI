@@ -57,7 +57,7 @@ period = 24*60*60
 def sendSubscription():
 
     try:
-        # Send an interval subscription to Objects/MyObject/MyItem with urlopen
+        # Send an event subscription (interval=-1) to Objects/MyObject/MyItem with urlopen
         response = urlopen(dataOutputNode, data=(
         """<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="{period}">
               <read msgformat="odf" interval="-1" callback="{callbackAddress}">
