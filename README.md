@@ -115,7 +115,7 @@ More Information in the [Configuration](#Configuration) section.
 **With docker**
 
 1. `docker pull aaltoasia/o-mi`
-2. `docker run docker run -p 8080:8080 aaltoasia/o-mi`
+2. `docker run -p 8080:8080 aaltoasia/o-mi`
 
 
 Setting up a development environment
