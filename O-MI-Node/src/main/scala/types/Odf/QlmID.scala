@@ -2,6 +2,7 @@ package types
 package odf
 
 import java.sql.Timestamp
+import akka.stream.alpakka.xml._
 
 import database.journal.{PQlmid, PTimestamp}
 import parsing.xmlGen.scalaxb.DataRecord
@@ -75,4 +76,29 @@ case class QlmID(
     startDate.map(time => PTimestamp(time.getTime)),
     endDate.map(time => PTimestamp(time.getTime)),
     attributes.toMap)
+  
+  def asXMLEvents(label:String) ={
+    Seq(
+      StartElement( label,
+        tagType.map{
+          str: String =>
+            Attribute("tagType",str)
+          }.toList ++ idType.map{
+            str: String =>
+            Attribute("idType",str)
+          }.toList ++ startDate.map{
+            timestamp: Timestamp =>
+            Attribute("startDate",timestampToDateTimeString(timestamp))
+          }.toList ++ endDate.map{
+            timestamp: Timestamp =>
+            Attribute("endDate",timestampToDateTimeString(timestamp))
+          }.toList ++ attributes.map{
+            case (key: String, value: String) => Attribute(key,value)
+          }.toList
+
+      ),
+      Characters( id ),
+      EndElement(label)
+    )
+  }
 }

@@ -27,6 +27,8 @@ import akka.http.scaladsl.server.Route
 import akka.pattern.ask
 import akka.stream.scaladsl._
 import akka.stream.{ActorMaterializer, _}
+import akka.stream.alpakka.xml._
+import akka.stream.alpakka.xml.scaladsl.XmlWriting
 import akka.util.Timeout
 
 import authorization.Authorization._
@@ -44,6 +46,7 @@ import scala.compat.java8.OptionConverters._
 import scala.concurrent.duration._
 import scala.concurrent.{Future, Promise, TimeoutException}
 import scala.language.postfixOps
+import scala.collection.SeqView
 import scala.util.{Failure, Success, Try}
 import scala.xml.NodeSeq
 import util._
@@ -168,6 +171,10 @@ trait OmiService
     // XML is marshalled to `text/xml` by default
     complete(ToResponseMarshallable(document)(htmlXml))
   }
+  def parseEventsToHttpEntity(events: Iterable[ParseEvent]): HttpEntity.Chunked = {
+    val chunkStream = parseEventsToByteSource(events).map(HttpEntity.ChunkStreamPart.apply)
+    HttpEntity.Chunked(ContentTypes.`text/xml(UTF-8)`, chunkStream)
+  }
 
   val getDataDiscovery: Route =
     path(Remaining) { uriPath =>
@@ -195,70 +202,51 @@ trait OmiService
                 ReadRequest(p, user0 = UserInfo(remoteAddress = Some(user)))
             })
 
-            val response: Future[ToResponseMarshallable] = asReadRequestF.flatMap {
+            def errorResult(msg: String ) = {
+              Right(
+                Vector(
+                  StartDocument,
+                  StartElement("error"),
+                  Characters(msg),
+                  EndElement("error"),
+                  EndDocument
+                ).view
+              )
+            }
+            val response: Future[Either[String,SeqView[ParseEvent,Seq[_]]]] = asReadRequestF.flatMap {
               case Some(readReq) =>
                 hasPermissionTest(readReq) match {
-                  case Success(_) => {
-
-                    RESTHandler.handle(origPath)(singleStores,timeout).map {
-                      case Some(Left(value)) =>
-                        HttpResponse(entity = HttpEntity(value))
-                      case Some(Right(xmlData)) =>
-                        ToResponseMarshallable(xmlData)(fromToEntityMarshaller(StatusCodes.OK)(xmlCT))
-                      case None => {
-                        log.debug(s"Url Discovery fail: org: [$pathStr] parsed: [$origPath]")
-
-                        // TODO: Clean this code
-                        ToResponseMarshallable(
-                          <error>No object found</error>
-                        )(
-                          fromToEntityMarshaller(StatusCodes.NotFound)(xmlCT)
-                        )
-                      }
-                    }
-                  }
+                  case Success(_) => 
+                    RESTHandler.handle(origPath)(singleStores,timeout) 
+                  
                   case Failure(e: UnauthorizedEx) => // Unauthorized
-                    Future.successful(ToResponseMarshallable(
-                      <error>No object found</error>
-                    )(
-                      fromToEntityMarshaller(StatusCodes.Unauthorized)(xmlCT)
-                    )
-                    )
+                    Future.successful(errorResult("No object found"))
 
                   case Failure(pe: ParseError) =>
                     log.debug(s"Url Discovery fail: org: [$pathStr] parsed: [$origPath]")
+                    Future.successful(errorResult("No object found"))
 
-                    // TODO: Clean this code
-                    Future.successful(
-                      ToResponseMarshallable(
-                        <error>No object found</error>
-                      )(
-                        fromToEntityMarshaller(StatusCodes.NotFound)(xmlCT)
-                      )
-                    )
                   case Failure(ex) =>
-                    Future.successful(
-                      ToResponseMarshallable(
-                        <error>Internal Server Error</error>
-                      )(
-                        fromToEntityMarshaller(StatusCodes.InternalServerError)(xmlCT)
-                      )
-                    )
+                    Future.successful(errorResult("Internal Server Error"))
                 }
               case None =>
                 log.debug(s"Url Discovery fail: org: [$pathStr] parsed: [$origPath]")
-
-                // TODO: Clean this code
-                Future.successful(
-                  ToResponseMarshallable(
-                    <error>No object found</error>
-                  )(
-                    fromToEntityMarshaller(StatusCodes.NotFound)(xmlCT)
-                  )
-                )
+                Future.successful(Right(Vector.empty.view))
             }
+            
+
             onComplete(response) {
-              case Success(resp) => complete(resp)
+              case Success(Right(xmlResp)) => 
+                if( xmlResp.isEmpty ){
+                  val errorEvents= errorResult("No Object Found").value
+                  val entity = parseEventsToHttpEntity(errorEvents)
+                  complete(StatusCodes.NotFound,entity)
+                } else {
+                  val entity = parseEventsToHttpEntity(xmlResp)
+                  complete(entity)
+                }
+              case Success(Left(strResp)) => 
+                complete(strResp)
               case Failure(ex) => {
                 log.error("Failure while creating response", ex)
                 complete(ToResponseMarshallable(
@@ -501,7 +489,6 @@ trait OmiService
         extractClientIP { user =>
           //val xmlH = XML.loadString("""<?xml version="1.0" encoding="UTF-8"?>""" )
           val requestID = (user,requestString.hashCode,currentTimestamp).hashCode
-          log.info( s"Testing: $requestID" )
           requestStorage ! AddInfos( requestID, Seq( RequestTimestampInfo("route-time",  currentTimestamp), RequestLongInfo("request-hash",requestString.hashCode),RequestStringInfo("user",user.toString)))
           val response = handleRequest(hasPermissionTest, requestString, remote = user, requestID = requestID) //.map{ ns => xmlH ++ ns }
           //val marshal = ToResponseMarshallable(response)(Marshaller.futureMarshaller(xmlCT))
@@ -525,7 +512,6 @@ trait OmiService
         extractClientIP { user =>
 
           val requestID = (user,requestString.hashCode,currentTimestamp).hashCode
-          log.info( s"Testing: $requestID" )
           requestStorage ! AddInfos( requestID, Seq( RequestTimestampInfo("route-time",  currentTimestamp), RequestLongInfo("request-hash",requestString.hashCode),RequestStringInfo("user",user.toString)))
           //val xmlH = XML.loadString("""<?xml version="1.0" encoding="UTF-8"?>""" )
           val response = handleRequest(hasPermissionTest, requestString, remote = user, requestID = requestID) //.map{ ns => xmlH ++ ns }

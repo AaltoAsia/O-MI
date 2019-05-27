@@ -701,10 +701,7 @@ class ResponseRequest(
     )
   }
 
-  final implicit def asXMLByteSource: Source[ByteString, NotUsed] = Source
-    .fromIterator(() => asXMLEvents.iterator)
-    .via( XmlWriting.writer )
-    .filter(_.length != 0)
+  final implicit def asXMLByteSource: Source[ByteString, NotUsed] = parseEventsToByteSource(asXMLEvents)
   
   final implicit def asXMLSource: Source[String, NotUsed] = asXMLByteSource.map[String](_.utf8String)
 

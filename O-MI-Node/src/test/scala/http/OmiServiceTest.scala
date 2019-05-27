@@ -111,7 +111,7 @@ class OmiServiceTest
 
 
     // Somewhat overcomplicated test; Serves as an example for other tests
-    "reply its settings as odf frorm path `settingsOdfPath` (with \"Settings\" id)" >> {
+    "reply its settings as odf form path `settingsOdfPath` (with \"Settings\" id)" >> {
       Get(settingsPath).withHeaders(`Remote-Address`(localHost)) ~>
         myRoute ~>
         check { // this didn't work without / at start

@@ -35,11 +35,9 @@ class RequestStore () extends Actor with ActorLogging{
   val storage: MHMap[RequestIDType,MHMap[String,RequestInfo]] = MHMap.empty
   def receive = {
     case AddRequest( request ) => 
-      log.debug( s"New Request: $request")
       storage += request -> MHMap.empty
 
     case RemoveRequest( request ) => 
-      log.debug( s"Remove Request: $request")
       storage -= request
     case GetInfo( request, infoName ) =>
       sender() ! storage.get(request).flatMap{
@@ -60,7 +58,6 @@ class RequestStore () extends Actor with ActorLogging{
           }
       }
       val tmp = infos.map{ info => s" ${info.name} : ${info.value.toString}"}.mkString("; ")
-      log.debug( s"Info Request: $request, $tmp") 
   }
 
 }

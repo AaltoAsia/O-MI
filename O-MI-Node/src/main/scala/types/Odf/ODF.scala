@@ -376,28 +376,7 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
             }.toList
 
           )) ++ obj.ids.view.flatMap{
-          case id: QlmID =>
-            Vector(
-              StartElement( "id",
-                id.tagType.map{
-                  str: String =>
-                    Attribute("tagType",str)
-                }.toList ++ id.idType.map{
-                  str: String =>
-                    Attribute("idType",str)
-                }.toList ++  id.startDate.map{
-                  timestamp: Timestamp =>
-                  Attribute("startDate",timestampToDateTimeString(timestamp))
-                }.toList ++  id.endDate.map{
-                  timestamp: Timestamp =>
-                  Attribute("endDate",timestampToDateTimeString(timestamp))
-                }.toList ++ id.attributes.map{
-                  case (key: String, value: String) => Attribute(key,value)
-                }.toList
-              ),
-              Characters( id.id ),
-              EndElement("id")
-            )
+            case id: QlmID => id.asXMLEvents("id")
         } ++ obj.descriptions.view.flatMap{
           case desc: Description =>
             desc.asXMLEvents

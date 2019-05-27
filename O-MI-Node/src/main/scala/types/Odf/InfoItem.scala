@@ -304,29 +304,7 @@ case class InfoItem(
         }.toList
       )
     ).view ++ names.view.flatMap{
-      case id: QlmID =>
-        Seq(
-          StartElement( "name",
-            id.tagType.map{
-              str: String =>
-                Attribute("tagType",str)
-              }.toList ++ id.idType.map{
-                str: String =>
-                Attribute("idType",str)
-              }.toList ++ id.startDate.map{
-                timestamp: Timestamp =>
-                Attribute("startDate",timestampToDateTimeString(timestamp))
-              }.toList ++  id.endDate.map{
-                timestamp: Timestamp =>
-                Attribute("endDate",timestampToDateTimeString(timestamp))
-              }.toList ++ id.attributes.map{
-                case (key: String, value: String) => Attribute(key,value)
-              }.toList
-
-          ),
-          Characters( id.id ),
-          EndElement("name")
-        )
+      case id: QlmID => id.asXMLEvents("name")
     } ++ descriptions.view.flatMap{
       case desc: Description =>
         desc.asXMLEvents
