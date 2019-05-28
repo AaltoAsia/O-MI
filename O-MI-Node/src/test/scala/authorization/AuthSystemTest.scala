@@ -393,7 +393,7 @@ class AuthServiceTest(implicit ee: ExecutionEnv) extends AuthServiceTestEnv{
         }
         "form-urlencoded" in new AuthTest() {
           val res = createRequest(Post, uri, twoVars("form-urlencoded"), testVars)
-          res.entity.toString === "HttpEntity.Strict(application/x-www-form-urlencoded; charset=UTF-8,Tok=myToken&foo=bar)"
+          res.entity.toString === "HttpEntity.Strict(application/x-www-form-urlencoded,Tok=myToken&foo=bar)"
         }
         "jsonbody" in new AuthTest {
           val res = createRequest(Post, uri, twoVars("jsonbody"), testVars)

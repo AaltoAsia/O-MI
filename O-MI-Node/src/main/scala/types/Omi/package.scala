@@ -17,6 +17,7 @@ package types
 
 import java.sql.Timestamp
 import java.util.{Date, GregorianCalendar}
+import java.time.{ZoneId, OffsetDateTime}
 
 import javax.xml.datatype.{DatatypeFactory, XMLGregorianCalendar}
 import parsing.xmlGen._
@@ -66,6 +67,9 @@ package object OmiTypes {
     val cal = new GregorianCalendar()
     cal.setTime(timestamp)
     DatatypeFactory.newInstance().newXMLGregorianCalendar(cal)
+  }
+  def timestampToDateTimeString(timestamp: Timestamp): String = {
+    OffsetDateTime.ofInstant(timestamp.toInstant(), ZoneId.systemDefault()).toString
   }
 
   def requestIDsFromJava(requestIDs: java.lang.Iterable[java.lang.Long]): Vector[Long] = {
