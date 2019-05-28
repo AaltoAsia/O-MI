@@ -796,7 +796,19 @@
                 return mirror.setValue(JSON.stringify(WebOmi.jsonConverter.parseOmiEnvelope(json), null, 2));
               }
             };
-            return formLogic.setRequest(JSON.stringify(jsonRequest, null, 2));
+            formLogic.setRequest(JSON.stringify(jsonRequest, null, 2));
+            return formLogic.send = function(callback) {
+              var request, server;
+              consts = WebOmi.consts;
+              formLogic.clearResponse();
+              server = consts.serverUrl.val();
+              request = window.requestXml; //consts.requestCodeMirror.getValue()
+              if (server.startsWith("ws://") || server.startsWith("wss://")) {
+                return formLogic.wsSend(request, callback);
+              } else {
+                return formLogic.httpSend(callback);
+              }
+            };
           }
         } else {
           WebOmi.consts.requestCodeMirror.setOption("mode", "xml");
@@ -813,7 +825,19 @@
             }
             return mirror.autoFormatAll();
           };
-          return formLogic.setRequest(window.requestXml);
+          formLogic.setRequest(window.requestXml);
+          return formLogic.send = function(callback) {
+            var request, server;
+            consts = WebOmi.consts;
+            formLogic.clearResponse();
+            server = consts.serverUrl.val();
+            request = consts.requestCodeMirror.getValue();
+            if (server.startsWith("ws://") || server.startsWith("wss://")) {
+              return formLogic.wsSend(request, callback);
+            } else {
+              return formLogic.httpSend(callback);
+            }
+          };
         }
       });
       // TODO: maybe move these to centralized place consts.ui._.something

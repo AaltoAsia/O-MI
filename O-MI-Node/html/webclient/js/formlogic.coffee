@@ -693,12 +693,23 @@ window.WebOmi = formLogicExt($, window.WebOmi || {})
                 mirror.setValue JSON.stringify(WebOmi.jsonConverter.parseOmiEnvelope(json), null, 2)
 
             formLogic.setRequest( JSON.stringify(jsonRequest, null, 2))
+            
+            formLogic.send = (callback) ->
+              consts = WebOmi.consts
+              formLogic.clearResponse()
+              server  = consts.serverUrl.val()
+              request = window.requestXml #consts.requestCodeMirror.getValue()
+              if server.startsWith("ws://") || server.startsWith("wss://")
+                formLogic.wsSend request,callback
+              else
+                formLogic.httpSend callback
 
 
 
         else
           WebOmi.consts.requestCodeMirror.setOption("mode","xml")
           WebOmi.consts.requestCodeMirror.setOption("readOnly", false)
+          
           formLogic.setRequest = (xml) ->
             mirror = WebOmi.consts.requestCodeMirror
             if not xml?
@@ -711,6 +722,16 @@ window.WebOmi = formLogicExt($, window.WebOmi || {})
             mirror.autoFormatAll()
 
           formLogic.setRequest(window.requestXml)
+
+          formLogic.send = (callback) ->
+            consts = WebOmi.consts
+            formLogic.clearResponse()
+            server  = consts.serverUrl.val()
+            request = consts.requestCodeMirror.getValue()
+            if server.startsWith("ws://") || server.startsWith("wss://")
+              formLogic.wsSend request,callback
+            else
+              formLogic.httpSend callback
 
 
     # TODO: maybe move these to centralized place consts.ui._.something
