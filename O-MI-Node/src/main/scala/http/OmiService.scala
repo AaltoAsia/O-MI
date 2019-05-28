@@ -283,6 +283,7 @@ trait OmiService
       val correctedRequestString = requestString.replace("\"omi.xsd\"", "\"http://www.opengroup.org/xsd/omi/1.0/\"")
         .replace("\"odf.xsd\"", "\"http://www.opengroup.org/xsd/odf/1.0/\"")
       //timer.step("Corrected wrong schema")
+      
       val originalReq = RawRequestWrapper(correctedRequestString, UserInfo(remoteAddress = Some(remote)))
       val ttlPromise = Promise[ResponseRequest]()
       originalReq.ttl match {
@@ -294,6 +295,13 @@ trait OmiService
         )
         case _ => //noop
       }
+
+      requestStorage ! AddInfos( requestID, Seq(
+        RequestAnyInfo("omiVersion",
+          OmiVersion.fromNameSpace(originalReq.omiEnvelope.scope.uri)),
+        RequestAnyInfo("odfVersion",
+          OdfVersion.fromNameSpace(originalReq.odfObjects.scope.uri))
+        ))
 
       //timer.step("Request wrapping")
       val responseF: Future[ResponseRequest] = hasPermissionTest(originalReq) match {

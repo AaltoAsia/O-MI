@@ -34,8 +34,68 @@ import scala.xml.{NamespaceBinding, NodeSeq}
 import akka.util.ByteString
 import akka.stream.scaladsl._
 import akka.stream.alpakka.xml._
-import akka.stream.alpakka.xml.scaladsl.XmlWriting
 import utils._
+
+
+
+
+abstract class Version private (val number: Double, val standard: String) {
+  val namespace: String = f"http://www.opengroup.org/xsd/$standard/$number%.1f/"
+}
+object Version {
+  abstract class OmiVersion private (n: Double) extends Version(n, "omi")
+  object OmiVersion {
+    case object OmiVersion1  extends OmiVersion(1.0)
+    case object OmiVersion1b extends OmiVersion(1.0){ override val namespace = "omi.xsd" }
+    case object OmiVersion2  extends OmiVersion(2.0)
+  }
+
+  abstract class OdfVersion private (n: Double) extends Version(n, "odf")
+  object OdfVersion {
+    case object OdfVersion1  extends OdfVersion(1.0)
+    case object OdfVersion1b extends OdfVersion(1.0){ override val namespace = "odf.xsd" }
+    case object OdfVersion2  extends OdfVersion(2.0)
+  }
+}
+import Version._
+import Version.OmiVersion._
+import Version.OdfVersion._
+
+object OmiVersion {
+  def fromNumber: Double => OmiVersion = {
+    case 2.0 => OmiVersion2
+    case 1.0 => OmiVersion1
+  }
+  def fromStringNumber: String => OmiVersion = {
+    case "2.0" | "2" => OmiVersion2
+    case "1.0" | "1" => OmiVersion1
+  }
+  def fromNameSpace: String => OmiVersion = {
+    case OmiVersion2.namespace => OmiVersion2
+    case OmiVersion1.namespace => OmiVersion1
+    case OmiVersion1b.namespace => OmiVersion1b
+  }
+}
+object OdfVersion {
+  def fromNumber: Double => OdfVersion = {
+    case 2.0 => OdfVersion2
+    case 1.0 => OdfVersion1
+  }
+  def fromStringNumber: String => OdfVersion = {
+    case "2.0" | "2" => OdfVersion2
+    case "1.0" | "1" => OdfVersion1
+  }
+  def fromNameSpace: String => OdfVersion = {
+    case OdfVersion2.namespace => OdfVersion2
+    case OdfVersion1.namespace => OdfVersion1
+    case OdfVersion1b.namespace => OdfVersion1b
+  }
+}
+
+
+
+
+
 
 trait JavaOmiRequest {
   def callbackAsJava(): JIterable[Callback]
@@ -190,24 +250,35 @@ class RawRequestWrapper(val rawRequest: String, private val user0: UserInfo) ext
 
   }
 
-  private val parseSingle: Boolean => EvElemStart = {
+  private val (parseSingle, closeParser): (() => EvElemStart, () => Unit) = {
     val src = io.Source.fromString(rawRequest)
     val er = new XMLEventReader(src)
 
-    { close =>
+    ({ () =>
       // skip to the interesting parts
-      val result = er.collectFirst {
+      er.collectFirst {
         case e: EvElemStart => e
       } getOrElse parseError("no xml elements found")
-      if(close){
-        er.stop()
-      }
-      result
-    }
+    }, () => er.stop)
   }
   // NOTE: Order is important
-  val omiEnvelope: Element = new Element(parseSingle(false))
-  val omiVerb: Element = new Element(parseSingle(true))
+  val omiEnvelope: Element = new Element(parseSingle())
+  val omiVerb: Element = new Element(parseSingle())
+
+  val odfObjects: Element = {
+    def findObjects(n: Int): Element = {
+      if (n >= 8) parseError("Objects element not found in 10 first tags")
+      else
+        new Element(parseSingle()) match {
+          case e if e.label == "Objects" => e
+          case _ => findObjects(n+1)
+        }
+    }
+    findObjects(0)
+  }
+  closeParser() // <- Important! otherwise leaks memory
+
+
 
   require(omiEnvelope.label == "omiEnvelope", "Pre-parsing: omiEnvelope not found!")
 
