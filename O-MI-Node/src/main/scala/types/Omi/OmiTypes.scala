@@ -34,7 +34,6 @@ import scala.xml.{NamespaceBinding, NodeSeq}
 import akka.util.ByteString
 import akka.stream.scaladsl._
 import akka.stream.alpakka.xml._
-import akka.stream.alpakka.xml.scaladsl.XmlWriting
 import utils._
 
 trait JavaOmiRequest {
@@ -80,6 +79,25 @@ sealed trait OmiRequest extends RequestWrapper with JavaOmiRequest {
 
   def withSenderInformation(ni: SenderInformation): OmiRequest
   def requestID: Option[Long] 
+  def asXMLEvents: SeqView[ParseEvent,Seq[_]] 
+  def omiEnvelopeEvents(events: SeqView[ParseEvent,Seq[_]]): SeqView[ParseEvent,Seq[_]] ={
+    Vector(
+      StartDocument,
+      StartElement(
+        "omiEnvelope",
+        List( Attribute("ttl", ttlAsSeconds.toString), Attribute("version","1.0")),
+        namespaceCtx = List(Namespace(s"http://www.opengroup.org/xsd/omi/1.0/",None))
+      )
+    ).view  ++ events ++ Vector(
+      EndElement("omiEnvelope"),
+      EndDocument
+    )
+
+  } 
+
+  final implicit def asXMLByteSource: Source[ByteString, NotUsed] = parseEventsToByteSource(asXMLEvents)
+  
+  final implicit def asXMLSource: Source[String, NotUsed] = asXMLByteSource.map[String](_.utf8String)
 }
 
 object OmiRequestType extends Enumeration {
@@ -116,6 +134,11 @@ sealed trait OdfRequest extends OmiRequest {
   def replaceOdf(nOdf: ODF): OdfRequest
 
   def odfAsDataRecord: DataRecord[NodeSeq] = DataRecord(None, Some("Objects"), odf.asXML)
+  
+  def odfAsOmiMsg: SeqView[ParseEvent,Seq[_]] ={
+    Vector(StartElement("msg")).view ++ odf.asXMLEvents ++ Vector(EndElement("msg"))
+  }
+  def asXMLEvents: SeqView[ParseEvent,Seq[_]] 
 }
 
 sealed trait JavaRequestIDRequest {
@@ -338,6 +361,34 @@ case class ReadRequest(
     )
   }
 
+  def asXMLEvents: SeqView[ParseEvent,Seq[_]] ={
+    val events: SeqView[ParseEvent,Seq[_]] = Vector(
+      StartElement("read",
+        List(
+          Attribute("msgformat","odf"),
+          Attribute("targetType","node")
+        ) ++ newest.map{
+          n => Attribute("newest",n.toString)
+        }.toList ++ oldest.map{
+          n => Attribute("oldest",n.toString)
+        }.toList ++ begin.map{
+          timestamp => Attribute("begin",timestampToDateTimeString(timestamp))
+        }.toList ++ end.map{
+          timestamp => Attribute("end",timestampToDateTimeString(timestamp))
+        }.toList ++ callback.map{
+          cb => Attribute("callback",cb.toString)
+        }.toList
+      )
+    ).view ++ requestID.map{
+      id => 
+        Vector(
+          StartElement("requestID"),
+          Characters(id.toString),
+          EndElement("requestID")
+        )
+    }.toSeq.flatten ++ odfAsOmiMsg ++ Vector(EndElement("read")).view
+    omiEnvelopeEvents(events)
+  }
   implicit def asOmiEnvelope: xmlTypes.OmiEnvelopeType = requestToEnvelope(asReadRequest, ttlAsSeconds)
 
   def replaceOdf(nOdf: ODF): ReadRequest = copy(odf = nOdf)
@@ -383,6 +434,26 @@ case class PollRequest(
   def withSenderInformation(si: SenderInformation): OmiRequest = this.copy(senderInformation = Some(si))
 
   val requestVerb: MessageType.Read.type = MessageType.Read
+  def asXMLEvents: SeqView[ParseEvent,Seq[_]] ={
+    val events = Vector(
+      StartElement("read",
+        List(
+          Attribute("msgformat","odf"),
+          Attribute("targetType","node")
+        ) ++ callback.map{
+          cb => Attribute("callback",cb.toString)
+        }.toList
+      )
+    ).view ++ requestID.map{
+      id => 
+        Vector(
+          StartElement("requestID"),
+          Characters(id.toString),
+          EndElement("requestID")
+        )
+    }.toSeq.flatten.view ++ Vector(EndElement("read"))
+    omiEnvelopeEvents(events)
+  }
 }
 
 /**
@@ -432,6 +503,31 @@ case class SubscriptionRequest(
   def replaceOdf(nOdf: ODF): SubscriptionRequest = copy(odf = nOdf)
 
   val requestVerb: MessageType.Read.type = MessageType.Read
+  def asXMLEvents: SeqView[ParseEvent,Seq[_]] ={
+    val events = Vector(
+      StartElement("read",
+        List(
+          Attribute("msgformat","odf"),
+          Attribute("targetType","node"),
+          Attribute("interval",interval.toSeconds.toString)
+        ) ++ newest.map{
+          n => Attribute("newest",n.toString)
+        }.toList ++ oldest.map{
+          n => Attribute("oldest",n.toString)
+        }.toList ++ callback.map{
+          cb => Attribute("callback",cb.toString)
+        }.toList
+      )
+    ).view ++ requestID.map{
+      id => 
+        Vector(
+          StartElement("requestID"),
+          Characters(id.toString),
+          EndElement("requestID")
+        )
+    }.toSeq.flatten.view ++ odfAsOmiMsg ++ Vector(EndElement("read"))
+    omiEnvelopeEvents(events)
+  }
 }
 
 
@@ -477,6 +573,26 @@ case class WriteRequest(
   def withSenderInformation(si: SenderInformation): OmiRequest = this.copy(senderInformation = Some(si))
 
   val requestVerb = MessageType.Write
+  def asXMLEvents: SeqView[ParseEvent,Seq[_]] ={
+    val events = Vector(
+      StartElement("write",
+        List(
+          Attribute("msgformat","odf"),
+          Attribute("targetType","node")
+        )++ callback.map{
+          cb => Attribute("callback",cb.toString)
+        }.toList
+      )
+    ).view ++ requestID.map{
+      id => 
+        Vector(
+          StartElement("requestID"),
+          Characters(id.toString),
+          EndElement("requestID")
+        )
+    }.toSeq.flatten.view ++ odfAsOmiMsg ++ Vector(EndElement("write"))
+    omiEnvelopeEvents(events)
+  }
 }
 
 case class CallRequest(
@@ -517,6 +633,26 @@ case class CallRequest(
   def withSenderInformation(si: SenderInformation): OmiRequest = this.copy(senderInformation = Some(si))
 
   val requestVerb: MessageType.Call.type = MessageType.Call
+  def asXMLEvents: SeqView[ParseEvent,Seq[_]] ={
+    val events = Vector(
+      StartElement("call",
+        List(
+          Attribute("msgformat","odf"),
+          Attribute("targetType","node")
+        )++ callback.map{
+          cb => Attribute("callback",cb.toString)
+        }.toList
+      )
+    ).view ++ requestID.map{
+      id => 
+        Vector(
+          StartElement("requestID"),
+          Characters(id.toString),
+          EndElement("requestID")
+        )
+    }.toSeq.flatten.view ++ odfAsOmiMsg ++ Vector(EndElement("call"))
+    omiEnvelopeEvents(events)
+  }
 }
 
 case class DeleteRequest(
@@ -557,6 +693,26 @@ case class DeleteRequest(
   def withSenderInformation(si: SenderInformation): OmiRequest = this.copy(senderInformation = Some(si))
 
   val requestVerb: MessageType.Delete.type = MessageType.Delete
+  def asXMLEvents: SeqView[ParseEvent,Seq[_]] ={
+    val events = Vector(
+      StartElement("delete",
+        List(
+          Attribute("msgformat","odf"),
+          Attribute("targetType","node")
+        )++ callback.map{
+          cb => Attribute("callback",cb.toString)
+        }.toList
+      )
+    ).view ++ requestID.map{
+      id => 
+        Vector(
+          StartElement("requestID"),
+          Characters(id.toString),
+          EndElement("requestID")
+        )
+    }.toSeq.flatten.view ++ odfAsOmiMsg ++ Vector(EndElement("delete"))
+    omiEnvelopeEvents(events)
+  }
 }
 
 /**
@@ -590,6 +746,19 @@ case class CancelRequest(
   def withSenderInformation(si: SenderInformation): OmiRequest = this.copy(senderInformation = Some(si))
 
   val requestVerb: MessageType.Cancel.type = MessageType.Cancel
+  def asXMLEvents: SeqView[ParseEvent,Seq[_]] ={
+    val events = Vector(
+      StartElement("cancel")
+    ).view ++ requestIDs.flatMap{
+      id => 
+        Vector(
+          StartElement("requestID"),
+          Characters(id.toString),
+          EndElement("requestID")
+        )
+    }.view ++ Vector(EndElement("cancel"))
+    omiEnvelopeEvents(events)
+  }
 }
 
 trait JavaResponseRequest {
@@ -701,9 +870,6 @@ class ResponseRequest(
     )
   }
 
-  final implicit def asXMLByteSource: Source[ByteString, NotUsed] = parseEventsToByteSource(asXMLEvents)
-  
-  final implicit def asXMLSource: Source[String, NotUsed] = asXMLByteSource.map[String](_.utf8String)
 
 }
 
