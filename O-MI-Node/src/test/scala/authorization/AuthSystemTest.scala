@@ -308,7 +308,7 @@ class AuthServiceTest(implicit ee: ExecutionEnv) extends AuthServiceTestEnv{
         }
 
         "omienvelope" in new AuthTest() {
-          extractParameter(base, omi, "omienvelope", "ttl") must beSome("10")
+          extractParameter(base, omi, "omienvelope", "ttl") must beSome("10.0")
         }
 
         "headers" in new AuthTest() {

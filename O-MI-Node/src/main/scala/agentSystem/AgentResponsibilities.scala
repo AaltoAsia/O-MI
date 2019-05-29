@@ -302,7 +302,6 @@ class AgentResponsibilities( val singleStores: SingleStores) {
             Some(None -> paths)
           
           } else {
-            println( "paths: " + paths.mkString("\n"))
             val filteredChilds = paths.flatMap{ path => cachedOdf.getChildPaths(path)}.filterNot{
               path: Path => 
                 r.exists{
@@ -315,7 +314,6 @@ class AgentResponsibilities( val singleStores: SingleStores) {
 
                 }
             }
-            println( "filtered childs: " + filteredChilds.mkString("\n"))
             val f2 = filteredChilds.filterNot{
               path: Path => 
                 filteredChilds.exists{
@@ -331,7 +329,6 @@ class AgentResponsibilities( val singleStores: SingleStores) {
                     path == leaf
                 }
             }
-            println( "f2: " + f2.mkString("\n"))
             if( f2.nonEmpty ){
               Some(None -> f2)
             } else None

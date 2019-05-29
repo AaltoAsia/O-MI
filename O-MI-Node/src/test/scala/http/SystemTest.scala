@@ -143,6 +143,10 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
   }
 
   def removeTimes(text: String): String = removeUnixTime(removeDateTime(text))
+  def removeTTLDecimals(text: String): String = text.replaceAll(
+    """(ttl\s*=\s*"\d*).\d*"""",
+    """$1.0\""""
+  )
 
   def removeDateTime(text: String): String = text.replaceAll(
     """dateTime\s*=\s*"\S*?"""",
@@ -292,7 +296,7 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
 
               responseXml must beSuccessfulTry
 
-              val response = XML.loadString(fixSubId(requestId, removeTimes(responseXml.get.toString)))
+              val response = XML.loadString(fixSubId(requestId, removeTTLDecimals(removeTimes(responseXml.get.toString))))
 
               response showAs (n =>
                 "Request Message:\n" +
@@ -340,7 +344,7 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
 
                 responseXml must beSuccessfulTry
 
-                val response = XML.loadString(fixSubId(requestId, removeTimes(responseXml.get.toString)))
+                val response = XML.loadString(fixSubId(requestId, removeTTLDecimals(removeTimes(responseXml.get.toString))))
                 //remove blocking waits if possible
                 if (request.get.\\("write").nonEmpty) {
                   Thread.sleep(2000)
@@ -363,7 +367,7 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
                 val messageOption = probe.expectMsgType[Option[NodeSeq]](Duration(responseWait.getOrElse(2), "second"))
 
                 messageOption must beSome
-                val response = XML.loadString(removeTimes(messageOption.get.toString()))
+                val response = XML.loadString(removeTTLDecimals(removeTimes(messageOption.get.toString())))
 
                 response showAs (n =>
                   "Response at callback server:\n" + printer.format(n.head)
