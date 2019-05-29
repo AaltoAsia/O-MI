@@ -17,6 +17,7 @@ package OmiTypes
 import java.lang.{Iterable => JIterable}
 import java.net.URI
 import java.sql.Timestamp
+import javax.xml.stream.XMLInputFactory
 
 import akka.NotUsed
 import akka.actor.ActorRef
@@ -27,7 +28,7 @@ import parsing.xmlGen.{omiDefaultScope, xmlTypes}
 import types.odf._
 
 import scala.collection.JavaConverters._
-import scala.collection.SeqView
+import scala.collection.{SeqView, Iterator}
 import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
 import scala.xml.{NamespaceBinding, NodeSeq}
@@ -257,45 +258,57 @@ class RawRequestWrapper(val rawRequest: String, private val user0: UserInfo) ext
 
   import RawRequestWrapper._
 
-  import scala.xml.pull._
+  //import scala.xml.pull._ // deprecated
+  import javax.xml.stream._
+  import javax.xml.stream.events._
+  import javax.xml.namespace._
 
   user = user0
 
 
-  class Element(private val ev: EvElemStart) {
-    val pre: String = ev.pre
-    val label: String = ev.label
-    val scope: NamespaceBinding = ev.scope
+  case class Element(private val ev: StartElement) {
+    //val pre: String = ev.pre
+    val name = ev.getName()
+    val label: String = name.getLocalPart()
+    val namespace: String = name.getNamespaceURI()
+    val namespacePrefix: String = name.getPrefix()
 
-    def attr(key: String): Option[String] = for {
-      nodeSeqAttr <- ev.attrs.get(key)
-      head <- nodeSeqAttr.headOption
-    } yield head.text
-
+    def attr(key: String): Option[String] = 
+      Try{ev.getAttributeByName(new QName(key))}
+      .map {_.getValue}
+      .toOption
   }
 
-  private val (parseSingle, closeParser): (() => EvElemStart, () => Unit) = {
-    val src = io.Source.fromString(rawRequest)
-    val er = new XMLEventReader(src)
-
-    ({ () =>
-      // skip to the interesting parts
-      er.collectFirst {
-        case e: EvElemStart => e
-      } getOrElse parseError("no xml elements found")
-    }, () => er.stop)
+  private val (parser, closeParser): (Iterator[XMLEvent], () => Unit) = {
+    val src = new java.io.ByteArrayInputStream(rawRequest.getBytes("UTF-8")); //io.Source.fromString(rawRequest)
+    val er = xmlFactory.createXMLEventReader(src)
+    (er.asScala.collect{case e: XMLEvent => e}, () => er.close())
   }
+  def optionalNextTag() = parser.collectFirst {
+    case e: StartElement => e
+  }.map(Element.apply)
+  def nextTag() = optionalNextTag() getOrElse parseError("no xml elements found")
+  def nextAttribute() = parser.collectFirst {
+    case e: Attribute => e
+  }
+
   // NOTE: Order is important
-  val omiEnvelope: Element = new Element(parseSingle())
-  val omiVerb: Element = new Element(parseSingle())
+  val omiEnvelope: Element = nextTag()
+  val omiVerb: Element = nextTag()
 
-  val odfObjects: Element = {
-    def findObjects(n: Int): Element = {
-      if (n >= 8) parseError("Objects element not found in 10 first tags")
+  /**
+    * The msgformat attribute of O-MI as in the verb element or the first result element
+    */
+  val msgFormat: Option[String] = omiVerb.attr("msgformat") orElse nextTag().attr("msgformat") // verb or result
+
+  val odfObjects: Option[Element] = {
+    def findObjects(n: Int): Option[Element] = {
+      if (n >= 2) None //parseError("Objects element not found in few first tags")
       else
-        new Element(parseSingle()) match {
-          case e if e.label == "Objects" => e
-          case _ => findObjects(n+1)
+        optionalNextTag() match {
+          case Some(e) if e.label == "Objects" => Some(e)
+          case Some(_) => findObjects(n+1)
+          case None => None
         }
     }
     findObjects(0)
@@ -315,11 +328,6 @@ class RawRequestWrapper(val rawRequest: String, private val user0: UserInfo) ext
     * The verb of the O-MI message (read, write, cancel, response)
     */
   val requestVerb: MessageType = MessageType(omiVerb.label)
-
-  /**
-    * The msgformat attribute of O-MI as in the verb element
-    */
-  val msgFormat: Option[String] = omiVerb.attr("msgformat")
 
   /**
     * Gets the verb of the O-MI message
@@ -348,6 +356,8 @@ object RawRequestWrapper {
   def apply(rawRequest: String, user: UserInfo): RawRequestWrapper = new RawRequestWrapper(rawRequest, user)
 
   private def parseError(m: String) = throw new IllegalArgumentException("Pre-parsing: " + m)
+
+  val xmlFactory = XMLInputFactory.newInstance()
 
   sealed class MessageType(val name: String)
 
