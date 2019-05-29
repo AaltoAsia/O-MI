@@ -912,6 +912,6 @@
 
   window.WebOmi = xmlConverter(window.WebOmi || {});
 
-  window.json = "ready";
+  window.jsonConverter = "ready";
 
 }).call(this);
