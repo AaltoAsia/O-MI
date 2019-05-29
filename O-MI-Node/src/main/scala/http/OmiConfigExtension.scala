@@ -225,6 +225,7 @@ class OmiConfigExtension(val config: Config) extends Extension
     }
   } else None
 
+  val admins: Vector[String] = config.getStringList("omi-service.admins").asScala.toVector
 }
 
 

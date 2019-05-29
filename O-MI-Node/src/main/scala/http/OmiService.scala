@@ -466,8 +466,10 @@ trait OmiService
         userAddress = hostAddr.getHostAddress
       } yield (userAddress, callbackAddr)
 
-      //TODO Check if admin
-      val admin = false //TODO
+      //TODO Check if admin from somewhere else than config
+      val admin = request.user.name.exists{
+        name: String => settings.admins.contains(name)
+      }
       if (!settings.callbackAuthorizationEnabled || admin || userAddr.exists(asd => asd._1 == asd._2)) {
 
         val cbTry = callbackHandler.createCallbackAddress(address)
