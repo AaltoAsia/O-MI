@@ -775,14 +775,17 @@
         }
       });
       consts.convertXmlCheckbox.on('change', function() {
-        var jsonRequest;
+        var jsonRequest, jsonResponse;
         if (this.checked) {
           window.requestXml = WebOmi.consts.requestCodeMirror.getValue();
+          window.responseXml = WebOmi.consts.responseCodeMirror.getValue();
           jsonRequest = WebOmi.jsonConverter.parseOmiEnvelope(WebOmi.omi.parseXml(window.requestXml));
+          jsonResponse = WebOmi.jsonConverter.parseOmiEnvelope(WebOmi.omi.parseXml(window.responseXml));
           if (jsonRequest == null) {
             return alert("Invalid O-MI/O-DF");
           } else {
             WebOmi.consts.requestCodeMirror.setOption("mode", "application/json");
+            WebOmi.consts.responseCodeMirror.setOption("mode", "application/json");
             WebOmi.consts.requestCodeMirror.setOption("readOnly", true);
             formLogic.setRequest = function(json) {
               var mirror;
@@ -797,6 +800,30 @@
               }
             };
             formLogic.setRequest(JSON.stringify(jsonRequest, null, 2));
+            formLogic.setResponse = function(xml, doneCallback) {
+              var mirror;
+              mirror = WebOmi.consts.responseCodeMirror;
+              if (typeof xml === "string") {
+                mirror.setValue(xml);
+              } else {
+                window.responseXml = new XMLSerializer().serializeToString(xml);
+                mirror.setValue(JSON.stringify(WebOmi.jsonConverter.parseOmiEnvelope(xml), null, 2));
+              }
+              mirror.autoFormatAll();
+              // refresh as we "resize" so more text will become visible
+              WebOmi.consts.responseDiv.slideDown({
+                complete: function() {
+                  mirror.refresh();
+                  if (doneCallback != null) {
+                    return doneCallback();
+                  }
+                }
+              });
+              return mirror.refresh();
+            };
+            if (jsonResponse != null) {
+              formLogic.setResponse(JSON.stringify(jsonResponse, null, 2));
+            }
             return formLogic.send = function(callback) {
               var request, server;
               consts = WebOmi.consts;
@@ -812,6 +839,7 @@
           }
         } else {
           WebOmi.consts.requestCodeMirror.setOption("mode", "xml");
+          WebOmi.consts.responseCodeMirror.setOption("mode", "xml");
           WebOmi.consts.requestCodeMirror.setOption("readOnly", false);
           formLogic.setRequest = function(xml) {
             var mirror;
@@ -826,7 +854,27 @@
             return mirror.autoFormatAll();
           };
           formLogic.setRequest(window.requestXml);
-          return formLogic.send = function(callback) {
+          formLogic.setResponse = function(xml, doneCallback) {
+            var mirror;
+            mirror = WebOmi.consts.responseCodeMirror;
+            if (typeof xml === "string") {
+              mirror.setValue(xml);
+            } else {
+              mirror.setValue(new XMLSerializer().serializeToString(xml));
+            }
+            mirror.autoFormatAll();
+            // refresh as we "resize" so more text will become visible
+            WebOmi.consts.responseDiv.slideDown({
+              complete: function() {
+                mirror.refresh();
+                if (doneCallback != null) {
+                  return doneCallback();
+                }
+              }
+            });
+            return mirror.refresh();
+          };
+          formLogic.send = function(callback) {
             var request, server;
             consts = WebOmi.consts;
             formLogic.clearResponse();
@@ -838,6 +886,7 @@
               return formLogic.httpSend(callback);
             }
           };
+          return formLogic.setResponse(window.responseXml);
         }
       });
       // TODO: maybe move these to centralized place consts.ui._.something
