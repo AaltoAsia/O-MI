@@ -298,10 +298,12 @@ trait OmiService
 
       requestStorage ! AddInfos( requestID, Seq(
         RequestAnyInfo("omiVersion",
-          OmiVersion.fromNameSpace(originalReq.omiEnvelope.scope.uri)),
-        RequestAnyInfo("odfVersion",
-          OdfVersion.fromNameSpace(originalReq.odfObjects.scope.uri))
-        ))
+          OmiVersion.fromNameSpace(originalReq.omiEnvelope.namespace))
+        )++
+        originalReq.odfObjects.map{objs =>
+          RequestAnyInfo("odfVersion", OdfVersion.fromNameSpace(objs.namespace))
+        }
+      )
 
       //timer.step("Request wrapping")
       val responseF: Future[ResponseRequest] = hasPermissionTest(originalReq) match {
