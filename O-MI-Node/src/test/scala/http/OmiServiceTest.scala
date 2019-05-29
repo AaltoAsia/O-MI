@@ -135,7 +135,7 @@ class OmiServiceTest
     "respond correctly to read request with invalid omi" >> {
       val request: NodeSeq =
       // NOTE: The type needed for compiler to recognize the right Marhshaller later
-        <omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="10">
+        <omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="10.0">
           <read msgformat="odf">
             <msgsssssssssssssssssssssssssss xmlns="http://www.opengroup.org/xsd/odf/1.0/">
               <Objects>
@@ -163,7 +163,7 @@ class OmiServiceTest
     "respond correctly to read request with invalid odf" >> {
       val request: NodeSeq =
       // NOTE: The type needed for compiler to recognize the right Marhshaller later
-        <omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="10">
+        <omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="10.0">
           <read msgformat="odf">
             <msg>
               <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/">
@@ -192,7 +192,7 @@ class OmiServiceTest
     "respond correctly to read request with non-existing path" >> {
       val request: NodeSeq =
       // NOTE: The type needed for compiler to recognize the right Marhshaller later
-        <omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="10">
+        <omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="10.0">
           <read msgformat="odf">
             <msg>
               <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/">
@@ -225,7 +225,7 @@ class OmiServiceTest
 
     "respond correctly to subscription poll with non existing requestId" >> {
       val request: NodeSeq =
-        <omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="10">
+        <omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="10.0">
           <read>
             <requestID>9999</requestID>
           </read>
@@ -250,7 +250,7 @@ class OmiServiceTest
     "respond to permissive requests" >> {
       val request: String =
         """
-        <omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="0">
+        <omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="0.0">
           <write msgformat="odf">
             <msg >
               <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
@@ -380,7 +380,7 @@ class OmiServiceTest
       "respond correctly to normal read with non-whitelisted address and user" >> {
         val request: String =
           """
-          <omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="0">
+          <omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="0.0">
             <read msgformat="odf">
               <msg>
                 <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/">
@@ -445,7 +445,7 @@ class OmiServiceTest
     "accept empty Object in write request (issue #8)" >> {
       val emptyObjWrite: String =
         """
-        <omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="0">
+        <omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="0.0">
           <write msgformat="odf">
             <msg >
               <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >

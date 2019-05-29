@@ -39,7 +39,7 @@ package object OmiTypes {
 
   def getPaths(request: OdfRequest): Seq[Path] = request.odf.getLeafPaths.toSeq
 
-  def requestToEnvelope(request: OmiEnvelopeTypeOption, ttl: Long): xmlTypes.OmiEnvelopeType = {
+  def requestToEnvelope(request: OmiEnvelopeTypeOption, ttl: Double): xmlTypes.OmiEnvelopeType = {
     val namespace = Some("omi.xsd")
     //val version = "1.0" //TODO remove unused?
     val datarecord = request match {

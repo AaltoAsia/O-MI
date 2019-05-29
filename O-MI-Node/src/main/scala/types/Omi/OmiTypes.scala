@@ -234,9 +234,9 @@ sealed trait RequestWrapper {
 
   def requestVerb: RawRequestWrapper.MessageType
 
-  def ttlAsSeconds: Long = ttl match {
-    case finite: FiniteDuration => finite.toSeconds
-    case infinite: Duration.Infinite => -1
+  def ttlAsSeconds: Double = ttl match {
+    case finite: FiniteDuration => finite.toMillis.toDouble/1000.0
+    case infinite: Duration.Infinite => -1.0
   }
 
   final def handleTTL: FiniteDuration = if (ttl.isFinite) {
