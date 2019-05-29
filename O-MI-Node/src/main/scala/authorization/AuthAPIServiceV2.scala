@@ -239,7 +239,7 @@ class AuthAPIServiceV2(
     }
   }
 
-  def optionToAuthResult: Option[OmiRequest] => (UserInfo => AuthorizationResult) = {
+  def optionToAuthResult: Option[RequestWrapper] => (UserInfo => AuthorizationResult) = {
     case None => Unauthorized(_)
     case Some(req) => Changed(req, _)
   }
@@ -397,28 +397,38 @@ class AuthAPIServiceV2(
         }
       }
 
-      authorizationRequest = createRequest(
-        authorizationMethod, authorizationEndpoint, parametersToAuthorization, authenticationResult)
-
       _ <- Future.successful {
         log.debug(s"Parameter variables: $authenticationResult")
+      }
+
+      filteredRequest <- if (authorizationEndpoint.isEmpty) {
+        Future.successful(Some(rawOmiRequest))
+        //Future.fromTry(rawOmiRequest.unwrapped)
+      } else {
+
+        val authorizationRequest = createRequest(
+          authorizationMethod, authorizationEndpoint, parametersToAuthorization, authenticationResult)
+
         log.debug(s"AuthorizationRequest: $authorizationRequest")
+
+        for {
+          authorizationResponse <- sendAndReceiveAsAuthorizationResponse(authorizationRequest)
+
+          _ <- Future.successful(
+            log.debug(s"Authorization call successfull: ${authorizationResponse.toString.take(160)}...")
+          )
+          omiRequest <- Future.fromTry {
+            rawOmiRequest.unwrapped
+          }
+          odfRequest = omiRequest match {
+            case o: OdfRequest => o
+            case _ => throw new Error("Authorization failed: Parsed request was not O-DF request")
+          }
+
+          filteredRequest <- filterODF(odfRequest, authorizationResponse)
+        } yield filteredRequest
       }
 
-      authorizationResponse <- sendAndReceiveAsAuthorizationResponse(authorizationRequest)
-
-      _ <- Future
-        .successful(log.debug(s"Authorization call successfull: ${authorizationResponse.toString.take(160)}..."))
-
-      omiRequest <- Future.fromTry {
-        rawOmiRequest.unwrapped
-      }
-      odfRequest = omiRequest match {
-        case o: OdfRequest => o
-        case _ => throw new Error("Authorization failed: Parsed request was not O-DF request")
-      }
-
-      filteredRequest <- filterODF(odfRequest, authorizationResponse)
 
       user = UserInfo(name = authenticationResult.get("username"))
 
