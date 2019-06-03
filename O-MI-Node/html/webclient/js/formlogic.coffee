@@ -678,11 +678,11 @@ window.WebOmi = formLogicExt($, window.WebOmi || {})
           window.responseXml = WebOmi.consts.responseCodeMirror.getValue()
 
           jsonRequest = WebOmi.jsonConverter.parseOmiEnvelope(WebOmi.omi.parseXml(window.requestXml))
-          jsonResponse = WebOmi.jsonConverter.parseOmiEnvelope(WebOmi.omi.parseXml(window.responseXml))
 
           if not jsonRequest?
             alert("Invalid O-MI/O-DF")
           else
+            WebOmi.consts.responseCodeMirror.removeOverlay WebOmi.consts.URLHighlightOverlay
             WebOmi.consts.requestCodeMirror.setOption("mode","application/json")
             WebOmi.consts.responseCodeMirror.setOption("mode","application/json")
             WebOmi.consts.requestCodeMirror.setOption("readOnly",true)
@@ -702,7 +702,8 @@ window.WebOmi = formLogicExt($, window.WebOmi || {})
             formLogic.setResponse = (xml, doneCallback) ->
               mirror = WebOmi.consts.responseCodeMirror
               if typeof xml == "string"
-                mirror.setValue xml
+                window.responseXml = xml
+                mirror.setValue JSON.stringify(WebOmi.jsonConverter.parseOmiEnvelope(xml), null, 2)
               else
                 window.responseXml = new XMLSerializer().serializeToString xml
                 mirror.setValue JSON.stringify(WebOmi.jsonConverter.parseOmiEnvelope(xml), null, 2)
@@ -713,8 +714,8 @@ window.WebOmi = formLogicExt($, window.WebOmi || {})
                 if doneCallback? then doneCallback()
               mirror.refresh()
 
-            if jsonResponse?
-              formLogic.setResponse(JSON.stringify(jsonResponse,null,2))
+            if window.responseXml?
+              formLogic.setResponse(window.responseXml)
 
 
             formLogic.send = (callback) ->
@@ -771,6 +772,8 @@ window.WebOmi = formLogicExt($, window.WebOmi || {})
               formLogic.httpSend callback
           
           formLogic.setResponse(window.responseXml)
+
+          WebOmi.consts.responseCodeMirror.addOverlay WebOmi.consts.URLHighlightOverlay
 
 
     # TODO: maybe move these to centralized place consts.ui._.something

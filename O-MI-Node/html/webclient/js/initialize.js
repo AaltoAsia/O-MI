@@ -195,7 +195,7 @@
 
   // extend module webOmi; public vars
   constsExt = function($, parent, util) {
-    var URLHighlightOverlay, afterWaits, my, openOdfContextmenu;
+    var afterWaits, my, openOdfContextmenu;
     // Module WebOmi constants
     my = parent.consts = {};
     my.codeMirrorSettings = {
@@ -397,7 +397,7 @@
       return afterWaits.push(fn);
     };
     // private; url matcher for response codemirror links
-    URLHighlightOverlay = {
+    my.URLHighlightOverlay = {
       token: function(stream, state) {
         if (stream.match(util.urlmatch)) {
           stream.backUp(1);
@@ -421,7 +421,7 @@
       my.responseCodeMirror = CodeMirror.fromTextArea($("#responseArea")[0], my.responseCMSettings);
       my.responseDiv = $('.response .CodeMirror');
       my.responseDiv.hide();
-      my.responseCodeMirror.addOverlay(URLHighlightOverlay);
+      my.responseCodeMirror.addOverlay(my.URLHighlightOverlay);
       // click events for codemirror url links
       $('.well.response').delegate(".cm-link", "click", function(event) {
         var url;

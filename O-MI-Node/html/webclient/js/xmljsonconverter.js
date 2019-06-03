@@ -54,6 +54,9 @@
     //  xml.getElementsByTagName("omiEnvelope")[0]
     my.parseOmiEnvelope = function(xml) {
       var calls, cancels, deletes, ex, reads, responses, result, ttl, version, writes;
+      if (typeof xml === "string") {
+        xml = my.parseXml(xml);
+      }
       if (xml == null) {
         return null;
       }
@@ -309,7 +312,6 @@
       try {
         oldest = Number(my.exSingleAtt(my.evaluateXPath(xml, "./@oldest")));
         if (!Number.isInteger(oldest) || oldest < 1) {
-          console.log(`invalid oldest value: ${oldest}`);
           oldest = null;
         }
       } catch (error) {

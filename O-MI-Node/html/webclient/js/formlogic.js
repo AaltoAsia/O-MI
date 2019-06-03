@@ -775,15 +775,15 @@
         }
       });
       consts.convertXmlCheckbox.on('change', function() {
-        var jsonRequest, jsonResponse;
+        var jsonRequest;
         if (this.checked) {
           window.requestXml = WebOmi.consts.requestCodeMirror.getValue();
           window.responseXml = WebOmi.consts.responseCodeMirror.getValue();
           jsonRequest = WebOmi.jsonConverter.parseOmiEnvelope(WebOmi.omi.parseXml(window.requestXml));
-          jsonResponse = WebOmi.jsonConverter.parseOmiEnvelope(WebOmi.omi.parseXml(window.responseXml));
           if (jsonRequest == null) {
             return alert("Invalid O-MI/O-DF");
           } else {
+            WebOmi.consts.responseCodeMirror.removeOverlay(WebOmi.consts.URLHighlightOverlay);
             WebOmi.consts.requestCodeMirror.setOption("mode", "application/json");
             WebOmi.consts.responseCodeMirror.setOption("mode", "application/json");
             WebOmi.consts.requestCodeMirror.setOption("readOnly", true);
@@ -804,7 +804,8 @@
               var mirror;
               mirror = WebOmi.consts.responseCodeMirror;
               if (typeof xml === "string") {
-                mirror.setValue(xml);
+                window.responseXml = xml;
+                mirror.setValue(JSON.stringify(WebOmi.jsonConverter.parseOmiEnvelope(xml), null, 2));
               } else {
                 window.responseXml = new XMLSerializer().serializeToString(xml);
                 mirror.setValue(JSON.stringify(WebOmi.jsonConverter.parseOmiEnvelope(xml), null, 2));
@@ -821,8 +822,8 @@
               });
               return mirror.refresh();
             };
-            if (jsonResponse != null) {
-              formLogic.setResponse(JSON.stringify(jsonResponse, null, 2));
+            if (window.responseXml != null) {
+              formLogic.setResponse(window.responseXml);
             }
             return formLogic.send = function(callback) {
               var request, server;
@@ -886,7 +887,8 @@
               return formLogic.httpSend(callback);
             }
           };
-          return formLogic.setResponse(window.responseXml);
+          formLogic.setResponse(window.responseXml);
+          return WebOmi.consts.responseCodeMirror.addOverlay(WebOmi.consts.URLHighlightOverlay);
         }
       });
       // TODO: maybe move these to centralized place consts.ui._.something

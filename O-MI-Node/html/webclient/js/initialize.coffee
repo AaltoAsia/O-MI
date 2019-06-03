@@ -324,7 +324,7 @@ constsExt = ($, parent, util) ->
   my.afterJquery = (fn) -> afterWaits.push fn
 
   # private; url matcher for response codemirror links
-  URLHighlightOverlay =
+  my.URLHighlightOverlay =
     token: (stream, state) ->
       if stream.match(util.urlmatch)
         stream.backUp(1)
@@ -348,7 +348,7 @@ constsExt = ($, parent, util) ->
     my.responseDiv        = $ '.response .CodeMirror'
     my.responseDiv.hide()
     
-    my.responseCodeMirror.addOverlay URLHighlightOverlay
+    my.responseCodeMirror.addOverlay my.URLHighlightOverlay
 
     # click events for codemirror url links
     $ '.well.response'
