@@ -309,6 +309,7 @@ trait OmiService
       val responseF: Future[ResponseRequest] = hasPermissionTest(originalReq) match {
         case Success((req: RequestWrapper, user: UserInfo)) => { // Authorized
           //timer.step("Permission test")
+          println(s"!!!!!!!!!!!!!!!!!!! USER $user")
           req.user = UserInfo(user.remoteAddress, user.name) //Copy user info to requestwrapper
           requestStorage ! AddInfos( requestID, Seq( RequestTimestampInfo("pre-parse-time",  currentTimestamp)))
           val parsed = req.parsed
