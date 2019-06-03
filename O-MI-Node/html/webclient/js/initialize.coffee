@@ -343,12 +343,14 @@ constsExt = ($, parent, util) ->
    
     
     # initialize UI
-    my.requestCodeMirror  = CodeMirror.fromTextArea $("#requestArea" )[0], my.codeMirrorSettings
-    my.responseCodeMirror = CodeMirror.fromTextArea $("#responseArea")[0], my.responseCMSettings
-    my.responseDiv        = $ '.response .CodeMirror'
-    my.responseDiv.hide()
-    
-    my.responseCodeMirror.addOverlay my.URLHighlightOverlay
+    fallback.ready ['codeMirrorExtension'], ->
+
+      my.requestCodeMirror  = CodeMirror.fromTextArea $("#requestArea" )[0], my.codeMirrorSettings
+      my.responseCodeMirror = CodeMirror.fromTextArea $("#responseArea")[0], my.responseCMSettings
+      my.responseDiv        = $ '.response .CodeMirror'
+      my.responseDiv.hide()
+      
+      my.responseCodeMirror.addOverlay my.URLHighlightOverlay
 
     # click events for codemirror url links
     $ '.well.response'

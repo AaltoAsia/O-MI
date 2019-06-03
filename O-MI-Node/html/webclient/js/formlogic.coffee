@@ -731,6 +731,7 @@ window.WebOmi = formLogicExt($, window.WebOmi || {})
 
 
         else
+          WebOmi.consts.requestCodeMirror.setValue ""
           WebOmi.consts.requestCodeMirror.setOption("mode","xml")
           WebOmi.consts.responseCodeMirror.setOption("mode","xml")
           WebOmi.consts.requestCodeMirror.setOption("readOnly", false)
