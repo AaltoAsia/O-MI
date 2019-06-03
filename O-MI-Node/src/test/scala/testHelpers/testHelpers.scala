@@ -33,6 +33,8 @@ import database.TestDB
 import database.DBHandler
 import agentSystem._
 import database.journal.HierarchyStore.GetTree
+import authorization.Authorization._
+import authorization.{AuthAPIService, _}
 
 //class TestOmiServer(config: Config) extends OmiNode {
 class TestOmiServer() extends OmiNode with OmiServiceTestImpl {
@@ -69,6 +71,11 @@ class TestOmiServer() extends OmiNode with OmiServiceTestImpl {
 
 
   implicit val timeoutForBind: Timeout = Timeout(5.seconds)
+  if (settings.AuthApiV2.enable) {
+    log.info("External Auth API v2 modules enabled")
+    log.info(s"External Auth API settings ${settings.AuthApiV2}")
+    registerApi(new AuthAPIServiceV2(singleStores.hierarchyStore, settings, system, materializer))
+  }
 }
 
 trait AnyActorSystem {
@@ -83,7 +90,7 @@ trait TestOmiService extends OmiServiceTestImpl {
 
 }
 trait OmiServiceTestImpl extends OmiService with AnyActorSystem {
-  lazy implicit val settings: OmiConfigExtension = OmiConfig(Actorstest.createSilentAs())
+  lazy implicit val settings: OmiConfigExtension = OmiConfig(system)
   lazy implicit val callbackHandler: CallbackHandler = new CallbackHandler(settings)(system, materializer)
   lazy implicit val singleStores: SingleStores = SingleStores(settings)
 

@@ -377,6 +377,37 @@ class OmiServiceTest
             description startsWith ("Unauthorized")
           }
       }
+      "respond correctly to normal write with callback, non-whitelisted address and admin user" >> {
+        val request: String =
+          """
+          <omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="0.0">
+            <write msgformat="odf" callback="http://187.142.74.1">
+            <msg >
+              <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
+                <Object>
+                  <id>testObject</id>
+                  <InfoItem name="testSensor">
+                    <value unixTime="0" type="xs:integer">0</value>
+                  </InfoItem>
+                </Object>
+              </Objects>
+            </msg>
+            </write>
+          </omiEnvelope>"""
+        Post("/", XML.loadString(request))
+          .withHeaders(`Remote-Address`(RemoteAddress(InetAddress.getByName("187.42.74.1"))),
+            RawHeader("HTTP_EPPN", "test@admin.com")
+            
+            ) ~> myRoute ~> check {
+
+          isOkXml
+          val resp = responseAs[NodeSeq].head
+          val response = resp showAs (n =>
+            "Request:\n" + request + "\n\n" + "Response:\n" + printer.format(n))
+
+          omiReturn200(response)
+        }
+      }
       "respond correctly to normal read with non-whitelisted address and user" >> {
         val request: String =
           """

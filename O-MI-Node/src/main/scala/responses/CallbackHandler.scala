@@ -274,7 +274,7 @@ class CallbackHandler(
         Try {
           throw new Exception("Callback 0 not supported with http/https try using ws(websocket) instead")
         }
-      case other =>
+      case other: String =>
         Try {
           val uri = Uri(address)
           val hostAddress = uri.authority.host.address
