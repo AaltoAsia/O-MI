@@ -78,7 +78,7 @@ object RESTHandler {
       }
     if(orgPath.toSeq.contains("MetaData") && !orgPath.lastOption.contains("MetaData")){
       val (path, metaPath) = orgPath.toSeq.splitAt(orgPath.toSeq.indexOf("MetaData"))
-      val nodeOptF = singleStores.getSingle(path.init).map{
+      val nodeOptF = singleStores.getSingle(path).map{
         nOption: Option[Node] => 
         nOption.collect{
           case ii: InfoItem => 
@@ -86,7 +86,7 @@ object RESTHandler {
               md: MetaData => 
                 md.infoItems.find{
                   mdii: InfoItem => 
-                    metaPath.headOption.contains(mdii.nameAttribute)
+                    metaPath.tail.headOption.contains(mdii.nameAttribute)
                 }
             }
         }.flatten
@@ -133,7 +133,7 @@ object RESTHandler {
           )
           Future.successful(value)
         case Some("MetaData") => 
-          val events =   Vector(StartDocument).view ++ ii.metaData.map{
+          val events = Vector(StartDocument, StartElement("MetaData")).view ++ ii.metaData.map{
             case md: MetaData => md.infoItems.view.flatMap{
               ii =>
                 Seq(
@@ -151,7 +151,7 @@ object RESTHandler {
                         EndElement("InfoItem")
                       )
             }
-          }.toSeq.flatten.view ++ Vector(EndDocument)
+          }.toSeq.flatten.view ++ Vector(EndElement("MetaData"), EndDocument)
 
           Future.successful(Right(events))
         case Some("name") => 

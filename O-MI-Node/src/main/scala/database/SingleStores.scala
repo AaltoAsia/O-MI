@@ -224,7 +224,7 @@ trait SingleStores {
       case info: InfoItem =>
         (latestStore ? SingleReadCommand(path)).mapTo[Option[Value[Any]]].map {
           case Some(value) =>
-            InfoItem(path.last, path, values = Vector(value), attributes = info.attributes)
+            info.copy(values = Vector(value))
           case None =>
             info
         }

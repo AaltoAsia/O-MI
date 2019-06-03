@@ -195,7 +195,7 @@ trait OmiService
             }
 
             val asReadRequestF: Future[Option[ReadRequest]] = singleStores.getHierarchyTree()
-              .map(_.get(path).map {
+              .map(_.get(Path(path.takeWhile(_!="MetaData"))).map {
               n: Node => ImmutableODF(Vector(n))
             }.map {
               p =>
@@ -242,7 +242,15 @@ trait OmiService
                   val entity = parseEventsToHttpEntity(errorEvents)
                   complete(StatusCodes.NotFound,entity)
                 } else {
-                  val entity = parseEventsToHttpEntity(xmlResp)
+                  val xmlWithNamespace = xmlResp.take(2).map{
+                    // take StartDocument and first StartElement
+                    case s: StartElement =>
+                      val ns = Version.OdfVersion.OdfVersion1.namespace
+                      s.copy(namespace=Some(ns),namespaceCtx=List(Namespace(ns)))
+                    case x => x // noop
+                  } ++ xmlResp.drop(2)
+
+                  val entity = parseEventsToHttpEntity(xmlWithNamespace)
                   complete(entity)
                 }
               case Success(Left(strResp)) => 
@@ -309,7 +317,6 @@ trait OmiService
       val responseF: Future[ResponseRequest] = hasPermissionTest(originalReq) match {
         case Success((req: RequestWrapper, user: UserInfo)) => { // Authorized
           //timer.step("Permission test")
-          println(s"!!!!!!!!!!!!!!!!!!! USER $user")
           req.user = UserInfo(user.remoteAddress, user.name) //Copy user info to requestwrapper
           requestStorage ! AddInfos( requestID, Seq( RequestTimestampInfo("pre-parse-time",  currentTimestamp)))
           val parsed = req.parsed
