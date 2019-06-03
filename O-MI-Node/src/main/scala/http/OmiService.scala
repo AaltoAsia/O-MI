@@ -32,7 +32,7 @@ import akka.stream.alpakka.xml.scaladsl.XmlWriting
 import akka.util.Timeout
 
 import authorization.Authorization._
-import authorization.{AuthAPIService, _}
+import authorization._
 import database.SingleStores
 import org.slf4j.LoggerFactory
 import responses.CallbackHandler._
@@ -478,10 +478,11 @@ trait OmiService
 
       //TODO Check if admin from somewhere else than config
       val admin = request.user.name.exists{
-        name: String => settings.admins.contains(name)
+        name: String => 
+          settings.admins.contains(name)
       }
-      if (!settings.callbackAuthorizationEnabled || admin || userAddr.exists(asd => asd._1 == asd._2)) {
 
+      if (!settings.callbackAuthorizationEnabled || admin || userAddr.exists(asd => asd._1 == asd._2)) {
         val cbTry = callbackHandler.createCallbackAddress(address)
         val result = cbTry.map(callback =>
           request.withCallback(Some(callback))).recoverWith {

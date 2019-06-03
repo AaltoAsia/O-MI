@@ -170,7 +170,7 @@ object OmiRequestType extends Enumeration {
 
 }
 
-object SenderInformation {
+object SenderInformatio {
 
 }
 
@@ -333,7 +333,7 @@ class RawRequestWrapper(val rawRequest: String, private val user0: UserInfo) ext
     * Gets the verb of the O-MI message
     */
   val callback: Option[Callback] =
-    omiEnvelope.attr("callback").map(RawCallback.apply)
+    omiVerb.attr("callback").map(RawCallback.apply)
 
   /**
     * Get the parsed request. Message is parsed only once because of laziness.
