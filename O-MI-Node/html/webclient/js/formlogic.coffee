@@ -675,11 +675,16 @@ window.WebOmi = formLogicExt($, window.WebOmi || {})
       .on 'change', ->
         if this.checked
           window.requestXml = WebOmi.consts.requestCodeMirror.getValue()
+          window.responseXml = WebOmi.consts.responseCodeMirror.getValue()
+
           jsonRequest = WebOmi.jsonConverter.parseOmiEnvelope(WebOmi.omi.parseXml(window.requestXml))
+
           if not jsonRequest?
             alert("Invalid O-MI/O-DF")
           else
+            WebOmi.consts.responseCodeMirror.removeOverlay WebOmi.consts.URLHighlightOverlay
             WebOmi.consts.requestCodeMirror.setOption("mode","application/json")
+            WebOmi.consts.responseCodeMirror.setOption("mode","application/json")
             WebOmi.consts.requestCodeMirror.setOption("readOnly",true)
 
             formLogic.setRequest = (json) ->
@@ -693,12 +698,44 @@ window.WebOmi = formLogicExt($, window.WebOmi || {})
                 mirror.setValue JSON.stringify(WebOmi.jsonConverter.parseOmiEnvelope(json), null, 2)
 
             formLogic.setRequest( JSON.stringify(jsonRequest, null, 2))
+            
+            formLogic.setResponse = (xml, doneCallback) ->
+              mirror = WebOmi.consts.responseCodeMirror
+              if typeof xml == "string"
+                window.responseXml = xml
+                mirror.setValue JSON.stringify(WebOmi.jsonConverter.parseOmiEnvelope(xml), null, 2)
+              else
+                window.responseXml = new XMLSerializer().serializeToString xml
+                mirror.setValue JSON.stringify(WebOmi.jsonConverter.parseOmiEnvelope(xml), null, 2)
+              mirror.autoFormatAll()
+              # refresh as we "resize" so more text will become visible
+              WebOmi.consts.responseDiv.slideDown complete : ->
+                mirror.refresh()
+                if doneCallback? then doneCallback()
+              mirror.refresh()
+
+            if window.responseXml?
+              formLogic.setResponse(window.responseXml)
+
+
+            formLogic.send = (callback) ->
+              consts = WebOmi.consts
+              formLogic.clearResponse()
+              server  = consts.serverUrl.val()
+              request = window.requestXml #consts.requestCodeMirror.getValue()
+              if server.startsWith("ws://") || server.startsWith("wss://")
+                formLogic.wsSend request,callback
+              else
+                formLogic.httpSend callback
 
 
 
         else
+          WebOmi.consts.requestCodeMirror.setValue ""
           WebOmi.consts.requestCodeMirror.setOption("mode","xml")
+          WebOmi.consts.responseCodeMirror.setOption("mode","xml")
           WebOmi.consts.requestCodeMirror.setOption("readOnly", false)
+          
           formLogic.setRequest = (xml) ->
             mirror = WebOmi.consts.requestCodeMirror
             if not xml?
@@ -711,6 +748,33 @@ window.WebOmi = formLogicExt($, window.WebOmi || {})
             mirror.autoFormatAll()
 
           formLogic.setRequest(window.requestXml)
+
+          formLogic.setResponse = (xml, doneCallback) ->
+            mirror = WebOmi.consts.responseCodeMirror
+            if typeof xml == "string"
+              mirror.setValue xml
+            else
+              mirror.setValue new XMLSerializer().serializeToString xml
+            mirror.autoFormatAll()
+            # refresh as we "resize" so more text will become visible
+            WebOmi.consts.responseDiv.slideDown complete : ->
+              mirror.refresh()
+              if doneCallback? then doneCallback()
+            mirror.refresh()
+
+          formLogic.send = (callback) ->
+            consts = WebOmi.consts
+            formLogic.clearResponse()
+            server  = consts.serverUrl.val()
+            request = consts.requestCodeMirror.getValue()
+            if server.startsWith("ws://") || server.startsWith("wss://")
+              formLogic.wsSend request,callback
+            else
+              formLogic.httpSend callback
+          
+          formLogic.setResponse(window.responseXml)
+
+          WebOmi.consts.responseCodeMirror.addOverlay WebOmi.consts.URLHighlightOverlay
 
 
     # TODO: maybe move these to centralized place consts.ui._.something

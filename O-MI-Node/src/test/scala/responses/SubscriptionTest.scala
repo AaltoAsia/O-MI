@@ -318,9 +318,9 @@ class SubscriptionTest extends Specification with BeforeAfterAll {
 
     "subscription should be removed when the ttl expired" >> {
       val subId = addSub(1, 5, Seq(Path("p", "1"))).asXML.\\("requestID").text.toInt
-      Thread.sleep(100)
+      Thread.sleep(10)
       pollSub(subId).asXML must \("response") \ ("result") \ ("return", "returnCode" -> "200")
-      Thread.sleep(2000)
+      Thread.sleep(1200)
       pollSub(subId).asXML must \("response") \ ("result") \ ("return", "returnCode" -> "404")
     }
   }

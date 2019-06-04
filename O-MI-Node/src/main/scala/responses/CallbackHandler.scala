@@ -14,15 +14,19 @@
 package responses
 
 import java.net.InetAddress
+import java.net.URLEncoder
 import java.sql.Timestamp
 import java.util.Date
 
+import akka.util.ByteString
 import akka.actor.{ActorSystem, Terminated}
 import akka.event.{LogSource, Logging, LoggingAdapter}
 import akka.http.scaladsl.client.RequestBuilding
 import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.ContentTypes._
 import akka.http.scaladsl.model.ws._
 import akka.http.scaladsl.{Http, HttpExt}
+import akka.NotUsed
 import akka.stream._
 import akka.stream.scaladsl._
 import http.OmiConfigExtension
@@ -99,7 +103,13 @@ class CallbackHandler(
 
 
     val address = callback.uri
-    val httpEntity = FormData(("msg", request.asXML.toString)).toEntity(HttpCharsets.`UTF-8`)
+    val encodedSource = request.asXMLSource.map{
+      str: String => 
+        URLEncoder.encode(str,"UTF-8")
+    }
+    val formSource = Source.single("msg=").concat(encodedSource).map{str: String => ByteString(str,"UTF-8")}
+    val httpEntity = HttpEntity(ContentTypes.`application/x-www-form-urlencoded`,formSource)
+    //val httpEntity = FormData(("msg", request.asXML.toString)).toEntity(HttpCharsets.`UTF-8`)
     val httpRequest = RequestBuilding.Post(address, httpEntity)
 
     log.debug(
@@ -264,7 +274,7 @@ class CallbackHandler(
         Try {
           throw new Exception("Callback 0 not supported with http/https try using ws(websocket) instead")
         }
-      case other =>
+      case other: String =>
         Try {
           val uri = Uri(address)
           val hostAddress = uri.authority.host.address
@@ -299,15 +309,15 @@ class CallbackHandler(
 
     // keepalive? http://doc.akka.io/docs/akka/2.4.8/scala/stream/stream-cookbook.html#Injecting_keep-alive_messages_into_a_stream_of_ByteStrings
 
-    def queueSend(futureResponse: Future[NodeSeq]): Future[QueueOfferResult] = {
+    def queueSend(futureResponse: Future[Source[String,_]]): Future[QueueOfferResult] = {
       val result = for {
         response <- futureResponse
-        if response.nonEmpty
+        //if response.nonEmpty
 
         queue <- futureQueue
 
         // TODO: check what happens when sending empty String
-        resultMessage = ws.TextMessage(response.toString)
+        resultMessage = ws.TextMessage(response)
         queueResult <- queue offer resultMessage
       } yield queueResult
 
@@ -328,7 +338,7 @@ class CallbackHandler(
         case _ =>
       }
 
-    def sendHandler = (response: ResponseRequest) => queueSend(Future(response.asXML)) map { _ => () }
+    def sendHandler = (response: ResponseRequest) => queueSend(Future(response.asXMLSource)) map { _ => () }
 
     val wsFlow = httpExtension.webSocketClientFlow(WebSocketRequest(uri))
     val (upgradeResponse, closed) = outSource.viaMat(wsFlow)(Keep.right)

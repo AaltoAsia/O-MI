@@ -40,6 +40,8 @@ xmlConverter = (WebOmi) ->
   #  xml.getElementsByTagName("omiEnvelope")[0]
   
   my.parseOmiEnvelope = (xml) ->
+    if typeof xml == "string"
+      xml = my.parseXml xml
     if !xml?
       return null
 
@@ -258,7 +260,6 @@ xmlConverter = (WebOmi) ->
     try
       oldest = Number my.exSingleAtt(my.evaluateXPath(xml,"./@oldest"))
       if !Number.isInteger(oldest) || oldest < 1
-        console.log "invalid oldest value: #{oldest}"
         oldest = null
     catch ex
       oldest = null
@@ -580,8 +581,6 @@ xmlConverter = (WebOmi) ->
       ids = null
       console.log("Object Id missing")
 
-    console.log ids
-
     try
       type = my.exSingleAtt(my.evaluateXPath(xml,"./@type"))
     catch ex
@@ -729,21 +728,22 @@ xmlConverter = (WebOmi) ->
 
     try
       content = my.exSingleNode(xml)
-      content = switch type.toLowerCase()
-        when "xs:string" then content
-        when "xs:integer" then Number(content)
-        when "xs:int" then Number(content)
-        when "xs:long" then Number(content)
-        when "xs:decimal" then Number(content)
-        when "xs:double" then Number(content)
-        when "xs:integer" then Number(content)
-        when "xs:boolean" then switch content.toLowerCase()
-          when "true" then true
-          when "false" then false
-          when "1" then true
-          when "0" then false
-          else false
-        else content
+      if type?
+        content = switch type.toLowerCase()
+          when "xs:string" then content
+          when "xs:integer" then Number(content)
+          when "xs:int" then Number(content)
+          when "xs:long" then Number(content)
+          when "xs:decimal" then Number(content)
+          when "xs:double" then Number(content)
+          when "xs:integer" then Number(content)
+          when "xs:boolean" then switch content.toLowerCase()
+            when "true" then true
+            when "false" then false
+            when "1" then true
+            when "0" then false
+            else false
+          else content
     catch ex
       content = null
 
@@ -779,4 +779,4 @@ xmlConverter = (WebOmi) ->
 
 
 window.WebOmi = xmlConverter(window.WebOmi || {})
-window.json = "ready"
+window.jsonConverter = "ready"

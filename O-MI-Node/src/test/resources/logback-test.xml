@@ -4,9 +4,6 @@
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <target>System.out</target>
 <!-- Filter for limiting messages to INFO level-->
-        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
-            <level>WARNING</level>
-        </filter>
 
         <encoder>
             <pattern>%date{ISO8601} %-5level %logger{36} - %msg%n</pattern>
@@ -29,6 +26,7 @@
 		<logger name="authorization" level="DEBUG" />
     <logger name="database" level="WARNING" />
 -->
+		<logger name="authorization" level="DEBUG" />
     <logger name="database.influxDB" level="DEBUG" />
     <logger name="agentSystem" level="WARNING" />
     <root level="ERROR">

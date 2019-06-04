@@ -17,6 +17,7 @@ package OmiTypes
 import java.lang.{Iterable => JIterable}
 import java.net.URI
 import java.sql.Timestamp
+import javax.xml.stream.XMLInputFactory
 
 import akka.NotUsed
 import akka.actor.ActorRef
@@ -27,15 +28,75 @@ import parsing.xmlGen.{omiDefaultScope, xmlTypes}
 import types.odf._
 
 import scala.collection.JavaConverters._
-import scala.collection.SeqView
+import scala.collection.{SeqView, Iterator}
 import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
 import scala.xml.{NamespaceBinding, NodeSeq}
 import akka.util.ByteString
 import akka.stream.scaladsl._
 import akka.stream.alpakka.xml._
-import akka.stream.alpakka.xml.scaladsl.XmlWriting
 import utils._
+
+
+
+
+abstract class Version private (val number: Double, val standard: String) {
+  val namespace: String = f"http://www.opengroup.org/xsd/$standard/$number%.1f/"
+}
+object Version {
+  abstract class OmiVersion private (n: Double) extends Version(n, "omi")
+  object OmiVersion {
+    case object OmiVersion1  extends OmiVersion(1.0)
+    case object OmiVersion1b extends OmiVersion(1.0){ override val namespace = "omi.xsd" }
+    case object OmiVersion2  extends OmiVersion(2.0)
+  }
+
+  abstract class OdfVersion private (n: Double) extends Version(n, "odf")
+  object OdfVersion {
+    case object OdfVersion1  extends OdfVersion(1.0)
+    case object OdfVersion1b extends OdfVersion(1.0){ override val namespace = "odf.xsd" }
+    case object OdfVersion2  extends OdfVersion(2.0)
+  }
+}
+import Version._
+import Version.OmiVersion._
+import Version.OdfVersion._
+
+object OmiVersion {
+  def fromNumber: Double => OmiVersion = {
+    case 2.0 => OmiVersion2
+    case 1.0 => OmiVersion1
+  }
+  def fromStringNumber: String => OmiVersion = {
+    case "2.0" | "2" => OmiVersion2
+    case "1.0" | "1" => OmiVersion1
+  }
+  def fromNameSpace: String => OmiVersion = {
+    case OmiVersion2.namespace => OmiVersion2
+    case OmiVersion1.namespace => OmiVersion1
+    case OmiVersion1b.namespace => OmiVersion1b
+  }
+}
+object OdfVersion {
+  def fromNumber: Double => OdfVersion = {
+    case 2.0 => OdfVersion2
+    case 1.0 => OdfVersion1
+  }
+  def fromStringNumber: String => OdfVersion = {
+    case "2.0" | "2" => OdfVersion2
+    case "1.0" | "1" => OdfVersion1
+  }
+  def fromNameSpace: String => OdfVersion = {
+    case OdfVersion2.namespace => OdfVersion2
+    case OdfVersion1.namespace => OdfVersion1
+    case OdfVersion1b.namespace => OdfVersion1b
+  }
+}
+
+
+
+
+
 
 trait JavaOmiRequest {
   def callbackAsJava(): JIterable[Callback]
@@ -80,6 +141,25 @@ sealed trait OmiRequest extends RequestWrapper with JavaOmiRequest {
 
   def withSenderInformation(ni: SenderInformation): OmiRequest
   def requestID: Option[Long] 
+  def asXMLEvents: SeqView[ParseEvent,Seq[_]] 
+  def omiEnvelopeEvents(events: SeqView[ParseEvent,Seq[_]]): SeqView[ParseEvent,Seq[_]] ={
+    Vector(
+      StartDocument,
+      StartElement(
+        "omiEnvelope",
+        List( Attribute("ttl", ttlAsSeconds.toString), Attribute("version","1.0")),
+        namespaceCtx = List(Namespace(s"http://www.opengroup.org/xsd/omi/1.0/",None))
+      )
+    ).view  ++ events ++ Vector(
+      EndElement("omiEnvelope"),
+      EndDocument
+    )
+
+  } 
+
+  final implicit def asXMLByteSource: Source[ByteString, NotUsed] = parseEventsToByteSource(asXMLEvents)
+  
+  final implicit def asXMLSource: Source[String, NotUsed] = asXMLByteSource.map[String](_.utf8String)
 }
 
 object OmiRequestType extends Enumeration {
@@ -90,7 +170,7 @@ object OmiRequestType extends Enumeration {
 
 }
 
-object SenderInformation {
+object SenderInformatio {
 
 }
 
@@ -116,6 +196,11 @@ sealed trait OdfRequest extends OmiRequest {
   def replaceOdf(nOdf: ODF): OdfRequest
 
   def odfAsDataRecord: DataRecord[NodeSeq] = DataRecord(None, Some("Objects"), odf.asXML)
+  
+  def odfAsOmiMsg: SeqView[ParseEvent,Seq[_]] ={
+    Vector(StartElement("msg")).view ++ odf.asXMLEvents ++ Vector(EndElement("msg"))
+  }
+  def asXMLEvents: SeqView[ParseEvent,Seq[_]] 
 }
 
 sealed trait JavaRequestIDRequest {
@@ -150,9 +235,9 @@ sealed trait RequestWrapper {
 
   def requestVerb: RawRequestWrapper.MessageType
 
-  def ttlAsSeconds: Long = ttl match {
-    case finite: FiniteDuration => finite.toSeconds
-    case infinite: Duration.Infinite => -1
+  def ttlAsSeconds: Double = ttl match {
+    case finite: FiniteDuration => finite.toMillis.toDouble/1000.0
+    case infinite: Duration.Infinite => -1.0
   }
 
   final def handleTTL: FiniteDuration = if (ttl.isFinite) {
@@ -173,41 +258,64 @@ class RawRequestWrapper(val rawRequest: String, private val user0: UserInfo) ext
 
   import RawRequestWrapper._
 
-  import scala.xml.pull._
+  //import scala.xml.pull._ // deprecated
+  import javax.xml.stream._
+  import javax.xml.stream.events._
+  import javax.xml.namespace._
 
   user = user0
 
 
-  class Element(private val ev: EvElemStart) {
-    val pre: String = ev.pre
-    val label: String = ev.label
-    val scope: NamespaceBinding = ev.scope
+  case class Element(private val ev: StartElement) {
+    //val pre: String = ev.pre
+    val name = ev.getName()
+    val label: String = name.getLocalPart()
+    val namespace: String = name.getNamespaceURI()
+    val namespacePrefix: String = name.getPrefix()
 
-    def attr(key: String): Option[String] = for {
-      nodeSeqAttr <- ev.attrs.get(key)
-      head <- nodeSeqAttr.headOption
-    } yield head.text
-
+    def attr(key: String): Option[String] = 
+      Try{ev.getAttributeByName(new QName(key))}
+      .map {_.getValue}
+      .toOption
   }
 
-  private val parseSingle: Boolean => EvElemStart = {
-    val src = io.Source.fromString(rawRequest)
-    val er = new XMLEventReader(src)
-
-    { close =>
-      // skip to the interesting parts
-      val result = er.collectFirst {
-        case e: EvElemStart => e
-      } getOrElse parseError("no xml elements found")
-      if(close){
-        er.stop()
-      }
-      result
-    }
+  private val (parser, closeParser): (Iterator[XMLEvent], () => Unit) = {
+    val src = new java.io.ByteArrayInputStream(rawRequest.getBytes("UTF-8")); //io.Source.fromString(rawRequest)
+    val er = xmlFactory.createXMLEventReader(src)
+    (er.asScala.collect{case e: XMLEvent => e}, () => er.close())
   }
+  def optionalNextTag() = parser.collectFirst {
+    case e: StartElement => e
+  }.map(Element.apply)
+  def nextTag() = optionalNextTag() getOrElse parseError("no xml elements found")
+  def nextAttribute() = parser.collectFirst {
+    case e: Attribute => e
+  }
+
   // NOTE: Order is important
-  val omiEnvelope: Element = new Element(parseSingle(false))
-  val omiVerb: Element = new Element(parseSingle(true))
+  val omiEnvelope: Element = nextTag()
+  val omiVerb: Element = nextTag()
+
+  /**
+    * The msgformat attribute of O-MI as in the verb element or the first result element
+    */
+  val msgFormat: Option[String] = omiVerb.attr("msgformat") orElse nextTag().attr("msgformat") // verb or result
+
+  val odfObjects: Option[Element] = {
+    def findObjects(n: Int): Option[Element] = {
+      if (n >= 2) None //parseError("Objects element not found in few first tags")
+      else
+        optionalNextTag() match {
+          case Some(e) if e.label == "Objects" => Some(e)
+          case Some(_) => findObjects(n+1)
+          case None => None
+        }
+    }
+    findObjects(0)
+  }
+  closeParser() // <- Important! otherwise leaks memory
+
+
 
   require(omiEnvelope.label == "omiEnvelope", "Pre-parsing: omiEnvelope not found!")
 
@@ -222,15 +330,10 @@ class RawRequestWrapper(val rawRequest: String, private val user0: UserInfo) ext
   val requestVerb: MessageType = MessageType(omiVerb.label)
 
   /**
-    * The msgformat attribute of O-MI as in the verb element
-    */
-  val msgFormat: Option[String] = omiVerb.attr("msgformat")
-
-  /**
     * Gets the verb of the O-MI message
     */
   val callback: Option[Callback] =
-    omiEnvelope.attr("callback").map(RawCallback.apply)
+    omiVerb.attr("callback").map(RawCallback.apply)
 
   /**
     * Get the parsed request. Message is parsed only once because of laziness.
@@ -253,6 +356,8 @@ object RawRequestWrapper {
   def apply(rawRequest: String, user: UserInfo): RawRequestWrapper = new RawRequestWrapper(rawRequest, user)
 
   private def parseError(m: String) = throw new IllegalArgumentException("Pre-parsing: " + m)
+
+  val xmlFactory = XMLInputFactory.newInstance()
 
   sealed class MessageType(val name: String)
 
@@ -338,6 +443,34 @@ case class ReadRequest(
     )
   }
 
+  def asXMLEvents: SeqView[ParseEvent,Seq[_]] ={
+    val events: SeqView[ParseEvent,Seq[_]] = Vector(
+      StartElement("read",
+        List(
+          Attribute("msgformat","odf"),
+          Attribute("targetType","node")
+        ) ++ newest.map{
+          n => Attribute("newest",n.toString)
+        }.toList ++ oldest.map{
+          n => Attribute("oldest",n.toString)
+        }.toList ++ begin.map{
+          timestamp => Attribute("begin",timestampToDateTimeString(timestamp))
+        }.toList ++ end.map{
+          timestamp => Attribute("end",timestampToDateTimeString(timestamp))
+        }.toList ++ callback.map{
+          cb => Attribute("callback",cb.toString)
+        }.toList
+      )
+    ).view ++ requestID.map{
+      id => 
+        Vector(
+          StartElement("requestID"),
+          Characters(id.toString),
+          EndElement("requestID")
+        )
+    }.toSeq.flatten ++ odfAsOmiMsg ++ Vector(EndElement("read")).view
+    omiEnvelopeEvents(events)
+  }
   implicit def asOmiEnvelope: xmlTypes.OmiEnvelopeType = requestToEnvelope(asReadRequest, ttlAsSeconds)
 
   def replaceOdf(nOdf: ODF): ReadRequest = copy(odf = nOdf)
@@ -383,6 +516,26 @@ case class PollRequest(
   def withSenderInformation(si: SenderInformation): OmiRequest = this.copy(senderInformation = Some(si))
 
   val requestVerb: MessageType.Read.type = MessageType.Read
+  def asXMLEvents: SeqView[ParseEvent,Seq[_]] ={
+    val events = Vector(
+      StartElement("read",
+        List(
+          Attribute("msgformat","odf"),
+          Attribute("targetType","node")
+        ) ++ callback.map{
+          cb => Attribute("callback",cb.toString)
+        }.toList
+      )
+    ).view ++ requestID.map{
+      id => 
+        Vector(
+          StartElement("requestID"),
+          Characters(id.toString),
+          EndElement("requestID")
+        )
+    }.toSeq.flatten.view ++ Vector(EndElement("read"))
+    omiEnvelopeEvents(events)
+  }
 }
 
 /**
@@ -432,6 +585,31 @@ case class SubscriptionRequest(
   def replaceOdf(nOdf: ODF): SubscriptionRequest = copy(odf = nOdf)
 
   val requestVerb: MessageType.Read.type = MessageType.Read
+  def asXMLEvents: SeqView[ParseEvent,Seq[_]] ={
+    val events = Vector(
+      StartElement("read",
+        List(
+          Attribute("msgformat","odf"),
+          Attribute("targetType","node"),
+          Attribute("interval",interval.toSeconds.toString)
+        ) ++ newest.map{
+          n => Attribute("newest",n.toString)
+        }.toList ++ oldest.map{
+          n => Attribute("oldest",n.toString)
+        }.toList ++ callback.map{
+          cb => Attribute("callback",cb.toString)
+        }.toList
+      )
+    ).view ++ requestID.map{
+      id => 
+        Vector(
+          StartElement("requestID"),
+          Characters(id.toString),
+          EndElement("requestID")
+        )
+    }.toSeq.flatten.view ++ odfAsOmiMsg ++ Vector(EndElement("read"))
+    omiEnvelopeEvents(events)
+  }
 }
 
 
@@ -477,6 +655,26 @@ case class WriteRequest(
   def withSenderInformation(si: SenderInformation): OmiRequest = this.copy(senderInformation = Some(si))
 
   val requestVerb = MessageType.Write
+  def asXMLEvents: SeqView[ParseEvent,Seq[_]] ={
+    val events = Vector(
+      StartElement("write",
+        List(
+          Attribute("msgformat","odf"),
+          Attribute("targetType","node")
+        )++ callback.map{
+          cb => Attribute("callback",cb.toString)
+        }.toList
+      )
+    ).view ++ requestID.map{
+      id => 
+        Vector(
+          StartElement("requestID"),
+          Characters(id.toString),
+          EndElement("requestID")
+        )
+    }.toSeq.flatten.view ++ odfAsOmiMsg ++ Vector(EndElement("write"))
+    omiEnvelopeEvents(events)
+  }
 }
 
 case class CallRequest(
@@ -517,6 +715,26 @@ case class CallRequest(
   def withSenderInformation(si: SenderInformation): OmiRequest = this.copy(senderInformation = Some(si))
 
   val requestVerb: MessageType.Call.type = MessageType.Call
+  def asXMLEvents: SeqView[ParseEvent,Seq[_]] ={
+    val events = Vector(
+      StartElement("call",
+        List(
+          Attribute("msgformat","odf"),
+          Attribute("targetType","node")
+        )++ callback.map{
+          cb => Attribute("callback",cb.toString)
+        }.toList
+      )
+    ).view ++ requestID.map{
+      id => 
+        Vector(
+          StartElement("requestID"),
+          Characters(id.toString),
+          EndElement("requestID")
+        )
+    }.toSeq.flatten.view ++ odfAsOmiMsg ++ Vector(EndElement("call"))
+    omiEnvelopeEvents(events)
+  }
 }
 
 case class DeleteRequest(
@@ -557,6 +775,26 @@ case class DeleteRequest(
   def withSenderInformation(si: SenderInformation): OmiRequest = this.copy(senderInformation = Some(si))
 
   val requestVerb: MessageType.Delete.type = MessageType.Delete
+  def asXMLEvents: SeqView[ParseEvent,Seq[_]] ={
+    val events = Vector(
+      StartElement("delete",
+        List(
+          Attribute("msgformat","odf"),
+          Attribute("targetType","node")
+        )++ callback.map{
+          cb => Attribute("callback",cb.toString)
+        }.toList
+      )
+    ).view ++ requestID.map{
+      id => 
+        Vector(
+          StartElement("requestID"),
+          Characters(id.toString),
+          EndElement("requestID")
+        )
+    }.toSeq.flatten.view ++ odfAsOmiMsg ++ Vector(EndElement("delete"))
+    omiEnvelopeEvents(events)
+  }
 }
 
 /**
@@ -590,6 +828,19 @@ case class CancelRequest(
   def withSenderInformation(si: SenderInformation): OmiRequest = this.copy(senderInformation = Some(si))
 
   val requestVerb: MessageType.Cancel.type = MessageType.Cancel
+  def asXMLEvents: SeqView[ParseEvent,Seq[_]] ={
+    val events = Vector(
+      StartElement("cancel")
+    ).view ++ requestIDs.flatMap{
+      id => 
+        Vector(
+          StartElement("requestID"),
+          Characters(id.toString),
+          EndElement("requestID")
+        )
+    }.view ++ Vector(EndElement("cancel"))
+    omiEnvelopeEvents(events)
+  }
 }
 
 trait JavaResponseRequest {
@@ -701,12 +952,6 @@ class ResponseRequest(
     )
   }
 
-  final implicit def asXMLByteSource: Source[ByteString, NotUsed] = Source
-    .fromIterator(() => asXMLEvents.iterator)
-    .via( XmlWriting.writer )
-    .filter(_.length != 0)
-  
-  final implicit def asXMLSource: Source[String, NotUsed] = asXMLByteSource.map[String](_.utf8String)
 
 }
 
