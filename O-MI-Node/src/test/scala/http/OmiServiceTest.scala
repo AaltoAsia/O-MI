@@ -66,70 +66,6 @@ class OmiServiceTest
 
 
 
-  "Data discovery, GET: OmiService" >> {
-
-    "respond with hello message for GET request to the root path" >> {
-      Get() ~> myRoute ~> check {
-        status === OK
-        mediaType === `text/html`
-        responseAs[String] must contain("Say hello to <i>O-MI Node service")
-
-      }
-    }
-
-    "respond successfully to GET to /Objects" >> {
-      Get("/Objects").withHeaders(`Remote-Address`(localHost)) ~> myRoute ~> check {
-        isOkXml
-        responseAs[NodeSeq].headOption must
-          beSome.which(_.label == "Objects") // => ??? }((_: Node).label == "Objects")//.head.label === "Objects"
-      }
-    }
-    "respond successfully to GET to /Objects/" >> {
-      Get("/Objects/").withHeaders(`Remote-Address`(localHost)) ~> myRoute ~> check {
-        isOkXml
-        responseAs[NodeSeq].headOption must beSome.which(_.label == "Objects")
-      }
-    }
-    "respond with error to non existing path" >> {
-      Get("/Objects/nonexsistent7864057").withHeaders(`Remote-Address`(localHost)) ~> myRoute ~> check {
-        isXml
-        status === NotFound
-        responseAs[NodeSeq].headOption must beSome.which(_.label == "error")
-      }
-    }
-    val settingsPath = "/Objects/OMI-Service/Settings/"
-    "respond successfully to GET to some value" >> {
-      Get(settingsPath + "num-latest-values-stored/value").withHeaders(`Remote-Address`(localHost)) ~>
-        myRoute ~>
-        check {
-          mediaType === `text/plain`
-          status === OK
-          responseAs[String] === "10"
-        }
-
-    }
-
-
-    // Somewhat overcomplicated test; Serves as an example for other tests
-    "reply its settings as odf form path `settingsOdfPath` (with \"Settings\" id)" >> {
-      Get(settingsPath).withHeaders(`Remote-Address`(localHost)) ~>
-        myRoute ~>
-        check { // this didn't work without / at start
-          isOkXml
-          responseAs[NodeSeq] must \("id") \> "Settings"
-        }
-    }
-
-    "reply its settings having num-latest-values-stored)" >> {
-      Get(settingsPath).withHeaders(`Remote-Address`(localHost)) ~>
-        myRoute ~>
-        check { // this didn't work without / at start
-          isOkXml
-          responseAs[NodeSeq] must \("InfoItem", "name" -> "num-latest-values-stored")
-        }
-    }
-
-  }
 
   "request, POST: OmiService" >> {
     "respond correctly to read request with invalid omi" >> {
@@ -248,6 +184,7 @@ class OmiServiceTest
     }
 
     "respond to permissive requests" >> {
+      //This request is also used to write MetaData and description for GET test
       val request: String =
         """
         <omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="0.0">
@@ -257,6 +194,17 @@ class OmiServiceTest
                 <Object>
                   <id>testObject</id>
                   <InfoItem name="testSensor">
+                    <name>testName</name>
+                    <name>testName2</name>
+                    <description lang="ENG">test</description>
+                    <description lang="FIN">testi</description>
+                    <MetaData>
+                      <InfoItem name="test">
+                        <name>testName</name>
+                        <description lang="ENG">test</description>
+                        <value unixTime="0" type="xs:integer">10</value>
+                      </InfoItem>
+                    </MetaData>
                     <value unixTime="0" type="xs:integer">0</value>
                   </InfoItem>
                 </Object>
@@ -525,6 +473,139 @@ class OmiServiceTest
       * }
       * }
       */
+
+  }
+
+  "Data discovery, GET: OmiService" >> {
+
+    "respond with hello message for GET request to the root path" >> {
+      Get() ~> myRoute ~> check {
+        status === OK
+        mediaType === `text/html`
+        responseAs[String] must contain("Say hello to <i>O-MI Node service")
+
+      }
+    }
+
+    "respond successfully to GET to /Objects" >> {
+      Get("/Objects").withHeaders(`Remote-Address`(localHost)) ~> myRoute ~> check {
+        isOkXml
+        responseAs[NodeSeq].headOption must
+          beSome.which(_.label == "Objects") // => ??? }((_: Node).label == "Objects")//.head.label === "Objects"
+      }
+    }
+    "respond successfully to GET to /Objects/" >> {
+      Get("/Objects/").withHeaders(`Remote-Address`(localHost)) ~> myRoute ~> check {
+        isOkXml
+        responseAs[NodeSeq].headOption must beSome.which(_.label == "Objects")
+      }
+    }
+    "respond with error to non existing path" >> {
+      Get("/Objects/nonexsistent7864057").withHeaders(`Remote-Address`(localHost)) ~> myRoute ~> check {
+        isXml
+        status === NotFound
+        responseAs[NodeSeq].headOption must beSome.which(_.label == "error")
+      }
+    }
+    val settingsPath = "/Objects/OMI-Service/Settings/"
+    "respond successfully to GET to some value" >> {
+      Get(settingsPath + "num-latest-values-stored/value").withHeaders(`Remote-Address`(localHost)) ~>
+        myRoute ~>
+        check {
+          mediaType === `text/plain`
+          status === OK
+          responseAs[String] === "10"
+        }
+
+    }
+    val testPath = "/Objects/testObject"
+    "respond successfully to GET to an Object" >> {
+      Get(testPath ).withHeaders(`Remote-Address`(localHost)) ~>
+        myRoute ~>
+        check {
+          mediaType === `text/xml`
+          status === OK
+          responseAs[NodeSeq] must \("id") \> "testObject"  
+        }
+
+    }
+    val testIIPath = testPath + "/testSensor"
+    "respond successfully to GET to an InfoItem" >> {
+      Get(testIIPath ).withHeaders(`Remote-Address`(localHost)) ~>
+        myRoute ~>
+        check {
+          mediaType === `text/xml`
+          status === OK
+          responseAs[NodeSeq] must \\("InfoItem", "name" -> "testSensor") 
+        }
+    }
+    "respond successfully to GET to names of an InfoItem" >> {
+      Get(testIIPath + "/name").withHeaders(`Remote-Address`(localHost)) ~>
+        myRoute ~>
+        check {
+          mediaType === `text/xml`
+          status === OK
+          responseAs[NodeSeq] must \\("name") \> "testName" 
+          responseAs[NodeSeq] must \\("name") \> "testName2" 
+        }
+    }
+    "respond successfully to GET to descriptions of an InfoItem" >> {
+      Get(testIIPath + "/description").withHeaders(`Remote-Address`(localHost)) ~>
+        myRoute ~>
+        check {
+          mediaType === `text/xml`
+          status === OK
+          responseAs[NodeSeq] must \\("description", "lang" -> "ENG") 
+          responseAs[NodeSeq] must \\("description", "lang" -> "FIN") 
+        }
+    }
+    "respond successfully to GET to MetaData of an InfoItem" >> {
+      Get(testIIPath + "/MetaData").withHeaders(`Remote-Address`(localHost)) ~>
+        myRoute ~>
+        check {
+          mediaType === `text/xml`
+          status === OK
+          responseAs[NodeSeq] must \\("MetaData")  
+        }
+    }
+    "respond successfully to GET to an MetaData InfoItem" >> {
+      Get(testIIPath + "/MetaData/test").withHeaders(`Remote-Address`(localHost)) ~>
+        myRoute ~>
+        check {
+          mediaType === `text/xml`
+          status === OK
+          responseAs[NodeSeq] must \\("InfoItem", "name" -> "test")
+        }
+    }
+    "respond successfully to GET to value of an MetaData InfoItem" >> {
+      Get(testIIPath + "/MetaData/test/value").withHeaders(`Remote-Address`(localHost)) ~>
+        myRoute ~>
+        check {
+          mediaType === `text/plain`
+          status === OK
+          responseAs[String] === "10"
+        }
+    }
+
+
+    // Somewhat overcomplicated test; Serves as an example for other tests
+    "reply its settings as odf form path `settingsOdfPath` (with \"Settings\" id)" >> {
+      Get(settingsPath).withHeaders(`Remote-Address`(localHost)) ~>
+        myRoute ~>
+        check { // this didn't work without / at start
+          isOkXml
+          responseAs[NodeSeq] must \("id") \> "Settings"
+        }
+    }
+
+    "reply its settings having num-latest-values-stored)" >> {
+      Get(settingsPath).withHeaders(`Remote-Address`(localHost)) ~>
+        myRoute ~>
+        check { // this didn't work without / at start
+          isOkXml
+          responseAs[NodeSeq] must \("InfoItem", "name" -> "num-latest-values-stored")
+        }
+    }
 
   }
 }

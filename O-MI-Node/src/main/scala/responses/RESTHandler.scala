@@ -133,9 +133,10 @@ object RESTHandler {
           )
           Future.successful(value)
         case Some("MetaData") => 
-          val events = Vector(StartDocument, StartElement("MetaData")).view ++ ii.metaData.map{
-            case md: MetaData => md.infoItems.view.flatMap{
-              ii =>
+          val events =  ii.metaData.map{
+            case md: MetaData => 
+              Vector(StartDocument, StartElement("MetaData")).view ++ md.infoItems.view.flatMap{
+                ii =>
                 Seq(
                   StartElement(
                     "InfoItem",
@@ -150,19 +151,19 @@ object RESTHandler {
                           ),
                         EndElement("InfoItem")
                       )
-            }
-          }.toSeq.flatten.view ++ Vector(EndElement("MetaData"), EndDocument)
+              }++ Vector(EndElement("MetaData"), EndDocument)
+          }.toSeq.flatten.view 
 
           Future.successful(Right(events))
         case Some("name") => 
-          val events =  Vector(StartDocument).view ++ ii.names.toSeq.view.flatMap{
+          val events =  Vector(StartDocument, StartElement("InfoItem",List(Attribute("name",ii.nameAttribute)))).view ++ ii.names.toSeq.view.flatMap{
             case id: QlmID => id.asXMLEvents("name")
-          } ++ Vector(EndDocument)
+          } ++ Vector(EndElement("InfoItem"),EndDocument)
           Future.successful(Right(events))
         case Some("description") => 
-          val events =  Vector(StartDocument).view ++ ii.descriptions.toSeq.view.flatMap{
+          val events =  Vector(StartDocument, StartElement("InfoItem",List(Attribute("name",ii.nameAttribute)))).view ++ ii.descriptions.toSeq.view.flatMap{
             case desc: Description => desc.asXMLEvents
-          } ++ Vector(EndDocument)
+          } ++ Vector(EndElement("InfoItem"),EndDocument)
           Future.successful(Right(events))
         case None =>
           val events = Seq(
@@ -198,18 +199,47 @@ object RESTHandler {
             EndDocument
           )
           Future.successful(Right(events))
+        case Some(str) => 
+          val events = Vector(
+            StartDocument,
+            StartElement("error"),
+            Characters("No such element in InfoItem"),
+            EndElement("error"),
+            EndDocument
+          ).view
+          Future.successful(Right(events))
       }
     case obj: Object => 
       member match{
         case Some("description") => 
-          val events = Vector(StartDocument).view ++ obj.descriptions.toSeq.view.flatMap{
+          val events = Vector(StartDocument,
+                StartElement(
+                  "Object",
+                  obj.typeAttribute.map{
+                    str: String => Attribute("type",str)
+                  }.toList ++ 
+                  obj.attributes.map{
+                    case (key: String, value: String) => Attribute(key,value)
+                  }.toList
+                )
+            ).view ++ obj.descriptions.toSeq.view.flatMap{
               case desc: Description => desc.asXMLEvents
-          } ++ Vector(EndDocument)
+          } ++ Vector(EndElement("Object"),EndDocument)
           Future.successful(Right(events))
         case Some("id") => 
-          val events = Vector(StartDocument).view ++ obj.ids.view.flatMap{
+          val events = Vector(StartDocument,
+                StartElement(
+                  "Object",
+                  obj.typeAttribute.map{
+                    str: String => Attribute("type",str)
+                  }.toList ++ 
+                  obj.attributes.map{
+                    case (key: String, value: String) => Attribute(key,value)
+                  }.toList
+                )
+            ).view ++ obj.ids.view.flatMap{
               case id: QlmID => id.asXMLEvents("id")
-            } ++ Vector(EndDocument)
+            } ++ Vector(EndElement("Object"),EndDocument)
           Future.successful(Right(events))
         case None =>
           singleStores.getHierarchyTree().map{
@@ -265,6 +295,15 @@ object RESTHandler {
               } ++ Vector(EndElement("Object" ), EndDocument)
               Right(events)
           }
+        case Some(str) => 
+          val events = Vector(
+            StartDocument,
+            StartElement("error"),
+            Characters("No such element in Object"),
+            EndElement("error"),
+            EndDocument
+          ).view
+          Future.successful(Right(events))
       }
       case objs: Objects =>
           singleStores.getHierarchyTree().map{
