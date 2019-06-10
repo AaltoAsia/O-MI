@@ -135,7 +135,8 @@ By default, O-MI Node allows anyone to make any read requests. If some parts of 
       }
     }
     ```
-4. Configure nginx
+4. Create a CA certificate and a client key and sign it using your preferred tools. [(openssl)](https://gist.github.com/mtigas/952344)
+5. Configure nginx
     * put this outside server block to extract CN for the username (*remove "_legacy" if using older than v1.11.6*) and support websockets
         ```
         map $ssl_client_s_dn_legacy $ssl_client_s_dn_cn {
@@ -186,7 +187,7 @@ By default, O-MI Node allows anyone to make any read requests. If some parts of 
             }
         }
         ```
-5. (re)Start o-mi-node, o-mi-authorization and nginx
+6. (re)Start o-mi-node, o-mi-authorization and nginx
 
 ## Authentication in Kong API manager
 
