@@ -5,7 +5,7 @@ import types.Path._
 
 import scala.collection.immutable.{HashMap => ImmutableHashMap}
 import scala.collection.mutable.{HashMap => MutableHashMap, TreeSet => MutableTreeSet}
-import scala.collection.{Map, Seq, SortedSet}
+import scala.collection.{SortedSet}
 
 class MutableODF private[odf](
                                protected[odf] val nodes: MutableHashMap[Path, Node] = MutableHashMap.empty
@@ -173,7 +173,7 @@ class MutableODF private[odf](
     this
   }
 
-  def addNodes(nodesToAdd: Seq[Node]): MutableODF = {
+  def addNodes(nodesToAdd: Iterable[Node]): MutableODF = {
     nodesToAdd.foreach {
       node: Node =>
         this.add(node)

@@ -31,7 +31,7 @@ import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 
 trait CLIHelperT {
-  def handlePathRemove(parentPathS: Seq[Path]): Future[Seq[Int]]
+  def handlePathRemove(parentPathS: Iterable[Path]): Future[Iterable[Int]]
 
   def takeSnapshot(): Future[Any]
 
@@ -47,7 +47,7 @@ class CLIHelper(val singleStores: SingleStores, dbConnection: DB)(implicit syste
   implicit val logSource: LogSource[CLIHelper] = (handler: CLIHelper) => handler.toString
   protected val log: LoggingAdapter = Logging(system, this)
   def takeSnapshot(): Future[Any] = singleStores.takeSnapshot
-  def handlePathRemove(parentPaths: Seq[Path]): Future[Seq[Int]] = {
+  def handlePathRemove(parentPaths: Iterable[Path]): Future[Iterable[Int]] = {
     val odfF = singleStores.getHierarchyTree()
 
     Future.sequence(parentPaths.map { parentPath =>
@@ -101,9 +101,9 @@ class CLIHelper(val singleStores: SingleStores, dbConnection: DB)(implicit syste
   }
 
   def writeOdf(odf: ImmutableODF): Future[Unit] = {
-    val infoItems: Seq[InfoItem] = odf.getInfoItems
+    val infoItems: Iterable[InfoItem] = odf.getInfoItems
     for {
-      dbc <- dbConnection.writeMany(infoItems)
+      dbc <- dbConnection.writeMany(infoItems.toSeq)
       ret <- singleStores.updateHierarchyTree(odf.immutable)
       latestValues: Map[Path, Value[Any]] = infoItems.collect {
         case ii: InfoItem if ii.values.nonEmpty => ii.path -> ii.values.maxBy(_.timestamp.getTime())

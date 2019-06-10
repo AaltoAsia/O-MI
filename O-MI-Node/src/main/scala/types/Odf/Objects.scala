@@ -30,7 +30,7 @@ case class Objects(
     this
   }
 
-  def createAncestors: Seq[Node] = {
+  def createAncestors: Iterable[Node] = {
     Vector()
   }
 
@@ -68,9 +68,9 @@ case class Objects(
     )
   }
 
-  implicit def asObjectsType(objects: Seq[ObjectType]): ObjectsType = {
+  implicit def asObjectsType(objects: Iterable[ObjectType]): ObjectsType = {
     ObjectsType(
-      objects,
+      objects.toSeq,
       attributes = attributesToDataRecord(attributes) ++ version.map {
         version: String => "@version" -> DataRecord(version)
       }

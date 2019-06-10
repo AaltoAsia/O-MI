@@ -39,7 +39,7 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
   final def isRootOnly: Boolean = isEmpty
 
   final def contains(path: Path): Boolean = paths.contains(path)
-  final def contains( _paths: Seq[Path]): Boolean = _paths.forall{ path => paths.contains(path)}
+  final def contains( _paths: Iterable[Path]): Boolean = _paths.forall{ path => paths.contains(path)}
 
 
   /*
@@ -49,7 +49,7 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
 
   def union(that: ODF): ODF
 
-  def removePaths(pathsToRemove: Seq[Path]): ODF = removePaths(pathsToRemove.toSet)
+  def removePaths(pathsToRemove: Iterable[Path]): ODF = removePaths(pathsToRemove.toSet)
   
   def removePaths(pathsToRemove: Set[Path]): ODF
 
@@ -59,13 +59,13 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
 
   def getPaths: Set[Path] = paths.toSet
 
-  def getNodes: Seq[Node] = nodes.values.toVector
+  def getNodes: Iterable[Node] = nodes.values.toVector
 
-  final def getInfoItems: Seq[InfoItem] = nodes.values.collect {
+  final def getInfoItems: Iterable[InfoItem] = nodes.values.collect {
     case ii: InfoItem => ii
   }.toVector
 
-  final def getObjects: Seq[Object] = nodes.values.collect {
+  final def getObjects: Iterable[Object] = nodes.values.collect {
     case obj: Object => obj
   }.toVector
   final def getRoot: Option[Objects] = nodes.get(Path("Objects")).collect{
@@ -99,7 +99,7 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
       .toSet
   }
 
-  final def getChilds(path: Path): Seq[Node] = {
+  final def getChilds(path: Path): Iterable[Node] = {
     getChildPaths(path).flatMap { p: Path => nodes.get(p) }.toVector
   }
 
@@ -215,17 +215,17 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
    */
   def selectUpTree(pathsToGet: Set[Path]): ODF
 
-  def --(removedPaths: Seq[Path]): ODF = removePaths(removedPaths)
+  def --(removedPaths: Iterable[Path]): ODF = removePaths(removedPaths)
 
   def removePath(path: Path): ODF
 
   def add(node: Node): ODF
 
-  def addNodes(nodesToAdd: Seq[Node]): ODF
+  def addNodes(nodesToAdd: Iterable[Node]): ODF
 
   implicit def asObjectsType: ObjectsType = {
     //val timer = LapTimer(println)
-    val parentPath2IIt: MutableMap[Path,Seq[InfoItemType]] = MutableMap.empty
+    val parentPath2IIt: MutableMap[Path,Iterable[InfoItemType]] = MutableMap.empty
     val objs: Buffer[Object] = Buffer.empty
     var objects = Objects()
     //timer.step("aOT: init")
@@ -239,23 +239,23 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
       }
     }
     //timer.step("aOT: node grouping")
-    val parentPath2Objs: Map[Path,Seq[Tuple2[Path,ObjectType]]] = objs.map{
+    val parentPath2Objs: Map[Path,Iterable[Tuple2[Path,ObjectType]]] = objs.map{
       case obj: Object => 
         obj.path -> obj.asObjectType( parentPath2IIt.get(obj.path).toSeq.flatten, Seq.empty)
     }.groupBy(_._1.getParent)  
     //timer.step("aOT: IIs to parents")
     def temp(path:Path, obj: ObjectType): ObjectType ={
-      val cobjs: Seq[ObjectType] = parentPath2Objs.get(path).toSeq.flatten.map{
+      val cobjs: Iterable[ObjectType] = parentPath2Objs.get(path).toSeq.flatten.map{
         case ( p: Path, ot: ObjectType) => temp(p,ot)
       }
-      obj.copy( ObjectValue = cobjs ) 
+      obj.copy( ObjectValue = cobjs.toSeq ) 
     }
-    val topObjects: Seq[ObjectType] = parentPath2Objs.get( Path("Objects") ).toSeq.flatten.map{
+    val topObjects: Iterable[ObjectType] = parentPath2Objs.get( Path("Objects") ).toSeq.flatten.map{
       case (path: Path, obj: ObjectType) =>  temp(path, obj) 
         
     }
     //timer.step("aOT: Objs to top object s")
-    val objsT =objects.asObjectsType( topObjects)
+    val objsT =objects.asObjectsType( topObjects )
     //timer.step("Objects type")
     //timer.total()
     objsT
@@ -288,7 +288,7 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
     )
   }*/
 
-  final implicit def asXMLEvents: SeqView[ParseEvent, Seq[_]] = {
+  final implicit def asXMLEvents: SeqView[ParseEvent, Iterable[_]] = {
     
     object ResponseOrdering extends scala.math.Ordering[Node] {
       def compare(l: Node, r: Node): Int = {
@@ -314,7 +314,7 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
         case node: Node => objs = node :: objs
       }
       //timer.step("Partition")
-      val parent2IIs: Map[Path,Seq[InfoItem]] = iis.groupBy{ ii: InfoItem => ii.path.getParent}
+      val parent2IIs: Map[Path,Iterable[InfoItem]] = iis.groupBy{ ii: InfoItem => ii.path.getParent}
       //timer.step("Group by")
       val sorted = objs.sortBy(_.path)(PathOrdering)
       //timer.step("sort")

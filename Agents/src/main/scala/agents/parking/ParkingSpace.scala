@@ -202,7 +202,7 @@ object ParkingSpace{
             availabilityResult,         // NOTE: this will add extra infoitem if isOccupied is used
             availabilityResult.map(!_), // NOTE: ^
             getStringOption("user",path,odf),
-            chargers,
+            chargers.toSeq,
             getDoubleOption("vehicleHeightLimit",path,odf),
             getDoubleOption("vehicleLengthLimit",path,odf),
             getDoubleOption("vehicleWidthLimit",path,odf)

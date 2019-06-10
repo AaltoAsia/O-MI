@@ -6,7 +6,7 @@ import database.journal.PPersistentNode
 import scala.collection.Seq
 
 trait Node {
-  def createAncestors: Seq[Node]
+  def createAncestors: Iterable[Node]
 
   def createParent: Node
 
