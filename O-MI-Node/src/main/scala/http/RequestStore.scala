@@ -1,7 +1,7 @@
 package http
 
-import akka.actor.{Actor, ActorSystem,  ActorLogging, Props}
-import scala.collection.mutable.{Map => MMap, HashMap => MHMap}
+import akka.actor.{Actor, ActorLogging, Props}
+import scala.collection.mutable.{HashMap => MHMap}
 import java.sql.Timestamp
 
 object RequestStore{
@@ -57,7 +57,6 @@ class RequestStore () extends Actor with ActorLogging{
             requestInfos += info.name -> info
           }
       }
-      val tmp = infos.map{ info => s" ${info.name} : ${info.value.toString}"}.mkString("; ")
   }
 
 }

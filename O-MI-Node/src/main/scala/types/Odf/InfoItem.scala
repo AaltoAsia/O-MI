@@ -1,7 +1,6 @@
 package types
 package odf
 
-import java.sql.Timestamp
 import scala.language.implicitConversions
 import database.journal.PPersistentNode.NodeType.Ii
 import database.journal.{PInfoItem, PPersistentNode}

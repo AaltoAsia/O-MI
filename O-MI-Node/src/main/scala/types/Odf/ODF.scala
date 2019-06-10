@@ -2,18 +2,16 @@ package types
 package odf
 
 
-import java.sql.Timestamp
 import parsing.xmlGen.xmlTypes.{ObjectType, ObjectsType, InfoItemType}
 import parsing.xmlGen.{odfDefaultScope, scalaxb}
 
 import scala.collection.immutable.{HashMap => ImmutableHashMap, TreeSet => ImmutableTreeSet, SortedSet}
-import scala.collection.mutable.{ Buffer, Map => MutableMap, Stack => MStack, Queue => MQueue}
+import scala.collection.mutable.{ Buffer, Map => MutableMap, Stack => MStack}
 import scala.collection.{Map, Seq, SortedSet => CSortedSet, SeqView}
 import akka.stream.alpakka.xml._
 import scala.xml.NodeSeq
 import types.Path.PathOrdering
 import types.Path
-import utils._
 
 /** O-DF structure
   */
@@ -290,7 +288,7 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
 
   final implicit def asXMLEvents: SeqView[ParseEvent, Seq[_]] = {
     
-    object ResponseOrdering extends scala.math.Ordering[Node] {
+    /*object ResponseOrdering extends scala.math.Ordering[Node] {
       def compare(l: Node, r: Node): Int = {
         if( PathOrdering.compare(l.path.getParent, r.path.getParent) == 0){
 
@@ -304,7 +302,7 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
               PathOrdering.compare(l.path,r.path)
         }
       }
-    }
+    }*/
     def sort = {
       //val timer = LapTimer(println)
       var iis: List[InfoItem] = List.empty
@@ -327,9 +325,9 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
       res
     }
     
-    val sortedNodes = sort 
+    val sortedNodes = sort
 
-    val parentStack: MStack[Path] = MStack.empty[Path]
+    var parentStack: List[Path] = Nil
     def handleEnd( index: Int ) = {
       if( index == sortedNodes.size - 1 ){
         val count = Math.max(parentStack.length-1,0)
@@ -340,7 +338,7 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
     }
     val events = sortedNodes.zipWithIndex.view.flatMap{
       case (objs: Objects, index: Int) =>
-        parentStack.push(objs.path)
+        parentStack = objs.path +: parentStack //parentStack.push(objs.path)
         Vector(
           StartElement(
             "Objects",
@@ -358,13 +356,15 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
       case (obj: Object, index: Int) =>
         var count: Int = 0
         while(parentStack.length > 0 && parentStack.head != obj.path.getParent){
-          Option(parentStack.pop()) match{
+          val first = parentStack.headOption
+          parentStack = parentStack.tail
+          first match{
             case Some(path) =>
               count = count + 1
             case None =>
           }
         }
-        parentStack.push(obj.path)
+        parentStack = obj.path +: parentStack
         Vector.fill(count)( EndElement("Object") ) ++ Vector(
           StartElement(
             "Object",
@@ -385,7 +385,9 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
 
         var count: Int = 0
         while(parentStack.length > 0 && parentStack.head != ii.path.getParent){
-          Option(parentStack.pop()) match{
+          val first = parentStack.headOption
+          parentStack = parentStack.tail
+          first match{
             case Some(path) =>
               count = count + 1
             case None =>

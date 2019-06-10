@@ -5,8 +5,7 @@ import types.Path._
 
 import scala.collection.immutable.{HashMap => ImmutableHashMap, TreeSet => ImmutableTreeSet}
 import scala.collection.mutable.{HashMap => MutableHashMap}
-import scala.collection.{Map, Seq, SortedSet}
-import utils._
+import scala.collection.{Map, Seq}
 
 case class ImmutableODF private[odf](
                                       nodes: ImmutableHashMap[Path, Node],

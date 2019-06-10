@@ -5,7 +5,7 @@ import types.Path._
 
 import scala.collection.immutable.{HashMap => ImmutableHashMap}
 import scala.collection.mutable.{HashMap => MutableHashMap, TreeSet => MutableTreeSet}
-import scala.collection.{Map, Seq, SortedSet}
+import scala.collection.{Seq, SortedSet}
 
 class MutableODF private[odf](
                                protected[odf] val nodes: MutableHashMap[Path, Node] = MutableHashMap.empty

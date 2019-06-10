@@ -23,10 +23,8 @@ import akka.actor.{ActorSystem, Terminated}
 import akka.event.{LogSource, Logging, LoggingAdapter}
 import akka.http.scaladsl.client.RequestBuilding
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.ContentTypes._
 import akka.http.scaladsl.model.ws._
 import akka.http.scaladsl.{Http, HttpExt}
-import akka.NotUsed
 import akka.stream._
 import akka.stream.scaladsl._
 import http.OmiConfigExtension
@@ -37,7 +35,6 @@ import scala.collection.mutable.{Map => MutableMap}
 import scala.concurrent._
 import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
-import scala.xml.NodeSeq
 
 object CallbackHandler {
 
