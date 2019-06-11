@@ -12,7 +12,7 @@
  +    limitations under the License.                                              +
  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 package types
-package odf
+package omi
 package parser
 
 import java.sql.Timestamp
@@ -28,22 +28,21 @@ import akka.stream.alpakka.xml._
 import akka.stream.alpakka.xml.scaladsl._
 
 import types._
-import odf._
+import omi._
 import utils._
 
 /** Parser for data in O-DF format */
-object ODFStreamParser {
-  def parser: Flow[String,ODF,NotUsed] = Flow[String]
+object OMIStreamParser {
+  def parser: Flow[String,OmiRequest,NotUsed] = Flow[String]
     .map(ByteString(_))
     .via(XmlParsing.parser)
-    .via(new ODFParserFlow)
-  private class ODFParserFlow extends GraphStage[FlowShape[ParseEvent,ODF]] {
-    val in = Inlet[ParseEvent]("ODFParserFlowF.in")
-    val out = Outlet[ODF]("ODFParserFlow.out")
+    .via(new OMIParserFlow)
+  private class OMIParserFlow extends GraphStage[FlowShape[ParseEvent, OmiRequest]] {
+    val in = Inlet[ParseEvent]("OMIParserFlowF.in")
+    val out = Outlet[OmiRequest]("OMIParserFlow.out")
     override val shape = FlowShape(in, out)
 
     override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
-      private var state: EventBuilder[_] = new ODFEventBuilder(None,currentTimestamp)
 
 
       setHandler(out, new OutHandler {
@@ -53,17 +52,6 @@ object ODFStreamParser {
       setHandler(in, new InHandler {
         override def onPush(): Unit = {
           val event: ParseEvent = grab(in)
-          state = state.parse(event) 
-          state match {
-            case fail: FailedEventBuilder =>
-              failStage(ODFParserError(fail.msg))
-            case builder: ODFEventBuilder if builder.isComplete  =>
-              push(out,builder.build )
-            case other: EventBuilder[_] =>
-              if( other.isComplete )
-                failStage(ODFParserError("Non ODFBuilder is complete"))
-
-          }
           pull(in)
         }
 
