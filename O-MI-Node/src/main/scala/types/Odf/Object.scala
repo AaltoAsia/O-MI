@@ -49,10 +49,10 @@ case class Object(
   assert(ids.nonEmpty, "Object doesn't have any ids.")
   assert(path.length > 1, "Length of path of Object is not greater than 1 (Objects/).")
 
-  def idsToStr(): Vector[String] = ids.toList.map {
+  def idsToStr(): Vector[String] = ids.map {
     id: QlmID =>
       id.id
-  }.toVector
+  }
 
   def idTest: Boolean = idsToStr().exists {
     id: String =>
@@ -72,7 +72,7 @@ case class Object(
       QlmID.unionReduce(ids ++ that.ids).toVector,
       path,
       that.typeAttribute.orElse(typeAttribute),
-      Description.unionReduce(descriptions ++ that.descriptions).toSet,
+      Description.unionReduce(descriptions ++ that.descriptions),
       attributes ++ that.attributes
     )
 
@@ -93,7 +93,7 @@ case class Object(
       QlmID.unionReduce(ids ++ that.ids).toVector,
       path,
       optionAttributeUnion(typeAttribute, that.typeAttribute),
-      Description.unionReduce(descriptions ++ that.descriptions).toSet,
+      Description.unionReduce(descriptions ++ that.descriptions),
       attributeUnion(attributes, that.attributes)
     )
 
