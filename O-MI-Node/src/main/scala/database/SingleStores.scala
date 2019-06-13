@@ -156,6 +156,7 @@ trait SingleStores {
   val hierarchyStore: ActorRef
   val subStore: ActorRef
   val pollDataStore: ActorRef
+  val requestInfoStore: ActorRef
 
   def buildODFFromValues(items: Seq[(Path, Value[Any])]): ODF = {
     ImmutableODF(items map { case (path, value) =>
@@ -252,5 +253,6 @@ object SingleStores{
     val hierarchyStore: ActorRef = system.actorOf(HierarchyStore.props())
     val subStore: ActorRef = system.actorOf(SubStore.props())
     val pollDataStore: ActorRef = system.actorOf(PollDataStore.props())
+    val requestInfoStore: ActorRef = system.actorOf(RequestInfoStore.props())
   }
 } 

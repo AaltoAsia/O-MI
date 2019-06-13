@@ -236,3 +236,22 @@ message PRemovePollSubData {
     option (scalapb.message).extends = "database.journal.Models.Event";
     fixed64 id = 1;
 }
+
+message PRequestInfo {
+    option (scalapb.message).extends = "database.journal.Models.Event";
+    fixed64 id = 1;
+    uint64 endTime = 2;
+    double omiVersion = 3;
+    double odfVersion = 4;
+    string msgFormat = 5;
+}
+
+message PRequestStore {
+    //option (scalapb.message).extends = "database.journal.Models.Event";
+    map<fixed64,PRequestInfo> infos = 1;
+}
+
+message PRemoveInfo {
+    option (scalapb.message).extends = "database.journal.Models.Event";
+    fixed64 id = 1;
+}

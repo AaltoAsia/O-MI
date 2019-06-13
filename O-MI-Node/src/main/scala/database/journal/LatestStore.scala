@@ -1,14 +1,14 @@
 package database.journal
 
-import akka.actor.{ActorLogging, Props}
+import akka.actor.Props
 import akka.persistence._
-import database.journal.LatestStore._
-import database.journal.Models._
+import scala.util.{Failure, Success, Try}
+
+import LatestStore._
+import Models._
 import types.Path
 import types.odf._
 
-import scala.concurrent.duration.Duration
-import scala.util.{Failure, Success, Try}
 
 
 //Event and Commands are separate in case there is need to develop further and add Event and Command handlers
@@ -30,14 +30,9 @@ object LatestStore {
 
   case object ReadAllCommand extends Command
 }
-class LatestStore(id: String) extends PersistentActor with ActorLogging {
-  override def persistenceId: String = id
+class LatestStore(override val persistenceId: String) extends JournalStore {
 
-  val oldestSavedSnapshot: Long =
-    Duration(
-      context.system.settings.config.getDuration("omi-service.snapshot-delete-older").toMillis,
-      scala.concurrent.duration.MILLISECONDS).toMillis
-  var state: Map[Path, Value[Any]] = Map()
+  private var state: Map[Path, Value[Any]] = Map()
 
 
   def updateState(event: Event): Unit = event match {
@@ -59,7 +54,7 @@ class LatestStore(id: String) extends PersistentActor with ActorLogging {
 
   val snapshotInterval = 100
 
-  def receiveCommand: Receive = {
+  def receiveCommand: Receive = receiveBoilerplate orElse {
     case SaveSnapshot(msg) => sender() ! saveSnapshot(
       PWriteLatest(
         state.map{
@@ -67,15 +62,6 @@ class LatestStore(id: String) extends PersistentActor with ActorLogging {
         }
       )
     )
-    case SaveSnapshotSuccess(metadata @ SnapshotMetadata(snapshotPersistenceId, sequenceNr, timestamp)) => {
-      log.debug(metadata.toString)
-      deleteSnapshots(SnapshotSelectionCriteria(maxTimestamp = timestamp - oldestSavedSnapshot ))
-    }
-    case SaveSnapshotFailure(metadata, reason) ⇒ log.error(reason,  s"Save snapshot failure with: ${metadata.toString}")
-    case DeleteSnapshotsSuccess(crit) =>
-      log.debug(s"Snapshots successfully deleted for $persistenceId with criteria: $crit")
-    case DeleteSnapshotsFailure(crit, ex) =>
-      log.error(ex, s"Failed to delete old snapshots for $persistenceId with criteria: $crit")
 
     case SingleWriteCommand(p, v) => {
       persist(PWriteLatest(Map(p.toString -> v.persist))) { event =>

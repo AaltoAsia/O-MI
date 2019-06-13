@@ -136,14 +136,14 @@ class OmiServer extends OmiNode {
   )
 
 
-  val requestStorage: ActorRef = system.actorOf( RequestStore.props )
+  val tempRequestInfoStore: ActorRef = system.actorOf( TemporaryRequestInfoStore.props )
   val requestHandler: ActorRef = system.actorOf(
     RequestHandler.props(
       singleStores,
       subscriptionManager,
       dbHandler,
       settings,
-      requestStorage
+      tempRequestInfoStore,
     ),
     "request-handler"
   )
@@ -181,7 +181,7 @@ class OmiServer extends OmiNode {
     singleStores,
     requestHandler,
     callbackHandler,
-    requestStorage
+    tempRequestInfoStore,
   )
 
 
@@ -302,13 +302,6 @@ object Boot /*extends Starter */ {
   // with App{
   val log: Logger = LoggerFactory.getLogger("OmiServiceTest")
 
-  def time[R](message: String)(block: => R): R = {
-    val t0 = System.nanoTime()
-    val result = block    // call-by-name
-    val t1 = System.nanoTime()
-    log.info(s"$message took:\n${t1 - t0}ns")
-    result
-  }
 
   def main(args: Array[String]): Unit = {
     Try {

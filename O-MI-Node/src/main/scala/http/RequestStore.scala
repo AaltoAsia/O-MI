@@ -4,10 +4,10 @@ import akka.actor.{Actor, ActorSystem,  ActorLogging, Props}
 import scala.collection.mutable.{Map => MMap, HashMap => MHMap}
 import java.sql.Timestamp
 
-object RequestStore{
+object TemporaryRequestInfoStore{
   def props: Props = {
     Props(
-      new RequestStore()
+      new TemporaryRequestInfoStore()
     )
   }
   type RequestIDType= Long
@@ -30,8 +30,8 @@ object RequestStore{
 }
 
 
-class RequestStore () extends Actor with ActorLogging{
-  import RequestStore._
+class TemporaryRequestInfoStore () extends Actor with ActorLogging{
+  import TemporaryRequestInfoStore._
   val storage: MHMap[RequestIDType,MHMap[String,RequestInfo]] = MHMap.empty
   def receive = {
     case AddRequest( request ) => 

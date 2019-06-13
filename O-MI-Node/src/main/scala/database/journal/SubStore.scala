@@ -4,7 +4,7 @@ import java.sql.Timestamp
 import java.util.Date
 
 import Models._
-import akka.actor.{ActorLogging, Props}
+import akka.actor.Props
 import akka.persistence._
 import PAddSub.SubType._
 import database._
@@ -51,18 +51,12 @@ object SubStore {
   case class GetNewEventSubsForPath(path: Path) extends Command
 }
 
-class SubStore(id: String) extends PersistentActor with ActorLogging {
+class SubStore(override val persistenceId: String) extends JournalStore {
 
-  override def persistenceId: String = id
-  val oldestSavedSnapshot: Long =
-    Duration(
-      context.system.settings.config.getDuration("omi-service.snapshot-delete-older").toMillis,
-      scala.concurrent.duration.MILLISECONDS).toMillis
-
-  var eventSubs: Map[Path, Seq[EventSub]] = Map()
-  var idToSub: Map[Long, PolledSub] = Map()
-  var pathToSubs: Map[Path, Set[Long]] = Map()
-  var intervalSubs: Map[Long, IntervalSub] = Map()
+  private var eventSubs: Map[Path, Seq[EventSub]] = Map()
+  private var idToSub: Map[Long, PolledSub] = Map()
+  private var pathToSubs: Map[Path, Set[Long]] = Map()
+  private var intervalSubs: Map[Long, IntervalSub] = Map()
 
   def addPollSub(ps: PolledSub): Unit = {
     if (ps.endTime.after(new Date())) {
@@ -373,22 +367,13 @@ class SubStore(id: String) extends PersistentActor with ActorLogging {
 
   }
 
-  def receiveCommand: Receive = {
+  def receiveCommand: Receive = receiveBoilerplate orElse {
     case SaveSnapshot(msg) => sender() ! saveSnapshot(
       PSubStoreState(
         persistEventsubs(eventSubs),
         persistIdToSub(idToSub),
         persistPathToSub(pathToSubs),
         persistIntervalSubs(intervalSubs)))
-    case SaveSnapshotSuccess(metadata @ SnapshotMetadata(snapshotPersistenceId, sequenceNr, timestamp)) => {
-      log.debug(metadata.toString)
-      deleteSnapshots(SnapshotSelectionCriteria(maxTimestamp = timestamp - oldestSavedSnapshot ))
-    }
-    case SaveSnapshotFailure(metadata, reason) ⇒ log.error(reason,  s"Save snapshot failure with: ${metadata.toString}")
-    case DeleteSnapshotsSuccess(crit) =>
-      log.debug(s"Snapshots successfully deleted for $persistenceId with criteria: $crit")
-    case DeleteSnapshotsFailure(crit, ex) =>
-      log.error(ex, s"Failed to delete old snapshots for $persistenceId with criteria: $crit")
 
     case aEventS@AddEventSub(eventSub: EventSub) =>
       val res = updateState(aEventS)

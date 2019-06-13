@@ -40,6 +40,8 @@ class JournalProtoBufSerializer extends SerializerWithStringManifest {
   final val PollEventSubscriptionManifest = classOf[PPollEventSubscription].getName
   final val PollIntervalSubscriptionManifest = classOf[PPollIntervalSubscription].getName
   final val RemovePollSubDataManifest = classOf[PRemovePollSubData].getName
+  final val RequestInfoManifest = classOf[PRequestInfo].getName
+  final val RequestStoreManifest = classOf[PRequestStore].getName
 
   override def identifier = 1500
 
@@ -82,6 +84,8 @@ class JournalProtoBufSerializer extends SerializerWithStringManifest {
     case c: PPollEventSubscription => c.toByteArray
     case c: PPollIntervalSubscription => c.toByteArray
     case c: PRemovePollSubData => c.toByteArray
+    case c: PRequestInfo => c.toByteArray
+    case c: PRequestStore => c.toByteArray
   }
 
   override def fromBinary(bytes: Array[Byte], manifest: String): AnyRef = manifest match {
@@ -121,6 +125,7 @@ class JournalProtoBufSerializer extends SerializerWithStringManifest {
     case PollEventSubscriptionManifest => PPollEventSubscription.parseFrom(bytes)
     case PollIntervalSubscriptionManifest => PPollIntervalSubscription.parseFrom(bytes)
     case RemovePollSubDataManifest => PRemovePollSubData.parseFrom(bytes)
-
+    case RequestInfoManifest => PRequestInfo.parseFrom(bytes)
+    case RequestStoreManifest => PRequestStore.parseFrom(bytes)
   }
 }

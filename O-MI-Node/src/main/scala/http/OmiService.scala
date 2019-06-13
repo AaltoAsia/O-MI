@@ -51,7 +51,7 @@ import scala.util.{Failure, Success, Try}
 import scala.xml.NodeSeq
 import util._
 import utils._
-import RequestStore._
+import TemporaryRequestInfoStore._
 
 trait OmiServiceAuthorization
   extends ExtensibleAuthorization
@@ -120,7 +120,7 @@ trait OmiService
   import system.dispatcher
 
   //Get the files from the html directory; http://localhost:8080/html/form.html
-  //this version words with 'sbt run' and 're-start' as well as the packaged version
+  //this version works with 'sbt run' and 're-start' as well as the packaged version
   val staticHtml: Route = if (Files.exists(Paths.get("./html"))) {
     getFromDirectory("./html")
   } else getFromDirectory("O-MI-Node/html")
@@ -508,7 +508,6 @@ trait OmiService
     makePermissionTestFunction() { hasPermissionTest =>
       entity(as[String]) { requestString => // XML and O-MI parsed later
         extractClientIP { user =>
-          //val xmlH = XML.loadString("""<?xml version="1.0" encoding="UTF-8"?>""" )
           val requestID = (user,requestString.hashCode,currentTimestamp).hashCode
           requestStorage ! AddInfos( requestID, Seq( RequestTimestampInfo("route-time",  currentTimestamp), RequestLongInfo("request-hash",requestString.hashCode),RequestStringInfo("user",user.toString)))
           val response = handleRequest(hasPermissionTest, requestString, remote = user, requestID = requestID) //.map{ ns => xmlH ++ ns }
@@ -534,7 +533,6 @@ trait OmiService
 
           val requestID = (user,requestString.hashCode,currentTimestamp).hashCode
           requestStorage ! AddInfos( requestID, Seq( RequestTimestampInfo("route-time",  currentTimestamp), RequestLongInfo("request-hash",requestString.hashCode),RequestStringInfo("user",user.toString)))
-          //val xmlH = XML.loadString("""<?xml version="1.0" encoding="UTF-8"?>""" )
           val response = handleRequest(hasPermissionTest, requestString, remote = user, requestID = requestID) //.map{ ns => xmlH ++ ns }
           response.foreach{
             _ =>
@@ -665,7 +663,6 @@ trait WebSocketOMISupport {
         case requestString: String =>
 
           val requestID = (user,requestString.hashCode,currentTimestamp).hashCode
-          log.info( s"Testing: $requestID" )
           requestStorage ! AddInfos( requestID, Seq( RequestTimestampInfo("ws-time",  currentTimestamp), RequestLongInfo("request-hash",requestString.hashCode),RequestStringInfo("user",user.toString)) )
 
           val futureResponse: Future[ws.TextMessage] = handleRequest(hasPermissionTest,
