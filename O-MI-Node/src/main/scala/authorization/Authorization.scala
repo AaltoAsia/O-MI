@@ -14,7 +14,6 @@
 
 package authorization
 
-import akka.http.scaladsl.server.Directive.SingleValueModifiers
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.server.util.Tupler._

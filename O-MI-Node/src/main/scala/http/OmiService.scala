@@ -28,7 +28,6 @@ import akka.pattern.ask
 import akka.stream.scaladsl._
 import akka.stream.{ActorMaterializer, _}
 import akka.stream.alpakka.xml._
-import akka.stream.alpakka.xml.scaladsl.XmlWriting
 import akka.util.Timeout
 
 import authorization.Authorization._

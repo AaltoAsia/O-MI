@@ -114,7 +114,7 @@ object RESTHandler {
     
   }
 
-  def toEvents(node: Node, member: Option[String])(implicit singleStores: SingleStores, timeout: Timeout): Future[Either[String,SeqView[ParseEvent,Seq[_]]]] = node match{
+  def toEvents(node: Node, member: Option[String])(implicit singleStores: SingleStores): Future[Either[String,SeqView[ParseEvent,Seq[_]]]] = node match{
     case ii: InfoItem => 
       member match{
         case Some("value") => 

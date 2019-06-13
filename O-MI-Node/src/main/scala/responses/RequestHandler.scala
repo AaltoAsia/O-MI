@@ -93,7 +93,6 @@ class RequestHandler(
         RequestStringInfo( "callback-attribute", read.callback.toString)
       ))
     } 
-    val ottl: Timeout = Timeout(read.handleTTL)
     checkForNotFound(read).flatMap{
       case (Some(response),None) =>  
         Future.successful(response)

@@ -5,7 +5,7 @@ import java.sql.Timestamp
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
-import scala.util.{Try, Success, Failure}
+import scala.util.Try
 import scala.language.postfixOps
 
 import akka.actor.{ActorRef, ActorSystem}

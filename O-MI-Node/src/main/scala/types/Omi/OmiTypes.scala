@@ -31,7 +31,7 @@ import scala.collection.JavaConverters._
 import scala.collection.{SeqView, Iterator}
 import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
-import scala.xml.{NamespaceBinding, NodeSeq}
+import scala.xml.{NodeSeq}
 import akka.util.ByteString
 import akka.stream.scaladsl._
 import akka.stream.alpakka.xml._
@@ -259,7 +259,6 @@ class RawRequestWrapper(val rawRequest: String, private val user0: UserInfo) ext
   import RawRequestWrapper._
 
   //import scala.xml.pull._ // deprecated
-  import javax.xml.stream._
   import javax.xml.stream.events._
   import javax.xml.namespace._
 
