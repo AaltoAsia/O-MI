@@ -16,7 +16,7 @@ package types
 
 
 import java.sql.Timestamp
-import java.util.{GregorianCalendar}
+import java.util.GregorianCalendar
 import java.time.{ZoneId, OffsetDateTime}
 
 import javax.xml.datatype.{DatatypeFactory, XMLGregorianCalendar}

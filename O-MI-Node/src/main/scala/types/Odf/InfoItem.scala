@@ -17,31 +17,31 @@ object InfoItem {
   }
   trait Builders {
     implicit def fromPath(path: Path) = new Parameters {
-      def apply = InfoItem( path.last, path)
+      def apply() = InfoItem(path.last, path)
     }
     implicit def fromPathValues(t: (Path, Vector[Value[Any]])) = new Parameters {
       val (path, values) = t
-      def apply =
+      def apply() =
         InfoItem( path.last, path, values=values)
     }
     implicit def fromPathValuesDesc(t: (Path,
                                  Vector[Value[Any]],
                                  Description)) = new Parameters {
       val (path, values, description) = t
-      def apply = InfoItem( path.last, path, values=values, descriptions=Set(description))
+      def apply() = InfoItem(path.last, path, values=values, descriptions=Set(description))
     }
     implicit def fromPathValuesMeta(t: (Path,
                                  Vector[Value[Any]],
                                  MetaData)) = new Parameters {
       val (path, values, metaData) = t
-      def apply = InfoItem( path.last, path, values=values, metaData=Some(metaData))
+      def apply() = InfoItem(path.last, path, values=values, metaData=Some(metaData))
     }
     implicit def fromPathValuesDescMeta(t: (Path,
                                  Vector[Value[Any]],
                                  Description,
                                  MetaData)) = new Parameters {
       val (path, values, description, metaData) = t
-      def apply = InfoItem( path.last, path, values=values, metaData=Some(metaData), descriptions=Set(description))
+      def apply() = InfoItem(path.last, path, values=values, metaData=Some(metaData), descriptions=Set(description))
     }
   }
 

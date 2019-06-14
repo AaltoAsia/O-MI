@@ -9,7 +9,7 @@ import javax.xml.datatype.{DatatypeFactory, XMLGregorianCalendar}
 import parsing.xmlGen.scalaxb._
 
 import scala.collection.JavaConverters._
-import scala.collection.{Map}
+import scala.collection.Map
 import scala.collection.immutable.{Map => ImmutableMap}
 
 package object odf extends InfoItem.Builders {

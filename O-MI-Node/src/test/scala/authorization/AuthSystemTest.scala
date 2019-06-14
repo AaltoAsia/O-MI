@@ -56,7 +56,7 @@ class AuthServiceTestEnv extends Specification with AfterAll with Mockito {
 
   def beSomeEmptyReadRequest = 
     beSome(beLike[OmiRequest]{
-      case read: ReadRequest if read.odf.getPaths.size == 0 => ok
+      case read: ReadRequest if read.odf.getPaths.isEmpty => ok
     })
 
   def containExactlyPaths(f: Path*) = {

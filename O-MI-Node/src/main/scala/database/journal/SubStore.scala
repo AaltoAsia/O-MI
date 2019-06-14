@@ -51,9 +51,9 @@ object SubStore {
   case class GetNewEventSubsForPath(path: Path) extends Command
 }
 
-class SubStore(id: String) extends PersistentActor with ActorLogging {
+class SubStore(identifier: String) extends PersistentActor with ActorLogging {
 
-  override def persistenceId: String = id
+  override def persistenceId: String = identifier
   val oldestSavedSnapshot: Long =
     Duration(
       context.system.settings.config.getDuration("omi-service.snapshot-delete-older").toMillis,

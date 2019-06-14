@@ -213,7 +213,7 @@ class InfluxDBImplementation
 
 }
 
-  case class Measurement(val measurement: String, val value: String, val time: Timestamp){
+  case class Measurement(measurement: String, value: String, time: Timestamp){
     def formatStr: String = s"$measurement value=$value ${time.getTime}"
   }
 

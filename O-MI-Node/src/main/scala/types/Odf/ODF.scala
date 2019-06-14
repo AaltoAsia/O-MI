@@ -355,7 +355,7 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
         ) ++ handleEnd(index)
       case (obj: Object, index: Int) =>
         var count: Int = 0
-        while(parentStack.length > 0 && parentStack.head != obj.path.getParent){
+        while(parentStack.nonEmpty && parentStack.head != obj.path.getParent){
           val first = parentStack.headOption
           parentStack = parentStack.tail
           first match{
@@ -384,7 +384,7 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
       case (ii: InfoItem, index: Int) =>
 
         var count: Int = 0
-        while(parentStack.length > 0 && parentStack.head != ii.path.getParent){
+        while(parentStack.nonEmpty && parentStack.head != ii.path.getParent){
           val first = parentStack.headOption
           parentStack = parentStack.tail
           first match{

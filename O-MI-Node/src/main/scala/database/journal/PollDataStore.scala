@@ -27,8 +27,8 @@ object PollDataStore {
 
 }
 
-class PollDataStore(id: String) extends PersistentActor with ActorLogging {
-  override def persistenceId: String = id
+class PollDataStore(identifier: String) extends PersistentActor with ActorLogging {
+  override def persistenceId: String = identifier
   //"polldatastore"
   val oldestSavedSnapshot: Long =
     Duration(

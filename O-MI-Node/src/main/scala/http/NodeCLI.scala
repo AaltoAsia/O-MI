@@ -351,7 +351,7 @@ class OmiNodeCLI(
   }
 
   private def backupDatabase(filePath: String): Future[Unit] = {
-    val allData: Future[Option[ODF]] = removeHandler.getAllData
+    val allData: Future[Option[ODF]] = removeHandler.getAllData()
     allData.map(aData => {
       aData.foreach(odf => {
         val file = new File(filePath)
@@ -386,8 +386,17 @@ class OmiNodeCLI(
     "Done\r\n>"
   }
 
+  private def readFile(path: String): String = {
+    val source = Source.fromFile(path)
+    try{
+      source.getLines().mkString
+    } finally{
+      source.close()
+    }
+  }
+
   private def restoreSubs(filePath: String) = {
-    val json: JsValue = Source.fromFile(filePath).getLines().mkString.parseJson
+    val json: JsValue = readFile(filePath).parseJson
     val subs: Seq[(SavedSub, Option[SubData])] = json match {
       case JsArray(subscriptionsU) =>
         val subscriptions = subscriptionsU.collect{case o: JsObject => o}
