@@ -122,7 +122,7 @@ object RESTHandler {
             case odfvalue: Value[_] => 
               odfvalue.value match {
                 case value: ODF =>
-                  Right( Vector(StartDocument).view ++ value.asXMLEvents ++ Vector(EndDocument))
+                  Right( Vector(StartDocument).view ++ value.asXMLEvents() ++ Vector(EndDocument))
                 case value: Any =>
                   Left(value.toString)
               }

@@ -86,7 +86,7 @@ case class ODFValue(
           )
       )
       ).view ++
-    value.asXMLEvents ++
+    value.asXMLEvents() ++
     Seq(
       EndElement("value")
     )

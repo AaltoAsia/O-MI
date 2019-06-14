@@ -510,12 +510,17 @@ class SubscriptionManager(
       .map(allSubs => (allSubs.events ++ allSubs.intervals ++ allSubs.polls).map(_.id))
 
     def getNewId: Future[Long] = {
-      val nId: Long = rand.nextInt(Int.MaxValue)
-      allIdsF.flatMap(allIds =>
-        if (allIds.contains(nId))
-          getNewId
-        else
-          Future.successful(nId))
+      (subscription.requestID match {
+        case Some(id) => Future.successful(id)
+        case None => Future.failed(new Error("No request id"))
+      }).fallbackTo {
+        val nId: Long = rand.nextInt(Int.MaxValue)
+        allIdsF.flatMap(allIds =>
+          if (allIds.contains(nId))
+            getNewId
+          else
+            Future.successful(nId))
+      }
     }
 
     val endTime = subEndTimestamp(subscription.ttl)

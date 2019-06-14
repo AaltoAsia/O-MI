@@ -33,8 +33,7 @@ import database.TestDB
 import database.DBHandler
 import agentSystem._
 import database.journal.HierarchyStore.GetTree
-import authorization.Authorization._
-import authorization.{AuthAPIService, _}
+import authorization._
 
 //class TestOmiServer(config: Config) extends OmiNode {
 class TestOmiServer() extends OmiNode with OmiServiceTestImpl {
@@ -118,7 +117,7 @@ trait OmiServiceTestImpl extends OmiService with AnyActorSystem {
     "database-handler"
   )
   lazy val requestStorage =system.actorOf(
-    RequestStore.props
+    TemporaryRequestInfoStore.props
   )
   lazy val requestHandler = system.actorOf(
     RequestHandler.props(
@@ -459,6 +458,7 @@ class DummySingleStores(
   override val pollDataStore: ActorRef =  ActorRef.noSender,
   override val hierarchyStore: ActorRef =  ActorRef.noSender,
   )(implicit val system: ActorSystem)  extends {
+    override val requestInfoStore: ActorRef = system.actorOf(database.journal.RequestInfoStore.props()) //ActorRef.noSender
     override protected val settings: OmiConfigExtension = {
       val s = mock[OmiConfigExtension]
       doReturn(11.seconds).when(s).journalTimeout

@@ -2,18 +2,19 @@ package types
 package odf
 
 
-import java.sql.Timestamp
 import parsing.xmlGen.xmlTypes.{ObjectType, ObjectsType, InfoItemType}
 import parsing.xmlGen.{odfDefaultScope, scalaxb}
 
 import scala.collection.immutable.{HashMap => ImmutableHashMap, TreeSet => ImmutableTreeSet, SortedSet}
-import scala.collection.mutable.{ Buffer, Map => MutableMap, Stack => MStack, Queue => MQueue}
+import scala.collection.mutable.{ Buffer, Map => MutableMap, Stack => MStack}
 import scala.collection.{Map, Seq, SortedSet => CSortedSet, SeqView}
 import akka.stream.alpakka.xml._
 import scala.xml.NodeSeq
 import types.Path.PathOrdering
 import types.Path
-import utils._
+
+import types.OmiTypes.Version.OdfVersion
+import types.OmiTypes.Version.OdfVersion._
 
 /** O-DF structure
   */
@@ -288,23 +289,23 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
     )
   }*/
 
-  final implicit def asXMLEvents: SeqView[ParseEvent, Seq[_]] = {
+  final def asXMLEvents(odfVersion: Option[OdfVersion]=None): SeqView[ParseEvent, Seq[_]] = {
     
-    object ResponseOrdering extends scala.math.Ordering[Node] {
-      def compare(l: Node, r: Node): Int = {
-        if( PathOrdering.compare(l.path.getParent, r.path.getParent) == 0){
+    //object ResponseOrdering extends scala.math.Ordering[Node] {
+    //  def compare(l: Node, r: Node): Int = {
+    //    if( PathOrdering.compare(l.path.getParent, r.path.getParent) == 0){
 
-          (l,r) match {
-            case (ii:InfoItem,obj: Object) => -1
-            case (obj: Object, ii: InfoItem) => 1
-            case (nl: Node, nr: Node) => 
-              PathOrdering.compare(l.path,r.path)
-          }
-        } else {
-              PathOrdering.compare(l.path,r.path)
-        }
-      }
-    }
+    //      (l,r) match {
+    //        case (ii:InfoItem,obj: Object) => -1
+    //        case (obj: Object, ii: InfoItem) => 1
+    //        case (nl: Node, nr: Node) => 
+    //          PathOrdering.compare(l.path,r.path)
+    //      }
+    //    } else {
+    //          PathOrdering.compare(l.path,r.path)
+    //    }
+    //  }
+    //}
     def sort = {
       //val timer = LapTimer(println)
       var iis: List[InfoItem] = List.empty
@@ -344,7 +345,7 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
         Vector(
           StartElement(
             "Objects",
-             objs.version.map{
+             (odfVersion.map(_.number.toString) orElse objs.version).map{
                ver: String =>
                  Attribute("version", ver)
              }.toList ++ objs.attributes.map{
@@ -352,7 +353,8 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
                  Attribute(key,value)
              },
             namespaceCtx = List(
-              Namespace(s"http://www.opengroup.org/xsd/odf/${objs.version.getOrElse("1.0")}/",None))
+              //Namespace(s"http://www.opengroup.org/xsd/odf/${objs.version.getOrElse("1.0")}/",None))
+              Namespace(odfVersion.getOrElse(OdfVersion1).namespace,None))
           )
         ) ++ handleEnd(index)
       case (obj: Object, index: Int) =>

@@ -28,7 +28,7 @@ import akka.pattern.ask
 import akka.stream.scaladsl._
 import akka.stream.{ActorMaterializer, _}
 import akka.stream.alpakka.xml._
-import akka.stream.alpakka.xml.scaladsl.XmlWriting
+//import akka.stream.alpakka.xml.scaladsl.XmlWriting
 import akka.util.Timeout
 
 import authorization.Authorization._
@@ -44,7 +44,7 @@ import types.{ParseError, Path}
 
 import scala.compat.java8.OptionConverters._
 import scala.concurrent.duration._
-import scala.concurrent.{Future, Promise, TimeoutException}
+import scala.concurrent.{Future, Promise, TimeoutException, Await}
 import scala.language.postfixOps
 import scala.collection.SeqView
 import scala.util.{Failure, Success, Try}
@@ -240,7 +240,7 @@ trait OmiService
                 if( xmlResp.isEmpty ){
                   val errorEvents= errorResult("No Object Found").value
                   val entity = parseEventsToHttpEntity(errorEvents)
-                  complete(StatusCodes.NotFound,entity)
+                  complete((StatusCodes.NotFound,entity))
                 } else {
                   val xmlWithNamespace = xmlResp.take(2).map{
                     // take StartDocument and first StartElement
@@ -278,13 +278,10 @@ trait OmiService
                      requestString: String,
                      currentConnectionCallback: Option[Callback] = None,
                      remote: RemoteAddress,
-                     requestID: Long
                    ): Future[ResponseRequest] = {
     try {
 
-      requestStorage ! AddRequest( requestID )
-      requestStorage ! AddInfos( requestID, Seq( RequestTimestampInfo("start-time",  currentTimestamp)))
-      //val eitherOmi = OmiParser.parse(requestString)
+      val startTime = currentTimestamp
 
       //XXX: Corrected namespaces
       //val timer = LapTimer(log.info)
@@ -293,25 +290,32 @@ trait OmiService
       //timer.step("Corrected wrong schema")
       
       val originalReq = RawRequestWrapper(correctedRequestString, UserInfo(remoteAddress = Some(remote)))
+
+      val omiVersion = OmiVersion.fromNameSpace(originalReq.omiEnvelope.namespace)
+      val odfVersion = originalReq.odfObjects.map{objs => OdfVersion.fromNameSpace(objs.namespace)}
+
+      val requestID = Await.result(
+        singleStores.addRequestInfo(startTime.getTime()*1000 + originalReq.handleTTL.toSeconds, omiVersion, odfVersion),
+        originalReq.handleTTL) // TODO better infinite ttl handling (not only this line, overall)
+
+      requestStorage ! AddRequest( requestID )
+      requestStorage ! AddInfos( requestID, Seq(
+        RequestTimestampInfo("start-time",  startTime),
+        RequestAnyInfo("omiVersion", omiVersion),
+        RequestAnyInfo("odfVersion", odfVersion)
+      ))
+
+
       val ttlPromise = Promise[ResponseRequest]()
       originalReq.ttl match {
         case ttl: FiniteDuration => ttlPromise.completeWith(
           akka.pattern.after(ttl, using = system.scheduler) {
-            log.info(s"TTL timed out after $ttl")
+            log.info(s"TTL timed out after $ttl seconds")
             Future.successful(Responses.TTLTimeout())
           }
         )
         case _ => //noop
       }
-
-      requestStorage ! AddInfos( requestID, Seq(
-        RequestAnyInfo("omiVersion",
-          OmiVersion.fromNameSpace(originalReq.omiEnvelope.namespace))
-        )++
-        originalReq.odfObjects.map{objs =>
-          RequestAnyInfo("odfVersion", OdfVersion.fromNameSpace(objs.namespace))
-        }
-      )
 
       //timer.step("Request wrapping")
       val responseF: Future[ResponseRequest] = hasPermissionTest(originalReq) match {
@@ -333,13 +337,13 @@ trait OmiService
                     request: OmiRequest => 
                       //timer.step("Callback defined")
                       requestStorage ! AddInfos( requestID, Seq( RequestTimestampInfo("callback-time",  currentTimestamp)/*, RequestStringInfo("omi-version", request.version)*/))
-                      val handle = handleRequest(request.withRequestID(Some(requestID)))
-                      handle.foreach{
+                      val handle: Future[ResponseRequest] = handleOmiRequest(request.withRequestID(Some(requestID)))
+                      handle.map{
                         response =>
                         //timer.step("Request handled")
                         requestStorage ! AddInfos( requestID, Seq( RequestTimestampInfo("handle-end-time",  currentTimestamp)))
+                        response.withRequestID(Some(requestID)) //TODO: Clean requestID passing
                       }
-                      handle
                   }.recover {
                     case e: TimeoutException => Responses.TTLTimeout(Some(e.getMessage))
                     case e: IllegalArgumentException => Responses.InvalidRequest(Some(e.getMessage))
@@ -399,6 +403,11 @@ trait OmiService
 
           //HttpEntity.Strict(ContentType.`text/xml(UTF-8)`, xmlStream)
           //HttpEntity.CloseDelimited(ContentType.`text/xml(UTF-8)`, xmlStream)
+          //
+          //
+          requestStorage ! AddInfos( requestID, Seq( RequestTimestampInfo("final-time",  currentTimestamp)))
+          requestStorage ! RemoveRequest( requestID )
+
           response
       }
 
@@ -415,7 +424,7 @@ trait OmiService
     }
   }
 
-  def handleRequest(request: OmiRequest): Future[ResponseRequest] = {
+  def handleOmiRequest(request: OmiRequest): Future[ResponseRequest] = {
     implicit val to: Timeout = Timeout(request.handleTTL)
     request match {
       // Part of a fix to stop response request infinite loop (server and client sending OK to others' OK)
@@ -508,15 +517,8 @@ trait OmiService
     makePermissionTestFunction() { hasPermissionTest =>
       entity(as[String]) { requestString => // XML and O-MI parsed later
         extractClientIP { user =>
-          val requestID = (user,requestString.hashCode,currentTimestamp).hashCode
-          requestStorage ! AddInfos( requestID, Seq( RequestTimestampInfo("route-time",  currentTimestamp), RequestLongInfo("request-hash",requestString.hashCode),RequestStringInfo("user",user.toString)))
-          val response = handleRequest(hasPermissionTest, requestString, remote = user, requestID = requestID) //.map{ ns => xmlH ++ ns }
+          val response = handleRequest(hasPermissionTest, requestString, remote = user) //.map{ ns => xmlH ++ ns }
           //val marshal = ToResponseMarshallable(response)(Marshaller.futureMarshaller(xmlCT))
-          response.foreach{
-            _ =>
-              requestStorage ! AddInfos( requestID, Seq( RequestTimestampInfo("final-time",  currentTimestamp)))
-              requestStorage ! RemoveRequest( requestID )
-          }
           complete(HttpResponse(entity=chunkedStream(response)))
         }
       }
@@ -531,14 +533,7 @@ trait OmiService
       formFields("msg".as[String]) { requestString =>
         extractClientIP { user =>
 
-          val requestID = (user,requestString.hashCode,currentTimestamp).hashCode
-          requestStorage ! AddInfos( requestID, Seq( RequestTimestampInfo("route-time",  currentTimestamp), RequestLongInfo("request-hash",requestString.hashCode),RequestStringInfo("user",user.toString)))
-          val response = handleRequest(hasPermissionTest, requestString, remote = user, requestID = requestID) //.map{ ns => xmlH ++ ns }
-          response.foreach{
-            _ =>
-              requestStorage ! AddInfos( requestID, Seq( RequestTimestampInfo("final-time",  currentTimestamp)))
-              requestStorage ! RemoveRequest( requestID )
-          }
+          val response = handleRequest(hasPermissionTest, requestString, remote = user) //.map{ ns => xmlH ++ ns }
           complete(HttpResponse(entity=chunkedStream(response)))
         }
       }
@@ -662,21 +657,12 @@ trait WebSocketOMISupport {
           queueSend(Future.successful(ws.TextMessage("")))
         case requestString: String =>
 
-          val requestID = (user,requestString.hashCode,currentTimestamp).hashCode
-          requestStorage ! AddInfos( requestID, Seq( RequestTimestampInfo("ws-time",  currentTimestamp), RequestLongInfo("request-hash",requestString.hashCode),RequestStringInfo("user",user.toString)) )
-
           val futureResponse: Future[ws.TextMessage] = handleRequest(hasPermissionTest,
             requestString,
             createZeroCallback,
-            user,
-            requestID
+            user
           ).map(r => ws.TextMessage.Streamed(r.asXMLSource))
 
-          futureResponse.foreach{
-            _ =>
-              requestStorage ! AddInfos( requestID, Seq( RequestTimestampInfo("final-time",  currentTimestamp)))
-              requestStorage ! RemoveRequest( requestID.hashCode )
-          }
           queueSend(futureResponse)
       }
     }

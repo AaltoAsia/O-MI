@@ -14,6 +14,9 @@ import scala.concurrent.duration._
 import akka.stream.alpakka.xml._
 import scala.util.Try
 
+import Version.OdfVersion
+import Version.OdfVersion._
+
 trait JavaOmiResult {
   def requestIDsAsJava(): JIterable[RequestID]
 
@@ -88,7 +91,7 @@ class OmiResult(
 
   }
 
-  def asXMLEvents: SeqView[ParseEvent,Seq[_]] ={
+  def asXMLEvents(odfVersion: Option[OdfVersion] = None): SeqView[ParseEvent,Seq[_]] ={
         Vector(
           StartElement("result",
             odf.map{
@@ -107,7 +110,7 @@ class OmiResult(
         } ++ odf.view.flatMap{
           o_df =>
             Vector(StartElement("msg")).view ++
-            o_df.asXMLEvents ++
+            o_df.asXMLEvents(odfVersion) ++
             Vector(EndElement("msg"))
         } ++ Vector(
           EndElement("result")

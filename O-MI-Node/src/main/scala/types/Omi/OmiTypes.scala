@@ -31,7 +31,7 @@ import scala.collection.JavaConverters._
 import scala.collection.{SeqView, Iterator}
 import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
-import scala.xml.{NamespaceBinding, NodeSeq}
+import scala.xml.NodeSeq
 import akka.util.ByteString
 import akka.stream.scaladsl._
 import akka.stream.alpakka.xml._
@@ -204,7 +204,7 @@ sealed trait OdfRequest extends OmiRequest {
   def odfAsDataRecord: DataRecord[NodeSeq] = DataRecord(None, Some("Objects"), odf.asXML)
   
   def odfAsOmiMsg: SeqView[ParseEvent,Seq[_]] ={
-    Vector(StartElement("msg")).view ++ odf.asXMLEvents ++ Vector(EndElement("msg"))
+    Vector(StartElement("msg")).view ++ odf.asXMLEvents() ++ Vector(EndElement("msg"))
   }
   def asXMLEvents: SeqView[ParseEvent,Seq[_]] 
 }
@@ -265,7 +265,6 @@ class RawRequestWrapper(val rawRequest: String, private val user0: UserInfo) ext
   import RawRequestWrapper._
 
   //import scala.xml.pull._ // deprecated
-  import javax.xml.stream._
   import javax.xml.stream.events._
   import javax.xml.namespace._
 
@@ -856,14 +855,15 @@ trait JavaResponseRequest {
 /**
   * Response request, contains result for other requests
   **/
-class ResponseRequest(
+case class ResponseRequest(
                        val results: OdfCollection[OmiResult],
-                       val ttl: Duration,
+                       val ttl: Duration = 10 seconds,
                        val callback: Option[Callback] = None,
                        private val user0: UserInfo = UserInfo(),
                        val senderInformation: Option[SenderInformation] = None,
                        val ttlLimit: Option[Timestamp] = None,
-                       val requestID: Option[Long] = None
+                       val requestID: Option[Long] = None,
+                       val renderRequestID: Boolean = false
                      ) extends OmiRequest with PermissiveRequest with JavaResponseRequest {
   user = user0
 
@@ -875,11 +875,12 @@ class ResponseRequest(
             callback: Option[Callback] = this.callback,
             senderInformation: Option[SenderInformation] = this.senderInformation,
             ttlLimit: Option[Timestamp] = this.ttlLimit,
-            requestID: Option[Long] = this.requestID
+            requestID: Option[Long] = this.requestID,
+            renderRequestID: Boolean = false,
           ): ResponseRequest = ResponseRequest(results, ttl)
 
   def withCallback: Option[Callback] => ResponseRequest = cb => this.copy(callback = cb)
-  def withRequestID: Option[Long] => OmiRequest = id => this.copy(requestID = id )
+  def withRequestID: Option[Long] => ResponseRequest = id => this.copy(requestID = id )
 
   def odf: ODF = results.foldLeft(ImmutableODF()) {
     case (l: ODF, r: OmiResult) =>
@@ -931,40 +932,39 @@ class ResponseRequest(
   }
 
   val requestVerb: MessageType.Response.type = MessageType.Response
-  def asXMLEvents: SeqView[ParseEvent,Seq[_]] ={
+  def asXMLEvents() = asXMLEventsWithVersion()
+  def asXMLEventsWithVersion(omiVersion: OmiVersion = OmiVersion1, odfVersion: Option[OdfVersion] = None): SeqView[ParseEvent,Seq[_]] ={
     Vector(
       StartDocument,
       StartElement("omiEnvelope",
         List(
           Attribute("ttl", ttlAsSeconds.toString),//.toString.replaceAll(".0$","")),
-          Attribute("version", "1.0")
+          Attribute("version", omiVersion.number.toString)
         ),
-        namespaceCtx = List(Namespace("http://www.opengroup.org/xsd/omi/1.0/",None))
+        namespaceCtx = List(Namespace(omiVersion.namespace,None))
       ),
       StartElement("response")
-    ).view ++ requestID.view.flatMap{
+    ).view ++
+    {if (renderRequestID) requestID.view.flatMap{
       rid =>
         Vector(
           StartElement("requestID"),
           Characters(rid.toString),
           EndElement("requestID")
         )
-    } ++ results.view.flatMap{
-      result => result.asXMLEvents
+    }
+    else Seq.empty.view} ++
+    results.view.flatMap{
+      result => result.asXMLEvents(odfVersion)
     } ++ Vector(
       EndElement("response"),
       EndElement("omiEnvelope"),
       EndDocument
     )
   }
-
-
 }
 
-
-object ResponseRequest {
-  def apply(
-             results: OdfCollection[OmiResult],
-             ttl: Duration = 10.seconds
-           ): ResponseRequest = new ResponseRequest(results, ttl)
+object ResponseRequest{
+  def applySimple(results: OdfCollection[OmiResult], ttl: Duration) = ResponseRequest(results,ttl)
 }
+

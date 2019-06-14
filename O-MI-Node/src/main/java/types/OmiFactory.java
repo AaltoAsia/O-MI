@@ -818,7 +818,7 @@ final public class OmiFactory{
       Duration ttl,
       Iterable<OmiResult> results
       ){
-    return ResponseRequest$.MODULE$.apply(
+    return ResponseRequest$.MODULE$.applySimple(
         OdfTreeCollection.fromJava(results),
         ttl
         );
