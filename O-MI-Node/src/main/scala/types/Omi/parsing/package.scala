@@ -1,5 +1,5 @@
 package types
-package odf
+package OmiTypes
 
 import utils._
 import scala.util.Try

@@ -959,6 +959,7 @@ class ResponseRequest(
 object ResponseRequest {
   def apply(
              results: OdfCollection[OmiResult],
-             ttl: Duration = 10.seconds
-           ): ResponseRequest = new ResponseRequest(results, ttl)
+             ttl: Duration = 10.seconds,
+             callback: Option[Callback] = None
+           ): ResponseRequest = new ResponseRequest(results, ttl, callback)
 }

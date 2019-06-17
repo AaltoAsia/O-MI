@@ -13,6 +13,7 @@
  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 
 package types
+import java.sql.Timestamp
 import akka.stream.alpakka.xml._
 
 trait EventBuilder[T] {
@@ -21,3 +22,10 @@ trait EventBuilder[T] {
   def isComplete: Boolean
   def build: T
 }
+case class FailedEventBuilder(val previous: Option[EventBuilder[_]], val msg: String, implicit val receiveTime: Timestamp)  extends EventBuilder[ParseError]{
+    def parse( event: ParseEvent ): EventBuilder[ParseError] = {
+      this
+    }
+    final def isComplete: Boolean = false
+    def build: ParseError = ODFParserError(msg)
+  } 

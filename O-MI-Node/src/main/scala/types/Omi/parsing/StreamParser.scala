@@ -12,7 +12,7 @@
  +    limitations under the License.                                              +
  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 package types
-package omi
+package OmiTypes
 package parser
 
 import java.sql.Timestamp

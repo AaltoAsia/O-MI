@@ -29,16 +29,11 @@ import akka.stream.alpakka.xml.scaladsl._
 
 import types._
 import odf._
+import types.OmiTypes.parser.{ResultEventBuilder,OdfRequestEventBuilder}
 import utils._
-  private class FailedEventBuilder(val previous: Option[EventBuilder[_]], val msg: String, implicit val receiveTime: Timestamp)  extends EventBuilder[ParseError]{
-    def parse( event: ParseEvent ): EventBuilder[ParseError] = {
-      this
-    }
-    final def isComplete: Boolean = false
-    def build: ParseError = ODFParserError(msg)
-  } 
 
-  private class ODFEventBuilder(  val previous: Option[EventBuilder[_]], implicit val receiveTime: Timestamp)  extends EventBuilder[ODF]{
+
+  class ODFEventBuilder(  val previous: Option[EventBuilder[_]], implicit val receiveTime: Timestamp = currentTimestamp)  extends EventBuilder[ODF]{
     private var position: Int = 0
     private var odf: MutableODF = MutableODF()
     private var complete: Boolean = false 
@@ -56,12 +51,18 @@ import utils._
       event match{
         case startElement: StartElement if startElement.localName == "Objects" =>
           if( position == 0){
+            val correctNS = startElement.namespace.forall{
+              str: String =>
+               str.startsWith("http://www.opengroup.org/xsd/odf/")
+            }
+            if( !correctNS )
+              throw ODFParserError("Wrong namespace url.")
             val version = startElement.attributes.get("version")
             val attributes = startElement.attributes.filter( _._1 != "version")
             odf.add( Objects(version, attributes))
             this
           } else 
-            new FailedEventBuilder(Some(this),"Objects is defined twice", receiveTime)
+            throw ODFParserError("Objects is defined twice")
 
         case startElement: StartElement if startElement.localName == "Object" =>
           new ObjectEventBuilder(Path("Objects"),Some(this),receiveTime).parse(event)
@@ -69,22 +70,27 @@ import utils._
           previous match {
             case Some( state: ValueEventBuilder ) =>
               state.addODF(odf)
+            case Some( state: OdfRequestEventBuilder[_] ) =>
+              state.addODF(odf)
+            case Some( state: ResultEventBuilder ) =>
+              state.addODF(odf)
             case None =>
               complete = true
               this
           }
+        case event: ParseEvent =>
+           unexpectedEventHandle( " inside Objects element.", event, this)
       }
     }
   }
 
-  private class ObjectEventBuilder( val parentPath:Path,  val previous: Option[EventBuilder[_]], implicit  val receiveTime: Timestamp)  extends EventBuilder[Object]{
+  class ObjectEventBuilder( val parentPath:Path,  val previous: Option[EventBuilder[_]], implicit  val receiveTime: Timestamp = currentTimestamp)  extends EventBuilder[Object]{
     private var subNodes: List[Node] = List.empty
     private var mainId = ""
     private var path: Path = parentPath
     private var typeAttribute: Option[String] = None
     private var descriptions: List[Description] = List.empty
     private var ids: List[QlmID] = List.empty
-    private var position: Int = 0
     private var complete: Boolean = false 
     final def isComplete: Boolean = previous.isEmpty && complete
     def build: Object = Object(
@@ -94,7 +100,7 @@ import utils._
               Description.unionReduce(descriptions.toSet)
             )
     def addSubNode( node: Node): ObjectEventBuilder = {
-      subNodes = node:: subNodes
+      subNodes = node :: subNodes
       this
     }
     def addSubNodes( nodes: List[Node]): ObjectEventBuilder = {
@@ -103,7 +109,7 @@ import utils._
     }
 
     def addId( id: QlmID ): ObjectEventBuilder  ={
-      ids = id:: ids
+      ids = id :: ids
       if( mainId.isEmpty ){
         mainId = id.id
         path = parentPath / mainId
@@ -111,73 +117,111 @@ import utils._
       this
     } 
     def addDescription( desc: Description): ObjectEventBuilder ={
-      descriptions = desc:: descriptions
+      descriptions = desc :: descriptions
       this
     } 
+    object Position extends Enumeration {
+      type Position = Value
+      val OpenTag, Ids, Descriptions, InfoItems, Objects, CloseTag = Value 
+    }
+    import Position._
+    private var position: Position = OpenTag
     def parse( event: ParseEvent ): EventBuilder[_] = {
-      event match{
-        case startElement: StartElement if startElement.localName == "Object" =>
-          if( position == 0){
-            typeAttribute = startElement.attributes.get("type")
-            position = 1
-            this
-          } else {
-            if(mainId.nonEmpty){
-              position = 4
-              new ObjectEventBuilder( path, Some(this), receiveTime).parse(event)
-            } else new FailedEventBuilder(Some(this),"No id defined for Object before child Object", receiveTime)
+      position match {
+        case OpenTag =>
+          event match { 
+            case startElement: StartElement if startElement.localName == "Object" =>
+              typeAttribute = startElement.attributes.get("type")
+              position = Ids
+              this
+            case event: ParseEvent =>
+              unexpectedEventHandle( "before expected Object element.", event, this)
           }
-        case startElement: StartElement if startElement.localName == "id" =>
-          if( position <= 1){
-            position = 1
-            new IdEventBuilder(Some(this),receiveTime).parse(event)
-          } else {
-            new FailedEventBuilder(Some(this),"id in wrong position, after description, InfoItem or Objects", receiveTime)
+        case Ids => 
+          event match { 
+            case startElement: StartElement if startElement.localName == "id" =>
+              new IdEventBuilder(Some(this),receiveTime).parse(event)
+            case event: ParseEvent if mainId.isEmpty =>
+              unexpectedEventHandle( "before least one Id element.", event, this)
+            case startElement: StartElement if startElement.localName == "description" =>
+              position = Descriptions
+              parse(event)
+            case startElement: StartElement if startElement.localName == "InfoItem" =>
+              position = InfoItems
+              parse(event)
+            case startElement: StartElement if startElement.localName == "Object" =>
+              position = Objects
+              parse(event)
+            case endElement: EndElement if endElement.localName == "Object" =>
+              position = CloseTag
+              parse(event)
+            case event: ParseEvent =>
+              unexpectedEventHandle( "after id.", event, this)
           }
-        case startElement: StartElement if startElement.localName == "description" =>
-          if( position <= 2){
-            if(mainId.nonEmpty){
-              position = 2
+        case Descriptions => 
+          event match { 
+            case startElement: StartElement if startElement.localName == "description" =>
               new DescriptionEventBuilder(Some(this),receiveTime).parse(event)
-            } else new FailedEventBuilder(Some(this),"No id defined for Object before description", receiveTime)
-          } else {
-            new FailedEventBuilder(Some(this),"description in wrong position, after InfoItem or Objects", receiveTime)
+            case startElement: StartElement if startElement.localName == "InfoItem" =>
+              position = InfoItems
+              parse(event)
+            case startElement: StartElement if startElement.localName == "Object" =>
+              position = Objects
+              parse(event)
+            case endElement: EndElement if endElement.localName == "Object" =>
+              position = CloseTag
+              parse(event)
+            case event: ParseEvent =>
+              unexpectedEventHandle( "after description inside Object", event, this)
           }
-        case startElement: StartElement if startElement.localName == "InfoItem" =>
-          if( position <= 3){
-            if(mainId.nonEmpty){
-              position = 3
+        case InfoItems => 
+          event match { 
+            case startElement: StartElement if startElement.localName == "InfoItem" =>
               new InfoItemEventBuilder( path, Some(this),receiveTime).parse(event)
-            } else new FailedEventBuilder(Some(this),"No id defined for Object before InfoItem", receiveTime)
-          } else {
-            new FailedEventBuilder(Some(this),"InfoItem in wrong position, after Objects", receiveTime)
+            case startElement: StartElement if startElement.localName == "Object" =>
+              position = Objects
+              parse(event)
+            case endElement: EndElement if endElement.localName == "Object" =>
+              position = CloseTag
+              parse(event)
+            case event: ParseEvent =>
+              unexpectedEventHandle( "after InfoItem inside Object.", event, this)
           }
-        case endElement: EndElement if endElement.localName == "Object" =>
-          if( mainId.nonEmpty ){
+        case Objects => 
+          event match { 
+            case startElement: StartElement if startElement.localName == "Object" =>
+              new ObjectEventBuilder( path, Some(this), receiveTime).parse(event)
+            case endElement: EndElement if endElement.localName == "Object" =>
+              position = CloseTag
+              parse(event)
+            case event: ParseEvent =>
+              unexpectedEventHandle( "after Object inside Object.", event, this)
+          }
+        case CloseTag => 
+          event match { 
+            case endElement: EndElement if endElement.localName == "Object" =>
+              if( mainId.nonEmpty ){
 
-            val obj = build
-            previous match{
-              case Some(state: ObjectEventBuilder ) => state.addSubNodes(obj:: subNodes)
-              case Some(state: ODFEventBuilder ) => state.addSubNodes(obj:: subNodes)
-              case None =>
-                complete = true
-                this
-            }
-          } else new FailedEventBuilder(Some(this),"No id defined for Object before end tag", receiveTime)
-        case startElement: StartElement if !allowedElements.contains(startElement.localName) =>
-          new FailedEventBuilder( Some(this), s"Possibly unknown ${startElement.localName} element is not allowed in Object",receiveTime)
-        case endElement: EndElement if !allowedElements.contains(endElement.localName) =>
-          new FailedEventBuilder( Some(this), s"Possibly unknown ${endElement.localName} element is not allowed in Object",receiveTime)
-
+                val obj = build
+                previous match{
+                  case Some(state: ObjectEventBuilder ) => state.addSubNodes(obj :: subNodes)
+                  case Some(state: ODFEventBuilder ) => state.addSubNodes(obj :: subNodes)
+                  case None =>
+                    complete = true
+                    this
+                }
+              } else throw ODFParserError("No ids found for Object")
+            case event: ParseEvent =>
+              unexpectedEventHandle( "after Object end.", event, this)
+          }
       }
     }
     val allowedElements = Set("Object","InfoItem","description","id")
 
   }
 
-  private class MetaDataEventBuilder(val infoItemPath: Path,  val previous: Option[InfoItemEventBuilder], implicit  val receiveTime: Timestamp)  extends EventBuilder[MetaData]{
+  class MetaDataEventBuilder(val infoItemPath: Path,  val previous: Option[InfoItemEventBuilder], implicit  val receiveTime: Timestamp = currentTimestamp)  extends EventBuilder[MetaData]{
     val allowedElements = Set("MetaData","InfoItem")
-    private var position: Int = 0
     private var infoItems: List[InfoItem] = List.empty
     private var path = infoItemPath / "MetaData"
     private var complete: Boolean = false 
@@ -185,35 +229,55 @@ import utils._
     def build: MetaData = MetaData( infoItems.toVector)
 
     def addInfoItem( ii: InfoItem): MetaDataEventBuilder = {
-      infoItems = ii:: infoItems
+      infoItems = ii :: infoItems
       this
     }
+    object Position extends Enumeration {
+      type Position = Value
+      val OpenTag, InfoItems, CloseTag = Value 
+    }
+    import Position._
+    private var position: Position = OpenTag
     def parse( event: ParseEvent ): EventBuilder[_] = {
-      event match{
-        case startElement: StartElement if startElement.localName == "MetaData" =>
-          position = 1
-          this
-        case startElement: StartElement if startElement.localName == "MetaData" =>
-          new InfoItemEventBuilder(path,Some(this),receiveTime).parse(event)
-        case endElement: EndElement if endElement.localName == "MetaData" =>
-          previous match{
-            case Some(state: InfoItemEventBuilder) => state.addMetaData( build )
-            case Some(state: EventBuilder[_]) => new FailedEventBuilder(Some(this), "MetaData after something else than InfoItem", receiveTime)
-            case None =>
-              complete = true
+      position match{
+        case OpenTag =>
+          event match{
+            case startElement: StartElement if startElement.localName == "MetaData" =>
+              position = InfoItems
               this
+            case event: ParseEvent =>
+              unexpectedEventHandle( "before expected MetaData element.", event, this)
           }
-        case startElement: StartElement if !allowedElements.contains(startElement.localName) =>
-          new FailedEventBuilder( Some(this), s"Possibly unknown ${startElement.localName} element is not allowed in MetaData",receiveTime)
-        case endElement: EndElement if !allowedElements.contains(endElement.localName) =>
-          new FailedEventBuilder( Some(this), s"Possibly unknown ${endElement.localName} element is not allowed in MetaData",receiveTime)
+        case InfoItems =>
+          event match{
+            case startElement: StartElement if startElement.localName == "InfoItem" =>
+              new InfoItemEventBuilder(path,Some(this),receiveTime).parse(event)
+            case endElement: EndElement if endElement.localName == "MetaData" =>
+              position = CloseTag
+              parse(event)
+            case event: ParseEvent =>
+              unexpectedEventHandle( "before expected InfoItem elements.", event, this)
+          }
+        case CloseTag =>
+          event match{
+            case endElement: EndElement if endElement.localName == "MetaData" =>
+              position = CloseTag
+              previous match{
+                case Some(state: InfoItemEventBuilder) => state.addMetaData( build )
+                case Some(state: EventBuilder[_]) => throw ODFParserError("MetaDataafter something else than InfoItem")
+                case None =>
+                  complete = true
+                  this
+              }
+            case event: ParseEvent =>
+              unexpectedEventHandle( "before expected closing of MetaData element.", event, this)
+          }
       }
     }
   }
 
-  private class InfoItemEventBuilder( val objectPath: Path,  val previous: Option[EventBuilder[_]], implicit  val receiveTime: Timestamp)  extends EventBuilder[InfoItem]{
+  class InfoItemEventBuilder( val objectPath: Path,  val previous: Option[EventBuilder[_]], implicit  val receiveTime: Timestamp = currentTimestamp)  extends EventBuilder[InfoItem]{
     val allowedElements = Set("name","InfoItem","description","altName", "MetaData","value")
-    private var position: Int = 0
     private var descriptions: List[Description] = List.empty
     private var values: List[Value[_]] = List.empty
     private var names: List[QlmID] = List.empty
@@ -237,161 +301,248 @@ import utils._
       this
     }
     def addDescription( desc: Description): InfoItemEventBuilder ={
-      descriptions = desc:: descriptions
+      descriptions = desc :: descriptions
       this
     } 
     def addValue( value: Value[_]): InfoItemEventBuilder ={
-      values = value:: values
+      values = value :: values
       this
     } 
     def addName( name: QlmID ): InfoItemEventBuilder  ={
-      names = name:: names
+      names = name :: names
       this
     } 
-    def parse( event: ParseEvent ): EventBuilder[_] = {
-      event match{
-        case startElement: StartElement if startElement.localName == "name" || startElement.localName == "altName" =>
-          if( position == 0 )
-            new IdEventBuilder(Some(this),receiveTime).parse(event)
-          else
-            new FailedEventBuilder(Some(this),"No names after descriptions", receiveTime)
-        case startElement: StartElement if startElement.localName == "description" =>
-          if( position <= 1 ){
-            position = 1
-            new DescriptionEventBuilder(Some(this),receiveTime).parse(event)
-          } else
-            new FailedEventBuilder(Some(this),"No descriptions after MetaData", receiveTime)
-        case startElement: StartElement if startElement.localName == "MetaData" =>
-          if( position <= 2 ){
-            position = 2
-            new MetaDataEventBuilder(path,Some(this),receiveTime).parse(event)
-          } else
-            new FailedEventBuilder(Some(this),"No MetaData after value", receiveTime)
-        case startElement: StartElement if startElement.localName == "value" =>
-          position = 3
-          new ValueEventBuilder(Some(this),receiveTime).parse(event)
-        case startElement: StartElement if startElement.localName == "InfoItem" =>
-          nameAttribute = startElement.attributes.get("name").getOrElse("")
-          typeAttribute = startElement.attributes.get("type")
-          path = objectPath / nameAttribute
-          this
-        case endElement: EndElement if endElement.localName == "InfoItem" =>
-          val ii = build
-          previous match{
-            case Some(state:ObjectEventBuilder) => state.addSubNode(ii)
-            case Some(state:MetaDataEventBuilder) => state.addInfoItem(ii)
-            case None =>
-              complete = true
-              this
-          }
-        case startElement: StartElement if !allowedElements.contains(startElement.localName) =>
-          new FailedEventBuilder( Some(this), s"Possibly unknown ${startElement.localName} element is not allowed in InfoItem",receiveTime)
-        case endElement: EndElement if !allowedElements.contains(endElement.localName) =>
-          new FailedEventBuilder( Some(this), s"Possibly unknown ${endElement.localName} element is not allowed in InfoItem",receiveTime)
-      }
+    object Position extends Enumeration {
+      type Position = Value
+      val OpenTag, Names, Descriptions, MetaData, Values, CloseTag = Value 
     }
-  }
-
-  private class ValueEventBuilder( val  previous: Option[EventBuilder[_]], implicit val  receiveTime: Timestamp)  extends EventBuilder[Value[_]]{
-    val allowedElements = Set("Objects","value")
-    private var valueO: Option[Value[_]] = None 
-    private var complete: Boolean = false 
-    final def isComplete: Boolean = previous.isEmpty && complete
-    def build = valueO.getOrElse{ throw ODFParserError("Build non existing value.") }
-    def addODF( odf: ODF ): ValueEventBuilder ={
-      valueO = valueO.map{
-        case value: ODFValue =>
-          value.copy(odf.immutable)
-        case value: Value[_] =>
-          ODFValue( odf, value.timestamp)
-      }.orElse{
-          Some(ODFValue( odf, receiveTime))
-      }
-      this
-    }
+    import Position.{OpenTag, Names, Descriptions, MetaData, Values, CloseTag, Position }
+    private var position: Position = OpenTag
     def parse( event: ParseEvent ): EventBuilder[_] = {
-        event match {
-          case startElement: StartElement if startElement.localName == "value" =>
-            val typeAttribute = startElement.attributes.get("type")
-            val dateTime = startElement.attributes.get("dateTime")
-            val unixTime = startElement.attributes.get("unixTime")
-            val timestamp = solveTimestamp(dateTime,unixTime,receiveTime)
-            if( typeAttribute != "odf" ) {//Non O-DF values, TODO: Check other possible types
-              valueO = Some( StringPresentedValue("",timestamp,typeAttribute.getOrElse("xs:string")))
-              this
-            } else{
-              valueO = Some( ODFValue( ImmutableODF(), timestamp))
-              new ODFEventBuilder(Some(this),receiveTime)
+        position match{
+          case OpenTag =>
+            event match {
+              case startElement: StartElement if startElement.localName == "InfoItem" =>
+                nameAttribute = startElement.attributes.get("name").getOrElse("")
+                typeAttribute = startElement.attributes.get("type")
+                path = objectPath / nameAttribute
+                position = Names
+                this
+              case event: ParseEvent =>
+                unexpectedEventHandle( "before expected InfoItem element.", event, this)
             }
-
-          case text: TextEvent => 
-            valueO = valueO.headOption.map{
-              case StringPresentedValue(str,timestamp,typeAttribute) =>
-                Value.applyFromString(str + text.text, typeAttribute, timestamp)
+          case Names =>
+            event match {
+              case startElement: StartElement if startElement.localName == "name" || startElement.localName == "altName" =>
+                new IdEventBuilder(Some(this),receiveTime).parse(event)
+              case startElement: StartElement if startElement.localName == "description" =>
+                position = Descriptions
+                parse(event)
+              case startElement: StartElement if startElement.localName == "MetaData" =>
+                position = MetaData
+                parse(event)
+              case startElement: StartElement if startElement.localName == "value" =>
+                position = Values
+                parse(event)
+              case endElement: EndElement if endElement.localName == "InfoItem" =>
+                position = CloseTag
+                parse(event)
+              case event: ParseEvent =>
+                unexpectedEventHandle( "before additional names.", event, this)
             }
-            this
-
-          case endElement: EndElement if endElement.localName == "value" =>
-            valueO match{
-              case Some(value: Value[_])=>
+          case Descriptions =>
+            event match {
+              case startElement: StartElement if startElement.localName == "description" =>
+                position = Descriptions
+                new DescriptionEventBuilder(Some(this),receiveTime).parse(event)
+              case startElement: StartElement if startElement.localName == "MetaData" =>
+                position = MetaData
+                parse(event)
+              case startElement: StartElement if startElement.localName == "value" =>
+                position = Values
+                parse(event)
+              case endElement: EndElement if endElement.localName == "InfoItem" =>
+                position = CloseTag
+                parse(event)
+              case event: ParseEvent =>
+                unexpectedEventHandle( "after names.", event, this)
+            }
+          case MetaData =>
+            event match {
+              case startElement: StartElement if startElement.localName == "MetaData" =>
+                position = MetaData
+                new MetaDataEventBuilder(path,Some(this),receiveTime).parse(event)
+              case startElement: StartElement if startElement.localName == "value" =>
+                position = Values
+                parse(event)
+              case endElement: EndElement if endElement.localName == "InfoItem" =>
+                position = CloseTag
+                parse(event)
+              case event: ParseEvent =>
+                unexpectedEventHandle( "after names and descriptions.", event, this)
+            }
+          case Values =>
+            event match {
+              case startElement: StartElement if startElement.localName == "value" =>
+                position = Values
+                new ValueEventBuilder(Some(this),receiveTime).parse(event)
+              case endElement: EndElement if endElement.localName == "InfoItem" =>
+                position = CloseTag
+                parse(event)
+              case event: ParseEvent =>
+                unexpectedEventHandle( "after names, descriptions and MetaData.", event, this)
+            }
+          case CloseTag =>
+            event match {
+              case endElement: EndElement if endElement.localName == "InfoItem" =>
+                val ii = build
                 previous match{
-                  case Some(iiEventBuilder: InfoItemEventBuilder) =>
-                    iiEventBuilder.addValue( value )
-                  case Some(other: EventBuilder[_]) =>
-                    new FailedEventBuilder(Some(this),"Value state should be only after InfoItem state",receiveTime)
+                  case Some(state:ObjectEventBuilder) => state.addSubNode(ii)
+                  case Some(state:MetaDataEventBuilder) => state.addInfoItem(ii)
                   case None =>
                     complete = true
                     this
                 }
-              case None =>
-                new FailedEventBuilder(Some(this),"Nonexisting value", receiveTime)
+              case event: ParseEvent =>
+                unexpectedEventHandle( "before closing InfoItem tag.", event, this)
             }
-          //ODFValue parsing
-          case startElement: StartElement if startElement.localName == "Objects" =>
-            new FailedEventBuilder(Some(this),"Objects inside value without proper type given for value", receiveTime)
-          case startElement: StartElement if !allowedElements.contains(startElement.localName) =>
-            new FailedEventBuilder( Some(this), s"Possibly unknown ${startElement.localName} element is not allowed in value",receiveTime)
-          case endElement: EndElement if !allowedElements.contains(endElement.localName) =>
-            new FailedEventBuilder( Some(this), s"Possibly unknown ${endElement.localName} element is not allowed in value",receiveTime)
         }
     }
   }
 
-  private class DescriptionEventBuilder( val  previous: Option[EventBuilder[_]], implicit val  receiveTime: Timestamp)  extends EventBuilder[Description] {
+  class ValueEventBuilder( val  previous: Option[EventBuilder[_]], implicit val  receiveTime: Timestamp = currentTimestamp)  extends EventBuilder[Value[_]]{
+    val allowedElements = Set("Objects","value")
+    private var timestamp: Timestamp = receiveTime
+    private var valueStr: String = "" 
+    private var typeAttribute: String = "xs:string" 
+    private var odf: Option[ODF] = None
+    private var complete: Boolean = false 
+    final def isComplete: Boolean = previous.isEmpty && complete
+    def build = odf.map{
+      o_df: ODF => ODFValue(o_df,timestamp)
+    }.getOrElse(Value.applyFromString( valueStr, typeAttribute, timestamp))
+    def addODF( _odf: ODF ): ValueEventBuilder ={
+      odf = Some(_odf)
+      this
+    }
+    object Position extends Enumeration {
+      type Position = Value
+      val OpenTag, Content, CloseTag = Value 
+    }
+    import Position._
+    private var position: Position = OpenTag
+    def parse( event: ParseEvent ): EventBuilder[_] = {
+        position match{
+          case OpenTag =>
+            event match {
+              case startElement: StartElement if startElement.localName == "value" =>
+                typeAttribute = startElement.attributes.get("type").getOrElse(typeAttribute)
+                val dateTime = startElement.attributes.get("dateTime")
+                val unixTime = startElement.attributes.get("unixTime")
+                timestamp = solveTimestamp(dateTime,unixTime,receiveTime)
+                this
+              case event: ParseEvent =>
+                unexpectedEventHandle( "before expected value element.", event, this)
+            }
+          case Content =>
+            event match {
+              case startElement: StartElement if startElement.localName == "Objects" && typeAttribute == "odf" =>
+                position = CloseTag
+                new ODFEventBuilder(Some(this),receiveTime)
+              case startElement: StartElement if startElement.localName == "Objects" =>
+                throw ODFParserError(s"Objects inside value without correct type attribute. Found attribute $typeAttribute.")
+              case content: TextEvent if typeAttribute == "odf" => 
+                throw ODFParserError(s"Expected Objects inside value because of type attribute $typeAttribute.")
+              case content: TextEvent => 
+                valueStr = valueStr+ content.text
+                position = CloseTag
+                this
+              case event: ParseEvent =>
+                unexpectedEventHandle( "when expected text content.", event, this)
+            }
+          case CloseTag =>
+            event match {
+              case content: TextEvent => 
+                valueStr = valueStr+ content.text
+                position = CloseTag
+                this
+              case content: TextEvent if typeAttribute == "odf" => 
+                throw ODFParserError(s"Textafter Objects inside value.")
+              case endElement: EndElement if endElement.localName == "value" =>
+                previous match {
+                  case Some(state: InfoItemEventBuilder) => 
+                    state.addValue( build)
+                  case Some(state: EventBuilder[_]) => throw ODFParserError("Description state after wrong state. Previous should be InfoItem.")
+                  case None =>
+                    complete = true
+                    this
+                }
+              case event: ParseEvent =>
+                unexpectedEventHandle( s"before expected closing of description.", event, this)
+            }
+        }
+    }
+  }
+
+  class DescriptionEventBuilder( val  previous: Option[EventBuilder[_]], implicit val  receiveTime: Timestamp = currentTimestamp)  extends EventBuilder[Description] {
     val allowedElements = Set("description")
     private var lang: Option[String] = None 
     private var text: String = ""
     private var complete: Boolean = false 
     final def isComplete: Boolean = previous.isEmpty && complete
     def build: Description = Description( text, lang)
+    object Position extends Enumeration {
+      type Position = Value
+      val OpenTag, Content, CloseTag = Value 
+    }
+    import Position._
+    private var position: Position = OpenTag
     def parse( event: ParseEvent ): EventBuilder[_] = {
-        event match {
-          case startElement: StartElement if startElement.localName == "description" =>
-            lang = startElement.attributes.get("lang")
-            this
-          case content: TextEvent => 
-            text = text + content.text
-            this
-
-          case endElement: EndElement if endElement.localName == "description" =>
-            previous match{
-              case Some(state: InfoItemEventBuilder) =>state.addDescription( build ) 
-              case Some(state: ObjectEventBuilder )=> state.addDescription( build ) 
-              case Some(state: EventBuilder[_]) => new FailedEventBuilder(Some(this),"Description state after wrong state. Previous should be InfoItem or Object",receiveTime)
-              case None =>
-                complete = true
+        position match{
+          case OpenTag =>
+            event match {
+              case startElement: StartElement if startElement.localName == "description" =>
+                lang = startElement.attributes.get("lang")
+                position = Content
                 this
+              case event: ParseEvent =>
+                unexpectedEventHandle( "before expected description element.", event, this)
             }
-          case startElement: StartElement if !allowedElements.contains(startElement.localName) =>
-            new FailedEventBuilder( Some(this), s"Possibly unknown ${startElement.localName} element is not allowed in description",receiveTime)
-          case endElement: EndElement if !allowedElements.contains(endElement.localName) =>
-            new FailedEventBuilder( Some(this), s"Possibly unknown ${endElement.localName} element is not allowed in description",receiveTime)
+          case Content =>
+            event match {
+              case content: TextEvent => 
+                text = text + content.text
+                position = CloseTag
+                this
+              case event: ParseEvent =>
+                unexpectedEventHandle( "when expected text content.", event, this)
+            }
+          case CloseTag =>
+            event match {
+              case content: TextEvent => 
+                text = text + content.text
+                this
+              case endElement: EndElement if endElement.localName == "description" =>
+                previous match {
+                  case Some(state: InfoItemEventBuilder) => 
+                    state.addDescription(build)
+                  case Some(state: ObjectEventBuilder ) =>  
+                    state.addDescription(build)
+                  case Some(state: EventBuilder[_]) => throw ODFParserError("Description state after wrong state. Previous should be InfoItem or Object")
+                  case None =>
+                    complete = true
+                    this
+                }
+              case event: ParseEvent =>
+                unexpectedEventHandle( s"before expected closing of description.", event, this)
+            }
         }
     }
   }
 
-  private class IdEventBuilder(  val previous: Option[EventBuilder[_]], implicit  val receiveTime: Timestamp)  extends EventBuilder[QlmID] {
+  class IdEventBuilder(  val previous: Option[EventBuilder[_]], implicit  val receiveTime: Timestamp = currentTimestamp)  extends EventBuilder[QlmID] {
     val allowedElements = Set("id","name","altName")
+    private var openingTag: String = "id"
     private var tagType: Option[String] = None
     private var idType: Option[String] = None
     private var startDate: Option[Timestamp] = None
@@ -400,35 +551,65 @@ import utils._
     private var id: String = ""
     final def isComplete: Boolean = previous.isEmpty && complete
     def build: QlmID = QlmID(id,idType,tagType,startDate,endDate)
+    object Position extends Enumeration {
+      type Position = Value
+      val OpenTag, Content, CloseTag = Value 
+    }
+    import Position._
+    private var position: Position = OpenTag
     def parse( event: ParseEvent ): EventBuilder[_] = {
-        event match {
-          case startElement: StartElement if startElement.localName == "id" || startElement.localName == "name" || startElement.localName == "altName"  =>
-            tagType = startElement.attributes.get("tagType")
-            idType = startElement.attributes.get("idType")
-            startDate = startElement.attributes.get("startDate").map{
-              str => dateTimeStrToTimestamp(str)
-            }
-            endDate = startElement.attributes.get("startDate").map{
-              str => dateTimeStrToTimestamp(str)
-            }
-            this
-          case content: TextEvent => 
-            id = id+ content.text
-            this
-
-          case endElement: EndElement if endElement.localName == "id" || endElement.localName == "name" || endElement.localName == "altName"  =>
-            previous match {
-              case Some(state: InfoItemEventBuilder) =>state.addName( build) 
-              case Some(state: ObjectEventBuilder )=> state.addId( build ) 
-              case Some(state: EventBuilder[_]) => new FailedEventBuilder(Some(this),"Id state after wrong state. Previous should be InfoItem or Object",receiveTime)
-              case None =>
-                complete = true
+        position match{
+          case OpenTag =>
+            event match {
+              case startElement: StartElement if startElement.localName == "id" || startElement.localName == "name" || startElement.localName == "altName"  =>
+                position = Content
+                openingTag = startElement.localName
+                tagType = startElement.attributes.get("tagType")
+                idType = startElement.attributes.get("idType")
+                startDate = startElement.attributes.get("startDate").map{
+                  str => dateTimeStrToTimestamp(str)
+                }
+                endDate = startElement.attributes.get("startDate").map{
+                  str => dateTimeStrToTimestamp(str)
+                }
                 this
+              case event: ParseEvent =>
+                unexpectedEventHandle( "before expected id, name or altName element.", event, this)
             }
-          case startElement: StartElement if !allowedElements.contains(startElement.localName) =>
-            new FailedEventBuilder( Some(this), s"Possibly unknown ${startElement.localName} element is not allowed in name, altName or id",receiveTime)
-          case endElement: EndElement if !allowedElements.contains(endElement.localName) =>
-            new FailedEventBuilder( Some(this), s"Possibly unknown ${endElement.localName} element is not allowed in name, altName or id",receiveTime)
+          case Content =>
+            event match {
+              case content: TextEvent => 
+                id = id+ content.text
+                position = CloseTag
+                this
+              case event: ParseEvent =>
+                unexpectedEventHandle( "when expected text content.", event, this)
+            }
+          case CloseTag =>
+            event match {
+              case content: TextEvent => 
+                id = id+ content.text
+                this
+              case endElement: EndElement if endElement.localName == openingTag =>
+                previous match {
+                  case Some(state: InfoItemEventBuilder) => 
+                    if( openingTag == "name" || openingTag == "altName" )
+                      state.addName( build ) 
+                    else
+                      throw ODFParserError("id element should not be used for InfoItem")
+                  case Some(state: ObjectEventBuilder ) => state.addId( build ) 
+                    if( openingTag == "id" )
+                      state.addId( build ) 
+                    else
+                      throw ODFParserError("name or altName element should not be used for Object")
+                  case Some(state: EventBuilder[_]) => throw ODFParserError("Id state after wrong state. Previous should be InfoItem or Object")
+                  case None =>
+                    complete = true
+                    this
+                }
+              case event: ParseEvent =>
+                unexpectedEventHandle( s"before expected closing of $openingTag", event, this)
+            }
         }
     }
   }

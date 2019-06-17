@@ -16,6 +16,7 @@ package odf
 package parser
 
 import java.sql.Timestamp
+import scala.util.Try
 import scala.collection.JavaConverters._
 import scala.collection.immutable.HashMap
 
@@ -53,16 +54,20 @@ object ODFStreamParser {
       setHandler(in, new InHandler {
         override def onPush(): Unit = {
           val event: ParseEvent = grab(in)
-          state = state.parse(event) 
-          state match {
-            case fail: FailedEventBuilder =>
-              failStage(ODFParserError(fail.msg))
-            case builder: ODFEventBuilder if builder.isComplete  =>
-              push(out,builder.build )
-            case other: EventBuilder[_] =>
-              if( other.isComplete )
-                failStage(ODFParserError("Non ODFBuilder is complete"))
-
+          Try{
+            state = state.parse(event) 
+            state match {
+              case builder: ODFEventBuilder if builder.isComplete  =>
+                push(out,builder.build )
+              case other: EventBuilder[_] =>
+                if( other.isComplete )
+                  failStage(ODFParserError("Non ODFBuilder is complete"))
+            }
+          }.recover{
+            case error: ODFParserError => 
+              failStage( error)
+            case t: Throwable => 
+              failStage( t)
           }
           pull(in)
         }
