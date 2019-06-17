@@ -53,6 +53,7 @@ object RESTHandler {
       case attr@Some("name") => RESTInfoName(path.init)
       case Some(str) => 
         RESTNodeReq(path)
+      case None => throw new Exception("Unknown REST Request type")
     }
   }
 

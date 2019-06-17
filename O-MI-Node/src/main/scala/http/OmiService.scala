@@ -239,7 +239,7 @@ trait OmiService
                 if( xmlResp.isEmpty ){
                   val errorEvents= errorResult("No Object Found").value
                   val entity = parseEventsToHttpEntity(errorEvents)
-                  complete(StatusCodes.NotFound,entity)
+                  complete(StatusCodes.NotFound -> entity)
                 } else {
                   val xmlWithNamespace = xmlResp.take(2).map{
                     // take StartDocument and first StartElement

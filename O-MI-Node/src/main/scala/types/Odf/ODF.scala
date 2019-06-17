@@ -6,7 +6,7 @@ import parsing.xmlGen.xmlTypes.{ObjectType, ObjectsType, InfoItemType}
 import parsing.xmlGen.{odfDefaultScope, scalaxb}
 
 import scala.collection.immutable.{HashMap => ImmutableHashMap, TreeSet => ImmutableTreeSet, SortedSet}
-import scala.collection.mutable.{ Buffer, Map => MutableMap, Stack => MStack}
+import scala.collection.mutable.{ Buffer, Map => MutableMap}
 import scala.collection.{Map, Seq, SortedSet => CSortedSet, SeqView}
 import akka.stream.alpakka.xml._
 import scala.xml.NodeSeq
@@ -394,6 +394,7 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
           }
         }
         Vector.fill(count)( EndElement("Object") ) ++ ii.asXMLEvents ++ handleEnd(index)
+
 
     } 
     events 

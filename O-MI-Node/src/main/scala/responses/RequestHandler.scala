@@ -94,9 +94,9 @@ class RequestHandler(
       ))
     }
     checkForNotFound(readR).flatMap{
-      case (Some(response),None) =>  
+      case (Some(response),None) =>
         Future.successful(response)
-      case (notFoundResponse,Some(read)) => 
+      case (notFoundResponse,Some(read)) =>
         splitAndHandle(read){
           request: OdfRequest =>
             log.debug("Handling shared paths: "+ request.odf.getLeafPaths.mkString("\n"))
@@ -111,12 +111,13 @@ class RequestHandler(
               case None => responseFuture
               case Some(nfResponse) =>
                 responseFuture.map{
-                  response => 
+                  response =>
                     response.union(nfResponse)
                 }
             }
-            
+
         }
+      case _ => Future.failed(new Exception("Unkown message encountered while handling request"))
     }
   }
   def checkForNotFound(request: OdfRequest ): Future[Tuple2[Option[ResponseRequest],Option[OdfRequest]]] ={
@@ -158,6 +159,8 @@ class RequestHandler(
                 }
             }
         }
+
+      case _ => Future.failed(new Exception("Unkown message encountered while handling request"))
     }
     
   }
@@ -232,6 +235,8 @@ class RequestHandler(
             case Some(nfResponse) => f.map{ response => response.union(nfResponse)}
           }
       }
+
+      case _ => Future.failed(new Exception("Unkown message encountered while handling request"))
    }
 
   }
