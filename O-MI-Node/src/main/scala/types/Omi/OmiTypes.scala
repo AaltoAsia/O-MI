@@ -395,6 +395,7 @@ object RawRequestWrapper {
 }
 
 import types.OmiTypes.RawRequestWrapper.MessageType
+import database.journal.PRequestInfo
 
 /**
   * One-time-read request
@@ -932,7 +933,24 @@ case class ResponseRequest(
   }
 
   val requestVerb: MessageType.Response.type = MessageType.Response
-  def asXMLEvents() = asXMLEventsWithVersion()
+
+  def asXMLEvents = asXMLEventsWithVersion()
+
+  def asXMLByteSourceWithVersion(info: PRequestInfo): Source[ByteString, NotUsed] =
+    asXMLByteSourceWithVersion(OmiVersion.fromNumber(info.omiVersion), info.odfVersion.map(OdfVersion.fromNumber(_))) // msgformat?
+
+  def asXMLByteSourceWithVersion(omiVersion: OmiVersion = OmiVersion1, odfVersion: Option[OdfVersion] = None): Source[ByteString, NotUsed] =
+    parseEventsToByteSource(asXMLEventsWithVersion(omiVersion, odfVersion))
+
+  def asXMLSourceWithVersion(info: PRequestInfo): Source[String, NotUsed] =
+    asXMLSourceWithVersion(OmiVersion.fromNumber(info.omiVersion), info.odfVersion.map(OdfVersion.fromNumber(_))) // msgformat?
+
+  def asXMLSourceWithVersion(omiVersion: OmiVersion = OmiVersion1, odfVersion: Option[OdfVersion] = None): Source[String, NotUsed] =
+    asXMLByteSourceWithVersion(omiVersion, odfVersion).map[String](_.utf8String)
+
+  def asXMLEventsWithVersion(info: PRequestInfo): SeqView[ParseEvent,Seq[_]] =
+    asXMLEventsWithVersion(OmiVersion.fromNumber(info.omiVersion), info.odfVersion.map(OdfVersion.fromNumber(_))) // msgformat?
+
   def asXMLEventsWithVersion(omiVersion: OmiVersion = OmiVersion1, odfVersion: Option[OdfVersion] = None): SeqView[ParseEvent,Seq[_]] ={
     Vector(
       StartDocument,

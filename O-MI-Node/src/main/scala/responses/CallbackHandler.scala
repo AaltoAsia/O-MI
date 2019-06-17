@@ -18,26 +18,32 @@ import java.net.URLEncoder
 import java.sql.Timestamp
 import java.util.Date
 
-import akka.util.ByteString
-import akka.actor.{ActorSystem, Terminated}
-import akka.event.{LogSource, Logging, LoggingAdapter}
-import akka.http.scaladsl.client.RequestBuilding
-import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.ContentTypes._
-import akka.http.scaladsl.model.ws._
-import akka.http.scaladsl.{Http, HttpExt}
-import akka.NotUsed
-import akka.stream._
-import akka.stream.scaladsl._
-import http.OmiConfigExtension
-import responses.CallbackHandler._
-import types.OmiTypes._
-
 import scala.collection.mutable.{Map => MutableMap}
 import scala.concurrent._
 import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
-import scala.xml.NodeSeq
+//import scala.xml.NodeSeq
+
+import akka.util.ByteString
+import akka.actor.{ActorSystem, Terminated}
+import akka.event.LogSource
+import org.slf4j.LoggerFactory
+import akka.http.scaladsl.client.RequestBuilding
+import akka.http.scaladsl.model._
+//import akka.http.scaladsl.model.ContentTypes._
+import akka.http.scaladsl.model.ws._
+import akka.http.scaladsl.{Http, HttpExt}
+//import akka.NotUsed
+import akka.stream._
+import akka.stream.scaladsl._
+
+import http.OmiConfigExtension
+import responses.CallbackHandler._
+import types.OmiTypes._
+import database.SingleStores
+
+
+import http.WebSocketUtil
 
 object CallbackHandler {
 
@@ -73,11 +79,12 @@ object CallbackHandler {
   * Handles sending data to callback addresses
   */
 class CallbackHandler(
-                       protected val settings: OmiConfigExtension
+                       protected val settings: OmiConfigExtension,
+                       protected val singleStores: SingleStores
                      )(
                        protected implicit val system: ActorSystem,
                        protected implicit val materializer: ActorMaterializer
-                     ) {
+                     ) extends WebSocketUtil {
 
   import system.dispatcher
 
@@ -89,7 +96,9 @@ class CallbackHandler(
 
   implicit val logSource: LogSource[CallbackHandler] = (requestHandler: CallbackHandler) => requestHandler.toString
 
-  protected val log: LoggingAdapter = Logging(system, this)
+  //protected val log: LoggingAdapter = Logging(system, this)
+  protected val log = LoggerFactory.getLogger(classOf[CallbackHandler])
+
   val webSocketConnections: MutableMap[String, SendHandler] = MutableMap.empty
   val currentConnections: MutableMap[Int, CurrentConnection] = MutableMap.empty
 
@@ -103,13 +112,22 @@ class CallbackHandler(
 
 
     val address = callback.uri
-    val encodedSource = request.asXMLSource.map{
-      str: String => 
-        URLEncoder.encode(str,"UTF-8")
-    }
-    val formSource = Source.single("msg=").concat(encodedSource).map{str: String => ByteString(str,"UTF-8")}
-    val httpEntity = HttpEntity(ContentTypes.`application/x-www-form-urlencoded`,formSource)
+    val encodedSource = (request match {
+        case response: ResponseRequest =>
+          Source.fromFutureSource(
+            singleStores.getRequestInfo(response).map(versions =>
+              response.asXMLSourceWithVersion(versions)))
+        case r => r.asXMLSource
+
+      }).map{str: String => URLEncoder.encode(str,"UTF-8")}
+
+    val formSource = Source.single("msg=").concat(encodedSource)
+      .map{str: String => ByteString(str,"UTF-8")}
+      .map(HttpEntity.ChunkStreamPart.apply)
+
+    val httpEntity = HttpEntity.Chunked(ContentTypes.`application/x-www-form-urlencoded`,formSource)
     //val httpEntity = FormData(("msg", request.asXML.toString)).toEntity(HttpCharsets.`UTF-8`)
+
     val httpRequest = RequestBuilding.Post(address, httpEntity)
 
     log.debug(
@@ -126,7 +144,7 @@ class CallbackHandler(
         Future.successful(())
       } else {
         response.discardEntityBytes()
-        log.warning(s"Http status: ${response.status}")
+        log.warn(s"Http status: ${response.status}")
         Future failed HttpError(response.status, callback)
       }
     }
@@ -199,8 +217,7 @@ class CallbackHandler(
           case Failure(t: Throwable) =>
             log.debug(
               s"Response send  to WebSocket connection ${callback.address} failed, ${
-                t
-                  .getMessage
+                t.getMessage
               }. Connection removed."
             )
             webSocketConnections -= callback.address
@@ -229,8 +246,7 @@ class CallbackHandler(
           case Failure(t: Throwable) =>
             log.debug(
               s"Response send  to current connection ${callback.identifier} failed, ${
-                t
-                  .getMessage
+                t.getMessage
               }. Connection removed."
             )
             currentConnections -= callback.identifier
@@ -285,13 +301,8 @@ class CallbackHandler(
             wsConnection => WSCallback(uri)
           }.getOrElse {
             scheme match {
-              case "http" => HTTPCallback(uri)
-              case "https" => HTTPCallback(uri)
-              case "ws" =>
-                val handler = createWebsocketConnectionHandler(uri)
-                webSocketConnections += uri.toString -> handler
-                WSCallback(uri)
-              case "wss" =>
+              case "http" | "https" => HTTPCallback(uri)
+              case "ws" | "wss" =>
                 val handler = createWebsocketConnectionHandler(uri)
                 webSocketConnections += uri.toString -> handler
                 WSCallback(uri)
@@ -308,37 +319,17 @@ class CallbackHandler(
       peekMatValue(Source.queue[ws.Message](queueSize, OverflowStrategy.fail))
 
     // keepalive? http://doc.akka.io/docs/akka/2.4.8/scala/stream/stream-cookbook.html#Injecting_keep-alive_messages_into_a_stream_of_ByteStrings
-
-    def queueSend(futureResponse: Future[Source[String,_]]): Future[QueueOfferResult] = {
-      val result = for {
-        response <- futureResponse
-        //if response.nonEmpty
-
-        queue <- futureQueue
-
-        // TODO: check what happens when sending empty String
-        resultMessage = ws.TextMessage(response)
-        queueResult <- queue offer resultMessage
-      } yield queueResult
-
-      result onComplete {
-        case Success(QueueOfferResult.Enqueued) => // Ok
-        case Success(e: QueueOfferResult) => // Others mean failure
-          log.warning(s"WebSocket response queue failed, reason: $e")
-        case Failure(e) => // exceptions
-          log.warning("WebSocket response queue failed, reason: ", e)
-      }
-      result
-    }
+    
+    val queue = WSQueue(futureQueue)
 
     val wsSink: Sink[Message, Future[akka.Done]] =
       Sink.foreach[Message] {
         case message: TextMessage.Strict =>
-          log.warning(s"Received WS message from $uri. Message is ignored. ${message.text}")
+          log.warn(s"Received WS message from $uri. Message is ignored. ${message.text}")
         case _ =>
       }
 
-    def sendHandler = (response: ResponseRequest) => queueSend(Future(response.asXMLSource)) map { _ => () }
+    //def sendHandler = (response: ResponseRequest) => queue.send(Future(response.asXMLSource)) map { _ => () }
 
     val wsFlow = httpExtension.webSocketClientFlow(WebSocketRequest(uri))
     val (upgradeResponse, closed) = outSource.viaMat(wsFlow)(Keep.right)
@@ -351,23 +342,11 @@ class CallbackHandler(
         Future.successful(akka.Done)
       } else {
         val msg = s"connection to  WebSocket callback: $uri failed: ${upgrade.response.status}"
-        log.warning(msg)
+        log.warn(msg)
         Future.failed(new Exception(msg))
       }
     }
 
-    sendHandler
-  }
-
-  // Queue howto: http://loicdescotte.github.io/posts/play-akka-streams-queue/
-  // T is the source type
-  // M is the materialization type, here a SourceQueue[String]
-  private def peekMatValue[T, M](src: Source[T, M]): (Source[T, M], Future[M]) = {
-    val p = Promise[M]
-    val s = src.mapMaterializedValue { m =>
-      p.trySuccess(m)
-      m
-    }
-    (s, p.future)
+    queue.sendHandler
   }
 }

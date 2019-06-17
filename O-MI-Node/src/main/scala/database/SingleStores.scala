@@ -16,6 +16,7 @@ import types.Path
 import types.odf._
 import journal._
 import types.OmiTypes.Version._
+import types.OmiTypes.ResponseRequest
 
 import LatestStore._
 import HierarchyStore._
@@ -159,6 +160,12 @@ trait SingleStores {
 
   def addRequestInfo(endTime: Long, omiVersion: OmiVersion, odfVersion: Option[OdfVersion]): Future[Long] =
     (requestInfoStore ? AddInfo(endTime, omiVersion, odfVersion)).mapTo[Long]
+
+  val DefaultRequestInfo = PRequestInfo(omiVersion=1.0, odfVersion=None) // TODO: Default version to configuration?
+
+  def getRequestInfo(response: ResponseRequest): Future[PRequestInfo] =
+    response.requestID.map{id => getRequestInfo(id)}
+        .getOrElse(Future.successful(DefaultRequestInfo))
 
   def getRequestInfo(requestId: Long): Future[PRequestInfo] =
     (requestInfoStore ? GetInfo(requestId)).mapTo[PRequestInfo]

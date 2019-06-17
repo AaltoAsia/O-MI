@@ -44,7 +44,7 @@ import types.{ParseError, Path}
 
 import scala.compat.java8.OptionConverters._
 import scala.concurrent.duration._
-import scala.concurrent.{Future, Promise, TimeoutException, Await}
+import scala.concurrent.{Future, Promise, TimeoutException, Await, ExecutionContext}
 import scala.language.postfixOps
 import scala.collection.SeqView
 import scala.util.{Failure, Success, Try}
@@ -453,9 +453,13 @@ trait OmiService
     }
   }
 
-  def chunkedStream(resp: Future[ResponseRequest]): ResponseEntity = {
+  def chunkedStream(fResponse: Future[ResponseRequest]): ResponseEntity = {
     val chunkStream =
-      Source.fromFutureSource(resp.map(_.asXMLByteSource))
+      Source.fromFutureSource(for {
+        response <- fResponse
+        versions <- singleStores.getRequestInfo(response)
+        
+      } yield response.asXMLByteSourceWithVersion(versions))
         .map(HttpEntity.ChunkStreamPart.apply)
 
     HttpEntity.Chunked(ContentTypes.`text/xml(UTF-8)`, chunkStream)
@@ -560,7 +564,7 @@ trait OmiService
 /**
   * This trait implements websocket support for O-MI message handling using akka-http
   */
-trait WebSocketOMISupport {
+trait WebSocketOMISupport extends WebSocketUtil {
   self: OmiService =>
   protected def system: ActorSystem
 
@@ -586,17 +590,6 @@ trait WebSocketOMISupport {
       }
     }
 
-  // Queue howto: http://loicdescotte.github.io/posts/play-akka-streams-queue/
-  // T is the source type
-  // M is the materialization type, here a SourceQueue[String]
-  private def peekMatValue[T, M](src: Source[T, M]): (Source[T, M], Future[M]) = {
-    val p = Promise[M]
-    val s = src.mapMaterializedValue { m =>
-      p.trySuccess(m)
-      m
-    }
-    (s, p.future)
-  }
 
 
   // akka.stream
@@ -608,7 +601,63 @@ trait WebSocketOMISupport {
 
     // keepalive? http://doc.akka.io/docs/akka/2.4.8/scala/stream/stream-cookbook.html#Injecting_keep-alive_messages_into_a_stream_of_ByteStrings
 
-		def queueSend(futureResponse: Future[ws.TextMessage], ids: Seq[RequestID]=Vector.empty): Future[QueueOfferResult] = {
+
+    val queue = WSQueue(futureQueue, Some(subscriptionManager))
+
+    val wsConnection = CurrentConnection(queue.connectionIdentifier, queue.sendHandler)
+
+    def createZeroCallback = callbackHandler.createCallbackAddress("0", Some(wsConnection)).toOption
+
+    val stricted = Flow.fromFunction[ws.Message, Future[String]] {
+      case textMessage: ws.TextMessage =>
+        log.debug("Received keep alive for websocket")
+        textMessage.textStream.runFold("")(_ + _)
+      case msg: ws.Message => Future successful ""
+    }
+    val msgSink = Sink.foreach[Future[String]] { future: Future[String] =>
+      future.flatMap {
+        case "" => //Keep alive 
+          queue.send(Future.successful(ws.TextMessage("")))
+        case requestString: String =>
+
+          val futureResponse: Future[ws.TextMessage] = for {
+            r <- handleRequest(hasPermissionTest,
+                requestString,
+                createZeroCallback,
+                user
+              )
+            versions <- singleStores.getRequestInfo(r)
+          } yield ws.TextMessage.Streamed(r.asXMLSourceWithVersion(versions))
+
+          queue.send(futureResponse)
+      }
+    }
+
+    val inSink = stricted.to(msgSink)
+    (inSink, outSource)
+  }
+
+}
+trait WebSocketUtil {
+  protected def system: ActorSystem
+  protected def log: org.slf4j.Logger
+  
+  // Queue howto: http://loicdescotte.github.io/posts/play-akka-streams-queue/
+  // T is the source type
+  // M is the materialization type, here a SourceQueue[String]
+  def peekMatValue[T, M](src: Source[T, M]): (Source[T, M], Future[M]) = {
+    val p = Promise[M]
+    val s = src.mapMaterializedValue { m =>
+      p.trySuccess(m)
+      m
+    }
+    (s, p.future)
+  }
+
+  case class WSQueue(val futureQueue: Future[SourceQueueWithComplete[ws.Message]], val subscriptionManager: Option[ActorRef] = None, val singleStores: Option[SingleStores] = None)(implicit val ex: ExecutionContext) {
+    val connectionIdentifier = futureQueue.hashCode
+
+		def send(futureResponse: Future[ws.TextMessage], ids: Seq[RequestID]=Vector.empty): Future[QueueOfferResult] = {
       val result = for {
         response <- futureResponse
         //if (response.nonEmpty)
@@ -623,7 +672,7 @@ trait WebSocketOMISupport {
       def removeRelatedSub() = {
         ids.foreach {
           id =>
-            subscriptionManager ! RemoveSubscription(id, 2 minutes)
+            subscriptionManager.map(_ ! RemoveSubscription(id, 2 minutes))
         }
       }
 
@@ -636,39 +685,16 @@ trait WebSocketOMISupport {
       result
     }
 
-    val connectionIdentifier = futureQueue.hashCode
-
-    def sendHandler = (response: ResponseRequest) =>
-      queueSend(Future.successful(ws.TextMessage.Streamed(response.asXMLSource)), Vector(connectionIdentifier)) map { _ => () }
-
-    val wsConnection = CurrentConnection(connectionIdentifier, sendHandler)
-
-    def createZeroCallback = callbackHandler.createCallbackAddress("0", Some(wsConnection)).toOption
-
-    val stricted = Flow.fromFunction[ws.Message, Future[String]] {
-      case textMessage: ws.TextMessage =>
-        log.debug("Received keep alive for websocket")
-        textMessage.textStream.runFold("")(_ + _)
-      case msg: ws.Message => Future successful ""
+    val sendHandler = (response: ResponseRequest) => {
+      send(
+        singleStores
+          .map(ss =>
+              ss.getRequestInfo(response)
+                .map(v => response.asXMLSourceWithVersion(v)))
+          .getOrElse(Future.successful(response.asXMLSource))
+          .map(ws.TextMessage.Streamed(_))
+      , Vector(connectionIdentifier)) map { _ => () }
     }
-    val msgSink = Sink.foreach[Future[String]] { future: Future[String] =>
-      future.flatMap {
-        case "" => //Keep alive 
-          queueSend(Future.successful(ws.TextMessage("")))
-        case requestString: String =>
-
-          val futureResponse: Future[ws.TextMessage] = handleRequest(hasPermissionTest,
-            requestString,
-            createZeroCallback,
-            user
-          ).map(r => ws.TextMessage.Streamed(r.asXMLSource))
-
-          queueSend(futureResponse)
-      }
-    }
-
-    val inSink = stricted.to(msgSink)
-    (inSink, outSource)
   }
 
 }
