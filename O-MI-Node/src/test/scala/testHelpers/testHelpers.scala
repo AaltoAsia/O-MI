@@ -90,8 +90,9 @@ trait TestOmiService extends OmiServiceTestImpl {
 }
 trait OmiServiceTestImpl extends OmiService with AnyActorSystem {
   lazy implicit val settings: OmiConfigExtension = OmiConfig(system)
-  lazy implicit val callbackHandler: CallbackHandler = new CallbackHandler(settings)(system, materializer)
   lazy implicit val singleStores: SingleStores = SingleStores(settings)
+  lazy implicit val callbackHandler: CallbackHandler =
+    new CallbackHandler(settings, singleStores)(system, materializer)
 
 
   lazy implicit val dbConnection = new TestDB("test")(
