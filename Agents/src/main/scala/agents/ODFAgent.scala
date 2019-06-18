@@ -12,7 +12,7 @@ import types.OmiTypes.{OmiResult, ResponseRequest, Results, WriteRequest}
 import types.ParseError
 import types.odf._
 
-import scala.collection.JavaConversions.iterableAsScalaIterable
+import scala.collection.JavaConverters
 import scala.collection.mutable.{Queue => MutableQueue}
 import scala.concurrent.duration._
 import scala.util.{Failure, Random, Success}
@@ -54,10 +54,10 @@ class ODFAgent(
       val xml = XML.loadFile(file)
       ODFParser.parse( xml ) match {
         case Left( errors ) =>
-          val msg = errors.mkString("\n")
+          val msg = JavaConverters.iterableAsScalaIterable(errors).mkString("\n")
           log.warning(s"Odf has errors, $name could not be configured.")
           log.debug(msg)
-          throw ParseError.combineErrors( errors )
+          throw ParseError.combineErrors( JavaConverters.iterableAsScalaIterable(errors) )
         case Right(odfObjects) => odfQueue.enqueue(odfObjects)
       }
     } else if( file.exists() ){

@@ -159,7 +159,7 @@ class InfluxDBImplementation
           }
 
         }
-        response = res.map(_.immutable)
+        response = res.map(_.toImmutable)
       } yield response
 
     }
@@ -175,7 +175,7 @@ class InfluxDBImplementation
           odf: ImmutableODF =>
             log.debug(s"Influx O-DF:\n$odf")
             if (odf.getPaths.size < 2 && requestedODF.getPaths.size < 2) None
-            else Some(requestedODF.union(odf).immutable)
+            else Some(requestedODF.union(odf).toImmutable)
         }
     }
     formatedResponse.failed.foreach {

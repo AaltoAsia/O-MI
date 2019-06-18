@@ -292,7 +292,8 @@ object RESTHandler {
                       }.toList
                     ),
                     EndElement("InfoItem" )
-                  ).view  
+                  ).view
+                case _: Objects => throw new Exception("Objects encountered while handling REST request")
               } ++ Vector(EndElement("Object" ), EndDocument)
               Right(events)
           }
@@ -356,7 +357,8 @@ object RESTHandler {
                       }.toList
                     ),
                     EndElement("InfoItem" )
-                  ).view  
+                  ).view
+                case _: Objects => throw new Exception("Objects encountered while handling REST request")
               } ++ Vector( EndElement("Objects" ),EndDocument )
               Right(events)
           }

@@ -11,7 +11,7 @@ object NewTypeConverter {
                                                                                                 o_df: ODF
                                                                                               ): OdfObjects = {
     val firstLevelObjects = o_df.getChilds(new Path("Objects"))
-    val odfObjects = firstLevelObjects.map {
+    val odfObjects = firstLevelObjects.collect {
       case obj: Object =>
         createOdfObject(obj, o_df)
     }
@@ -28,6 +28,7 @@ object NewTypeConverter {
     val (objects, infoItems) = o_df.getChilds(obj.path).partition {
       case obj: Object => true
       case ii: InfoItem => false
+      case objs: Objects => throw new Exception("Invalid type encountered while converting types")
     }
     convertObject(
       obj,

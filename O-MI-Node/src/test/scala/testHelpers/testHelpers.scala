@@ -448,7 +448,7 @@ object DummyHierarchyStore {
   def apply(odf: ODF)(implicit system: ActorSystem) =
     system actorOf Props(new Actor {
       def receive = {
-        case GetTree => sender() ! odf.immutable
+        case GetTree => sender() ! odf.toImmutable
       }
     }) 
 }

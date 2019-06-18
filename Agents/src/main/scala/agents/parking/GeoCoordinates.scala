@@ -1,9 +1,10 @@
 package agents.parking
 
+import agents.MVError
 import types._
 import types.odf._
 
-import scala.util.{Try, Success, Failure}
+import scala.util.{Failure, Success, Try}
 
 case class GeoCoordinates(
                            latitude: Double,

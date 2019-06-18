@@ -876,7 +876,7 @@ class ResponseRequest(
 
   def odf: ODF = results.foldLeft(ImmutableODF()) {
     case (l: ODF, r: OmiResult) =>
-      l.union(r.odf.getOrElse(ImmutableODF())).immutable
+      l.union(r.odf.getOrElse(ImmutableODF())).toImmutable
   }
 
   implicit def asResponseListType: xmlTypes.ResponseListType =
@@ -916,7 +916,7 @@ class ResponseRequest(
   def odfResultsToSingleWrite: WriteRequest = {
     WriteRequest(
       odfResultsToWrites.foldLeft(ImmutableODF()) {
-        case (objects, write) => objects.union(write.odf).immutable
+        case (objects, write) => objects.union(write.odf).toImmutable
       },
       None,
       ttl

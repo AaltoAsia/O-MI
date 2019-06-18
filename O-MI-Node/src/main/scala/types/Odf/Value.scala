@@ -187,7 +187,7 @@ object Value {
            ): Value[Any] = {
     value match {
       case odf: ODF => //[scala.collection.Map[Path,Node],scala.collection.SortedSet[Path]] => 
-        ODFValue(odf.immutable, timestamp)
+        ODFValue(odf.toImmutable, timestamp)
       case s: Short => ShortValue(s, timestamp)
       case i: Int => IntValue(i, timestamp)
       case l: Long => LongValue(l, timestamp)
@@ -206,7 +206,7 @@ object Value {
            ): Value[Any] = {
     value match {
       case odf: ODF => //[scala.collection.Map[Path,Node],scala.collection.SortedSet[Path]] => 
-        ODFValue(odf.immutable, timestamp)
+        ODFValue(odf.toImmutable, timestamp)
       case s: Short => ShortValue(s, timestamp)
       case i: Int => IntValue(i, timestamp)
       case l: Long => LongValue(l, timestamp)

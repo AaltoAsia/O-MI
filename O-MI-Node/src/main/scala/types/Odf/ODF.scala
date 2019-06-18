@@ -5,8 +5,8 @@ package odf
 import parsing.xmlGen.xmlTypes.{ObjectType, ObjectsType, InfoItemType}
 import parsing.xmlGen.{odfDefaultScope, scalaxb}
 
-import scala.collection.immutable.{HashMap => ImmutableHashMap, TreeSet => ImmutableTreeSet, SortedSet}
-import scala.collection.mutable.{ Buffer, Map => MutableMap}
+import scala.collection.immutable.{HashMap, TreeSet}
+import scala.collection.mutable
 import scala.collection.{Map, Seq, SortedSet => CSortedSet, SeqView}
 import akka.stream.alpakka.xml._
 import scala.xml.NodeSeq
@@ -51,9 +51,9 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
   
   def removePaths(pathsToRemove: Set[Path]): ODF
 
-  def immutable: ImmutableODF
+  def toImmutable: ImmutableODF
 
-  def mutable: MutableODF
+  def toMutable: MutableODF
 
   def getPaths: Set[Path] = paths.toSet
 
@@ -75,10 +75,10 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
   final def nodesWithAttributes: Vector[Node] = nodes.values.filter(_.attributes.nonEmpty).toVector
 
   @deprecated("use nodesMap instead (bad naming)", "1.0.8")
-  def getNodesMap: Map[Path, Node] = ImmutableHashMap(
+  def getNodesMap: Map[Path, Node] = HashMap(
     nodes.toVector: _*
   )
-  def nodesMap: ImmutableHashMap[Path, Node] = ImmutableHashMap(
+  def nodesMap: HashMap[Path, Node] = HashMap(
     nodes.toVector: _*
   )
 
@@ -105,9 +105,9 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
     getLeafPaths.flatMap(nodes.get(_)).toVector.sortBy(_.path)(Path.PathOrdering)
   }
 
-  final def getLeafPaths: SortedSet[Path] = {
+  final def getLeafPaths: TreeSet[Path] = {
     val ps: Seq[(Path, Int)] = paths.toSeq.zipWithIndex
-    ImmutableTreeSet(ps.collect {
+    TreeSet(ps.collect {
       case (path: Path, index: Int) if{
         val nextIndex = index + 1
         if (nextIndex < ps.size) {
@@ -182,8 +182,8 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
     * Find given paths and all paths of the descendants.
     * Same as [[selectSubTreePaths]] but doesn't add ancestors of the subtrees
     */
-  final def subTreePaths(pathsToGet: Set[Path]): SortedSet[Path] = (
-    ImmutableTreeSet( pathsToGet.flatMap {
+  final def subTreePaths(pathsToGet: Set[Path]): TreeSet[Path] = (
+    TreeSet( pathsToGet.flatMap {
       wantedPath: Path =>
       paths.keysIteratorFrom(wantedPath).takeWhile {
         path: Path => path.startsWith(wantedPath)
@@ -194,7 +194,7 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
   /**
     * Same as [[subTreePaths]] but adds ancestors of the subtrees
     */
-  final def selectSubTreePaths(pathsToGet: Set[Path]): SortedSet[Path] = {
+  final def selectSubTreePaths(pathsToGet: Set[Path]): TreeSet[Path] = {
     subTreePaths(pathsToGet) ++ pathsToGet.flatMap{
         path => path.getAncestors
         //case path: Path if (paths.contains(path)) =>
@@ -223,8 +223,8 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
 
   implicit def asObjectsType: ObjectsType = {
     //val timer = LapTimer(println)
-    val parentPath2IIt: MutableMap[Path,Seq[InfoItemType]] = MutableMap.empty
-    val objs: Buffer[Object] = Buffer.empty
+    val parentPath2IIt: mutable.Map[Path,Seq[InfoItemType]] = mutable.Map.empty
+    val objs: mutable.Buffer[Object] = mutable.Buffer.empty
     var objects = Objects()
     //timer.step("aOT: init")
     for( n <- nodes.values ){
@@ -432,7 +432,7 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
   def readTo(to: ODF): ODF
 
   def readToNodes(to: ODF): Iterable[Node] = {
-    val wantedPaths: SortedSet[Path] = SortedSet(selectSubTreePaths(to.getLeafPaths).intersect(paths).toSeq:_*)(PathOrdering)
+    val wantedPaths: TreeSet[Path] = TreeSet(selectSubTreePaths(to.getLeafPaths).intersect(paths).toSeq:_*)(PathOrdering)
     val wantedNodes: Iterable[Node] = wantedPaths.map {
       path: Path =>
         (nodes.get(path), to.nodes.get(path)) match {
@@ -460,7 +460,6 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
           case (Some(ii:InfoItem),Some(toIi:InfoItem)) => ii.readTo(toIi)
           case (Some(obj:Objects),Some(toObj:Objects)) => obj.readTo(toObj)
           case (Some(f:Node), Some(t:Node)) => throw new Exception("Missmatching types in ODF when reading.")
-          case (Some(f:Node),None) => throw new Exception("Found unknown Node type.")
         }
     }
     wantedNodes
