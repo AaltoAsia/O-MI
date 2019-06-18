@@ -820,9 +820,30 @@ final public class OmiFactory{
       ){
     return ResponseRequest$.MODULE$.apply(
         OdfTreeCollection.fromJava(results),
-        ttl
-        );
-      }
+        ttl,
+        scala.Option.empty()
+    );
+  }
+
+  /**
+   *
+   * @param ttl Time to live of request.
+   * @param results Iterable of O-MI result contained in O-MI response.
+   * @param callback Callback address were subscribed data is to be sent.
+   * @return ResponseRequest
+   */
+  public static ResponseRequest createResponseRequest(
+      Duration ttl,
+      Iterable<OmiResult> results,
+      String callback
+      ){
+    Callback cb = new RawCallback(callback);
+    return ResponseRequest$.MODULE$.apply(
+        OdfTreeCollection.fromJava(results),
+        ttl,
+        scala.Option.apply(cb)
+    );
+  }
 
   /**
    *
