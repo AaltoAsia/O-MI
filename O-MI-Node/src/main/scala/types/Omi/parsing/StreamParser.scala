@@ -16,6 +16,7 @@ package OmiTypes
 package parser
 
 import java.sql.Timestamp
+import scala.util.Try
 import scala.collection.JavaConverters._
 import scala.collection.immutable.HashMap
 
@@ -33,7 +34,7 @@ import utils._
 
 /** Parser for data in O-DF format */
 object OMIStreamParser {
-  def parser: Flow[String,OmiRequest,NotUsed] = Flow[String]
+  def parserFlow: Flow[String,OmiRequest,NotUsed] = Flow[String]
     .map(ByteString(_))
     .via(XmlParsing.parser)
     .via(new OMIParserFlow)
@@ -43,6 +44,7 @@ object OMIStreamParser {
     override val shape = FlowShape(in, out)
 
     override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
+      private var state: EventBuilder[_] = new EnvelopeEventBuilder(None,currentTimestamp)
 
 
       setHandler(out, new OutHandler {
@@ -52,6 +54,21 @@ object OMIStreamParser {
       setHandler(in, new InHandler {
         override def onPush(): Unit = {
           val event: ParseEvent = grab(in)
+          Try{
+            state = state.parse(event) 
+            state match {
+              case builder: EnvelopeEventBuilder if builder.isComplete  =>
+                push(out,builder.build )
+              case other: EventBuilder[_] =>
+                if( other.isComplete )
+                  failStage(OMIParserError("Non EnvelopeBuilder is complete"))
+            }
+          }.recover{
+            case error: OMIParserError => 
+              failStage( error)
+            case t: Throwable => 
+              failStage( t)
+          }
           pull(in)
         }
 
@@ -61,4 +78,5 @@ object OMIStreamParser {
       })
     }
   }
+  
 }

@@ -34,7 +34,7 @@ import utils._
 
 /** Parser for data in O-DF format */
 object ODFStreamParser {
-  def parser: Flow[String,ODF,NotUsed] = Flow[String]
+  def parserFlow: Flow[String,ODF,NotUsed] = Flow[String]
     .map(ByteString(_))
     .via(XmlParsing.parser)
     .via(new ODFParserFlow)
