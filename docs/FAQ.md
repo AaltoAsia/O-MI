@@ -1,7 +1,7 @@
 # Fequently Asked Questions
 
 ## Why there are only 50 values in DB?
-By default server stores only 50 values per InfoItem, but this can be adjusted
+By default, the server stores only 50 values per InfoItem, but this can be adjusted
 with `num-latest-values-stored` in `application.conf`. This is done to assure
 that if program is used only for testing it will not create lot of unrequired
 data.  
