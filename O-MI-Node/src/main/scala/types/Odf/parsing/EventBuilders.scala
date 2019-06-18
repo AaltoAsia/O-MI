@@ -18,6 +18,7 @@ package parser
 import java.sql.Timestamp
 import scala.collection.JavaConverters._
 import scala.collection.immutable.HashMap
+import scala.util.Try
 
 import akka.NotUsed
 import akka.util._
@@ -329,7 +330,7 @@ import utils._
                 position = Names
                 this
               case event: ParseEvent =>
-                unexpectedEventHandle( "before expected InfoItem element.", event, this)
+                unexpectedEventHandle( s"before expected InfoItem element under O-DF path ${objectPath}.", event, this)
             }
           case Names =>
             event match {
@@ -348,7 +349,7 @@ import utils._
                 position = CloseTag
                 parse(event)
               case event: ParseEvent =>
-                unexpectedEventHandle( "before additional names.", event, this)
+                unexpectedEventHandle( s"before additional names in InfoItem with name: $nameAttribute.", event, this)
             }
           case Descriptions =>
             event match {
@@ -365,7 +366,7 @@ import utils._
                 position = CloseTag
                 parse(event)
               case event: ParseEvent =>
-                unexpectedEventHandle( "after names.", event, this)
+                unexpectedEventHandle( s"after descriptions in InfoItem with name: $nameAttribute.", event, this)
             }
           case MetaData =>
             event match {
@@ -379,7 +380,7 @@ import utils._
                 position = CloseTag
                 parse(event)
               case event: ParseEvent =>
-                unexpectedEventHandle( "after names and descriptions.", event, this)
+                unexpectedEventHandle( s"after MetaData in InfoItem with name: $nameAttribute.", event, this)
             }
           case Values =>
             event match {
@@ -390,21 +391,23 @@ import utils._
                 position = CloseTag
                 parse(event)
               case event: ParseEvent =>
-                unexpectedEventHandle( "after names, descriptions and MetaData.", event, this)
+                unexpectedEventHandle( s"after Value in InfoItem with name: $nameAttribute.", event, this)
             }
           case CloseTag =>
             event match {
+              case event: ParseEvent if complete =>
+                unexpectedEventHandle( s"after complete InfoItem with name: $nameAttribute.", event, this)
               case endElement: EndElement if endElement.localName == "InfoItem" =>
                 val ii = build
+                complete = true
                 previous match{
                   case Some(state:ObjectEventBuilder) => state.addSubNode(ii)
                   case Some(state:MetaDataEventBuilder) => state.addInfoItem(ii)
                   case None =>
-                    complete = true
                     this
                 }
               case event: ParseEvent =>
-                unexpectedEventHandle( "before closing InfoItem tag.", event, this)
+                unexpectedEventHandle( s"before closing InfoItem with name: $nameAttribute.", event, this)
             }
         }
     }
@@ -437,9 +440,24 @@ import utils._
             event match {
               case startElement: StartElement if startElement.localName == "value" =>
                 typeAttribute = startElement.attributes.get("type").getOrElse(typeAttribute)
-                val dateTime = startElement.attributes.get("dateTime")
-                val unixTime = startElement.attributes.get("unixTime")
+                val dateTime = startElement.attributes.get("dateTime").map{
+                  str =>
+                    Try{
+                      dateTimeStrToTimestamp(str)
+                    }.getOrElse{
+                        throw ODFParserError("Invalid dateTime for value.")
+                    }
+                }
+                val unixTime = startElement.attributes.get("unixTime").map{
+                  str => 
+                    Try{
+                      new Timestamp((str.toDouble * 1000.0).toLong)
+                    }.getOrElse{
+                        throw ODFParserError("Invalid unixTime for value.")
+                    }
+                }
                 timestamp = solveTimestamp(dateTime,unixTime,receiveTime)
+                position = Content
                 this
               case event: ParseEvent =>
                 unexpectedEventHandle( "before expected value element.", event, this)
@@ -454,7 +472,7 @@ import utils._
               case content: TextEvent if typeAttribute == "odf" => 
                 throw ODFParserError(s"Expected Objects inside value because of type attribute $typeAttribute.")
               case content: TextEvent => 
-                valueStr = valueStr+ content.text
+                valueStr = valueStr + content.text
                 position = CloseTag
                 this
               case event: ParseEvent =>
@@ -462,6 +480,8 @@ import utils._
             }
           case CloseTag =>
             event match {
+              case event: ParseEvent if complete =>
+                unexpectedEventHandle( s"after complete value.", event, this)
               case content: TextEvent => 
                 valueStr = valueStr+ content.text
                 position = CloseTag
@@ -469,16 +489,16 @@ import utils._
               case content: TextEvent if typeAttribute == "odf" => 
                 throw ODFParserError(s"Textafter Objects inside value.")
               case endElement: EndElement if endElement.localName == "value" =>
+                complete = true
                 previous match {
                   case Some(state: InfoItemEventBuilder) => 
                     state.addValue( build)
-                  case Some(state: EventBuilder[_]) => throw ODFParserError("Description state after wrong state. Previous should be InfoItem.")
+                  case Some(state: EventBuilder[_]) => throw ODFParserError("Value state after wrong state. Previous should be InfoItem.")
                   case None =>
-                    complete = true
                     this
                 }
               case event: ParseEvent =>
-                unexpectedEventHandle( s"before expected closing of description.", event, this)
+                unexpectedEventHandle( s"before expected closing of Value.", event, this)
             }
         }
     }
@@ -519,10 +539,13 @@ import utils._
             }
           case CloseTag =>
             event match {
+              case event: ParseEvent if complete =>
+                unexpectedEventHandle( s"after complete description.", event, this)
               case content: TextEvent => 
                 text = text + content.text
                 this
               case endElement: EndElement if endElement.localName == "description" =>
+                complete = true
                 previous match {
                   case Some(state: InfoItemEventBuilder) => 
                     state.addDescription(build)
@@ -530,7 +553,6 @@ import utils._
                     state.addDescription(build)
                   case Some(state: EventBuilder[_]) => throw ODFParserError("Description state after wrong state. Previous should be InfoItem or Object")
                   case None =>
-                    complete = true
                     this
                 }
               case event: ParseEvent =>
@@ -567,10 +589,20 @@ import utils._
                 tagType = startElement.attributes.get("tagType")
                 idType = startElement.attributes.get("idType")
                 startDate = startElement.attributes.get("startDate").map{
-                  str => dateTimeStrToTimestamp(str)
+                  str => 
+                    Try{
+                      dateTimeStrToTimestamp(str)
+                    }.getOrElse{
+                      throw ODFParserError(s"Invalid startDate attribute for ${startElement.localName} element.")
+                    }
                 }
-                endDate = startElement.attributes.get("startDate").map{
-                  str => dateTimeStrToTimestamp(str)
+                endDate = startElement.attributes.get("endDate").map{
+                  str => 
+                    Try{
+                      dateTimeStrToTimestamp(str)
+                    }.getOrElse{
+                      throw ODFParserError(s"Invalid endDate attribute for ${startElement.localName} element.")
+                    }
                 }
                 this
               case event: ParseEvent =>
@@ -587,6 +619,8 @@ import utils._
             }
           case CloseTag =>
             event match {
+              case event: ParseEvent if complete =>
+                unexpectedEventHandle( s"after complete $openingTag element.", event, this)
               case content: TextEvent => 
                 id = id+ content.text
                 this
