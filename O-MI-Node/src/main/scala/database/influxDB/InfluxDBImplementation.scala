@@ -5,7 +5,7 @@ import java.sql.Timestamp
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
-import scala.util.{Try, Success, Failure}
+import scala.util.Try
 import scala.language.postfixOps
 
 import akka.actor.{ActorRef, ActorSystem}
@@ -213,7 +213,7 @@ class InfluxDBImplementation
 
 }
 
-  case class Measurement(val measurement: String, val value: String, val time: Timestamp){
+  case class Measurement(measurement: String, value: String, time: Timestamp){
     def formatStr: String = s"$measurement value=$value ${time.getTime}"
   }
 

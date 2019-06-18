@@ -11,10 +11,8 @@ import types.Path
 import types.odf._
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration._
 import scala.concurrent.stm._
 import scala.concurrent.{Await, Future}
-import scala.language.postfixOps
 import scala.util.{Failure, Success}
 
 trait OdfDatabase extends Tables with DB with TrimmableDB {
@@ -314,7 +312,7 @@ trait OdfDatabase extends Tables with DB with TrimmableDB {
       }.toSet
       singleStores.getHierarchyTree().flatMap{
         odf: ODF => 
-          var t = odf.subTreePaths(leafPaths).toVector
+          val t = odf.subTreePaths(leafPaths).toVector
           //Filter only leafs
           val iiIOAs = t.flatMap{
             path => pathToDBPath.single.get(path)
@@ -498,7 +496,7 @@ trait OdfDatabase extends Tables with DB with TrimmableDB {
     // but it shouldn't be a big problem
     val p2iisF: Future[Map[Path, InfoItem]] = singleStores.getHierarchyTree().map{
       odf => 
-        var t = odf.subTreePaths(leafPaths.toSet)
+        val t = odf.subTreePaths(leafPaths.toSet)
         t.filterNot{
             path => t.exists{
               op => path.isAncestorOf(op)

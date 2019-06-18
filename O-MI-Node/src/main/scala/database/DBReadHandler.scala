@@ -47,7 +47,7 @@ trait DBReadHandler extends DBHandlerBase {
         val requestedODF = read.odf
         val timer = LapTimer(log.info)
         val leafs = requestedODF.getLeafs
-        timer.step("Got leafs")
+        //timer.step("Got leafs")
 
         //Get values from database
         val odfWithValuesO: Future[Option[ODF]] = dbConnection.getNBetween(
@@ -60,7 +60,7 @@ trait DBReadHandler extends DBHandlerBase {
 
         // NOTE: Might go off sync with tree or values if the request is large,
         // but it shouldn't be a big problem
-        val mdtimer = LapTimer(log.info)
+        //val mdtimer = LapTimer(log.info)
         val fmetadataTree: Future[ImmutableODF] = singleStores.getHierarchyTree()
 
         val fodfWithMetaData: Future[ODF] = fmetadataTree.map(_.readTo(requestedODF).valuesRemoved)

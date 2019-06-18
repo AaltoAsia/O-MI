@@ -31,7 +31,7 @@ import scala.collection.JavaConverters._
 import scala.collection.{SeqView, Iterator}
 import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
-import scala.xml.{NamespaceBinding, NodeSeq}
+import scala.xml.NodeSeq
 import akka.util.ByteString
 import akka.stream.scaladsl._
 import akka.stream.alpakka.xml._
@@ -259,7 +259,6 @@ class RawRequestWrapper(val rawRequest: String, private val user0: UserInfo) ext
   import RawRequestWrapper._
 
   //import scala.xml.pull._ // deprecated
-  import javax.xml.stream._
   import javax.xml.stream.events._
   import javax.xml.namespace._
 
@@ -405,7 +404,7 @@ case class ReadRequest(
                         private val user0: UserInfo = UserInfo(),
                         senderInformation: Option[SenderInformation] = None,
                         ttlLimit: Option[Timestamp] = None,
-                        val requestID: Option[Long] = None
+                        requestID: Option[Long] = None
                       ) extends OmiRequest with OdfRequest {
   user = user0
 
@@ -490,7 +489,7 @@ case class PollRequest(
                         private val user0: UserInfo = UserInfo(),
                         senderInformation: Option[SenderInformation] = None,
                         ttlLimit: Option[Timestamp] = None,
-                        val requestID: Option[Long] = None
+                        requestID: Option[Long] = None
                       ) extends OmiRequest {
 
   user = user0
@@ -551,7 +550,7 @@ case class SubscriptionRequest(
                                 private val user0: UserInfo = UserInfo(),
                                 senderInformation: Option[SenderInformation] = None,
                                 ttlLimit: Option[Timestamp] = None,
-                                val requestID: Option[Long] = None
+                                requestID: Option[Long] = None
                               ) extends OmiRequest  with OdfRequest {
   require(interval == -1.seconds || interval == -2.seconds || interval >= 0.seconds, s"Invalid interval: $interval")
   require(ttl >= 0.seconds, s"Invalid ttl, should be positive (or +infinite): $ttl")
@@ -623,7 +622,7 @@ case class WriteRequest(
                          private val user0: UserInfo = UserInfo(),
                          senderInformation: Option[SenderInformation] = None,
                          ttlLimit: Option[Timestamp] = None,
-                         val requestID: Option[Long] = None
+                         requestID: Option[Long] = None
                        ) extends OmiRequest with OdfRequest with PermissiveRequest {
 
   user = user0
@@ -684,7 +683,7 @@ case class CallRequest(
                         private val user0: UserInfo = UserInfo(),
                         senderInformation: Option[SenderInformation] = None,
                         ttlLimit: Option[Timestamp] = None,
-                        val requestID: Option[Long] = None
+                        requestID: Option[Long] = None
                       ) extends OmiRequest with OdfRequest with PermissiveRequest {
   user = user0
 
@@ -744,7 +743,7 @@ case class DeleteRequest(
                           private val user0: UserInfo = UserInfo(),
                           senderInformation: Option[SenderInformation] = None,
                           ttlLimit: Option[Timestamp] = None,
-                          val requestID: Option[Long] = None
+                          requestID: Option[Long] = None
                         ) extends OmiRequest with OdfRequest with PermissiveRequest {
   user = user0
 
@@ -806,7 +805,7 @@ case class CancelRequest(
                           private val user0: UserInfo = UserInfo(),
                           senderInformation: Option[SenderInformation] = None,
                           ttlLimit: Option[Timestamp] = None,
-                          val requestID: Option[Long] = None
+                          requestID: Option[Long] = None
                         ) extends OmiRequest {
   user = user0
 

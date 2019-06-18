@@ -16,7 +16,7 @@ package types
 
 
 import java.sql.Timestamp
-import java.util.{Date, GregorianCalendar}
+import java.util.GregorianCalendar
 import java.time.{ZoneId, OffsetDateTime}
 
 import javax.xml.datatype.{DatatypeFactory, XMLGregorianCalendar}
@@ -27,7 +27,6 @@ import parsing.xmlGen.xmlTypes._
 import scala.collection.Iterable
 import scala.collection.JavaConverters._
 import scala.xml.NodeSeq
-import utils._
 
 /**
   * Package containing classes presenting O-MI request internally.
