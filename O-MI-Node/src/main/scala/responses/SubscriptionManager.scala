@@ -526,7 +526,7 @@ class SubscriptionManager(
     val endTime = subEndTimestamp(subscription.ttl)
     val currentTime = System.currentTimeMillis()
     val currentTimestamp = new Timestamp(currentTime)
-    val subscribedOdf = NewTypeConverter.convertODF(subscription.odf)
+    val subscribedOdf = subscription.odf
 
     val subId: Future[Long] = subscription.callback match {
       case cb@Some(callback: RawCallback) =>
@@ -539,7 +539,7 @@ class SubscriptionManager(
             addedSub <- singleStores.addSub(
               NormalEventSub(
                 newId,
-                OdfTypes.getLeafs(subscribedOdf).iterator.map(_.path).toSeq,
+                subscribedOdf.getLeafs.map(_.path),
                 endTime,
                 callback
               )
@@ -558,7 +558,7 @@ class SubscriptionManager(
             addedSub <- singleStores.addSub(
               NewEventSub(
                 newId,
-                OdfTypes.getLeafs(subscribedOdf).iterator.map(_.path).toSeq,
+                subscribedOdf.getLeafs.map(_.path),
                 endTime,
                 callback
               )
@@ -577,7 +577,7 @@ class SubscriptionManager(
             newId <- getNewId
             iSub = IntervalSub(
               newId,
-              OdfTypes.getLeafs(subscribedOdf).iterator.map(_.path).toSeq,
+              subscribedOdf.getLeafs.map(_.path),
               endTime,
               callback,
               dur,
@@ -599,7 +599,7 @@ class SubscriptionManager(
         }
       }
       case None => {
-        val paths = OdfTypes.getLeafs(subscribedOdf).iterator.map(_.path).toSeq
+        val paths = subscribedOdf.getLeafs.map(_.path)
         subscription.interval match {
           case Duration(-1, duration.SECONDS) => {
             //event poll sub

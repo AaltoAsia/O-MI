@@ -53,6 +53,7 @@ object RESTHandler {
       case attr@Some("name") => RESTInfoName(path.init)
       case Some(str) => 
         RESTNodeReq(path)
+      case None => throw new Exception("Unknown REST Request type")
     }
   }
 
@@ -114,7 +115,7 @@ object RESTHandler {
     
   }
 
-  def toEvents(node: Node, member: Option[String])(implicit singleStores: SingleStores, timeout: Timeout): Future[Either[String,SeqView[ParseEvent,Seq[_]]]] = node match{
+  def toEvents(node: Node, member: Option[String])(implicit singleStores: SingleStores): Future[Either[String,SeqView[ParseEvent,Seq[_]]]] = node match{
     case ii: InfoItem => 
       member match{
         case Some("value") => 
@@ -291,7 +292,8 @@ object RESTHandler {
                       }.toList
                     ),
                     EndElement("InfoItem" )
-                  ).view  
+                  ).view
+                case _: Objects => throw new Exception("Objects encountered while handling REST request")
               } ++ Vector(EndElement("Object" ), EndDocument)
               Right(events)
           }
@@ -355,7 +357,8 @@ object RESTHandler {
                       }.toList
                     ),
                     EndElement("InfoItem" )
-                  ).view  
+                  ).view
+                case _: Objects => throw new Exception("Objects encountered while handling REST request")
               } ++ Vector( EndElement("Objects" ),EndDocument )
               Right(events)
           }

@@ -59,23 +59,21 @@ class OmiServer extends OmiNode {
     */
   val settings: OmiConfigExtension = OmiConfig(system)
 
-  settings.kamonEnabled match {
+  if(settings.kamonEnabled){
     //TODO: Add other reporters? Additional depncies...
-    case true =>
       Kamon.addReporter(new InfluxDBReporter())
-      system.log.info(s"Started influxdb reporter for Kamon.") 
+      system.log.info(s"Started influxdb reporter for Kamon.")
       //Enablest system metric monitoring with Kamon, but needs Sigar to work
       //TODO: Add Sigar to depencies?
       Try{
         SystemMetrics.startCollecting()
         system.registerOnTermination{ a: Unit => SystemMetrics.stopCollecting()}
       } match {
-        case Failure(ex) => 
-          system.log.warning(s"Starting system metrics collection failed because: $ex") 
-          system.log.warning(s"System metrics will not be collected.") 
+        case Failure(ex) =>
+          system.log.warning(s"Starting system metrics collection failed because: $ex")
+          system.log.warning(s"System metrics will not be collected.")
         case Success(_) =>
       }
-    case false => 
   }
 
   val singleStores = SingleStores(settings)

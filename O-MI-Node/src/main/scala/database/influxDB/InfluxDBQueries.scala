@@ -44,7 +44,7 @@ trait Clause {
   def clause: String
 }
 case class WhereClause(
-  val expressions: Seq[Expression]
+                        expressions: Seq[Expression]
 ) extends Clause {
   def clause: String = {
     if( expressions.nonEmpty ) "WHERE "+ expressions.map(_.expression).mkString( " AND " )
@@ -52,7 +52,7 @@ case class WhereClause(
   }
 }
 case class LimitClause(
-  val n: Int
+                        n: Int
 ) extends Clause {
   def clause: String = s"LIMIT $n"
 }

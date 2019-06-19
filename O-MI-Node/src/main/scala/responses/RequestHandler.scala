@@ -81,23 +81,22 @@ class RequestHandler(
     case na: AgentStopped => agentStopped(na.agentName)
   }
 
-  def handleReadRequest(read: ReadRequest): Future[ResponseRequest] = {
-    read.requestID.foreach{
+  def handleReadRequest(readR: ReadRequest): Future[ResponseRequest] = {
+    readR.requestID.foreach{
       id =>
-      requestStore ! AddInfos(id,Vector( 
-        RequestStringInfo( "request-type", "read"),
-        RequestStringInfo( "begin-attribute", read.begin.toString),
-        RequestStringInfo( "end-attribute", read.end.toString),
-        RequestStringInfo( "newest-attribute", read.newest.toString),
-        RequestStringInfo( "oldest-attribute", read.oldest.toString),
-        RequestStringInfo( "callback-attribute", read.callback.toString)
+      requestStore ! AddInfos(id,Vector(
+                                         RequestStringInfo( "request-type", "read"),
+                                         RequestStringInfo("begin-attribute", readR.begin.toString),
+                                         RequestStringInfo("end-attribute", readR.end.toString),
+                                         RequestStringInfo("newest-attribute", readR.newest.toString),
+                                         RequestStringInfo("oldest-attribute", readR.oldest.toString),
+                                         RequestStringInfo("callback-attribute", readR.callback.toString)
       ))
-    } 
-    val ottl: Timeout = Timeout(read.handleTTL)
-    checkForNotFound(read).flatMap{
-      case (Some(response),None) =>  
+    }
+    checkForNotFound(readR).flatMap{
+      case (Some(response),None) =>
         Future.successful(response)
-      case (notFoundResponse,Some(read)) => 
+      case (notFoundResponse,Some(read)) =>
         splitAndHandle(read){
           request: OdfRequest =>
             log.debug("Handling shared paths: "+ request.odf.getLeafPaths.mkString("\n"))
@@ -112,12 +111,13 @@ class RequestHandler(
               case None => responseFuture
               case Some(nfResponse) =>
                 responseFuture.map{
-                  response => 
+                  response =>
                     response.union(nfResponse)
                 }
             }
-            
+
         }
+      case _ => Future.failed(new Exception("Unkown message encountered while handling request"))
     }
   }
   def checkForNotFound(request: OdfRequest ): Future[Tuple2[Option[ResponseRequest],Option[OdfRequest]]] ={
@@ -140,10 +140,10 @@ class RequestHandler(
         }
     }
   }
-  def handleDeleteRequest( delete: DeleteRequest) : Future[ResponseRequest] = {
-    checkForNotFound(delete).flatMap{
+  def handleDeleteRequest(deleteR: DeleteRequest) : Future[ResponseRequest] = {
+    checkForNotFound(deleteR).flatMap{
       case (Some(response),None) =>  Future.successful(response)
-      case (notFoundResponse,Some(delete)) => 
+      case (notFoundResponse,Some(delete)) =>
         splitAndHandle(delete){
           request: OdfRequest =>
             implicit val to: Timeout = Timeout(request.handleTTL)
@@ -159,6 +159,8 @@ class RequestHandler(
                 }
             }
         }
+
+      case _ => Future.failed(new Exception("Unkown message encountered while handling request"))
     }
     
   }
@@ -218,8 +220,8 @@ class RequestHandler(
     }
   }
 
-  def handleCallRequest( call: CallRequest) : Future[ResponseRequest] = {
-    checkForNotFound(call).flatMap{
+  def handleCallRequest(callR: CallRequest) : Future[ResponseRequest] = {
+    checkForNotFound(callR).flatMap{
       case (Some(response),None) => Future.successful(response)
       case (notFoundResponse,Some(call)) => 
       splitAndHandle(call){
@@ -233,6 +235,8 @@ class RequestHandler(
             case Some(nfResponse) => f.map{ response => response.union(nfResponse)}
           }
       }
+
+      case _ => Future.failed(new Exception("Unkown message encountered while handling request"))
    }
 
   }

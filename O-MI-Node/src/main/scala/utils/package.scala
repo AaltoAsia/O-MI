@@ -17,6 +17,6 @@ package object utils {
     Source
       .fromIterator(() => events.iterator)
       .via( XmlWriting.writer )
-      .filter(_.length != 0)
+      .filter(_.nonEmpty)
   }
 }

@@ -25,14 +25,14 @@ class HierarchyStore(override val persistenceId: String) extends JournalStore {
 
   def updateState(event: PersistentMessage): Unit = event match {
     case e: Event => e match {
-      case PUnion(another) => state = state.union(buildImmutableOdfFromProtobuf(another).valuesRemoved).immutable
-      case PErasePath(path) => state = state.removePath(Path(path)).immutable
+      case PUnion(another) => state = state.union(buildImmutableOdfFromProtobuf(another).valuesRemoved).toImmutable
+      case PErasePath(path) => state = state.removePath(Path(path)).toImmutable
       case _ =>
 
     }
     case p: PersistentCommand => p match {
-      case UnionCommand(other) => state = state.union(other.valuesRemoved).immutable
-      case ErasePathCommand(path) => state = state.removePath(path).immutable
+      case UnionCommand(other) => state = state.union(other.valuesRemoved).toImmutable
+      case ErasePathCommand(path) => state = state.removePath(path).toImmutable
       case _ =>
 
     }
@@ -56,7 +56,7 @@ class HierarchyStore(override val persistenceId: String) extends JournalStore {
         sender() ! updateState(erase)
       }
     case GetTree =>
-      sender() ! state.immutable
+      sender() ! state.toImmutable
 
   }
 

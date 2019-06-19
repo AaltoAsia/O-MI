@@ -411,7 +411,7 @@ case class ReadRequest(
                         private val user0: UserInfo = UserInfo(),
                         senderInformation: Option[SenderInformation] = None,
                         ttlLimit: Option[Timestamp] = None,
-                        val requestID: Option[Long] = None
+                        requestID: Option[Long] = None
                       ) extends OmiRequest with OdfRequest {
   user = user0
 
@@ -496,7 +496,7 @@ case class PollRequest(
                         private val user0: UserInfo = UserInfo(),
                         senderInformation: Option[SenderInformation] = None,
                         ttlLimit: Option[Timestamp] = None,
-                        val requestID: Option[Long] = None
+                        requestID: Option[Long] = None
                       ) extends OmiRequest {
 
   user = user0
@@ -557,7 +557,7 @@ case class SubscriptionRequest(
                                 private val user0: UserInfo = UserInfo(),
                                 senderInformation: Option[SenderInformation] = None,
                                 ttlLimit: Option[Timestamp] = None,
-                                val requestID: Option[Long] = None
+                                requestID: Option[Long] = None
                               ) extends OmiRequest  with OdfRequest {
   require(interval == -1.seconds || interval == -2.seconds || interval >= 0.seconds, s"Invalid interval: $interval")
   require(ttl >= 0.seconds, s"Invalid ttl, should be positive (or +infinite): $ttl")
@@ -629,7 +629,7 @@ case class WriteRequest(
                          private val user0: UserInfo = UserInfo(),
                          senderInformation: Option[SenderInformation] = None,
                          ttlLimit: Option[Timestamp] = None,
-                         val requestID: Option[Long] = None
+                         requestID: Option[Long] = None
                        ) extends OmiRequest with OdfRequest with PermissiveRequest {
 
   user = user0
@@ -690,7 +690,7 @@ case class CallRequest(
                         private val user0: UserInfo = UserInfo(),
                         senderInformation: Option[SenderInformation] = None,
                         ttlLimit: Option[Timestamp] = None,
-                        val requestID: Option[Long] = None
+                        requestID: Option[Long] = None
                       ) extends OmiRequest with OdfRequest with PermissiveRequest {
   user = user0
 
@@ -750,7 +750,7 @@ case class DeleteRequest(
                           private val user0: UserInfo = UserInfo(),
                           senderInformation: Option[SenderInformation] = None,
                           ttlLimit: Option[Timestamp] = None,
-                          val requestID: Option[Long] = None
+                          requestID: Option[Long] = None
                         ) extends OmiRequest with OdfRequest with PermissiveRequest {
   user = user0
 
@@ -812,7 +812,7 @@ case class CancelRequest(
                           private val user0: UserInfo = UserInfo(),
                           senderInformation: Option[SenderInformation] = None,
                           ttlLimit: Option[Timestamp] = None,
-                          val requestID: Option[Long] = None
+                          requestID: Option[Long] = None
                         ) extends OmiRequest {
   user = user0
 
@@ -885,7 +885,7 @@ case class ResponseRequest(
 
   def odf: ODF = results.foldLeft(ImmutableODF()) {
     case (l: ODF, r: OmiResult) =>
-      l.union(r.odf.getOrElse(ImmutableODF())).immutable
+      l.union(r.odf.getOrElse(ImmutableODF())).toImmutable
   }
 
   implicit def asResponseListType: xmlTypes.ResponseListType =
@@ -925,7 +925,7 @@ case class ResponseRequest(
   def odfResultsToSingleWrite: WriteRequest = {
     WriteRequest(
       odfResultsToWrites.foldLeft(ImmutableODF()) {
-        case (objects, write) => objects.union(write.odf).immutable
+        case (objects, write) => objects.union(write.odf).toImmutable
       },
       None,
       ttl

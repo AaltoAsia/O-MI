@@ -5,7 +5,7 @@ import types.Path._
 
 import scala.collection.immutable.{HashMap => ImmutableHashMap}
 import scala.collection.mutable.{HashMap => MutableHashMap, TreeSet => MutableTreeSet}
-import scala.collection.{Map, Seq, SortedSet}
+import scala.collection.{Seq, SortedSet}
 
 class MutableODF private[odf](
                                protected[odf] val nodes: MutableHashMap[Path, Node] = MutableHashMap.empty
@@ -97,12 +97,12 @@ class MutableODF private[odf](
   }
 
 
-  def immutable: ImmutableODF = ImmutableODF(
+  def toImmutable: ImmutableODF = ImmutableODF(
     this.nodes.values.toVector
   )
 
   //Should be this? or create a copy?
-  def mutable: MutableODF = this 
+  def toMutable: MutableODF = this
 
   def valuesRemoved: MutableODF = {
     this.nodes.valuesIterator.foreach {

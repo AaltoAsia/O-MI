@@ -3,15 +3,15 @@ package agents
 import java.sql.Timestamp
 import java.util.Date
 import scala.util.Try
-import scala.collection.mutable.{Map => MutableMap}
 
 import types._
 import types.odf._
 import types.ParseError
 
+case class MVError( msg: String ) extends ParseError(msg, "MobiVoc error:")
+
 package object parking{
 
-  case class MVError( msg: String ) extends ParseError(msg, "MobiVoc error:")
 
   def currentTimestamp: Timestamp = new Timestamp( new Date().getTime())
   def getStringOption(name: String, path: Path, odf: ImmutableODF): Option[String] = {

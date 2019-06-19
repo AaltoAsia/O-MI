@@ -1,16 +1,16 @@
 package agents.parking
 
+import agents.MVError
 import types._
 import types.odf._
 
-import scala.util.{Try, Success, Failure}
+import scala.util.{Failure, Success, Try}
 
 case class GeoCoordinates(
                            latitude: Double,
   longitude: Double
 ){
-  import GeoCoordinates._
-  def distanceTo( other: GeoCoordinates): Double= { 
+  def distanceTo( other: GeoCoordinates): Double= {
     val radius: Double = 6371e3
     val a1 = other.latitude.toRadians 
     val a2 = latitude.toRadians 

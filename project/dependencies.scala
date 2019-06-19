@@ -15,7 +15,7 @@ object Dependencies {
   val httpExperimnt= "com.typesafe.akka" %% "akka-http" % akkaHttpV
   val httpXml      = "com.typesafe.akka" %% "akka-http-xml" % akkaHttpV
   val sprayJson    = "com.typesafe.akka" %% "akka-http-spray-json" % akkaHttpV 
-  val httpCors     = "ch.megard"         %% "akka-http-cors" % "0.3.0"
+  val httpCors     = "ch.megard"         %% "akka-http-cors" % "0.4.1"
   //Test dependencies
   val specs2V = "4.3.0"
   val specs2       = "org.specs2"        %% "specs2-core"   % specs2V   % "test"
@@ -37,8 +37,8 @@ object Dependencies {
   val leveldbjni   = "org.fusesource.leveldbjni"   % "leveldbjni-all"   % "1.8"
   //val json4s       = "org.json4s"         %% "json4s-native"  % "3.3.0" //common
   val postgres     = "org.postgresql"      % "postgresql"      % "9.4.1211"
-  val json4s       = "org.json4s"         %% "json4s-native"   % "3.5.4" //common
-  val json4sAkka   = "de.heikoseeberger"  %% "akka-http-json4s" % "1.21.0" //common
+  val json4s       = "org.json4s"         %% "json4s-native"   % "3.6.6" //common
+  val json4sAkka   = "de.heikoseeberger"  %% "akka-http-json4s" % "1.26.0" //common
 
   //etc
   val logback          = "ch.qos.logback" % "logback-classic" % "1.2.3"
@@ -52,7 +52,7 @@ object Dependencies {
     "io.kamon" %% "kamon-core" % "1.1.3",
     "io.kamon" %% "kamon-logback" % "1.0.2",
     "io.kamon" %% "kamon-akka-2.5" % "1.1.2",
-    "io.kamon" %% "kamon-akka-http-2.5" % "1.1.1",
+    "io.kamon" %% "kamon-akka-http-2.5" % "1.1.2",
     "io.kamon" %% "kamon-scala-future" % "1.0.0",
     "io.kamon" %% "kamon-jdbc" % "1.0.2",
     "io.kamon" %% "kamon-system-metrics" % "1.0.0",

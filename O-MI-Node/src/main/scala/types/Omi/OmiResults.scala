@@ -15,7 +15,6 @@ import akka.stream.alpakka.xml._
 import scala.util.Try
 
 import Version.OdfVersion
-import Version.OdfVersion._
 
 trait JavaOmiResult {
   def requestIDsAsJava(): JIterable[RequestID]

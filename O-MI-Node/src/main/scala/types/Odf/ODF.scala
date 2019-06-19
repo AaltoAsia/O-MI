@@ -5,8 +5,8 @@ package odf
 import parsing.xmlGen.xmlTypes.{ObjectType, ObjectsType, InfoItemType}
 import parsing.xmlGen.{odfDefaultScope, scalaxb}
 
-import scala.collection.immutable.{HashMap => ImmutableHashMap, TreeSet => ImmutableTreeSet, SortedSet}
-import scala.collection.mutable.{ Buffer, Map => MutableMap, Stack => MStack}
+import scala.collection.immutable.{HashMap, TreeSet}
+import scala.collection.mutable
 import scala.collection.{Map, Seq, SortedSet => CSortedSet, SeqView}
 import akka.stream.alpakka.xml._
 import scala.xml.NodeSeq
@@ -54,9 +54,9 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
   
   def removePaths(pathsToRemove: Set[Path]): ODF
 
-  def immutable: ImmutableODF
+  def toImmutable: ImmutableODF
 
-  def mutable: MutableODF
+  def toMutable: MutableODF
 
   def getPaths: Set[Path] = paths.toSet
 
@@ -78,10 +78,10 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
   final def nodesWithAttributes: Vector[Node] = nodes.values.filter(_.attributes.nonEmpty).toVector
 
   @deprecated("use nodesMap instead (bad naming)", "1.0.8")
-  def getNodesMap: Map[Path, Node] = ImmutableHashMap(
+  def getNodesMap: Map[Path, Node] = HashMap(
     nodes.toVector: _*
   )
-  def nodesMap: ImmutableHashMap[Path, Node] = ImmutableHashMap(
+  def nodesMap: HashMap[Path, Node] = HashMap(
     nodes.toVector: _*
   )
 
@@ -108,9 +108,9 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
     getLeafPaths.flatMap(nodes.get(_)).toVector.sortBy(_.path)(Path.PathOrdering)
   }
 
-  final def getLeafPaths: SortedSet[Path] = {
+  final def getLeafPaths: TreeSet[Path] = {
     val ps: Seq[(Path, Int)] = paths.toSeq.zipWithIndex
-    ImmutableTreeSet(ps.collect {
+    TreeSet(ps.collect {
       case (path: Path, index: Int) if{
         val nextIndex = index + 1
         if (nextIndex < ps.size) {
@@ -185,8 +185,8 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
     * Find given paths and all paths of the descendants.
     * Same as [[selectSubTreePaths]] but doesn't add ancestors of the subtrees
     */
-  final def subTreePaths(pathsToGet: Set[Path]): SortedSet[Path] = (
-    ImmutableTreeSet( pathsToGet.flatMap {
+  final def subTreePaths(pathsToGet: Set[Path]): TreeSet[Path] = (
+    TreeSet( pathsToGet.flatMap {
       wantedPath: Path =>
       paths.keysIteratorFrom(wantedPath).takeWhile {
         path: Path => path.startsWith(wantedPath)
@@ -197,7 +197,7 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
   /**
     * Same as [[subTreePaths]] but adds ancestors of the subtrees
     */
-  final def selectSubTreePaths(pathsToGet: Set[Path]): SortedSet[Path] = {
+  final def selectSubTreePaths(pathsToGet: Set[Path]): TreeSet[Path] = {
     subTreePaths(pathsToGet) ++ pathsToGet.flatMap{
         path => path.getAncestors
         //case path: Path if (paths.contains(path)) =>
@@ -226,8 +226,8 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
 
   implicit def asObjectsType: ObjectsType = {
     //val timer = LapTimer(println)
-    val parentPath2IIt: MutableMap[Path,Seq[InfoItemType]] = MutableMap.empty
-    val objs: Buffer[Object] = Buffer.empty
+    val parentPath2IIt: mutable.Map[Path,Seq[InfoItemType]] = mutable.Map.empty
+    val objs: mutable.Buffer[Object] = mutable.Buffer.empty
     var objects = Objects()
     //timer.step("aOT: init")
     for( n <- nodes.values ){
@@ -291,21 +291,21 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
 
   final def asXMLEvents(odfVersion: Option[OdfVersion]=None): SeqView[ParseEvent, Seq[_]] = {
     
-    //object ResponseOrdering extends scala.math.Ordering[Node] {
-    //  def compare(l: Node, r: Node): Int = {
-    //    if( PathOrdering.compare(l.path.getParent, r.path.getParent) == 0){
+    /*object ResponseOrdering extends scala.math.Ordering[Node] {
+      def compare(l: Node, r: Node): Int = {
+        if( PathOrdering.compare(l.path.getParent, r.path.getParent) == 0){
 
-    //      (l,r) match {
-    //        case (ii:InfoItem,obj: Object) => -1
-    //        case (obj: Object, ii: InfoItem) => 1
-    //        case (nl: Node, nr: Node) => 
-    //          PathOrdering.compare(l.path,r.path)
-    //      }
-    //    } else {
-    //          PathOrdering.compare(l.path,r.path)
-    //    }
-    //  }
-    //}
+          (l,r) match {
+            case (ii:InfoItem,obj: Object) => -1
+            case (obj: Object, ii: InfoItem) => 1
+            case (nl: Node, nr: Node) => 
+              PathOrdering.compare(l.path,r.path)
+          }
+        } else {
+              PathOrdering.compare(l.path,r.path)
+        }
+      }
+    }*/
     def sort = {
       //val timer = LapTimer(println)
       var iis: List[InfoItem] = List.empty
@@ -328,9 +328,9 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
       res
     }
     
-    val sortedNodes = sort 
+    val sortedNodes = sort
 
-    val parentStack: MStack[Path] = MStack.empty[Path]
+    var parentStack: List[Path] = Nil
     def handleEnd( index: Int ) = {
       if( index == sortedNodes.size - 1 ){
         val count = Math.max(parentStack.length-1,0)
@@ -341,7 +341,7 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
     }
     val events = sortedNodes.zipWithIndex.view.flatMap{
       case (objs: Objects, index: Int) =>
-        parentStack.push(objs.path)
+        parentStack = objs.path +: parentStack //parentStack.push(objs.path)
         Vector(
           StartElement(
             "Objects",
@@ -359,14 +359,16 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
         ) ++ handleEnd(index)
       case (obj: Object, index: Int) =>
         var count: Int = 0
-        while(parentStack.length > 0 && parentStack.head != obj.path.getParent){
-          Option(parentStack.pop()) match{
+        while(parentStack.nonEmpty && parentStack.head != obj.path.getParent){
+          val first = parentStack.headOption
+          parentStack = parentStack.tail
+          first match{
             case Some(path) =>
               count = count + 1
             case None =>
           }
         }
-        parentStack.push(obj.path)
+        parentStack = obj.path +: parentStack
         Vector.fill(count)( EndElement("Object") ) ++ Vector(
           StartElement(
             "Object",
@@ -386,14 +388,17 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
       case (ii: InfoItem, index: Int) =>
 
         var count: Int = 0
-        while(parentStack.length > 0 && parentStack.head != ii.path.getParent){
-          Option(parentStack.pop()) match{
+        while(parentStack.nonEmpty && parentStack.head != ii.path.getParent){
+          val first = parentStack.headOption
+          parentStack = parentStack.tail
+          first match{
             case Some(path) =>
               count = count + 1
             case None =>
           }
         }
         Vector.fill(count)( EndElement("Object") ) ++ ii.asXMLEvents ++ handleEnd(index)
+
 
     } 
     events 
@@ -431,7 +436,7 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
   def readTo(to: ODF): ODF
 
   def readToNodes(to: ODF): Iterable[Node] = {
-    val wantedPaths: SortedSet[Path] = SortedSet(selectSubTreePaths(to.getLeafPaths).intersect(paths).toSeq:_*)(PathOrdering)
+    val wantedPaths: TreeSet[Path] = TreeSet(selectSubTreePaths(to.getLeafPaths).intersect(paths).toSeq:_*)(PathOrdering)
     val wantedNodes: Iterable[Node] = wantedPaths.map {
       path: Path =>
         (nodes.get(path), to.nodes.get(path)) match {
@@ -459,7 +464,6 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
           case (Some(ii:InfoItem),Some(toIi:InfoItem)) => ii.readTo(toIi)
           case (Some(obj:Objects),Some(toObj:Objects)) => obj.readTo(toObj)
           case (Some(f:Node), Some(t:Node)) => throw new Exception("Missmatching types in ODF when reading.")
-          case (Some(f:Node),None) => throw new Exception("Found unknown Node type.")
         }
     }
     wantedNodes

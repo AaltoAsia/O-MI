@@ -6,10 +6,9 @@ import java.util.concurrent.TimeUnit
 import agentSystem._
 import akka.actor.{Actor, ActorRef, Cancellable, Props}
 import com.typesafe.config.Config
-import types.OdfTypes._
 import types.OmiTypes.{OmiResult, ResponseRequest, Results, WriteRequest}
 import types.Path
-import types.odf.OldTypeConverter
+import types.odf._
 
 import scala.concurrent.ExecutionContext.Implicits._
 import scala.concurrent.Future
@@ -100,30 +99,32 @@ class ScalaAgent(
     //New value as String
     //val valueStr : String = newValueStr
 
-    val odfValue : OdfValue[Any] = OdfValue( newValueStr, typeStr, timestamp ) 
+    val odfValue: Value[Any] = Value(newValueStr,typeStr,timestamp)
 
     // Multiple values can be added at the same time but we add one
-    val odfValues : Vector[OdfValue[Any]] = Vector( odfValue )
+    val odfValues: Vector[Value[Any]] = Vector( odfValue )
 
     //val metaValueStr : String = newValueStr
 
     //val metaValue : OdfValue[Any] = OdfValue( newValueStr, typeStr, timestamp )
 
     // Multiple values can be added at the same time but we add one
-    val metaValues : Vector[OdfValue[Any]] = Vector( odfValue )
+    val metaValues: Vector[Value[Any]] = Vector( odfValue )
 
     // Create OdfInfoItem to contain the value. 
-    val metaInfoItem : OdfInfoItem = OdfInfoItem( path / "MetaData" / "test", metaValues)
+    val metaInfoItem: InfoItem = InfoItem(path / "metaData" / "test", metaValues)
 
-    val metaData = OdfMetaData( Vector(metaInfoItem) )
+    val metaData = MetaData( Vector(metaInfoItem))
 
-    val description = OdfDescription("test")
+    val description = Description("test")
+
     // Create OdfInfoItem to contain the value. 
-    val infoItem : OdfInfoItem = OdfInfoItem( path, odfValues, Some(description), Some(metaData))
+    val infoItem: InfoItem =
+      InfoItem(path,None,Vector.empty[QlmID],Set(description),odfValues,Some(metaData),Map.empty[String,String])
 
     // Method createAncestors generates O-DF structure from the path of an OdfNode 
     // and returns the root, OdfObjects
-    val objects : OdfObjects =  infoItem.createAncestors
+    val odf = ImmutableODF(infoItem.createAncestors)
 
     // This sends debug log message to O-MI Node logs if
     // debug level is enabled (in logback.xml and application.conf)
@@ -131,7 +132,7 @@ class ScalaAgent(
 
     // Create O-MI write request
     // interval as time to live
-    val write : WriteRequest = WriteRequest( OldTypeConverter.convertOdfObjects(objects), None, interval )
+    val write : WriteRequest = WriteRequest(odf, None, interval )
 
     // Execute the request, execution is asynchronous (will not block)
     val result : Future[ResponseRequest] = writeToDB(write) 

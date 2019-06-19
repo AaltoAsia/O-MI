@@ -10,14 +10,14 @@ import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.unmarshalling._
-import scala.concurrent.{Future}
+import scala.concurrent.Future
 import scala.concurrent.duration._
 
 import http.OmiConfigExtension
 
 object InfluxDBClient {
   def queriesToHTTPPost( queries: Seq[InfluxQuery],readAddress: Uri): HttpRequest ={
-    val httpEntity = FormData(("q", queries.map(_.query).mkString(";\n")) ).toEntity(HttpCharsets.`UTF-8`)
+    val httpEntity = FormData(("q", queries.map(_.query).mkString(";\n")) ).toEntity
     RequestBuilding.Post(readAddress, httpEntity).withHeaders(RawHeader("Accept","application/json"))
   }
   def httpResponseToStrict(futureResponse: Future[HttpResponse],log: LoggingAdapter)(implicit ec: ExecutionContext, materializer: Materializer): Future[HttpEntity.Strict] = {

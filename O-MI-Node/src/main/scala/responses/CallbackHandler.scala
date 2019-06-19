@@ -30,10 +30,8 @@ import akka.event.LogSource
 import org.slf4j.LoggerFactory
 import akka.http.scaladsl.client.RequestBuilding
 import akka.http.scaladsl.model._
-//import akka.http.scaladsl.model.ContentTypes._
 import akka.http.scaladsl.model.ws._
 import akka.http.scaladsl.{Http, HttpExt}
-//import akka.NotUsed
 import akka.stream._
 import akka.stream.scaladsl._
 
@@ -41,7 +39,6 @@ import http.OmiConfigExtension
 import responses.CallbackHandler._
 import types.OmiTypes._
 import database.SingleStores
-
 
 import http.WebSocketUtil
 
