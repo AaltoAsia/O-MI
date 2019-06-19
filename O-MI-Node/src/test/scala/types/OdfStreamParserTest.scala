@@ -401,10 +401,11 @@ class OdfEventBuilderTest extends Specification {
         ) must beFailedTry.withThrowable[ODFParserError]("O-DF Parser error: Unexpect end of error element after complete value.")
       }
     }
-    "parse correctly InfoItem element" >> {
+    "handle correctly InfoItem element" >> {
       val objPath = Path("Objects/TestObj")
       val iiPath = objPath / "test"
-      "from correct events" >> {
+      val mdPath = iiPath / "MetaData"
+      "from all correct events" >> {
         buildFromEvents(
           new InfoItemEventBuilder(objPath,None,testTime),
           Vector(
@@ -421,6 +422,12 @@ class OdfEventBuilderTest extends Specification {
             StartElement("description",List(Attribute("lang", "FIN"))),
             Characters("testing"),
             EndElement("description"),
+            StartElement("MetaData"),
+            StartElement("InfoItem", List(Attribute("name","test1"))),
+            EndElement("InfoItem"),
+            StartElement("InfoItem", List(Attribute("name","test2"))),
+            EndElement("InfoItem"),
+            EndElement("MetaData"),
             StartElement("value", List(Attribute("type","xs:double"))),
             Characters("1.2"),
             EndElement("value"),
@@ -436,20 +443,980 @@ class OdfEventBuilderTest extends Specification {
             Some("test"),
             Vector(QlmID("testing2"),QlmID("testing1")),
             Set(Description("testing",Some("ENG")),Description("testing",Some("FIN"))),
-            Vector(DoubleValue(1.3,testTime),DoubleValue(1.2,testTime))
+            Vector(DoubleValue(1.3,testTime),DoubleValue(1.2,testTime)),
+          Some(MetaData(
+            Vector(
+              InfoItem(
+                "test2",
+                mdPath/"test2"
+              ),
+              InfoItem(
+                "test1",
+                mdPath/"test1"
+              )
+            )
+          ))
+          )
+        )
+      }
+      "from correct events with description and value" >> {
+        buildFromEvents(
+          new InfoItemEventBuilder(objPath,None,testTime),
+          Vector(
+            StartElement("InfoItem", List(Attribute("name","test"),Attribute("type","test"))),
+            StartElement("description",List(Attribute("lang", "ENG"))),
+            Characters("testing"),
+            EndElement("description"),
+            StartElement("value", List(Attribute("type","xs:double"))),
+            Characters("1.2"),
+            EndElement("value"),
+            EndElement("InfoItem")
+          )
+        ) must beSuccessfulTry.withValue(
+          InfoItem(
+            "test",
+            iiPath,
+            Some("test"),
+            Vector.empty,
+            Set(Description("testing",Some("ENG"))),
+            Vector(DoubleValue(1.2,testTime))
+          )
+        )
+      }
+      "from correct events with description and MetaData" >> {
+        buildFromEvents(
+          new InfoItemEventBuilder(objPath,None,testTime),
+          Vector(
+            StartElement("InfoItem", List(Attribute("name","test"),Attribute("type","test"))),
+            StartElement("description",List(Attribute("lang", "ENG"))),
+            Characters("testing"),
+            EndElement("description"),
+            StartElement("MetaData"),
+            StartElement("InfoItem", List(Attribute("name","test1"))),
+            EndElement("InfoItem"),
+            EndElement("MetaData"),
+            EndElement("InfoItem")
+          )
+        ) must beSuccessfulTry.withValue(
+          InfoItem(
+            "test",
+            iiPath,
+            Some("test"),
+            Vector.empty,
+            Set(Description("testing",Some("ENG"))),
+            Vector.empty,
+          Some(MetaData(
+            Vector(
+              InfoItem(
+                "test1",
+                mdPath/"test1"
+              )
+            )
+          ))
+          )
+        )
+      }
+      "from correct events with MetaData and value" >> {
+        buildFromEvents(
+          new InfoItemEventBuilder(objPath,None,testTime),
+          Vector(
+            StartElement("InfoItem", List(Attribute("name","test"),Attribute("type","test"))),
+            StartElement("MetaData"),
+            StartElement("InfoItem", List(Attribute("name","test1"))),
+            EndElement("InfoItem"),
+            EndElement("MetaData"),
+            StartElement("value", List(Attribute("type","xs:double"))),
+            Characters("1.2"),
+            EndElement("value"),
+            EndElement("InfoItem")
+          )
+        ) must beSuccessfulTry.withValue(
+          InfoItem(
+            "test",
+            iiPath,
+            Some("test"),
+            Vector.empty,
+            Set.empty,
+            Vector(DoubleValue(1.2,testTime)),
+            Some(MetaData(
+              Vector(
+                InfoItem(
+                  "test1",
+                  mdPath/"test1"
+                )
+              )
+            )),
+            Map.empty
+          )
+        )
+      }
+      "from correct events with description, MetaData and value" >> {
+        buildFromEvents(
+          new InfoItemEventBuilder(objPath,None,testTime),
+          Vector(
+            StartElement("InfoItem", List(Attribute("name","test"),Attribute("type","test"))),
+            StartElement("description",List(Attribute("lang", "ENG"))),
+            Characters("testing"),
+            EndElement("description"),
+            StartElement("MetaData"),
+            StartElement("InfoItem", List(Attribute("name","test1"))),
+            EndElement("InfoItem"),
+            EndElement("MetaData"),
+            StartElement("value", List(Attribute("type","xs:double"))),
+            Characters("1.2"),
+            EndElement("value"),
+            EndElement("InfoItem")
+          )
+        ) must beSuccessfulTry.withValue(
+          InfoItem(
+            "test",
+            iiPath,
+            Some("test"),
+            Vector.empty,
+            Set(Description("testing",Some("ENG"))),
+            Vector(DoubleValue(1.2,testTime)),
+          Some(MetaData(
+            Vector(
+              InfoItem(
+                "test1",
+                mdPath/"test1"
+              )
+            )
+          ))
+          )
+        )
+      }
+      "from correct events with additional name and value" >> {
+        buildFromEvents(
+          new InfoItemEventBuilder(objPath,None,testTime),
+          Vector(
+            StartElement("InfoItem", List(Attribute("name","test"),Attribute("type","test"))),
+            StartElement("name"),
+            Characters("testing1"),
+            EndElement("name"),
+            StartElement("value", List(Attribute("type","xs:double"))),
+            Characters("1.2"),
+            EndElement("value"),
+            EndElement("InfoItem")
+          )
+        ) must beSuccessfulTry.withValue(
+          InfoItem(
+            "test",
+            iiPath,
+            Some("test"),
+            Vector(QlmID("testing1")),
+            Set.empty,
+            Vector(DoubleValue(1.2,testTime))
+          )
+        )
+      }
+      "from correct events with additional name and MetaData" >> {
+        buildFromEvents(
+          new InfoItemEventBuilder(objPath,None,testTime),
+          Vector(
+            StartElement("InfoItem", List(Attribute("name","test"),Attribute("type","test"))),
+            StartElement("name"),
+            Characters("testing1"),
+            EndElement("name"),
+            StartElement("MetaData"),
+            StartElement("InfoItem", List(Attribute("name","test1"))),
+            EndElement("InfoItem"),
+            EndElement("MetaData"),
+            EndElement("InfoItem")
+          )
+        ) must beSuccessfulTry.withValue(
+            InfoItem(
+              "test",
+              iiPath,
+              Some("test"),
+              Vector(QlmID("testing1")),
+              Set.empty,
+              Vector.empty,
+              Some(MetaData(
+                Vector(
+                  InfoItem(
+                    "test1",
+                    mdPath/"test1"
+                  )
+                )
+              )),
+              Map.empty
+          )
+        )
+      }
+      "from correct events with additional name, value and MetaData" >> {
+        buildFromEvents(
+          new InfoItemEventBuilder(objPath,None,testTime),
+          Vector(
+            StartElement("InfoItem", List(Attribute("name","test"),Attribute("type","test"))),
+            StartElement("name"),
+            Characters("testing1"),
+            EndElement("name"),
+            StartElement("MetaData"),
+            StartElement("InfoItem", List(Attribute("name","test1"))),
+            EndElement("InfoItem"),
+            EndElement("MetaData"),
+            StartElement("value", List(Attribute("type","xs:double"))),
+            Characters("1.2"),
+            EndElement("value"),
+            EndElement("InfoItem")
+          )
+        ) must beSuccessfulTry.withValue(
+          InfoItem(
+            "test",
+            iiPath,
+            Some("test"),
+            Vector(QlmID("testing1")),
+            Set.empty,
+            Vector(DoubleValue(1.2,testTime)),
+          Some(MetaData(
+            Vector(
+              InfoItem(
+                "test1",
+                mdPath/"test1"
+              )
+            )
+          )),
+            Map.empty
+          )
+        )
+      }
+      "from correct events with additional name and description" >> {
+        buildFromEvents(
+          new InfoItemEventBuilder(objPath,None,testTime),
+          Vector(
+            StartElement("InfoItem", List(Attribute("name","test"),Attribute("type","test"))),
+            StartElement("name"),
+            Characters("testing1"),
+            EndElement("name"),
+            StartElement("description",List(Attribute("lang", "ENG"))),
+            Characters("testing"),
+            EndElement("description"),
+            EndElement("InfoItem")
+          )
+        ) must beSuccessfulTry.withValue(
+          InfoItem(
+            "test",
+            iiPath,
+            Some("test"),
+            Vector(QlmID("testing1")),
+            Set(Description("testing",Some("ENG"))),
+            Vector.empty
+          )
+        )
+      }
+      "from correct events with additional name, description and MetaData" >> {
+        buildFromEvents(
+          new InfoItemEventBuilder(objPath,None,testTime),
+          Vector(
+            StartElement("InfoItem", List(Attribute("name","test"),Attribute("type","test"))),
+            StartElement("name"),
+            Characters("testing1"),
+            EndElement("name"),
+            StartElement("description",List(Attribute("lang", "ENG"))),
+            Characters("testing"),
+            EndElement("description"),
+            StartElement("MetaData"),
+            StartElement("InfoItem", List(Attribute("name","test1"))),
+            EndElement("InfoItem"),
+            EndElement("MetaData"),
+            EndElement("InfoItem")
+          )
+        ) must beSuccessfulTry.withValue(
+          InfoItem(
+            "test",
+            iiPath,
+            Some("test"),
+            Vector(QlmID("testing1")),
+            Set(Description("testing",Some("ENG"))),
+            Vector.empty,
+          Some(MetaData(
+            Vector(
+              InfoItem(
+                "test1",
+                mdPath/"test1"
+              )
+            )
+          ))
+          )
+        )
+      }
+      "from correct events with additional name" >> {
+        buildFromEvents(
+          new InfoItemEventBuilder(objPath,None,testTime),
+          Vector(
+            StartElement("InfoItem", List(Attribute("name","test"),Attribute("type","test"))),
+            StartElement("name"),
+            Characters("testing1"),
+            EndElement("name"),
+            EndElement("InfoItem")
+          )
+        ) must beSuccessfulTry.withValue(
+          InfoItem(
+            "test",
+            iiPath,
+            Some("test"),
+            Vector(QlmID("testing1")),
+            Set.empty,
+            Vector.empty
+          )
+        )
+      }
+      "from correct events with description" >> {
+        buildFromEvents(
+          new InfoItemEventBuilder(objPath,None,testTime),
+          Vector(
+            StartElement("InfoItem", List(Attribute("name","test"),Attribute("type","test"))),
+            StartElement("description",List(Attribute("lang", "ENG"))),
+            Characters("testing"),
+            EndElement("description"),
+            EndElement("InfoItem")
+          )
+        ) must beSuccessfulTry.withValue(
+          InfoItem(
+            "test",
+            iiPath,
+            Some("test"),
+            Vector.empty,
+            Set(Description("testing",Some("ENG"))),
+            Vector.empty
+          )
+        )
+      }
+      "from correct events with value" >> {
+        buildFromEvents(
+          new InfoItemEventBuilder(objPath,None,testTime),
+          Vector(
+            StartElement("InfoItem", List(Attribute("name","test"),Attribute("type","test"))),
+            StartElement("value", List(Attribute("type","xs:double"))),
+            Characters("1.2"),
+            EndElement("value"),
+            EndElement("InfoItem")
+          )
+        ) must beSuccessfulTry.withValue(
+          InfoItem(
+            "test",
+            iiPath,
+            Some("test"),
+            Vector.empty,
+            Set.empty,
+            Vector(DoubleValue(1.2,testTime))
+          )
+        )
+      }
+      "from correct events with MetaData" >> {
+        buildFromEvents(
+          new InfoItemEventBuilder(objPath,None,testTime),
+          Vector(
+            StartElement("InfoItem", List(Attribute("name","test"),Attribute("type","test"))),
+            StartElement("MetaData"),
+            StartElement("InfoItem", List(Attribute("name","test1"))),
+            EndElement("InfoItem"),
+            StartElement("InfoItem", List(Attribute("name","test2"))),
+            EndElement("InfoItem"),
+            EndElement("MetaData"),
+            EndElement("InfoItem")
+          )
+        ) must beSuccessfulTry.withValue(
+          InfoItem(
+            "test",
+            iiPath,
+            Some("test"),
+            Vector.empty,
+            Set.empty,
+            Vector.empty,
+          Some(MetaData(
+            Vector(
+              InfoItem(
+                "test2",
+                mdPath/"test2"
+              ),
+              InfoItem(
+                "test1",
+                mdPath/"test1"
+              )
+            )
+          )),
+            Map.empty
+          )
+        )
+      }
+      "from correct events with no sub elements" >> {
+        buildFromEvents(
+          new InfoItemEventBuilder(objPath,None,testTime),
+          Vector(
+            StartElement("InfoItem", List(Attribute("name","test"),Attribute("type","test"))),
+            EndElement("InfoItem")
+          )
+        ) must beSuccessfulTry.withValue(
+          InfoItem(
+            "test",
+            iiPath,
+            Some("test"),
+            Vector.empty,
+            Set.empty,
+            Vector.empty
+          )
+        )
+      }
+      "with unexpected event after addional name element" >> {
+        buildFromEvents(
+          new InfoItemEventBuilder(objPath,None,testTime),
+          Vector(
+            StartElement("InfoItem", List(Attribute("name","test"),Attribute("type","test"))),
+            StartElement("name"),
+            Characters("testing1"),
+            EndElement("name"),
+            StartElement("error"),
+            StartElement("description",List(Attribute("lang", "ENG"))),
+            Characters("testing"),
+            EndElement("description"),
+            StartElement("MetaData"),
+            StartElement("InfoItem", List(Attribute("name","test1"))),
+            EndElement("InfoItem"),
+            EndElement("MetaData"),
+            StartElement("value", List(Attribute("type","xs:double"))),
+            Characters("1.2"),
+            EndElement("value"),
+            EndElement("InfoItem")
+          )
+        ) must beFailedTry.withThrowable[ODFParserError]("O-DF Parser error: Unexpect start of error element after additional names in InfoItem with name: test.")
+      }
+      "with unexpected event after description" >> {
+        buildFromEvents(
+          new InfoItemEventBuilder(objPath,None,testTime),
+          Vector(
+            StartElement("InfoItem", List(Attribute("name","test"),Attribute("type","test"))),
+            StartElement("name"),
+            Characters("testing1"),
+            EndElement("name"),
+            StartElement("description",List(Attribute("lang", "ENG"))),
+            Characters("testing"),
+            EndElement("description"),
+            StartElement("error"),
+            StartElement("MetaData"),
+            StartElement("InfoItem", List(Attribute("name","test1"))),
+            EndElement("InfoItem"),
+            StartElement("InfoItem", List(Attribute("name","test2"))),
+            EndElement("InfoItem"),
+            EndElement("MetaData"),
+            StartElement("value", List(Attribute("type","xs:double"))),
+            Characters("1.2"),
+            EndElement("value"),
+            EndElement("InfoItem")
+          )
+        ) must beFailedTry.withThrowable[ODFParserError]("O-DF Parser error: Unexpect start of error element after descriptions in InfoItem with name: test.")
+      }
+      "with unexpected event after MetaData" >> {
+        buildFromEvents(
+          new InfoItemEventBuilder(objPath,None,testTime),
+          Vector(
+            StartElement("InfoItem", List(Attribute("name","test"),Attribute("type","test"))),
+            StartElement("name"),
+            Characters("testing1"),
+            EndElement("name"),
+            StartElement("description",List(Attribute("lang", "ENG"))),
+            Characters("testing"),
+            EndElement("description"),
+            StartElement("MetaData"),
+            StartElement("InfoItem", List(Attribute("name","test1"))),
+            EndElement("InfoItem"),
+            EndElement("MetaData"),
+            StartElement("error"),
+            StartElement("value", List(Attribute("type","xs:double"))),
+            Characters("1.2"),
+            EndElement("value"),
+            EndElement("InfoItem")
+          )
+        ) must beFailedTry.withThrowable[ODFParserError]("O-DF Parser error: Unexpect start of error element after MetaData in InfoItem with name: test.")
+      }
+      "with unexpected event after value" >> {
+        buildFromEvents(
+          new InfoItemEventBuilder(objPath,None,testTime),
+          Vector(
+            StartElement("InfoItem", List(Attribute("name","test"),Attribute("type","test"))),
+            StartElement("name"),
+            Characters("testing1"),
+            EndElement("name"),
+            StartElement("description",List(Attribute("lang", "ENG"))),
+            Characters("testing"),
+            EndElement("description"),
+            StartElement("value", List(Attribute("type","xs:double"))),
+            Characters("1.2"),
+            EndElement("value"),
+            StartElement("error"),
+            EndElement("InfoItem")
+          )
+        ) must beFailedTry.withThrowable[ODFParserError]("O-DF Parser error: Unexpect start of error element after values in InfoItem with name: test.")
+      }
+      "with unexpected event after complete InfoItem" >> {
+        buildFromEvents(
+          new InfoItemEventBuilder(objPath,None,testTime),
+          Vector(
+            StartElement("InfoItem", List(Attribute("name","test"),Attribute("type","test"))),
+            StartElement("name"),
+            Characters("testing1"),
+            EndElement("name"),
+            StartElement("description",List(Attribute("lang", "ENG"))),
+            Characters("testing"),
+            EndElement("description"),
+            StartElement("value", List(Attribute("type","xs:double"))),
+            Characters("1.2"),
+            EndElement("value"),
+            EndElement("InfoItem"),
+            StartElement("error")
+          )
+        ) must beFailedTry.withThrowable[ODFParserError]("O-DF Parser error: Unexpect start of error element after complete InfoItem with name: test.")
+      }
+    }
+    "parse correctly MetaData element" >> {
+      val iiPath = Path("Objects/TestObj/test")
+      val mdPath = iiPath / "MetaData"
+      "from correct events" >> {
+        buildFromEvents(
+          new MetaDataEventBuilder(iiPath,None,testTime),
+          Vector(
+            StartElement("MetaData"),
+            StartElement("InfoItem", List(Attribute("name","test1"))),
+            EndElement("InfoItem"),
+            StartElement("InfoItem", List(Attribute("name","test2"))),
+            EndElement("InfoItem"),
+            EndElement("MetaData")
+          )
+        ) must beSuccessfulTry.withValue(
+          MetaData(
+            Vector(
+              InfoItem(
+                "test2",
+                mdPath/"test2"
+              ),
+              InfoItem(
+                "test1",
+                mdPath/"test1"
+              )
+            )
+          )
+        )
+      }
+      "with unexpected event after complete MetaData" >> {
+        buildFromEvents(
+          new MetaDataEventBuilder(iiPath,None,testTime),
+          Vector(
+            StartElement("MetaData"),
+            StartElement("InfoItem", List(Attribute("name","test1"))),
+            EndElement("InfoItem"),
+            StartElement("InfoItem", List(Attribute("name","test2"))),
+            EndElement("InfoItem"),
+            EndElement("MetaData"),
+            EndElement("error")
+          )
+        ) must beFailedTry.withThrowable[ODFParserError](s"O-DF Parser error: Unexpect end of error element after complete MetaData in InfoItem ${iiPath.toString}.")
+      }
+      "with unexpected event in MetaData" >> {
+        buildFromEvents(
+          new MetaDataEventBuilder(iiPath,None,testTime),
+          Vector(
+            StartElement("MetaData"),
+            StartElement("InfoItem", List(Attribute("name","test1"))),
+            EndElement("InfoItem"),
+            EndElement("error"),
+            StartElement("InfoItem", List(Attribute("name","test2"))),
+            EndElement("InfoItem"),
+            EndElement("MetaData")
+          )
+        ) must beFailedTry.withThrowable[ODFParserError](s"O-DF Parser error: Unexpect end of error element when expected InfoItem elements in MetaData in InfoItem ${iiPath.toString}.")
+      }
+      "with unexpected event before MetaData" >> {
+        buildFromEvents(
+          new MetaDataEventBuilder(iiPath,None,testTime),
+          Vector(
+            EndElement("error"),
+            StartElement("MetaData"),
+            StartElement("InfoItem", List(Attribute("name","test1"))),
+            EndElement("InfoItem"),
+            StartElement("InfoItem", List(Attribute("name","test2"))),
+            EndElement("InfoItem"),
+            EndElement("MetaData")
+          )
+        ) must beFailedTry.withThrowable[ODFParserError](s"O-DF Parser error: Unexpect end of error element before expected MetaData element in InfoItem ${iiPath.toString}.")
+      }
+    }
+    "handle correctly Object element" >> {
+      "with correct events with all possible sub elements" >> {
+        val parentPath = Path("Objects/TestObj")
+        val objPath = parentPath / "testing"
+        buildFromEvents(
+          new ObjectEventBuilder(parentPath,None,testTime),
+          Vector(
+            StartElement("Object", List(Attribute("type","test"))),
+            StartElement("id"),
+            Characters("testing"),
+            EndElement("id"),
+            StartElement("description"),
+            Characters("testing"),
+            EndElement("description"),
+            StartElement("InfoItem", List(Attribute("name","II1"))),
+            EndElement("InfoItem"),
+            StartElement("Object", List(Attribute("type","test"))),
+            StartElement("id"),
+            Characters("SubObject"),
+            EndElement("id"),
+            StartElement("InfoItem", List(Attribute("name","II2"))),
+            EndElement("InfoItem"),
+            EndElement("Object"),
+            EndElement("Object")
+            )
+        ) must beSuccessfulTry.withValue(
+          Object(
+            Vector(QlmID("testing")),
+            objPath,
+            Some("test"),
+            Set(Description("testing"))
+          )
+        )
+      }
+      "with object with only id" >> {
+        val parentPath = Path("Objects/TestObj")
+        val objPath = parentPath / "testing"
+        buildFromEvents(
+          new ObjectEventBuilder(parentPath,None,testTime),
+          Vector(
+            StartElement("Object", List(Attribute("type","test"))),
+            StartElement("id"),
+            Characters("testing"),
+            EndElement("id"),
+            EndElement("Object")
+            )
+        ) must beSuccessfulTry.withValue(
+          Object(
+            Vector(QlmID("testing")),
+            objPath,
+            Some("test")
+          )
+        )
+      }
+      "with description" >> {
+        val parentPath = Path("Objects/TestObj")
+        val objPath = parentPath / "testing"
+        buildFromEvents(
+          new ObjectEventBuilder(parentPath,None,testTime),
+          Vector(
+            StartElement("Object", List(Attribute("type","test"))),
+            StartElement("id"),
+            Characters("testing"),
+            EndElement("id"),
+            StartElement("description"),
+            Characters("testing"),
+            EndElement("description"),
+            EndElement("Object")
+            )
+        ) must beSuccessfulTry.withValue(
+          Object(
+            Vector(QlmID("testing")),
+            objPath,
+            Some("test"),
+            Set(Description("testing"))
+          )
+        )
+      }
+      "with description and InfoItem" >> {
+        val parentPath = Path("Objects/TestObj")
+        val objPath = parentPath / "testing"
+        buildFromEvents(
+          new ObjectEventBuilder(parentPath,None,testTime),
+          Vector(
+            StartElement("Object", List(Attribute("type","test"))),
+            StartElement("id"),
+            Characters("testing"),
+            EndElement("id"),
+            StartElement("description"),
+            Characters("testing"),
+            EndElement("description"),
+            StartElement("InfoItem", List(Attribute("name","II1"))),
+            EndElement("InfoItem"),
+            EndElement("Object")
+            )
+        ) must beSuccessfulTry.withValue(
+          Object(
+            Vector(QlmID("testing")),
+            objPath,
+            Some("test"),
+            Set(Description("testing"))
+          )
+        )
+      }
+      "with description and sub Object" >> {
+        val parentPath = Path("Objects/TestObj")
+        val objPath = parentPath / "testing"
+        buildFromEvents(
+          new ObjectEventBuilder(parentPath,None,testTime),
+          Vector(
+            StartElement("Object", List(Attribute("type","test"))),
+            StartElement("id"),
+            Characters("testing"),
+            EndElement("id"),
+            StartElement("description"),
+            Characters("testing"),
+            EndElement("description"),
+            StartElement("Object", List(Attribute("type","test"))),
+            StartElement("id"),
+            Characters("testing"),
+            EndElement("id"),
+            EndElement("Object"),
+            EndElement("Object")
+            )
+        ) must beSuccessfulTry.withValue(
+          Object(
+            Vector(QlmID("testing")),
+            objPath,
+            Some("test"),
+            Set(Description("testing"))
+          )
+        )
+      }
+      "with description, InfoItem and sub Object" >> {
+        val parentPath = Path("Objects/TestObj")
+        val objPath = parentPath / "testing"
+        buildFromEvents(
+          new ObjectEventBuilder(parentPath,None,testTime),
+          Vector(
+            StartElement("Object", List(Attribute("type","test"))),
+            StartElement("id"),
+            Characters("testing"),
+            EndElement("id"),
+            StartElement("description"),
+            Characters("testing"),
+            EndElement("description"),
+            StartElement("InfoItem", List(Attribute("name","II1"))),
+            EndElement("InfoItem"),
+            StartElement("Object", List(Attribute("type","test"))),
+            StartElement("id"),
+            Characters("testing"),
+            EndElement("id"),
+            EndElement("Object"),
+            EndElement("Object")
+            )
+        ) must beSuccessfulTry.withValue(
+          Object(
+            Vector(QlmID("testing")),
+            objPath,
+            Some("test"),
+            Set(Description("testing"))
+          )
+        )
+      }
+      "with InfoItem" >> {
+        val parentPath = Path("Objects/TestObj")
+        val objPath = parentPath / "testing"
+        buildFromEvents(
+          new ObjectEventBuilder(parentPath,None,testTime),
+          Vector(
+            StartElement("Object", List(Attribute("type","test"))),
+            StartElement("id"),
+            Characters("testing"),
+            EndElement("id"),
+            StartElement("InfoItem", List(Attribute("name","II1"))),
+            EndElement("InfoItem"),
+            EndElement("Object")
+            )
+        ) must beSuccessfulTry.withValue(
+          Object(
+            Vector(QlmID("testing")),
+            objPath,
+            Some("test")
+          )
+        )
+      }
+      "with InfoItem and sub Object" >> {
+        val parentPath = Path("Objects/TestObj")
+        val objPath = parentPath / "testing"
+        buildFromEvents(
+          new ObjectEventBuilder(parentPath,None,testTime),
+          Vector(
+            StartElement("Object", List(Attribute("type","test"))),
+            StartElement("id"),
+            Characters("testing"),
+            EndElement("id"),
+            StartElement("InfoItem", List(Attribute("name","II1"))),
+            EndElement("InfoItem"),
+            StartElement("Object", List(Attribute("type","test"))),
+            StartElement("id"),
+            Characters("testing"),
+            EndElement("id"),
+            EndElement("Object"),
+            EndElement("Object")
+            )
+        ) must beSuccessfulTry.withValue(
+          Object(
+            Vector(QlmID("testing")),
+            objPath,
+            Some("test")
+          )
+        )
+      }
+      "with sub Object" >> {
+        val parentPath = Path("Objects/TestObj")
+        val objPath = parentPath / "testing"
+        buildFromEvents(
+          new ObjectEventBuilder(parentPath,None,testTime),
+          Vector(
+            StartElement("Object", List(Attribute("type","test"))),
+            StartElement("id"),
+            Characters("testing"),
+            EndElement("id"),
+            StartElement("Object", List(Attribute("type","test"))),
+            StartElement("id"),
+            Characters("testing"),
+            EndElement("id"),
+            EndElement("Object"),
+            EndElement("Object")
+            )
+        ) must beSuccessfulTry.withValue(
+          Object(
+            Vector(QlmID("testing")),
+            objPath,
+            Some("test")
+          )
+        )
+      }
+      "without id" >> {
+        val parentPath = Path("Objects/TestObj")
+        val objPath = parentPath / "testing"
+        buildFromEvents(
+          new ObjectEventBuilder(parentPath,None,testTime),
+          Vector(
+            StartElement("Object", List(Attribute("type","test"))),
+            EndElement("Object")
+            )
+        ) must beFailedTry.withThrowable[ODFParserError](s"O-DF Parser error: Unexpect end of Object element before least one Id element in Object inside parent ${parentPath.toString}.")
+      }
+      "with unexpect event after id" >> {
+        val parentPath = Path("Objects/TestObj")
+        val objPath = parentPath / "testing"
+        buildFromEvents(
+          new ObjectEventBuilder(parentPath,None,testTime),
+          Vector(
+            StartElement("Object", List(Attribute("type","test"))),
+            StartElement("id"),
+            Characters("testing"),
+            EndElement("id"),
+            Characters("error"),
+            EndElement("Object")
+            )
+        ) must beFailedTry.withThrowable[ODFParserError](s"O-DF Parser error: Unexpect text content after id in Object with id ${objPath.last.toString}.")
+      }
+      "with unexpect event after description" >> {
+        val parentPath = Path("Objects/TestObj")
+        val objPath = parentPath / "testing"
+        buildFromEvents(
+          new ObjectEventBuilder(parentPath,None,testTime),
+          Vector(
+            StartElement("Object", List(Attribute("type","test"))),
+            StartElement("id"),
+            Characters("testing"),
+            EndElement("id"),
+            StartElement("description"),
+            Characters("testing"),
+            EndElement("description"),
+            Characters("error"),
+            EndElement("Object")
+            )
+        ) must beFailedTry.withThrowable[ODFParserError](s"O-DF Parser error: Unexpect text content after description inside Object with id ${objPath.last.toString}.")
+      }
+      "with unexpect event after InfoItem" >> {
+        val parentPath = Path("Objects/TestObj")
+        val objPath = parentPath / "testing"
+        buildFromEvents(
+          new ObjectEventBuilder(parentPath,None,testTime),
+          Vector(
+            StartElement("Object", List(Attribute("type","test"))),
+            StartElement("id"),
+            Characters("testing"),
+            EndElement("id"),
+            StartElement("InfoItem", List(Attribute("name","II1"))),
+            EndElement("InfoItem"),
+            Characters("error"),
+            EndElement("Object")
+            )
+        ) must beFailedTry.withThrowable[ODFParserError](s"O-DF Parser error: Unexpect text content after InfoItem inside Object with id ${objPath.last.toString}.")
+      }
+      "with unexpect event after sub Object" >> {
+        val parentPath = Path("Objects/TestObj")
+        val objPath = parentPath / "testing"
+        buildFromEvents(
+          new ObjectEventBuilder(parentPath,None,testTime),
+          Vector(
+            StartElement("Object", List(Attribute("type","test"))),
+            StartElement("id"),
+            Characters("testing"),
+            EndElement("id"),
+            StartElement("Object", List(Attribute("type","test"))),
+            StartElement("id"),
+            Characters("testing"),
+            EndElement("id"),
+            EndElement("Object"),
+            Characters("error"),
+            EndElement("Object")
+            )
+        ) must beFailedTry.withThrowable[ODFParserError](s"O-DF Parser error: Unexpect text content after Object inside Object with id ${objPath.last.toString}.")
+      }
+      "with unexpect event after complete Object" >> {
+        val parentPath = Path("Objects/TestObj")
+        val objPath = parentPath / "testing"
+        buildFromEvents(
+          new ObjectEventBuilder(parentPath,None,testTime),
+          Vector(
+            StartElement("Object", List(Attribute("type","test"))),
+            StartElement("id"),
+            Characters("testing"),
+            EndElement("id"),
+            StartElement("Object", List(Attribute("type","test"))),
+            StartElement("id"),
+            Characters("testing"),
+            EndElement("id"),
+            EndElement("Object"),
+            EndElement("Object"),
+            Characters("error")
+            )
+        ) must beFailedTry.withThrowable[ODFParserError](s"O-DF Parser error: Unexpect text content after complete Object with id ${objPath.last.toString}.")
+      }
+    }
+    "handle correctly whole O-DF structure" >> {
+      "with simple structure with only InfoItems and Object s" >> {
+        val parentPath = Path("Objects/TestObj")
+        val objPath = parentPath / "testing"
+        buildFromEvents(
+          new ODFEventBuilder(None,testTime),
+          Vector(
+            StartElement("Objects", List(Attribute("version","2.0")), None, Some("http://www.opengroup.org/xsd/odf/2.0/")),
+            StartElement("Object"),
+            StartElement("id"),
+            Characters("testing"),
+            EndElement("id"),
+            StartElement("InfoItem", List(Attribute("name","II1"))),
+            EndElement("InfoItem"),
+            StartElement("Object"),
+            StartElement("id"),
+            Characters("SubObject"),
+            EndElement("id"),
+            StartElement("InfoItem", List(Attribute("name","II2"))),
+            EndElement("InfoItem"),
+            EndElement("Object"),
+            EndElement("Object"),
+            EndElement("Objects")
+          )
+        ) must beSuccessfulTry.withValue(
+          ImmutableODF(
+            Vector(
+              Objects(Some("2.0")),
+              InfoItem(Path("Objects/testing/II1"),Vector.empty),
+              InfoItem(Path("Objects/testing/SubObject/II2"),Vector.empty)
+              )
           )
         )
       }
     }
-    /*
-    "parse correctly MetaData element" >> {
-    }
-    "parse correctly Object element" >> {
-    }
-    "parse correctly Objects element" >> {
-    }
-    "parse correctly whole O-DF structure" >> {
-    }*/
+
   }
   def runBuilderWithEvents( builder: EventBuilder[_], events: Iterable[ParseEvent] ): Try[EventBuilder[_]] = {
     Try{

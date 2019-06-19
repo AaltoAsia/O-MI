@@ -34,12 +34,12 @@ import types.OmiTypes.parser.{ResultEventBuilder,OdfRequestEventBuilder}
 import utils._
 
 
-  class ODFEventBuilder(  val previous: Option[EventBuilder[_]], implicit val receiveTime: Timestamp = currentTimestamp)  extends EventBuilder[ODF]{
+  class ODFEventBuilder(  val previous: Option[EventBuilder[_]], implicit val receiveTime: Timestamp = currentTimestamp)  extends EventBuilder[ImmutableODF]{
     private var position: Int = 0
     private var odf: MutableODF = MutableODF()
     private var complete: Boolean = false 
     final def isComplete: Boolean = previous.isEmpty && complete
-    def build: ODF = odf.immutable
+    def build: ImmutableODF = odf.immutable
     def addSubNode( node: Node): ODFEventBuilder = {
       odf = odf.add(node)
       this
@@ -136,14 +136,14 @@ import utils._
               position = Ids
               this
             case event: ParseEvent =>
-              unexpectedEventHandle( "before expected Object element.", event, this)
+              unexpectedEventHandle( s"before expected Object element inside parent $parentPath.", event, this)
           }
         case Ids => 
           event match { 
             case startElement: StartElement if startElement.localName == "id" =>
               new IdEventBuilder(Some(this),receiveTime).parse(event)
             case event: ParseEvent if mainId.isEmpty =>
-              unexpectedEventHandle( "before least one Id element.", event, this)
+              unexpectedEventHandle( s"before least one Id element in Object inside parent $parentPath.", event, this)
             case startElement: StartElement if startElement.localName == "description" =>
               position = Descriptions
               parse(event)
@@ -157,7 +157,7 @@ import utils._
               position = CloseTag
               parse(event)
             case event: ParseEvent =>
-              unexpectedEventHandle( "after id.", event, this)
+              unexpectedEventHandle( s"after id in Object with id $mainId.", event, this)
           }
         case Descriptions => 
           event match { 
@@ -173,7 +173,7 @@ import utils._
               position = CloseTag
               parse(event)
             case event: ParseEvent =>
-              unexpectedEventHandle( "after description inside Object", event, this)
+              unexpectedEventHandle( s"after description inside Object with id $mainId.", event, this)
           }
         case InfoItems => 
           event match { 
@@ -186,7 +186,7 @@ import utils._
               position = CloseTag
               parse(event)
             case event: ParseEvent =>
-              unexpectedEventHandle( "after InfoItem inside Object.", event, this)
+              unexpectedEventHandle( s"after InfoItem inside Object with id $mainId.", event, this)
           }
         case Objects => 
           event match { 
@@ -196,10 +196,12 @@ import utils._
               position = CloseTag
               parse(event)
             case event: ParseEvent =>
-              unexpectedEventHandle( "after Object inside Object.", event, this)
+              unexpectedEventHandle( s"after Object inside Object with id $mainId.", event, this)
           }
         case CloseTag => 
           event match { 
+            case event: ParseEvent if complete =>
+              unexpectedEventHandle( s"after complete Object with id $mainId.", event, this)
             case endElement: EndElement if endElement.localName == "Object" =>
               if( mainId.nonEmpty ){
 
@@ -217,12 +219,10 @@ import utils._
           }
       }
     }
-    val allowedElements = Set("Object","InfoItem","description","id")
 
   }
 
   class MetaDataEventBuilder(val infoItemPath: Path,  val previous: Option[InfoItemEventBuilder], implicit  val receiveTime: Timestamp = currentTimestamp)  extends EventBuilder[MetaData]{
-    val allowedElements = Set("MetaData","InfoItem")
     private var infoItems: List[InfoItem] = List.empty
     private var path = infoItemPath / "MetaData"
     private var complete: Boolean = false 
@@ -247,7 +247,7 @@ import utils._
               position = InfoItems
               this
             case event: ParseEvent =>
-              unexpectedEventHandle( "before expected MetaData element.", event, this)
+              unexpectedEventHandle( s"before expected MetaData element in InfoItem ${infoItemPath.toString}.", event, this)
           }
         case InfoItems =>
           event match{
@@ -257,28 +257,29 @@ import utils._
               position = CloseTag
               parse(event)
             case event: ParseEvent =>
-              unexpectedEventHandle( "before expected InfoItem elements.", event, this)
+              unexpectedEventHandle( s"when expected InfoItem elements in MetaData in InfoItem ${infoItemPath.toString}.", event, this)
           }
         case CloseTag =>
           event match{
+              case event: ParseEvent if complete =>
+                unexpectedEventHandle( s"after complete MetaData in InfoItem ${infoItemPath.toString}.", event, this)
             case endElement: EndElement if endElement.localName == "MetaData" =>
               position = CloseTag
+              complete = true
               previous match{
                 case Some(state: InfoItemEventBuilder) => state.addMetaData( build )
-                case Some(state: EventBuilder[_]) => throw ODFParserError("MetaDataafter something else than InfoItem")
+                case Some(state: EventBuilder[_]) => throw ODFParserError("MetaData after something else than InfoItem")
                 case None =>
-                  complete = true
                   this
               }
             case event: ParseEvent =>
-              unexpectedEventHandle( "before expected closing of MetaData element.", event, this)
+              unexpectedEventHandle( s"before expected closing of MetaData element in InfoItem ${infoItemPath.toString}.", event, this)
           }
       }
     }
   }
 
   class InfoItemEventBuilder( val objectPath: Path,  val previous: Option[EventBuilder[_]], implicit  val receiveTime: Timestamp = currentTimestamp)  extends EventBuilder[InfoItem]{
-    val allowedElements = Set("name","InfoItem","description","altName", "MetaData","value")
     private var descriptions: List[Description] = List.empty
     private var values: List[Value[_]] = List.empty
     private var names: List[QlmID] = List.empty
@@ -349,7 +350,7 @@ import utils._
                 position = CloseTag
                 parse(event)
               case event: ParseEvent =>
-                unexpectedEventHandle( s"before additional names in InfoItem with name: $nameAttribute.", event, this)
+                unexpectedEventHandle( s"after additional names in InfoItem with name: $nameAttribute.", event, this)
             }
           case Descriptions =>
             event match {
@@ -391,7 +392,7 @@ import utils._
                 position = CloseTag
                 parse(event)
               case event: ParseEvent =>
-                unexpectedEventHandle( s"after Value in InfoItem with name: $nameAttribute.", event, this)
+                unexpectedEventHandle( s"after values in InfoItem with name: $nameAttribute.", event, this)
             }
           case CloseTag =>
             event match {
@@ -414,7 +415,6 @@ import utils._
   }
 
   class ValueEventBuilder( val  previous: Option[EventBuilder[_]], implicit val  receiveTime: Timestamp = currentTimestamp)  extends EventBuilder[Value[_]]{
-    val allowedElements = Set("Objects","value")
     private var timestamp: Timestamp = receiveTime
     private var valueStr: String = "" 
     private var typeAttribute: String = "xs:string" 
@@ -505,7 +505,6 @@ import utils._
   }
 
   class DescriptionEventBuilder( val  previous: Option[EventBuilder[_]], implicit val  receiveTime: Timestamp = currentTimestamp)  extends EventBuilder[Description] {
-    val allowedElements = Set("description")
     private var lang: Option[String] = None 
     private var text: String = ""
     private var complete: Boolean = false 
@@ -563,7 +562,6 @@ import utils._
   }
 
   class IdEventBuilder(  val previous: Option[EventBuilder[_]], implicit  val receiveTime: Timestamp = currentTimestamp)  extends EventBuilder[QlmID] {
-    val allowedElements = Set("id","name","altName")
     private var openingTag: String = "id"
     private var tagType: Option[String] = None
     private var idType: Option[String] = None
@@ -631,7 +629,7 @@ import utils._
                       state.addName( build ) 
                     else
                       throw ODFParserError("id element should not be used for InfoItem")
-                  case Some(state: ObjectEventBuilder ) => state.addId( build ) 
+                  case Some(state: ObjectEventBuilder ) =>  
                     if( openingTag == "id" )
                       state.addId( build ) 
                     else
