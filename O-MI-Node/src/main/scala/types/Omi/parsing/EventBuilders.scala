@@ -37,9 +37,9 @@ import utils._
 
 private object RequestPosition extends Enumeration {
   type RequestPosition = Value
-  val OpenRequest, NodeList, RequestId, OpenMsg, CloseMsg, CloseRequest = Value
+  val OpenRequest, NodeList, RequestId, OpenMsg, OpenObjects, CloseMsg, CloseRequest = Value
 }
-import RequestPosition.{RequestPosition,OpenRequest, NodeList, RequestId, OpenMsg, CloseMsg, CloseRequest} 
+import RequestPosition.{RequestPosition,OpenRequest, NodeList, RequestId, OpenMsg, OpenObjects, CloseMsg, CloseRequest} 
 class EnvelopeEventBuilder( val previous: Option[EventBuilder[_]], implicit val receiveTime: Timestamp = currentTimestamp) extends EventBuilder[OmiRequest]{
   private var version: String = "2.0"
   private var ttl: Duration = 0.seconds
@@ -68,7 +68,7 @@ class EnvelopeEventBuilder( val previous: Option[EventBuilder[_]], implicit val 
             str.startsWith("http://www.opengroup.org/xsd/odf/")
         }
         if( !correctNS )
-          throw ODFParserError("Wrong namespace url.")
+          throw OMIParserError("Wrong namespace url.")
         val ver = startElement.attributes.get("version")
         val ttlO = startElement.attributes.get("ttl").flatMap{
           str: String => Try{parseTTL(str.toDouble)}.toOption
@@ -129,14 +129,14 @@ class WriteEventBuilder( val ttl: Duration, val previous: Option[EventBuilder[_]
       case OpenMsg =>
         event match {
           case startElement: StartElement if startElement.localName == "nodeList" =>
-            throw ODFParserError("nodeList is not supported by O-MI Node.")
+            throw OMIParserError("nodeList is not supported by O-MI Node.")
           case startElement: StartElement if startElement.localName == "requestId" =>
-            throw ODFParserError("Write request doesn't use requestId.")
+            throw OMIParserError("Write request doesn't use requestId.")
           case startElement: StartElement if startElement.localName == "msg" =>
-            position = CloseMsg
             msgformat match {
               case "odf" =>
-                new ODFEventBuilder(Some(this),receiveTime)
+                position = OpenObjects
+                this
               case unknown: String => throw OMIParserError(s"Unknown msgformat: $unknown. Do not how to parse content inside msg element.")
             }
           case endElement: EndElement if endElement.localName == "msg" =>
@@ -145,13 +145,21 @@ class WriteEventBuilder( val ttl: Duration, val previous: Option[EventBuilder[_]
           case event: ParseEvent =>
             unexpectedEventHandle("before msg element.", event, this)
         }
+      case OpenObjects =>
+        event match {
+          case startElement: StartElement if startElement.localName == "Objects" =>
+            position = CloseMsg
+            new ODFEventBuilder(Some(this),receiveTime).parse(event)
+          case event: ParseEvent =>
+            unexpectedEventHandle("in msg element.", event, this)
+        }
       case CloseMsg =>
         event match {
           case endElement: EndElement if endElement.localName == "msg" =>
             position = CloseRequest
             this
           case event: ParseEvent =>
-            unexpectedEventHandle("after msg element.", event, this)
+            unexpectedEventHandle("in msg element.", event, this)
         }
       case CloseRequest =>
         event match {
@@ -195,14 +203,14 @@ class CallEventBuilder( val ttl: Duration, val previous: Option[EventBuilder[_]]
       case OpenMsg =>
         event match {
           case startElement: StartElement if startElement.localName == "nodeList" =>
-            throw ODFParserError("nodeList is not supported by O-MI Node.")
+            throw OMIParserError("nodeList is not supported by O-MI Node.")
           case startElement: StartElement if startElement.localName == "requestId" =>
-            throw ODFParserError("Call request doesn't use requestId.")
+            throw OMIParserError("Call request doesn't use requestId.")
           case startElement: StartElement if startElement.localName == "msg" =>
-            position = CloseMsg
             msgformat match {
               case "odf" =>
-                new ODFEventBuilder(Some(this),receiveTime)
+                position = OpenObjects
+                this
               case unknown: String => throw OMIParserError(s"Unknown msgformat: $unknown. Do not how to parse content inside msg element.")
             }
           case endElement: EndElement if endElement.localName == "msg" =>
@@ -211,13 +219,21 @@ class CallEventBuilder( val ttl: Duration, val previous: Option[EventBuilder[_]]
           case event: ParseEvent =>
             unexpectedEventHandle("before msg element.", event, this)
         }
+      case OpenObjects =>
+        event match {
+          case startElement: StartElement if startElement.localName == "Objects" =>
+            position = CloseMsg
+            new ODFEventBuilder(Some(this),receiveTime).parse(event)
+          case event: ParseEvent =>
+            unexpectedEventHandle("in msg element.", event, this)
+        }
       case CloseMsg =>
         event match {
           case endElement: EndElement if endElement.localName == "msg" =>
             position = CloseRequest
             this
           case event: ParseEvent =>
-            unexpectedEventHandle("after msg element.", event, this)
+            unexpectedEventHandle("in msg element.", event, this)
         }
       case CloseRequest =>
         event match {
@@ -261,14 +277,14 @@ class DeleteEventBuilder( val ttl: Duration, val previous: Option[EventBuilder[_
       case OpenMsg =>
         event match {
           case startElement: StartElement if startElement.localName == "nodeList" =>
-            throw ODFParserError("nodeList is not supported by O-MI Node.")
+            throw OMIParserError("nodeList is not supported by O-MI Node.")
           case startElement: StartElement if startElement.localName == "requestId" =>
-            throw ODFParserError("Delete request doesn't use requestId.")
+            throw OMIParserError("Delete request doesn't use requestId.")
           case startElement: StartElement if startElement.localName == "msg" =>
-            position = CloseMsg
             msgformat match {
               case "odf" =>
-                new ODFEventBuilder(Some(this),receiveTime)
+                position = OpenObjects
+                this
               case unknown: String => throw OMIParserError(s"Unknown msgformat: $unknown. Do not how to parse content inside msg element.")
             }
           case endElement: EndElement if endElement.localName == "msg" =>
@@ -277,13 +293,21 @@ class DeleteEventBuilder( val ttl: Duration, val previous: Option[EventBuilder[_
           case event: ParseEvent =>
             unexpectedEventHandle("before msg element.", event, this)
         }
+      case OpenObjects =>
+        event match {
+          case startElement: StartElement if startElement.localName == "Objects" =>
+            position = CloseMsg
+            new ODFEventBuilder(Some(this),receiveTime).parse(event)
+          case event: ParseEvent =>
+            unexpectedEventHandle("in msg element.", event, this)
+        }
       case CloseMsg =>
         event match {
           case endElement: EndElement if endElement.localName == "msg" =>
             position = CloseRequest
             this
           case event: ParseEvent =>
-            unexpectedEventHandle("after msg element.", event, this)
+            unexpectedEventHandle("in msg element.", event, this)
         }
       case CloseRequest =>
         event match {
@@ -303,7 +327,7 @@ class DeleteEventBuilder( val ttl: Duration, val previous: Option[EventBuilder[_
   }
 }
 class ReadEventBuilder( val ttl: Duration, val previous: Option[EventBuilder[_]], implicit val receiveTime: Timestamp = currentTimestamp ) extends OdfRequestEventBuilder[OmiRequest]{
-  private var msgformat: String = ""
+  private var msgformat: Option[String] = None
   private var callback: Option[Callback] = None
   private var position: RequestPosition = OpenRequest
   private var newest: Option[Int] = None
@@ -330,7 +354,7 @@ class ReadEventBuilder( val ttl: Duration, val previous: Option[EventBuilder[_]]
           ttl
         )
       case None =>
-        if( requestIds.nonEmpty ){
+        if( requestIds.nonEmpty && msgformat.isEmpty){
           PollRequest(
             callback,
             requestIds.toVector,
@@ -354,10 +378,7 @@ class ReadEventBuilder( val ttl: Duration, val previous: Option[EventBuilder[_]]
       case OpenRequest =>
         event match {
           case startElement: StartElement if startElement.localName == "read" =>
-            val mf = startElement.attributes.get("msgformat")
-            if( mf.isEmpty ){
-              throw OMIParserError("No msgformat for read")
-            } else {
+              msgformat = startElement.attributes.get("msgformat")
               all = startElement.attributes.get("all").map{ 
                 str: String => 
                   Try{ str.toBoolean }.getOrElse{ throw OMIParserError("Attribute all found for read request but it is not type of boolean.")}
@@ -393,36 +414,42 @@ class ReadEventBuilder( val ttl: Duration, val previous: Option[EventBuilder[_]]
               if( all.nonEmpty && (intervalO.nonEmpty || begin.nonEmpty || end.nonEmpty || newest.nonEmpty || oldest.nonEmpty ) )
                 throw OMIParserError("Attribute all can not use with begin, end, newest, oldest or interval attribute.")
               callback = startElement.attributes.get("callback").map{ str: String => RawCallback(str)}
-              msgformat = mf.getOrElse("")
               position = RequestId
               this
-            }
           case event: ParseEvent =>
             unexpectedEventHandle("before read element.", event, this)
         }
       case RequestId =>
         event match {
           case startElement: StartElement if startElement.localName == "nodeList" =>
-            throw ODFParserError("nodeList is not supported by O-MI Node.")
+            throw OMIParserError("nodeList is not supported by O-MI Node.")
           case startElement: StartElement if startElement.localName == "msg" =>
             position = OpenMsg
             this.parse(event)
           case startElement: StartElement if startElement.localName == "requestId" =>
-            if( intervalO.nonEmpty || newest.nonEmpty || oldest.nonEmpty || begin.nonEmpty || end.nonEmpty || all.nonEmpty)
+            if( msgformat.nonEmpty || intervalO.nonEmpty || newest.nonEmpty || oldest.nonEmpty || begin.nonEmpty || end.nonEmpty || all.nonEmpty)
               throw OMIParserError("Element requestId can not be used with interval, newest, oldest, begin, end or all attribute.")
             else
-              new RequestIdEventBuilder(Some(this), receiveTime)
+              new RequestIdEventBuilder(Some(this), receiveTime).parse(event)
+          case endElement: EndElement if endElement.localName == "read" =>
+            position = CloseRequest
+            this.parse(event)
+          case event: ParseEvent =>
+            unexpectedEventHandle("after requestId element", event, this)
         }
       case OpenMsg =>
         event match {
           case startElement: StartElement if startElement.localName == "nodeList" =>
-            throw ODFParserError("nodeList is not supported by O-MI Node.")
+            throw OMIParserError("nodeList is not supported by O-MI Node.")
           case startElement: StartElement if startElement.localName == "msg" =>
             position = CloseMsg
             msgformat match {
-              case "odf" =>
+              case Some("odf") =>
                 new ODFEventBuilder(Some(this),receiveTime)
-              case unknown: String => throw OMIParserError(s"Unknown msgformat: $unknown. Do not how to parse content inside msg element.")
+              case Some(unknown: String) => 
+                throw OMIParserError(s"Unknown msgformat: $unknown. Do not how to parse content inside msg element.")
+              case None =>
+                throw OMIParserError(s"No msgformat. Do not how to parse content inside msg element.")
             }
           case endElement: EndElement if endElement.localName == "msg" =>
             position = CloseRequest
@@ -478,7 +505,7 @@ class CancelEventBuilder( val ttl: Duration, val previous: Option[EventBuilder[_
       case RequestId =>
         event match {
           case startElement: StartElement if startElement.localName == "nodeList" =>
-            throw ODFParserError("nodeList is not supported by O-MI Node.")
+            throw OMIParserError("nodeList is not supported by O-MI Node.")
           case startElement: StartElement if startElement.localName == "requestId" =>
             new RequestIdEventBuilder(Some(this), receiveTime)
           case endElement: EndElement if endElement.localName == "cancel" =>
@@ -516,7 +543,7 @@ class RequestIdEventBuilder( val previous: Option[EventBuilder[_]], implicit val
       Try{ 
         text.toLong
       }.getOrElse{
-        throw OMIParserError("RequestId was not long.") 
+        throw OMIParserError(s"RequestId $text was not type Long.") 
       }
       
     } 
@@ -544,10 +571,13 @@ class RequestIdEventBuilder( val previous: Option[EventBuilder[_]], implicit val
             }
           case CloseTag =>
             event match {
+              case event: ParseEvent if complete =>
+                unexpectedEventHandle( s"after complete requestId element.", event, this)
               case content: TextEvent => 
                 text = text + content.text
                 this
               case endElement: EndElement if endElement.localName == "requestId" =>
+                complete = true
                 previous match {
                   case Some(state: ReadEventBuilder) => 
                     state.addRequestId(build)
@@ -557,7 +587,6 @@ class RequestIdEventBuilder( val previous: Option[EventBuilder[_]], implicit val
                     state.addRequestId(build)
                   case Some(state: EventBuilder[_]) => throw OMIParserError("RequestId state after wrong state. Previous should be read.")
                   case None =>
-                    complete = true
                     this
                 }
               case event: ParseEvent =>

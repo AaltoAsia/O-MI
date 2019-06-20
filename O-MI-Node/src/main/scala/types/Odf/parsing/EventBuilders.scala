@@ -80,7 +80,7 @@ import utils._
               this
           }
         case event: ParseEvent =>
-           unexpectedEventHandle( " inside Objects element.", event, this)
+           unexpectedEventHandle( " before Objects element.", event, this)
       }
     }
   }

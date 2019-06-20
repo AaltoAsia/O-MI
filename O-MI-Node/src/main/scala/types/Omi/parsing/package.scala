@@ -30,11 +30,11 @@ package object `parser` {
   }
   def unexpectedEventHandle(msg: String, event: ParseEvent, builder: EventBuilder[_]): EventBuilder[_] ={
     event match {
-      case content: TextEvent => throw ODFParserError(s"Unexpect text content $msg")
-      case start: StartElement => throw ODFParserError(s"Unexpect start of ${start.localName} element $msg")
-      case end: EndElement =>throw ODFParserError(s"Unexpect end of ${end.localName} element $msg")
-      case EndDocument =>throw ODFParserError(s"Unexpect end of document $msg")
-      case StartDocument =>throw ODFParserError(s"Unexpect start of document $msg")
+      case content: TextEvent => throw OMIParserError(s"Unexpect text content $msg")
+      case start: StartElement => throw OMIParserError(s"Unexpect start of ${start.localName} element $msg")
+      case end: EndElement =>throw OMIParserError(s"Unexpect end of ${end.localName} element $msg")
+      case EndDocument =>throw OMIParserError(s"Unexpect end of document $msg")
+      case StartDocument =>throw OMIParserError(s"Unexpect start of document $msg")
       case other: ParseEvent => builder 
     }
   }
