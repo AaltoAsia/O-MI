@@ -97,12 +97,12 @@ class MutableODF private[odf](
   }
 
 
-  def immutable: ImmutableODF = ImmutableODF(
+  def toImmutable: ImmutableODF = ImmutableODF(
     this.nodes.values.toVector
   )
 
   //Should be this? or create a copy?
-  def mutable: MutableODF = this 
+  def toMutable: MutableODF = this
 
   def valuesRemoved: MutableODF = {
     this.nodes.valuesIterator.foreach {

@@ -94,5 +94,4 @@ O-MI-Node/src/main/resources/logback-test.xml
 private/
 *.err
 /database/
-
 package-lock.json

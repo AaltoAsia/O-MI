@@ -23,6 +23,8 @@ import akka.http.scaladsl.model.headers
 import akka.http.scaladsl.client.RequestBuilding._
 //import akka.util.{ByteString, Timeout}
 import akka.util.Timeout
+import akka.stream.ActorMaterializer
+import akka.stream.scaladsl._
 import org.specs2.specification.Scope
 import org.specs2.matcher.MustThrownExpectations
 import scala.collection.immutable
@@ -48,6 +50,7 @@ class AuthAPIServiceMock(
 }
 class AuthServiceTestEnv extends Specification with AfterAll with Mockito {
   implicit val system = Actorstest.createAs()
+  implicit val materializer = ActorMaterializer()
 
   def afterAll = {
     system.terminate()
@@ -296,7 +299,7 @@ class AuthServiceTest(implicit ee: ExecutionEnv) extends AuthServiceTestEnv{
 
     "extractParameter" should {
 
-      val omi = Some(RawRequestWrapper(ReadAll.asXML.toString, UserInfo()))
+      val omi = Some(RawRequestWrapper(Source.single(ReadAll.asXML.toString), UserInfo()))
       val base = httpRequest
 
       "extract from HttpRequest" >> {

@@ -39,7 +39,7 @@ import utils._
     private var odf: MutableODF = MutableODF()
     private var complete: Boolean = false 
     final def isComplete: Boolean = previous.isEmpty && complete
-    def build: ImmutableODF = odf.immutable
+    def build: ImmutableODF = odf.toImmutable
     def addSubNode( node: Node): ODFEventBuilder = {
       odf = odf.add(node)
       this
@@ -289,15 +289,18 @@ import utils._
     private var metaData: Option[MetaData] = None
     private var complete: Boolean = false 
     final def isComplete: Boolean = previous.isEmpty && complete
-    def build: InfoItem = InfoItem(
-      nameAttribute,
-      path,
-      typeAttribute,
-      names.toVector,
-      Description.unionReduce(descriptions.toSet),
-      values.toVector,
-      metaData
-    )
+    def build: InfoItem = {
+      println( s"ii $path values: ${values.mkString("\n")}")
+      InfoItem(
+        nameAttribute,
+        path,
+        typeAttribute,
+        names.toVector.sortBy(_.timestamp.getTime),
+        Description.unionReduce(descriptions.toSet),
+        values.toVector,
+        metaData
+      )
+    }
     def addMetaData( metaD: MetaData ): InfoItemEventBuilder ={
       metaData = Some(metaD)
       this
@@ -531,8 +534,10 @@ import utils._
             event match {
               case content: TextEvent => 
                 text = text + content.text
-                position = CloseTag
                 this
+              case endElement: EndElement if endElement.localName == "description" =>
+                position = CloseTag
+                this.parse(event)
               case event: ParseEvent =>
                 unexpectedEventHandle( "when expected text content.", event, this)
             }

@@ -9,8 +9,13 @@ import akka.stream.alpakka.xml._
 import types._
 
 package object `parser` {
-  def dateTimeStrToTimestamp(dateTimeStr: String): Timestamp = {
-    Timestamp.from(OffsetDateTime.parse(dateTimeStr).toInstant())
+  def dateTimeStrToTimestamp(dateTimeString: String): Timestamp = {
+    val offsetR ="([-+]\\d{2}:\\d{2}|Z)$".r
+    val correctStr = dateTimeString match {
+      case offsetR() => dateTimeString
+      case other: String  => dateTimeString + "Z"
+    }
+    Timestamp.from(OffsetDateTime.parse(correctStr).toInstant())
   }
   def solveTimestamp(dateTime: Option[Timestamp], unixTime: Option[Timestamp], receiveTime: Timestamp): Timestamp = {
     (dateTime,unixTime) match{
@@ -23,7 +28,7 @@ package object `parser` {
   }
   def unexpectedEventHandle(msg: String, event: ParseEvent, builder: EventBuilder[_]): EventBuilder[_] ={
     event match {
-      case content: TextEvent => throw ODFParserError(s"Unexpect text content $msg")
+      case content: TextEvent if content.text.replaceAll("\\s","").nonEmpty => throw ODFParserError(s"Unexpect text content $msg")
       case start: StartElement => throw ODFParserError(s"Unexpect start of ${start.localName} element $msg")
       case end: EndElement =>throw ODFParserError(s"Unexpect end of ${end.localName} element $msg")
       case EndDocument =>throw ODFParserError(s"Unexpect end of document $msg")

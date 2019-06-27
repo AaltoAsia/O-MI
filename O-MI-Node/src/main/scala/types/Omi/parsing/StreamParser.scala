@@ -34,21 +34,37 @@ import utils._
 
 /** Parser for data in O-DF format */
 object OMIStreamParser {
-  def parserFlow: Flow[String,OmiRequest,NotUsed] = Flow[String]
+  def xmlParserFlow: Flow[String,ParseEvent,NotUsed] = Flow[String]
     .map(ByteString(_))
     .via(XmlParsing.parser)
-    .via(new OMIParserFlow)
-  private class OMIParserFlow extends GraphStage[FlowShape[ParseEvent, OmiRequest]] {
+  def omiParserFlow = new OMIParserFlow
+  def parserFlow: Flow[String,OmiRequest,NotUsed] = xmlParserFlow.via(omiParserFlow)
+  class OMIParserFlow extends GraphStage[FlowShape[ParseEvent, OmiRequest]] {
     val in = Inlet[ParseEvent]("OMIParserFlowF.in")
     val out = Outlet[OmiRequest]("OMIParserFlow.out")
     override val shape = FlowShape(in, out)
 
     override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
       private var state: EventBuilder[_] = new EnvelopeEventBuilder(None,currentTimestamp)
+      private var done: Boolean = false
 
 
       setHandler(out, new OutHandler {
-        override def onPull(): Unit = pull(in)
+        override def onPull(): Unit = {
+          if( isClosed(in)) {
+            println("Inlet closed, pull")
+            //???
+          } else {
+            pull(in)
+          }
+        }
+        override def onDownstreamFinish(): Unit = {
+          //XXX:To nothing?
+          if( isClosed(in)) {
+            completeStage()
+          } 
+
+        }
       })
 
       setHandler(in, new InHandler {
@@ -58,21 +74,38 @@ object OMIStreamParser {
             state = state.parse(event) 
             state match {
               case builder: EnvelopeEventBuilder if builder.isComplete  =>
-                push(out,builder.build )
+                if( !done ){
+                  println("Envelope complete")
+                  done = true
+                  emit(out,builder.build )
+                } else {
+                  println(s"Envelope completed again? $event")
+                }
               case other: EventBuilder[_] =>
                 if( other.isComplete )
                   failStage(OMIParserError("Non EnvelopeBuilder is complete"))
             }
           }.recover{
             case error: OMIParserError => 
+              println("parser fail")
               failStage( error)
             case t: Throwable => 
+              println(s"Something else $t")
+              println(s"Something else $state")
               failStage( t)
           }
-          pull(in)
+          if( isClosed(in)) {
+            println("Inlet closed")
+            //???
+          } else {
+            pull(in)
+          }
         }
 
         override def onUpstreamFinish(): Unit = {
+          if( isClosed(in)) {
+            completeStage()
+          }//Maybe something else? 
           completeStage()
         }
       })

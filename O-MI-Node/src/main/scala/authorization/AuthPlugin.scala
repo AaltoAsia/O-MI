@@ -181,11 +181,12 @@ trait AuthApiProvider extends AuthorizationExtension {
                                                                                                      nextAuthApi) =>
           lastTest orElse {
 
+            /*
             lazy val rawReqResult = convertToWrapper(
               Try {
                 nextAuthApi.isAuthorizedForRawRequest(httpRequest, orgOmiRequest.rawRequest)
               }
-            )
+            )*/
 
             lazy val reqResult =
               orgOmiRequest.unwrapped flatMap { omiReq =>
@@ -199,8 +200,8 @@ trait AuthApiProvider extends AuthorizationExtension {
 
             // Choose optimal test order
             orgOmiRequest match {
-              case raw: RawRequestWrapper => (rawReqResult orElse reqResult).map(t => (t, t.user))
-              case other: RequestWrapper => (reqResult orElse rawReqResult).map(t => (t, t.user))
+              case raw: RawRequestWrapper => (/*rawReqResult orElse */reqResult).map(t => (t, t.user))
+              case other: RequestWrapper => (reqResult/* orElse rawReqResult*/).map(t => (t, t.user))
 
             }
           }

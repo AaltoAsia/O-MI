@@ -253,7 +253,7 @@ class AuthAPIServiceV2(
         httpMessage.header[headers.Authorization].map(_.value.drop(from.length + 1))
 
       case "omienvelope" =>
-        rawOmi.flatMap(_.omiEnvelope.attr(from))
+        rawOmi.flatMap(_.omiEnvelope.attributes.get(from))
 
       case "headers" =>
         httpMessage.headers.find(header => from == header.name).map(_.value)
@@ -440,6 +440,7 @@ class AuthAPIServiceV2(
   }
 
 
+  /*
   override def isAuthorizedForRawRequest(httpRequest: HttpRequest, rawRequest: String): AuthorizationResult = {
     val rawRequestWrapper = RawRequestWrapper(rawRequest, UserInfo())
 
@@ -457,5 +458,5 @@ class AuthAPIServiceV2(
     // case class Authorized(user: UserInfo) extends AuthorizationResult {def instance: Authorized = this}
     // case class Unauthorized(user: UserInfo = UserInfo()) extends AuthorizationResult {def instance: Unauthorized = this}
     // case class Partial(authorized: JavaIterable[Path], user: UserInfo) extends AuthorizationResult
-  }
+  }*/
 }

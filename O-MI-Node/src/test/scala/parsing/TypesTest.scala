@@ -3,12 +3,15 @@ package parsing
 import java.net.URI
 
 import akka.http.scaladsl.model.Uri
+import akka.stream.ActorMaterializer
+import akka.stream.scaladsl
 import org.specs2._
 import types.OdfTypes.OdfTreeCollection._
 import types.OdfTypes._
 import types.OmiTypes._
 import types.Path._
 import types._
+import testHelpers._
 import types.odf.OldTypeConverter
 
 import scala.concurrent.duration._
@@ -18,6 +21,8 @@ import scala.xml._
 /* Test class for testing ODF Types */
 class TypesTest extends Specification {
 
+  implicit val system = Actorstest.createAs()
+  implicit val materializer = ActorMaterializer()
   def is =
     s2"""
   This is Specification to check inheritance for Types. Also testing Path Object
@@ -186,7 +191,7 @@ class TypesTest extends Specification {
     {testOdfMsg}
   </response>)
 
-  def newRawRequestWrapper(xml: NodeSeq) = RawRequestWrapper(xml.toString, UserInfo())
+  def newRawRequestWrapper(xml: NodeSeq) = RawRequestWrapper(scaladsl.Source.single(xml.toString), UserInfo())
 
   def pFiniteTTL = newRawRequestWrapper(xmlReadFinite).ttl mustEqual 10.seconds
 

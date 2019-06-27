@@ -14,7 +14,6 @@ import scala.concurrent.Future
 import types.OmiTypes._
 import types.Path
 import types.odf.{ImmutableODF, ODF}
-import utils._
 
 trait DBReadHandler extends DBHandlerBase {
   def currentTimestamp = new Timestamp( new Date().getTime)
@@ -45,7 +44,7 @@ trait DBReadHandler extends DBHandlerBase {
         )
 
         val requestedODF = read.odf
-        val timer = LapTimer(log.info)
+        //val timer = LapTimer(log.info)
         val leafs = requestedODF.getLeafs
         //timer.step("Got leafs")
 

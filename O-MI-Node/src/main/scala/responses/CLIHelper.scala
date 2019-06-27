@@ -104,7 +104,7 @@ class CLIHelper(val singleStores: SingleStores, dbConnection: DB)(implicit syste
     val infoItems: Iterable[InfoItem] = odf.getInfoItems
     for {
       dbc <- dbConnection.writeMany(infoItems.toSeq)
-      ret <- singleStores.updateHierarchyTree(odf.immutable)
+      ret <- singleStores.updateHierarchyTree(odf.toImmutable)
       latestValues: Map[Path, Value[Any]] = infoItems.collect {
         case ii: InfoItem if ii.values.nonEmpty => ii.path -> ii.values.maxBy(_.timestamp.getTime())
       }.toMap //.map(pv => singleStores.latestStore ? SetSensorData(pv._1,pv._2))

@@ -30,12 +30,15 @@ import types.odf._
 import scala.collection.JavaConverters._
 import scala.collection.{SeqView, Iterator}
 import scala.concurrent.duration._
+import scala.concurrent._
 import scala.util.{Failure, Success, Try}
 import scala.xml.NodeSeq
 import akka.util.ByteString
+import akka.stream.{ClosedShape, Materializer}
 import akka.stream.scaladsl._
 import akka.stream.alpakka.xml._
 import utils._
+import parser.OMIStreamParser
 
 
 
@@ -51,7 +54,7 @@ object Version {
     case object OmiVersion2  extends OmiVersion(2.0)
   }
 
-  abstract class OdfVersion private (n: Double) extends Version(n, "odf")
+  abstract class OdfVersion private (n: Double, val msgFormat: String = "odf") extends Version(n, "odf")
   object OdfVersion {
     case object OdfVersion1  extends OdfVersion(1.0)
     case object OdfVersion1b extends OdfVersion(1.0){ override val namespace = "odf.xsd" }
@@ -66,30 +69,36 @@ object OmiVersion {
   def fromNumber: Double => OmiVersion = {
     case 2.0 => OmiVersion2
     case 1.0 => OmiVersion1
+    case _   => OmiVersion2
   }
   def fromStringNumber: String => OmiVersion = {
     case "2.0" | "2" => OmiVersion2
     case "1.0" | "1" => OmiVersion1
+    case _ => OmiVersion2
   }
   def fromNameSpace: String => OmiVersion = {
     case OmiVersion2.namespace => OmiVersion2
     case OmiVersion1.namespace => OmiVersion1
     case OmiVersion1b.namespace => OmiVersion1b
+    case _ => OmiVersion2
   }
 }
 object OdfVersion {
   def fromNumber: Double => OdfVersion = {
     case 2.0 => OdfVersion2
     case 1.0 => OdfVersion1
+    case _   => OdfVersion2
   }
   def fromStringNumber: String => OdfVersion = {
     case "2.0" | "2" => OdfVersion2
     case "1.0" | "1" => OdfVersion1
+    case _   => OdfVersion2
   }
   def fromNameSpace: String => OdfVersion = {
     case OdfVersion2.namespace => OdfVersion2
     case OdfVersion1.namespace => OdfVersion1
     case OdfVersion1b.namespace => OdfVersion1b
+    case _   => OdfVersion2
   }
 }
 
@@ -198,7 +207,7 @@ sealed trait OdfRequest extends OmiRequest {
   def odfAsDataRecord: DataRecord[NodeSeq] = DataRecord(None, Some("Objects"), odf.asXML)
   
   def odfAsOmiMsg: SeqView[ParseEvent,Seq[_]] ={
-    Vector(StartElement("msg")).view ++ odf.asXMLEvents ++ Vector(EndElement("msg"))
+    Vector(StartElement("msg")).view ++ odf.asXMLEvents() ++ Vector(EndElement("msg"))
   }
   def asXMLEvents: SeqView[ParseEvent,Seq[_]] 
 }
@@ -225,7 +234,6 @@ sealed trait RequestWrapper {
   //def user(): Option[UserInfo]
   var user: UserInfo = _
 
-  def rawRequest: String
 
   def ttl: Duration
 
@@ -254,90 +262,162 @@ sealed trait RequestWrapper {
   * Defines values from the beginning of O-MI message like ttl and message type
   * without parsing the whole request.
   */
-class RawRequestWrapper(val rawRequest: String, private val user0: UserInfo) extends RequestWrapper {
+class RawRequestWrapper(val rawSource: Source[String,_], private val user0: UserInfo)(implicit materializer: Materializer) extends RequestWrapper {
+
+    case class WrapperInfo( 
+      omiEnvelope: Option[StartElement],
+      omiVerb: Option[StartElement],
+      odfObjects: Option[StartElement],
+      omiResults: Vector[StartElement]
+    )
+  val wantedEventsFlow: Flow[ParseEvent,StartElement, _] = Flow.apply[ParseEvent].collect{
+    case startElement: StartElement if
+      startElement.localName == "omiEnvelope" ||
+      startElement.localName == "objects" ||
+      startElement.localName == "read" ||
+      startElement.localName == "write" ||
+      startElement.localName == "call" ||
+      startElement.localName == "delete" ||
+      startElement.localName == "cancel" ||
+      startElement.localName == "response" ||
+      startElement.localName == "result" 
+    => startElement
+  }
+  val wrapperInfoFlow = Flow.apply[StartElement].fold[WrapperInfo](WrapperInfo(None,None,None, Vector.empty)){
+    case (wrapperInfo: WrapperInfo, startElement: StartElement) if
+      startElement.localName == "omiEnvelope" =>
+
+        wrapperInfo.copy(
+          omiEnvelope = Some(startElement)
+        )
+    case (wrapperInfo: WrapperInfo, startElement: StartElement) if
+      startElement.localName == "objects" =>
+        wrapperInfo.copy(
+          odfObjects = Some(startElement)
+        )
+
+    case (wrapperInfo: WrapperInfo, startElement: StartElement) if
+      startElement.localName == "read" =>
+        wrapperInfo.copy(
+          omiVerb = Some(startElement)
+        )
+      case (wrapperInfo: WrapperInfo, startElement: StartElement) if
+      startElement.localName == "write" =>
+        wrapperInfo.copy(
+          omiVerb = Some(startElement)
+        )
+    case (wrapperInfo: WrapperInfo, startElement: StartElement) if
+      startElement.localName == "call" =>
+        wrapperInfo.copy(
+          omiVerb = Some(startElement)
+        )
+    case (wrapperInfo: WrapperInfo, startElement: StartElement) if
+      startElement.localName == "delete" =>
+        wrapperInfo.copy(
+          omiVerb = Some(startElement)
+        )
+    case (wrapperInfo: WrapperInfo, startElement: StartElement) if
+      startElement.localName == "cancel" =>
+        wrapperInfo.copy(
+          omiVerb = Some(startElement)
+        )
+    case (wrapperInfo: WrapperInfo, startElement: StartElement) if
+      startElement.localName == "response" => 
+        wrapperInfo.copy(
+          omiVerb = Some(startElement)
+        )
+    case (wrapperInfo: WrapperInfo, startElement: StartElement) if
+      startElement.localName == "result" => 
+        wrapperInfo.copy(
+          omiResults = Vector(startElement) ++ wrapperInfo.omiResults
+        )
+
+  }
+  val parsedSink : Sink[OmiRequest,Future[OmiRequest]] = Sink.head[OmiRequest] 
+  val infoSink : Sink[WrapperInfo,Future[WrapperInfo]] = Sink.head[WrapperInfo]
+  val eventSource = rawSource.log("raw source").via(OMIStreamParser.xmlParserFlow.log("xml parser"))
+  val rGraph: RunnableGraph[(_,Future[OmiRequest],Future[WrapperInfo])] = RunnableGraph.fromGraph(
+    GraphDSL.create(
+      eventSource,
+      parsedSink,
+      infoSink
+    )((_,_,_)){ implicit builder =>
+      (parseEventSource,parsedRequestSink, wrapperInfoSink) =>
+        import GraphDSL.Implicits._
+        val bcast = builder.add(Broadcast[ParseEvent](2,false))
+        val logF = builder.add(Flow[OmiRequest].log("wrapper parser"))
+        parseEventSource ~> bcast.in
+        bcast ~> OMIStreamParser.omiParserFlow ~> logF ~> parsedRequestSink.in
+        bcast ~> wantedEventsFlow ~> wrapperInfoFlow ~> wrapperInfoSink.in
+        ClosedShape
+    }
+  )
+  //XXX: Should first complete infoResult before completing parseResult( parsing
+  //whole request)
+  val (_,parsedResult,infoResult): (_,Future[OmiRequest],Future[WrapperInfo]) = rGraph.run()
+  if( !Await.ready(infoResult,10.seconds).isCompleted ){//XXX: How long to wait? should be pretty fast
+    throw OMIParserError("Could not parse wrapper information in 10.seconds")
+  }
+  infoResult.value match{
+    case Some(Failure(throwable)) => throw throwable 
+    case Some(Success(_)) =>
+    case None => throw OMIParserError("Could not parse wrapper information in 10.seconds")
+  }
+
+  val wrapperInfo: WrapperInfo = Await.result(infoResult,10.seconds)//XXX: Should be ready already. How long to wait? should be pretty fast
+
+  
+
 
   import RawRequestWrapper._
 
   //import scala.xml.pull._ // deprecated
-  import javax.xml.stream.events._
-  import javax.xml.namespace._
 
   user = user0
 
 
-  case class Element(private val ev: StartElement) {
-    //val pre: String = ev.pre
-    val name = ev.getName()
-    val label: String = name.getLocalPart()
-    val namespace: String = name.getNamespaceURI()
-    val namespacePrefix: String = name.getPrefix()
-
-    def attr(key: String): Option[String] = 
-      Try{ev.getAttributeByName(new QName(key))}
-      .map {_.getValue}
-      .toOption
-  }
-
-  private val (parser, closeParser): (Iterator[XMLEvent], () => Unit) = {
-    val src = new java.io.ByteArrayInputStream(rawRequest.getBytes("UTF-8")); //io.Source.fromString(rawRequest)
-    val er = xmlFactory.createXMLEventReader(src)
-    (er.asScala.collect{case e: XMLEvent => e}, () => er.close())
-  }
-  def optionalNextTag() = parser.collectFirst {
-    case e: StartElement => e
-  }.map(Element.apply)
-  def nextTag() = optionalNextTag() getOrElse parseError("no xml elements found")
-  def nextAttribute() = parser.collectFirst {
-    case e: Attribute => e
-  }
-
   // NOTE: Order is important
-  val omiEnvelope: Element = nextTag()
-  val omiVerb: Element = nextTag()
+  val omiEnvelope: StartElement = wrapperInfo.omiEnvelope.getOrElse(throw OMIParserError("omiEnvelope not found."))
+  val omiVerb: StartElement = wrapperInfo.omiVerb.getOrElse(throw OMIParserError("No O-MI read,write,call,delete,cancel or response found."))
 
   /**
     * The msgformat attribute of O-MI as in the verb element or the first result element
     */
-  val msgFormat: Option[String] = omiVerb.attr("msgformat") orElse nextTag().attr("msgformat") // verb or result
+  val msgFormat: Option[String] = omiVerb.attributes.get("msgformat") orElse wrapperInfo.omiResults.flatMap(_.attributes.get("msgformat")).headOption // verb or result
 
-  val odfObjects: Option[Element] = {
-    def findObjects(n: Int): Option[Element] = {
-      if (n >= 2) None //parseError("Objects element not found in few first tags")
-      else
-        optionalNextTag() match {
-          case Some(e) if e.label == "Objects" => Some(e)
-          case Some(_) => findObjects(n+1)
-          case None => None
-        }
-    }
-    findObjects(0)
-  }
-  closeParser() // <- Important! otherwise leaks memory
+  val odfObjects: Option[StartElement] = wrapperInfo.odfObjects
 
 
 
-  require(omiEnvelope.label == "omiEnvelope", "Pre-parsing: omiEnvelope not found!")
+  require(omiEnvelope.localName == "omiEnvelope", "Pre-parsing: omiEnvelope not found!")
 
   val ttl: Duration =
-    omiEnvelope.attr("ttl")
-      .map { (ttlStr) => parsing.OmiParser.parseTTL(ttlStr.toDouble) }
+    omiEnvelope.attributes.get("ttl")
+      .map { (ttlStr) => parser.parseTTL(ttlStr.toDouble) }
       .getOrElse(parseError("couldn't parse ttl"))
 
   /**
     * The verb of the O-MI message (read, write, cancel, response)
     */
-  val requestVerb: MessageType = MessageType(omiVerb.label)
+  val requestVerb: MessageType = MessageType(omiVerb.localName)
 
   /**
     * Gets the verb of the O-MI message
     */
   val callback: Option[Callback] =
-    omiVerb.attr("callback").map(RawCallback.apply)
+    omiVerb.attributes.get("callback").map(RawCallback.apply)
 
   /**
     * Get the parsed request. Message is parsed only once because of laziness.
     */
-  lazy val parsed: OmiParseResult = parsing.OmiParser.parse(rawRequest)
+  //XXX: Blocking. Waiting ttl that is given by user.
+  lazy val parsed: OmiParseResult = Await.ready(parsedResult,ttl).value.map{ 
+    case Failure(pe: ParseError) => Left(Vector(pe))
+    case Failure(other)=> throw other
+    case Success(req: OmiRequest) => Right(Vector(req))
+  }.getOrElse{
+    throw OMIParserError(s"Parsing whole request takes longer than given $ttl")
+  }
 
   /**
     * Access the request easily and leave responsibility of error handling to someone else.
@@ -352,7 +432,7 @@ class RawRequestWrapper(val rawRequest: String, private val user0: UserInfo) ext
 }
 
 object RawRequestWrapper {
-  def apply(rawRequest: String, user: UserInfo): RawRequestWrapper = new RawRequestWrapper(rawRequest, user)
+  def apply(rawSource: Source[String,_], user: UserInfo)(implicit materializer: Materializer): RawRequestWrapper = new RawRequestWrapper(rawSource, user)
 
   private def parseError(m: String) = throw new IllegalArgumentException("Pre-parsing: " + m)
 
@@ -389,6 +469,7 @@ object RawRequestWrapper {
 }
 
 import types.OmiTypes.RawRequestWrapper.MessageType
+import database.journal.PRequestInfo
 
 /**
   * One-time-read request
@@ -849,14 +930,15 @@ trait JavaResponseRequest {
 /**
   * Response request, contains result for other requests
   **/
-class ResponseRequest(
+case class ResponseRequest(
                        val results: OdfCollection[OmiResult],
-                       val ttl: Duration,
+                       val ttl: Duration = 10 seconds,
                        val callback: Option[Callback] = None,
                        private val user0: UserInfo = UserInfo(),
                        val senderInformation: Option[SenderInformation] = None,
                        val ttlLimit: Option[Timestamp] = None,
-                       val requestID: Option[Long] = None
+                       val requestID: Option[Long] = None,
+                       val renderRequestID: Boolean = false
                      ) extends OmiRequest with PermissiveRequest with JavaResponseRequest {
   user = user0
 
@@ -868,15 +950,16 @@ class ResponseRequest(
             callback: Option[Callback] = this.callback,
             senderInformation: Option[SenderInformation] = this.senderInformation,
             ttlLimit: Option[Timestamp] = this.ttlLimit,
-            requestID: Option[Long] = this.requestID
+            requestID: Option[Long] = this.requestID,
+            renderRequestID: Boolean = false,
           ): ResponseRequest = ResponseRequest(results, ttl)
 
   def withCallback: Option[Callback] => ResponseRequest = cb => this.copy(callback = cb)
-  def withRequestID: Option[Long] => OmiRequest = id => this.copy(requestID = id )
+  def withRequestID: Option[Long] => ResponseRequest = id => this.copy(requestID = id )
 
   def odf: ODF = results.foldLeft(ImmutableODF()) {
     case (l: ODF, r: OmiResult) =>
-      l.union(r.odf.getOrElse(ImmutableODF())).immutable
+      l.union(r.odf.getOrElse(ImmutableODF())).toImmutable
   }
 
   implicit def asResponseListType: xmlTypes.ResponseListType =
@@ -916,7 +999,7 @@ class ResponseRequest(
   def odfResultsToSingleWrite: WriteRequest = {
     WriteRequest(
       odfResultsToWrites.foldLeft(ImmutableODF()) {
-        case (objects, write) => objects.union(write.odf).immutable
+        case (objects, write) => objects.union(write.odf).toImmutable
       },
       None,
       ttl
@@ -924,41 +1007,57 @@ class ResponseRequest(
   }
 
   val requestVerb: MessageType.Response.type = MessageType.Response
-  def asXMLEvents: SeqView[ParseEvent,Seq[_]] ={
+
+  def asXMLEvents = asXMLEventsWithVersion()
+
+  def asXMLByteSourceWithVersion(info: PRequestInfo): Source[ByteString, NotUsed] =
+    asXMLByteSourceWithVersion(OmiVersion.fromNumber(info.omiVersion), info.odfVersion.map(OdfVersion.fromNumber(_))) // msgformat?
+
+  def asXMLByteSourceWithVersion(omiVersion: OmiVersion = OmiVersion1, odfVersion: Option[OdfVersion] = None): Source[ByteString, NotUsed] =
+    parseEventsToByteSource(asXMLEventsWithVersion(omiVersion, odfVersion))
+
+  def asXMLSourceWithVersion(info: PRequestInfo): Source[String, NotUsed] =
+    asXMLSourceWithVersion(OmiVersion.fromNumber(info.omiVersion), info.odfVersion.map(OdfVersion.fromNumber(_))) // msgformat?
+
+  def asXMLSourceWithVersion(omiVersion: OmiVersion = OmiVersion1, odfVersion: Option[OdfVersion] = None): Source[String, NotUsed] =
+    asXMLByteSourceWithVersion(omiVersion, odfVersion).map[String](_.utf8String)
+
+  def asXMLEventsWithVersion(info: PRequestInfo): SeqView[ParseEvent,Seq[_]] =
+    asXMLEventsWithVersion(OmiVersion.fromNumber(info.omiVersion), info.odfVersion.map(OdfVersion.fromNumber(_))) // msgformat?
+
+  def asXMLEventsWithVersion(omiVersion: OmiVersion = OmiVersion1, odfVersion: Option[OdfVersion] = None): SeqView[ParseEvent,Seq[_]] ={
     Vector(
       StartDocument,
       StartElement("omiEnvelope",
         List(
           Attribute("ttl", ttlAsSeconds.toString),//.toString.replaceAll(".0$","")),
-          Attribute("version", "1.0")
+          Attribute("version", omiVersion.number.toString)
         ),
-        namespaceCtx = List(Namespace("http://www.opengroup.org/xsd/omi/1.0/",None))
+        namespaceCtx = List(Namespace(omiVersion.namespace,None))
       ),
       StartElement("response")
-    ).view ++ requestID.view.flatMap{
+    ).view ++
+    {if (renderRequestID) requestID.view.flatMap{
       rid =>
         Vector(
           StartElement("requestID"),
           Characters(rid.toString),
           EndElement("requestID")
         )
-    } ++ results.view.flatMap{
-      result => result.asXMLEvents
+    }
+    else Seq.empty.view} ++
+    results.view.flatMap{
+      result => result.asXMLEvents(odfVersion)
     } ++ Vector(
       EndElement("response"),
       EndElement("omiEnvelope"),
       EndDocument
     )
   }
-
-
 }
 
 
 object ResponseRequest {
-  def apply(
-             results: OdfCollection[OmiResult],
-             ttl: Duration = 10.seconds,
-             callback: Option[Callback] = None
-           ): ResponseRequest = new ResponseRequest(results, ttl, callback)
+  def applySimple(results: OdfCollection[OmiResult], ttl: Duration) = ResponseRequest(results,ttl)
 }
+

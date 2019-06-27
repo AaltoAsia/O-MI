@@ -1,15 +1,279 @@
 package types
 package odf
 
-import scala.language.implicitConversions
-import database.journal.PPersistentNode.NodeType.Ii
-import database.journal.{PInfoItem, PPersistentNode}
+import akka.stream.alpakka.xml.{Attribute, EndElement, ParseEvent, StartElement}
+import database.journal.PPersistentNode.NodeType.{Ii, Obj, Objs}
+import database.journal.{PInfoItem, PObject, PObjects, PPersistentNode}
 import parsing.xmlGen.scalaxb.DataRecord
-import parsing.xmlGen.xmlTypes.InfoItemType
+import parsing.xmlGen.xmlTypes.{InfoItemType, ObjectType, ObjectsType}
 
-import akka.stream.alpakka.xml._
-import scala.collection.immutable.{HashMap, Map => IMap}
-import scala.collection.SeqView
+import scala.language.implicitConversions
+import scala.collection.{Seq, SeqView}
+import scala.collection.immutable.{HashMap, Map}
+
+sealed trait Node {
+  def createAncestors: Seq[Node]
+
+  def createParent: Node
+
+  def attributes: Map[String, String]
+
+  def path: Path
+
+  def hasStaticData: Boolean
+
+  def persist: PPersistentNode.NodeType // = PersistentNode(path.toString,attributes)
+}
+object Objects {
+  val empty: Objects = Objects()
+}
+
+@SerialVersionUID(2921615916249400841L)
+case class Objects(
+                    version: Option[String] = None,
+                    attributes: Map[String, String] = HashMap.empty
+                  ) extends Node {
+  val path: Path = new Path("Objects")
+
+  def hasStaticData: Boolean = attributes.nonEmpty
+
+  def update(that: Objects): Objects = {
+    Objects(that.version.orElse(version), attributes ++ that.attributes)
+  }
+
+  def createParent: Node = {
+    this
+  }
+
+  def createAncestors: Seq[Node] = {
+    Vector()
+  }
+
+  /**
+    * true if first is greater or equeal version number
+    */
+  private def vcomp(x: String, y: String): Boolean =
+    (x.split("\\.") zip y.split("\\."))
+      .foldLeft(true) {
+        case (true, (a, b)) if a >= b => true;
+        case _ => false
+      }
+
+  def intersection(that: Objects): Objects = {
+    Objects(
+      (this.version, that.version) match {
+        case (o@Some(oldv), n@Some(newv)) =>
+          if (vcomp(oldv, newv)) n
+          else o
+        case _ => this.version orElse that.version
+      },
+      that.attributes ++ attributes
+    )
+  }
+
+  def union(that: Objects): Objects = {
+    Objects(
+      (this.version, that.version) match {
+        case (o@Some(oldv), n@Some(newv)) =>
+          if (vcomp(oldv, newv)) o
+          else n
+        case _ => optionUnion(this.version, that.version)
+      },
+      attributeUnion(attributes, that.attributes)
+    )
+  }
+
+  implicit def asObjectsType(objects: Iterable[ObjectType]): ObjectsType = {
+    ObjectsType(
+      objects.toSeq,
+      attributes = attributesToDataRecord(attributes) ++ version.map {
+        version: String => "@version" -> DataRecord(version)
+      }
+    )
+  }
+
+  def readTo(to: Objects): Objects = {
+    to.copy(
+      this.version.orElse(to.version),
+      this.attributes ++ to.attributes
+    )
+  }
+
+  def persist: PPersistentNode.NodeType = Objs(PObjects(version.getOrElse(""), attributes))
+}
+
+object Object {
+  def apply(
+             path: Path
+           ): Object = Object(
+    Vector(QlmID(path.last)),
+    path
+  )
+
+  def apply(
+             path: Path,
+             typeAttribute: Option[String]
+           ): Object = Object(
+    Vector(QlmID(path.last)),
+    path,
+    typeAttribute
+  )
+
+  def apply(
+             path: Path,
+             typeAttribute: Option[String],
+             descriptions: Set[Description],
+             attributes: Map[String, String]
+           ): Object = Object(
+    Vector(QlmID(path.last)),
+    path,
+    typeAttribute,
+    descriptions,
+    attributes
+  )
+}
+
+case class Object(
+                   ids: Vector[QlmID],
+                   path: Path,
+                   typeAttribute: Option[String] = None,
+                   descriptions: Set[Description] = Set.empty,
+                   attributes: Map[String, String] = HashMap.empty
+                 ) extends Node with Unionable[Object] {
+  assert(ids.nonEmpty, "Object doesn't have any ids.")
+  assert(path.length > 1, "Length of path of Object is not greater than 1 (Objects/).")
+
+  def idsToStr(): Vector[String] = ids.map {
+    id: QlmID =>
+      id.id
+  }
+
+  def idTest: Boolean = idsToStr().exists {
+    id: String =>
+      val pl = path.last
+      id == pl
+  }
+
+  def tmy = s"Ids don't contain last id in path. ${path.last} not in (${idsToStr().mkString(",")})"
+
+  assert(idTest, tmy)
+
+  def update(that: Object): Object = {
+    val pathsMatches = path == that.path
+    val containSameId = ids.map(_.id).toSet.intersect(that.ids.map(_.id).toSet).nonEmpty
+    assert(containSameId && pathsMatches)
+    Object(
+      QlmID.unionReduce(ids ++ that.ids).toVector,
+      path,
+      that.typeAttribute.orElse(typeAttribute),
+      Description.unionReduce(descriptions ++ that.descriptions),
+      attributes ++ that.attributes
+    )
+
+  }
+
+  def hasStaticData: Boolean = {
+    attributes.nonEmpty ||
+      ids.length > 1 ||
+      typeAttribute.nonEmpty ||
+      descriptions.nonEmpty
+  }
+
+  def union(that: Object): Object = {
+    val pathsMatches = path == that.path
+    val containSameId = ids.map(_.id).toSet.intersect(that.ids.map(_.id).toSet).nonEmpty
+    assert(containSameId && pathsMatches)
+    Object(
+      QlmID.unionReduce(ids ++ that.ids).toVector,
+      path,
+      optionAttributeUnion(typeAttribute, that.typeAttribute),
+      Description.unionReduce(descriptions ++ that.descriptions),
+      attributeUnion(attributes, that.attributes)
+    )
+
+  }
+
+  def createAncestors: Seq[Node] = {
+    path.getAncestors.collect {
+      case ancestorPath: Path if ancestorPath.nonEmpty =>
+        if (ancestorPath == Path("Objects")) {
+          Objects()
+        } else {
+          Object(
+            Vector(
+              new QlmID(
+                ancestorPath.last
+              )
+            ),
+            ancestorPath
+          )
+        }
+    }.toVector
+  }
+
+  def createParent: Node = {
+    val parentPath = path.getParent
+    if (parentPath.isEmpty || parentPath == Path("Objects")) {
+      Objects()
+    } else {
+      Object(
+        Vector(
+          QlmID(
+            parentPath.last
+          )
+        ),
+        parentPath
+      )
+    }
+  }
+
+  implicit def asObjectType(infoitems: Iterable[InfoItemType], objects: Iterable[ObjectType]): ObjectType = {
+    ObjectType(
+      /*Seq( QlmID(
+        path.last, // require checks (also in OdfObject)
+        attributes = Map.empty
+      )),*/
+      ids.map(_.asQlmIDType), //
+      descriptions.map(des => des.asDescriptionType).toVector,
+      infoitems.toSeq,
+      objects.toSeq,
+      attributes = (
+        attributesToDataRecord(attributes) ++ typeAttribute.map { n => "@type" -> DataRecord(n) })
+    )
+  }
+
+  def readTo(to: Object): Object = {
+    val pathsMatches = path == to.path
+    val containSameId = ids.map(_.id).toSet.intersect(to.ids.map(_.id).toSet).nonEmpty
+    assert(containSameId && pathsMatches)
+
+    val desc = if (to.descriptions.nonEmpty) {
+      val languages = to.descriptions.flatMap(_.language)
+      if (languages.nonEmpty) {
+        descriptions.filter {
+          case Description(text, Some(lang)) => languages.contains(lang)
+          case Description(text, None) => true
+        }
+      } else {
+        descriptions
+      }
+    } else if (this.descriptions.nonEmpty) {
+      Vector(Description("", None))
+    } else Vector.empty
+    //TODO: Filter ids based on QlmID attributes
+    to.copy(
+      ids = QlmID.unionReduce(ids ++ to.ids).toVector,
+      typeAttribute = typeAttribute.orElse(to.typeAttribute),
+      descriptions = desc.toSet,
+      attributes = attributes ++ to.attributes
+    )
+  }
+
+  def persist: PPersistentNode.NodeType = Obj(PObject(typeAttribute.getOrElse(""),
+    ids.map(_.persist),
+    descriptions.map(_.persist()).toSeq,
+    attributes))
+}
 
 object InfoItem {
   sealed trait Parameters {
@@ -25,21 +289,21 @@ object InfoItem {
         InfoItem( path.last, path, values=values)
     }
     implicit def fromPathValuesDesc(t: (Path,
-                                 Vector[Value[Any]],
-                                 Description)) = new Parameters {
+      Vector[Value[Any]],
+      Description)) = new Parameters {
       val (path, values, description) = t
       def apply() = InfoItem(path.last, path, values=values, descriptions=Set(description))
     }
     implicit def fromPathValuesMeta(t: (Path,
-                                 Vector[Value[Any]],
-                                 MetaData)) = new Parameters {
+      Vector[Value[Any]],
+      MetaData)) = new Parameters {
       val (path, values, metaData) = t
       def apply() = InfoItem(path.last, path, values=values, metaData=Some(metaData))
     }
     implicit def fromPathValuesDescMeta(t: (Path,
-                                 Vector[Value[Any]],
-                                 Description,
-                                 MetaData)) = new Parameters {
+      Vector[Value[Any]],
+      Description,
+      MetaData)) = new Parameters {
       val (path, values, description, metaData) = t
       def apply() = InfoItem(path.last, path, values=values, metaData=Some(metaData), descriptions=Set(description))
     }
@@ -63,7 +327,7 @@ object InfoItem {
              descriptions: Set[Description],
              values: Vector[Value[Any]],
              metaData: Option[MetaData],
-             attributes: IMap[String, String]
+             attributes: Map[String, String]
            ): InfoItem = {
     InfoItem(
       path.last,
@@ -86,7 +350,7 @@ case class InfoItem(
                      descriptions: Set[Description] = Set.empty,
                      values: Vector[Value[Any]] = Vector.empty,
                      metaData: Option[MetaData] = None,
-                     attributes: IMap[String, String] = HashMap.empty
+                     attributes: Map[String, String] = HashMap.empty
                    ) extends Node with Unionable[InfoItem] {
   assert(nameAttribute == path.last && path.length > 2)
 
@@ -138,9 +402,9 @@ case class InfoItem(
       (metaData, that.metaData) match{
         case (Some( md ), Some( omd )) => Some( omd.union(md) )
         case ( Some(md), None) => Some( MetaData( Vector()))
-        case (None, _) => None 
+        case (None, _) => None
       },
-      that.attributes ++ attributes 
+      that.attributes ++ attributes
     )
   }*/
 
@@ -285,10 +549,10 @@ case class InfoItem(
   }
 
   def persist: PPersistentNode.NodeType = Ii(PInfoItem(typeAttribute.getOrElse(""),
-                                                       names.map(_.persist),
-                                                       descriptions.map(_.persist()).toSeq,
-                                                       metaData.map(_.persist()),
-                                                       attributes))
+    names.map(_.persist),
+    descriptions.map(_.persist()).toSeq,
+    metaData.map(_.persist()),
+    attributes))
   final implicit def asXMLEvents: SeqView[ParseEvent,Seq[_]] = {
     Seq(
       StartElement(
@@ -297,7 +561,7 @@ case class InfoItem(
           Attribute("name",nameAttribute),
         ) ++ typeAttribute.map{
           str: String =>
-          Attribute("type",str)
+            Attribute("type",str)
         }.toList ++ attributes.map{
           case (key: String, value: String) => Attribute(key,value)
         }.toList

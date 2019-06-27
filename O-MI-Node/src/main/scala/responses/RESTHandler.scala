@@ -53,6 +53,7 @@ object RESTHandler {
       case attr@Some("name") => RESTInfoName(path.init)
       case Some(str) => 
         RESTNodeReq(path)
+      case None => throw new Exception("Unknown REST Request type")
     }
   }
 
@@ -122,7 +123,7 @@ object RESTHandler {
             case odfvalue: Value[_] => 
               odfvalue.value match {
                 case value: ODF =>
-                  Right( Vector(StartDocument).view ++ value.asXMLEvents ++ Vector(EndDocument))
+                  Right( Vector(StartDocument).view ++ value.asXMLEvents() ++ Vector(EndDocument))
                 case value: Any =>
                   Left(value.toString)
               }
@@ -291,7 +292,8 @@ object RESTHandler {
                       }.toList
                     ),
                     EndElement("InfoItem" )
-                  ).view  
+                  ).view
+                case _: Objects => throw new Exception("Objects encountered while handling REST request")
               } ++ Vector(EndElement("Object" ), EndDocument)
               Right(events)
           }
@@ -355,7 +357,8 @@ object RESTHandler {
                       }.toList
                     ),
                     EndElement("InfoItem" )
-                  ).view  
+                  ).view
+                case _: Objects => throw new Exception("Objects encountered while handling REST request")
               } ++ Vector( EndElement("Objects" ),EndDocument )
               Right(events)
           }

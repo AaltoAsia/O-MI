@@ -1,5 +1,6 @@
 package agents.parking
 
+import agents.MVError
 import types.Path
 import types.odf._
 

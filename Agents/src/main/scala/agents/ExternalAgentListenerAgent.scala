@@ -26,12 +26,11 @@ import authorization.IpAuthorization
 import com.typesafe.config.Config
 import http.{OmiConfig, OmiConfigExtension}
 import org.slf4j.LoggerFactory
-import parsing.OdfParser
 import types.OmiTypes._
 import types._
-import types.odf.{ImmutableODF, OldTypeConverter}
+import types.odf.{ImmutableODF, ODFParser}
 
-import scala.collection.JavaConversions.iterableAsScalaIterable
+import scala.collection.JavaConverters
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
@@ -159,15 +158,17 @@ class ExternalAgentHandler(
       //check if the last part of the message contains closing xml tag
       if(storage.slice(lastCharIndex - 9, lastCharIndex + 1).endsWith("</Objects>")) {
 
-        val parsedEntries = OdfParser.parse(storage)
+        val parsedEntries = ODFParser.parse(storage)
         storage = ""
         parsedEntries match {
           case Left(errors) =>
-            log.warning(s"Malformed odf received from agent ${sender()}: ${errors.mkString("\n")}")
+            log.warning(
+              s"Malformed odf received from agent ${sender()}: " +
+                s"${JavaConverters.iterableAsScalaIterable(errors).mkString("\n")}")
           case Right(odf) =>
             val ttl  = Duration(5,SECONDS)
             implicit val timeout: Timeout = Timeout(ttl)
-            val write = WriteRequest( OldTypeConverter.convertOdfObjects(odf), None,  Duration(5,SECONDS))
+            val write = WriteRequest( odf, None,  Duration(5,SECONDS))
             val result = (requestHandler ? write).mapTo[ResponseRequest]
             result.onComplete{
               case Success( response: ResponseRequest )=>

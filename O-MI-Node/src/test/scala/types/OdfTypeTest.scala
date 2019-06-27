@@ -264,13 +264,13 @@ class OdfTypesTest extends Specification {
   def immutableCastTest( odf: ODF ) ={
     val nodes = odf.getNodes
     val correct = ImmutableODF(nodes)
-    val res = odf.immutable 
+    val res = odf.toImmutable
     (res must haveClass[ImmutableODF]) and (res === correct)
   }
   def mutableCastTest( odf: ODF ) ={
     val nodes = odf.getNodes
     val correct = MutableODF(nodes)
-    val res = odf.mutable 
+    val res = odf.toMutable
     (res must haveClass[MutableODF]) and (res === correct)
   }
   def metaDatasRemovedTest( odf: ODF ) ={
@@ -1024,7 +1024,7 @@ class OdfTypesTest extends Specification {
   ) = {
     ODFParser.parse(o_df.asXML.toString) should beRight {
       o: ImmutableODF =>
-        val iODF = o_df.immutable
+        val iODF = o_df.toImmutable
         lazy val parsedOdfPaths = o.getPaths.toSet
         lazy val correctOdfPaths = iODF.getPaths.toSet
         lazy val pathCheck = (parsedOdfPaths must contain(correctOdfPaths)) and

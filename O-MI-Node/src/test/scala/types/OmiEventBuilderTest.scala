@@ -17,6 +17,7 @@ package parser
 
 import java.sql.Timestamp
 import java.time.OffsetDateTime
+import java.time.Instant
 import scala.collection.JavaConverters._
 import scala.collection.immutable.HashMap
 import scala.concurrent.duration._
@@ -45,21 +46,21 @@ import scala.util.Try
 
 
 class OMIEventBuilderTest extends Specification {
-  val testTimeStr ="2017-05-11T15:44:55+03:00"
+  val testTimeStr ="2017-05-11T15:44:55.001Z"
   val testTime: Timestamp = Timestamp.from(OffsetDateTime.parse(testTimeStr).toInstant())
   val testTTL = 30.seconds
   val testCallbackStr = "http://localhost/" 
   sequential
   "EventBuilders" >> {
-    "handle correctly requestId element" >> {
+    "handle correctly requestID element" >> {
 
       "with correct events" >>{
         buildFromEvents( 
           new RequestIdEventBuilder(None,testTime),
           Vector(
-            StartElement("requestId"),
+            StartElement("requestID"),
             Characters("51557117"),
-            EndElement("requestId")
+            EndElement("requestID")
           )
         ) must beSuccessfulTry.withValue(51557117L)
       }
@@ -67,9 +68,9 @@ class OMIEventBuilderTest extends Specification {
         buildFromEvents( 
           new RequestIdEventBuilder(None,testTime),
           Vector(
-            StartElement("requestId"),
+            StartElement("requestID"),
             Characters("51ouou"),
-            EndElement("requestId")
+            EndElement("requestID")
           )
         ) must beFailedTry.withThrowable[OMIParserError](s"O-MI Parser error: RequestId 51ouou was not type Long.")
       }
@@ -77,21 +78,21 @@ class OMIEventBuilderTest extends Specification {
         buildFromEvents( 
           new RequestIdEventBuilder(None,testTime),
           Vector(
-            StartElement("requestId"),
+            StartElement("requestID"),
             Characters("51557117"),
             EndElement("error"),
-            EndElement("requestId")
+            EndElement("requestID")
           )
-        ) must beFailedTry.withThrowable[OMIParserError](s"O-MI Parser error: Unexpect end of error element before expected closing of requestId.")
+        ) must beFailedTry.withThrowable[OMIParserError](s"O-MI Parser error: Unexpect end of error element before expected closing of requestID.")
       }
       "with unexpected event before content" >>{
         buildFromEvents( 
           new RequestIdEventBuilder(None,testTime),
           Vector(
-            StartElement("requestId"),
+            StartElement("requestID"),
             EndElement("error"),
             Characters("51557117"),
-            EndElement("requestId")
+            EndElement("requestID")
           )
         ) must beFailedTry.withThrowable[OMIParserError](s"O-MI Parser error: Unexpect end of error element when expected text content.")
       }
@@ -100,22 +101,22 @@ class OMIEventBuilderTest extends Specification {
           new RequestIdEventBuilder(None,testTime),
           Vector(
             EndElement("error"),
-            StartElement("requestId"),
+            StartElement("requestID"),
             Characters("51557117"),
-            EndElement("requestId")
+            EndElement("requestID")
           )
-        ) must beFailedTry.withThrowable[OMIParserError](s"O-MI Parser error: Unexpect end of error element before expected requestId element.")
+        ) must beFailedTry.withThrowable[OMIParserError](s"O-MI Parser error: Unexpect end of error element before expected requestID element.")
       }
-      "with unexpected event after complete requestId" >>{
+      "with unexpected event after complete requestID" >>{
         buildFromEvents( 
           new RequestIdEventBuilder(None,testTime),
           Vector(
-            StartElement("requestId"),
+            StartElement("requestID"),
             Characters("51557117"),
-            EndElement("requestId"),
+            EndElement("requestID"),
             EndElement("error")
           )
-        ) must beFailedTry.withThrowable[OMIParserError](s"O-MI Parser error: Unexpect end of error element after complete requestId element.")
+        ) must beFailedTry.withThrowable[OMIParserError](s"O-MI Parser error: Unexpect end of error element after complete requestID element.")
       }
     }
 
@@ -423,14 +424,14 @@ class OMIEventBuilderTest extends Specification {
           )
         )
       }
-      "with requestId" >>{
+      "with requestID" >>{
         buildFromEvents( 
           new ReadEventBuilder(testTTL, None,testTime),
           Vector(
             StartElement("read"),
-            StartElement("requestId"),
+            StartElement("requestID"),
             Characters("1313"),
-            EndElement("requestId"),
+            EndElement("requestID"),
             EndElement("read")
           )
         ) must beSuccessfulTry.withValue(

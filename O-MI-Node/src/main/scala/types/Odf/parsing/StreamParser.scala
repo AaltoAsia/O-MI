@@ -48,7 +48,13 @@ object ODFStreamParser {
 
 
       setHandler(out, new OutHandler {
-        override def onPull(): Unit = pull(in)
+        override def onPull(): Unit ={
+          if( isClosed(in)) {
+            //???
+          } else {
+            pull(in)
+          }
+        }
       })
 
       setHandler(in, new InHandler {
@@ -69,7 +75,11 @@ object ODFStreamParser {
             case t: Throwable => 
               failStage( t)
           }
-          pull(in)
+          if( isClosed(in)) {
+            //???
+          } else {
+            pull(in)
+          }
         }
 
         override def onUpstreamFinish(): Unit = {

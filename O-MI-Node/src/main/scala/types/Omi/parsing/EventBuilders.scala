@@ -51,21 +51,16 @@ class EnvelopeEventBuilder( val previous: Option[EventBuilder[_]], implicit val 
     this
   }
 
-  def parseTTL(v: Double): Duration =
-    v match {
-      case -1.0 => Duration.Inf
-      case 0.0 => Duration.Inf
-      case w if w > 0 => w.seconds
-      case _ => throw new IllegalArgumentException("Negative Interval, diffrent than -1 isn't allowed.")
-    }
   def build: OmiRequest = request.get
 
   def parse( event: ParseEvent): EventBuilder[_] ={
     event match {
+      case StartDocument => this
+      case EndDocument => this
       case startElement: StartElement if startElement.localName == "omiEnvelope" =>
         val correctNS = startElement.namespace.forall{
           str: String =>
-            str.startsWith("http://www.opengroup.org/xsd/odf/")
+            str.startsWith("http://www.opengroup.org/xsd/omi/")
         }
         if( !correctNS )
           throw OMIParserError("Wrong namespace url.")
@@ -81,17 +76,31 @@ class EnvelopeEventBuilder( val previous: Option[EventBuilder[_]], implicit val 
           this
         }
       case startElement: StartElement if startElement.localName == "read" =>
-        new ReadEventBuilder(ttl,Some(this),receiveTime)
+        new ReadEventBuilder(ttl,Some(this),receiveTime).parse(event)
       case startElement: StartElement if startElement.localName == "write" =>
-        new WriteEventBuilder(ttl,Some(this),receiveTime)
+        new WriteEventBuilder(ttl,Some(this),receiveTime).parse(event)
       case startElement: StartElement if startElement.localName == "call" =>
-        new CallEventBuilder(ttl,Some(this),receiveTime)
+        new CallEventBuilder(ttl,Some(this),receiveTime).parse(event)
       case startElement: StartElement if startElement.localName == "cancel" =>
-        new CancelEventBuilder(ttl,Some(this),receiveTime)
+        new CancelEventBuilder(ttl,Some(this),receiveTime).parse(event)
       case startElement: StartElement if startElement.localName == "delete" =>
-        new DeleteEventBuilder(ttl,Some(this),receiveTime)
+        new DeleteEventBuilder(ttl,Some(this),receiveTime).parse(event)
       case startElement: StartElement if startElement.localName == "response" =>
-        new ResponseEventBuilder(ttl, Some(this),receiveTime)
+        new ResponseEventBuilder(ttl, Some(this),receiveTime).parse(event)
+      case endElement: EndElement if endElement.localName == "omiEnvelope" =>
+        if( request.nonEmpty ){
+          complete = true
+          previous match {
+            case None => this
+            case Some( builder: EventBuilder[_] ) => 
+              throw OMIParserError("Wrong previous builder for omiEnvelope.")
+          }
+        } else
+            throw OMIParserError("OmiEnvelope completed without request.")
+      case event: ParseEvent if complete =>
+        unexpectedEventHandle("after complete omiEnvelope element.", event, this)
+      case event: ParseEvent =>
+        unexpectedEventHandle("before omiEnvelope element.", event, this)
     }
   }
 }
@@ -130,8 +139,8 @@ class WriteEventBuilder( val ttl: Duration, val previous: Option[EventBuilder[_]
         event match {
           case startElement: StartElement if startElement.localName == "nodeList" =>
             throw OMIParserError("nodeList is not supported by O-MI Node.")
-          case startElement: StartElement if startElement.localName == "requestId" =>
-            throw OMIParserError("Write request doesn't use requestId.")
+          case startElement: StartElement if startElement.localName == "requestID" =>
+            throw OMIParserError("Write request doesn't use requestID.")
           case startElement: StartElement if startElement.localName == "msg" =>
             msgformat match {
               case "odf" =>
@@ -204,8 +213,8 @@ class CallEventBuilder( val ttl: Duration, val previous: Option[EventBuilder[_]]
         event match {
           case startElement: StartElement if startElement.localName == "nodeList" =>
             throw OMIParserError("nodeList is not supported by O-MI Node.")
-          case startElement: StartElement if startElement.localName == "requestId" =>
-            throw OMIParserError("Call request doesn't use requestId.")
+          case startElement: StartElement if startElement.localName == "requestID" =>
+            throw OMIParserError("Call request doesn't use requestID.")
           case startElement: StartElement if startElement.localName == "msg" =>
             msgformat match {
               case "odf" =>
@@ -278,8 +287,8 @@ class DeleteEventBuilder( val ttl: Duration, val previous: Option[EventBuilder[_
         event match {
           case startElement: StartElement if startElement.localName == "nodeList" =>
             throw OMIParserError("nodeList is not supported by O-MI Node.")
-          case startElement: StartElement if startElement.localName == "requestId" =>
-            throw OMIParserError("Delete request doesn't use requestId.")
+          case startElement: StartElement if startElement.localName == "requestID" =>
+            throw OMIParserError("Delete request doesn't use requestID.")
           case startElement: StartElement if startElement.localName == "msg" =>
             msgformat match {
               case "odf" =>
@@ -393,11 +402,11 @@ class ReadEventBuilder( val ttl: Duration, val previous: Option[EventBuilder[_]]
                   Try{ str.toInt }.getOrElse{ throw OMIParserError("Attribute oldest found for read request but it is not type of Int.")}
               }
               if( newest.nonEmpty && oldest.nonEmpty)
-                throw OMIParserError("Attributes newest and oldest can not be given at same time.")
+                throw OMIParserError("Invalid Read request, Can not query oldest and newest values at same time.")
               
               begin = startElement.attributes.get("begin").map{ 
                 str: String => 
-                  Try{ dateTimeStrToTimestamp(str) }.getOrElse{ throw OMIParserError("Attribute megin found for read request but it is not dateTime.")}
+                  Try{ dateTimeStrToTimestamp(str) }.getOrElse{ throw OMIParserError("Attribute begin found for read request but it is not dateTime.")}
               }
               end = startElement.attributes.get("end").map{ 
                 str: String => 
@@ -426,16 +435,16 @@ class ReadEventBuilder( val ttl: Duration, val previous: Option[EventBuilder[_]]
           case startElement: StartElement if startElement.localName == "msg" =>
             position = OpenMsg
             this.parse(event)
-          case startElement: StartElement if startElement.localName == "requestId" =>
+          case startElement: StartElement if startElement.localName == "requestID" =>
             if( msgformat.nonEmpty || intervalO.nonEmpty || newest.nonEmpty || oldest.nonEmpty || begin.nonEmpty || end.nonEmpty || all.nonEmpty)
-              throw OMIParserError("Element requestId can not be used with interval, newest, oldest, begin, end or all attribute.")
+              throw OMIParserError("Element requestID can not be used with interval, newest, oldest, begin, end or all attribute.")
             else
               new RequestIdEventBuilder(Some(this), receiveTime).parse(event)
           case endElement: EndElement if endElement.localName == "read" =>
             position = CloseRequest
             this.parse(event)
           case event: ParseEvent =>
-            unexpectedEventHandle("after requestId element", event, this)
+            unexpectedEventHandle("after requestID element", event, this)
         }
       case OpenMsg =>
         event match {
@@ -496,7 +505,7 @@ class CancelEventBuilder( val ttl: Duration, val previous: Option[EventBuilder[_
     position match {
       case OpenRequest =>
         event match {
-          case startElement: StartElement if startElement.localName == "read" =>
+          case startElement: StartElement if startElement.localName == "cancel" =>
             position = RequestId
             this
           case event: ParseEvent =>
@@ -506,13 +515,13 @@ class CancelEventBuilder( val ttl: Duration, val previous: Option[EventBuilder[_
         event match {
           case startElement: StartElement if startElement.localName == "nodeList" =>
             throw OMIParserError("nodeList is not supported by O-MI Node.")
-          case startElement: StartElement if startElement.localName == "requestId" =>
-            new RequestIdEventBuilder(Some(this), receiveTime)
+          case startElement: StartElement if startElement.localName == "requestID" =>
+              new RequestIdEventBuilder(Some(this)).parse(event)
           case endElement: EndElement if endElement.localName == "cancel" =>
             position = CloseRequest
             this.parse(event)
           case event: ParseEvent =>
-            unexpectedEventHandle("before requestId element.", event, this)
+            unexpectedEventHandle("before requestID element.", event, this)
         }
       case CloseRequest =>
         event match {
@@ -554,11 +563,11 @@ class RequestIdEventBuilder( val previous: Option[EventBuilder[_]], implicit val
         position match{
           case OpenTag =>
             event match {
-              case startElement: StartElement if startElement.localName == "requestId" =>
+              case startElement: StartElement if startElement.localName == "requestID" =>
                 position = Content
                 this
               case event: ParseEvent =>
-                unexpectedEventHandle( "before expected requestId element.", event, this)
+                unexpectedEventHandle( "before expected requestID element.", event, this)
             }
           case Content =>
             event match {
@@ -572,11 +581,11 @@ class RequestIdEventBuilder( val previous: Option[EventBuilder[_]], implicit val
           case CloseTag =>
             event match {
               case event: ParseEvent if complete =>
-                unexpectedEventHandle( s"after complete requestId element.", event, this)
+                unexpectedEventHandle( s"after complete requestID element.", event, this)
               case content: TextEvent => 
                 text = text + content.text
                 this
-              case endElement: EndElement if endElement.localName == "requestId" =>
+              case endElement: EndElement if endElement.localName == "requestID" =>
                 complete = true
                 previous match {
                   case Some(state: ReadEventBuilder) => 
@@ -590,7 +599,7 @@ class RequestIdEventBuilder( val previous: Option[EventBuilder[_]], implicit val
                     this
                 }
               case event: ParseEvent =>
-                unexpectedEventHandle( s"before expected closing of requestId.", event, this)
+                unexpectedEventHandle( s"before expected closing of requestID.", event, this)
             }
         }
     }
@@ -635,7 +644,7 @@ class ResponseEventBuilder( val ttl: Duration, val previous: Option[EventBuilder
           event match {
             case startElement: StartElement if startElement.localName == "result" =>
               position = CloseResponse
-              new ResultEventBuilder(Some(this),receiveTime)
+              new ResultEventBuilder(Some(this),receiveTime).parse(event)
             case event: ParseEvent =>
               unexpectedEventHandle("before result element.", event, this)
           }
@@ -645,8 +654,8 @@ class ResponseEventBuilder( val ttl: Duration, val previous: Option[EventBuilder
               unexpectedEventHandle("after complete response.", event, this)
             case startElement: StartElement if startElement.localName == "result" =>
               position = CloseResponse
-              new ResultEventBuilder(Some(this),receiveTime)
-            case startElement: StartElement if startElement.localName == "response" =>
+              new ResultEventBuilder(Some(this),receiveTime).parse(event)
+            case endElement: EndElement if endElement.localName == "response" =>
               complete = true
               previous match {
                 case Some(builder: EnvelopeEventBuilder) => 
@@ -718,7 +727,7 @@ class ResultEventBuilder( val previous: Option[EventBuilder[_]], implicit val re
               if( returnCode.isEmpty )
                 throw OMIParserError("return element requires returnCode attribute.")
               this
-            case startElement: StartElement if startElement.localName == "return" => 
+            case endElement: EndElement if endElement.localName == "return" => 
               position = RequestIds
               this
             case event: ParseEvent =>
@@ -726,8 +735,8 @@ class ResultEventBuilder( val previous: Option[EventBuilder[_]], implicit val re
           }
         case RequestIds =>
           event match {
-            case startElement: StartElement if startElement.localName == "requestId" => 
-              new RequestIdEventBuilder(Some(this))
+            case startElement: StartElement if startElement.localName == "requestID" => 
+              new RequestIdEventBuilder(Some(this)).parse(event)
             case endElement: EndElement if endElement.localName == "result" => 
               position = CloseResult
               this.parse(event)
@@ -735,7 +744,7 @@ class ResultEventBuilder( val previous: Option[EventBuilder[_]], implicit val re
               position = Position.OpenMsg
               this.parse(event)
             case event: ParseEvent =>
-              unexpectedEventHandle("before requestId element.", event, this)
+              unexpectedEventHandle("before requestID element.", event, this)
           }
         case Position.OpenMsg =>
           event match {
@@ -749,7 +758,7 @@ class ResultEventBuilder( val previous: Option[EventBuilder[_]], implicit val re
                   throw OMIParserError(s"No msgformat for msg element in result element.")
               }
             case event: ParseEvent =>
-              unexpectedEventHandle("before msg element.", event, this)
+              unexpectedEventHandle("before msg element.",event, this)
           }
         case Position.CloseMsg =>
           event match {
