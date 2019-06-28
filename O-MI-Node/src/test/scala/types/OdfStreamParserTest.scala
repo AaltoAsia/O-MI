@@ -16,7 +16,8 @@ package odf
 package parser
 
 import java.sql.Timestamp
-import java.time.OffsetDateTime
+import java.time.{ZoneOffset,OffsetDateTime, ZoneId}
+import javax.xml.datatype.DatatypeFactory
 import scala.collection.JavaConverters._
 import scala.collection.immutable.HashMap
 import scala.util.Try
@@ -41,8 +42,9 @@ import org.specs2.matcher._
 import org.specs2.specification.{Scope,AfterAll}
 
 class OdfEventBuilderTest extends Specification {
-  val testTimeStr ="2017-05-11T15:44:55+03:00"
-  val testTime: Timestamp = Timestamp.from(OffsetDateTime.parse(testTimeStr).toInstant())
+  val testTimeStr ="2017-05-11T15:44:55.00+03:00"
+  val gc = DatatypeFactory.newInstance().newXMLGregorianCalendar(testTimeStr).toGregorianCalendar()
+  val testTime: Timestamp = Timestamp.from(gc.toInstant())
   sequential
   "EventBuilders" >> {
     "handle correctly description element" >> {

@@ -144,7 +144,7 @@ sealed trait OmiRequest extends RequestWrapper with JavaOmiRequest {
 
   def unwrapped: Try[OmiRequest] = Success(this)
 
-  def rawRequest: String = asXML.toString
+  def rawSource: Source[String,_] = asXMLSource
 
   def senderInformation: Option[SenderInformation]
 
@@ -234,6 +234,7 @@ sealed trait RequestWrapper {
   //def user(): Option[UserInfo]
   var user: UserInfo = _
 
+  def rawSource: Source[String,_]
 
   def ttl: Duration
 

@@ -142,8 +142,7 @@ class TypesTest extends Specification {
       reg2.callbackAsUri must beSome.like { case a => a.isInstanceOf[URI] }) and (
       reg2.asXML must beAnInstanceOf[NodeSeq]) and (
       reg2.parsed must beRight) and (
-      reg2.unwrapped must beSuccessfulTry) and (
-      reg2.rawRequest must startWith("<omiEnvelope"))
+      reg2.unwrapped must beSuccessfulTry) 
   }
 
   def omiTypes2 = {

@@ -10,30 +10,6 @@ import akka.stream.alpakka.xml._
 import types._
 
 package object `parser` {
-  def dateTimeStrToTimestamp(dateTimeString: String): Timestamp = {
-    val offsetR ="([-+]\\d{2}:\\d{2}|Z)$".r
-    val correctStr = dateTimeString match {
-      case offsetR() => dateTimeString
-      case other: String  => dateTimeString + "Z"
-    }
-    Timestamp.from(OffsetDateTime.parse(correctStr).toInstant())
-  }
-  def solveTimestamp(dateTime: Option[String], unixTime: Option[String], receiveTime: Timestamp): Timestamp = {
-    val dT = dateTime.map(dateTimeStrToTimestamp)
-    val uT = unixTime.flatMap{
-      str =>
-        Try{
-          new Timestamp((str.toDouble * 1000.0).toLong)
-        }.toOption
-    }
-    (dT,uT) match{
-      case (Some(dTs), Some(uTs)) => dTs
-      case (Some(ts),None) => ts
-      case (None,Some(ts)) => ts
-      case (None,None) => receiveTime
-    }
-
-  }
   def unexpectedEventHandle(msg: String, event: ParseEvent, builder: EventBuilder[_]): EventBuilder[_] ={
     event match {
       case content: TextEvent if content.text.replaceAll("\\s","").nonEmpty => throw OMIParserError(s"Unexpect text content( ${content.text} ) $msg")

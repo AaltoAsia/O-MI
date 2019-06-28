@@ -40,7 +40,7 @@ class AuthAPIServiceMock(
     DummyHierarchyStore(hierarchyStored)
     , new OmiConfigExtension(config.withFallback(Actorstest.silentLoggerConfFull))
     , system
-    , mock[ActorMaterializer]
+    , ActorMaterializer()
     )
   with Mockito
   with MustThrownExpectations
@@ -299,7 +299,7 @@ class AuthServiceTest(implicit ee: ExecutionEnv) extends AuthServiceTestEnv{
 
     "extractParameter" should {
 
-      val omi = Some(RawRequestWrapper(Source.single(ReadAll.asXML.toString), UserInfo()))
+      val omi = Some(RawRequestWrapper(ReadAll.rawSource, UserInfo()))
       val base = httpRequest
 
       "extract from HttpRequest" >> {
@@ -440,13 +440,13 @@ class AuthServiceTest(implicit ee: ExecutionEnv) extends AuthServiceTestEnv{
         val result = Authorized(UserInfo(None, Some("test")))
         doReturn(result).when(authTest).isAuthorizedForOdfRequest(anyObject, anyObject)
 
-        authTest.isAuthorizedForRawRequest(httpRequest, ReadAll.asXML.toString) === result
+        authTest.isAuthorizedForRawRequest(httpRequest, ReadAll.rawSource) === result
 
         there was one(authTest).isAuthorizedForOdfRequest(anyObject, anyObject)
       }
       "return Authorized for other requests" in {
         AuthTest().isAuthorizedForRawRequest(
-          httpRequest, CancelRequest(Vector(1)).asXML.toString
+          httpRequest, CancelRequest(Vector(1)).rawSource
         ) === Authorized(UserInfo(None))
       }
     }
@@ -491,7 +491,7 @@ class AuthServiceTest(implicit ee: ExecutionEnv) extends AuthServiceTestEnv{
           .returns(Future.successful(authnResponse))
           .thenReturns(Future.successful(authzResponse))
         
-        isAuthorizedForRawRequest(Post(tokenUri), ReadAll.asXML.toString) === Changed(ReadAll, UserInfo(None, Some("test")))
+        isAuthorizedForRawRequest(Post(tokenUri), ReadAll.rawSource) === Changed(ReadAll, UserInfo(None, Some("test")))
       }
       "work correctly for auth and authz in failure case" in todo
       "work correctly for auth skipping" in todo

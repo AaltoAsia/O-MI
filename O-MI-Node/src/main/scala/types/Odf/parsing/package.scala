@@ -9,14 +9,6 @@ import akka.stream.alpakka.xml._
 import types._
 
 package object `parser` {
-  def dateTimeStrToTimestamp(dateTimeString: String): Timestamp = {
-    val offsetR ="([-+]\\d{2}:\\d{2}|Z)$".r
-    val correctStr = dateTimeString match {
-      case offsetR() => dateTimeString
-      case other: String  => dateTimeString + "Z"
-    }
-    Timestamp.from(OffsetDateTime.parse(correctStr).toInstant())
-  }
   def solveTimestamp(dateTime: Option[Timestamp], unixTime: Option[Timestamp], receiveTime: Timestamp): Timestamp = {
     (dateTime,unixTime) match{
       case (Some(dTs), Some(uTs)) => dTs

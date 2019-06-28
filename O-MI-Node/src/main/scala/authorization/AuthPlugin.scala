@@ -16,6 +16,7 @@ package authorization
 
 import java.lang.{Iterable => JavaIterable}
 
+import akka.stream.scaladsl.Source
 import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.server.Directives.extract
 import authorization.Authorization.{AuthorizationExtension, CombinedTest, UnauthorizedEx}
@@ -99,7 +100,7 @@ trait AuthApi {
     * @param httpRequest http headers and other data as they were received to O-MI Node.
     * @param omiRequestXml contains the original request as received by the server.
     */
-  def isAuthorizedForRawRequest(httpRequest: HttpRequest, omiRequestXml: String): AuthorizationResult = {
+  def isAuthorizedForRawRequest(httpRequest: HttpRequest, rawSource: Source[String,_]): AuthorizationResult = {
     Unauthorized()
   }
 }
@@ -181,12 +182,12 @@ trait AuthApiProvider extends AuthorizationExtension {
                                                                                                      nextAuthApi) =>
           lastTest orElse {
 
-            /*
+            
             lazy val rawReqResult = convertToWrapper(
               Try {
-                nextAuthApi.isAuthorizedForRawRequest(httpRequest, orgOmiRequest.rawRequest)
+                nextAuthApi.isAuthorizedForRawRequest(httpRequest, orgOmiRequest.rawSource)
               }
-            )*/
+            )
 
             lazy val reqResult =
               orgOmiRequest.unwrapped flatMap { omiReq =>
@@ -200,8 +201,8 @@ trait AuthApiProvider extends AuthorizationExtension {
 
             // Choose optimal test order
             orgOmiRequest match {
-              case raw: RawRequestWrapper => (/*rawReqResult orElse */reqResult).map(t => (t, t.user))
-              case other: RequestWrapper => (reqResult/* orElse rawReqResult*/).map(t => (t, t.user))
+              case raw: RawRequestWrapper => (rawReqResult orElse reqResult).map(t => (t, t.user))
+              case other: RequestWrapper => (reqResult orElse rawReqResult).map(t => (t, t.user))
 
             }
           }

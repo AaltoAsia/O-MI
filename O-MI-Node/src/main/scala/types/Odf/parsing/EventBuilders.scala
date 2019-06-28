@@ -18,7 +18,7 @@ package parser
 import java.sql.Timestamp
 import scala.collection.JavaConverters._
 import scala.collection.immutable.HashMap
-import scala.util.Try
+import scala.util.{Try, Failure, Success}
 
 import akka.NotUsed
 import akka.util._
@@ -93,12 +93,14 @@ import utils._
     private var descriptions: List[Description] = List.empty
     private var ids: List[QlmID] = List.empty
     private var complete: Boolean = false 
+    private var attributes: Map[String,String] = Map.empty
     final def isComplete: Boolean = previous.isEmpty && complete
     def build: Object = Object(
               ids.toVector,
               path,
               typeAttribute,
-              Description.unionReduce(descriptions.toSet)
+              Description.unionReduce(descriptions.toSet),
+              attributes
             )
     def addSubNode( node: Node): ObjectEventBuilder = {
       subNodes = node :: subNodes
@@ -133,6 +135,7 @@ import utils._
           event match { 
             case startElement: StartElement if startElement.localName == "Object" =>
               typeAttribute = startElement.attributes.get("type")
+              attributes = startElement.attributes -("type")
               position = Ids
               this
             case event: ParseEvent =>
@@ -287,6 +290,7 @@ import utils._
     private var typeAttribute: Option[String] = None
     private var path: Path = objectPath
     private var metaData: Option[MetaData] = None
+    private var attributes: Map[String,String] = Map.empty
     private var complete: Boolean = false 
     final def isComplete: Boolean = previous.isEmpty && complete
     def build: InfoItem = {
@@ -295,10 +299,11 @@ import utils._
         nameAttribute,
         path,
         typeAttribute,
-        names.toVector.sortBy(_.timestamp.getTime),
+        names.toVector,
         Description.unionReduce(descriptions.toSet),
-        values.toVector,
-        metaData
+        values.toVector.sortBy(_.timestamp.getTime),
+        metaData,
+        attributes
       )
     }
     def addMetaData( metaD: MetaData ): InfoItemEventBuilder ={
@@ -332,6 +337,7 @@ import utils._
                 typeAttribute = startElement.attributes.get("type")
                 path = objectPath / nameAttribute
                 position = Names
+                attributes = startElement.attributes -("name","type")
                 this
               case event: ParseEvent =>
                 unexpectedEventHandle( s"before expected InfoItem element under O-DF path ${objectPath}.", event, this)
@@ -447,8 +453,11 @@ import utils._
                   str =>
                     Try{
                       dateTimeStrToTimestamp(str)
-                    }.getOrElse{
+                    } match {
+                      case Failure(t) =>
+                        println(t)
                         throw ODFParserError("Invalid dateTime for value.")
+                      case Success(ts) => ts
                     }
                 }
                 val unixTime = startElement.attributes.get("unixTime").map{
@@ -574,8 +583,9 @@ import utils._
     private var endDate: Option[Timestamp] = None
     private var complete: Boolean = false 
     private var id: String = ""
+    private var attributes: Map[String,String] = Map.empty
     final def isComplete: Boolean = previous.isEmpty && complete
-    def build: QlmID = QlmID(id,idType,tagType,startDate,endDate)
+    def build: QlmID = QlmID(id,idType,tagType,startDate,endDate,attributes)
     object Position extends Enumeration {
       type Position = Value
       val OpenTag, Content, CloseTag = Value 
@@ -607,6 +617,8 @@ import utils._
                       throw ODFParserError(s"Invalid endDate attribute for ${startElement.localName} element.")
                     }
                 }
+
+                attributes = startElement.attributes -("tagType","idType","startDate","endDate")
                 this
               case event: ParseEvent =>
                 unexpectedEventHandle( "before expected id, name or altName element.", event, this)

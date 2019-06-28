@@ -1,6 +1,7 @@
 package authorization
 
 import akka.actor.{ActorRef, ActorSystem}
+import akka.stream.scaladsl.Source
 import akka.http.scaladsl.client.RequestBuilding.RequestBuilder
 import akka.http.scaladsl.model.ContentTypes._
 import akka.http.scaladsl.model._
@@ -440,9 +441,8 @@ class AuthAPIServiceV2(
   }
 
 
-  /*
-  override def isAuthorizedForRawRequest(httpRequest: HttpRequest, rawRequest: String): AuthorizationResult = {
-    val rawRequestWrapper = RawRequestWrapper(rawRequest, UserInfo())
+  override def isAuthorizedForRawRequest(httpRequest: HttpRequest, rawSource: Source[String,_]): AuthorizationResult = {
+    val rawRequestWrapper = RawRequestWrapper(rawSource, UserInfo())
 
     if (rawRequestWrapper.msgFormat.contains("odf"))
       isAuthorizedForOdfRequest(httpRequest, rawRequestWrapper)
@@ -458,5 +458,5 @@ class AuthAPIServiceV2(
     // case class Authorized(user: UserInfo) extends AuthorizationResult {def instance: Authorized = this}
     // case class Unauthorized(user: UserInfo = UserInfo()) extends AuthorizationResult {def instance: Unauthorized = this}
     // case class Partial(authorized: JavaIterable[Path], user: UserInfo) extends AuthorizationResult
-  }*/
+  }
 }
