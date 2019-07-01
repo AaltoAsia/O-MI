@@ -415,7 +415,7 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
           val wsProbe = TestProbe()
           val wsServer = new WsTestCallbackClient(wsProbe.ref, "ws://localhost", 8080)
           wsServer.offer(writeMessage("1"))
-          val res1 = wsProbe.receiveN(1, 5 seconds) //write confirmation
+          val res1 = wsProbe.receiveN(1, 10 seconds) //write confirmation
           wsServer.offer(
             """<?xml version="1.0" encoding="UTF-8"?>
               <omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="20">
@@ -431,14 +431,14 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
               </read>
             </omiEnvelope>
             """)
-          val res2 = wsProbe.receiveN(1, 5 seconds) //write confirmation
+          val res2 = wsProbe.receiveN(1, 10 seconds) //write confirmation
           for {
             _ <- wsServer.offer(writeMessage("2"))
             _ <- wsServer.offer(writeMessage("3"))
             _ <- wsServer.offer(writeMessage("4"))
             f <- wsServer.offer(writeMessage("5"))
           } yield f
-          val res3 = wsProbe.receiveN(8, 15 seconds)
+          val res3 = wsProbe.receiveN(8, 30 seconds)
           res1.length === 1
           res2.length === 1
           res3.length === 8 // 4 write confirmations and 4 subscription updates
