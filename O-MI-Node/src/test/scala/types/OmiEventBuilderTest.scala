@@ -167,7 +167,7 @@ class OMIEventBuilderTest extends Specification {
             EndElement("msg"),
             EndElement("write")
           )
-        ) must beFailedTry.withThrowable[OMIParserError]("O-MI Parser error: Unknown msgformat: error. Do not how to parse content inside msg element.")
+        ) must beFailedTry.withThrowable[OMIParserError]("O-MI Parser error: Unknown msgformat: error. Do not know how to parse content inside msg element.")
       }
       "with unexpected event before msg" >>{
         buildFromEvents( 
@@ -257,7 +257,7 @@ class OMIEventBuilderTest extends Specification {
             EndElement("msg"),
             EndElement("call")
           )
-        ) must beFailedTry.withThrowable[OMIParserError]("O-MI Parser error: Unknown msgformat: error. Do not how to parse content inside msg element.")
+        ) must beFailedTry.withThrowable[OMIParserError]("O-MI Parser error: Unknown msgformat: error. Do not know how to parse content inside msg element.")
       }
       "with unexpected event before msg" >>{
         buildFromEvents( 
@@ -346,7 +346,7 @@ class OMIEventBuilderTest extends Specification {
             EndElement("msg"),
             EndElement("delete")
           )
-        ) must beFailedTry.withThrowable[OMIParserError]("O-MI Parser error: Unknown msgformat: error. Do not how to parse content inside msg element.")
+        ) must beFailedTry.withThrowable[OMIParserError]("O-MI Parser error: Unknown msgformat: error. Do not know how to parse content inside msg element.")
       }
       "with unexpected event before msg" >>{
         buildFromEvents( 

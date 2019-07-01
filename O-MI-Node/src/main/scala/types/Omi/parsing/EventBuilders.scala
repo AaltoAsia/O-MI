@@ -146,7 +146,7 @@ class WriteEventBuilder( val ttl: Duration, val previous: Option[EventBuilder[_]
               case "odf" =>
                 position = OpenObjects
                 this
-              case unknown: String => throw OMIParserError(s"Unknown msgformat: $unknown. Do not how to parse content inside msg element.")
+              case unknown: String => throw OMIParserError(s"Unknown msgformat: $unknown. Do not know how to parse content inside msg element.")
             }
           case endElement: EndElement if endElement.localName == "msg" =>
             position = CloseRequest
@@ -294,7 +294,7 @@ class DeleteEventBuilder( val ttl: Duration, val previous: Option[EventBuilder[_
               case "odf" =>
                 position = OpenObjects
                 this
-              case unknown: String => throw OMIParserError(s"Unknown msgformat: $unknown. Do not how to parse content inside msg element.")
+              case unknown: String => throw OMIParserError(s"Unknown msgformat: $unknown. Do not know how to parse content inside msg element.")
             }
           case endElement: EndElement if endElement.localName == "msg" =>
             position = CloseRequest
@@ -456,9 +456,9 @@ class ReadEventBuilder( val ttl: Duration, val previous: Option[EventBuilder[_]]
               case Some("odf") =>
                 new ODFEventBuilder(Some(this),receiveTime)
               case Some(unknown: String) => 
-                throw OMIParserError(s"Unknown msgformat: $unknown. Do not how to parse content inside msg element.")
+                throw OMIParserError(s"Unknown msgformat: $unknown. Do not know how to parse content inside msg element.")
               case None =>
-                throw OMIParserError(s"No msgformat. Do not how to parse content inside msg element.")
+                throw OMIParserError(s"No msgformat. Do not know how to parse content inside msg element.")
             }
           case endElement: EndElement if endElement.localName == "msg" =>
             position = CloseRequest
@@ -753,7 +753,7 @@ class ResultEventBuilder( val previous: Option[EventBuilder[_]], implicit val re
               msgformat match {
                 case Some("odf") =>
                   new ODFEventBuilder(Some(this),receiveTime)
-                case Some(unknown: String) => throw OMIParserError(s"Unknown msgformat: $unknown. Do not how to parse content inside msg element.")
+                case Some(unknown: String) => throw OMIParserError(s"Unknown msgformat: $unknown. Do not know how to parse content inside msg element.")
                 case None =>
                   throw OMIParserError(s"No msgformat for msg element in result element.")
               }
