@@ -81,7 +81,7 @@ class OmiServiceImpl(
   } with OmiService {
 
   //example auth API service code in java directory of the project
-  if (settings.enableExternalAuthorization) {
+  if( settings.enableExternalAuthorization) {
     log.info("External Auth API v1 module enabled")
     log.info(s"External Authorization port ${settings.externalAuthorizationPort}")
     log.info(s"External Authorization useHttps ${settings.externalAuthUseHttps}")
@@ -89,7 +89,7 @@ class OmiServiceImpl(
   }
 
   //example auth API service code in java directory of the project
-  if (settings.AuthApiV2.enable) {
+  if( settings.AuthApiV2.enable) {
     log.info("External Auth API v2 modules enabled")
     log.info(s"External Auth API settings ${settings.AuthApiV2}")
     registerApi(new AuthAPIServiceV2(singleStores.hierarchyStore, settings, system, materializer))
@@ -518,7 +518,6 @@ trait OmiService
       //entity(as[Source[String]]) { requestString => // XML and O-MI parsed later
         extractClientIP { user =>
           val response = handleRequest(hasPermissionTest, requestSource.map{ bStr: ByteString => bStr.decodeString("UTF-8")}, remote = user) //.map{ ns => xmlH ++ ns }
-          //val marshal = ToResponseMarshallable(response)(Marshaller.futureMarshaller(xmlCT))
           complete(HttpResponse(entity=chunkedStream(response)))
         }
       }
@@ -528,25 +527,81 @@ trait OmiService
   //TODO: Filter the field msg and decode value
   /**
     * Receives POST at root with O-MI compliant msg parameter.
+    */
   val postFormXMLRequest: Route = post {
     makePermissionTestFunction() { hasPermissionTest =>
-      formFields("msg".as[String]) { requestString =>
+      headerValue{
+        header: HttpHeader =>
+          header match {
+            case ct: headers.`Content-Type` if ct.is("application/x-www-form-urlencoded") => 
+              Some(true)
+            case other => None
+          }
+    }{ correctCT =>
+      extractDataBytes { requestSource =>
         extractClientIP { user =>
+          val decodedSource = requestSource
+            .map{ bStr: ByteString => bStr.decodeString("UTF-8")}
+            .statefulMapConcat{ () =>
+              var msgHandled = false
+              var bufferString =""
+              str: String => {
+                bufferString += str
+                if( !msgHandled ){
+                  if( bufferString.startsWith("msg=") ){
+                    val (_,content) = bufferString.splitAt("msg=".size)
+                    bufferString = content
+                    msgHandled = true
+                  } 
+                  Vector.empty
+                } else { 
+                  if( bufferString.contains("%") ){
+                    def decode(str: String, result: String = ""): String ={
+                      val i = str.indexOf("%")
+                      if( i > -1 ){
+                        if( i + 2 >= str.size ){
+                          bufferString = str
+                          result
+                        } else {
+                          var (res: String, tail: String) = bufferString.splitAt(i)
+                          val encoded = tail.slice(1,3)
+                          val value = new String(Array(Integer.parseInt(tail,16).toByte),"utf-8")
+                          res = res + value
+                          decode(tail.drop(3), result + res)
+                        }
+                      } else {
+                        bufferString = ""
+                        result
+                      }
+                    }
+                    val decoded = decode( bufferString )
+                    if( decoded.nonEmpty){
+                      Vector(decoded)
+                    } else {
+                      Vector.empty
+                    } 
+                  } else {
+                    val res = Vector(bufferString)
+                    bufferString = ""
+                    res
+                  }
+                }
+              }
+            }
 
-          val response = handleRequest(hasPermissionTest, requestString, remote = user) //.map{ ns => xmlH ++ ns }
+          val response = handleRequest(hasPermissionTest, decodedSource, remote = user) //.map{ ns => xmlH ++ ns }
           complete(HttpResponse(entity=chunkedStream(response)))
         }
       }
     }
+    }
   }
-    */
 
   // Combine all handlers
   val myRoute: Route = corsEnabled {
     path("") {
       webSocketUpgrade ~
-        //TODO: Fix for streaming
-        //postFormXMLRequest ~
+        postFormXMLRequest ~
         postXMLRequest ~
         helloWorld
     } ~
