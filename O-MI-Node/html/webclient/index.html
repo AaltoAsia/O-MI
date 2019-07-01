@@ -175,7 +175,8 @@
         codeMirrorExtension: ['CodeMirror', 'jQuery', 'CodeMirror.modes.xml', 'CodeMirror.modes.javascript'],
         '$.fn.datetimepicker': ['jQuery', 'moment'],
         Initialize: ['jQuery', 'CodeMirror', '$.fn.modal', 'jQuery.jstree', '$.fn.datetimepicker'],
-        FormLogic: ['jQuery', 'Initialize','CodeMirror'],
+        requests: ['Initialize'],
+        FormLogic: ['jQuery', 'Initialize','CodeMirror', 'requests'],
         newInfoItemForm: ['Initialize']
       },
     }, function(success, failed){
