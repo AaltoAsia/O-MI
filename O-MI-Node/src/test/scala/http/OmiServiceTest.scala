@@ -92,7 +92,7 @@ class OmiServiceTest
 
         omiReturn400(response)
         val description = resp.\("response").\("result").\("return").\@("description")
-        description must startWith("Schema error:")
+        description must startWith("O-MI Parser error:")
       }
     }
 
@@ -121,7 +121,7 @@ class OmiServiceTest
 
         omiReturn400(response)
         val description = resp.\("response").\("result").\("return").\@("description")
-        description must startWith("Schema error:")
+        description must startWith("O-DF Parser error:")
       }
     }
 
