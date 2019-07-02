@@ -294,7 +294,6 @@ import utils._
     private var complete: Boolean = false 
     final def isComplete: Boolean = previous.isEmpty && complete
     def build: InfoItem = {
-      println( s"ii $path values: ${values.mkString("\n")}")
       InfoItem(
         nameAttribute,
         path,
@@ -455,7 +454,6 @@ import utils._
                       dateTimeStrToTimestamp(str)
                     } match {
                       case Failure(t) =>
-                        println(t)
                         throw ODFParserError("Invalid dateTime for value.")
                       case Success(ts) => ts
                     }

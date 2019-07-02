@@ -52,7 +52,6 @@ object OMIStreamParser {
       setHandler(out, new OutHandler {
         override def onPull(): Unit = {
           if( isClosed(in)) {
-            println("Inlet closed, pull")
             //???
           } else {
             pull(in)
@@ -75,11 +74,9 @@ object OMIStreamParser {
             state match {
               case builder: EnvelopeEventBuilder if builder.isComplete  =>
                 if( !done ){
-                  println("Envelope complete")
                   done = true
                   emit(out,builder.build )
                 } else {
-                  println(s"Envelope completed again? $event")
                 }
               case other: EventBuilder[_] =>
                 if( other.isComplete )
@@ -87,15 +84,11 @@ object OMIStreamParser {
             }
           }.recover{
             case error: OMIParserError => 
-              println("parser fail")
               failStage( error)
             case t: Throwable => 
-              println(s"Something else $t")
-              println(s"Something else $state")
               failStage( t)
           }
           if( isClosed(in)) {
-            println("Inlet closed")
             //???
           } else {
             pull(in)

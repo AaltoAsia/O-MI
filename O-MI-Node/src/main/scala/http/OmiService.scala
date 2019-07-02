@@ -517,7 +517,7 @@ trait OmiService
       extractDataBytes { requestSource =>
       //entity(as[Source[String]]) { requestString => // XML and O-MI parsed later
         extractClientIP { user =>
-          val response = handleRequest(hasPermissionTest, requestSource.map{ bStr: ByteString => bStr.decodeString("UTF-8")}, remote = user) //.map{ ns => xmlH ++ ns }
+          val response = handleRequest(hasPermissionTest, requestSource.via(byteStringToUTF8Flow), remote = user) //.map{ ns => xmlH ++ ns }
           complete(HttpResponse(entity=chunkedStream(response)))
         }
       }
@@ -540,9 +540,18 @@ trait OmiService
     }{ correctCT =>
       extractDataBytes { requestSource =>
         extractClientIP { user =>
-          val decodedSource = requestSource
-            .map{ bStr: ByteString => bStr.decodeString("UTF-8")}
-            .statefulMapConcat{ () =>
+          val decodedSource = requestSource.via(byteStringToUTF8Flow).via(urlDecoderFlow)
+
+          val response = handleRequest(hasPermissionTest, decodedSource, remote = user) //.map{ ns => xmlH ++ ns }
+          complete(HttpResponse(entity=chunkedStream(response)))
+        }
+      }
+    }
+    }
+  }
+  def byteStringToUTF8Flow = Flow[ByteString].map{ bStr: ByteString => bStr.decodeString("UTF-8")}
+
+  def urlDecoderFlow = Flow[String].statefulMapConcat{ () =>
               var msgHandled = false
               var bufferString =""
               str: String => {
@@ -556,22 +565,23 @@ trait OmiService
                   Vector.empty
                 } else { 
                   if( bufferString.contains("%") ){
-                    def decode(str: String, result: String = ""): String ={
-                      val i = str.indexOf("%")
+                    def decode(encodedString: String, result: String = ""): String ={
+                      val i = encodedString.indexOf("%")
                       if( i > -1 ){
-                        if( i + 2 >= str.size ){
-                          bufferString = str
+                        if( i + 2 >= encodedString.size ){
+                          bufferString = encodedString
                           result
                         } else {
-                          var (res: String, tail: String) = bufferString.splitAt(i)
+                          var (res: String, tail: String) = encodedString.splitAt(i)
                           val encoded = tail.slice(1,3)
-                          val value = new String(Array(Integer.parseInt(tail,16).toByte),"utf-8")
+                          val value = new String(Array(Integer.parseInt(encoded,16).toByte),"utf-8")
                           res = res + value
                           decode(tail.drop(3), result + res)
                         }
                       } else {
                         bufferString = ""
-                        result
+                        val res =result + encodedString
+                        res
                       }
                     }
                     val decoded = decode( bufferString )
@@ -587,15 +597,11 @@ trait OmiService
                   }
                 }
               }
+            }.mapError{
+              case error: java.lang.NumberFormatException => 
+                new ParseError("Invalid url encoding: " + error.getMessage, "")
+              case error => error
             }
-
-          val response = handleRequest(hasPermissionTest, decodedSource, remote = user) //.map{ ns => xmlH ++ ns }
-          complete(HttpResponse(entity=chunkedStream(response)))
-        }
-      }
-    }
-    }
-  }
 
   // Combine all handlers
   val myRoute: Route = corsEnabled {
