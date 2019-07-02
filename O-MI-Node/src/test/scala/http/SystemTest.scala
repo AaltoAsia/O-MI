@@ -120,7 +120,7 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
       case t: Throwable =>
         system.log.error(t, "AfterAll encountered:")
     }
-    Await.ready(future, 2 seconds)
+    Await.ready(future, 10 seconds)
     dbConnection.destroy()
     Await
       .ready(singleStores.erasePathHierarchy(types.Path("/Objects")),
@@ -461,9 +461,8 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
                 </msg>
               </read>
             </omiEnvelope>""")
-          //val result = wsProbe.expectNoMsg(Duration.apply(5, "seconds"))
           // 3 responses + 1 confirmation
-          val result = wsProbe.receiveN(4, 10 seconds)
+          val result = wsProbe.receiveN(4, 30 seconds)
           wsServer.close()
           result.length === 4
         }
@@ -503,18 +502,18 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
               </msg>
             </read>
           </omiEnvelope>""")
-          wsProbe1.receiveN(1, 5 seconds) //responses for subscriptions
-          wsProbe2.receiveN(1, 5 seconds)
+          wsProbe1.receiveN(1, 10 seconds) //responses for subscriptions
+          wsProbe2.receiveN(1, 10 seconds)
           val res = for{
             _ <- wsServer2.offer(writeMessage("6")) //WS2
             _ <- wsServer2.offer(writeMessage("7")) //WS2
             _ <- wsServer1.offer(writeMessage("8")) //WS1
             r <- wsServer1.offer(writeMessage("9")) //WS1
           } yield r
-          Await.ready(res, 10 seconds)
+          Await.ready(res, 20 seconds)
 
-          val res1 = wsProbe1.receiveN(6, 10 seconds) //4 subscription updates and 2 write confirmations
-          val res2 = wsProbe2.receiveN(2, 10 seconds) //2 write confirmations(subscribed to unchanging ii)
+          val res1 = wsProbe1.receiveN(6, 30 seconds) //4 subscription updates and 2 write confirmations
+          val res2 = wsProbe2.receiveN(2, 30 seconds) //2 write confirmations(subscribed to unchanging ii)
           wsServer1.close()
           wsServer2.close()
           res1.length === 6
@@ -527,11 +526,11 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
         val wsServer1 = new WsTestCallbackServer(wsProbe.ref, "localhost", 8787)
         val wsServer2 = new WsTestCallbackServer(wsProbe.ref, "localhost", 8788)
         val (bind1, unbind1) = wsServer1.bind()
-        Await.ready(bind1, 5 seconds)
+        Await.ready(bind1, 10 seconds)
         "return correct number of responses for event subscription" >> {
           val m1 = getPostRequest(
             """<?xml version="1.0" encoding="UTF-8"?>
-              <omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="15">
+              <omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="30">
               <read msgformat="odf" interval="-1" callback="ws://localhost:8787">
               <msg>
                 <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/">
@@ -545,20 +544,20 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
           </omiEnvelope>
           """)
           val res1 = http.singleRequest(m1)
-          Await.result(res1, 5 seconds)
+          Await.result(res1, 10 seconds)
           for {
             _ <- http.singleRequest(getPostRequest(writeMessage("2")))
             _ <- http.singleRequest(getPostRequest(writeMessage("3")))
             _ <- http.singleRequest(getPostRequest(writeMessage("4")))
             f <- http.singleRequest(getPostRequest(writeMessage("5")))
           } yield f
-          val res3 = wsProbe.receiveN(4, 10 seconds)
+          val res3 = wsProbe.receiveN(4, 30 seconds)
           res3.length === 4 // 4 write confirmations and 4 subscription updates
         }
         "return correct number of responses for two event subscriptions with same callback address" >> {
           val m1 = getPostRequest(
             """<?xml version="1.0" encoding="UTF-8"?>
-              <omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="15">
+              <omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="30">
               <read msgformat="odf" interval="-1" callback="ws://localhost:8787">
               <msg>
                 <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/">
@@ -573,15 +572,15 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
           """)
           val res1 = http.singleRequest(m1)
           val res2 = http.singleRequest(m1)
-          Await.result(res1, 5 seconds)
-          Await.result(res2, 5 seconds)
+          Await.result(res1, 10 seconds)
+          Await.result(res2, 10 seconds)
           for {
             _ <- http.singleRequest(getPostRequest(writeMessage("2")))
             _ <- http.singleRequest(getPostRequest(writeMessage("3")))
             _ <- http.singleRequest(getPostRequest(writeMessage("4")))
             f <- http.singleRequest(getPostRequest(writeMessage("5")))
           } yield f
-          val res3 = wsProbe.receiveN(8, 12 seconds)
+          val res3 = wsProbe.receiveN(8, 30 seconds)
           res3.length === 8 // 4 write confirmations and 4 subscription updates
         }
         "return correct number of responses for interval subscription: ttl=7 interval=2" >> {
@@ -600,8 +599,7 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
               </read>
             </omiEnvelope>""")
           http.singleRequest(m1)
-          val result = wsProbe.receiveN(3, 15 seconds)
-          //val result = wsProbe.expectNoMsg(Duration.apply(5, "seconds"))
+          val result = wsProbe.receiveN(3, 20 seconds)
           // 3 responses
           result.length === 3
         }
@@ -638,12 +636,10 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
             http.singleRequest(m1)
             http.singleRequest(m2)
             val result = wsProbe.receiveN(5, 20 seconds)
-            //val result = wsProbe.expectNoMsg(Duration.apply(5, "seconds"))
-            // 3 responses
             result.length === 5
           }
         val (bind2, unbind2) = wsServer2.bind()
-        Await.ready(bind2, 5 seconds)
+        Await.ready(bind2, 10 seconds)
         "return correct number of responses for multiple interval subscription: ttl=7 interval=2 and ttl=8 and interval=3 with different callback address" >>
           {
             val m1 = getPostRequest(
@@ -676,8 +672,7 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
             </omiEnvelope>""")
             http.singleRequest(m1)
             http.singleRequest(m2)
-            val result = wsProbe.receiveN(5, 20 seconds)
-            //val result = wsProbe.expectNoMsg(Duration.apply(5, "seconds"))
+            val result = wsProbe.receiveN(5, 30 seconds)
             // 3 responses
             result.length === 5
           }
@@ -714,15 +709,15 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
           """)
           val res1 = http.singleRequest(m1)
           val res2 = http.singleRequest(m2)
-          Await.result(res1, 5 seconds)
-          Await.result(res2, 5 seconds)
+          Await.result(res1, 15 seconds)
+          Await.result(res2, 15 seconds)
           for {
             _ <- http.singleRequest(getPostRequest(writeMessage("2")))
             _ <- http.singleRequest(getPostRequest(writeMessage("3")))
             _ <- http.singleRequest(getPostRequest(writeMessage("4")))
             f <- http.singleRequest(getPostRequest(writeMessage("5")))
           } yield f
-          val res3 = wsProbe.receiveN(8, 12 seconds)
+          val res3 = wsProbe.receiveN(8, 30 seconds)
           res3.length === 8 // 4 write confirmations and 4 subscription updates
         }
         step{
