@@ -162,7 +162,11 @@ trait DBWriteHandler extends DBHandlerBase {
       oldValueOpt = singleStores.readValue(path)
       value <- info.values
     } yield (path, value, oldValueOpt)
-    val pollFuture = Future.sequence(pathValueOldValueTuples.map {
+    val pollFuture = Future.sequence(
+      pathValueOldValueTuples.sortBy{
+        case ( _, value, _) =>
+          value.timestamp.getTime
+      }.map{
       case (path,value , oldValueOpt) =>
         oldValueOpt.flatMap(oldValue =>
           handlePollData(path, value, oldValue))
