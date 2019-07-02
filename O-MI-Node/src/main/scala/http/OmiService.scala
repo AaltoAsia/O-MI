@@ -287,8 +287,8 @@ trait OmiService
 
       val originalReq = RawRequestWrapper(requestSource, UserInfo(remoteAddress = Some(remote)))
 
-      val omiVersion = OmiVersion.fromNameSpace(originalReq.omiEnvelope.namespace.getOrElse("http://www.opengroup.org/xsd/omi/2.0/"))
-      val odfVersion = originalReq.odfObjects.map{ objs => OdfVersion.fromNameSpace(objs.namespace.getOrElse("http://www.opengroup.org/xsd/odf/2.0/") )}
+      val omiVersion = OmiVersion.fromNameSpace(originalReq.omiEnvelope.namespace.getOrElse("default"))
+      val odfVersion = originalReq.odfObjects.map{ objs => OdfVersion.fromNameSpace(objs.namespace.getOrElse("default") )}
 
       val requestID = Await.result(
         singleStores.addRequestInfo(startTime.getTime()*1000 + originalReq.handleTTL.toSeconds, omiVersion, odfVersion),
@@ -332,7 +332,7 @@ trait OmiService
                   defineCallbackForRequest(request, currentConnectionCallback).flatMap {
                     request: OmiRequest => 
                       //timer.step("Callback defined")
-                      requestStorage ! AddInfos( requestID, Seq( RequestTimestampInfo("callback-time",  currentTimestamp)/*, RequestStringInfo("omi-version", request.version)*/))
+                      requestStorage ! AddInfos( requestID, Seq( RequestTimestampInfo("callback-time",  currentTimestamp)))
                       val handle: Future[ResponseRequest] = handleOmiRequest(request.withRequestID(Some(requestID)))
                       handle.map{
                         response =>
