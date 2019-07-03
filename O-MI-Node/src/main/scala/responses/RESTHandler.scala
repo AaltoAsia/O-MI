@@ -258,7 +258,10 @@ object RESTHandler {
                 )
               ).view ++ obj.ids.view.flatMap{
                 id: QlmID => id.asXMLEvents("id")
-                } ++ odf.getChilds(obj.path).flatMap{
+              } ++ obj.descriptions.headOption.map{
+                case desc: Description =>
+                  Vector(StartElement("description"),EndElement("description"))
+              }.toSeq.flatten ++ odf.getChilds(obj.path).flatMap{
                 case subObj: Object =>
                   Vector(
                     StartElement(
