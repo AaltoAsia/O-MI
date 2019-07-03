@@ -504,7 +504,7 @@ class AuthServiceTest(implicit ee: ExecutionEnv) extends AuthServiceTestEnv{
           .thenReturns(Future.successful(authzResponse2))
 
         Try{
-          isAuthorizedForRawRequest(Post(tokenUri), ReadAll.asXML.toString)
+          isAuthorizedForRawRequest(Post(tokenUri), ReadAll.rawSource)
         } must beFailedTry
       }
       "work correctly for auth and authz in failure case (denied=[\"Objects\"])" in new AuthAPIServiceMock(config1) {
@@ -516,7 +516,7 @@ class AuthServiceTest(implicit ee: ExecutionEnv) extends AuthServiceTestEnv{
           .thenReturns(Future.successful(authzResponse2))
 
         Try{
-          isAuthorizedForRawRequest(Post(tokenUri), ReadAll.asXML.toString)
+          isAuthorizedForRawRequest(Post(tokenUri), ReadAll.rawSource)
         } must beFailedTry
       }
       "work correctly for auth skipping" in todo

@@ -462,23 +462,22 @@ extends EventBuilder[Value[_]]{
         event match {
           case startElement: StartElement if startElement.localName == "value" =>
             typeAttribute = startElement.attributes.get("type").getOrElse(typeAttribute)
-            val dateTime = startElement.attributes.get("dateTime").map{
-              str =>
-                Try{
-                  dateTimeStrToTimestamp(str)
-                  } match {
-                    case Failure(t) =>
-                      throw ODFParserError("Invalid dateTime for value.")
-                    case Success(ts) => ts
-                  }
+            val dateTime = Try{
+              startElement.attributes.get("dateTime").map{
+                str => dateTimeStrToTimestamp(str)
+              }
+            } match {
+              case Failure(t) =>
+                throw ODFParserError("Invalid dateTime for value.")
+              case Success(ts) => ts
             }
-            val unixTime = startElement.attributes.get("unixTime").map{
-              str => 
-                Try{
+            val unixTime = Try{
+              startElement.attributes.get("unixTime").map{
+                str => 
                   new Timestamp((str.toDouble * 1000.0).toLong)
-                  }.getOrElse{
-                    throw ODFParserError("Invalid unixTime for value.")
-                  }
+              }
+            }.getOrElse{
+              throw ODFParserError("Invalid unixTime for value.")
             }
             timestamp = solveTimestamp(dateTime,unixTime,receiveTime)
             position = Content
