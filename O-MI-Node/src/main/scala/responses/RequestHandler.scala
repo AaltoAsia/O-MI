@@ -30,7 +30,7 @@ import http.OmiConfigExtension
 import types.OmiTypes._
 import types.odf.ImmutableODF
 import types.Path
-import http.RequestStore._
+import http.TemporaryRequestInfoStore._
 import utils._
 
 object RequestHandler {

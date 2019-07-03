@@ -289,7 +289,7 @@ class OmiNodeCLI(
       Await.result(result, commandTimeout)
     } else {
       log.info(s"Trying to remove path $pathOrId")
-      val removeFuture: Future[Seq[Int]] = removeHandler.handlePathRemove(Seq(Path(pathOrId)))
+      val removeFuture: Future[Iterable[Int]] = removeHandler.handlePathRemove(Seq(Path(pathOrId)))
       Await.ready(removeFuture, 10 seconds)
       removeFuture.value match {
         case Some(Success(x)) if x.sum > 0 => {

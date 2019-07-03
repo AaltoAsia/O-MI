@@ -5,19 +5,24 @@ import akka.actor.{ActorRef, ActorSystem}
 import akka.event.LoggingAdapter
 import akka.pattern.ask
 import akka.util.Timeout
+import scala.concurrent.Future
+import scala.concurrent.duration.{Duration, FiniteDuration, MILLISECONDS}
+import scala.util.{Failure, Success}
+import collection.immutable.LongMap
+
 import journal.Models.SaveSnapshot
 import http.OmiConfigExtension
 import types.Path
 import types.odf._
 import journal._
+import types.OmiTypes.Version._
+import types.OmiTypes.ResponseRequest
 
-import scala.concurrent.Future
-import scala.concurrent.duration.{Duration, FiniteDuration, MILLISECONDS}
-import scala.util.{Failure, Success}
 import LatestStore._
 import HierarchyStore._
 import SubStore._
 import PollDataStore._
+import RequestInfoStore._
 
 trait SingleStores {
   implicit val system: ActorSystem
@@ -60,6 +65,7 @@ trait SingleStores {
     }
     res
   }
+
 
   //LatestStore
   def writeValue(path: Path, value: Value[Any]): Future[Unit] =
@@ -152,10 +158,29 @@ trait SingleStores {
   def checkSubData(id: Long): Future[Map[Path,Seq[Value[Any]]]] =
     (pollDataStore ? CheckSubscriptionData(id)).mapTo[Map[Path,Seq[Value[Any]]]]
 
+  def addRequestInfo(endTime: Long, omiVersion: OmiVersion, odfVersion: Option[OdfVersion]): Future[Long] =
+    (requestInfoStore ? AddInfo(endTime, omiVersion, odfVersion)).mapTo[Long]
+
+  val DefaultRequestInfo = PRequestInfo(omiVersion=1.0, odfVersion=None) // TODO: Default version to configuration?
+
+  def getRequestInfo(response: ResponseRequest): Future[PRequestInfo] =
+    response.requestID.map{id => getRequestInfo(id)}
+        .getOrElse(Future.successful(DefaultRequestInfo))
+
+  def getRequestInfo(requestId: Long): Future[PRequestInfo] =
+    (requestInfoStore ? GetInfo(requestId)).mapTo[PRequestInfo]
+
+  def peekRequestInfo(requestId: Long): Future[PRequestInfo] =
+    (requestInfoStore ? PeekInfo(requestId)).mapTo[PRequestInfo]
+
+  def peekAllRequestInfo(): Future[LongMap[PRequestInfo]] =
+    (requestInfoStore ? PeekAll()).mapTo[LongMap[PRequestInfo]]
+
   val latestStore: ActorRef
   val hierarchyStore: ActorRef
   val subStore: ActorRef
   val pollDataStore: ActorRef
+  val requestInfoStore: ActorRef
 
   def buildODFFromValues(items: Seq[(Path, Value[Any])]): ODF = {
     ImmutableODF(items map { case (path, value) =>
@@ -252,5 +277,6 @@ object SingleStores{
     val hierarchyStore: ActorRef = system.actorOf(HierarchyStore.props())
     val subStore: ActorRef = system.actorOf(SubStore.props())
     val pollDataStore: ActorRef = system.actorOf(PollDataStore.props())
+    val requestInfoStore: ActorRef = system.actorOf(RequestInfoStore.props())
   }
 } 

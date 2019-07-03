@@ -15,7 +15,7 @@ import scala.collection.immutable.HashMap
 import scala.collection.SeqView
 import scala.util.{Failure, Success, Try}
 
-trait Value[+V] {
+trait Value[+V] extends Element{
   val value: V
   val typeAttribute: String
   val timestamp: Timestamp
@@ -86,7 +86,7 @@ case class ODFValue(
           )
       )
       ).view ++
-    value.asXMLEvents ++
+    value.asXMLEvents() ++
     Seq(
       EndElement("value")
     )

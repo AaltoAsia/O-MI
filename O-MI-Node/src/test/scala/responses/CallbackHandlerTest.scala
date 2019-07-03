@@ -7,7 +7,7 @@ import akka.testkit.TestProbe
 import http.OmiConfig
 import org.specs2.concurrent.ExecutionEnv
 import org.specs2.mutable._
-import testHelpers.{Actorstest, SystemTestCallbackServer}
+import testHelpers.{Actorstest, SystemTestCallbackServer, DummySingleStores}
 import types.OmiTypes._
 
 
@@ -29,7 +29,7 @@ class CallbackHandlerTest(implicit ee: ExecutionEnv) extends Specification {
       val settings = OmiConfig(system)
 
       val materializer = ActorMaterializer()(system)
-      val callbackHandler = new CallbackHandler(settings)(system, materializer)
+      val callbackHandler = new CallbackHandler(settings, new DummySingleStores())(system, materializer)
       callbackHandler.sendCallback(HTTPCallback(Uri(s"http://localhost:$port")), msg)
 
       probe.expectMsg(ttl, Option(msg.asXML))
@@ -44,7 +44,7 @@ class CallbackHandlerTest(implicit ee: ExecutionEnv) extends Specification {
 
       val settings = OmiConfig(system)
       val materializer = ActorMaterializer()(system)
-      val callbackHandler = new CallbackHandler(settings)(system, materializer)
+      val callbackHandler = new CallbackHandler(settings, new DummySingleStores())(system, materializer)
       callbackHandler.sendCallback(HTTPCallback(Uri(s"http://localhost:$port")), msg)
 
       Thread.sleep(500)

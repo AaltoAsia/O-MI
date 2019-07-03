@@ -23,6 +23,8 @@ import akka.http.scaladsl.model.headers
 import akka.http.scaladsl.client.RequestBuilding._
 //import akka.util.{ByteString, Timeout}
 import akka.util.Timeout
+import akka.stream.ActorMaterializer
+import akka.stream.scaladsl._
 import org.specs2.specification.Scope
 import org.specs2.matcher.MustThrownExpectations
 import scala.collection.immutable
@@ -39,7 +41,7 @@ class AuthAPIServiceMock(
     DummyHierarchyStore(hierarchyStored)
     , new OmiConfigExtension(config.withFallback(Actorstest.silentLoggerConfFull))
     , system
-    , mock[ActorMaterializer]
+    , ActorMaterializer()
     )
   with Mockito
   with MustThrownExpectations
@@ -49,6 +51,7 @@ class AuthAPIServiceMock(
 }
 class AuthServiceTestEnv extends Specification with AfterAll with Mockito {
   implicit val system = Actorstest.createAs()
+  implicit val materializer = ActorMaterializer()
 
   def afterAll = {
     system.terminate()
@@ -297,7 +300,7 @@ class AuthServiceTest(implicit ee: ExecutionEnv) extends AuthServiceTestEnv{
 
     "extractParameter" should {
 
-      val omi = Some(RawRequestWrapper(ReadAll.asXML.toString, UserInfo()))
+      val omi = Some(RawRequestWrapper(ReadAll.rawSource, UserInfo()))
       val base = httpRequest
 
       "extract from HttpRequest" >> {
@@ -438,13 +441,13 @@ class AuthServiceTest(implicit ee: ExecutionEnv) extends AuthServiceTestEnv{
         val result = Authorized(UserInfo(None, Some("test")))
         doReturn(result).when(authTest).isAuthorizedForOdfRequest(anyObject, anyObject)
 
-        authTest.isAuthorizedForRawRequest(httpRequest, ReadAll.asXML.toString) === result
+        authTest.isAuthorizedForRawRequest(httpRequest, ReadAll.rawSource) === result
 
         there was one(authTest).isAuthorizedForOdfRequest(anyObject, anyObject)
       }
       "return Authorized for other requests" in {
         AuthTest().isAuthorizedForRawRequest(
-          httpRequest, CancelRequest(Vector(1)).asXML.toString
+          httpRequest, CancelRequest(Vector(1)).rawSource
         ) === Authorized(UserInfo(None))
       }
     }
@@ -490,7 +493,7 @@ class AuthServiceTest(implicit ee: ExecutionEnv) extends AuthServiceTestEnv{
           .returns(Future.successful(authnResponse))
           .thenReturns(Future.successful(authzResponse))
         
-        isAuthorizedForRawRequest(Post(tokenUri), ReadAll.asXML.toString) === Changed(ReadAll, UserInfo(None, Some("test")))
+        isAuthorizedForRawRequest(Post(tokenUri), ReadAll.rawSource) === Changed(ReadAll, UserInfo(None, Some("test")))
       }
       "work correctly for auth and authz in failure case (allowed=[])" in new AuthAPIServiceMock(config1) {
         val authzResponse2 = HttpResponse().withEntity(ContentTypes.`application/json`, 
@@ -501,7 +504,7 @@ class AuthServiceTest(implicit ee: ExecutionEnv) extends AuthServiceTestEnv{
           .thenReturns(Future.successful(authzResponse2))
 
         Try{
-          isAuthorizedForRawRequest(Post(tokenUri), ReadAll.asXML.toString)
+          isAuthorizedForRawRequest(Post(tokenUri), ReadAll.rawSource)
         } must beFailedTry
       }
       "work correctly for auth and authz in failure case (denied=[\"Objects\"])" in new AuthAPIServiceMock(config1) {
@@ -513,7 +516,7 @@ class AuthServiceTest(implicit ee: ExecutionEnv) extends AuthServiceTestEnv{
           .thenReturns(Future.successful(authzResponse2))
 
         Try{
-          isAuthorizedForRawRequest(Post(tokenUri), ReadAll.asXML.toString)
+          isAuthorizedForRawRequest(Post(tokenUri), ReadAll.rawSource)
         } must beFailedTry
       }
       "work correctly for auth skipping" in todo

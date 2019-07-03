@@ -8,22 +8,25 @@ import akka.http.scaladsl.model.RemoteAddress
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model.headers.{RawHeader, `Remote-Address`}
 import akka.http.scaladsl.testkit.Specs2RouteTest
+import akka.stream.scaladsl._
 import akka.pattern.ask
 import akka.util.Timeout
 import org.specs2.matcher.XmlMatchers
 import org.specs2.mutable.Specification
 import org.specs2.specification.BeforeAfterAll
+import org.specs2.concurrent.ExecutionEnv
 
 import scala.concurrent.Await
+import scala.concurrent._
 import scala.concurrent.duration.DurationInt
 import scala.xml._
 import database._
-import types.Path
+import types.{ParseError,Path}
 import org.specs2.matcher.Expectable
 import journal.LatestStore.ErasePathCommand
 
 
-class OmiServiceTest
+class OmiServiceTest(implicit ee: ExecutionEnv)
   extends Specification
     with XmlMatchers
     with Specs2RouteTest
@@ -92,7 +95,7 @@ class OmiServiceTest
 
         omiReturn400(response)
         val description = resp.\("response").\("result").\("return").\@("description")
-        description must startWith("Schema error:")
+        description must startWith("O-MI Parser error:")
       }
     }
 
@@ -121,7 +124,7 @@ class OmiServiceTest
 
         omiReturn400(response)
         val description = resp.\("response").\("result").\("return").\@("description")
-        description must startWith("Schema error:")
+        description must startWith("O-DF Parser error:")
       }
     }
 
@@ -608,5 +611,33 @@ class OmiServiceTest
     }
 
   }
+
+  "O-MI as form value" >> {
+    val correctMsg = """<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="0">""" +
+    """<read msgformat="odf"><msg><Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/"/></msg></read></omiEnvelope>"""
+
+    val testMsg = "msg=%3ComiEnvelope%20xmlns%3D%22http%3A%2F%2Fwww.opengroup.org%2Fxsd%2Fomi%2F1.0%2F%22%20version%3D" +
+    "%221.0%22%20ttl%3D%220%22%3E%3Cread%20msgformat%3D%22odf%22%3E%3Cmsg%3E%3CObjects%20xmlns%3D%22http%3A%2F%2Fwww.o" +
+    "pengroup.org%2Fxsd%2Fodf%2F1.0%2F%22%2F%3E%3C%2Fmsg%3E%3C%2Fread%3E%3C%2FomiEnvelope%3E"
+    "be parsed correctly" >> {
+      val sink = Sink.fold[String,String]("")(_ + _)
+      val source = akka.stream.scaladsl.Source.fromIterator[String](() => testMsg.grouped(20))
+      val decoded: Future[String] = source.via(urlDecoderFlow).runWith(sink)
+    
+      decoded must beEqualTo(correctMsg).await
+
+    }
+    
+    "should fail with malformed url encoding" >> {
+      val sink = Sink.fold[String,String]("")(_ + _)
+      val source = akka.stream.scaladsl.Source.fromIterator[String](() => "msg=%3ComiEnvelope%20xmlns%3D%22http%3A%2F%2Fwww.opengroup.org%2M".grouped(20))
+      val decoded: Future[String] = source.via(urlDecoderFlow).runWith(sink).recover{
+        case e => e.getMessage
+      }
+    
+      decoded must beEqualTo("Invalid url encoding: For input string: \"2M\"").await
+    }
+  }
+  
 }
 

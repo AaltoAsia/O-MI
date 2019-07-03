@@ -64,3 +64,5 @@ package object odf extends InfoItem.Builders {
   }
 
 }
+
+trait Element

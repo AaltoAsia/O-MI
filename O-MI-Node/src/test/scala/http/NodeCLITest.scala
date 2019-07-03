@@ -71,7 +71,7 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification {
 
     def writeOdf(odf: ImmutableODF) = Future.successful(())
     def takeSnapshot() = Future.successful(())
-    override def handlePathRemove(parentPaths: Seq[Path]): Future[Seq[Int]] = {
+    override def handlePathRemove(parentPaths: Iterable[Path]): Future[Seq[Int]] = {
       if (path == parentPaths.head || path.isAncestorOf(parentPaths.head)) {
         Future.successful(Seq(1)) //???
       } else {

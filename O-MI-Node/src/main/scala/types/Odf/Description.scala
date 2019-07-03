@@ -19,7 +19,7 @@ object Description {
 case class Description(
                         text: String,
                         language: Option[String] = None
-                      ) {
+                      ) extends Element {
   def union(other: Description): Description = {
     Description(
       if (other.text.nonEmpty) {

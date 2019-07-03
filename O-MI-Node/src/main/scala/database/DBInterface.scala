@@ -220,7 +220,7 @@ trait DB {
   def writeMany(data: Seq[InfoItem]): Future[OmiReturn]
 
   def writeMany(odf: ImmutableODF): Future[OmiReturn] = {
-    writeMany(odf.getNodes.collect { case ii: InfoItem => ii })
+    writeMany(odf.getNodes.collect { case ii: InfoItem => ii }.toSeq)
   }
 
   /**

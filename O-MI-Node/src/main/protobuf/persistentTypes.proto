@@ -1,6 +1,7 @@
 syntax = "proto3";
 
 import "scalapb/scalapb.proto";
+import "google/protobuf/wrappers.proto";
 
 option (scalapb.options) = {
   package_name: "database.journal"
@@ -234,5 +235,24 @@ message PPollIntervalSubscription {
 }
 message PRemovePollSubData {
     option (scalapb.message).extends = "database.journal.Models.Event";
+    fixed64 id = 1;
+}
+
+message PRequestInfo {
+    option (scalapb.message).extends = "database.journal.RequestInfoStore.Change";
+    fixed64 id = 1;
+    uint64 endTime = 2;
+    double omiVersion = 3;
+    google.protobuf.DoubleValue odfVersion = 4; // to get Option[Double]
+    google.protobuf.StringValue msgFormat = 5;
+}
+
+message PRequestStore {
+    //option (scalapb.message).extends = "database.journal.Models.Event";
+    map<fixed64,PRequestInfo> infos = 1;
+}
+
+message PRemoveInfo {
+    option (scalapb.message).extends = "database.journal.RequestInfoStore.Change";
     fixed64 id = 1;
 }

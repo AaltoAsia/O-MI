@@ -7,7 +7,6 @@ import akka.util.Timeout
 import org.specs2.matcher.XmlMatchers._
 import org.specs2.mutable._
 import org.specs2.specification.BeforeAfterAll
-import testHelpers.Actorstest
 import types.OdfTypes.{OdfInfoItem, OdfValue}
 import types.odf.ImmutableODF
 
@@ -22,11 +21,12 @@ import database._
 import journal.LatestStore.ErasePathCommand
 import journal.HierarchyStore.GetTree
 import http.OmiConfig
-import http.RequestStore
+import http.TemporaryRequestInfoStore
 import types.OdfTypes._
 import types.OmiTypes._
 import types._
 import types.odf.{NewTypeConverter, OldTypeConverter}
+import testHelpers.{Actorstest, DummySingleStores}
 
 import scala.concurrent.duration._
 
@@ -48,7 +48,7 @@ class SubscriptionTest extends Specification with BeforeAfterAll {
   implicit val system = testHelpers.Actorstest.createAs()
   implicit val materializer: ActorMaterializer = ActorMaterializer()(system)
   implicit val settings = OmiConfig(system)
-  implicit val callbackHandler: CallbackHandler = new CallbackHandler(settings)(system, materializer)
+  implicit val callbackHandler: CallbackHandler = new CallbackHandler(settings, new DummySingleStores())(system, materializer)
   val analytics = None
 
   implicit val singleStores = SingleStores(settings)
@@ -75,7 +75,7 @@ class SubscriptionTest extends Specification with BeforeAfterAll {
     "database-handler"
   )
   lazy val requestStore =system.actorOf(
-    RequestStore.props
+    TemporaryRequestInfoStore.props
   )
   val requestHandler = system.actorOf(
     RequestHandler.props(

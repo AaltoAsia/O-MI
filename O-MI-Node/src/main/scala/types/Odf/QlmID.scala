@@ -28,7 +28,7 @@ case class QlmID(
                   startDate: Option[Timestamp] = None,
                   endDate: Option[Timestamp] = None,
                   attributes: Map[String, String] = HashMap.empty
-                ) {
+                ) extends Element {
   def union(other: QlmID): QlmID = {
     assert(id == other.id)
     QlmID(

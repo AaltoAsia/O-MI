@@ -83,9 +83,9 @@ case class Objects(
     )
   }
 
-  implicit def asObjectsType(objects: Seq[ObjectType]): ObjectsType = {
+  implicit def asObjectsType(objects: Iterable[ObjectType]): ObjectsType = {
     ObjectsType(
-      objects,
+      objects.toSeq,
       attributes = attributesToDataRecord(attributes) ++ version.map {
         version: String => "@version" -> DataRecord(version)
       }
@@ -227,7 +227,7 @@ case class Object(
     }
   }
 
-  implicit def asObjectType(infoitems: Seq[InfoItemType], objects: Seq[ObjectType]): ObjectType = {
+  implicit def asObjectType(infoitems: Iterable[InfoItemType], objects: Iterable[ObjectType]): ObjectType = {
     ObjectType(
       /*Seq( QlmID(
         path.last, // require checks (also in OdfObject)
@@ -235,8 +235,8 @@ case class Object(
       )),*/
       ids.map(_.asQlmIDType), //
       descriptions.map(des => des.asDescriptionType).toVector,
-      infoitems,
-      objects,
+      infoitems.toSeq,
+      objects.toSeq,
       attributes = (
         attributesToDataRecord(attributes) ++ typeAttribute.map { n => "@type" -> DataRecord(n) })
     )
