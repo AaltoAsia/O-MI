@@ -29,6 +29,7 @@ import scala.collection.immutable
 import scala.concurrent.Future
 import com.typesafe.config._
 import http.OmiConfigExtension
+import util.Try
 
 class AuthAPIServiceMock(
     config: Config = ConfigFactory.empty()
@@ -501,7 +502,7 @@ class AuthServiceTest(implicit ee: ExecutionEnv) extends AuthServiceTestEnv{
 
         Try{
           isAuthorizedForRawRequest(Post(tokenUri), ReadAll.asXML.toString)
-        }.beFailedTry
+        } must beFailedTry
       }
       "work correctly for auth and authz in failure case (denied=[\"Objects\"])" in new AuthAPIServiceMock(config1) {
         val authzResponse2 = HttpResponse().withEntity(ContentTypes.`application/json`, 
@@ -513,7 +514,7 @@ class AuthServiceTest(implicit ee: ExecutionEnv) extends AuthServiceTestEnv{
 
         Try{
           isAuthorizedForRawRequest(Post(tokenUri), ReadAll.asXML.toString)
-        }.beFailedTry
+        } must beFailedTry
       }
       "work correctly for auth skipping" in todo
     }
