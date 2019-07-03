@@ -417,6 +417,8 @@ class AuthAPIServiceV2(
           _ <- Future.successful(
             log.debug(s"Authorization call successfull: ${authorizationResponse.toString.take(160)}...")
           )
+          if authorizationResponse.allow.nonEmpty && !authorizationResponse.deny.contains(Path("Objects"))
+
           omiRequest <- Future.fromTry {
             rawOmiRequest.unwrapped
           }

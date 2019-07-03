@@ -468,14 +468,15 @@ class AuthServiceTest(implicit ee: ExecutionEnv) extends AuthServiceTestEnv{
           }
         } """)
 
+      val authnResponse = HttpResponse().withEntity(ContentTypes.`application/json`, """{"username":"test"}""")
+      val tokenUri = uri.withQuery(Uri.Query("Tok" -> "myToken"))
+
       "work correctly for auth and authz in success case" in new AuthAPIServiceMock(config1) {
         implicit val order = inOrder(httpExtension)
 
-        val tokenUri = uri.withQuery(Uri.Query("Tok" -> "myToken"))
         //val authnRequest = beLike[HttpRequest]{
         //  case r => r.method === HttpMethods.GET and r.uri.toString === uri.toString
         //}
-        val authnResponse = HttpResponse().withEntity(ContentTypes.`application/json`, """{"username":"test"}""")
         //val authzRequest = beLike[HttpRequest]{
         //  case r => r.toStrict(1.seconds) ===
         //    HttpEntity.Strict(ContentTypes.`application/json`, ByteString("""{"username":"test","request":"r"}"""))
@@ -490,7 +491,30 @@ class AuthServiceTest(implicit ee: ExecutionEnv) extends AuthServiceTestEnv{
         
         isAuthorizedForRawRequest(Post(tokenUri), ReadAll.asXML.toString) === Changed(ReadAll, UserInfo(None, Some("test")))
       }
-      "work correctly for auth and authz in failure case" in todo
+      "work correctly for auth and authz in failure case (allowed=[])" in new AuthAPIServiceMock(config1) {
+        val authzResponse2 = HttpResponse().withEntity(ContentTypes.`application/json`, 
+          """{"allowed":[],"denied":["Objects/private"]}""" 
+          )
+        httpExtension.singleRequest(anyObject,anyObject,anyObject,anyObject) 
+          .returns(Future.successful(authnResponse))
+          .thenReturns(Future.successful(authzResponse2))
+
+        Try{
+          isAuthorizedForRawRequest(Post(tokenUri), ReadAll.asXML.toString)
+        }.beFailedTry
+      }
+      "work correctly for auth and authz in failure case (denied=[\"Objects\"])" in new AuthAPIServiceMock(config1) {
+        val authzResponse2 = HttpResponse().withEntity(ContentTypes.`application/json`, 
+          """{"allowed":["Objects"],"denied":["Objects"]}""" 
+          )
+        httpExtension.singleRequest(anyObject,anyObject,anyObject,anyObject) 
+          .returns(Future.successful(authnResponse))
+          .thenReturns(Future.successful(authzResponse2))
+
+        Try{
+          isAuthorizedForRawRequest(Post(tokenUri), ReadAll.asXML.toString)
+        }.beFailedTry
+      }
       "work correctly for auth skipping" in todo
     }
 
