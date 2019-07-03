@@ -38,9 +38,9 @@ class RequestInfoStore(override val persistenceId: String) extends JournalStore 
   private var infos: LongMap[PRequestInfo] = LongMap.empty
 
   private val rand = new Random()
-  private def getNewId: Long = {
+  private def createNewId: Long = {
     val idCandidate: Long = rand.nextInt(Int.MaxValue)
-    if (infos contains idCandidate) getNewId
+    if (infos contains idCandidate) createNewId
     else idCandidate
   }
 
@@ -55,7 +55,7 @@ class RequestInfoStore(override val persistenceId: String) extends JournalStore 
     case event: Change => updateState(event)
     case SnapshotOffer(_, snapshot: PRequestStore) =>// updateState(snapshot)
       infos = LongMap(snapshot.infos.toSeq:_*)
-    case x => log.error("Recover not implemented for" + x.toString)
+    case x: Any => log.error("Recover not implemented for" + x.toString)
   }
 
   def receiveCommand: Receive = receiveBoilerplate orElse {
@@ -68,7 +68,7 @@ class RequestInfoStore(override val persistenceId: String) extends JournalStore 
       sender() ! info
 
     case AddInfo(endTime, omiVersion, odfVersion) =>
-      val id = getNewId
+      val id = createNewId
       val info = PRequestInfo(id, endTime, omiVersion.number, odfVersion.map(_.number), odfVersion.map(_.msgFormat))
       persist(info)(updateState)
       sender() ! id
