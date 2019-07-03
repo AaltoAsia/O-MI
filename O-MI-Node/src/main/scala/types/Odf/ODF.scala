@@ -6,8 +6,7 @@ import parsing.xmlGen.xmlTypes.{ObjectType, ObjectsType, InfoItemType}
 import parsing.xmlGen.{odfDefaultScope, scalaxb}
 
 import scala.collection.immutable.{HashMap, TreeSet}
-import scala.collection.mutable
-import scala.collection.{Map, Seq, SortedSet => CSortedSet, SeqView}
+import scala.collection.{mutable, Map, Seq, SortedSet => CSortedSet, SeqView}
 import akka.stream.alpakka.xml._
 import scala.xml.NodeSeq
 import types.Path.PathOrdering

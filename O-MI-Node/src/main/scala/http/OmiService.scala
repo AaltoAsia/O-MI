@@ -535,7 +535,7 @@ trait OmiService
           header match {
             case ct: headers.`Content-Type` if ct.is("application/x-www-form-urlencoded") => 
               Some(true)
-            case other => None
+            case other: HttpHeader => None
           }
     }{ correctCT =>
       extractDataBytes { requestSource =>
@@ -600,7 +600,7 @@ trait OmiService
             }.mapError{
               case error: java.lang.NumberFormatException => 
                 new ParseError("Invalid url encoding: " + error.getMessage, "")
-              case error => error
+              case error: Throwable => error
             }
 
   // Combine all handlers
@@ -667,8 +667,9 @@ trait WebSocketOMISupport extends WebSocketUtil {
 
     def createZeroCallback = callbackHandler.createCallbackAddress("0", Some(wsConnection)).toOption
 
-    val inSink = Sink.foreach[ws.Message] {
+    val inSink = Sink.foreach[ws.Message]{
       case ws.TextMessage.Strict("") =>
+
       case textMessage: ws.TextMessage =>
         val futureResponse: Future[ws.TextMessage] = for {
           r <- handleRequest(hasPermissionTest,

@@ -30,7 +30,6 @@ import akka.stream.alpakka.xml._
 import akka.stream.alpakka.xml.scaladsl._
 
 import types._
-import types.FailedEventBuilder
 import types.odf._
 import types.odf.parser.ODFEventBuilder
 import utils._
@@ -39,19 +38,23 @@ private object RequestPosition extends Enumeration {
   type RequestPosition = Value
   val OpenRequest, NodeList, RequestId, OpenMsg, OpenObjects, CloseMsg, CloseRequest = Value
 }
-import RequestPosition.{RequestPosition,OpenRequest, NodeList, RequestId, OpenMsg, OpenObjects, CloseMsg, CloseRequest} 
-class EnvelopeEventBuilder( val previous: Option[EventBuilder[_]], implicit val receiveTime: Timestamp = currentTimestamp) extends EventBuilder[OmiRequest]{
+import RequestPosition.{RequestPosition,OpenRequest, NodeList, RequestId, OpenMsg, OpenObjects, 
+  CloseMsg, CloseRequest} 
+class EnvelopeEventBuilder(
+  val previous: Option[EventBuilder[_]], 
+  implicit val receiveTime: Timestamp = currentTimestamp
+) extends EventBuilder[OmiRequest]{
   private var version: String = "2.0"
   private var ttl: Duration = 0.seconds
   private var request: Option[OmiRequest] = None
   private var complete: Boolean = false 
   final def isComplete: Boolean = previous.isEmpty && complete && request.nonEmpty
-  def setRequest( req: OmiRequest ) ={
+  def setRequest( req: OmiRequest ): EnvelopeEventBuilder ={
     request = Some(req)
     this
   }
 
-  def build: OmiRequest = request.get
+  def build: OmiRequest = request.getOrElse{ throw OMIParserError("incomplete request build")}
 
   def parse( event: ParseEvent): EventBuilder[_] ={
     event match {
@@ -108,12 +111,16 @@ trait OdfRequestEventBuilder[T] extends EventBuilder[T] {
   protected var odf: ODF = ImmutableODF()
   protected var complete: Boolean = false 
   final def isComplete: Boolean = previous.isEmpty && complete
-  def addODF(_odf: ODF ) ={
+  def addODF(_odf: ODF ): OdfRequestEventBuilder[T] ={
     odf = _odf
     this
   }
 }
-class WriteEventBuilder( val ttl: Duration, val previous: Option[EventBuilder[_]], implicit val receiveTime: Timestamp = currentTimestamp ) extends OdfRequestEventBuilder[WriteRequest]{
+class WriteEventBuilder(
+  val ttl: Duration, 
+  val previous: Option[EventBuilder[_]], 
+  implicit val receiveTime: Timestamp = currentTimestamp 
+) extends OdfRequestEventBuilder[WriteRequest]{
   private var msgformat: String = ""
   private var callback: Option[Callback] = None
   private var position: RequestPosition = OpenRequest
@@ -187,7 +194,11 @@ class WriteEventBuilder( val ttl: Duration, val previous: Option[EventBuilder[_]
     }
   }
 }
-class CallEventBuilder( val ttl: Duration, val previous: Option[EventBuilder[_]], implicit val receiveTime: Timestamp = currentTimestamp ) extends OdfRequestEventBuilder[CallRequest]{
+class CallEventBuilder( 
+  val ttl: Duration, 
+  val previous: Option[EventBuilder[_]], 
+  implicit val receiveTime: Timestamp = currentTimestamp 
+) extends OdfRequestEventBuilder[CallRequest]{
   private var msgformat: String = ""
   private var callback: Option[Callback] = None
   private var position: RequestPosition = OpenRequest
@@ -261,7 +272,11 @@ class CallEventBuilder( val ttl: Duration, val previous: Option[EventBuilder[_]]
     }
   }
 }
-class DeleteEventBuilder( val ttl: Duration, val previous: Option[EventBuilder[_]], implicit val receiveTime: Timestamp = currentTimestamp ) extends OdfRequestEventBuilder[DeleteRequest]{
+class DeleteEventBuilder( 
+  val ttl: Duration, 
+  val previous: Option[EventBuilder[_]], 
+  implicit val receiveTime: Timestamp = currentTimestamp 
+) extends OdfRequestEventBuilder[DeleteRequest]{
   private var msgformat: String = ""
   private var callback: Option[Callback] = None
   private var position: RequestPosition = OpenRequest
@@ -335,7 +350,11 @@ class DeleteEventBuilder( val ttl: Duration, val previous: Option[EventBuilder[_
     }
   }
 }
-class ReadEventBuilder( val ttl: Duration, val previous: Option[EventBuilder[_]], implicit val receiveTime: Timestamp = currentTimestamp ) extends OdfRequestEventBuilder[OmiRequest]{
+class ReadEventBuilder( 
+  val ttl: Duration, 
+  val previous: Option[EventBuilder[_]], 
+  implicit val receiveTime: Timestamp = currentTimestamp 
+) extends OdfRequestEventBuilder[OmiRequest]{
   private var msgformat: Option[String] = None
   private var callback: Option[Callback] = None
   private var position: RequestPosition = OpenRequest
@@ -491,7 +510,11 @@ class ReadEventBuilder( val ttl: Duration, val previous: Option[EventBuilder[_]]
     }
   }
 }
-class CancelEventBuilder( val ttl: Duration, val previous: Option[EventBuilder[_]], implicit val receiveTime: Timestamp = currentTimestamp ) extends OdfRequestEventBuilder[CancelRequest]{
+class CancelEventBuilder( 
+  val ttl: Duration, 
+  val previous: Option[EventBuilder[_]], 
+  implicit val receiveTime: Timestamp = currentTimestamp 
+) extends OdfRequestEventBuilder[CancelRequest]{
   private var callback: Option[Callback] = None
   private var position: RequestPosition = OpenRequest
   private var requestIds: List[Long] = List.empty
@@ -540,7 +563,10 @@ class CancelEventBuilder( val ttl: Duration, val previous: Option[EventBuilder[_
     }
   }
 }
-class RequestIdEventBuilder( val previous: Option[EventBuilder[_]], implicit val receiveTime: Timestamp = currentTimestamp ) extends EventBuilder[Long]{
+class RequestIdEventBuilder( 
+  val previous: Option[EventBuilder[_]], 
+  implicit val receiveTime: Timestamp = currentTimestamp 
+) extends EventBuilder[Long]{
     object Position extends Enumeration {
       type Position = Value
       val OpenTag, Content, CloseTag = Value 
@@ -605,7 +631,10 @@ class RequestIdEventBuilder( val previous: Option[EventBuilder[_]], implicit val
     }
 }
 
-class ResponseEventBuilder( val ttl: Duration, val previous: Option[EventBuilder[_]], implicit val receiveTime: Timestamp = currentTimestamp ) extends EventBuilder[ResponseRequest]{
+class ResponseEventBuilder( 
+  val ttl: Duration, 
+  val previous: Option[EventBuilder[_]], implicit val receiveTime: Timestamp = currentTimestamp 
+) extends EventBuilder[ResponseRequest]{
     object Position extends Enumeration {
       type Position = Value
       val OpenResponse, Results, CloseResponse = Value 
@@ -672,7 +701,10 @@ class ResponseEventBuilder( val ttl: Duration, val previous: Option[EventBuilder
 
     }
 }
-class ResultEventBuilder( val previous: Option[EventBuilder[_]], implicit val receiveTime: Timestamp = currentTimestamp ) extends EventBuilder[OmiResult]{
+class ResultEventBuilder( 
+  val previous: Option[EventBuilder[_]], 
+  implicit val receiveTime: Timestamp = currentTimestamp 
+) extends EventBuilder[OmiResult]{
     object Position extends Enumeration {
       type Position = Value
       val OpenResult, Return, RequestIds, OpenMsg,CloseMsg, CloseResult = Value 
