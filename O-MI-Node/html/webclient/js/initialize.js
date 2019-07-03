@@ -410,7 +410,8 @@
       }
     };
     // All of jquery initiliazation code is here
-    $(function() {
+    // $ ->
+    fallback.ready(['jQuery', 'CodeMirror'], function() {
       var basicInput, fn, i, language, len, loc, proto, requestTip, results, v;
       my.responseCMSettings = $.extend({
         readOnly: true

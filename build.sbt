@@ -92,6 +92,7 @@ lazy val root = (project in file(".")).
   enablePlugins(RpmPlugin).
   enablePlugins(ScalaUnidocPlugin).
   enablePlugins(JavaUnidocPlugin).
+  enablePlugins(LauncherJarPlugin).
   configs(Javadoc).
   settings(javadocSettings: _*).
   settings(commonSettings("Node")).
