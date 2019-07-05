@@ -5,6 +5,7 @@ import responses.CallbackHandler._
 import types.OmiTypes._
 import types.Path
 import types.odf._
+import types._
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -134,7 +135,7 @@ trait DBWriteHandler extends DBHandlerBase {
       relatedPollSubs <- relatedPollSubsF
       readyFuture <- Future.sequence(relatedPollSubs.collect {
         case sub if oldValueOpt.forall(oldValue =>
-          singleStores.valueShouldBeUpdated(oldValue, newValue) &&
+          SingleStores.valueShouldBeUpdated(oldValue, newValue) &&
             (oldValue.timestamp.before(sub.startTime) || oldValue.value != newValue.value)) => {
           singleStores.addPollData(sub.id, path, newValue)
         }
@@ -142,10 +143,18 @@ trait DBWriteHandler extends DBHandlerBase {
     } yield readyFuture
   }
 
-  protected def handleWrite(write: WriteRequest): Future[ResponseRequest] = {
-    //                   infoItems: Iterable[InfoItem],
-    //                   objectMetadatas: Vector[Object] = Vector()
-    //
+
+  class WriteLike[T]
+  object WriteLike {
+    implicit object WriteWitness extends WriteLike[WriteRequest]
+    implicit object SpecialWitness extends WriteLike[SpecialEventHandling]
+  }
+  protected def handleWrite[T: WriteLike](writelike: T): Future[ResponseRequest] = {
+    val (write, eventFilter): (WriteRequest, InfoItemEvent => Boolean) = writelike match {
+      case w: WriteRequest => (w, {case _ => true})
+      case s: SpecialEventHandling => (s.write, s.triggerEvent)
+    }
+
     log.debug("HandleWrite...")
     val odf = write.odf
     // save only changed values
@@ -187,7 +196,7 @@ trait DBWriteHandler extends DBHandlerBase {
     // return false  // command was not accepted or failed in agent or physical world but no internal server errors
 
     // Send all callbacks
-    ftriggeringEvents.foreach(events => processEvents(events))
+    ftriggeringEvents.foreach(events => processEvents(events filter eventFilter))
 
     // Save new/changed stuff to transactional in-memory singleStores and then DB
 

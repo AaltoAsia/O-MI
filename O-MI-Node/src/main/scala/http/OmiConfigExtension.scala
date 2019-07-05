@@ -226,6 +226,21 @@ class OmiConfigExtension(val config: Config) extends Extension
   } else None
 
   val admins: Vector[String] = config.getStringList("omi-service.admins").asScala.toVector
+
+
+  trait ResponseSetting
+  object ResponseSetting {
+    case object Write extends ResponseSetting
+    case object WriteWithoutEvents extends ResponseSetting
+    case object Ignore extends ResponseSetting
+    def apply: String => ResponseSetting = {
+      case "Write" => Write
+      case "WriteWithoutEvents" => WriteWithoutEvents
+      case "None" | "Ignore" => Ignore
+      case _ => throw new MatchError("Not a valid configuration value for responseHandling")
+    }
+  }
+  val responseHandling: ResponseSetting = ResponseSetting.apply(config.getString("omi-service.responseHandling"))
 }
 
 

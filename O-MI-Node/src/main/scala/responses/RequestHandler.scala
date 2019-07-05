@@ -30,6 +30,7 @@ import http.OmiConfigExtension
 import types.OmiTypes._
 import types.odf.ImmutableODF
 import types.Path
+import types._
 import http.TemporaryRequestInfoStore._
 import utils._
 
@@ -241,8 +242,33 @@ class RequestHandler(
 
   }
 
+
   def handleResponse(response: ResponseRequest): Future[ResponseRequest] = {
-    handleWriteRequest(response.odfResultsToSingleWrite)
+    settings.responseHandling match {
+      case settings.ResponseSetting.Ignore => Future.successful(Responses.Success())
+      case settings.ResponseSetting.Write => 
+        handleWriteRequest(response.odfResultsToSingleWrite)
+      case settings.ResponseSetting.WriteWithoutEvents => 
+        val write = response.odfResultsToSingleWrite
+        splitAndHandle(write){
+          case request: WriteRequest =>
+            implicit val to: Timeout = Timeout(request.handleTTL)
+            write.requestID.foreach{
+              id =>
+                requestStore ! AddInfos(id,Vector( 
+                  RequestStringInfo( "request-type", "response" ),
+                  RequestStringInfo( "callback-attribute", write.callback.toString )
+                ))
+            } 
+            log.debug(s"Asking DBHandler to handle request parts that are not owned by an Agent.")
+            (dbHandler ? WithoutEvents(request)).mapTo[ResponseRequest]
+          case request: OdfRequest =>
+            implicit val to: Timeout = Timeout(request.handleTTL)
+            log.error("Write transformed into something in splitAndHandle")
+            (dbHandler ? request).mapTo[ResponseRequest]
+        }
+
+    }
   }
 
   def handleNonOdfRequest(omiRequest: OmiRequest): Future[ResponseRequest] = {

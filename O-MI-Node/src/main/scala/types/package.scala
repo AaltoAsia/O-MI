@@ -28,4 +28,15 @@ case class FailedEventBuilder(val previous: Option[EventBuilder[_]], val msg: St
     }
     final def isComplete: Boolean = false
     def build: ParseError = ODFParserError(msg)
-  } 
+} 
+
+trait SpecialEventHandling {
+  def write: OmiTypes.WriteRequest
+  def valueShouldBeUpdated: (odf.Value[Any], odf.Value[Any]) => Boolean
+  def triggerEvent: database.InfoItemEvent => Boolean
+}
+case class WithoutEvents(write: OmiTypes.WriteRequest) extends SpecialEventHandling {
+  def valueShouldBeUpdated = database.SingleStores.valueShouldBeUpdated _
+  def triggerEvent = {_ => false}
+}
+
