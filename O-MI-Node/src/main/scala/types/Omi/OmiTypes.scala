@@ -271,72 +271,102 @@ class RawRequestWrapper(val rawSource: Source[String,_], private val user0: User
       odfObjects: Option[StartElement],
       omiResults: Vector[StartElement]
     )
-  val wantedEventsFlow: Flow[ParseEvent,StartElement, _] = Flow.apply[ParseEvent].collect{
-    case startElement: StartElement if
-      startElement.localName == "omiEnvelope" ||
-      startElement.localName == "objects" ||
-      startElement.localName == "read" ||
-      startElement.localName == "write" ||
-      startElement.localName == "call" ||
-      startElement.localName == "delete" ||
-      startElement.localName == "cancel" ||
-      startElement.localName == "response" ||
-      startElement.localName == "result" 
-    => startElement
+  val wantedEventsFlow = Flow.apply[ParseEvent].takeWhile{
+    pe: ParseEvent => 
+      pe match {
+        case startElement: StartElement if
+          startElement.localName == "omiEnvelope" ||
+          startElement.localName == "read" ||
+          startElement.localName == "write" ||
+          startElement.localName == "call" ||
+          startElement.localName == "delete" ||
+          startElement.localName == "cancel" ||
+          startElement.localName == "response" ||
+          startElement.localName == "result" ||
+          startElement.localName == "requestID" || 
+          startElement.localName == "return" ||
+          startElement.localName == "msg" ||
+          startElement.localName == "Objects" 
+        => true
+        case endElement: EndElement if
+          endElement.localName == "requestID" ||  
+          endElement.localName == "return" ||
+          endElement.localName == "result" 
+        => true
+        case text: TextEvent => true
+        case text: Comment => true
+        case StartDocument => true
+        case other: ParseEvent => 
+          false
+      }
+  }.collect{
+        case startElement: StartElement if
+        startElement.localName == "omiEnvelope" ||
+        startElement.localName == "Objects" ||
+        startElement.localName == "read" ||
+        startElement.localName == "write" ||
+        startElement.localName == "call" ||
+        startElement.localName == "delete" ||
+        startElement.localName == "cancel" ||
+        startElement.localName == "response" ||
+        startElement.localName == "result" 
+        => startElement
   }
-  val wrapperInfoFlow = Flow.apply[StartElement].fold[WrapperInfo](WrapperInfo(None,None,None, Vector.empty)){
-    case (wrapperInfo: WrapperInfo, startElement: StartElement) if
-      startElement.localName == "omiEnvelope" =>
-
-        wrapperInfo.copy(
-          omiEnvelope = Some(startElement)
-        )
-    case (wrapperInfo: WrapperInfo, startElement: StartElement) if
-      startElement.localName == "objects" =>
-        wrapperInfo.copy(
-          odfObjects = Some(startElement)
-        )
-
-    case (wrapperInfo: WrapperInfo, startElement: StartElement) if
-      startElement.localName == "read" =>
-        wrapperInfo.copy(
-          omiVerb = Some(startElement)
-        )
-      case (wrapperInfo: WrapperInfo, startElement: StartElement) if
-      startElement.localName == "write" =>
-        wrapperInfo.copy(
-          omiVerb = Some(startElement)
-        )
-    case (wrapperInfo: WrapperInfo, startElement: StartElement) if
-      startElement.localName == "call" =>
-        wrapperInfo.copy(
-          omiVerb = Some(startElement)
-        )
-    case (wrapperInfo: WrapperInfo, startElement: StartElement) if
-      startElement.localName == "delete" =>
-        wrapperInfo.copy(
-          omiVerb = Some(startElement)
-        )
-    case (wrapperInfo: WrapperInfo, startElement: StartElement) if
-      startElement.localName == "cancel" =>
-        wrapperInfo.copy(
-          omiVerb = Some(startElement)
-        )
-    case (wrapperInfo: WrapperInfo, startElement: StartElement) if
-      startElement.localName == "response" => 
-        wrapperInfo.copy(
-          omiVerb = Some(startElement)
-        )
-    case (wrapperInfo: WrapperInfo, startElement: StartElement) if
-      startElement.localName == "result" => 
-        wrapperInfo.copy(
-          omiResults = Vector(startElement) ++ wrapperInfo.omiResults
-        )
+  val infoSink = Sink.fold[WrapperInfo,StartElement](WrapperInfo(None,None,None, Vector.empty)){
+    case (wrapperInfo: WrapperInfo, startElement: StartElement) =>
+      startElement.localName match{
+        case "omiEnvelope" =>
+          wrapperInfo.copy(
+            omiEnvelope = Some(startElement)
+          )
+        case "Objects" =>
+          wrapperInfo.copy(
+            odfObjects = Some(startElement)
+          )
+        case "read" =>
+          wrapperInfo.copy(
+            omiVerb = Some(startElement)
+          )
+        case "write" =>
+          wrapperInfo.copy(
+            omiVerb = Some(startElement)
+          )
+        case "call" =>
+          wrapperInfo.copy(
+            omiVerb = Some(startElement)
+          )
+        case "delete" =>
+          wrapperInfo.copy(
+            omiVerb = Some(startElement)
+          )
+        case "cancel" =>
+          wrapperInfo.copy(
+            omiVerb = Some(startElement)
+          )
+        case "response" => 
+          wrapperInfo.copy(
+            omiVerb = Some(startElement)
+          )
+        case  "result" => 
+          wrapperInfo.copy(
+            omiResults = Vector(startElement) ++ wrapperInfo.omiResults
+          )
+        case str: String => 
+          wrapperInfo
+      }
 
   }
   val parsedSink : Sink[OmiRequest,Future[OmiRequest]] = Sink.head[OmiRequest] 
-  val infoSink : Sink[WrapperInfo,Future[WrapperInfo]] = Sink.head[WrapperInfo]
-  val eventSource = rawSource.log("raw source").via(OMIStreamParser.xmlParserFlow.log("xml parser"))
+  val eventSource = rawSource.via(OMIStreamParser.xmlParserFlow)
+  //Version with broadcasting hub that loses omiEnvelope element in test
+  /*
+  val broadcast = eventSource.toMat(BroadcastHub.sink[ParseEvent])(Keep.right).run()
+  val infoResultS = broadcast.map{ pe => println("info: " + pe.toString); pe }.via(wantedEventsFlow).toMat(infoSink)(Keep.right)
+  val parsedResultS = broadcast.map{ pe => println("parse: " + pe.toString); pe }.via(OMIStreamParser.omiParserFlow).toMat(parsedSink)(Keep.right)
+  val parsedResult = parsedResultS.run()
+  val infoResult =  infoResultS.run()
+  */
+  //Version that passes all test but time outs:
   val rGraph: RunnableGraph[(_,Future[OmiRequest],Future[WrapperInfo])] = RunnableGraph.fromGraph(
     GraphDSL.create(
       eventSource,
@@ -346,15 +376,15 @@ class RawRequestWrapper(val rawSource: Source[String,_], private val user0: User
       (parseEventSource,parsedRequestSink, wrapperInfoSink) =>
         import GraphDSL.Implicits._
         val bcast = builder.add(Broadcast[ParseEvent](2,false))
-        val logF = builder.add(Flow[OmiRequest].log("wrapper parser"))
         parseEventSource ~> bcast.in
-        bcast ~> OMIStreamParser.omiParserFlow ~> logF ~> parsedRequestSink.in
-        bcast ~> wantedEventsFlow ~> wrapperInfoFlow ~> wrapperInfoSink.in
+        bcast ~> OMIStreamParser.omiParserFlow ~> parsedRequestSink.in
+        bcast ~> wantedEventsFlow ~> wrapperInfoSink.in
         ClosedShape
     }
   )
   //XXX: Should first complete infoResult before completing parseResult( parsing
   //whole request)
+  //Version that passes all test:
   val (_,parsedResult,infoResult): (_,Future[OmiRequest],Future[WrapperInfo]) = rGraph.run()
   if( !Await.ready(infoResult,10.seconds).isCompleted ){//XXX: How long to wait? should be pretty fast
     throw OMIParserError("Could not parse wrapper information in 10.seconds")

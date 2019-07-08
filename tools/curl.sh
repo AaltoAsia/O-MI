@@ -16,5 +16,5 @@ if [[ -z $2 ]]; then
     exit 1
 fi
 
-curl --max-time 180 -X POST --header "Content-Type:text/xml;charset=UTF-8" --data @"$1" "$2"
+curl --max-time 180 -X POST --header "Content-Type:text/xml;charset=UTF-8" -H "Transfer-Encoding:chunked" --data @"$1" "$2"
 

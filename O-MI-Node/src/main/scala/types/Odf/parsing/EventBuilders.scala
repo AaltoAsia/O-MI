@@ -487,6 +487,9 @@ extends EventBuilder[Value[_]]{
         }
                     case Content =>
                       event match {
+                        case endElement: EndElement if endElement.localName == "value" =>
+                          position = CloseTag
+                          parse(event)
                         case startElement: StartElement if startElement.localName == "Objects" && typeAttribute == "odf" =>
                           position = CloseTag
                           new ODFEventBuilder(Some(this),receiveTime)
