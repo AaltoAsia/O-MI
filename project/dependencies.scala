@@ -4,7 +4,7 @@ import Keys._
 object Dependencies {
 
   //Akka 
-  val akkaV = "2.5.23"
+  val akkaV = "2.6.0-M2" //"2.5.23"
   val akkaHttpV = "10.1.8"
   val akkaActor    = "com.typesafe.akka" %% "akka-actor" % akkaV //
   val akkaSlf4j    = "com.typesafe.akka" %% "akka-slf4j" % akkaV
