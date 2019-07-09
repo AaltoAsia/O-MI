@@ -29,32 +29,14 @@ import scala.collection.SeqView
 
 object RESTHandler {
 
-  sealed trait RESTRequest {
-    def path: Path
-  } // path is OdfNode path
-  case class RESTValue(path: Path) extends RESTRequest
-
-  case class RESTMetaData(path: Path) extends RESTRequest
-
-  case class RESTDescription(path: Path) extends RESTRequest
-
-  case class RESTObjId(path: Path) extends RESTRequest
-
-  case class RESTInfoName(path: Path) extends RESTRequest
-
-  case class RESTNodeReq(path: Path) extends RESTRequest
-
-  object RESTRequest {
-    def apply(path: Path): RESTRequest = path.lastOption match {
-      case attr@Some("value") => RESTValue(path.init)
-      case attr@Some("description") => RESTDescription(path.init)
-      case attr@Some("id") => RESTObjId(path.init)
-      case attr@Some("MetaData") => RESTMetaData(path.init)
-      case attr@Some("name") => RESTInfoName(path.init)
-      case Some(str) => 
-        RESTNodeReq(path)
-      case None => throw new Exception("Unknown REST Request type")
-    }
+  private object RESTRequest extends Enumeration {
+    type RESTRequest = Value
+    val value: RESTRequest = new Val("value")
+    val name: RESTRequest = new Val("name")
+    val id: RESTRequest = new Val("id")
+    val description: RESTRequest = new Val("description")
+    val metaData: RESTRequest = new Val("MetaData")
+    def fromString(str: String): RESTRequest = withName(str)
   }
 
   /**
@@ -69,7 +51,9 @@ object RESTHandler {
     def createEvents(nodeOpt: Option[Node], label: Option[String]): Future[Either[String,SeqView[ParseEvent,Seq[_]]]] = 
       nodeOpt match{
         case Some(node: Node) =>
-          toEvents(node,label)
+          toEvents(node,label.map{
+            str => RESTRequest.fromString(str)
+          })
         case None =>
           Future.successful(
             Right(
@@ -115,10 +99,10 @@ object RESTHandler {
     
   }
 
-  def toEvents(node: Node, member: Option[String])(implicit singleStores: SingleStores): Future[Either[String,SeqView[ParseEvent,Seq[_]]]] = node match{
+  def toEvents(node: Node, member: Option[RESTRequest.RESTRequest])(implicit singleStores: SingleStores): Future[Either[String,SeqView[ParseEvent,Seq[_]]]] = node match{
     case ii: InfoItem => 
       member match{
-        case Some("value") => 
+        case Some(RESTRequest.value) => 
           val value: Either[String,SeqView[ParseEvent,Seq[_]]] = ii.values.headOption.map{ 
             case odfvalue: Value[_] => 
               odfvalue.value match {
@@ -133,7 +117,7 @@ object RESTHandler {
             )
           )
           Future.successful(value)
-        case Some("MetaData") => 
+        case Some(RESTRequest.metaData) => 
           val events =  ii.metaData.map{
             case md: MetaData => 
               Vector(StartDocument, StartElement("MetaData")).view ++ md.infoItems.view.flatMap{
@@ -156,12 +140,12 @@ object RESTHandler {
           }.toSeq.flatten.view 
 
           Future.successful(Right(events))
-        case Some("name") => 
+        case Some(RESTRequest.name) => 
           val events =  Vector(StartDocument, StartElement("InfoItem",List(Attribute("name",ii.nameAttribute)))).view ++ ii.names.toSeq.view.flatMap{
             case id: QlmID => id.asXMLEvents("name")
           } ++ Vector(EndElement("InfoItem"),EndDocument)
           Future.successful(Right(events))
-        case Some("description") => 
+        case Some(RESTRequest.description) => 
           val events =  Vector(StartDocument, StartElement("InfoItem",List(Attribute("name",ii.nameAttribute)))).view ++ ii.descriptions.toSeq.view.flatMap{
             case desc: Description => desc.asXMLEvents
           } ++ Vector(EndElement("InfoItem"),EndDocument)
@@ -212,7 +196,7 @@ object RESTHandler {
       }
     case obj: Object => 
       member match{
-        case Some("description") => 
+        case Some(RESTRequest.description) => 
           val events = Vector(StartDocument,
                 StartElement(
                   "Object",
@@ -227,7 +211,7 @@ object RESTHandler {
               case desc: Description => desc.asXMLEvents
           } ++ Vector(EndElement("Object"),EndDocument)
           Future.successful(Right(events))
-        case Some("id") => 
+        case Some(RESTRequest.id) => 
           val events = Vector(StartDocument,
                 StartElement(
                   "Object",
@@ -300,7 +284,7 @@ object RESTHandler {
               } ++ Vector(EndElement("Object" ), EndDocument)
               Right(events)
           }
-        case Some(str) => 
+        case Some(other) => 
           val events = Vector(
             StartDocument,
             StartElement("error"),
@@ -326,7 +310,7 @@ object RESTHandler {
                       }
                 )
               ).view ++ 
-              odf.getChilds(objs.path).flatMap{
+              odf.getChilds(objs.path).collect{
                 case subObj: Object =>
                   Vector(
                     StartElement(
@@ -344,25 +328,7 @@ object RESTHandler {
                   } ++ Vector(
                     EndElement("Object" )
                   )
-                case ii: InfoItem =>
-
-                  Vector(
-                    StartElement(
-                      "InfoItem",
-                      List(
-                        Attribute("name",ii.nameAttribute),
-                        ) ++
-                      ii.typeAttribute.map{
-                        str: String => Attribute("type",str)
-                      }.toList ++ 
-                      ii.attributes.map{
-                        case (key: String, value: String) => Attribute(key,value)
-                      }.toList
-                    ),
-                    EndElement("InfoItem" )
-                  ).view
-                case _: Objects => throw new Exception("Objects encountered while handling REST request")
-              } ++ Vector( EndElement("Objects" ),EndDocument )
+              }.flatten ++ Vector( EndElement("Objects" ),EndDocument )
               Right(events)
           }
   
