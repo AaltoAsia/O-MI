@@ -1290,7 +1290,7 @@ class OdfEventBuilderTest extends Specification {
             StartElement("Object", List(Attribute("type","test"))),
             EndElement("Object")
             )
-        ) must beFailedTry.withThrowable[ODFParserError](s"O-DF Parser error: Unexpect end of Object element before least one Id element in Object inside parent ${parentPath.toString}.")
+        ) must beFailedTry.withThrowable[ODFParserError](s"O-DF Parser error: Unexpect end of Object element before at least one Id element in Object inside parent ${parentPath.toString}.")
       }
       "with unexpect event after id" >> {
         val parentPath = Path("Objects/TestObj")
