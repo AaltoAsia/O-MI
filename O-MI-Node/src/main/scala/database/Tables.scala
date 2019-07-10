@@ -7,6 +7,7 @@ import slick.jdbc.meta.MTable
 
 import scala.collection.mutable.{HashMap => MutableHashMap, Map => MutableMap}
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.stm._
 //import slick.driver.H2Driver.api._
 import slick.jdbc.JdbcProfile
 import slick.lifted.{Index, ProvenShape}
@@ -233,15 +234,30 @@ trait Tables extends DBBase {
   val valueTables: MutableMap[Path, PathValues] = new MutableHashMap()
   val pathsTable: StoredPath = new StoredPath()
 
-  def namesOfCurrentTables: DBIOro[Vector[String]] = MTable.getTables.map {
+  def namesOfCurrentTables: DBIOro[Set[String]] = MTable.getTables.map {
     mts =>
       mts.map {
         mt => mt.name.name
-      }
+      }.toSet
   }
 
-  def tableByNameExists(name: String): DBIOro[Boolean] = namesOfCurrentTables.map {
-    names: Seq[String] =>
-      names.contains(name)
+  val tableNames: TSet[String] = TSet.empty[String]
+  def tableByNameExists(name: String): DBIOro[Boolean] = {
+    if( tableNames.single.contains(name) ){ 
+      DBIO.successful(true)
+    } else {
+      namesOfCurrentTables.map {
+        names: Set[String] =>
+          atomic { implicit txn =>
+            if( (tableNames &~ names).nonEmpty ) {
+              tableNames ++= names
+              val diff = tableNames &~ names
+              if( diff.nonEmpty ) 
+                tableNames --= diff
+              tableNames.contains(name)
+            } else names.contains(name)
+          }
+      }
+    }
   }
 }
