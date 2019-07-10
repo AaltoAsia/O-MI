@@ -16,8 +16,10 @@ package parsing
 
 import java.io.{File, InputStream, Reader}
 import java.sql.Timestamp
+import java.util.Date
 
 import org.json4s._
+import org.json4s.JsonDSL.WithDouble._
 import org.json4s.native.JsonMethods.{parse => jparse}
 import types.{ODFParserError, Path}
 import types.odf._
@@ -72,36 +74,39 @@ class JSONParser {
       }
     }
     """
-  val test2 = """"Objects": {
-                "Object": {
-                  "id": "OMI-Service",
-                  "Object": {
-                    "id": "Settings",
-                    "InfoItem": {
-                      "name": "num-latest-values-stored",
-                      "description": {
-                        "text": "\n                "
-                      },
-                      "value": [
-                        {
-                          "type": "xs:int",
-                          "dateTime": "2019-06-04T13:37:59.311+03:00",
-                          "unixTime": 1559644679,
-                          "content": 50
-                        },
-                        {
-                          "type": "xs:int",
-                          "dateTime": "2019-06-04T13:35:26.196+03:00",
-                          "unixTime": 1559644526,
-                          "content": 50
-                        }
-                      ]
-                    }
+  val test2 =
+    """{
+   "Objects":{
+      "Object":{
+         "id":"OMI-Service",
+         "Object":{
+            "id":"Settings",
+            "InfoItem":{
+               "name":"num-latest-values-stored",
+               "description":{
+                  "text":"\n                "
+               },
+               "values":[
+                  {
+                     "type":"xs:int",
+                     "dateTime":"2019-06-04T13:37:59.311+03:00",
+                     "unixTime":1559644679,
+                     "content":50
+                  },
+                  {
+                     "type":"xs:int",
+                     "dateTime":"2019-06-04T13:35:26.196+03:00",
+                     "unixTime":1559644526,
+                     "content":50
                   }
-                }
-              }"""
+               ]
+            }
+         }
+      }
+   }
+}"""
 
-  //def parse(in:String) = parse(StringInput(in))
+  def parse(in:String): ODF = parse(StringInput(in))
   //def parse(in:Reader) = parse(ReaderInput(in))
   //def parse(in: InputStream) = parse(StreamInput(in))
   //def parse(in: File) = parse(FileInput(in))
@@ -116,7 +121,7 @@ class JSONParser {
 
   private def handleASTRoot(in: JValue) = {
     in match {
-      case JObject(asd) =>
+      case obj: JObject => ???
     }
     ???
   }
@@ -147,7 +152,7 @@ class JSONParser {
   // f(jval)
   //}
 
-  private def parseObjects(in: JObject) = {
+  def parseObjects(in: JObject) = {
     val path = Path("Objects")
     val fields: Map[String, JValue] = in.obj.toMap
     val version = fields.get("version").map(parseStringAttribute)
@@ -158,13 +163,13 @@ class JSONParser {
           .map(p => "prefix" -> p) //Option[(String,String)] add to map as "list" of tuples
     val attributes: Map[String,String] = prefix
 
-    val objects: Option[Seq[Node]] = fields.get("object").map{
+    val objects: Option[Seq[Node]] = fields.get("Object").map{
       case obj: JObject => parseObject(path, obj)
       case JArray(arr: List[JObject]) => arr.flatMap(parseObject(path,_))
       case other => throw ODFParserError(s"'object' must be either object or array of objects")
     }
 
-    val nodes: Seq[Node] = Objects(version, attributes) :: objects.toList.flatten
+    val nodes: Seq[Node] = Objects(version, attributes) +: (objects.toList.flatten)
     ImmutableODF(nodes)
 
   }
@@ -217,8 +222,8 @@ class JSONParser {
       val oType: Option[String] = fields.get("type").map(parseStringAttribute)
       val attributes: Map[String, String] = fields.get("attributes").map(parseAttributes).getOrElse(Map.empty)
       val objects: Seq[Node] = fields.get("Object").map(parseObject(path,_)).toSeq.flatten
-      val infoitems: Seq[InfoItem] = fields.get("InfoItem").map(parseInfoItems(parentPath,_)).toSeq.flatten
-      val description: Set[Description] = fields.get("description").map(parseDescription).getOrElse(Set.empty)
+      val infoitems: Seq[InfoItem] = fields.get("InfoItem").map(parseInfoItems(path,_)).toSeq.flatten
+      val description: Set[Description] = fields.get("description").map(parseDescriptions).getOrElse(Set.empty)
       val thisObject: Object = Object(id,path,oType,description,attributes)
 
        Seq(thisObject) ++  objects ++ infoitems
@@ -232,7 +237,7 @@ class JSONParser {
   }
   private def parseInfoItems(parentPath: Path, jval: JValue): Seq[InfoItem] = {
     def parseInfoItem(in: JObject): InfoItem = {
-     val fields: Map[String,JValue]  = in.obj.toMap
+      val fields: Map[String,JValue]  = in.obj.toMap
 
       val name: String = fields.get("name").map(parseStringAttribute)
         .getOrElse(throw ODFParserError("Name missing from InfoItem"))
@@ -241,8 +246,8 @@ class JSONParser {
       val typev: Option[String] = fields.get("type").map(parseStringAttribute)
       val attributes: Map[String, String] = fields.get("attributes").map(parseAttributes).getOrElse(Map.empty)
       val values: Vector[Value[Any]] = fields.get("values").map(parseValues).toVector.flatten
-      val metaData: Option[MetaData] = fields.get("MetaData").map(parseMetaData)
-      val description: Set[Description] = fields.get("description").map(parseDescription).getOrElse(Set.empty)
+      val metaData: Option[MetaData] = fields.get("MetaData").map(parseMetaData(path,_))
+      val description: Set[Description] = fields.get("description").map(parseDescriptions).getOrElse(Set.empty)
 
       InfoItem(name,path,typev,altName,description,values,metaData,attributes)
     }
@@ -256,7 +261,29 @@ class JSONParser {
 
   private def parseValues(jval: JValue): Vector[Value[Any]] = {
     def parseValue(in: JObject): Value[Any] = {
-      ???
+      val parseTime = new Timestamp(new Date().getTime)
+      val fields: Map[String,JValue] = in.obj.toMap
+
+      val typev = fields.get("type").map(parseStringAttribute) //TODO
+      val dateTime = fields.get("dateTime").map(parseDateTime)
+      val unixTime = fields.get("unixTime")
+      val timestamp = correctTimeStamp(dateTime, unixTime)
+      //val attributes = ??? // TODO not implemented in value type
+      val value = fields.get("value").map{
+        case JString(s) => s
+        case JDouble(num) => num
+        case JInt(num) =>
+          if(num.isValidLong)
+            num.longValue()
+          else num
+        case JBool(b) => b
+        case obj: JObject => parseObjects(obj)
+        case other => throw ODFParserError("Invalid JSON type for ODF Value")
+      }
+      if(typev.isEmpty)
+        Value(value,timestamp)
+      else
+        Value(value,typev.get,timestamp)
     }
 
     jval match {
@@ -265,13 +292,47 @@ class JSONParser {
       case other => throw ODFParserError("Invalid JSON type for ODF Value")
     }
   }
+  private def correctTimeStamp(dt: Option[Timestamp], ut: Option[JValue]): Timestamp = {
+    dt match {
+      case Some(tt) => tt
+      case None => ut match {
+        case Some(JInt(num)) => {
+          if(num.isValidLong)
+            new Timestamp(num.longValue() * 1000)
+          else
+            throw ODFParserError("unixTime too big")
+        }
+        case Some(JDouble(num)) => {
+          new Timestamp( (num*1000).toLong)
 
-  private def parseDescription(jval: JValue): Set[Description] = {
-    ???
+        }
+        case None => new Timestamp(new Date().getTime)
+      }
+    }
   }
 
-  private def parseMetaData(jval: JValue): MetaData = {
-    ???
+  private def parseDescriptions(jval: JValue): Set[Description] = {
+    def parseDescription(in: JObject): Description = {
+      val fields = in.obj.toMap
+
+      val lang = fields.get("lang").map(parseStringAttribute)
+      //val attributes = fields.get(attributes).map(parseAttributes).getOrElse(Map.empty)
+      val text = fields.get("text").map(parseStringAttribute)
+        .getOrElse(throw ODFParserError("Text missing from description"))
+      Description(text, lang)
+
+    }
+    jval match {
+      case obj: JObject => Set(parseDescription(obj))
+      case JArray(arr: List[JObject]) => arr.map(parseDescription).toSet
+      case other => throw ODFParserError("Invalid JSON type for ODF Description")
+    }
+  }
+
+  private def parseMetaData(parentPath :Path, jval: JValue): MetaData = {
+    val path: Path = parentPath./("MetaData")
+    MetaData(parseInfoItems(path,jval).toVector)
+
   }
 
 }
