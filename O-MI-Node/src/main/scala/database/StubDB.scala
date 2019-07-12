@@ -57,12 +57,12 @@ class StubDB(val singleStores: SingleStores, val system: ActorSystem, val settin
 
   def currentTimestamp = new Timestamp( new Date().getTime)
   def readLatestFromCache(leafPaths: Seq[Path]): Future[ImmutableODF] = {
-    val timer = LapTimer(log.info)
+    //val timer = LapTimer(log.info)
     val fp2iis: Future[Set[Path]] = singleStores.getHierarchyTree().map{
       hTree => 
-        timer.step("Got HT ODF")
+        //timer.step("Got HT ODF")
         val stp = hTree.subTreePaths(leafPaths.toSet)
-        timer.step("HT ODF STP")
+        //timer.step("HT ODF STP")
         stp
     }
 
@@ -73,9 +73,9 @@ class StubDB(val singleStores: SingleStores, val system: ActorSystem, val settin
       objectsWithValues = ImmutableODF.createFromNodes(pathToValue.map(pv => InfoItem(pv._1,Vector(pv._2))))
     } yield objectsWithValues
 
-    objectsWithValues.foreach{
-      t => timer.step("objectsWithValues")
-    }
+    //objectsWithValues.foreach{
+    //  t => timer.step("objectsWithValues")
+    //}
     objectsWithValues
   }
 
