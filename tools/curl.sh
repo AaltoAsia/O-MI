@@ -21,5 +21,5 @@ if [[ -z "$nodeurl" ]]; then
     exit 1
 fi
 
-curl --max-time 180 -X POST --header "Content-Type:text/xml;charset=UTF-8" -H "Transfer-Encoding:chunked" --data @"filepath" "$nodeurl" $*
+curl --max-time 180 -X POST --header "Content-Type:text/xml;charset=UTF-8" -H "Transfer-Encoding:chunked" --data "@$filepath" "$nodeurl" $*
 
