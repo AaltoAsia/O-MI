@@ -28,18 +28,17 @@ import parsing.xmlGen.{omiDefaultScope, xmlTypes}
 import types.odf._
 
 import scala.collection.JavaConverters._
-import scala.collection.{SeqView, Iterator}
+import scala.collection.SeqView
 import scala.concurrent.duration._
 import scala.concurrent._
 import scala.util.{Failure, Success, Try}
 import scala.xml.NodeSeq
 import akka.util.ByteString
-import akka.stream.{ClosedShape, Materializer}
+import akka.stream.{Materializer, ClosedShape}
 import akka.stream.scaladsl._
 import akka.stream.alpakka.xml._
 import utils._
 import parser.OMIStreamParser
-
 
 
 
@@ -356,17 +355,23 @@ class RawRequestWrapper(val rawSource: Source[String,_], private val user0: User
       }
 
   }
-  val parsedSink : Sink[OmiRequest,Future[OmiRequest]] = Sink.head[OmiRequest] 
   val eventSource = rawSource.via(OMIStreamParser.xmlParserFlow)
-  //Version with broadcasting hub that loses omiEnvelope element in test
-  /*
-  val broadcast = eventSource.toMat(BroadcastHub.sink[ParseEvent])(Keep.right).run()
-  val infoResultS = broadcast.map{ pe => println("info: " + pe.toString); pe }.via(wantedEventsFlow).toMat(infoSink)(Keep.right)
-  val parsedResultS = broadcast.map{ pe => println("parse: " + pe.toString); pe }.via(OMIStreamParser.omiParserFlow).toMat(parsedSink)(Keep.right)
-  val parsedResult = parsedResultS.run()
-  val infoResult =  infoResultS.run()
-  */
-  //Version that passes all test but time outs:
+  val parsedSink : Sink[OmiRequest,Future[OmiRequest]] = Sink.head[OmiRequest] 
+
+  //val broadcast = eventSource.map{ pe => println("broadcast: " + pe.toString); pe }.delay(0.seconds).runWith(
+  //val broadcast = eventSource.delay(0.seconds).runWith(
+  //  BroadcastHub.sink[ParseEvent](bufferSize=16))
+  // FIXME: When akka/akka pull request is merged and released: https://github.com/akka/akka/pull/27206
+  //  BroadcastHub.sink[ParseEvent](startAfterNrOfConsumers=2, bufferSize=16))
+
+
+  //val infoResult = broadcast.map{ pe => println("info: " + pe.toString); pe }.via(wantedEventsFlow).runWith(infoSink)
+  //val parsedResult = broadcast.map{ pe => println("parse: " + pe.toString); pe }.via(OMIStreamParser.omiParserFlow).runWith(parsedSink)
+  //val blackhole = broadcast.runForeach(msg => println("blackhole: "+ msg))
+  
+  //val infoResult = broadcast.via(wantedEventsFlow).runWith(infoSink)
+  //val parsedResult = broadcast.via(OMIStreamParser.omiParserFlow).runWith(parsedSink)
+
   val rGraph: RunnableGraph[(_,Future[OmiRequest],Future[WrapperInfo])] = RunnableGraph.fromGraph(
     GraphDSL.create(
       eventSource,
@@ -382,10 +387,15 @@ class RawRequestWrapper(val rawSource: Source[String,_], private val user0: User
         ClosedShape
     }
   )
-  //XXX: Should first complete infoResult before completing parseResult( parsing
-  //whole request)
-  //Version that passes all test:
   val (_,parsedResult,infoResult): (_,Future[OmiRequest],Future[WrapperInfo]) = rGraph.run()
+
+  //import materializer.executionContext
+  //FutureTimer(parsedResult, println, "parse")
+  //FutureTimer(infoResult, println, "info")
+
+
+
+  
   if( !Await.ready(infoResult,10.seconds).isCompleted ){//XXX: How long to wait? should be pretty fast
     throw OMIParserError("Could not parse wrapper information in 10.seconds")
   }
@@ -397,7 +407,6 @@ class RawRequestWrapper(val rawSource: Source[String,_], private val user0: User
 
   val wrapperInfo: WrapperInfo = Await.result(infoResult,10.seconds)//XXX: Should be ready already. How long to wait? should be pretty fast
 
-  
 
 
   import RawRequestWrapper._

@@ -59,7 +59,13 @@ class EnvelopeEventBuilder(
   def parse( event: ParseEvent): EventBuilder[_] ={
     event match {
       case StartDocument => this
-      case EndDocument => this
+      case EndDocument if isComplete => this
+      case EndDocument if !isComplete => 
+        if (request.isEmpty)
+          unexpectedEventHandle("Expecting request tag", EndDocument, this)
+        else
+          unexpectedEventHandle("Expecting omiEnvelope close tag", EndDocument, this)
+
       case startElement: StartElement if startElement.localName == "omiEnvelope" =>
         val correctNS = startElement.namespace.forall{
           str: String =>
