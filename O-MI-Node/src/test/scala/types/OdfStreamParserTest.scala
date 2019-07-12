@@ -68,7 +68,7 @@ class OdfEventBuilderTest extends Specification {
             EndElement("description"),
             Characters("testing2"),
           )
-        ) must beFailedTry.withThrowable[ODFParserError]("O-DF Parser error: Unexpect text content after complete description.")
+        ) must beFailedTry.withThrowable[ODFParserError]("O-DF Parser error: Unexpected text content after complete description.")
       }
       "with unexpect event before element" >> {
         buildFromEvents(
@@ -79,7 +79,7 @@ class OdfEventBuilderTest extends Specification {
             Characters("testing"),
             EndElement("description"),
           )
-        ) must beFailedTry.withThrowable[ODFParserError]("O-DF Parser error: Unexpect text content before expected description element.")
+        ) must beFailedTry.withThrowable[ODFParserError]("O-DF Parser error: Unexpected text content before expected description element.")
       }
       "with unexpect event in description " >> {
         buildFromEvents(
@@ -90,7 +90,7 @@ class OdfEventBuilderTest extends Specification {
             Characters("testing"),
             EndElement("description"),
           )
-        ) must beFailedTry.withThrowable[ODFParserError]("O-DF Parser error: Unexpect start of error element when expected text content.")
+        ) must beFailedTry.withThrowable[ODFParserError]("O-DF Parser error: Unexpected start of error element when expected text content.")
       }
     }
     "handle correctly id element" >> {
@@ -143,7 +143,7 @@ class OdfEventBuilderTest extends Specification {
             Characters("testing"),
             EndElement("id")
           )
-        ) must beFailedTry.withThrowable[ODFParserError]("O-DF Parser error: Unexpect end of document before expected id, name or altName element.")
+        ) must beFailedTry.withThrowable[ODFParserError]("O-DF Parser error: Unexpected end of document before expected id, name or altName element.")
       }
       "with unexpected event before content in id element" >> {
         buildFromEvents(
@@ -154,7 +154,7 @@ class OdfEventBuilderTest extends Specification {
             Characters("testing"),
             EndElement("id")
           )
-        ) must beFailedTry.withThrowable[ODFParserError]("O-DF Parser error: Unexpect end of id element when expected text content.")
+        ) must beFailedTry.withThrowable[ODFParserError]("O-DF Parser error: Unexpected end of id element when expected text content.")
       }
       
       "with unexpected event after content in id element" >> {
@@ -166,7 +166,7 @@ class OdfEventBuilderTest extends Specification {
             EndElement("ids"),
             EndElement("id")
           )
-        ) must beFailedTry.withThrowable[ODFParserError]("O-DF Parser error: Unexpect end of ids element before expected closing of id")
+        ) must beFailedTry.withThrowable[ODFParserError]("O-DF Parser error: Unexpected end of ids element before expected closing of id")
       }
       "with unexpected event after complete id element" >> {
         buildFromEvents(
@@ -177,7 +177,7 @@ class OdfEventBuilderTest extends Specification {
             EndElement("id"),
             StartElement("ids"),
           )
-        ) must beFailedTry.withThrowable[ODFParserError]("O-DF Parser error: Unexpect start of ids element after complete id element.")
+        ) must beFailedTry.withThrowable[ODFParserError]("O-DF Parser error: Unexpected start of ids element after complete id element.")
       }
     }
     "handle correctly name element" >> {
@@ -230,7 +230,7 @@ class OdfEventBuilderTest extends Specification {
             Characters("testing"),
             EndElement("name")
           )
-        ) must beFailedTry.withThrowable[ODFParserError]("O-DF Parser error: Unexpect end of document before expected id, name or altName element.")
+        ) must beFailedTry.withThrowable[ODFParserError]("O-DF Parser error: Unexpected end of document before expected id, name or altName element.")
       }
       "with unexpected event before content in name element" >> {
         buildFromEvents(
@@ -241,7 +241,7 @@ class OdfEventBuilderTest extends Specification {
             Characters("testing"),
             EndElement("name")
           )
-        ) must beFailedTry.withThrowable[ODFParserError]("O-DF Parser error: Unexpect end of name element when expected text content.")
+        ) must beFailedTry.withThrowable[ODFParserError]("O-DF Parser error: Unexpected end of name element when expected text content.")
       }
       
       "with unexpected event after content in name element" >> {
@@ -253,7 +253,7 @@ class OdfEventBuilderTest extends Specification {
             EndElement("names"),
             EndElement("name")
           )
-        ) must beFailedTry.withThrowable[ODFParserError]("O-DF Parser error: Unexpect end of names element before expected closing of name")
+        ) must beFailedTry.withThrowable[ODFParserError]("O-DF Parser error: Unexpected end of names element before expected closing of name")
       }
       "with unexpected event after complete name element" >> {
         buildFromEvents(
@@ -264,7 +264,7 @@ class OdfEventBuilderTest extends Specification {
             EndElement("name"),
             StartElement("names"),
           )
-        ) must beFailedTry.withThrowable[ODFParserError]("O-DF Parser error: Unexpect start of names element after complete name element.")
+        ) must beFailedTry.withThrowable[ODFParserError]("O-DF Parser error: Unexpected start of names element after complete name element.")
       }
     }
     "parse correctly value element" >> {
@@ -367,7 +367,7 @@ class OdfEventBuilderTest extends Specification {
             Characters("1.2"),
             EndElement("value")
           )
-        ) must beFailedTry.withThrowable[ODFParserError]("O-DF Parser error: Unexpect end of error element before expected value element.")
+        ) must beFailedTry.withThrowable[ODFParserError]("O-DF Parser error: Unexpected end of error element before expected value element.")
       }
       "from unexpected event before content in value" >> {
         buildFromEvents(
@@ -378,7 +378,7 @@ class OdfEventBuilderTest extends Specification {
             Characters("1.2"),
             EndElement("value")
           )
-        ) must beFailedTry.withThrowable[ODFParserError]("O-DF Parser error: Unexpect end of error element when expected text content.")
+        ) must beFailedTry.withThrowable[ODFParserError]("O-DF Parser error: Unexpected end of error element when expected text content.")
       }
       "from unexpected event before closing tag of value" >> {
         buildFromEvents(
@@ -389,7 +389,7 @@ class OdfEventBuilderTest extends Specification {
             EndElement("error"),
             EndElement("value")
           )
-        ) must beFailedTry.withThrowable[ODFParserError]("O-DF Parser error: Unexpect end of error element before expected closing of Value.")
+        ) must beFailedTry.withThrowable[ODFParserError]("O-DF Parser error: Unexpected end of error element before expected closing of Value.")
       }
       "from unexpected event after complete value" >> {
         buildFromEvents(
@@ -400,7 +400,7 @@ class OdfEventBuilderTest extends Specification {
             EndElement("value"),
             EndElement("error")
           )
-        ) must beFailedTry.withThrowable[ODFParserError]("O-DF Parser error: Unexpect end of error element after complete value.")
+        ) must beFailedTry.withThrowable[ODFParserError]("O-DF Parser error: Unexpected end of error element after complete value.")
       }
     }
     "handle correctly InfoItem element" >> {
@@ -882,7 +882,7 @@ class OdfEventBuilderTest extends Specification {
             EndElement("value"),
             EndElement("InfoItem")
           )
-        ) must beFailedTry.withThrowable[ODFParserError]("O-DF Parser error: Unexpect start of error element after additional names in InfoItem with name: test.")
+        ) must beFailedTry.withThrowable[ODFParserError]("O-DF Parser error: Unexpected start of error element after additional names in InfoItem with name: test.")
       }
       "with unexpected event after description" >> {
         buildFromEvents(
@@ -907,7 +907,7 @@ class OdfEventBuilderTest extends Specification {
             EndElement("value"),
             EndElement("InfoItem")
           )
-        ) must beFailedTry.withThrowable[ODFParserError]("O-DF Parser error: Unexpect start of error element after descriptions in InfoItem with name: test.")
+        ) must beFailedTry.withThrowable[ODFParserError]("O-DF Parser error: Unexpected start of error element after descriptions in InfoItem with name: test.")
       }
       "with unexpected event after MetaData" >> {
         buildFromEvents(
@@ -930,7 +930,7 @@ class OdfEventBuilderTest extends Specification {
             EndElement("value"),
             EndElement("InfoItem")
           )
-        ) must beFailedTry.withThrowable[ODFParserError]("O-DF Parser error: Unexpect start of error element after MetaData in InfoItem with name: test.")
+        ) must beFailedTry.withThrowable[ODFParserError]("O-DF Parser error: Unexpected start of error element after MetaData in InfoItem with name: test.")
       }
       "with unexpected event after value" >> {
         buildFromEvents(
@@ -949,7 +949,7 @@ class OdfEventBuilderTest extends Specification {
             StartElement("error"),
             EndElement("InfoItem")
           )
-        ) must beFailedTry.withThrowable[ODFParserError]("O-DF Parser error: Unexpect start of error element after values in InfoItem with name: test.")
+        ) must beFailedTry.withThrowable[ODFParserError]("O-DF Parser error: Unexpected start of error element after values in InfoItem with name: test.")
       }
       "with unexpected event after complete InfoItem" >> {
         buildFromEvents(
@@ -968,7 +968,7 @@ class OdfEventBuilderTest extends Specification {
             EndElement("InfoItem"),
             StartElement("error")
           )
-        ) must beFailedTry.withThrowable[ODFParserError]("O-DF Parser error: Unexpect start of error element after complete InfoItem with name: test.")
+        ) must beFailedTry.withThrowable[ODFParserError]("O-DF Parser error: Unexpected start of error element after complete InfoItem with name: test.")
       }
     }
     "parse correctly MetaData element" >> {
@@ -1012,7 +1012,7 @@ class OdfEventBuilderTest extends Specification {
             EndElement("MetaData"),
             EndElement("error")
           )
-        ) must beFailedTry.withThrowable[ODFParserError](s"O-DF Parser error: Unexpect end of error element after complete MetaData in InfoItem ${iiPath.toString}.")
+        ) must beFailedTry.withThrowable[ODFParserError](s"O-DF Parser error: Unexpected end of error element after complete MetaData in InfoItem ${iiPath.toString}.")
       }
       "with unexpected event in MetaData" >> {
         buildFromEvents(
@@ -1026,7 +1026,7 @@ class OdfEventBuilderTest extends Specification {
             EndElement("InfoItem"),
             EndElement("MetaData")
           )
-        ) must beFailedTry.withThrowable[ODFParserError](s"O-DF Parser error: Unexpect end of error element when expected InfoItem elements in MetaData in InfoItem ${iiPath.toString}.")
+        ) must beFailedTry.withThrowable[ODFParserError](s"O-DF Parser error: Unexpected end of error element when expected InfoItem elements in MetaData in InfoItem ${iiPath.toString}.")
       }
       "with unexpected event before MetaData" >> {
         buildFromEvents(
@@ -1040,7 +1040,7 @@ class OdfEventBuilderTest extends Specification {
             EndElement("InfoItem"),
             EndElement("MetaData")
           )
-        ) must beFailedTry.withThrowable[ODFParserError](s"O-DF Parser error: Unexpect end of error element before expected MetaData element in InfoItem ${iiPath.toString}.")
+        ) must beFailedTry.withThrowable[ODFParserError](s"O-DF Parser error: Unexpected end of error element before expected MetaData element in InfoItem ${iiPath.toString}.")
       }
     }
     "handle correctly Object element" >> {
@@ -1290,7 +1290,7 @@ class OdfEventBuilderTest extends Specification {
             StartElement("Object", List(Attribute("type","test"))),
             EndElement("Object")
             )
-        ) must beFailedTry.withThrowable[ODFParserError](s"O-DF Parser error: Unexpect end of Object element before least one Id element in Object inside parent ${parentPath.toString}.")
+        ) must beFailedTry.withThrowable[ODFParserError](s"O-DF Parser error: Unexpected end of Object element before at least one Id element in Object inside parent ${parentPath.toString}.")
       }
       "with unexpect event after id" >> {
         val parentPath = Path("Objects/TestObj")
@@ -1305,7 +1305,7 @@ class OdfEventBuilderTest extends Specification {
             Characters("error"),
             EndElement("Object")
             )
-        ) must beFailedTry.withThrowable[ODFParserError](s"O-DF Parser error: Unexpect text content after id in Object with id ${objPath.last.toString}.")
+        ) must beFailedTry.withThrowable[ODFParserError](s"O-DF Parser error: Unexpected text content after id in Object with id ${objPath.last.toString}.")
       }
       "with unexpect event after description" >> {
         val parentPath = Path("Objects/TestObj")
@@ -1323,7 +1323,7 @@ class OdfEventBuilderTest extends Specification {
             Characters("error"),
             EndElement("Object")
             )
-        ) must beFailedTry.withThrowable[ODFParserError](s"O-DF Parser error: Unexpect text content after description inside Object with id ${objPath.last.toString}.")
+        ) must beFailedTry.withThrowable[ODFParserError](s"O-DF Parser error: Unexpected text content after description inside Object with id ${objPath.last.toString}.")
       }
       "with unexpect event after InfoItem" >> {
         val parentPath = Path("Objects/TestObj")
@@ -1340,7 +1340,7 @@ class OdfEventBuilderTest extends Specification {
             Characters("error"),
             EndElement("Object")
             )
-        ) must beFailedTry.withThrowable[ODFParserError](s"O-DF Parser error: Unexpect text content after InfoItem inside Object with id ${objPath.last.toString}.")
+        ) must beFailedTry.withThrowable[ODFParserError](s"O-DF Parser error: Unexpected text content after InfoItem inside Object with id ${objPath.last.toString}.")
       }
       "with unexpect event after sub Object" >> {
         val parentPath = Path("Objects/TestObj")
@@ -1360,7 +1360,7 @@ class OdfEventBuilderTest extends Specification {
             Characters("error"),
             EndElement("Object")
             )
-        ) must beFailedTry.withThrowable[ODFParserError](s"O-DF Parser error: Unexpect text content after Object inside Object with id ${objPath.last.toString}.")
+        ) must beFailedTry.withThrowable[ODFParserError](s"O-DF Parser error: Unexpected text content after Object inside Object with id ${objPath.last.toString}.")
       }
       "with unexpect event after complete Object" >> {
         val parentPath = Path("Objects/TestObj")
@@ -1380,7 +1380,7 @@ class OdfEventBuilderTest extends Specification {
             EndElement("Object"),
             Characters("error")
             )
-        ) must beFailedTry.withThrowable[ODFParserError](s"O-DF Parser error: Unexpect text content after complete Object with id ${objPath.last.toString}.")
+        ) must beFailedTry.withThrowable[ODFParserError](s"O-DF Parser error: Unexpected text content after complete Object with id ${objPath.last.toString}.")
       }
     }
     "handle correctly whole O-DF structure" >> {

@@ -83,7 +83,7 @@ class OMIEventBuilderTest extends Specification {
             EndElement("error"),
             EndElement("requestID")
           )
-        ) must beFailedTry.withThrowable[OMIParserError](s"O-MI Parser error: Unexpect end of error element before expected closing of requestID.")
+        ) must beFailedTry.withThrowable[OMIParserError](s"O-MI Parser error: Unexpected end of error element before expected closing of requestID.")
       }
       "with unexpected event before content" >>{
         buildFromEvents( 
@@ -94,7 +94,7 @@ class OMIEventBuilderTest extends Specification {
             Characters("51557117"),
             EndElement("requestID")
           )
-        ) must beFailedTry.withThrowable[OMIParserError](s"O-MI Parser error: Unexpect end of error element when expected text content.")
+        ) must beFailedTry.withThrowable[OMIParserError](s"O-MI Parser error: Unexpected end of error element when expected text content.")
       }
       "with unexpected event before opening element" >>{
         buildFromEvents( 
@@ -105,7 +105,7 @@ class OMIEventBuilderTest extends Specification {
             Characters("51557117"),
             EndElement("requestID")
           )
-        ) must beFailedTry.withThrowable[OMIParserError](s"O-MI Parser error: Unexpect end of error element before expected requestID element.")
+        ) must beFailedTry.withThrowable[OMIParserError](s"O-MI Parser error: Unexpected end of error element before expected requestID element.")
       }
       "with unexpected event after complete requestID" >>{
         buildFromEvents( 
@@ -116,7 +116,7 @@ class OMIEventBuilderTest extends Specification {
             EndElement("requestID"),
             EndElement("error")
           )
-        ) must beFailedTry.withThrowable[OMIParserError](s"O-MI Parser error: Unexpect end of error element after complete requestID element.")
+        ) must beFailedTry.withThrowable[OMIParserError](s"O-MI Parser error: Unexpected end of error element after complete requestID element.")
       }
     }
 
@@ -180,7 +180,7 @@ class OMIEventBuilderTest extends Specification {
             EndElement("msg"),
             EndElement("write")
           )
-        ) must beFailedTry.withThrowable[OMIParserError]("O-MI Parser error: Unexpect start of error element before msg element.")
+        ) must beFailedTry.withThrowable[OMIParserError]("O-MI Parser error: Unexpected start of error element before msg element.")
       }
       "with unexpected event after msg" >>{
         buildFromEvents( 
@@ -193,7 +193,7 @@ class OMIEventBuilderTest extends Specification {
             StartElement("error"),
             EndElement("write")
           )
-        ) must beFailedTry.withThrowable[OMIParserError]("O-MI Parser error: Unexpect start of error element before write element closing.")
+        ) must beFailedTry.withThrowable[OMIParserError]("O-MI Parser error: Unexpected start of error element before write element closing.")
       }
       "with unexpected event in msg" >>{
         buildFromEvents( 
@@ -206,7 +206,7 @@ class OMIEventBuilderTest extends Specification {
             EndElement("msg"),
             EndElement("write")
           )
-        ) must beFailedTry.withThrowable[OMIParserError]("O-MI Parser error: Unexpect start of error element in msg element.")
+        ) must beFailedTry.withThrowable[OMIParserError]("O-MI Parser error: Unexpected start of error element in msg element.")
       }
     }
     
@@ -270,7 +270,7 @@ class OMIEventBuilderTest extends Specification {
             EndElement("msg"),
             EndElement("call")
           )
-        ) must beFailedTry.withThrowable[OMIParserError]("O-MI Parser error: Unexpect start of error element before msg element.")
+        ) must beFailedTry.withThrowable[OMIParserError]("O-MI Parser error: Unexpected start of error element before msg element.")
       }
       "with unexpected event after msg" >>{
         buildFromEvents( 
@@ -283,7 +283,7 @@ class OMIEventBuilderTest extends Specification {
             StartElement("error"),
             EndElement("call")
           )
-        ) must beFailedTry.withThrowable[OMIParserError]("O-MI Parser error: Unexpect start of error element before call element closing.")
+        ) must beFailedTry.withThrowable[OMIParserError]("O-MI Parser error: Unexpected start of error element before call element closing.")
       }
       "with unexpected event in msg" >>{
         buildFromEvents( 
@@ -296,7 +296,7 @@ class OMIEventBuilderTest extends Specification {
             EndElement("msg"),
             EndElement("call")
           )
-        ) must beFailedTry.withThrowable[OMIParserError]("O-MI Parser error: Unexpect start of error element in msg element.")
+        ) must beFailedTry.withThrowable[OMIParserError]("O-MI Parser error: Unexpected start of error element in msg element.")
       }
     }
     "handle correctly delete element" >>{
@@ -359,7 +359,7 @@ class OMIEventBuilderTest extends Specification {
             EndElement("msg"),
             EndElement("delete")
           )
-        ) must beFailedTry.withThrowable[OMIParserError]("O-MI Parser error: Unexpect start of error element before msg element.")
+        ) must beFailedTry.withThrowable[OMIParserError]("O-MI Parser error: Unexpected start of error element before msg element.")
       }
       "with unexpected event after msg" >>{
         buildFromEvents( 
@@ -372,7 +372,7 @@ class OMIEventBuilderTest extends Specification {
             StartElement("error"),
             EndElement("delete")
           )
-        ) must beFailedTry.withThrowable[OMIParserError]("O-MI Parser error: Unexpect start of error element before delete element closing.")
+        ) must beFailedTry.withThrowable[OMIParserError]("O-MI Parser error: Unexpected start of error element before delete element closing.")
       }
       "with unexpected event in msg" >>{
         buildFromEvents( 
@@ -385,7 +385,7 @@ class OMIEventBuilderTest extends Specification {
             EndElement("msg"),
             EndElement("delete")
           )
-        ) must beFailedTry.withThrowable[OMIParserError]("O-MI Parser error: Unexpect start of error element in msg element.")
+        ) must beFailedTry.withThrowable[OMIParserError]("O-MI Parser error: Unexpected start of error element in msg element.")
       }
     }
     "handle correctly read element" >>{

@@ -278,8 +278,8 @@ trait OmiService
                      requestSource: Source[String,_],
                      currentConnectionCallback: Option[Callback] = None,
                      remote: RemoteAddress,
-                   ): Future[ResponseRequest] = {
-    try {
+                   ): Future[Future[ResponseRequest]] = {
+    Future {
 
       val startTime = currentTimestamp
 
@@ -406,7 +406,7 @@ trait OmiService
           response
       }
 
-    } catch {
+    }.recover{
 
       case ex: IllegalArgumentException => {
         log.debug(ex.getMessage)
@@ -508,17 +508,19 @@ trait OmiService
       }
   }
 
+
   /**
     * Receives HTTP-POST directed to root with o-mi xml as body. (Non-standard convenience feature)
     */
   val postXMLRequest: Route = post {
     // Handle POST requests from the client
     makePermissionTestFunction() { hasPermissionTest =>
-      extractDataBytes { requestSource =>
-      //entity(as[Source[String]]) { requestString => // XML and O-MI parsed later
+      extractDataBytes { requestSource => 
         extractClientIP { user =>
-          val response = handleRequest(hasPermissionTest, requestSource.via(byteStringToUTF8Flow), remote = user) //.map{ ns => xmlH ++ ns }
-          complete(HttpResponse(entity=chunkedStream(response)))
+          val response = handleRequest(hasPermissionTest, requestSource.via(byteStringToUTF8Flow), remote = user)
+          onSuccess(response) {r =>
+            complete(HttpResponse(entity=chunkedStream(r)))
+          }
         }
       }
     }
@@ -537,16 +539,18 @@ trait OmiService
               Some(true)
             case other: HttpHeader => None
           }
-    }{ correctCT =>
-      extractDataBytes { requestSource =>
-        extractClientIP { user =>
-          val decodedSource = requestSource.via(byteStringToUTF8Flow).via(urlDecoderFlow)
+      }{ correctCT =>
+        extractDataBytes { requestSource =>
+          extractClientIP { user =>
+            val decodedSource = requestSource.via(byteStringToUTF8Flow).via(urlDecoderFlow)
 
-          val response = handleRequest(hasPermissionTest, decodedSource, remote = user) //.map{ ns => xmlH ++ ns }
-          complete(HttpResponse(entity=chunkedStream(response)))
+            val response = handleRequest(hasPermissionTest, decodedSource, remote = user)
+            onSuccess(response) {r =>
+              complete(HttpResponse(entity=chunkedStream(r)))
+            }
+          }
         }
       }
-    }
     }
   }
   def byteStringToUTF8Flow = Flow[ByteString].map{ bStr: ByteString => bStr.decodeString("UTF-8")}
@@ -672,11 +676,12 @@ trait WebSocketOMISupport extends WebSocketUtil {
 
       case textMessage: ws.TextMessage =>
         val futureResponse: Future[ws.TextMessage] = for {
-          r <- handleRequest(hasPermissionTest,
+          r2 <- handleRequest(hasPermissionTest,
             textMessage.textStream.filter{ str => str.nonEmpty},
             createZeroCallback,
             user
           )
+          r <- r2
           versions <- singleStores.getRequestInfo(r)
         } yield ws.TextMessage.Streamed(r.asXMLSourceWithVersion(versions))
 

@@ -194,15 +194,17 @@ class OmiServiceTest(implicit ee: ExecutionEnv)
           <write msgformat="odf">
             <msg >
               <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
-                <Object>
+                <Object type="test">
                   <id>testObject</id>
-                  <InfoItem name="testSensor">
+                  <description lang="ENG">test</description>
+                  <description lang="FIN">testi</description>
+                  <InfoItem name="testSensor" type="test">
                     <name>testName</name>
                     <name>testName2</name>
                     <description lang="ENG">test</description>
                     <description lang="FIN">testi</description>
                     <MetaData>
-                      <InfoItem name="test">
+                      <InfoItem name="test" type="test">
                         <name>testName</name>
                         <description lang="ENG">test</description>
                         <value unixTime="0" type="xs:integer">10</value>
@@ -210,6 +212,9 @@ class OmiServiceTest(implicit ee: ExecutionEnv)
                     </MetaData>
                     <value unixTime="0" type="xs:integer">0</value>
                   </InfoItem>
+                  <Object type="test">
+                    <id>subObject</id>
+                  </Object>
                 </Object>
               </Objects>
             </msg>
@@ -529,8 +534,31 @@ class OmiServiceTest(implicit ee: ExecutionEnv)
           mediaType === `text/xml`
           status === OK
           responseAs[NodeSeq] must \("id") \> "testObject"  
+          responseAs[NodeSeq] must \("Object", "type" -> "test") \("id") \> "subObject"  
+          responseAs[NodeSeq] must \("description")  
+          responseAs[NodeSeq] must \("InfoItem", "name" -> "testSensor", "type" -> "test") 
+
         }
 
+    }
+    "respond successfully to GET to ids of an Object" >> {
+      Get(testPath + "/id").withHeaders(`Remote-Address`(localHost)) ~>
+        myRoute ~>
+        check {
+          mediaType === `text/xml`
+          status === OK
+          responseAs[NodeSeq] must \\("id") \> "testObject" 
+        }
+    }
+    "respond successfully to GET to descriptions of an Object" >> {
+      Get(testPath + "/description").withHeaders(`Remote-Address`(localHost)) ~>
+        myRoute ~>
+        check {
+          mediaType === `text/xml`
+          status === OK
+          responseAs[NodeSeq] must \\("description", "lang" -> "ENG") 
+          responseAs[NodeSeq] must \\("description", "lang" -> "FIN") 
+        }
     }
     val testIIPath = testPath + "/testSensor"
     "respond successfully to GET to an InfoItem" >> {
@@ -539,7 +567,7 @@ class OmiServiceTest(implicit ee: ExecutionEnv)
         check {
           mediaType === `text/xml`
           status === OK
-          responseAs[NodeSeq] must \\("InfoItem", "name" -> "testSensor") 
+          responseAs[NodeSeq] must \\("InfoItem", "name" -> "testSensor", "type" -> "test") 
         }
     }
     "respond successfully to GET to names of an InfoItem" >> {

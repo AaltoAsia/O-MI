@@ -48,39 +48,27 @@ object OMIStreamParser {
       private var state: EventBuilder[_] = new EnvelopeEventBuilder(None,currentTimestamp)
       private var done: Boolean = false
 
-
-      setHandler(out, new OutHandler {
-        override def onPull(): Unit = {
-          if( isClosed(in)) {
-            //???
-          } else {
-            pull(in)
-          }
-        }
-        override def onDownstreamFinish(): Unit = {
-          //XXX:To nothing?
-          if( isClosed(in)) {
-            completeStage()
-          } 
-
-        }
-      })
+      //override def preStart(): Unit = pull(in)
 
       setHandler(in, new InHandler {
         override def onPush(): Unit = {
           val event: ParseEvent = grab(in)
+
+          state = state.parse(event)
+
           Try{
-            state = state.parse(event) 
             state match {
               case builder: EnvelopeEventBuilder if builder.isComplete  =>
                 if( !done ){
                   done = true
-                  emit(out,builder.build )
-                } else {
+                  push(out,builder.build )
+                  pull(in)
                 }
               case other: EventBuilder[_] =>
                 if( other.isComplete )
                   failStage(OMIParserError("Non EnvelopeBuilder is complete"))
+                else
+                  pull(in)
             }
           }.recover{
             case error: OMIParserError => 
@@ -88,21 +76,15 @@ object OMIStreamParser {
             case t: Throwable => 
               failStage( t)
           }
-          if( isClosed(in)) {
-            //???
-          } else {
-            pull(in)
-          }
-        }
 
-        override def onUpstreamFinish(): Unit = {
-          if( isClosed(in)) {
-            completeStage()
-          }//Maybe something else? 
-          completeStage()
+        }
+      })
+
+      setHandler(out, new OutHandler {
+        override def onPull(): Unit = {
+          pull(in)
         }
       })
     }
   }
-  
 }

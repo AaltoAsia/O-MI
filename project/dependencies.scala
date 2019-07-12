@@ -4,12 +4,14 @@ import Keys._
 object Dependencies {
 
   //Akka 
-  val akkaV = "2.5.23"
+  val akkaV = "2.6.0-M2" // "2.6-SNAPSHOT" //"2.5.23"
+
   val akkaHttpV = "10.1.8"
-  val akkaActor    = "com.typesafe.akka" %% "akka-actor" % akkaV //
-  val akkaSlf4j    = "com.typesafe.akka" %% "akka-slf4j" % akkaV
-  val akkaStream   = "com.typesafe.akka" %% "akka-stream" % akkaV
+  val akkaActor       = "com.typesafe.akka" %% "akka-actor" % akkaV //
+  val akkaSlf4j       = "com.typesafe.akka" %% "akka-slf4j" % akkaV
+  val akkaStream      = "com.typesafe.akka" %% "akka-stream" % akkaV
   val akkaPersistance = "com.typesafe.akka" %% "akka-persistence" % akkaV
+
 
   val http         = "com.typesafe.akka" %% "akka-http-core" % akkaHttpV
   val httpExperimnt= "com.typesafe.akka" %% "akka-http" % akkaHttpV
@@ -73,6 +75,7 @@ object Dependencies {
 
   //Java dependencies
   val gson         = "com.google.code.gson"         % "gson"         % "2.8.5"
+
   
     val commonDependencies: Seq[ModuleID] = Seq(
     akkaActor,

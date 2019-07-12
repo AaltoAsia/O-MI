@@ -149,7 +149,7 @@ class ObjectEventBuilder(
                 case startElement: StartElement if startElement.localName == "id" =>
                   new IdEventBuilder(Some(this),receiveTime).parse(event)
                 case event: ParseEvent if mainId.isEmpty =>
-                  unexpectedEventHandle( s"before least one Id element in Object inside parent $parentPath.", event, this)
+                  unexpectedEventHandle( s"before at least one Id element in Object inside parent $parentPath.", event, this)
                 case startElement: StartElement if startElement.localName == "description" =>
                   position = Descriptions
                   parse(event)
@@ -487,6 +487,9 @@ extends EventBuilder[Value[_]]{
         }
                     case Content =>
                       event match {
+                        case endElement: EndElement if endElement.localName == "value" =>
+                          position = CloseTag
+                          parse(event)
                         case startElement: StartElement if startElement.localName == "Objects" && typeAttribute == "odf" =>
                           position = CloseTag
                           new ODFEventBuilder(Some(this),receiveTime)
@@ -640,42 +643,42 @@ class IdEventBuilder(
           case event: ParseEvent =>
             unexpectedEventHandle( "before expected id, name or altName element.", event, this)
         }
-          case Content =>
-            event match {
-              case content: TextEvent => 
-                id = id+ content.text
-                position = CloseTag
+      case Content =>
+        event match {
+          case content: TextEvent => 
+            id = id+ content.text
+            position = CloseTag
+            this
+          case event: ParseEvent =>
+            unexpectedEventHandle( "when expected text content.", event, this)
+        }
+      case CloseTag =>
+        event match {
+          case event: ParseEvent if complete =>
+            unexpectedEventHandle( s"after complete $openingTag element.", event, this)
+          case content: TextEvent => 
+            id = id+ content.text
+            this
+          case endElement: EndElement if endElement.localName == openingTag =>
+            previous match {
+              case Some(state: InfoItemEventBuilder) => 
+                if( openingTag == "name" || openingTag == "altName" )
+                  state.addName( build ) 
+                else
+                  throw ODFParserError("id element should not be used for InfoItem")
+              case Some(state: ObjectEventBuilder ) =>  
+                if( openingTag == "id" )
+                  state.addId( build ) 
+                else
+                  throw ODFParserError("name or altName element should not be used for Object")
+              case Some(state: EventBuilder[_]) => throw ODFParserError("Id state after wrong state. Previous should be InfoItem or Object")
+              case None =>
+                complete = true
                 this
-              case event: ParseEvent =>
-                unexpectedEventHandle( "when expected text content.", event, this)
             }
-              case CloseTag =>
-                event match {
-                  case event: ParseEvent if complete =>
-                    unexpectedEventHandle( s"after complete $openingTag element.", event, this)
-                  case content: TextEvent => 
-                    id = id+ content.text
-                    this
-                  case endElement: EndElement if endElement.localName == openingTag =>
-                    previous match {
-                      case Some(state: InfoItemEventBuilder) => 
-                        if( openingTag == "name" || openingTag == "altName" )
-                          state.addName( build ) 
-                        else
-                          throw ODFParserError("id element should not be used for InfoItem")
-                      case Some(state: ObjectEventBuilder ) =>  
-                        if( openingTag == "id" )
-                          state.addId( build ) 
-                        else
-                          throw ODFParserError("name or altName element should not be used for Object")
-                      case Some(state: EventBuilder[_]) => throw ODFParserError("Id state after wrong state. Previous should be InfoItem or Object")
-                      case None =>
-                        complete = true
-                        this
-                    }
-                      case event: ParseEvent =>
-                        unexpectedEventHandle( s"before expected closing of $openingTag", event, this)
-                }
+              case event: ParseEvent =>
+                unexpectedEventHandle( s"before expected closing of $openingTag", event, this)
+        }
     }
   }
 }
