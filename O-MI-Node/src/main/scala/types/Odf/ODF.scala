@@ -182,114 +182,122 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
 
   /**
     * Find given paths and all paths of the descendants.
+    * If generationDifference is given then each descendant can be at most given
+    * amount of generations younger.
     * Same as [[selectSubTreePaths]] but doesn't add ancestors of the subtrees
     */
-  final def subTreePaths(pathsToGet: Set[Path]): TreeSet[Path] = (
-    TreeSet( pathsToGet.flatMap {
-      wantedPath: Path =>
-      paths.keysIteratorFrom(wantedPath).takeWhile {
-        path: Path => path.startsWith(wantedPath)
-      }
-    }.toSeq:_*)(PathOrdering)
-  )
+   final def subTreePaths(pathsToGet: Set[Path], generationDifference: Option[Int] = None): TreeSet[Path] = (
+     TreeSet( pathsToGet.flatMap {
+       wantedPath: Path =>
+         paths.keysIteratorFrom(wantedPath).takeWhile {
+           path: Path => path.startsWith(wantedPath)
+         }.filter{
+           path: Path => 
+             generationDifference.forall{
+               n =>
+                 path.length - wantedPath.length <= n
+            }
+         }
+     }.toSeq:_*)(PathOrdering)
+   )
 
-  /**
+   /**
     * Same as [[subTreePaths]] but adds ancestors of the subtrees
     */
-  final def selectSubTreePaths(pathsToGet: Set[Path]): TreeSet[Path] = {
-    subTreePaths(pathsToGet) ++ pathsToGet.flatMap{
-        path => path.getAncestors
-        //case path: Path if (paths.contains(path)) =>
-        //  path.getAncestors
-        //case _ => Set()
-    }
-  }
+   final def selectSubTreePaths(pathsToGet: Set[Path], generationDifference: Option[Int] = None): TreeSet[Path] = {
+     subTreePaths(pathsToGet, generationDifference) ++ pathsToGet.flatMap{
+       path => path.getAncestors
+       //case path: Path if (paths.contains(path)) =>
+       //  path.getAncestors
+       //case _ => Set()
+     }
+   }
 
-  /*
-   * Select paths and their descedants from this ODF.
-   */
-  def selectSubTree(pathsToGet: Set[Path]): ODF
+   /*
+    * Select paths and their descedants from this ODF.
+    */
+   def selectSubTree(pathsToGet: Set[Path]): ODF
 
-  /*
-   * Select paths and their ancestors from this ODF.
-   */
-  def selectUpTree(pathsToGet: Set[Path]): ODF
+   /*
+    * Select paths and their ancestors from this ODF.
+    */
+   def selectUpTree(pathsToGet: Set[Path]): ODF
 
-  def --(removedPaths: Iterable[Path]): ODF = removePaths(removedPaths)
+   def --(removedPaths: Iterable[Path]): ODF = removePaths(removedPaths)
 
-  def removePath(path: Path): ODF
+   def removePath(path: Path): ODF
 
-  def add(node: Node): ODF
+   def add(node: Node): ODF
 
-  def addNodes(nodesToAdd: Iterable[Node]): ODF
+   def addNodes(nodesToAdd: Iterable[Node]): ODF
 
-  implicit def asObjectsType: ObjectsType = {
-    //val timer = LapTimer(println)
-    val parentPath2IIt: mutable.Map[Path,Iterable[InfoItemType]] = mutable.Map.empty
-    val objs: mutable.Buffer[Object] = mutable.Buffer.empty
-    var objects = Objects()
-    //timer.step("aOT: init")
-    for( n <- nodes.values ){
-      n match {
-        case ii: InfoItem => 
-          val parent = ii.path.getParent
-          parentPath2IIt.update(parent, (parentPath2IIt.get(parent).toVector.flatten ++ Vector(ii.asInfoItemType) ))
-        case obj: Object => objs += obj
-        case obj: Objects => objects = obj
-      }
-    }
-    //timer.step("aOT: node grouping")
-    val parentPath2Objs: Map[Path,Iterable[Tuple2[Path,ObjectType]]] = objs.map{
-      case obj: Object => 
-        obj.path -> obj.asObjectType( parentPath2IIt.get(obj.path).toSeq.flatten, Seq.empty)
-    }.groupBy(_._1.getParent)  
-    //timer.step("aOT: IIs to parents")
-    def temp(path:Path, obj: ObjectType): ObjectType ={
-      val cobjs: Iterable[ObjectType] = parentPath2Objs.get(path).toSeq.flatten.map{
-        case ( p: Path, ot: ObjectType) => temp(p,ot)
-      }
-      obj.copy( ObjectValue = cobjs.toSeq ) 
-    }
-    val topObjects: Iterable[ObjectType] = parentPath2Objs.get( Path("Objects") ).toSeq.flatten.map{
-      case (path: Path, obj: ObjectType) =>  temp(path, obj) 
-        
-    }
-    //timer.step("aOT: Objs to top object s")
-    val objsT =objects.asObjectsType( topObjects )
-    //timer.step("Objects type")
-    //timer.total()
-    objsT
-  }
+   implicit def asObjectsType: ObjectsType = {
+     //val timer = LapTimer(println)
+     val parentPath2IIt: mutable.Map[Path,Iterable[InfoItemType]] = mutable.Map.empty
+     val objs: mutable.Buffer[Object] = mutable.Buffer.empty
+     var objects = Objects()
+     //timer.step("aOT: init")
+     for( n <- nodes.values ){
+       n match {
+         case ii: InfoItem => 
+           val parent = ii.path.getParent
+           parentPath2IIt.update(parent, (parentPath2IIt.get(parent).toVector.flatten ++ Vector(ii.asInfoItemType) ))
+         case obj: Object => objs += obj
+         case obj: Objects => objects = obj
+       }
+     }
+     //timer.step("aOT: node grouping")
+     val parentPath2Objs: Map[Path,Iterable[Tuple2[Path,ObjectType]]] = objs.map{
+       case obj: Object => 
+         obj.path -> obj.asObjectType( parentPath2IIt.get(obj.path).toSeq.flatten, Seq.empty)
+     }.groupBy(_._1.getParent)  
+     //timer.step("aOT: IIs to parents")
+     def temp(path:Path, obj: ObjectType): ObjectType ={
+       val cobjs: Iterable[ObjectType] = parentPath2Objs.get(path).toSeq.flatten.map{
+         case ( p: Path, ot: ObjectType) => temp(p,ot)
+       }
+       obj.copy( ObjectValue = cobjs.toSeq ) 
+     }
+     val topObjects: Iterable[ObjectType] = parentPath2Objs.get( Path("Objects") ).toSeq.flatten.map{
+       case (path: Path, obj: ObjectType) =>  temp(path, obj) 
 
-  def update(that: ODF): ODF
+     }
+     //timer.step("aOT: Objs to top object s")
+     val objsT =objects.asObjectsType( topObjects )
+     //timer.step("Objects type")
+     //timer.total()
+     objsT
+   }
 
-  def valuesRemoved: ODF
+   def update(that: ODF): ODF
 
-  def descriptionsRemoved: ODF
+   def valuesRemoved: ODF
 
-  def metaDatasRemoved: ODF
-  def attributesRemoved: ODF
+   def descriptionsRemoved: ODF
 
-  //TODO: remove if newer is faster
-  /*
-  final def createObjectType(obj: Object): ObjectType = {
-    val (objects, infoItems) = getChilds(obj.path).partition {
-      case obj: Object => true
-      case ii: InfoItem => false
-    }
-    obj.asObjectType(
-      infoItems.collect {
-        case ii: InfoItem => ii.asInfoItemType
-      },
-      objects.collect {
-        case obj: Object =>
-          createObjectType(obj)
-      }
-    )
-  }*/
+   def metaDatasRemoved: ODF
+   def attributesRemoved: ODF
+
+   //TODO: remove if newer is faster
+   /*
+   final def createObjectType(obj: Object): ObjectType = {
+     val (objects, infoItems) = getChilds(obj.path).partition {
+       case obj: Object => true
+       case ii: InfoItem => false
+     }
+     obj.asObjectType(
+       infoItems.collect {
+         case ii: InfoItem => ii.asInfoItemType
+       },
+       objects.collect {
+         case obj: Object =>
+           createObjectType(obj)
+       }
+       )
+   }*/
 
   final def asXMLEvents(odfVersion: Option[OdfVersion]=None): SeqView[ParseEvent, Iterable[_]] = {
-    
+
     /*object ResponseOrdering extends scala.math.Ordering[Node] {
       def compare(l: Node, r: Node): Int = {
         if( PathOrdering.compare(l.path.getParent, r.path.getParent) == 0){
@@ -300,62 +308,62 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
             case (nl: Node, nr: Node) => 
               PathOrdering.compare(l.path,r.path)
           }
-        } else {
-              PathOrdering.compare(l.path,r.path)
-        }
+          } else {
+            PathOrdering.compare(l.path,r.path)
+          }
       }
     }*/
-    def sort = {
-      //val timer = LapTimer(println)
-      var iis: List[InfoItem] = List.empty
-      var objs: List[Node] = List.empty
-      nodes.values.foreach{
-        case ii: InfoItem => iis = ii :: iis
-        case node: Node => objs = node :: objs
-      }
-      //timer.step("Partition")
-      val parent2IIs: Map[Path,Iterable[InfoItem]] = iis.groupBy{ ii: InfoItem => ii.path.getParent}
-      //timer.step("Group by")
-      val sorted = objs.sortBy(_.path)(PathOrdering)
-      //timer.step("sort")
-      val res = sorted.flatMap{
-        case node: Node =>
-          Seq(node) ++ parent2IIs.get(node.path).toSeq.flatten
-      }.toVector
-      //timer.step("flat map")
-      //timer.total()
-      res
-    }
-    
-    val sortedNodes = sort
+   def sort = {
+     //val timer = LapTimer(println)
+     var iis: List[InfoItem] = List.empty
+     var objs: List[Node] = List.empty
+     nodes.values.foreach{
+       case ii: InfoItem => iis = ii :: iis
+       case node: Node => objs = node :: objs
+     }
+     //timer.step("Partition")
+     val parent2IIs: Map[Path,Iterable[InfoItem]] = iis.groupBy{ ii: InfoItem => ii.path.getParent}
+     //timer.step("Group by")
+     val sorted = objs.sortBy(_.path)(PathOrdering)
+     //timer.step("sort")
+     val res = sorted.flatMap{
+       case node: Node =>
+         Seq(node) ++ parent2IIs.get(node.path).toSeq.flatten
+     }.toVector
+     //timer.step("flat map")
+     //timer.total()
+     res
+   }
 
-    var parentStack: List[Path] = Nil
-    def handleEnd( index: Int ) = {
-      if( index == sortedNodes.size - 1 ){
-        val count = Math.max(parentStack.length-1,0)
-        Vector.fill(count)( EndElement("Object") ) ++ Vector(EndElement("Objects"))
-      } else {
-        Vector.empty[ParseEvent]
-      }
-    }
-    val events = sortedNodes.zipWithIndex.view.flatMap{
-      case (objs: Objects, index: Int) =>
-        parentStack = objs.path +: parentStack //parentStack.push(objs.path)
-        Vector(
-          StartElement(
-            "Objects",
-             (odfVersion.map(_.number.toString) orElse objs.version).map{
-               ver: String =>
-                 Attribute("version", ver)
-             }.toList ++ objs.attributes.map{
-               case (key: String, value: String) => 
-                 Attribute(key,value)
-             },
-            namespaceCtx = List(
-              //Namespace(s"http://www.opengroup.org/xsd/odf/${objs.version.getOrElse("1.0")}/",None))
-              Namespace(odfVersion.getOrElse(OdfVersion1).namespace,None))
-          )
-        ) ++ handleEnd(index)
+   val sortedNodes = sort
+
+   var parentStack: List[Path] = Nil
+   def handleEnd( index: Int ) = {
+     if( index == sortedNodes.size - 1 ){
+       val count = Math.max(parentStack.length-1,0)
+       Vector.fill(count)( EndElement("Object") ) ++ Vector(EndElement("Objects"))
+     } else {
+       Vector.empty[ParseEvent]
+     }
+   }
+   val events = sortedNodes.zipWithIndex.view.flatMap{
+     case (objs: Objects, index: Int) =>
+       parentStack = objs.path +: parentStack //parentStack.push(objs.path)
+       Vector(
+         StartElement(
+           "Objects",
+           (odfVersion.map(_.number.toString) orElse objs.version).map{
+             ver: String =>
+               Attribute("version", ver)
+               }.toList ++ objs.attributes.map{
+                 case (key: String, value: String) => 
+                   Attribute(key,value)
+               },
+               namespaceCtx = List(
+                 //Namespace(s"http://www.opengroup.org/xsd/odf/${objs.version.getOrElse("1.0")}/",None))
+                 Namespace(odfVersion.getOrElse(OdfVersion1).namespace,None))
+               )
+       ) ++ handleEnd(index)
       case (obj: Object, index: Int) =>
         var count: Int = 0
         while(parentStack.nonEmpty && parentStack.head != obj.path.getParent){
@@ -373,34 +381,34 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
             "Object",
             obj.typeAttribute.map{
               str: String =>
-              Attribute("type",str)
-            }.toList ++obj.attributes.map{
-              case (key: String, value: String) => Attribute(key,value)
-            }.toList
+                Attribute("type",str)
+                }.toList ++obj.attributes.map{
+                  case (key: String, value: String) => Attribute(key,value)
+                }.toList
 
-          )) ++ obj.ids.view.flatMap{
-            case id: QlmID => id.asXMLEvents("id")
-        } ++ obj.descriptions.view.flatMap{
-          case desc: Description =>
-            desc.asXMLEvents
-        } ++ handleEnd(index)      
-      case (ii: InfoItem, index: Int) =>
+                )) ++ obj.ids.view.flatMap{
+                  case id: QlmID => id.asXMLEvents("id")
+                  } ++ obj.descriptions.view.flatMap{
+                    case desc: Description =>
+                      desc.asXMLEvents
+                  } ++ handleEnd(index)      
+                    case (ii: InfoItem, index: Int) =>
 
-        var count: Int = 0
-        while(parentStack.nonEmpty && parentStack.head != ii.path.getParent){
-          val first = parentStack.headOption
-          parentStack = parentStack.tail
-          first match{
-            case Some(path) =>
-              count = count + 1
-            case None =>
-          }
-        }
-        Vector.fill(count)( EndElement("Object") ) ++ ii.asXMLEvents ++ handleEnd(index)
+                      var count: Int = 0
+                      while(parentStack.nonEmpty && parentStack.head != ii.path.getParent){
+                        val first = parentStack.headOption
+                        parentStack = parentStack.tail
+                        first match{
+                          case Some(path) =>
+                            count = count + 1
+                          case None =>
+                        }
+                      }
+                      Vector.fill(count)( EndElement("Object") ) ++ ii.asXMLEvents ++ handleEnd(index)
 
 
-    } 
-    events 
+   } 
+   events 
   }
 
   final implicit def asXML: NodeSeq = {
@@ -415,10 +423,10 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
 
   override def toString: String = {
     "ODF{\n" +
-      nodes.map {
-        case (p, node) =>
-          s"$p --> $node"
-      }.mkString("\n") + "\n}"
+    nodes.map {
+      case (p, node) =>
+        s"$p --> $node"
+    }.mkString("\n") + "\n}"
   }
 
   override def equals(that: Any): Boolean = {
@@ -434,8 +442,8 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
 
   def readTo(to: ODF): ODF
 
-  def readToNodes(to: ODF): Iterable[Node] = {
-    val wantedPaths: TreeSet[Path] = TreeSet(selectSubTreePaths(to.getLeafPaths).intersect(paths).toSeq:_*)(PathOrdering)
+  def readToNodes(to: ODF, generationDifference: Option[Int] = None): Iterable[Node] = {
+    val wantedPaths: TreeSet[Path] = TreeSet(selectSubTreePaths(to.getLeafPaths, generationDifference).intersect(paths).toSeq:_*)(PathOrdering)
     val wantedNodes: Iterable[Node] = wantedPaths.map {
       path: Path =>
         (nodes.get(path), to.nodes.get(path)) match {

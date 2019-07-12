@@ -27,7 +27,7 @@ trait OdfDatabase extends Tables with DB with TrimmableDB {
   def initialize(): Unit = {
     val findTables = db.run(namesOfCurrentTables)
     val createMissingTables = findTables.flatMap {
-      tableNames: Seq[String] =>
+      tableNames: Set[String] =>
         val queries = if (tableNames.contains("PATHSTABLE")) {
           //Found needed table, check for value tables
           /*
@@ -214,7 +214,7 @@ trait OdfDatabase extends Tables with DB with TrimmableDB {
           }
         }
         namesOfCurrentTables.flatMap {
-          tableNames: Seq[String] =>
+          tableNames: Set[String] =>
             val creations = addedDBPaths.collect {
               case DBPath(Some(id), path, true) =>
                 val pathValues = new PathValues(path, id)
@@ -479,7 +479,7 @@ trait OdfDatabase extends Tables with DB with TrimmableDB {
       }.transactionally
     ).flatMap { _ =>
       db.run(namesOfCurrentTables).map {
-        tableNames: Seq[String] =>
+        tableNames: Set[String] =>
           if (tableNames.nonEmpty) {
             val msg = s"Could not drop all tables.  Following tables found afterwards: ${tableNames.mkString(", ")}."
             log.error(msg)
