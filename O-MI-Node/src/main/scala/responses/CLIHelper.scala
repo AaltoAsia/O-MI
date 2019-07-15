@@ -95,7 +95,7 @@ class CLIHelper(val singleStores: SingleStores, dbConnection: DB)(implicit syste
     for {
       odf <- odfF
       leafs = odf.getLeafs
-      o: Option[ODF] <- dbConnection.getNBetween(leafs, None, None, Some(100), None)
+      o: Option[ODF] <- dbConnection.getNBetween(leafs, None, None, Some(100), None, None)
       res = o.map(_.union(odf))
     } yield res
   }

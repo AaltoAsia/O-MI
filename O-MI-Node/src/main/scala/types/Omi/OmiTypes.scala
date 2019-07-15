@@ -520,6 +520,7 @@ case class ReadRequest(
                         end: Option[Timestamp] = None,
                         newest: Option[Int] = None,
                         oldest: Option[Int] = None,
+                        depth: Option[Int] = None,
                         callback: Option[Callback] = None,
                         ttl: Duration = 10.seconds,
                         private val user0: UserInfo = UserInfo(),
@@ -573,6 +574,8 @@ case class ReadRequest(
           n => Attribute("newest",n.toString)
         }.toList ++ oldest.map{
           n => Attribute("oldest",n.toString)
+        }.toList ++ depth.map{
+          n => Attribute("depth",n.toString)
         }.toList ++ begin.map{
           timestamp => Attribute("begin",timestampToDateTimeString(timestamp))
         }.toList ++ end.map{

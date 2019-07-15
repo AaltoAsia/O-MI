@@ -12,7 +12,7 @@ class MutableODF private[odf](
                              ) extends ODF {
   protected[odf] val paths: MutableTreeSet[Path] = MutableTreeSet(nodes.keys.toSeq: _*)(PathOrdering)
 
-  def readTo(to: ODF): MutableODF = MutableODF(readToNodes(to))
+  def readTo(to: ODF, generationDifference: Option[Int] = None): MutableODF = MutableODF(readToNodes(to, generationDifference))
 
   def update(that: ODF): MutableODF = {
     nodes.valuesIterator.foreach {
@@ -184,13 +184,13 @@ class MutableODF private[odf](
   /*
    * Select paths and their descedants from this ODF.
    */
-  def selectSubTree(pathsToGet: Set[Path]): MutableODF = {
+  def selectSubTree(pathsToGet: Set[Path], generationDifference: Option[Int] = None): MutableODF = {
     MutableODF(
       nodes.values.filter {
         node: Node =>
           pathsToGet.exists {
             filter: Path =>
-              filter.isAncestorOf(node.path) || filter == node.path
+              (filter.isAncestorOf(node.path) || filter == node.path) && generationDifference.forall{ n => node.path.length - filter.length <= n}
           }
       }.toVector
     )

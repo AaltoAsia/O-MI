@@ -369,6 +369,7 @@ class ReadEventBuilder(
   private var intervalO: Option[Duration] = None
   private var begin: Option[Timestamp] = None
   private var end: Option[Timestamp] = None
+  private var depth: Option[Int] = None
   private var all: Option[Boolean] = None
 
   private var requestIds: List[Long] = List.empty
@@ -401,6 +402,7 @@ class ReadEventBuilder(
             end,
             newest,
             oldest,
+            depth,
             callback,
             ttl
           )
@@ -416,6 +418,10 @@ class ReadEventBuilder(
               all = startElement.attributes.get("all").map{ 
                 str: String => 
                   Try{ str.toBoolean }.getOrElse{ throw OMIParserError("Attribute all found for read request but it is not type of boolean.")}
+              }
+              depth = startElement.attributes.get("depth").map{ 
+                str: String => 
+                  Try{ str.toInt }.getOrElse{ throw OMIParserError("Attribute depth found for read request but it is not type of Int.")}
               }
 
               newest = startElement.attributes.get("newest").map{ 

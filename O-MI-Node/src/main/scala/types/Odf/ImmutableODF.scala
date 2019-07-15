@@ -43,11 +43,11 @@ case class ImmutableODF private[odf](
       }.toVector)
   }
 
-  def readTo(to: ODF): ImmutableODF = {
+  def readTo(to: ODF, generationDifference: Option[Int] = None): ImmutableODF = {
     //val timer = LapTimer(println)
     val leafs = to.getLeafPaths
     //timer.step("leafs")
-    val sstp =selectSubTreePaths(leafs)
+    val sstp =selectSubTreePaths(leafs, generationDifference)
     //timer.step("sstp")
     val intersect = sstp.intersect(paths)
     //timer.step("intersect")
@@ -202,8 +202,8 @@ case class ImmutableODF private[odf](
   /*
    * Select paths and their descedants from this ODF.
    */
-  def selectSubTree(pathsToGet: Set[Path]): ImmutableODF = {
-    val ps = selectSubTreePaths(pathsToGet)
+  def selectSubTree(pathsToGet: Set[Path], generationDifference: Option[Int] = None): ImmutableODF = {
+    val ps = selectSubTreePaths(pathsToGet,generationDifference)
     ImmutableODF(
       ps.flatMap {
         path: Path =>
