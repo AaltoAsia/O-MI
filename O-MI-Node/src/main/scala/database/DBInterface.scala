@@ -211,7 +211,7 @@ trait DB {
                    end: Option[Timestamp],
                    newest: Option[Int],
                    oldest: Option[Int],
-                   depth: Option[Int]
+                   maxLevels: Option[Int]
                  )(implicit timeout: Timeout): Future[Option[ODF]]
 
   /**

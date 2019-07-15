@@ -298,14 +298,14 @@ trait OdfDatabase extends Tables with DB with TrimmableDB {
                    endO: Option[Timestamp],
                    newestO: Option[Int],
                    oldestO: Option[Int],
-                   depth: Option[Int]
+                   maxLevels: Option[Int]
                  )(implicit timeout: Timeout): Future[Option[ODF]] = {
     if (beginO.isEmpty && endO.isEmpty && newestO.isEmpty && oldestO.isEmpty) {
       readLatestFromCache(
         nodes.map {
           node => node.path
         }.toSeq,
-        depth
+        maxLevels
       )
 
     } else {
@@ -314,7 +314,7 @@ trait OdfDatabase extends Tables with DB with TrimmableDB {
       }.toSet
       singleStores.getHierarchyTree().flatMap{
         odf: ODF => 
-          val t = odf.subTreePaths(leafPaths, depth).toVector
+          val t = odf.subTreePaths(leafPaths, maxLevels).toVector
           //Filter only leafs
           val iiIOAs = t.flatMap{
             path => pathToDBPath.single.get(path)
@@ -493,12 +493,12 @@ trait OdfDatabase extends Tables with DB with TrimmableDB {
     }
   }
 
-  def readLatestFromCache(leafPaths: Seq[Path], depth: Option[Int]): Future[Option[ImmutableODF]] = {
+  def readLatestFromCache(leafPaths: Seq[Path], maxLevels: Option[Int]): Future[Option[ImmutableODF]] = {
     // NOTE: Might go off sync with tree or values if the request is large,
     // but it shouldn't be a big problem
     val p2iisF: Future[Map[Path, InfoItem]] = singleStores.getHierarchyTree().map{
       odf => 
-        val t = odf.subTreePaths(leafPaths.toSet,depth)
+        val t = odf.subTreePaths(leafPaths.toSet,maxLevels)
         t.filterNot{
             path => t.exists{
               op => path.isAncestorOf(op)

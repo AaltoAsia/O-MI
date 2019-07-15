@@ -40,7 +40,7 @@ trait DBReadHandler extends DBHandlerBase {
             default.end.map { t => s"end: $t," }.getOrElse("") +
             default.newest.map { t => s"newest: $t," }.getOrElse("") +
             default.oldest.map { t => s"oldest: $t," }.getOrElse("") +
-            default.depth.map { t => s"oldest: $t," }.getOrElse("") +
+            default.maxLevels.map { t => s"oldest: $t," }.getOrElse("") +
             s"ttl: ${default.ttl} )"
         )
 
@@ -56,7 +56,7 @@ trait DBReadHandler extends DBHandlerBase {
           read.end,
           read.newest,
           read.oldest,
-          read.depth
+          read.maxLevels
         )
 
         // NOTE: Might go off sync with tree or values if the request is large,
@@ -64,7 +64,7 @@ trait DBReadHandler extends DBHandlerBase {
         //val mdtimer = LapTimer(log.info)
         val fmetadataTree: Future[ImmutableODF] = singleStores.getHierarchyTree()
 
-        val fodfWithMetaData: Future[ODF] = fmetadataTree.map(_.readTo(requestedODF,read.depth).valuesRemoved)
+        val fodfWithMetaData: Future[ODF] = fmetadataTree.map(_.readTo(requestedODF,read.maxLevels).valuesRemoved)
         log.debug( s" Requested paths: " + leafs.map{ _.path}.mkString("\n"))
 
         val resultF = odfWithValuesO.flatMap {
