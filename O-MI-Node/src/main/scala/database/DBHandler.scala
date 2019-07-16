@@ -1,5 +1,6 @@
 package database
 
+import http.OmiConfigExtension
 import agentSystem.AgentEvents._
 import agentSystem.{AgentName, AgentResponsibilities}
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
@@ -21,6 +22,7 @@ trait DBHandlerBase extends Actor
   protected implicit def removeHandler(): CLIHelperT
 
   protected def agentResponsibilities: AgentResponsibilities
+  protected implicit def settings: OmiConfigExtension
 }
 
 object DBHandler {
@@ -29,6 +31,8 @@ object DBHandler {
              singleStores: SingleStores,
              callbackHandler: CallbackHandler,
              removeHandler: CLIHelperT
+            )(
+             implicit settings: OmiConfigExtension
            ): Props = Props(
     new DBHandler(
       dbConnection,
@@ -45,6 +49,8 @@ class DBHandler(
                  protected val singleStores: SingleStores,
                  protected val callbackHandler: CallbackHandler,
                  protected val removeHandler: CLIHelperT
+                )(
+                 protected implicit val settings: OmiConfigExtension
                ) extends DBReadHandler
   with DBWriteHandler with DBDeleteHandler {
 

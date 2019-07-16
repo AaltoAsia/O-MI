@@ -33,6 +33,16 @@ trait DBReadHandler extends DBHandlerBase {
             )
           ))
         )
+      case read: ReadRequest if 
+        read.newest.exists{ n => n > settings.maximumNewest } || 
+        read.oldest.exists{ n => n > settings.maximumNewest } =>
+        Future.successful(
+          ResponseRequest(Vector(
+            Results.InvalidRequest(
+              Some(read.newest.map(_=>"newest").getOrElse("oldest") + " > " + settings.maximumNewest)
+            )
+          ))
+        )
       case default: ReadRequest =>
         log.debug(
           s"Read(" +
