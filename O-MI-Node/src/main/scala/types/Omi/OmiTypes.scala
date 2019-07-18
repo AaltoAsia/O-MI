@@ -122,7 +122,7 @@ sealed trait OmiRequest extends RequestWrapper with JavaOmiRequest {
   def callbackAsUri: Option[URI] = callback map { cb => new URI(cb.address) }
 
   def withCallback: Option[Callback] => OmiRequest
-  def withRequestID: Option[Long] => OmiRequest
+  def withRequestToken: Option[Long] => OmiRequest
 
   def hasCallback: Boolean = callback.nonEmpty
 
@@ -148,7 +148,7 @@ sealed trait OmiRequest extends RequestWrapper with JavaOmiRequest {
   def senderInformation: Option[SenderInformation]
 
   def withSenderInformation(ni: SenderInformation): OmiRequest
-  def requestID: Option[Long] 
+  def requestToken: Option[Long] 
   def asXMLEvents: SeqView[ParseEvent,Seq[_]] 
   def omiEnvelopeEvents(events: SeqView[ParseEvent,Seq[_]]): SeqView[ParseEvent,Seq[_]] ={
     Vector(
@@ -526,7 +526,7 @@ case class ReadRequest(
                         private val user0: UserInfo = UserInfo(),
                         senderInformation: Option[SenderInformation] = None,
                         ttlLimit: Option[Timestamp] = None,
-                        requestID: Option[Long] = None
+                        requestToken: Option[Long] = None
                       ) extends OmiRequest with OdfRequest {
   user = user0
 
@@ -539,7 +539,7 @@ case class ReadRequest(
   // callback: Option[Callback] = None,
   // ttl: Duration = 10.seconds) = this(odf,begin,end,newest,oldest,callback,ttl,None)
   def withCallback: Option[Callback] => ReadRequest = cb => this.copy(callback = cb)
-  def withRequestID: Option[Long] => ReadRequest = id => this.copy(requestID = id )
+  def withRequestToken: Option[Long] => ReadRequest = id => this.copy(requestToken = id )
 
   implicit def asReadRequest: xmlTypes.ReadRequestType = {
     xmlTypes.ReadRequestType(
@@ -584,14 +584,7 @@ case class ReadRequest(
           cb => Attribute("callback",cb.toString)
         }.toList
       )
-    ).view ++ requestID.map{
-      id => 
-        Vector(
-          StartElement("requestID"),
-          Characters(id.toString),
-          EndElement("requestID")
-        )
-    }.toSeq.flatten ++ odfAsOmiMsg ++ Vector(EndElement("read")).view
+    ).view ++ odfAsOmiMsg ++ Vector(EndElement("read")).view
     omiEnvelopeEvents(events)
   }
   implicit def asOmiEnvelope: xmlTypes.OmiEnvelopeType = requestToEnvelope(asReadRequest, ttlAsSeconds)
@@ -613,13 +606,13 @@ case class PollRequest(
                         private val user0: UserInfo = UserInfo(),
                         senderInformation: Option[SenderInformation] = None,
                         ttlLimit: Option[Timestamp] = None,
-                        requestID: Option[Long] = None
+                        requestToken: Option[Long] = None
                       ) extends OmiRequest {
 
   user = user0
 
   def withCallback: Option[Callback] => PollRequest = cb => this.copy(callback = cb)
-  def withRequestID: Option[Long] => PollRequest = id => this.copy(requestID = id )
+  def withRequestToken: Option[Long] => PollRequest = id => this.copy(requestToken = id )
 
   implicit def asReadRequest: xmlTypes.ReadRequestType = xmlTypes.ReadRequestType(
     None,
@@ -649,7 +642,7 @@ case class PollRequest(
           cb => Attribute("callback",cb.toString)
         }.toList
       )
-    ).view ++ requestID.map{
+    ).view ++ requestIDs.map{
       id => 
         Vector(
           StartElement("requestID"),
@@ -674,14 +667,14 @@ case class SubscriptionRequest(
                                 private val user0: UserInfo = UserInfo(),
                                 senderInformation: Option[SenderInformation] = None,
                                 ttlLimit: Option[Timestamp] = None,
-                                requestID: Option[Long] = None
+                                requestToken: Option[Long] = None
                               ) extends OmiRequest  with OdfRequest {
   require(interval == -1.seconds || interval == -2.seconds || interval >= 0.seconds, s"Invalid interval: $interval")
   require(ttl >= 0.seconds, s"Invalid ttl, should be positive (or +infinite): $ttl")
   user = user0
 
   def withCallback: Option[Callback] => SubscriptionRequest = cb => this.copy(callback = cb)
-  def withRequestID: Option[Long] => SubscriptionRequest = id => this.copy(requestID = id )
+  def withRequestToken: Option[Long] => SubscriptionRequest = id => this.copy(requestToken = id )
 
   implicit def asReadRequest: xmlTypes.ReadRequestType = xmlTypes.ReadRequestType(
     None,
@@ -723,14 +716,7 @@ case class SubscriptionRequest(
           cb => Attribute("callback",cb.toString)
         }.toList
       )
-    ).view ++ requestID.map{
-      id => 
-        Vector(
-          StartElement("requestID"),
-          Characters(id.toString),
-          EndElement("requestID")
-        )
-    }.toSeq.flatten.view ++ odfAsOmiMsg ++ Vector(EndElement("read"))
+    ).view ++ odfAsOmiMsg ++ Vector(EndElement("read"))
     omiEnvelopeEvents(events)
   }
 }
@@ -746,13 +732,13 @@ case class WriteRequest(
                          private val user0: UserInfo = UserInfo(),
                          senderInformation: Option[SenderInformation] = None,
                          ttlLimit: Option[Timestamp] = None,
-                         requestID: Option[Long] = None
+                         requestToken: Option[Long] = None
                        ) extends OmiRequest with OdfRequest with PermissiveRequest {
 
   user = user0
 
   def withCallback: Option[Callback] => WriteRequest = cb => this.copy(callback = cb)
-  def withRequestID: Option[Long] => WriteRequest = id => this.copy(requestID = id )
+  def withRequestToken: Option[Long] => WriteRequest = id => this.copy(requestToken = id )
 
   implicit def asWriteRequest: xmlTypes.WriteRequestType = xmlTypes.WriteRequestType(
     None,
@@ -788,14 +774,7 @@ case class WriteRequest(
           cb => Attribute("callback",cb.toString)
         }.toList
       )
-    ).view ++ requestID.map{
-      id => 
-        Vector(
-          StartElement("requestID"),
-          Characters(id.toString),
-          EndElement("requestID")
-        )
-    }.toSeq.flatten.view ++ odfAsOmiMsg ++ Vector(EndElement("write"))
+    ).view  ++ odfAsOmiMsg ++ Vector(EndElement("write"))
     omiEnvelopeEvents(events)
   }
 }
@@ -807,12 +786,12 @@ case class CallRequest(
                         private val user0: UserInfo = UserInfo(),
                         senderInformation: Option[SenderInformation] = None,
                         ttlLimit: Option[Timestamp] = None,
-                        requestID: Option[Long] = None
+                        requestToken: Option[Long] = None
                       ) extends OmiRequest with OdfRequest with PermissiveRequest {
   user = user0
 
   def withCallback: Option[Callback] => CallRequest = cb => this.copy(callback = cb)
-  def withRequestID: Option[Long] => CallRequest = id => this.copy(requestID = id )
+  def withRequestToken: Option[Long] => CallRequest = id => this.copy(requestToken = id )
 
   implicit def asCallRequest: xmlTypes.CallRequestType = xmlTypes.CallRequestType(
     None,
@@ -848,14 +827,7 @@ case class CallRequest(
           cb => Attribute("callback",cb.toString)
         }.toList
       )
-    ).view ++ requestID.map{
-      id => 
-        Vector(
-          StartElement("requestID"),
-          Characters(id.toString),
-          EndElement("requestID")
-        )
-    }.toSeq.flatten.view ++ odfAsOmiMsg ++ Vector(EndElement("call"))
+    ).view ++ odfAsOmiMsg ++ Vector(EndElement("call"))
     omiEnvelopeEvents(events)
   }
 }
@@ -867,12 +839,12 @@ case class DeleteRequest(
                           private val user0: UserInfo = UserInfo(),
                           senderInformation: Option[SenderInformation] = None,
                           ttlLimit: Option[Timestamp] = None,
-                          requestID: Option[Long] = None
+                          requestToken: Option[Long] = None
                         ) extends OmiRequest with OdfRequest with PermissiveRequest {
   user = user0
 
   def withCallback: Option[Callback] => DeleteRequest = cb => this.copy(callback = cb)
-  def withRequestID: Option[Long] => DeleteRequest = id => this.copy(requestID = id )
+  def withRequestToken: Option[Long] => DeleteRequest = id => this.copy(requestToken = id )
 
   implicit def asDeleteRequest: xmlTypes.DeleteRequestType = xmlTypes.DeleteRequestType(
     None,
@@ -908,14 +880,7 @@ case class DeleteRequest(
           cb => Attribute("callback",cb.toString)
         }.toList
       )
-    ).view ++ requestID.map{
-      id => 
-        Vector(
-          StartElement("requestID"),
-          Characters(id.toString),
-          EndElement("requestID")
-        )
-    }.toSeq.flatten.view ++ odfAsOmiMsg ++ Vector(EndElement("delete"))
+    ).view ++ odfAsOmiMsg ++ Vector(EndElement("delete"))
     omiEnvelopeEvents(events)
   }
 }
@@ -929,7 +894,7 @@ case class CancelRequest(
                           private val user0: UserInfo = UserInfo(),
                           senderInformation: Option[SenderInformation] = None,
                           ttlLimit: Option[Timestamp] = None,
-                          requestID: Option[Long] = None
+                          requestToken: Option[Long] = None
                         ) extends OmiRequest {
   user = user0
 
@@ -944,7 +909,7 @@ case class CancelRequest(
   def callback: Option[Callback] = None
 
   def withCallback: Option[Callback] => CancelRequest = cb => this
-  def withRequestID: Option[Long] => CancelRequest = id => this.copy(requestID = id )
+  def withRequestToken: Option[Long] => CancelRequest = id => this.copy(requestToken = id )
 
   implicit def asOmiEnvelope: xmlTypes.OmiEnvelopeType = requestToEnvelope(asCancelRequest, ttlAsSeconds)
 
@@ -980,8 +945,8 @@ case class ResponseRequest(
                        private val user0: UserInfo = UserInfo(),
                        val senderInformation: Option[SenderInformation] = None,
                        val ttlLimit: Option[Timestamp] = None,
-                       val requestID: Option[Long] = None,
-                       val renderRequestID: Boolean = false
+                       val requestToken: Option[Long] = None,
+                       val renderRequestToken: Boolean = false
                      ) extends OmiRequest with PermissiveRequest with JavaResponseRequest {
   user = user0
 
@@ -993,12 +958,12 @@ case class ResponseRequest(
             callback: Option[Callback] = this.callback,
             senderInformation: Option[SenderInformation] = this.senderInformation,
             ttlLimit: Option[Timestamp] = this.ttlLimit,
-            requestID: Option[Long] = this.requestID,
-            renderRequestID: Boolean = false,
+            requestToken: Option[Long] = this.requestToken,
+            renderRequestToken: Boolean = false,
           ): ResponseRequest = ResponseRequest(results, ttl)
 
   def withCallback: Option[Callback] => ResponseRequest = cb => this.copy(callback = cb)
-  def withRequestID: Option[Long] => ResponseRequest = id => this.copy(requestID = id )
+  def withRequestToken: Option[Long] => ResponseRequest = id => this.copy(requestToken = id )
 
   def odf: ODF = results.foldLeft(ImmutableODF()) {
     case (l: ODF, r: OmiResult) =>
@@ -1080,7 +1045,7 @@ case class ResponseRequest(
       ),
       StartElement("response")
     ).view ++
-    {if (renderRequestID) requestID.view.flatMap{
+    {if (renderRequestToken) requestToken.view.flatMap{
       rid =>
         Vector(
           StartElement("requestID"),

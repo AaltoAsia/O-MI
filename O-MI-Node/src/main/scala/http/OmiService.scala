@@ -290,12 +290,12 @@ trait OmiService
       val omiVersion = OmiVersion.fromNameSpace(originalReq.omiEnvelope.namespace.getOrElse("default"))
       val odfVersion = originalReq.odfObjects.map{ objs => OdfVersion.fromNameSpace(objs.namespace.getOrElse("default") )}
 
-      val requestID = Await.result(
+      val requestToken = Await.result(
         singleStores.addRequestInfo(startTime.getTime()*1000 + originalReq.handleTTL.toSeconds, omiVersion, odfVersion),
         originalReq.handleTTL) // TODO better infinite ttl handling (not only this line, overall)
 
-      requestStorage ! AddRequest( requestID )
-      requestStorage ! AddInfos( requestID, Seq(
+      requestStorage ! AddRequest( requestToken )
+      requestStorage ! AddInfos( requestToken, Seq(
         RequestTimestampInfo("start-time",  startTime),
         RequestAnyInfo("omiVersion", omiVersion),
         RequestAnyInfo("odfVersion", odfVersion)
@@ -318,10 +318,10 @@ trait OmiService
         case Success((req: RequestWrapper, user: UserInfo)) => { // Authorized
           //timer.step("Permission test")
           req.user = UserInfo(user.remoteAddress, user.name) //Copy user info to requestwrapper
-          requestStorage ! AddInfos( requestID, Seq( RequestTimestampInfo("pre-parse-time",  currentTimestamp)))
+          requestStorage ! AddInfos( requestToken, Seq( RequestTimestampInfo("pre-parse-time",  currentTimestamp)))
           val parsed = req.parsed
           //timer.step("Parsed")
-          requestStorage ! AddInfos( requestID, Seq( RequestTimestampInfo("post-parse-time",  currentTimestamp)))
+          requestStorage ! AddInfos( requestToken, Seq( RequestTimestampInfo("post-parse-time",  currentTimestamp)))
           parsed match {
             case Right(requests) =>
               val unwrappedRequest = req.unwrapped // NOTE: Be careful when implementing multi-request messages
@@ -332,13 +332,13 @@ trait OmiService
                   defineCallbackForRequest(request, currentConnectionCallback).flatMap {
                     request: OmiRequest => 
                       //timer.step("Callback defined")
-                      requestStorage ! AddInfos( requestID, Seq( RequestTimestampInfo("callback-time",  currentTimestamp)))
-                      val handle: Future[ResponseRequest] = handleOmiRequest(request.withRequestID(Some(requestID)))
+                      requestStorage ! AddInfos( requestToken, Seq( RequestTimestampInfo("callback-time",  currentTimestamp)))
+                      val handle: Future[ResponseRequest] = handleOmiRequest(request.withRequestToken(Some(requestToken)))
                       handle.map{
                         response =>
                         //timer.step("Request handled")
-                        requestStorage ! AddInfos( requestID, Seq( RequestTimestampInfo("handle-end-time",  currentTimestamp)))
-                        response.withRequestID(Some(requestID)) //TODO: Clean requestID passing
+                        requestStorage ! AddInfos( requestToken, Seq( RequestTimestampInfo("handle-end-time",  currentTimestamp)))
+                        response.withRequestToken(Some(requestToken)) //TODO: Clean requestToken passing
                       }
                   }.recover {
                     case e: TimeoutException => Responses.TTLTimeout(Some(e.getMessage))
@@ -384,11 +384,11 @@ trait OmiService
             log.debug(s"Error code $statusO with received request")
           }
 
-          //requestStorage ! AddInfos( requestID, Seq( RequestTimestampInfo("toXML-start-time",  currentTimestamp)))
+          //requestStorage ! AddInfos( requestToken, Seq( RequestTimestampInfo("toXML-start-time",  currentTimestamp)))
           //timer.step("Omi response status check")
           //val xmlResponse = response.asXML // return
           ////timer.step("Omi response to XML")
-          //requestStorage ! AddInfos( requestID, Seq( RequestTimestampInfo("toXML-end-time",  currentTimestamp)))
+          //requestStorage ! AddInfos( requestToken, Seq( RequestTimestampInfo("toXML-end-time",  currentTimestamp)))
           //timer.total()
 
           //val xmlStream = Source
@@ -400,8 +400,8 @@ trait OmiService
           //HttpEntity.CloseDelimited(ContentType.`text/xml(UTF-8)`, xmlStream)
           //
           //
-          requestStorage ! AddInfos( requestID, Seq( RequestTimestampInfo("final-time",  currentTimestamp)))
-          requestStorage ! RemoveRequest( requestID )
+          requestStorage ! AddInfos( requestToken, Seq( RequestTimestampInfo("final-time",  currentTimestamp)))
+          requestStorage ! RemoveRequest( requestToken )
 
           response
       }

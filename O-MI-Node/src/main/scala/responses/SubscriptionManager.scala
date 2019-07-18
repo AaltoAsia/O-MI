@@ -510,7 +510,7 @@ class SubscriptionManager(
       .map(allSubs => (allSubs.events ++ allSubs.intervals ++ allSubs.polls).map(_.id))
 
     def getNewId: Future[Long] = {
-      (subscription.requestID match {
+      (subscription.requestToken match {
         case Some(id) => Future.successful(id)
         case None => Future.failed(new Error("No request id"))
       }).fallbackTo {
