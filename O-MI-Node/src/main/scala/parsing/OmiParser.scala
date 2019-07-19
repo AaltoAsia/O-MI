@@ -204,6 +204,7 @@ object OmiParser extends Parser[OmiParseResult] {
                                                  gcalendarToTimestampOption(read.end),
                                                  read.newest.map(_.toInt),
                                                  read.oldest.map(_.toInt),
+                                                 None,
                                                  callback,
                                                  ttl
                                                )

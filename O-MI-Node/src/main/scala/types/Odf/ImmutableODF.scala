@@ -5,7 +5,7 @@ import types.Path._
 
 import scala.collection.immutable.{HashMap, TreeSet}
 import scala.collection.mutable
-import scala.collection.{Map, Seq}
+import scala.collection.{Map}
 
 case class ImmutableODF private[odf](
                                       nodes: HashMap[Path, Node],
@@ -43,11 +43,11 @@ case class ImmutableODF private[odf](
       }.toVector)
   }
 
-  def readTo(to: ODF): ImmutableODF = {
+  def readTo(to: ODF, generationDifference: Option[Int] = None): ImmutableODF = {
     //val timer = LapTimer(println)
     val leafs = to.getLeafPaths
     //timer.step("leafs")
-    val sstp =selectSubTreePaths(leafs)
+    val sstp =selectSubTreePaths(leafs, generationDifference)
     //timer.step("sstp")
     val intersect = sstp.intersect(paths)
     //timer.step("intersect")
@@ -117,7 +117,7 @@ case class ImmutableODF private[odf](
   }
 
 
-  lazy val typeIndex: Map[Option[String], Seq[Node]] = nodes.values.groupBy{
+  lazy val typeIndex: Map[Option[String], Iterable[Node]] = nodes.values.groupBy{
     case obj: Objects => None
     case ii: InfoItem => ii.typeAttribute
     case obj: Object => obj.typeAttribute
@@ -202,8 +202,8 @@ case class ImmutableODF private[odf](
   /*
    * Select paths and their descedants from this ODF.
    */
-  def selectSubTree(pathsToGet: Set[Path]): ImmutableODF = {
-    val ps = selectSubTreePaths(pathsToGet)
+  def selectSubTree(pathsToGet: Set[Path], generationDifference: Option[Int] = None): ImmutableODF = {
+    val ps = selectSubTreePaths(pathsToGet,generationDifference)
     ImmutableODF(
       ps.flatMap {
         path: Path =>
@@ -242,9 +242,9 @@ case class ImmutableODF private[odf](
     nodes.values.toVector
   )
 
-  def addNodes(nodesToAdd: Seq[Node]): ImmutableODF = {
+  def addNodes(nodesToAdd: Iterable[Node]): ImmutableODF = {
     val mutableHMap: mutable.HashMap[Path, Node] = mutable.HashMap(nodes.toVector: _*)
-    val sorted = nodesToAdd.sortBy(_.path)(PathOrdering)
+    val sorted = nodesToAdd.toSeq.sortBy(_.path)(PathOrdering)
     sorted.foreach {
       node: Node =>
         if (mutableHMap.contains(node.path)) {
@@ -324,8 +324,8 @@ object ImmutableODF {
       )
     )
   }
-  def createFromNodes(nodes:Seq[Node]):ImmutableODF = {
-    new ImmutableODF(HashMap(nodes.map(node => node.path -> node):_*))
+  def createFromNodes(nodes:Iterable[Node]):ImmutableODF = {
+    new ImmutableODF(HashMap(nodes.map(node => node.path -> node).toSeq:_*))
   }
   /** Unoptimized, but easy to use constructor for single O-DF Node.
     *

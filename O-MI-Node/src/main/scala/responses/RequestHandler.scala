@@ -82,7 +82,7 @@ class RequestHandler(
   }
 
   def handleReadRequest(readR: ReadRequest): Future[ResponseRequest] = {
-    readR.requestID.foreach{
+    readR.requestToken.foreach{
       id =>
       requestStore ! AddInfos(id,Vector(
                                          RequestStringInfo( "request-type", "read"),
@@ -169,7 +169,7 @@ class RequestHandler(
    splitAndHandle(write){
      request: OdfRequest =>
        implicit val to: Timeout = Timeout(request.handleTTL)
-       write.requestID.foreach{
+       write.requestToken.foreach{
          id =>
            requestStore ! AddInfos(id,Vector( 
              RequestStringInfo( "request-type", "write"),
@@ -182,7 +182,7 @@ class RequestHandler(
   }
   def splitAndHandle( request: OdfRequest )(f: OdfRequest => Future[ResponseRequest]): Future[ResponseRequest] ={
     val responsibleToRequestF = agentResponsibilities.splitRequestToResponsible( request )
-    request.requestID.foreach{
+    request.requestToken.foreach{
       id =>
         requestStore ! AddInfos(id,Vector( 
           RequestStringInfo( "odf-version", request.odf.getRoot.flatMap{ obj => obj.version }.toString),

@@ -35,6 +35,45 @@ final public class OmiFactory{
    * @param end Timestamp defining end of time frame to be read.
    * @param newest Number of newest values to be read.
    * @param oldest Number of oldest values to be read.
+   * @param depth Number of levels of descedants are read from leafs.
+   * @param callback Callback address were results of this request should be sent.
+   * @return ReadRequest
+   */
+  public static ReadRequest createReadRequest(
+      Duration ttl,
+      OdfObjects odf,
+      Timestamp begin,
+      Timestamp end,
+      int newest,
+      int oldest,
+      int depth,
+      String callback
+      ){
+    Callback cb = new RawCallback(callback);
+    return new ReadRequest(
+        OldTypeConverter.convertOdfObjects(odf),
+        scala.Option.apply(begin),
+        scala.Option.apply(end),
+        scala.Option.apply(newest),
+        scala.Option.apply(oldest),
+        scala.Option.apply(depth),
+        scala.Option.apply(cb),
+        ttl,
+        new UserInfo(UserInfo.apply$default$1(),UserInfo.apply$default$2()),
+        scala.Option.empty(),
+        scala.Option.empty(),
+        scala.Option.empty()
+        );
+      }
+  /**
+   *
+   * @param ttl Time to live of request.
+   * @param odf O-DF structure to be read.
+   * @param begin Timestamp defining begin of time frame to be read.
+   * @param end Timestamp defining end of time frame to be read.
+   * @param newest Number of newest values to be read.
+   * @param oldest Number of oldest values to be read.
+   * @param depth Number of levels of descedants are read from leafs.
    * @param callback Callback address were results of this request should be sent.
    * @return ReadRequest
    */
@@ -54,6 +93,7 @@ final public class OmiFactory{
         scala.Option.apply(end),
         scala.Option.apply(newest),
         scala.Option.apply(oldest),
+        scala.Option.empty(),
         scala.Option.apply(cb),
         ttl,
         new UserInfo(UserInfo.apply$default$1(),UserInfo.apply$default$2()),
@@ -90,6 +130,7 @@ final public class OmiFactory{
         scala.Option.apply(end),
         scala.Option.apply(newest),
         scala.Option.apply(oldest),
+        scala.Option.empty(),
         scala.Option.apply(cb),
         ttl,
         new UserInfo(UserInfo.apply$default$1(),UserInfo.apply$default$2()),
@@ -123,6 +164,7 @@ final public class OmiFactory{
         scala.Option.apply(newest),
         scala.Option.apply(oldest),
         scala.Option.empty(),
+        scala.Option.empty(),
         ttl,
         new UserInfo(UserInfo.apply$default$1(),UserInfo.apply$default$2()),
         scala.Option.empty(),
@@ -157,6 +199,7 @@ final public class OmiFactory{
         scala.Option.apply(newest),
         scala.Option.apply(oldest),
         scala.Option.empty(),
+        scala.Option.empty(),
         ttl,
         new UserInfo(UserInfo.apply$default$1(),UserInfo.apply$default$2()),
         scala.Option.empty(),
@@ -183,6 +226,7 @@ final public class OmiFactory{
         OldTypeConverter.convertOdfObjects(odf),
         scala.Option.apply(begin),
         scala.Option.apply(end),
+        scala.Option.empty(),
         scala.Option.empty(),
         scala.Option.empty(),
         scala.Option.empty(),
@@ -215,6 +259,7 @@ final public class OmiFactory{
         scala.Option.empty(),
         scala.Option.empty(),
         scala.Option.empty(),
+        scala.Option.empty(),
         ttl,
         new UserInfo(UserInfo.apply$default$1(),UserInfo.apply$default$2()),
         scala.Option.empty(),
@@ -239,6 +284,7 @@ final public class OmiFactory{
     return new ReadRequest(
         OldTypeConverter.convertOdfObjects(odf),
         scala.Option.apply(begin),
+        scala.Option.empty(),
         scala.Option.empty(),
         scala.Option.empty(),
         scala.Option.empty(),
@@ -268,6 +314,7 @@ final public class OmiFactory{
     return new ReadRequest(
         odf,
         scala.Option.apply(begin),
+        scala.Option.empty(),
         scala.Option.empty(),
         scala.Option.empty(),
         scala.Option.empty(),
@@ -302,6 +349,7 @@ final public class OmiFactory{
         scala.Option.apply(newest),
         scala.Option.empty(),
         scala.Option.empty(),
+        scala.Option.empty(),
         ttl,
         new UserInfo(UserInfo.apply$default$1(),UserInfo.apply$default$2()),
         scala.Option.empty(),
@@ -331,6 +379,7 @@ final public class OmiFactory{
         scala.Option.apply(newest),
         scala.Option.empty(),
         scala.Option.empty(),
+        scala.Option.empty(),
         ttl,
         new UserInfo(UserInfo.apply$default$1(),UserInfo.apply$default$2()),
         scala.Option.empty(),
@@ -362,6 +411,7 @@ final public class OmiFactory{
         OldTypeConverter.convertOdfObjects(odf),
         scala.Option.apply(begin),
         scala.Option.apply(end),
+        scala.Option.empty(),
         scala.Option.empty(),
         scala.Option.empty(),
         scala.Option.apply(cb),
@@ -397,6 +447,7 @@ final public class OmiFactory{
         scala.Option.apply(end),
         scala.Option.empty(),
         scala.Option.empty(),
+        scala.Option.empty(),
         scala.Option.apply(cb),
         ttl,
         new UserInfo(UserInfo.apply$default$1(),UserInfo.apply$default$2()),
@@ -429,6 +480,7 @@ final public class OmiFactory{
         scala.Option.empty(),
         scala.Option.empty(),
         scala.Option.empty(),
+        scala.Option.empty(),
         scala.Option.apply(cb),
         ttl,
         new UserInfo(UserInfo.apply$default$1(),UserInfo.apply$default$2()),
@@ -458,6 +510,7 @@ final public class OmiFactory{
     return new ReadRequest(
         odf,
         scala.Option.apply(begin),
+        scala.Option.empty(),
         scala.Option.empty(),
         scala.Option.empty(),
         scala.Option.empty(),
@@ -492,6 +545,7 @@ final public class OmiFactory{
         scala.Option.empty(),
         scala.Option.apply(newest),
         scala.Option.empty(),
+        scala.Option.empty(),
         scala.Option.apply(cb),
         ttl,
         new UserInfo(UserInfo.apply$default$1(),UserInfo.apply$default$2()),
@@ -522,6 +576,7 @@ final public class OmiFactory{
         scala.Option.empty(),
         scala.Option.apply(newest),
         scala.Option.empty(),
+        scala.Option.empty(),
         scala.Option.apply(cb),
         ttl,
         new UserInfo(UserInfo.apply$default$1(),UserInfo.apply$default$2()),
@@ -551,6 +606,7 @@ final public class OmiFactory{
         scala.Option.empty(),
         scala.Option.empty(),
         scala.Option.empty(),
+        scala.Option.empty(),
         scala.Option.apply(cb),
         ttl,
         new UserInfo(UserInfo.apply$default$1(),UserInfo.apply$default$2()),
@@ -576,6 +632,7 @@ final public class OmiFactory{
     Callback cb = new RawCallback(callback);
     return new ReadRequest(
         odf,
+        scala.Option.empty(),
         scala.Option.empty(),
         scala.Option.empty(),
         scala.Option.empty(),
@@ -607,6 +664,7 @@ final public class OmiFactory{
         scala.Option.empty(),
         scala.Option.empty(),
         scala.Option.empty(),
+        scala.Option.empty(),
         ttl,
         new UserInfo(UserInfo.apply$default$1(),UserInfo.apply$default$2()),
         scala.Option.empty(),
@@ -628,6 +686,7 @@ final public class OmiFactory{
       ){
     return new ReadRequest(
         odf,
+        scala.Option.empty(),
         scala.Option.empty(),
         scala.Option.empty(),
         scala.Option.empty(),
@@ -821,8 +880,8 @@ final public class OmiFactory{
     return ResponseRequest$.MODULE$.applySimple(
         OdfTreeCollection.fromJava(results),
         ttl
-        );
-      }
+    );
+  }
 
   /**
    *

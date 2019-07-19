@@ -28,7 +28,7 @@ import akka.pattern.ask
 import akka.stream.scaladsl._
 import akka.stream.{ActorMaterializer, _}
 import akka.stream.alpakka.xml._
-import akka.util.Timeout
+import akka.util.{ByteString,Timeout}
 
 import authorization.Authorization._
 import authorization._
@@ -81,7 +81,7 @@ class OmiServiceImpl(
   } with OmiService {
 
   //example auth API service code in java directory of the project
-  if (settings.enableExternalAuthorization) {
+  if( settings.enableExternalAuthorization) {
     log.info("External Auth API v1 module enabled")
     log.info(s"External Authorization port ${settings.externalAuthorizationPort}")
     log.info(s"External Authorization useHttps ${settings.externalAuthUseHttps}")
@@ -89,7 +89,7 @@ class OmiServiceImpl(
   }
 
   //example auth API service code in java directory of the project
-  if (settings.AuthApiV2.enable) {
+  if( settings.AuthApiV2.enable) {
     log.info("External Auth API v2 modules enabled")
     log.info(s"External Auth API settings ${settings.AuthApiV2}")
     registerApi(new AuthAPIServiceV2(singleStores.hierarchyStore, settings, system, materializer))
@@ -118,6 +118,7 @@ trait OmiService
 
   import system.dispatcher
 
+  implicit def materializer: ActorMaterializer
   //Get the files from the html directory; http://localhost:8080/html/form.html
   //this version works with 'sbt run' and 're-start' as well as the packaged version
   val staticHtml: Route = if (Files.exists(Paths.get("./html"))) {
@@ -274,31 +275,27 @@ trait OmiService
 
   def handleRequest(
                      hasPermissionTest: PermissionTest,
-                     requestString: String,
+                     requestSource: Source[String,_],
                      currentConnectionCallback: Option[Callback] = None,
                      remote: RemoteAddress,
-                   ): Future[ResponseRequest] = {
-    try {
+                   ): Future[Future[ResponseRequest]] = {
+    Future {
 
       val startTime = currentTimestamp
 
-      //XXX: Corrected namespaces
-      //val timer = LapTimer(log.info)
-      val correctedRequestString = requestString.replace("\"omi.xsd\"", "\"http://www.opengroup.org/xsd/omi/1.0/\"")
-        .replace("\"odf.xsd\"", "\"http://www.opengroup.org/xsd/odf/1.0/\"")
-      //timer.step("Corrected wrong schema")
       
-      val originalReq = RawRequestWrapper(correctedRequestString, UserInfo(remoteAddress = Some(remote)))
 
-      val omiVersion = OmiVersion.fromNameSpace(originalReq.omiEnvelope.namespace)
-      val odfVersion = originalReq.odfObjects.map{objs => OdfVersion.fromNameSpace(objs.namespace)}
+      val originalReq = RawRequestWrapper(requestSource, UserInfo(remoteAddress = Some(remote)))
 
-      val requestID = Await.result(
+      val omiVersion = OmiVersion.fromNameSpace(originalReq.omiEnvelope.namespace.getOrElse("default"))
+      val odfVersion = originalReq.odfObjects.map{ objs => OdfVersion.fromNameSpace(objs.namespace.getOrElse("default") )}
+
+      val requestToken = Await.result(
         singleStores.addRequestInfo(startTime.getTime()*1000 + originalReq.handleTTL.toSeconds, omiVersion, odfVersion),
         originalReq.handleTTL) // TODO better infinite ttl handling (not only this line, overall)
 
-      requestStorage ! AddRequest( requestID )
-      requestStorage ! AddInfos( requestID, Seq(
+      requestStorage ! AddRequest( requestToken )
+      requestStorage ! AddInfos( requestToken, Seq(
         RequestTimestampInfo("start-time",  startTime),
         RequestAnyInfo("omiVersion", omiVersion),
         RequestAnyInfo("odfVersion", odfVersion)
@@ -321,10 +318,10 @@ trait OmiService
         case Success((req: RequestWrapper, user: UserInfo)) => { // Authorized
           //timer.step("Permission test")
           req.user = UserInfo(user.remoteAddress, user.name) //Copy user info to requestwrapper
-          requestStorage ! AddInfos( requestID, Seq( RequestTimestampInfo("pre-parse-time",  currentTimestamp)))
+          requestStorage ! AddInfos( requestToken, Seq( RequestTimestampInfo("pre-parse-time",  currentTimestamp)))
           val parsed = req.parsed
           //timer.step("Parsed")
-          requestStorage ! AddInfos( requestID, Seq( RequestTimestampInfo("post-parse-time",  currentTimestamp)))
+          requestStorage ! AddInfos( requestToken, Seq( RequestTimestampInfo("post-parse-time",  currentTimestamp)))
           parsed match {
             case Right(requests) =>
               val unwrappedRequest = req.unwrapped // NOTE: Be careful when implementing multi-request messages
@@ -335,13 +332,13 @@ trait OmiService
                   defineCallbackForRequest(request, currentConnectionCallback).flatMap {
                     request: OmiRequest => 
                       //timer.step("Callback defined")
-                      requestStorage ! AddInfos( requestID, Seq( RequestTimestampInfo("callback-time",  currentTimestamp)/*, RequestStringInfo("omi-version", request.version)*/))
-                      val handle: Future[ResponseRequest] = handleOmiRequest(request.withRequestID(Some(requestID)))
+                      requestStorage ! AddInfos( requestToken, Seq( RequestTimestampInfo("callback-time",  currentTimestamp)))
+                      val handle: Future[ResponseRequest] = handleOmiRequest(request.withRequestToken(Some(requestToken)))
                       handle.map{
                         response =>
                         //timer.step("Request handled")
-                        requestStorage ! AddInfos( requestID, Seq( RequestTimestampInfo("handle-end-time",  currentTimestamp)))
-                        response.withRequestID(Some(requestID)) //TODO: Clean requestID passing
+                        requestStorage ! AddInfos( requestToken, Seq( RequestTimestampInfo("handle-end-time",  currentTimestamp)))
+                        response.withRequestToken(Some(requestToken)) //TODO: Clean requestToken passing
                       }
                   }.recover {
                     case e: TimeoutException => Responses.TTLTimeout(Some(e.getMessage))
@@ -357,7 +354,6 @@ trait OmiService
               }
             case Left(errors) => { // Parsing errors found
 
-              log.warn(s"$requestString")
               log.warn("Parse Errors: {}", errors.mkString(", "))
 
               val errorResponse = Responses.ParseErrors(errors.toVector)
@@ -388,11 +384,11 @@ trait OmiService
             log.debug(s"Error code $statusO with received request")
           }
 
-          //requestStorage ! AddInfos( requestID, Seq( RequestTimestampInfo("toXML-start-time",  currentTimestamp)))
+          //requestStorage ! AddInfos( requestToken, Seq( RequestTimestampInfo("toXML-start-time",  currentTimestamp)))
           //timer.step("Omi response status check")
           //val xmlResponse = response.asXML // return
           ////timer.step("Omi response to XML")
-          //requestStorage ! AddInfos( requestID, Seq( RequestTimestampInfo("toXML-end-time",  currentTimestamp)))
+          //requestStorage ! AddInfos( requestToken, Seq( RequestTimestampInfo("toXML-end-time",  currentTimestamp)))
           //timer.total()
 
           //val xmlStream = Source
@@ -404,13 +400,13 @@ trait OmiService
           //HttpEntity.CloseDelimited(ContentType.`text/xml(UTF-8)`, xmlStream)
           //
           //
-          requestStorage ! AddInfos( requestID, Seq( RequestTimestampInfo("final-time",  currentTimestamp)))
-          requestStorage ! RemoveRequest( requestID )
+          requestStorage ! AddInfos( requestToken, Seq( RequestTimestampInfo("final-time",  currentTimestamp)))
+          requestStorage ! RemoveRequest( requestToken )
 
           response
       }
 
-    } catch {
+    }.recover{
 
       case ex: IllegalArgumentException => {
         log.debug(ex.getMessage)
@@ -512,36 +508,104 @@ trait OmiService
       }
   }
 
+
   /**
     * Receives HTTP-POST directed to root with o-mi xml as body. (Non-standard convenience feature)
     */
   val postXMLRequest: Route = post {
     // Handle POST requests from the client
     makePermissionTestFunction() { hasPermissionTest =>
-      entity(as[String]) { requestString => // XML and O-MI parsed later
+      extractDataBytes { requestSource => 
         extractClientIP { user =>
-          val response = handleRequest(hasPermissionTest, requestString, remote = user) //.map{ ns => xmlH ++ ns }
-          //val marshal = ToResponseMarshallable(response)(Marshaller.futureMarshaller(xmlCT))
-          complete(HttpResponse(entity=chunkedStream(response)))
+          val response = handleRequest(hasPermissionTest, requestSource.via(byteStringToUTF8Flow), remote = user)
+          onSuccess(response) {r =>
+            complete(HttpResponse(entity=chunkedStream(r)))
+          }
         }
       }
     }
   }
 
+  //TODO: Filter the field msg and decode value
   /**
     * Receives POST at root with O-MI compliant msg parameter.
     */
   val postFormXMLRequest: Route = post {
     makePermissionTestFunction() { hasPermissionTest =>
-      formFields("msg".as[String]) { requestString =>
-        extractClientIP { user =>
+      headerValue{
+        header: HttpHeader =>
+          header match {
+            case ct: headers.`Content-Type` if ct.is("application/x-www-form-urlencoded") => 
+              Some(true)
+            case other: HttpHeader => None
+          }
+      }{ correctCT =>
+        extractDataBytes { requestSource =>
+          extractClientIP { user =>
+            val decodedSource = requestSource.via(byteStringToUTF8Flow).via(urlDecoderFlow)
 
-          val response = handleRequest(hasPermissionTest, requestString, remote = user) //.map{ ns => xmlH ++ ns }
-          complete(HttpResponse(entity=chunkedStream(response)))
+            val response = handleRequest(hasPermissionTest, decodedSource, remote = user)
+            onSuccess(response) {r =>
+              complete(HttpResponse(entity=chunkedStream(r)))
+            }
+          }
         }
       }
     }
   }
+  def byteStringToUTF8Flow = Flow[ByteString].map{ bStr: ByteString => bStr.decodeString("UTF-8")}
+
+  def urlDecoderFlow = Flow[String].statefulMapConcat{ () =>
+              var msgHandled = false
+              var bufferString =""
+              str: String => {
+                bufferString += str
+                if( !msgHandled ){
+                  if( bufferString.startsWith("msg=") ){
+                    val (_,content) = bufferString.splitAt("msg=".size)
+                    bufferString = content
+                    msgHandled = true
+                  } 
+                  Vector.empty
+                } else { 
+                  if( bufferString.contains("%") ){
+                    def decode(encodedString: String, result: String = ""): String ={
+                      val i = encodedString.indexOf("%")
+                      if( i > -1 ){
+                        if( i + 2 >= encodedString.size ){
+                          bufferString = encodedString
+                          result
+                        } else {
+                          var (res: String, tail: String) = encodedString.splitAt(i)
+                          val encoded = tail.slice(1,3)
+                          val value = new String(Array(Integer.parseInt(encoded,16).toByte),"utf-8")
+                          res = res + value
+                          decode(tail.drop(3), result + res)
+                        }
+                      } else {
+                        bufferString = ""
+                        val res =result + encodedString
+                        res
+                      }
+                    }
+                    val decoded = decode( bufferString )
+                    if( decoded.nonEmpty){
+                      Vector(decoded)
+                    } else {
+                      Vector.empty
+                    } 
+                  } else {
+                    val res = Vector(bufferString)
+                    bufferString = ""
+                    res
+                  }
+                }
+              }
+            }.mapError{
+              case error: java.lang.NumberFormatException => 
+                new ParseError("Invalid url encoding: " + error.getMessage, "")
+              case error: Throwable => error
+            }
 
   // Combine all handlers
   val myRoute: Route = corsEnabled {
@@ -607,16 +671,28 @@ trait WebSocketOMISupport extends WebSocketUtil {
 
     def createZeroCallback = callbackHandler.createCallbackAddress("0", Some(wsConnection)).toOption
 
-    val stricted = Flow.fromFunction[ws.Message, Future[String]] {
+    val inSink = Sink.foreach[ws.Message]{
+      case ws.TextMessage.Strict("") =>
+
       case textMessage: ws.TextMessage =>
-        log.debug("Received keep alive for websocket")
-        textMessage.textStream.runFold("")(_ + _)
-      case msg: ws.Message => Future successful ""
+        val futureResponse: Future[ws.TextMessage] = for {
+          r2 <- handleRequest(hasPermissionTest,
+            textMessage.textStream.filter{ str => str.nonEmpty},
+            createZeroCallback,
+            user
+          )
+          r <- r2
+          versions <- singleStores.getRequestInfo(r)
+        } yield ws.TextMessage.Streamed(r.asXMLSourceWithVersion(versions))
+
+        queue.send(futureResponse)
+      case msg: ws.Message => 
+          queue.send(Future.successful(ws.TextMessage("")))
     }
+    /*
     val msgSink = Sink.foreach[Future[String]] { future: Future[String] =>
       future.flatMap {
         case "" => //Keep alive 
-          queue.send(Future.successful(ws.TextMessage("")))
         case requestString: String =>
 
           val futureResponse: Future[ws.TextMessage] = for {
@@ -633,6 +709,7 @@ trait WebSocketOMISupport extends WebSocketUtil {
     }
 
     val inSink = stricted.to(msgSink)
+    */
     (inSink, outSource)
   }
 

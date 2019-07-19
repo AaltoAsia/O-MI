@@ -3,12 +3,15 @@ package parsing
 import java.net.URI
 
 import akka.http.scaladsl.model.Uri
+import akka.stream.ActorMaterializer
+import akka.stream.scaladsl
 import org.specs2._
 import types.OdfTypes.OdfTreeCollection._
 import types.OdfTypes._
 import types.OmiTypes._
 import types.Path._
 import types._
+import testHelpers._
 import types.odf.OldTypeConverter
 
 import scala.concurrent.duration._
@@ -18,6 +21,8 @@ import scala.xml._
 /* Test class for testing ODF Types */
 class TypesTest extends Specification {
 
+  implicit val system = Actorstest.createAs()
+  implicit val materializer = ActorMaterializer()
   def is =
     s2"""
   This is Specification to check inheritance for Types. Also testing Path Object
@@ -62,7 +67,7 @@ class TypesTest extends Specification {
 
   def e1 = !ParseErrorList("test error").isInstanceOf[OmiRequest]
 
-  def e2 = ReadRequest(OldTypeConverter.convertOdfObjects(OdfObjects()), None, None, None, None, None, 0.seconds)
+  def e2 = ReadRequest(OldTypeConverter.convertOdfObjects(OdfObjects()), None, None, None, None, None, None, 0.seconds)
     .isInstanceOf[OmiRequest]
 
   def e3 = WriteRequest(OldTypeConverter.convertOdfObjects(OdfObjects()), None, 10.seconds).isInstanceOf[OmiRequest]
@@ -125,26 +130,25 @@ class TypesTest extends Specification {
   }
 
   def omiTypes1 = {
-    val reg1 = ReadRequest(OldTypeConverter.convertOdfObjects(OdfObjects()), None, None, None, None, None)
+    val reg1 = ReadRequest(OldTypeConverter.convertOdfObjects(OdfObjects()), None, None, None, None,None,  None)
     val reg2 = ReadRequest(OldTypeConverter.convertOdfObjects(OdfObjects()),
       None,
       None,
       None,
-      None,
+      None,None, 
       Some(HTTPCallback(Uri("Http://google.com"))))
     reg1.hasCallback should be equalTo (false) and (
       reg2.hasCallback should be equalTo (true)) and (
       reg2.callbackAsUri must beSome.like { case a => a.isInstanceOf[URI] }) and (
       reg2.asXML must beAnInstanceOf[NodeSeq]) and (
       reg2.parsed must beRight) and (
-      reg2.unwrapped must beSuccessfulTry) and (
-      reg2.rawRequest must startWith("<omiEnvelope"))
+      reg2.unwrapped must beSuccessfulTry) 
   }
 
   def omiTypes2 = {
-    val reg1 = ReadRequest(OldTypeConverter.convertOdfObjects(OdfObjects()), None, None, None, None, None, 0 seconds)
-    val reg2 = ReadRequest(OldTypeConverter.convertOdfObjects(OdfObjects()), None, None, None, None, None, 5 seconds)
-    val reg3 = ReadRequest(OldTypeConverter.convertOdfObjects(OdfObjects()), None, None, None, None, None, Duration.Inf)
+    val reg1 = ReadRequest(OldTypeConverter.convertOdfObjects(OdfObjects()), None, None, None, None,None,  None, 0 seconds)
+    val reg2 = ReadRequest(OldTypeConverter.convertOdfObjects(OdfObjects()), None, None, None, None,None,  None, 5 seconds)
+    val reg3 = ReadRequest(OldTypeConverter.convertOdfObjects(OdfObjects()), None, None, None, None,None,  None, Duration.Inf)
 
     reg1.handleTTL must be equalTo (2 minutes) and (
       reg2.handleTTL must be equalTo (5 seconds)) and (
@@ -186,7 +190,7 @@ class TypesTest extends Specification {
     {testOdfMsg}
   </response>)
 
-  def newRawRequestWrapper(xml: NodeSeq) = RawRequestWrapper(xml.toString, UserInfo())
+  def newRawRequestWrapper(xml: NodeSeq) = RawRequestWrapper(scaladsl.Source.single(xml.toString), UserInfo())
 
   def pFiniteTTL = newRawRequestWrapper(xmlReadFinite).ttl mustEqual 10.seconds
 

@@ -27,7 +27,7 @@ trait OdfDatabase extends Tables with DB with TrimmableDB {
   def initialize(): Unit = {
     val findTables = db.run(namesOfCurrentTables)
     val createMissingTables = findTables.flatMap {
-      tableNames: Seq[String] =>
+      tableNames: Set[String] =>
         val queries = if (tableNames.contains("PATHSTABLE")) {
           //Found needed table, check for value tables
           /*
@@ -214,7 +214,7 @@ trait OdfDatabase extends Tables with DB with TrimmableDB {
           }
         }
         namesOfCurrentTables.flatMap {
-          tableNames: Seq[String] =>
+          tableNames: Set[String] =>
             val creations = addedDBPaths.collect {
               case DBPath(Some(id), path, true) =>
                 val pathValues = new PathValues(path, id)
@@ -297,13 +297,15 @@ trait OdfDatabase extends Tables with DB with TrimmableDB {
                    beginO: Option[Timestamp],
                    endO: Option[Timestamp],
                    newestO: Option[Int],
-                   oldestO: Option[Int]
+                   oldestO: Option[Int],
+                   maxLevels: Option[Int]
                  )(implicit timeout: Timeout): Future[Option[ODF]] = {
     if (beginO.isEmpty && endO.isEmpty && newestO.isEmpty && oldestO.isEmpty) {
       readLatestFromCache(
         nodes.map {
           node => node.path
-        }.toSeq
+        }.toSeq,
+        maxLevels
       )
 
     } else {
@@ -312,7 +314,7 @@ trait OdfDatabase extends Tables with DB with TrimmableDB {
       }.toSet
       singleStores.getHierarchyTree().flatMap{
         odf: ODF => 
-          val t = odf.subTreePaths(leafPaths).toVector
+          val t = odf.subTreePaths(leafPaths, maxLevels).toVector
           //Filter only leafs
           val iiIOAs = t.flatMap{
             path => pathToDBPath.single.get(path)
@@ -479,7 +481,7 @@ trait OdfDatabase extends Tables with DB with TrimmableDB {
       }.transactionally
     ).flatMap { _ =>
       db.run(namesOfCurrentTables).map {
-        tableNames: Seq[String] =>
+        tableNames: Set[String] =>
           if (tableNames.nonEmpty) {
             val msg = s"Could not drop all tables.  Following tables found afterwards: ${tableNames.mkString(", ")}."
             log.error(msg)
@@ -491,12 +493,12 @@ trait OdfDatabase extends Tables with DB with TrimmableDB {
     }
   }
 
-  def readLatestFromCache(leafPaths: Seq[Path]): Future[Option[ImmutableODF]] = {
+  def readLatestFromCache(leafPaths: Seq[Path], maxLevels: Option[Int]): Future[Option[ImmutableODF]] = {
     // NOTE: Might go off sync with tree or values if the request is large,
     // but it shouldn't be a big problem
     val p2iisF: Future[Map[Path, InfoItem]] = singleStores.getHierarchyTree().map{
       odf => 
-        val t = odf.subTreePaths(leafPaths.toSet)
+        val t = odf.subTreePaths(leafPaths.toSet,maxLevels)
         t.filterNot{
             path => t.exists{
               op => path.isAncestorOf(op)

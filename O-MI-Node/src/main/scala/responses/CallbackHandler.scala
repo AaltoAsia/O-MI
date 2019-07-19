@@ -13,8 +13,7 @@
  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 package responses
 
-import java.net.InetAddress
-import java.net.URLEncoder
+import java.net.{InetAddress, URLEncoder}
 import java.sql.Timestamp
 import java.util.Date
 
@@ -35,12 +34,11 @@ import akka.http.scaladsl.{Http, HttpExt}
 import akka.stream._
 import akka.stream.scaladsl._
 
-import http.OmiConfigExtension
 import responses.CallbackHandler._
 import types.OmiTypes._
 import database.SingleStores
 
-import http.WebSocketUtil
+import http.{WebSocketUtil, OmiConfigExtension}
 
 object CallbackHandler {
 
@@ -114,7 +112,7 @@ class CallbackHandler(
           Source.fromFutureSource(
             singleStores.getRequestInfo(response).map(versions =>
               response.asXMLSourceWithVersion(versions)))
-        case r => r.asXMLSource
+        case r: OmiRequest => r.asXMLSource
 
       }).map{str: String => URLEncoder.encode(str,"UTF-8")}
 
@@ -156,8 +154,8 @@ class CallbackHandler(
     retry.failed.foreach {
       _: Throwable =>
         system.log.warning(
-                            s"Failed to send POST request to $address after trying until ttl ended."
-                          )
+          s"Failed to send POST request to $address after trying until ttl ended."
+        )
     }
     retry
 

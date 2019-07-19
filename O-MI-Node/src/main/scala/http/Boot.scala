@@ -120,7 +120,7 @@ class OmiServer extends OmiNode {
       singleStores,
       callbackHandler,
       new CLIHelper(singleStores, dbConnection)
-    ),
+    )(settings),
     "database-handler"
   )
 

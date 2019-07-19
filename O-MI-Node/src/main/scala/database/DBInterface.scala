@@ -210,7 +210,9 @@ trait DB {
                    begin: Option[Timestamp],
                    end: Option[Timestamp],
                    newest: Option[Int],
-                   oldest: Option[Int])(implicit timeout: Timeout): Future[Option[ODF]]
+                   oldest: Option[Int],
+                   maxLevels: Option[Int]
+                 )(implicit timeout: Timeout): Future[Option[ODF]]
 
   /**
     * Used to set many values efficiently to the database.
@@ -220,7 +222,7 @@ trait DB {
   def writeMany(data: Seq[InfoItem]): Future[OmiReturn]
 
   def writeMany(odf: ImmutableODF): Future[OmiReturn] = {
-    writeMany(odf.getNodes.collect { case ii: InfoItem => ii })
+    writeMany(odf.getNodes.collect { case ii: InfoItem => ii }.toSeq)
   }
 
   /**

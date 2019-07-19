@@ -335,7 +335,8 @@ constsExt = ($, parent, util) ->
       return null
 
   # All of jquery initiliazation code is here
-  $ ->
+  # $ ->
+  fallback.ready ['jQuery', 'CodeMirror'], ->
     my.responseCMSettings = $.extend(
       readOnly : true
       , my.codeMirrorSettings

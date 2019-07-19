@@ -114,6 +114,7 @@ class OmiTypesTest extends Specification with XmlMatchers{
         Some(testTime),
         Some(countForRead),
         None,
+        None,
         Some(callback)
       ),
       getClass.getResource(exampleDirStr + "/ReadWithTimewindowNewestAndCallback.xml" )
@@ -126,6 +127,7 @@ class OmiTypesTest extends Specification with XmlMatchers{
         Some(testTime),
         None,
         Some(countForRead),
+        None,
         Some(callback)
       ), 
       getClass.getResource( exampleDirStr + "/ReadWithTimewindowOldestAndCallback.xml")

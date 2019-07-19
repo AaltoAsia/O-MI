@@ -5,14 +5,14 @@ import types.Path._
 
 import scala.collection.immutable.{HashMap => ImmutableHashMap}
 import scala.collection.mutable.{HashMap => MutableHashMap, TreeSet => MutableTreeSet}
-import scala.collection.{Seq, SortedSet}
+import scala.collection.{SortedSet}
 
 class MutableODF private[odf](
                                protected[odf] val nodes: MutableHashMap[Path, Node] = MutableHashMap.empty
                              ) extends ODF {
   protected[odf] val paths: MutableTreeSet[Path] = MutableTreeSet(nodes.keys.toSeq: _*)(PathOrdering)
 
-  def readTo(to: ODF): MutableODF = MutableODF(readToNodes(to))
+  def readTo(to: ODF, generationDifference: Option[Int] = None): MutableODF = MutableODF(readToNodes(to, generationDifference))
 
   def update(that: ODF): MutableODF = {
     nodes.valuesIterator.foreach {
@@ -173,7 +173,7 @@ class MutableODF private[odf](
     this
   }
 
-  def addNodes(nodesToAdd: Seq[Node]): MutableODF = {
+  def addNodes(nodesToAdd: Iterable[Node]): MutableODF = {
     nodesToAdd.foreach {
       node: Node =>
         this.add(node)
@@ -184,13 +184,13 @@ class MutableODF private[odf](
   /*
    * Select paths and their descedants from this ODF.
    */
-  def selectSubTree(pathsToGet: Set[Path]): MutableODF = {
+  def selectSubTree(pathsToGet: Set[Path], generationDifference: Option[Int] = None): MutableODF = {
     MutableODF(
       nodes.values.filter {
         node: Node =>
           pathsToGet.exists {
             filter: Path =>
-              filter.isAncestorOf(node.path) || filter == node.path
+              (filter.isAncestorOf(node.path) || filter == node.path) && generationDifference.forall{ n => node.path.length - filter.length <= n}
           }
       }.toVector
     )

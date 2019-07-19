@@ -44,7 +44,7 @@ object NewTypeConverter {
 
   def convertObjects(
                       objs: Objects,
-                      objects: Seq[OdfObject]
+                      objects: Iterable[OdfObject]
                     ): OdfObjects = {
     OdfObjects(
       objects.toVector,
@@ -53,8 +53,8 @@ object NewTypeConverter {
   }
 
   def convertObject(obj: Object,
-                    infoItems: Seq[OdfInfoItem] = Vector.empty,
-                    objects: Seq[OdfObject] = Vector.empty
+                    infoItems: Iterable[OdfInfoItem] = Vector.empty,
+                    objects: Iterable[OdfObject] = Vector.empty
                    ): OdfObject = {
     var ids = obj.ids.map(convertQlmID(_))
     if (!ids.map(_.value).contains(obj.path.last)) {

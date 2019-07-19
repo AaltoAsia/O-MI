@@ -1,6 +1,7 @@
 package authorization
 
 import akka.actor.{ActorRef, ActorSystem}
+import akka.stream.scaladsl.Source
 import akka.http.scaladsl.client.RequestBuilding.RequestBuilder
 import akka.http.scaladsl.model.ContentTypes._
 import akka.http.scaladsl.model._
@@ -253,7 +254,7 @@ class AuthAPIServiceV2(
         httpMessage.header[headers.Authorization].map(_.value.drop(from.length + 1))
 
       case "omienvelope" =>
-        rawOmi.flatMap(_.omiEnvelope.attr(from))
+        rawOmi.flatMap(_.omiEnvelope.attributes.get(from))
 
       case "headers" =>
         httpMessage.headers.find(header => from == header.name).map(_.value)
@@ -417,6 +418,8 @@ class AuthAPIServiceV2(
           _ <- Future.successful(
             log.debug(s"Authorization call successfull: ${authorizationResponse.toString.take(160)}...")
           )
+          if authorizationResponse.allow.nonEmpty && !authorizationResponse.deny.contains(Path("Objects"))
+
           omiRequest <- Future.fromTry {
             rawOmiRequest.unwrapped
           }
@@ -440,8 +443,8 @@ class AuthAPIServiceV2(
   }
 
 
-  override def isAuthorizedForRawRequest(httpRequest: HttpRequest, rawRequest: String): AuthorizationResult = {
-    val rawRequestWrapper = RawRequestWrapper(rawRequest, UserInfo())
+  override def isAuthorizedForRawRequest(httpRequest: HttpRequest, rawSource: Source[String,_]): AuthorizationResult = {
+    val rawRequestWrapper = RawRequestWrapper(rawSource, UserInfo())
 
     if (rawRequestWrapper.msgFormat.contains("odf"))
       isAuthorizedForOdfRequest(httpRequest, rawRequestWrapper)
