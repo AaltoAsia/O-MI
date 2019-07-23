@@ -14,19 +14,17 @@
 
 package parsing
 
-import java.io.{File, InputStream, Reader}
+import java.io.{File, InputStream}
 import java.sql.Timestamp
 import java.util.Date
 
 import org.json4s._
-import org.json4s.JsonDSL.WithDouble._
 import org.json4s.native.JsonMethods.{parse => jparse}
-import types.OmiTypes.ReturnCode.ReturnCode
-import types.OmiTypes.{CallRequest, Callback, CancelRequest, DeleteRequest, OmiParseResult, OmiResult, OmiReturn, RawCallback, ReadRequest, RequestID, ResponseRequest, SenderInformation, UserInfo, WriteRequest}
-import types.{ODFParserError, OMIParserError, Path}
+import types.OmiTypes.{CallRequest, Callback, CancelRequest, DeleteRequest, OmiParseResult, OmiRequest, OmiResult, OmiReturn, PollRequest, RawCallback, ReadRequest, RequestID, ResponseRequest, SenderInformation, SubscriptionRequest, UserInfo, WriteRequest}
+import types.{ODFParserError, OMIParserError, ParseError, Path}
 import types.odf._
 
-import scala.collection.immutable.HashMap
+import scala.collection.immutable._
 import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
 
@@ -69,18 +67,18 @@ class JSONParser {
                       "description": {
                         "text": "\n                "
                       },
-                      "value": [
+                      "values": [
                         {
                           "type": "xs:int",
                           "dateTime": "2019-06-04T13:37:59.311+03:00",
                           "unixTime": 1559644679,
-                          "content": 50
+                          "value": 50
                         },
                         {
                           "type": "xs:int",
                           "dateTime": "2019-06-04T13:35:26.196+03:00",
                           "unixTime": 1559644526,
-                          "content": 50
+                          "value": 50
                         }
                       ]
                     }
@@ -157,24 +155,28 @@ class JSONParser {
 """
 
 
-  def parse(in:String): ODF = parse(StringInput(in))
-  //def parse(in:Reader) = parse(ReaderInput(in))
-  //def parse(in: InputStream) = parse(StreamInput(in))
-  //def parse(in: File) = parse(FileInput(in))
+  def parse(in:String): OmiParseResult= parse(StringInput(in))
+  def parse(in: java.io.Reader): OmiParseResult = parse(ReaderInput(in))
+  def parse(in: InputStream): OmiParseResult = parse(StreamInput(in))
+  def parse(in: File): OmiParseResult = parse(FileInput(in))
 
 
 
 
-  def parse(in: JsonInput): ODF = {
+  def parse(in: JsonInput): OmiParseResult = {
     handleASTRoot(jparse(in))
   }
 
 
   private def handleASTRoot(in: JValue) = {
-    in match {
-      case obj: JObject => ???
+    def parseRoot(obj: JObject) = {
+      val fields = obj.obj.toMap
+      fields.get("omiEnvelope").map(parseOmiEnvelope).getOrElse(Right(Seq.empty[OmiRequest]))
     }
-    ???
+    in match {
+      case obj: JObject => parseRoot(obj)
+      case oth => Left(Seq(OMIParserError("Could not find root object for omiEnvelope")))
+    }
   }
 
   private def parseTTL(in: JValue): Duration = {
@@ -193,15 +195,36 @@ class JSONParser {
       }
       case JString(ttl) => Try(parseTTL(JDouble(ttl.toDouble)))
         .getOrElse(throw OMIParserError("Invalid format for TTL; number expected"))
-      case other => throw OMIParserError("invalid json format for TTL; number expected")
+      case other => throw OMIParserError("Invalid json format for TTL; number expected")
     }
+  }
+
+  private def parseInterval(in: JValue): Try[Duration] = {
+    def inner(inn: JValue) = {
+      inn match {
+        case JDouble(interval) => interval match {
+          case -1.0 => -1.seconds
+          case -2.0 => -2.seconds
+          case w if w > 0 => w.seconds
+          case _ => throw OMIParserError("Invalid interval, only positive or -1 and -2 are allowed")
+        }
+        case JInt(interval) => interval.longValue match {
+          case -1 => -1.seconds
+          case -2 => -2.seconds
+          case w if w > 0 => w.seconds
+          case _ => throw OMIParserError("Invalid interval, only positive or -1 and -2 are allowed")
+        }
+        case other => throw OMIParserError("Invalid json format for interval; number expected")
+      }
+    }
+      Try(inner(in))
   }
 
   def parseIntegerValue(in: JValue): Int = {
     in match {
       case JInt(num) => if(num.isValidInt) num.intValue() else throw ODFParserError("Integer value too long")
       case JString(num) => Try(num.toInt).getOrElse(throw ODFParserError("Could not convert string value to integeter value"))
-      case _ => throw ODFParserError("invalid json type when parsing integer value")
+      case _ => throw ODFParserError("Invalid json type when parsing integer value")
     }
 
   }
@@ -209,16 +232,16 @@ class JSONParser {
     in match {
       case JInt(num) => if(num.isValidLong) num.longValue() else throw ODFParserError("Integer value too long")
       case JString(num) => Try(num.toLong).getOrElse(throw ODFParserError("Could not convert string value to integeter value"))
-      case _ => throw ODFParserError("invalid json type when parsing integer value")
+      case _ => throw ODFParserError("Invalid json type when parsing integer value")
     }
 
   }
 
   def parseOmiEnvelope(jval: JValue): OmiParseResult = {
-    def parseEnvelope(in: JObject) = {
+    def parseEnvelope(in: JObject): OmiParseResult = {
       val fields = in.obj.toMap
       val version = fields.get("version").map(parseStringAttribute)
-        .getOrElse(throw OMIParserError("version mandatory in omiEnvelope"))
+        .getOrElse(throw OMIParserError("Version mandatory in omiEnvelope"))
       val ttl = fields.get("ttl").map(parseTTL).getOrElse(throw OMIParserError("TTL not found"))
       val attributes = fields.get("attributes").map(parseAttributes)
       val authorization = fields.get("authorization").map(parseStringAttribute)
@@ -231,14 +254,24 @@ class JSONParser {
       val cancel = fields.get("cancel").map(parseCancel(_, meta))
       val call = fields.get("call").map(parseCall(_, meta))
       val delete = fields.get("delete").map(parseDelete(_, meta))
-      val test: Option[Option[OmiParseResult]] = List(read,write,response,cancel,call,delete).find(_.isDefined)
-      ???
+      val (succ, fail) = List(read,write,response,cancel,call,delete).flatten.partition(_.isSuccess)
+
+
+      if(fail.isEmpty)
+        Right(succ.map(_.get))
+      else Left(fail.map(_.failed.map[ParseError]{
+        case pe: ParseError => pe
+        case oth => OMIParserError(s"unknown error while parsing: ${oth.getMessage}")
+      }.get))
+
+      //val test: Option[Option[OmiParseResult]] = List(read,write,response,cancel,call,delete).find(_.isDefined)
+
     }
 
 
     jval match {
       case obj: JObject => parseEnvelope(obj)
-      case other => ???
+      case other => Left(Seq(OMIParserError(s"Invalid json type for omiOmiEnvelope")))
     }
 
   }
@@ -248,37 +281,55 @@ class JSONParser {
     in match {
       case JInt(num) =>Vector(Try(num.longValue())
         .getOrElse(throw OMIParserError("RequestID only integer value supported currently")))
-      case JString(str) => Vector(Try(str.toLong).getOrElse(throw OMIParserError("currently only integer requestID supported")))
+      case JString(str) => Vector(Try(str.toLong).getOrElse(throw OMIParserError("Currently only integer requestID supported")))
       case JArray(arr) => arr.flatMap(parseRequestID).toVector
       case other => throw OMIParserError("Invalid RequestID found, currently only integer values supported")
     }
   }
   private def parseMsg(in: JValue): Try[ODF] = {
     in match {
-      case obj: JObject =>obj.obj.toMap.get("Objects").map(parseObjects).getOrElse(ImmutableODF())
+      case obj: JObject =>obj.obj.toMap.get("Objects").map(parseObjects).getOrElse(Success(ImmutableODF()))
       case others => Success(ImmutableODF()) //empty odf
     }
   }
 
-  private def parseRead(jval: JValue, meta: RequestMeta) : Try[ReadRequest] = {
-    def _parseRead(in: JObject): Try[ReadRequest] = {
+  private def parseRead(jval: JValue, meta: RequestMeta) : Try[OmiRequest] = {
+
+    def _parseRead(in: JObject): Try[OmiRequest] = {
       val fields = in.obj.toMap
 
-      for {
-        callback                            <- Try(fields.get("callback").map(parseStringAttribute).map(RawCallback))
-        msgformat                           <- Try(fields.get("msgformat").map(parseStringAttribute))
-        targetType                          <- Try(fields.get("targetType").map(parseStringAttribute)) // node or device
-        //val nodeList = fields.get("nodeList").map(parseNodelist) //nodelist not supported ???
-        requestId: OdfCollection[RequestID] <- Try(fields.get("requestID").map(parseRequestID).getOrElse(Success(OdfCollection.empty)))
-        msg: ODF                            <- fields.get("msg").map(parseMsg).getOrElse(Success(ImmutableODF()))
-        //val interval = fields.get("interval")
-        oldest: Option[Int]                 <- Try(fields.get("oldest").map(parseIntegerValue))
-        begin: Option[Timestamp]            <- Try(fields.get("begin").map(parseDateTime))
-        end: Option[Timestamp]              <- Try(fields.get("end").map(parseDateTime))
-        newest: Option[Int]                 <- Try(fields.get("newest").map(parseIntegerValue))
-      } yield ReadRequest(msg,begin,end,newest,oldest,callback,meta.ttl,meta.userInfo,meta.senderInfo,meta.ttlLimit,requestId)
+      val requestID: Option[OdfCollection[RequestID]] = fields.get("requestID").map(parseRequestID)
+      val requestInterval = fields.get("interval").map(parseInterval)
+
+      (requestID, requestInterval) match {
+        case (Some(id),_) =>
+          for {
+            callback                    <- Try(fields.get("callback").map(parseStringAttribute).map(RawCallback))
+          } yield PollRequest(callback,id,meta.ttl,meta.userInfo,meta.senderInfo,meta.ttlLimit,meta.requestToken)
+        case (_, Some(intval)) =>
+          for {
+            callback                    <- Try(fields.get("callback").map(parseStringAttribute).map(RawCallback))
+            interval                    <- intval
+            msg                         <- fields.get("msg").map(parseMsg).getOrElse(Success(ImmutableODF()))
+            newest: Option[Int]         <- Try(fields.get("newest").map(parseIntegerValue))
+            oldest: Option[Int]         <- Try(fields.get("oldest").map(parseIntegerValue))
+          } yield SubscriptionRequest(interval,msg,newest,oldest,callback,meta.ttl,meta.userInfo,meta.senderInfo,meta.ttlLimit,meta.requestToken)
+        case _ =>
+          for {
+            msg                                 <- fields.get("msg").map(parseMsg).getOrElse(Success(ImmutableODF()))
+            begin: Option[Timestamp]    <- Try(fields.get("begin").map(parseDateTime))
+            end: Option[Timestamp]      <- Try(fields.get("end").map(parseDateTime))
+            newest: Option[Int]         <- Try(fields.get("newest").map(parseIntegerValue))
+            oldest: Option[Int]         <- Try(fields.get("oldest").map(parseIntegerValue))
+            maxLevels                   <- Try(fields.get("maxlevels").map(parseIntegerValue))
+            callback <- Try(fields.get("callback").map(parseStringAttribute).map(RawCallback))
+
+          } yield ReadRequest(msg, begin, end, newest, oldest, maxLevels, callback, meta.ttl, meta.userInfo, meta.senderInfo, meta.ttlLimit, meta.requestToken)
+
+      }
+      //val nodeList = fields.get("nodeList").map(parseNodelist) //nodelist not supported ???
       //val all = fields.get("all")
-      //val maxlevels = fields.get("maxlevels")
+
 
 
     }
@@ -299,7 +350,6 @@ class JSONParser {
         msgformat                           <- Try(fields.get("msgformat").map(parseStringAttribute))
         targetType                          <- Try(fields.get("targetType").map(parseStringAttribute)) // node or device
         //val nodeList = fields.get("nodeList").map(parseNodelist) //nodelist not supported ???
-        requestId: OdfCollection[RequestID] <- Try(fields.get("requestID").map(parseRequestID).getOrElse(Success(OdfCollection.empty)))
         msg: ODF                            <- fields.get("msg").map(parseMsg).getOrElse(Success(ImmutableODF()))
       } yield WriteRequest(msg, callback, meta.ttl, meta.userInfo, meta.senderInfo, meta.ttlLimit,meta.requestToken)
     }
@@ -316,20 +366,20 @@ class JSONParser {
       val fields = in.obj.toMap
 
       for {
-        attributes: Map[String, String] <- fields.get("attributes").map(parseAttributes).getOrElse(Success(Map.empty))
-        returnCode: ReturnCode          <- Try(fields.get("attributes")
-          .map(parseStringAttribute)
+        attributes                      <- fields.get("attributes").map(parseAttributes).getOrElse(Success(Map.empty[String,String]))
+        returnCode                      <- Try(fields.get("returnCode")
+          .map[String](parseStringAttribute)
           .filter(_.matches("""^2[0-9]{2}|4[0-9]{2}|5[0-9]{2}|6[0-9]{2}$""")) //only allow 2xx 4xx 5xx 6xx return codes
-          .getOrElse(Failure(OMIParserError("returnCode missing or invalid format"))))
+          .getOrElse(throw OMIParserError("ReturnCode missing or invalid format")))
         description                     <- Try(fields.get("description").map(parseStringAttribute))
 
-      } yield OmiReturn(returnCode,description,attributes)
+      } yield OmiReturn(returnCode, description, attributes)
 
     }
 
     jval match {
       case obj: JObject => _parseReturn(obj)
-      case _ => Failure(OMIParserError("invalid JSON type for O-MI return"))
+      case _ => Failure(OMIParserError("Invalid JSON type for O-MI return"))
     }
   }
   private def parseResult(jval: JValue): Try[OdfCollection[OmiResult]]= {
@@ -337,11 +387,11 @@ class JSONParser {
       val fields = in.obj.toMap
 
       for {
-        msgformat: Option[String]   <- Try(fields.get("msgformat").map(parseStringAttribute))
-        targetType: Option[String]  <- Try(fields.get("targetType").map(parseStringAttribute)) // node or device
-        returnV: OmiReturn          <- fields.get("return").map(parseReturn).getOrElse( Failure(OMIParserError("return missing from result")))
+        //msgformat: Option[String]   <- Try(fields.get("msgformat").map(parseStringAttribute))
+        //targetType: Option[String]  <- Try(fields.get("targetType").map(parseStringAttribute)) // node or device
+        returnV: OmiReturn          <- fields.get("return").map(parseReturn).getOrElse( Failure(OMIParserError("Return missing from result")))
         requestId                   <- Try(fields.get("requestID").map(parseRequestID).getOrElse(OdfCollection.empty))
-        msg: Option[ODF]            <- fields.get("msg").map(parseMsg).getOrElse(Success(None))
+        msg                         <- fields.get("msg").map(m => parseMsg(m).map(Some(_))).getOrElse(Success(None))
         //val nodeList = fields.get("nodeList").map(parseNodelist) //nodelist not supported ???
         //omiEnvelope <- fields.get("omiEnvelope").map(parseOmiEnvelope) // omiEnvelope
       } yield OmiResult(returnV,requestId,msg)
@@ -359,7 +409,7 @@ class JSONParser {
       val fields = in.obj.toMap
 
       for {
-        results <- fields.get("result").map(parseResult).getOrElse( Failure(OMIParserError("result mandatory in response")))
+        results <- fields.get("result").map(parseResult).getOrElse( Failure(OMIParserError("Result mandatory in response")))
       } yield ResponseRequest(results,meta.ttl,meta.callback,meta.userInfo,meta.senderInfo,meta.ttlLimit,meta.requestToken,meta.renderRequestID)
     }
 
@@ -392,10 +442,7 @@ class JSONParser {
 
       for {
         callback: Option[RawCallback]       <- Try(fields.get("callback").map(parseStringAttribute).map(RawCallback))
-        msgformat: Option[String]           <- Try(fields.get("msgformat").map(parseStringAttribute))
-        targetType: Option[String]          <- Try(fields.get("targetType").map(parseStringAttribute)) // node or device
         //val nodeList = fields.get("nodeList").map(parseNodelist) //nodelist not supported ???
-        requestId: OdfCollection[RequestID] <- Try(fields.get("requestID").map(parseRequestID).getOrElse(Success(OdfCollection.empty)))
         msg: ODF                            <- fields.get("msg").map(parseMsg).getOrElse(Success(ImmutableODF()))
       } yield CallRequest(msg,callback,meta.ttl,meta.userInfo,meta.senderInfo,meta.ttlLimit,meta.requestToken)
 
@@ -479,7 +526,7 @@ class JSONParser {
   private def parseQlmID(in: JObject) = {
     val fields: Map[String,JValue] = in.obj.toMap
 
-    val id = fields.get("id").map(parseStringAttribute).getOrElse(throw ODFParserError("missing id value in id object"))
+    val id = fields.get("id").map(parseStringAttribute).getOrElse(throw ODFParserError("Missing id value in id object"))
     val idType = fields.get("idType").map(parseStringAttribute)
     val tagType = fields.get("tagType").map(parseStringAttribute)
     val startDate = fields.get("startDate").map(parseDateTime)
@@ -524,13 +571,13 @@ class JSONParser {
       //val path: Path = parentPath./(id.head) // id must not be empty id is required
       //val thisObject: Object = Object(id,path,oType,description,attributes)
       for {
-        id <- fields.get("id").map(parseID).getOrElse(Failure(ODFParserError("Id missing")))
-        path <- Try(parentPath./(id.head))
-        oType: Option[String] <- Try(fields.get("type").map(parseStringAttribute))
-        attributes: Map[String, String] <- fields.get("attributes").map(parseAttributes).getOrElse(Success(Map.empty))
-        objects: Seq[Node] <- fields.get("Object").map(parseObject(path,_)).getOrElse(Success(Seq.empty))
-        infoitems: Seq[InfoItem] <- fields.get("InfoItem").map(parseInfoItems(path,_)).getOrElse(Success(Seq.empty))
-        description: Set[Description] <- fields.get("description").map(parseDescriptions).getOrElse(Success(Set.empty))
+        id                         <- fields.get("id").map(parseID).getOrElse(Failure(ODFParserError("Id missing")))
+        path                       <- Try(parentPath./(id.head))
+        oType: Option[String]      <- Try(fields.get("type").map(parseStringAttribute))
+        attributes                 <- fields.get("attributes").map(parseAttributes).getOrElse(Success(Map.empty[String,String]))
+        objects: Seq[Node]         <- fields.get("Object").map(parseObject(path,_)).getOrElse(Success(Seq.empty))
+        infoitems: Seq[InfoItem]   <- fields.get("InfoItem").map(parseInfoItems(path,_)).getOrElse(Success(Seq.empty))
+        description                <- fields.get("description").map(parseDescriptions).getOrElse(Success(Set.empty[Description]))
         thisObject = Object(id,path,oType,description,attributes)
       } yield Seq(thisObject) ++ objects ++ infoitems
     }
@@ -549,11 +596,11 @@ class JSONParser {
       for {
         name: String                    <- Try(fields.get("name").map(parseStringAttribute).getOrElse(throw ODFParserError("Name missing from InfoItem")))
         path: Path = parentPath./(name)
-        attributes: Map[String, String] <- fields.get("attributes").map(parseAttributes).getOrElse(Success(Map.empty))
+        attributes                      <- fields.get("attributes").map(parseAttributes).getOrElse(Success(Map.empty[String,String]))
         values: Vector[Value[Any]]      <- fields.get("values").map(parseValues).getOrElse(Success(Vector.empty))
         altName: Vector[QlmID]          <- fields.get("altname").map(parseID).getOrElse(Success(Vector.empty))
         metaData: Option[MetaData]      <- fields.get("MetaData").map(parseMetaData(path,_).map(Some(_))).getOrElse(Success(None))
-        description: Set[Description]   <- fields.get("description").map(parseDescriptions).getOrElse(Success(Set.empty))
+        description                     <- fields.get("description").map(parseDescriptions).getOrElse(Success(Set.empty[Description]))
         typev: Option[String]           <- Try(fields.get("type").map(parseStringAttribute))
       } yield InfoItem(name,path,typev,altName,description,values,metaData,attributes)
 
@@ -607,12 +654,13 @@ class JSONParser {
           if(num.isValidLong)
             new Timestamp(num.longValue() * 1000)
           else
-            throw ODFParserError("unixTime too big")
+            throw ODFParserError("UnixTime too big")
         }
         case Some(JDouble(num)) => {
           new Timestamp( (num*1000).toLong)
 
         }
+        case Some(other) => throw ODFParserError("Invalid timestamp format")
         case None => new Timestamp(new Date().getTime)
       }
     }
