@@ -952,16 +952,6 @@ case class ResponseRequest(
 
   def resultsAsJava(): JIterable[OmiResult] = asJavaIterable(results)
 
-  def copy(
-            results: OdfCollection[OmiResult] = this.results,
-            ttl: Duration = this.ttl,
-            callback: Option[Callback] = this.callback,
-            senderInformation: Option[SenderInformation] = this.senderInformation,
-            ttlLimit: Option[Timestamp] = this.ttlLimit,
-            requestToken: Option[Long] = this.requestToken,
-            renderRequestToken: Boolean = false,
-          ): ResponseRequest = ResponseRequest(results, ttl)
-
   def withCallback: Option[Callback] => ResponseRequest = cb => this.copy(callback = cb)
   def withRequestToken: Option[Long] => ResponseRequest = id => this.copy(requestToken = id )
 

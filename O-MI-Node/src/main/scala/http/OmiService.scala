@@ -293,6 +293,7 @@ trait OmiService
       val requestToken = Await.result(
         singleStores.addRequestInfo(startTime.getTime()*1000 + originalReq.handleTTL.toSeconds, omiVersion, odfVersion),
         originalReq.handleTTL) // TODO better infinite ttl handling (not only this line, overall)
+      val rt = Some(requestToken)
 
       requestStorage ! AddRequest( requestToken )
       requestStorage ! AddInfos( requestToken, Seq(
@@ -338,7 +339,7 @@ trait OmiService
                         response =>
                         //timer.step("Request handled")
                         requestStorage ! AddInfos( requestToken, Seq( RequestTimestampInfo("handle-end-time",  currentTimestamp)))
-                        response.withRequestToken(Some(requestToken)) //TODO: Clean requestToken passing
+                        response
                       }
                   }.recover {
                     case e: TimeoutException => Responses.TTLTimeout(Some(e.getMessage))
@@ -403,7 +404,7 @@ trait OmiService
           requestStorage ! AddInfos( requestToken, Seq( RequestTimestampInfo("final-time",  currentTimestamp)))
           requestStorage ! RemoveRequest( requestToken )
 
-          response
+          response.withRequestToken(rt) //TODO: Clean requestToken passing
       }
 
     }.recover{
@@ -416,7 +417,7 @@ trait OmiService
         log.error("Fatal server error", ex)
         Future.failed(ex)
       }
-    }
+    }//.map(f => f.map(_.withRequestToken(rt))) //TODO: Clean requestToken passing
   }
 
   def handleOmiRequest(request: OmiRequest): Future[ResponseRequest] = {
@@ -687,7 +688,7 @@ trait WebSocketOMISupport extends WebSocketUtil {
 
         queue.send(futureResponse)
       case msg: ws.Message => 
-          queue.send(Future.successful(ws.TextMessage("")))
+          queue.send(Future.successful(ws.TextMessage("Error: Could not process ws message, use text instead of binary")))
     }
     /*
     val msgSink = Sink.foreach[Future[String]] { future: Future[String] =>
@@ -757,6 +758,7 @@ trait WebSocketUtil {
         case e @ (Success(_: QueueOfferResult) | Failure(_)) => // Others mean failure
           log.warn(s"WebSocket response queue failed, reason: $e")
           removeRelatedSub()
+          sendHandler(Responses.InternalError(Some(e.toString)))
       }
       result
     }

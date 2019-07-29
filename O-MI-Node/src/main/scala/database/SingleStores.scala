@@ -164,14 +164,14 @@ trait SingleStores {
   val DefaultRequestInfo = PRequestInfo(omiVersion=1.0, odfVersion=None) // TODO: Default version to configuration?
 
   def getRequestInfo(response: ResponseRequest): Future[PRequestInfo] =
-    response.requestToken.map{id => getRequestInfo(id)}
+    response.requestToken.map{id => getRequestInfo(id).map(_.getOrElse(DefaultRequestInfo))}
         .getOrElse(Future.successful(DefaultRequestInfo))
 
-  def getRequestInfo(requestId: Long): Future[PRequestInfo] =
-    (requestInfoStore ? GetInfo(requestId)).mapTo[PRequestInfo]
+  def getRequestInfo(requestId: Long): Future[Option[PRequestInfo]] =
+    (requestInfoStore ? GetInfo(requestId)).mapTo[Option[PRequestInfo]]
 
-  def peekRequestInfo(requestId: Long): Future[PRequestInfo] =
-    (requestInfoStore ? PeekInfo(requestId)).mapTo[PRequestInfo]
+  def peekRequestInfo(requestId: Long): Future[Option[PRequestInfo]] =
+    (requestInfoStore ? PeekInfo(requestId)).mapTo[Option[PRequestInfo]]
 
   def peekAllRequestInfo(): Future[LongMap[PRequestInfo]] =
     (requestInfoStore ? PeekAll()).mapTo[LongMap[PRequestInfo]]
