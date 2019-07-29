@@ -173,7 +173,7 @@ class ParserTest extends Specification with MatcherMacros {
     write request with
       correct message     $e100
       missing msgformat   $e101
-      missing msg     $e103
+      missing msg         $e103
       missing Objects     $e104
       no objects to parse $e105
     response message with
@@ -185,10 +185,10 @@ class ParserTest extends Specification with MatcherMacros {
     read request with
       correct message     $e300
       missing msgformat   $e301
-      missing msg     $e303
+      missing msg         $e303
       missing Objects     $e304
       no objects to parse $e305
-    correct subscription $e306
+    correct subscription  $e306
     cancel request with
       correct request     $e500
     OdfParser should give certain result for message with

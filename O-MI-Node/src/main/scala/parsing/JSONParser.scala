@@ -164,7 +164,9 @@ class JSONParser {
 
 
   def parse(in: JsonInput): OmiParseResult = {
-    handleASTRoot(jparse(in))
+    val ast = Try(jparse(in))
+    ast.fold(t => Left(Vector(OMIParserError(t.getMessage))),handleASTRoot(_))
+
   }
 
 
@@ -258,7 +260,10 @@ class JSONParser {
 
 
       if(fail.isEmpty)
-        Right(succ.map(_.get))
+        if(succ.isEmpty)
+          Left(Seq(OMIParserError(s"Request missing")))
+        else
+          Right(succ.map(_.get))
       else Left(fail.map(_.failed.map[ParseError]{
         case pe: ParseError => pe
         case oth => OMIParserError(s"unknown error while parsing: ${oth.getMessage}")
