@@ -19,7 +19,7 @@ import org.json4s.native.JsonMethods.parse
 import org.specs2._
 import org.specs2.matcher.MatchResult
 import org.specs2.specification.core.SpecStructure
-import types.OmiTypes.OmiParseResult
+import types.OmiTypes._
 import types.odf.ODF
 import types.{ODFParserError, OMIParserError, ParseError, ParseErrorList}
 
@@ -32,46 +32,53 @@ class JSONParserTest extends Specification {
 
       OMI JSON Parser should give the correct response for a
         message with
-          incorrect JSON      $e1
-          missing request     $e2
-          missing ttl         $e3
-          missing version     $e4
-          correct omiEnvelope $e5
-        write request with
-          correct message     $e100
-          missing msgformat   $e101
-          missing msg         $e103
-          missing Objects     $e104
-          no objects to parse $e105
-        response message with
-          correct message     $e200
-          missing Objects     $e204
-          missing result node $e205
-          no objects to parse $e206
-          missing return code $e207
+          incorrect JSON                  $e1
+          missing request                 $e2
+          missing ttl                     $e3
+          missing version                 $e4
+          correct omiEnvelope             $e5
         read request with
-          correct message     $e300
-          missing msgformat   $e301
-          missing msg         $e303
-          missing Objects     $e304
-          no objects to parse $e305
-        correct subscription  $e306
-        cancel request with
-          correct request     $e500
+          correct message                 $e100
+          callback address                $e101
+          both newest and oldest present  $e102
+          both newest and begin present   $e103
+          both begin and end present      $e104
+        poll request with
+          correct message                 $e105
+        write with
+          correct message                 $e200
+        response with
+          correct message                 $e300
+          missing return                  $e301
+        cancel with
+          correct message                 $e400
+          invalid message                 $e401
+        call with
+          correct message                 $e500
+        delete with
+          correct message                 $e600
+        subscription with
+          interval subscription           $e700
+          invalid interval subscription   $e701
+          -1 interval subscription        $e702
+          event subscription              $e703
+        ODF
+          correct message                 e800
+       """
+"""
       ODF JSON Parser should give certain result for message with
-        correct format      $e400
-        incorrect XML       $e401
-        incorrect label     $e402
+        correct format
+        incorrect XML
+        incorrect label
 
       """
-
-
+""""""
   val parser = new JSONParser
 
 
 
   def e1 = {
-    parseOmi("<omiEnvelope/>", Some("OMIParserError"))
+    parseOmi("<omiEnvelope/>", Left("OMIParserError"))
   }
 
   def e2 = {
@@ -84,7 +91,7 @@ class JSONParserTest extends Specification {
          }
        }
       """
-      , Some("OMIParserError"))
+      , Left("OMIParserError"))
   }
 
   def e3 = {
@@ -97,7 +104,7 @@ class JSONParserTest extends Specification {
          }
        }
       """
-      , Some("OMIParserError"))
+      , Left("OMIParserError"))
   }
 
   def e4 = {
@@ -111,7 +118,7 @@ class JSONParserTest extends Specification {
          }
        }
       """
-      , Some("OMIParserError"))
+      , Left("OMIParserError"))
   }
 
   def e5 = {
@@ -125,65 +132,419 @@ class JSONParserTest extends Specification {
          }
        }
       """
+      , Right("read")
     )
   }
   //READ
   def e100 = {
     parseOmi(
       """
-       {
-         "omiEnvelope": {
-         "version": "2",
-         "ttl": 1,
-         "read": {}
-         }
-       }
-      """
+        {
+          "omiEnvelope": {
+            "version": "1.0",
+            "ttl": 0,
+            "read": {
+              "msgformat": "odf",
+              "msg": {
+                "Objects": {}
+              }
+            }
+          }
+        }
+      """,
+      Right("read")
     )
-    ???
   }
+
+  def e101 = {
+    parseOmi(
+      """
+        {
+          "omiEnvelope": {
+            "version": "1.0",
+            "ttl": 0,
+            "read": {
+              "callback": "http://localhost",
+              "msgformat": "odf",
+              "msg": {
+                "Objects": {}
+              }
+            }
+          }
+        }
+      """,
+      Right("read")
+    ) and parseOmi(
+      """
+        {
+          "omiEnvelope": {
+            "version": "1.0",
+            "ttl": 0,
+            "read": {
+              "callback": "https://www.google.com",
+              "msgformat": "odf",
+              "msg": {
+                "Objects": {}
+              }
+            }
+          }
+        }
+      """,
+      Right("read")
+    )
+  }
+
+  def e102 = {
+    parseOmi(
+      """
+        {
+          "omiEnvelope": {
+            "version": "1.0",
+            "ttl": 0,
+            "read": {
+              "msgformat": "odf",
+              "msg": {
+                "Objects": {}
+              },
+              "oldest": 3,
+              "newest": 3
+            }
+          }
+        }
+      """
+      , Left("OMIParserError"))
+  }
+  def e103 = {
+    parseOmi(
+      """
+        {
+          "omiEnvelope": {
+            "version": "1.0",
+            "ttl": 0,
+            "read": {
+              "msgformat": "odf",
+              "msg": {
+                "Objects": {}
+              },
+              "begin": "2019-07-29T21:00:00.000Z"
+              "newest": 3
+
+            }
+          }
+        }
+      """,
+      Right("read")
+      )
+  }
+
+  def e104 = {
+    parseOmi(
+      """
+        {
+          "omiEnvelope": {
+            "version": "1.0",
+            "ttl": 0,
+            "read": {
+              "msgformat": "odf",
+              "msg": {
+                "Objects": {}
+              },
+              "begin": "2019-07-29T21:00:00.000Z",
+              "end": "2019-07-31T21:00:00.000Z"
+            }
+          }
+        }
+      """,
+      Right("read")
+    )
+  }
+
+  def e105 = {
+    parseOmi(
+      """
+        |{
+        |  "omiEnvelope": {
+        |    "version": "1.0",
+        |    "ttl": 0,
+        |    "read": {
+        |      "requestID": "1"
+        |    }
+        |  }
+        |}
+      """.stripMargin
+      ,
+      Right("poll")
+    )
+  }
+
   //WRITE
   def e200 = {
-    ???
+    parseOmi(
+      """
+        |{
+        |  "omiEnvelope": {
+        |    "version": "1.0",
+        |    "ttl": 0,
+        |    "write": {
+        |      "msgformat": "odf",
+        |      "msg": {
+        |        "Objects": {}
+        |      }
+        |    }
+        |  }
+        |}
+      """.stripMargin,
+      Right("write"))
   }
   //RESPONSE
   def e300 = {
-    ???
+    parseOmi(
+     """
+       |{
+       |  "omiEnvelope": {
+       |    "version": "1.0",
+       |    "ttl": 10,
+       |    "response": {
+       |      "result": {
+       |        "msgformat": "odf",
+       |        "return": {
+       |          "returnCode": "200"
+       |        },
+       |        "msg": {}
+       |      }
+       |    }
+       |  }
+       |}
+     """.stripMargin,
+      Right("response")
+    ) and
+    parseOmi(
+      """
+        |{
+        |  "omiEnvelope": {
+        |    "version": "1.0",
+        |    "ttl": 10,
+        |    "response": {
+        |      "result": [
+        |        {
+        |          "msgformat": "odf",
+        |          "return": {
+        |            "returnCode": "200"
+        |          },
+        |          "msg": {}},
+        |        {
+        |          "msgformat": "odf",
+        |          "return": {
+        |            "returnCode": "200"
+        |          },
+        |          "msg": {},
+        |        }]
+        |    }
+        |  }
+        |}
+      """.stripMargin,
+      Right("response")
+    )
+  }
+  def e301 = {
+    parseOmi(
+      """
+        |{
+        |  "omiEnvelope": {
+        |    "version": "1.0",
+        |    "ttl": 10,
+        |    "response": {
+        |      "result": {
+        |        "msgformat": "odf",
+        |        "msg": {}
+        |      }
+        |    }
+        |  }
+        |}
+      """.stripMargin
+      , Left("OMIParserError")
+    )
   }
   //CANCEL
   def e400 = {
-    ???
+    parseOmi(
+      """
+        |{
+        |  "omiEnvelope": {
+        |    "version": "1.0",
+        |    "ttl": 0,
+        |    "cancel": {
+        |      "requestID": "1"
+        |    }
+        |  }
+        |}
+      """.stripMargin
+    ,Right("cancel"))
+  }
+  def e401 = {
+    parseOmi(
+      """
+        |{
+        |  "omiEnvelope": {
+        |    "version": "1.0",
+        |    "ttl": 0,
+        |    "cancel": {
+        |      "requestID": ["1", "2"]
+        |    }
+        |  }
+        |}
+      """.stripMargin
+      , Right("cancel"))
   }
   //CALL
   def e500 = {
-    ???
+    parseOmi(
+      """
+        |{
+        |  "omiEnvelope": {
+        |    "version": "1.0",
+        |    "ttl": 0,
+        |    "call": {
+        |      "callback": "http://localhost",
+        |    }
+        |  }
+        |}
+      """.stripMargin,
+      Right("call")
+    )
   }
   //DELETE
   def e600 = {
-    ???
+    parseOmi(
+      """
+        |{
+        |  "omiEnvelope": {
+        |    "version": "1.0",
+        |    "ttl": 0,
+        |    "delete": {
+        |      "callback": "http://localhost",
+        |      "msgformat": "odf",
+        |      "msg": {
+        |        "Objects": {}
+        |      }
+        |    }
+        |  }
+        |}
+      """.stripMargin,
+      Right("delete")
+    )
   }
   //SUBSCRIPTION
   def e700 = {
-    ???
+    parseOmi(
+      """
+        |{
+        |  "omiEnvelope": {
+        |    "version": "1.0",
+        |    "ttl": 0,
+        |    "read": {
+        |      "callback": "0",
+        |      "msgformat": "odf",
+        |      "msg": {
+        |        "Objects": {}
+        |      },
+        |      "interval": 5
+        |    }
+        |  }
+        |}
+      """.stripMargin,
+      Right("subscription")
+    )
+  }
+  def e701 = {
+    parseOmi(
+      """
+        |{
+        |  "omiEnvelope": {
+        |    "version": "1.0",
+        |    "ttl": 0,
+        |    "read": {
+        |      "callback": "0",
+        |      "msgformat": "odf",
+        |      "msg": {
+        |        "Objects": {}
+        |      },
+        |      "interval": -5
+        |    }
+        |  }
+        |}
+      """.stripMargin,
+      Left("OMIParserError")
+    )
+  }
+  def e702 = {
+    parseOmi(
+      """
+        |{
+        |  "omiEnvelope": {
+        |    "version": "1.0",
+        |    "ttl": 0,
+        |    "read": {
+        |      "callback": "0",
+        |      "msgformat": "odf",
+        |      "msg": {
+        |        "Objects": {}
+        |      },
+        |      "interval": -1
+        |    }
+        |  }
+        |}
+      """.stripMargin,
+      Right("subscription")
+    )
+  }
+  def e703 = {
+    parseOmi(
+      """
+        |{
+        |  "omiEnvelope": {
+        |    "version": "1.0",
+        |    "ttl": 0,
+        |    "read": {
+        |      "callback": "0",
+        |      "msgformat": "odf",
+        |      "msg": {
+        |        "Objects": {}
+        |      },
+        |      "interval": -2
+        |    }
+        |  }
+        |}
+      """.stripMargin,
+      Right("subscription")
+    )
   }
   //ODF
   def e800 = {
     ???
   }
 
-
-  def parseOmi(msg: String, error: Option[String] = None): MatchResult[OmiParseResult] = {
+  def parseOmi(msg: String, check: Either[String,String]): MatchResult[OmiParseResult] = {
 
     val result = parser.parse(msg)
-
-    error.fold(result must beRight){
-      err => result must beLeft {
-        parseErrors: Iterable[ParseError] => parseErrors.headOption must beSome{
-          parseError: ParseError => errorType(parseError) must beEqualTo(err).ignoreCase
-        }
-      }
-    }
+   check.fold(error => result must beLeft{
+     parseErrors: Iterable[ParseError] => parseErrors.headOption must beSome {
+       parseError: ParseError => errorType(parseError) must beEqualTo(error).ignoreCase
+     }
+   },classes => result must beRight.like{case i => i.headOption must beSome(correctClass(classes))})
   }
+  //def parseOmi(msg: String, error: Option[String] = None): MatchResult[OmiParseResult] = {
+
+  //  val result = parser.parse(msg)
+
+  //  error.fold(result must beRight){
+  //    err => result must beLeft {
+  //      parseErrors: Iterable[ParseError] => parseErrors.headOption must beSome{
+  //        parseError: ParseError => errorType(parseError) must beEqualTo(err).ignoreCase
+  //      }
+  //    }
+  //  }
+  //}
 
   def parseOdf(msg: String, error: Option[String] = None): MatchResult[Try[ODF]] = {
     val result = Try(parse(msg).asInstanceOf[JObject].obj.toMap.get("Objects").get).flatMap(parser.parseObjects(_))
@@ -200,5 +561,15 @@ class JSONParserTest extends Specification {
     case _: ParseErrorList => "ParserErrorList"
     case _ => throw pe
 
+  }
+  def correctClass(s: String) = s match {
+    case "read" => haveClass[ReadRequest]
+    case "poll" => haveClass[PollRequest]
+    case "write" => haveClass[WriteRequest]
+    case "response" => haveClass[ResponseRequest]
+    case "call" => haveClass[CallRequest]
+    case "delete" => haveClass[DeleteRequest]
+    case "cancel" => haveClass[CancelRequest]
+    case "subscription" => haveClass[SubscriptionRequest]
   }
 }

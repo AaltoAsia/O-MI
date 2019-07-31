@@ -318,14 +318,20 @@ class JSONParser {
             msg                         <- fields.get("msg").map(parseMsg).getOrElse(Success(ImmutableODF()))
             newest: Option[Int]         <- Try(fields.get("newest").map(parseIntegerValue))
             oldest: Option[Int]         <- Try(fields.get("oldest").map(parseIntegerValue))
+            _                           <- (newest, oldest) match {
+              case (Some(n), Some(o)) => Failure(OMIParserError("Invalid Read request, Can not query oldest and newest values at same time."))
+              case _ => Success(Unit)}
           } yield SubscriptionRequest(interval,msg,newest,oldest,callback,meta.ttl,meta.userInfo,meta.senderInfo,meta.ttlLimit,meta.requestToken)
         case _ =>
           for {
-            msg                                 <- fields.get("msg").map(parseMsg).getOrElse(Success(ImmutableODF()))
+            msg                         <- fields.get("msg").map(parseMsg).getOrElse(Success(ImmutableODF()))
             begin: Option[Timestamp]    <- Try(fields.get("begin").map(parseDateTime))
             end: Option[Timestamp]      <- Try(fields.get("end").map(parseDateTime))
             newest: Option[Int]         <- Try(fields.get("newest").map(parseIntegerValue))
             oldest: Option[Int]         <- Try(fields.get("oldest").map(parseIntegerValue))
+            _                           <- (newest, oldest) match {
+              case (Some(n), Some(o)) => Failure(OMIParserError("Invalid Read request, Can not query oldest and newest values at same time."))
+              case _ => Success(Unit)}
             maxLevels                   <- Try(fields.get("maxlevels").map(parseIntegerValue))
             callback <- Try(fields.get("callback").map(parseStringAttribute).map(RawCallback))
 
