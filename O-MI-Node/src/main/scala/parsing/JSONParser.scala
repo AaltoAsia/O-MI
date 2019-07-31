@@ -634,7 +634,7 @@ class JSONParser {
       val unixTime = fields.get("unixTime")
       val timestamp = correctTimeStamp(dateTime, unixTime)
       //val attributes = ??? // TODO not implemented in value type
-      val value = fields.get("value").map{
+      val value: Any = fields.get("value").map{
         case JString(s) => s
         case JDouble(num) => num
         case JInt(num) =>
@@ -644,7 +644,8 @@ class JSONParser {
         case JBool(b) => b
         case obj: JObject => parseObjects(obj)
         case other => throw ODFParserError("Invalid JSON type for ODF Value")
-      }
+      }.getOrElse(throw ODFParserError("Value missing"))
+
       if(typev.isEmpty)
         Value(value,timestamp)
       else
@@ -697,8 +698,17 @@ class JSONParser {
 
   private def parseMetaData(parentPath :Path, jval: JValue): Try[MetaData]= {
     val path: Path = parentPath./("MetaData")
+    def parseM(in: JObject) = {
+      val fields = in.obj.toMap
+      fields.get("InfoItem").fold[Try[MetaData]](Success(MetaData(Vector.empty)))( jv => parseInfoItems(path,jv).map(ii => MetaData(ii.toVector)))
+    }
 
-    parseInfoItems(path,jval).map(ii => MetaData(ii.toVector))
+
+    //parseInfoItems(path,jval).map(ii => MetaData(ii.toVector))
+    jval match {
+      case obj: JObject => parseM(obj)
+      case other => Failure(ODFParserError("Invalid JSON type for ODF MetaData"))
+    }
 
   }
 

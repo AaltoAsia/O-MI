@@ -14,14 +14,16 @@
 
 package parsing
 
+import java.sql.Timestamp
+
 import org.json4s.JObject
 import org.json4s.native.JsonMethods.parse
 import org.specs2._
 import org.specs2.matcher.MatchResult
 import org.specs2.specification.core.SpecStructure
 import types.OmiTypes._
-import types.odf.ODF
-import types.{ODFParserError, OMIParserError, ParseError, ParseErrorList}
+import types.odf.{Description, ImmutableODF, InfoItem, IntValue, MetaData, ODF, Object, Objects, StringPresentedValue, Value}
+import types.{ODFParserError, OMIParserError, ParseError, ParseErrorList, Path}
 
 import scala.util.Try
 
@@ -63,7 +65,8 @@ class JSONParserTest extends Specification {
           -1 interval subscription        $e702
           event subscription              $e703
         ODF
-          correct message                 e800
+          correct message                 $e800
+          correct message                 $e801
        """
 """
       ODF JSON Parser should give certain result for message with
@@ -521,7 +524,101 @@ class JSONParserTest extends Specification {
   }
   //ODF
   def e800 = {
-    ???
+    parseOdf(
+      """
+        |{
+        |  "Objects": {
+        |    "Object": {
+        |      "id": "OMI-Service",
+        |      "Object": {
+        |        "id": "Settings",
+        |        "InfoItem": {
+        |          "name": "num-latest-values-stored"
+        |        }
+        |      }
+        |    }
+        |  }
+        |}
+      """.stripMargin) and
+    parseOdf(
+      """
+        |{
+        |"Objects": {
+        |  "Object": {
+        |    "id": "OMI-Service",
+        |    "Object": {
+        |      "id": "Settings",
+        |      "InfoItem": {
+        |        "name": "num-latest-values-stored",
+        |        "description": {
+        |          "text": ""
+        |        },
+        |        "values": {
+        |          "type": "xs:int",
+        |          "dateTime": "2019-06-04T13:37:59.311+03:00",
+        |          "unixTime": 1559644679,
+        |          "value": 50
+        |        }
+        |      }
+        |    }
+        |  }
+        |}
+        |}
+      """.stripMargin
+    )
+  }
+
+  def e801 = {
+    val msg = """
+        |{
+        |          "Objects": {
+        |            "Object": {
+        |              "id": "OMI-Service",
+        |              "Object": {
+        |                "id": "Settings",
+        |                "InfoItem": {
+        |                  "name": "num-latest-values-stored",
+        |                  "description": {
+        |                    "text": "Number of latest values (per sensor) that will be saved to the DB"
+        |                  },
+        |                  "MetaData": {
+        |                    "InfoItem": {
+        |                      "name": "meta",
+        |                      "values":{"unixTime": 100, "value":"2"}
+        |                    }
+        |                  },
+        |                  "values": {
+        |                    "type": "xs:int",
+        |                    "unixTime": 100,
+        |                    "value": "50"
+        |                  }
+        |                }
+        |              }
+        |            }
+        |          }
+        |}
+        |
+      """.stripMargin
+    val result = Try(parse(msg).asInstanceOf[JObject].obj.toMap.get("Objects").get).flatMap(parser.parseObjects(_))
+    result must beSuccessfulTry{
+      ImmutableODF(
+              Vector(
+                Objects(),
+                Object(Path("Objects/OMI-Service")),
+                Object(Path("Objects/OMI-Service/Settings")),
+                InfoItem(
+                  "num-latest-values-stored",
+                  Path("Objects/OMI-Service/Settings/num-latest-values-stored"),
+                  None,
+                  Vector.empty,
+                  Set(Description("Number of latest values (per sensor) that will be saved to the DB")),
+                  Vector(IntValue(50, new Timestamp(100000))),
+                  Some(MetaData(Vector(InfoItem(Path("Objects/OMI-Service/Settings/num-latest-values-stored/MetaData/meta"),Vector(StringPresentedValue("2", new Timestamp(100000))))))),
+                  Map.empty)
+              ))}
+
+
+
   }
 
   def parseOmi(msg: String, check: Either[String,String]): MatchResult[OmiParseResult] = {
