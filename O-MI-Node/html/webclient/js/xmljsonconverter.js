@@ -765,7 +765,7 @@
           altname: altnames,
           description: descriptions,
           MetaData: metadatas,
-          value: values
+          values: values
         });
       }
     };
@@ -896,7 +896,7 @@
           type: type,
           dateTime: dateTime,
           unixTime: unixTime,
-          content: {
+          value: {
             Objects: objects
           }
         });
@@ -905,7 +905,7 @@
           type: type,
           dateTime: dateTime,
           unixTime: unixTime,
-          content: content
+          value: content
         });
       }
     };

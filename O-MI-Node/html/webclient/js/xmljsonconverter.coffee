@@ -662,7 +662,7 @@ xmlConverter = (WebOmi) ->
         altname: altnames
         description: descriptions
         MetaData: metadatas
-        value: values
+        values: values
       })
 
   my.parseDescription = (xml) ->
@@ -757,7 +757,7 @@ xmlConverter = (WebOmi) ->
         type: type
         dateTime: dateTime
         unixTime: unixTime
-        content:
+        value:
           Objects: objects
       })
     else
@@ -765,7 +765,7 @@ xmlConverter = (WebOmi) ->
         type: type
         dateTime: dateTime
         unixTime: unixTime
-        content: content
+        value: content
       })
       
 
