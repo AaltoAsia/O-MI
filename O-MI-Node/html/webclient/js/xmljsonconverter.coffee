@@ -235,7 +235,7 @@ xmlConverter = (WebOmi) ->
       msgformat : msgformat
       targetType : targetType
       nodeList : nodeList
-      requestId : requestId
+      requestID : requestId
       msg : msg
     }
 
@@ -371,7 +371,7 @@ xmlConverter = (WebOmi) ->
       returnT = null
 
     try
-      requestId = my.parseRequestId(my.evaluateXPath(xml,"./omi:requestId")[0])
+      requestId = my.parseRequestId(my.evaluateXPath(xml,"./omi:requestID")[0])
       if returnT? and requestId?
         console.log "both return and requestID found"
         requestId = null
@@ -401,7 +401,7 @@ xmlConverter = (WebOmi) ->
       msgformat : msgformat
       targetType :  targetType
       return : returnT
-      requestId :requestId
+      requestID :requestId
       msg : msg
       nodeList : nodeList
       omiEnvelope : omiEnvelope
@@ -449,7 +449,7 @@ xmlConverter = (WebOmi) ->
 
     result = {
       nodeList : nodeList
-      requestId : requestId
+      requestID : requestId
     }
 
     my.filterNullKeys(result)

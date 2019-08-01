@@ -287,7 +287,7 @@
         msgformat: msgformat,
         targetType: targetType,
         nodeList: nodeList,
-        requestId: requestId,
+        requestID: requestId,
         msg: msg
       };
       return my.filterNullKeys(result);
@@ -441,7 +441,7 @@
         returnT = null;
       }
       try {
-        requestId = my.parseRequestId(my.evaluateXPath(xml, "./omi:requestId")[0]);
+        requestId = my.parseRequestId(my.evaluateXPath(xml, "./omi:requestID")[0]);
         if ((returnT != null) && (requestId != null)) {
           console.log("both return and requestID found");
           requestId = null;
@@ -476,7 +476,7 @@
         msgformat: msgformat,
         targetType: targetType,
         return: returnT,
-        requestId: requestId,
+        requestID: requestId,
         msg: msg,
         nodeList: nodeList,
         omiEnvelope: omiEnvelope
@@ -526,7 +526,7 @@
       }
       result = {
         nodeList: nodeList,
-        requestId: requestId
+        requestID: requestId
       };
       return my.filterNullKeys(result);
     };
