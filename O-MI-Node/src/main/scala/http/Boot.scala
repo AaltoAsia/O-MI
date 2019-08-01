@@ -46,6 +46,7 @@ import responses.{CallbackHandler, RequestHandler, SubscriptionManager}
 import types.OmiTypes.Returns.ReturnTypes._
 import types.OmiTypes._
 import types.odf._
+import io.prometheus.client._
 
 class OmiServer extends OmiNode {
 
@@ -58,6 +59,11 @@ class OmiServer extends OmiNode {
     * Settings loaded by akka (typesafe config) and our [[OmiConfigExtension]]
     */
   val settings: OmiConfigExtension = OmiConfig(system)
+  val prometheusServer = if( settings.metricsEnabled ) {
+    val tmp = Some(new exporter.HTTPServer(settings.prometheusPort))
+    hotspot.DefaultExports.initialize()
+    tmp
+  } else None
 
   if(settings.kamonEnabled){
     //TODO: Add other reporters? Additional depncies...

@@ -32,6 +32,7 @@ import types.odf.ImmutableODF
 import types.Path
 import http.TemporaryRequestInfoStore._
 import utils._
+import io.prometheus.client._
 
 object RequestHandler {
   def props(
@@ -70,13 +71,20 @@ class RequestHandler(
   private val agentResponsibilities: AgentResponsibilities = new AgentResponsibilities(singleStores)
   private val agents: MutableMap[AgentName, AgentInformation] = MutableMap.empty
 
+
   def receive: PartialFunction[Any, Unit] = {
     case read: ReadRequest => respond(handleReadRequest(read))
     case write: WriteRequest => respond(handleWriteRequest(write))
     case delete: DeleteRequest => respond(handleDeleteRequest(delete))
     case call: CallRequest => respond(handleCallRequest(call))
     case response: ResponseRequest => respond(handleResponse(response))
-    case omiRequest: OmiRequest => respond(handleNonOdfRequest(omiRequest))
+    case subscription: SubscriptionRequest => respond(handleSubscription(subscription))
+    case poll: PollRequest => respond(handlePoll(poll))
+    case cancel: CancelRequest => respond(handleCancel(cancel))
+    case other: OmiRequest => 
+      log.warning(s"Unexpected non-O-DF request: $other")
+      respond(Future.failed(new Exception(s"Unexpected non-O-DF request")))
+    
     case na: NewAgent => addAgent(na)
     case na: AgentStopped => agentStopped(na.agentName)
   }
@@ -85,7 +93,7 @@ class RequestHandler(
     readR.requestToken.foreach{
       id =>
       requestStore ! AddInfos(id,Vector(
-                                         RequestStringInfo( "request-type", "read"),
+                                         RequestStringInfo("request-type", "read"),
                                          RequestStringInfo("begin-attribute", readR.begin.toString),
                                          RequestStringInfo("end-attribute", readR.end.toString),
                                          RequestStringInfo("newest-attribute", readR.newest.toString),
@@ -245,17 +253,6 @@ class RequestHandler(
     handleWriteRequest(response.odfResultsToSingleWrite)
   }
 
-  def handleNonOdfRequest(omiRequest: OmiRequest): Future[ResponseRequest] = {
-    omiRequest match {
-      case subscription: SubscriptionRequest => handleSubscription(subscription)
-      case poll: PollRequest => handlePoll(poll)
-      case cancel: CancelRequest => handleCancel(cancel)
-      case other => {
-        log.warning(s"Unexpected non-O-DF request: $other")
-        Future.failed(new Exception(s"Unexpected non-O-DF request"))
-      }
-    }
-  }
 
   private def addAgent(newAgent: NewAgent) = {
     agentResponsibilities.add(newAgent.responsibilities)
@@ -314,7 +311,7 @@ class RequestHandler(
     }
   }
 
-  private def respond(futureResponse: Future[ResponseRequest]) = {
+  private def respond(futureResponse: Future[ResponseRequest]): Future[Unit] = {
     val senderRef = sender()
     futureResponse.recover {
       case e: Exception =>

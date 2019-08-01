@@ -447,6 +447,16 @@ class RawRequestWrapper(val rawSource: Source[String,_], private val user0: User
   val callback: Option[Callback] =
     omiVerb.attributes.get("callback").map(RawCallback.apply)
 
+  
+  lazy val requestTypeString: String = {
+    wrapperInfo.omiVerb.map( _.localName) match {
+      case Some("read") =>
+        if(wrapperInfo.odfObjects.isEmpty) "poll" 
+        else if(wrapperInfo.omiVerb.flatMap{ _.attributes.get("interval") }.nonEmpty ) "subscription" else "read" 
+      case Some(other: String) => other
+      case None => "not found"
+    }
+  }
   /**
     * Get the parsed request. Message is parsed only once because of laziness.
     */
