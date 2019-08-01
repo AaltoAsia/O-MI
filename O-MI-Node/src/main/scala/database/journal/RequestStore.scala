@@ -64,7 +64,9 @@ class RequestInfoStore(override val persistenceId: String) extends JournalStore 
 
     case GetInfo(id) =>
       val info = infos.get(id)
-      persist(PRemoveInfo(id))(updateState)
+      info map {_ =>
+        persist(PRemoveInfo(id))(updateState)
+      }
       sender() ! info
 
     case AddInfo(endTime, omiVersion, odfVersion) =>
