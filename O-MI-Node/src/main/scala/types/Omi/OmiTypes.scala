@@ -601,13 +601,13 @@ case class ReadRequest(
   **/
 case class PollRequest(
                         callback: Option[Callback] = None,
-                        requestIDs: OdfCollection[Long] = OdfCollection.empty,
+                        requestIDs: OdfCollection[RequestID] = OdfCollection.empty,
                         ttl: Duration = 10.seconds,
                         private val user0: UserInfo = UserInfo(),
                         senderInformation: Option[SenderInformation] = None,
                         ttlLimit: Option[Timestamp] = None,
                         requestToken: Option[Long] = None
-                      ) extends OmiRequest {
+                      ) extends OmiRequest with RequestIDRequest {
 
   user = user0
 
@@ -889,13 +889,13 @@ case class DeleteRequest(
   * Cancel request, for cancelling subscription.
   **/
 case class CancelRequest(
-                          requestIDs: OdfCollection[Long] = OdfCollection.empty,
+                          requestIDs: OdfCollection[RequestID] = OdfCollection.empty,
                           ttl: Duration = 10.seconds,
                           private val user0: UserInfo = UserInfo(),
                           senderInformation: Option[SenderInformation] = None,
                           ttlLimit: Option[Timestamp] = None,
                           requestToken: Option[Long] = None
-                        ) extends OmiRequest {
+                        ) extends OmiRequest with RequestIDRequest {
   user = user0
 
   implicit def asCancelRequest: xmlTypes.CancelRequestType = xmlTypes.CancelRequestType(
@@ -946,7 +946,6 @@ case class ResponseRequest(
                        val senderInformation: Option[SenderInformation] = None,
                        val ttlLimit: Option[Timestamp] = None,
                        val requestToken: Option[Long] = None,
-                       val renderRequestToken: Boolean = false
                      ) extends OmiRequest with PermissiveRequest with JavaResponseRequest {
   user = user0
 
@@ -1035,15 +1034,6 @@ case class ResponseRequest(
       ),
       StartElement("response")
     ).view ++
-    {if (renderRequestToken) requestToken.view.flatMap{
-      rid =>
-        Vector(
-          StartElement("requestID"),
-          Characters(rid.toString),
-          EndElement("requestID")
-        )
-    }
-    else Seq.empty.view} ++
     results.view.flatMap{
       result => result.asXMLEvents(odfVersion)
     } ++ Vector(

@@ -334,7 +334,7 @@ trait OmiService
                     request: OmiRequest => 
                       //timer.step("Callback defined")
                       requestStorage ! AddInfos( requestToken, Seq( RequestTimestampInfo("callback-time",  currentTimestamp)))
-                      val handle: Future[ResponseRequest] = handleOmiRequest(request.withRequestToken(Some(requestToken)))
+                      val handle: Future[ResponseRequest] = handleOmiRequest(request.withRequestToken(rt))
                       handle.map{
                         response =>
                         //timer.step("Request handled")
@@ -439,7 +439,7 @@ trait OmiService
             )
           case Some(callback: DefinedCallback) => {
             (requestHandler ? other).mapTo[ResponseRequest] map { response =>
-              callbackHandler.sendCallback(callback, response)
+              callbackHandler.sendCallback(callback, response.withRequestToken(request.requestToken))
             }
             Future.successful(
               Responses.Success(description = Some("OK, callback job started"))
@@ -683,6 +683,7 @@ trait WebSocketOMISupport extends WebSocketUtil {
             user
           )
           r <- r2
+
           versions <- singleStores.getRequestInfo(r)
         } yield ws.TextMessage.Streamed(r.asXMLSourceWithVersion(versions))
 
