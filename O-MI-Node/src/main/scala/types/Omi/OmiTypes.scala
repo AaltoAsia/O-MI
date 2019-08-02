@@ -39,6 +39,8 @@ import akka.stream.scaladsl._
 import akka.stream.alpakka.xml._
 import utils._
 import parser.OMIStreamParser
+import database.journal.PRequestInfo
+import database.SingleStores
 
 
 
@@ -519,7 +521,6 @@ object RawRequestWrapper {
 }
 
 import types.OmiTypes.RawRequestWrapper.MessageType
-import database.journal.PRequestInfo
 
 /**
   * One-time-read request
@@ -956,13 +957,18 @@ case class ResponseRequest(
                        val senderInformation: Option[SenderInformation] = None,
                        val ttlLimit: Option[Timestamp] = None,
                        val requestToken: Option[Long] = None,
+                       val requestInfo: Option[PRequestInfo] = None,
                      ) extends OmiRequest with PermissiveRequest with JavaResponseRequest {
   user = user0
 
   def resultsAsJava(): JIterable[OmiResult] = asJavaIterable(results)
 
   def withCallback: Option[Callback] => ResponseRequest = cb => this.copy(callback = cb)
+  def withSenderInformation(si: SenderInformation): OmiRequest = this.copy(senderInformation = Some(si))
   def withRequestToken: Option[Long] => ResponseRequest = id => this.copy(requestToken = id )
+  def withRequestInfo: PRequestInfo => ResponseRequest = ri => this.copy(requestInfo = ri )
+  def withRequestInfoFrom(s: SingleStores)(implicit ec: ExecutionContext): Future[ResponseRequest] =
+    s.getRequestInfo(this) map this.withRequestInfo
 
   def odf: ODF = results.foldLeft(ImmutableODF()) {
     case (l: ODF, r: OmiResult) =>
@@ -995,7 +1001,6 @@ case class ResponseRequest(
 
   implicit def asOmiEnvelope: xmlTypes.OmiEnvelopeType = requestToEnvelope(asResponseListType, ttlAsSeconds)
 
-  def withSenderInformation(si: SenderInformation): OmiRequest = this.copy(senderInformation = Some(si))
 
   def odfResultsToWrites: Seq[WriteRequest] = results.collect {
     case omiResult: OmiResult if omiResult.odf.nonEmpty =>
@@ -1015,24 +1020,14 @@ case class ResponseRequest(
 
   val requestVerb: MessageType.Response.type = MessageType.Response
 
-  def asXMLEvents = asXMLEventsWithVersion()
 
-  def asXMLByteSourceWithVersion(info: PRequestInfo): Source[ByteString, NotUsed] =
-    asXMLByteSourceWithVersion(OmiVersion.fromNumber(info.omiVersion), info.odfVersion.map(OdfVersion.fromNumber(_))) // msgformat?
+  def omiVersion: OmiVersion = requestInfo map (OmiVersion fromNumber _.omiVersion) getOrElse OmiVersion1
+  def odfVersion: OdfVersion = (for {
+    ri <- requestInfo
+    ov <- ri.odfVersion
+  } yield OdfVersion.fromNumber(ov)) getOrElse OdfVersion1
 
-  def asXMLByteSourceWithVersion(omiVersion: OmiVersion = OmiVersion1, odfVersion: Option[OdfVersion] = None): Source[ByteString, NotUsed] =
-    parseEventsToByteSource(asXMLEventsWithVersion(omiVersion, odfVersion))
-
-  def asXMLSourceWithVersion(info: PRequestInfo): Source[String, NotUsed] =
-    asXMLSourceWithVersion(OmiVersion.fromNumber(info.omiVersion), info.odfVersion.map(OdfVersion.fromNumber(_))) // msgformat?
-
-  def asXMLSourceWithVersion(omiVersion: OmiVersion = OmiVersion1, odfVersion: Option[OdfVersion] = None): Source[String, NotUsed] =
-    asXMLByteSourceWithVersion(omiVersion, odfVersion).map[String](_.utf8String)
-
-  def asXMLEventsWithVersion(info: PRequestInfo): SeqView[ParseEvent,Seq[_]] =
-    asXMLEventsWithVersion(OmiVersion.fromNumber(info.omiVersion), info.odfVersion.map(OdfVersion.fromNumber(_))) // msgformat?
-
-  def asXMLEventsWithVersion(omiVersion: OmiVersion = OmiVersion1, odfVersion: Option[OdfVersion] = None): SeqView[ParseEvent,Seq[_]] ={
+  def asXMLEvents: SeqView[ParseEvent,Seq[_]] ={
     Vector(
       StartDocument,
       StartElement("omiEnvelope",

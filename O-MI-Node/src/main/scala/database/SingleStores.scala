@@ -167,6 +167,8 @@ trait SingleStores {
 
   def getRequestInfo(response: ResponseRequest): Future[PRequestInfo] = {
 
+    val preDefault = OptionT(Future.successful(response.requestInfo))
+
     if (response.requestToken.isEmpty) log.info("Response doesn't have a request token, O-DF/O-MI versions unknown (FIXME)")
     
 
@@ -187,7 +189,6 @@ trait SingleStores {
       requestID    <- OptionT(subscriptionIdF map Option.apply) // optional
       requestToken <- OptionT(Future.successful(response.requestToken))
       requestInfo  <- OptionT{
-        println(s"REQUESTIDS $requestID $requestToken")
         if (requestID exists (_ == requestToken)) peekRequestInfo(requestToken) // do not remove
         else getRequestInfo(requestToken) // remove
       }
@@ -199,7 +200,7 @@ trait SingleStores {
           ri.copy(odfVersion=si.odfVersion)
         } orElse OptionT.some(ri)
       case ri => OptionT.some(ri)
-    } orElse subscriptionInfo getOrElse DefaultRequestInfo
+    } orElse preDefault orElse subscriptionInfo getOrElse DefaultRequestInfo
 
     //for {
     //  a <- requestInfo.run

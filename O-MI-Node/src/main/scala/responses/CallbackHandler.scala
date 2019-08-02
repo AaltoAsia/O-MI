@@ -110,8 +110,9 @@ class CallbackHandler(
     val encodedSource = (request match {
         case response: ResponseRequest =>
           Source.fromFutureSource(
-            singleStores.getRequestInfo(response).map(versions =>
-              response.asXMLSourceWithVersion(versions)))
+            response.withRequestInfoFrom(singleStores).map{r =>
+              r.asXMLSource
+            })
         case r: OmiRequest => r.asXMLSource
 
       }).map{str: String => URLEncoder.encode(str,"UTF-8")}
