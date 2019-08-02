@@ -111,6 +111,8 @@ class OmiConfigExtension(val config: Config) extends Extension
   //Maximum value that is accepted for newest and oldest parameters of O-MI read request.
   val maximumNewest: Int = config.getInt("omi-service.maximum-newest-attribute")
   
+  val metricsEnabled: Boolean = config.getBoolean("omi-service.metrics-enabled")
+  val prometheusPort: Int = config.getInt("omi-service.prometheus-export-port")
   // Authorization
   val allowedRequestTypes: Set[MessageType] = config.getStringList("omi-service.allowRequestTypesForAll").asScala
     .map((x) => MessageType(x.toLowerCase)).toSet

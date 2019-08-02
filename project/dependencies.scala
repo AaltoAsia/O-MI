@@ -61,7 +61,13 @@ object Dependencies {
     "io.kamon" %% "kamon-akka-2.5" % "1.1.2",
     "io.kamon" %% "kamon-influxdb" % "1.0.2"
   )
-  
+
+  val prometheus = Seq(
+    "io.prometheus" % "simpleclient" % "0.6.0",
+    "io.prometheus" % "simpleclient_hotspot" % "0.6.0",
+    "io.prometheus" % "simpleclient_httpserver" % "0.6.0",
+    "io.prometheus" % "simpleclient_pushgateway" % "0.6.0",
+  )
 
 
   //val schwatcher   = "com.beachape.filemanagement" %% "schwatcher"   % "0.3.1" //common
@@ -105,7 +111,7 @@ object Dependencies {
     gson,
     redis,
     alpakka
-  ) ++ kamonDepencies
+  ) ++ kamonDepencies ++ prometheus
 
   //val servletDependencies: Seq[ModuleID] = Seq(
   //  sprayServlet,
