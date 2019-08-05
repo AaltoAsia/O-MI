@@ -144,7 +144,7 @@
 		<h3>Response:</h3>
 		    <textarea  class="response" rows=30 cols=100 style="border: none;" readonly>
 <?xml version="1.0"?>
-<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"   ttl="10.0" version="1.0">
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/" ttl="10.0" version="1.0">
   <response>
     <result>
       <return returnCode="200"/>
@@ -166,7 +166,7 @@
 		<h3>Request:</h3>
 		    <textarea  class="request" rows=20 cols=100 style="border: none;" readonly>
 <?xml version="1.0"?>
-<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="0.0">
+<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="-1">
   <read msgformat="odf" >
     <msg >
       <Objects version="1.0" xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
@@ -229,7 +229,7 @@
 		<h3>Request:</h3>
 		    <textarea  class="request" rows=20 cols=100 style="border: none;" readonly>
 <?xml version="1.0"?>
-<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="0.0">
+<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="0">
   <read msgformat="odf" >
     <msg >
       <Objects version="1.0" xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
@@ -297,9 +297,9 @@
 		<h3>Request:</h3>
 		    <textarea  class="request" rows=20 cols=100 style="border: none;" readonly>
 <?xml version="1.0"?>
-<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="0.0">
+<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="0.0"><!-- Comments should also be fine -->
   <read msgformat="odf" >
-    <msg >
+    <msg>
       <Objects version="1.0" xmlns="http://www.opengroup.org/xsd/odf/1.0/" ></Objects>
     </msg>
   </read>
@@ -354,7 +354,7 @@
 	<article class="request-response single test"> 
 	    <h2> Not existing </h2>
 	    <div><p class="description">
-		This is normal read request without any extra arguments, now O-DF includes not existing elements. 
+		This is normal read request without any extra arguments, now O-DF includes non-existing elements. 
 		</p>
 	    </div>
 	    <div>

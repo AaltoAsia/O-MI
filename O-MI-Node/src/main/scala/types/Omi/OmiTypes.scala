@@ -180,10 +180,6 @@ object OmiRequestType extends Enumeration {
 
 }
 
-object SenderInformatio {
-
-}
-
 sealed trait SenderInformation
 
 case class ActorSenderInformation(
@@ -254,7 +250,7 @@ sealed trait RequestWrapper {
     if (ttl.toSeconds != 0)
       FiniteDuration(ttl.toSeconds, SECONDS)
     else
-      FiniteDuration(2, MINUTES)
+      FiniteDuration(10, MINUTES)
   } else {
     FiniteDuration(Int.MaxValue, MILLISECONDS)
   }
@@ -566,7 +562,7 @@ case class ReadRequest(
       List(
         callbackAsUri.map(c => "@callback" -> DataRecord(c)),
         Some("@msgformat" -> DataRecord("odf")),
-        Some("@targetType" -> DataRecord(TargetTypeType.fromString("node", omiDefaultScope))),
+        //Some("@targetType" -> DataRecord(TargetTypeType.fromString("node", omiDefaultScope))), TODO
         oldest.map(t => "@oldest" -> DataRecord(BigInt(t))),
         begin.map(t => "@begin" -> DataRecord(timestampToXML(t))),
         end.map(t => "@end" -> DataRecord(timestampToXML(t))),
@@ -580,7 +576,7 @@ case class ReadRequest(
       StartElement("read",
         List(
           Attribute("msgformat","odf"),
-          Attribute("targetType","node")
+          //Attribute("targetType","node") TODO
         ) ++ newest.map{
           n => Attribute("newest",n.toString)
         }.toList ++ oldest.map{
@@ -634,7 +630,7 @@ case class PollRequest(
     None,
     List(
       callbackAsUri.map(c => "@callback" -> DataRecord(c)),
-      Some("@targetType" -> DataRecord(TargetTypeType.fromString("node", omiDefaultScope)))
+      //Some("@targetType" -> DataRecord(TargetTypeType.fromString("node", omiDefaultScope)))  TODO
     ).flatten.toMap
   )
 
@@ -647,8 +643,7 @@ case class PollRequest(
     val events = Vector(
       StartElement("read",
         List(
-          Attribute("msgformat","odf"),
-          Attribute("targetType","node")
+          //Attribute("targetType","node") TODO
         ) ++ callback.map{
           cb => Attribute("callback",cb.toString)
         }.toList
@@ -700,7 +695,7 @@ case class SubscriptionRequest(
     List(
       callbackAsUri.map(c => "@callback" -> DataRecord(c)),
       Some("@msgformat" -> DataRecord("odf")),
-      Some("@targetType" -> DataRecord(TargetTypeType.fromString("node", omiDefaultScope))),
+      // Some("@targetType" -> DataRecord(TargetTypeType.fromString("node", omiDefaultScope))), TODO
       Some("@interval" -> DataRecord(interval.toSeconds.toString))
     ).flatten.toMap
   )
@@ -717,7 +712,7 @@ case class SubscriptionRequest(
       StartElement("read",
         List(
           Attribute("msgformat","odf"),
-          Attribute("targetType","node"),
+          //Attribute("targetType","node"), TODO
           Attribute("interval",interval.toSeconds.toString)
         ) ++ newest.map{
           n => Attribute("newest",n.toString)
@@ -764,7 +759,7 @@ case class WriteRequest(
     List(
       callbackAsUri.map(c => "@callback" -> DataRecord(c)),
       Some("@msgformat" -> DataRecord("odf")),
-      Some("@targetType" -> DataRecord(TargetTypeType.fromString("node", omiDefaultScope)))
+      // Some("@targetType" -> DataRecord(TargetTypeType.fromString("node", omiDefaultScope))) TODO
     ).flatten.toMap
   )
 
@@ -780,7 +775,7 @@ case class WriteRequest(
       StartElement("write",
         List(
           Attribute("msgformat","odf"),
-          Attribute("targetType","node")
+          //Attribute("targetType","node") TODO
         )++ callback.map{
           cb => Attribute("callback",cb.toString)
         }.toList
@@ -817,7 +812,7 @@ case class CallRequest(
     List(
       callbackAsUri.map(c => "@callback" -> DataRecord(c)),
       Some("@msgformat" -> DataRecord("odf")),
-      Some("@targetType" -> DataRecord(TargetTypeType.fromString("node", omiDefaultScope)))
+      //Some("@targetType" -> DataRecord(TargetTypeType.fromString("node", omiDefaultScope))) TODO
     ).flatten.toMap
   )
 
@@ -833,7 +828,7 @@ case class CallRequest(
       StartElement("call",
         List(
           Attribute("msgformat","odf"),
-          Attribute("targetType","node")
+          //Attribute("targetType","node") TODO
         )++ callback.map{
           cb => Attribute("callback",cb.toString)
         }.toList
@@ -870,7 +865,7 @@ case class DeleteRequest(
     List(
       callbackAsUri.map(c => "@callback" -> DataRecord(c)),
       Some("@msgformat" -> DataRecord("odf")),
-      Some("@targetType" -> DataRecord(TargetTypeType.fromString("node", omiDefaultScope)))
+      //Some("@targetType" -> DataRecord(TargetTypeType.fromString("node", omiDefaultScope)))  TODO
     ).flatten.toMap
   )
 
@@ -886,7 +881,7 @@ case class DeleteRequest(
       StartElement("delete",
         List(
           Attribute("msgformat","odf"),
-          Attribute("targetType","node")
+          //Attribute("targetType","node") TODO
         )++ callback.map{
           cb => Attribute("callback",cb.toString)
         }.toList
@@ -986,17 +981,6 @@ case class ResponseRequest(
                      Results.unionReduce((results ++ another.results)),
       if (ttl >= another.ttl) ttl else another.ttl
     )
-  }
-
-  override def equals(other: Any): Boolean = {
-    other match {
-      case response: ResponseRequest =>
-        response.ttl == ttl &&
-          response.callback == callback &&
-          response.user == user &&
-          response.results.toSet == results.toSet
-      case any: Any => any == this
-    }
   }
 
   implicit def asOmiEnvelope: xmlTypes.OmiEnvelopeType = requestToEnvelope(asResponseListType, ttlAsSeconds)
