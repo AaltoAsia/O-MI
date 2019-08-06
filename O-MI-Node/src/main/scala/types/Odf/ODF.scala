@@ -411,6 +411,7 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
    events 
   }
 
+  @deprecated("Use .asXMLEvents or .asXMLStream instead", "2.0.2")
   final implicit def asXML: NodeSeq = {
     //val timer = LapTimer(println)
     val objsType = asObjectsType

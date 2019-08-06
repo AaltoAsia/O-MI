@@ -350,7 +350,8 @@ trait OmiService
                   defineCallbackForRequest(request, currentConnectionCallback).flatMap {
                     request: OmiRequest => 
                       //timer.step("Callback defined")
-                      val handle: Future[ResponseRequest] = handleOmiRequest(request.withRequestToken(Some(requestToken)))
+                      //requestStorage ! AddInfos( requestToken, Seq( RequestTimestampInfo("callback-time",  currentTimestamp)))
+                      val handle: Future[ResponseRequest] = handleOmiRequest(request.withRequestToken(rt))
                       handle.map{
                         response =>
                         //timer.step("Request handled")
@@ -475,12 +476,18 @@ trait OmiService
               )
             )
           case Some(callback: DefinedCallback) => {
-            (requestHandler ? other).mapTo[ResponseRequest] map { response =>
-              callbackHandler.sendCallback(callback, response)
-            }
-            Future.successful(
-              Responses.Success(description = Some("OK, callback job started"))
-            )
+            val reqToken = request.requestToken
+            val immediateResponse = Responses.OKCallback.withRequestToken(reqToken).withRequestInfoFrom(singleStores)
+            val formatInfo = immediateResponse.map(_.requestInfo)
+
+            for {
+              r <- (requestHandler ? other).mapTo[ResponseRequest]
+              info <- formatInfo
+              response = r.withRequestToken(reqToken).withRequestInfo(info.getOrElse(singleStores.DefaultRequestInfo))
+              _ <- callbackHandler.sendCallback(callback, response)
+            } yield ()
+
+            immediateResponse
           }
         }
     }
@@ -489,10 +496,10 @@ trait OmiService
   def chunkedStream(fResponse: Future[ResponseRequest]): ResponseEntity = {
     val chunkStream =
       Source.fromFutureSource(for {
-        response <- fResponse
-        versions <- singleStores.getRequestInfo(response)
+        r <- fResponse
+        response <- r.withRequestInfoFrom(singleStores)
         
-      } yield response.asXMLByteSourceWithVersion(versions))
+      } yield response.asXMLByteSource)
         .map(HttpEntity.ChunkStreamPart.apply)
 
     HttpEntity.Chunked(ContentTypes.`text/xml(UTF-8)`, chunkStream)
@@ -722,8 +729,9 @@ trait WebSocketOMISupport extends WebSocketUtil with OMIServiceMetrics {
             user
           )
           r <- r2
-          versions <- singleStores.getRequestInfo(r)
-        } yield ws.TextMessage.Streamed(r.asXMLSourceWithVersion(versions))
+
+          response <- r.withRequestInfoFrom(singleStores)
+        } yield ws.TextMessage.Streamed(response.asXMLSource)
 
         queue.send(futureResponse)
       case msg: ws.Message => 
@@ -806,8 +814,8 @@ trait WebSocketUtil {
       send(
         singleStores
           .map(ss =>
-              ss.getRequestInfo(response)
-                .map(v => response.asXMLSourceWithVersion(v)))
+              response.withRequestInfoFrom(ss)
+                .map(r => r.asXMLSource))
           .getOrElse(Future.successful(response.asXMLSource))
           .map(ws.TextMessage.Streamed(_))
       , Vector(connectionIdentifier)) map { _ => () }

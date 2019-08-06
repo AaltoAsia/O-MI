@@ -39,6 +39,8 @@ import akka.stream.scaladsl._
 import akka.stream.alpakka.xml._
 import utils._
 import parser.OMIStreamParser
+import database.journal.PRequestInfo
+import database.SingleStores
 
 
 
@@ -179,10 +181,6 @@ object OmiRequestType extends Enumeration {
 
 }
 
-object SenderInformatio {
-
-}
-
 sealed trait SenderInformation
 
 case class ActorSenderInformation(
@@ -254,7 +252,7 @@ sealed trait RequestWrapper {
     if (ttl.toSeconds != 0)
       FiniteDuration(ttl.toSeconds, SECONDS)
     else
-      FiniteDuration(2, MINUTES)
+      FiniteDuration(10, MINUTES)
   } else {
     FiniteDuration(Int.MaxValue, MILLISECONDS)
   }
@@ -521,7 +519,6 @@ object RawRequestWrapper {
 }
 
 import types.OmiTypes.RawRequestWrapper.MessageType
-import database.journal.PRequestInfo
 
 /**
   * One-time-read request
@@ -575,7 +572,7 @@ case class ReadRequest(
       List(
         callbackAsUri.map(c => "@callback" -> DataRecord(c)),
         Some("@msgformat" -> DataRecord("odf")),
-        Some("@targetType" -> DataRecord(TargetTypeType.fromString("node", omiDefaultScope))),
+        //Some("@targetType" -> DataRecord(TargetTypeType.fromString("node", omiDefaultScope))), TODO
         oldest.map(t => "@oldest" -> DataRecord(BigInt(t))),
         begin.map(t => "@begin" -> DataRecord(timestampToXML(t))),
         end.map(t => "@end" -> DataRecord(timestampToXML(t))),
@@ -589,7 +586,7 @@ case class ReadRequest(
       StartElement("read",
         List(
           Attribute("msgformat","odf"),
-          Attribute("targetType","node")
+          //Attribute("targetType","node") TODO
         ) ++ newest.map{
           n => Attribute("newest",n.toString)
         }.toList ++ oldest.map{
@@ -621,13 +618,13 @@ case class ReadRequest(
   **/
 case class PollRequest(
                         callback: Option[Callback] = None,
-                        requestIDs: OdfCollection[Long] = OdfCollection.empty,
+                        requestIDs: OdfCollection[RequestID] = OdfCollection.empty,
                         ttl: Duration = 10.seconds,
                         private val user0: UserInfo = UserInfo(),
                         senderInformation: Option[SenderInformation] = None,
                         ttlLimit: Option[Timestamp] = None,
                         requestToken: Option[Long] = None
-                      ) extends OmiRequest {
+                      ) extends OmiRequest with RequestIDRequest {
   def requestTypeString: String = "poll"
   override def attributeStr: String = s"""ttl="${ttlAsSeconds}"""" +callback.map{ cb => s""" callback="${cb.address}"""" }.getOrElse("") 
 
@@ -645,7 +642,7 @@ case class PollRequest(
     None,
     List(
       callbackAsUri.map(c => "@callback" -> DataRecord(c)),
-      Some("@targetType" -> DataRecord(TargetTypeType.fromString("node", omiDefaultScope)))
+      //Some("@targetType" -> DataRecord(TargetTypeType.fromString("node", omiDefaultScope)))  TODO
     ).flatten.toMap
   )
 
@@ -658,8 +655,7 @@ case class PollRequest(
     val events = Vector(
       StartElement("read",
         List(
-          Attribute("msgformat","odf"),
-          Attribute("targetType","node")
+          //Attribute("targetType","node") TODO
         ) ++ callback.map{
           cb => Attribute("callback",cb.toString)
         }.toList
@@ -713,7 +709,7 @@ case class SubscriptionRequest(
     List(
       callbackAsUri.map(c => "@callback" -> DataRecord(c)),
       Some("@msgformat" -> DataRecord("odf")),
-      Some("@targetType" -> DataRecord(TargetTypeType.fromString("node", omiDefaultScope))),
+      // Some("@targetType" -> DataRecord(TargetTypeType.fromString("node", omiDefaultScope))), TODO
       Some("@interval" -> DataRecord(interval.toSeconds.toString))
     ).flatten.toMap
   )
@@ -730,7 +726,7 @@ case class SubscriptionRequest(
       StartElement("read",
         List(
           Attribute("msgformat","odf"),
-          Attribute("targetType","node"),
+          //Attribute("targetType","node"), TODO
           Attribute("interval",interval.toSeconds.toString)
         ) ++ newest.map{
           n => Attribute("newest",n.toString)
@@ -779,7 +775,7 @@ case class WriteRequest(
     List(
       callbackAsUri.map(c => "@callback" -> DataRecord(c)),
       Some("@msgformat" -> DataRecord("odf")),
-      Some("@targetType" -> DataRecord(TargetTypeType.fromString("node", omiDefaultScope)))
+      // Some("@targetType" -> DataRecord(TargetTypeType.fromString("node", omiDefaultScope))) TODO
     ).flatten.toMap
   )
 
@@ -795,7 +791,7 @@ case class WriteRequest(
       StartElement("write",
         List(
           Attribute("msgformat","odf"),
-          Attribute("targetType","node")
+          //Attribute("targetType","node") TODO
         )++ callback.map{
           cb => Attribute("callback",cb.toString)
         }.toList
@@ -834,7 +830,7 @@ case class CallRequest(
     List(
       callbackAsUri.map(c => "@callback" -> DataRecord(c)),
       Some("@msgformat" -> DataRecord("odf")),
-      Some("@targetType" -> DataRecord(TargetTypeType.fromString("node", omiDefaultScope)))
+      //Some("@targetType" -> DataRecord(TargetTypeType.fromString("node", omiDefaultScope))) TODO
     ).flatten.toMap
   )
 
@@ -850,7 +846,7 @@ case class CallRequest(
       StartElement("call",
         List(
           Attribute("msgformat","odf"),
-          Attribute("targetType","node")
+          //Attribute("targetType","node") TODO
         )++ callback.map{
           cb => Attribute("callback",cb.toString)
         }.toList
@@ -889,7 +885,7 @@ case class DeleteRequest(
     List(
       callbackAsUri.map(c => "@callback" -> DataRecord(c)),
       Some("@msgformat" -> DataRecord("odf")),
-      Some("@targetType" -> DataRecord(TargetTypeType.fromString("node", omiDefaultScope)))
+      //Some("@targetType" -> DataRecord(TargetTypeType.fromString("node", omiDefaultScope)))  TODO
     ).flatten.toMap
   )
 
@@ -905,7 +901,7 @@ case class DeleteRequest(
       StartElement("delete",
         List(
           Attribute("msgformat","odf"),
-          Attribute("targetType","node")
+          //Attribute("targetType","node") TODO
         )++ callback.map{
           cb => Attribute("callback",cb.toString)
         }.toList
@@ -919,13 +915,13 @@ case class DeleteRequest(
   * Cancel request, for cancelling subscription.
   **/
 case class CancelRequest(
-                          requestIDs: OdfCollection[Long] = OdfCollection.empty,
+                          requestIDs: OdfCollection[RequestID] = OdfCollection.empty,
                           ttl: Duration = 10.seconds,
                           private val user0: UserInfo = UserInfo(),
                           senderInformation: Option[SenderInformation] = None,
                           ttlLimit: Option[Timestamp] = None,
                           requestToken: Option[Long] = None
-                        ) extends OmiRequest {
+                        ) extends OmiRequest with RequestIDRequest {
   user = user0
 
   override def attributeStr: String = s"""ttl="${ttlAsSeconds}""""
@@ -978,7 +974,7 @@ case class ResponseRequest(
                        val senderInformation: Option[SenderInformation] = None,
                        val ttlLimit: Option[Timestamp] = None,
                        val requestToken: Option[Long] = None,
-                       val renderRequestToken: Boolean = false
+                       val requestInfo: Option[PRequestInfo] = None,
                      ) extends OmiRequest with PermissiveRequest with JavaResponseRequest {
   user = user0
 
@@ -987,7 +983,11 @@ case class ResponseRequest(
   override def attributeStr: String = s"""ttl="${ttlAsSeconds}"""" + callback.map{ cb => s""" callback="${cb.address}"""" }.getOrElse("") 
   def requestTypeString: String = "response"
   def withCallback: Option[Callback] => ResponseRequest = cb => this.copy(callback = cb)
+  def withSenderInformation(si: SenderInformation): OmiRequest = this.copy(senderInformation = Some(si))
   def withRequestToken: Option[Long] => ResponseRequest = id => this.copy(requestToken = id )
+  def withRequestInfo: PRequestInfo => ResponseRequest = ri => this.copy(requestInfo = ri )
+  def withRequestInfoFrom(s: SingleStores)(implicit ec: ExecutionContext): Future[ResponseRequest] =
+    s.getRequestInfo(this) map this.withRequestInfo
 
   def odf: ODF = results.foldLeft(ImmutableODF()) {
     case (l: ODF, r: OmiResult) =>
@@ -1007,20 +1007,8 @@ case class ResponseRequest(
     )
   }
 
-  override def equals(other: Any): Boolean = {
-    other match {
-      case response: ResponseRequest =>
-        response.ttl == ttl &&
-          response.callback == callback &&
-          response.user == user &&
-          response.results.toSet == results.toSet
-      case any: Any => any == this
-    }
-  }
-
   implicit def asOmiEnvelope: xmlTypes.OmiEnvelopeType = requestToEnvelope(asResponseListType, ttlAsSeconds)
 
-  def withSenderInformation(si: SenderInformation): OmiRequest = this.copy(senderInformation = Some(si))
 
   def odfResultsToWrites: Seq[WriteRequest] = results.collect {
     case omiResult: OmiResult if omiResult.odf.nonEmpty =>
@@ -1040,24 +1028,14 @@ case class ResponseRequest(
 
   val requestVerb: MessageType.Response.type = MessageType.Response
 
-  def asXMLEvents = asXMLEventsWithVersion()
 
-  def asXMLByteSourceWithVersion(info: PRequestInfo): Source[ByteString, NotUsed] =
-    asXMLByteSourceWithVersion(OmiVersion.fromNumber(info.omiVersion), info.odfVersion.map(OdfVersion.fromNumber(_))) // msgformat?
+  def omiVersion: OmiVersion = requestInfo map (OmiVersion fromNumber _.omiVersion) getOrElse OmiVersion1
+  def odfVersion: OdfVersion = (for {
+    ri <- requestInfo
+    ov <- ri.odfVersion
+  } yield OdfVersion.fromNumber(ov)) getOrElse OdfVersion1
 
-  def asXMLByteSourceWithVersion(omiVersion: OmiVersion = OmiVersion1, odfVersion: Option[OdfVersion] = None): Source[ByteString, NotUsed] =
-    parseEventsToByteSource(asXMLEventsWithVersion(omiVersion, odfVersion))
-
-  def asXMLSourceWithVersion(info: PRequestInfo): Source[String, NotUsed] =
-    asXMLSourceWithVersion(OmiVersion.fromNumber(info.omiVersion), info.odfVersion.map(OdfVersion.fromNumber(_))) // msgformat?
-
-  def asXMLSourceWithVersion(omiVersion: OmiVersion = OmiVersion1, odfVersion: Option[OdfVersion] = None): Source[String, NotUsed] =
-    asXMLByteSourceWithVersion(omiVersion, odfVersion).map[String](_.utf8String)
-
-  def asXMLEventsWithVersion(info: PRequestInfo): SeqView[ParseEvent,Seq[_]] =
-    asXMLEventsWithVersion(OmiVersion.fromNumber(info.omiVersion), info.odfVersion.map(OdfVersion.fromNumber(_))) // msgformat?
-
-  def asXMLEventsWithVersion(omiVersion: OmiVersion = OmiVersion1, odfVersion: Option[OdfVersion] = None): SeqView[ParseEvent,Seq[_]] ={
+  def asXMLEvents: SeqView[ParseEvent,Seq[_]] ={
     Vector(
       StartDocument,
       StartElement("omiEnvelope",
@@ -1069,15 +1047,6 @@ case class ResponseRequest(
       ),
       StartElement("response")
     ).view ++
-    {if (renderRequestToken) requestToken.view.flatMap{
-      rid =>
-        Vector(
-          StartElement("requestID"),
-          Characters(rid.toString),
-          EndElement("requestID")
-        )
-    }
-    else Seq.empty.view} ++
     results.view.flatMap{
       result => result.asXMLEvents(odfVersion)
     } ++ Vector(

@@ -124,6 +124,11 @@
 						<xs:documentation>Retrieve the newest available number of historical data available</xs:documentation>
 					</xs:annotation>
 				</xs:attribute>
+				<xs:attribute name="maxlevels" type="xs:positiveInteger" use="optional">
+					<xs:annotation>
+						<xs:documentation>Retrieve given number of levels of hierarchical information. From Version 2.0 onwards.</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
 				<xs:attribute name="all" type="xs:boolean" use="optional">
 					<xs:annotation>
 						<xs:documentation>Retrieve all available values. all="true" overrides other begin/end/oldest/newest attributes. From Version 2.0 onwards.</xs:documentation>

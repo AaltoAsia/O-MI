@@ -50,6 +50,8 @@ object Responses {
     ttl
   )
 
+  val OKCallback = Responses.Success(description = Some("OK, callback job started"))
+
   def InvalidCallback(callbackAddr: Callback,
                       reason: Option[String] = None,
                       ttl: Duration = 10.seconds): ResponseRequest = ResponseRequest(

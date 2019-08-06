@@ -17,11 +17,13 @@ import org.specs2.concurrent.ExecutionEnv
 import org.specs2.mutable._
 import org.specs2.specification.BeforeAfterAll
 import testHelpers._
+import parsing.OmiParser
 
 import scala.concurrent._
 import scala.concurrent.duration._
 import scala.util.Try
 import scala.xml._
+
 
 class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAfterAll {
 
@@ -56,7 +58,19 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
   } else Source.fromFile("html/ImplementationDetails.html")
   val sourceXML: Node = parser.loadXML(sourceFile)
   val testArticles = sourceXML \\ ("article")
+  val allTextAreas = testArticles.filter(_ \@ "class" contains "test") \\ "textarea"
+  require(allTextAreas.length > 10, "There should be more than ten textareas")
+
+
   val tests = testArticles.groupBy(x => x.\@("class"))
+
+  lazy val schemaTests = allTextAreas.zipWithIndex.map{case (ta, index) =>
+    s"Schema validation for O-MI sample #$index" >> {
+      val omiString = ta.text
+      val schemaValidation: Seq[types.ParseError] = OmiParser.schemaValidation(omiString)
+      schemaValidation must beEmpty 
+    }
+  }
 
   //tests with request response pairs, each containing description and forming single test(req, resp), (req, resp)...
   lazy val readTests = tests("request-response single test").map { node =>
@@ -215,6 +229,9 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
   }
 
   "Automatic System Tests" should {
+    "Schema validation of tests" >> {
+      org.specs2.specification.core.Fragments.empty.append(schemaTests)
+    }
     "Write Test" >> {
       dbConnection.clearDB()
       //Only 1 write test
