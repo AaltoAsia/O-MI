@@ -62,7 +62,15 @@ abstract trait Parser[Result] {
     * @param xml xml structure to check
     * @return ParseErrors found while checking, if empty, successful
     */
-  def schemaValidation(xml: Node): Seq[ParseError] = {
+  def schemaValidation(xml: Node): Seq[ParseError] = schemaValidation(xml.toString)
+
+  /**
+    * Method for checking does given xml conform schema of parser.
+    *
+    * @param xml xml structure to check
+    * @return ParseErrors found while checking, if empty, successful
+    */
+  def schemaValidation(xml: String): Seq[ParseError] = {
     Try {
       val factory: SchemaFactory =
         SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI)
@@ -70,7 +78,7 @@ abstract trait Parser[Result] {
       //println( scopeToStr(xml.scope))
       val schema: Schema = factory.newSchema(schemaPath)
       val validator: Validator = schema.newValidator()
-      validator.validate(new StreamSource(new StringReader(xml.toString)))
+      validator.validate(new StreamSource(new StringReader(xml)))
     } match {
       case Success(_) =>
         Seq.empty;
