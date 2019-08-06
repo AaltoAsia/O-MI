@@ -52,6 +52,7 @@ import util._
 import utils._
 import TemporaryRequestInfoStore._
 import io.prometheus.client._
+import MetricsReporter.{NewRequest,ResponseUpdate}
 
 trait OmiServiceAuthorization
   extends ExtensibleAuthorization
@@ -74,7 +75,8 @@ class OmiServiceImpl(
                       val singleStores: SingleStores,
                       protected val requestHandler: ActorRef,
                       protected val callbackHandler: CallbackHandler,
-                      protected val requestStorage: ActorRef
+                      protected val requestStorage: ActorRef,
+                      protected val metricsReporter: ActorRef
                     )
   extends {
     // Early initializer needed (-- still doesn't seem to work)
@@ -113,6 +115,7 @@ trait OmiService
 
   protected def requestStorage: ActorRef
   protected def requestHandler: ActorRef
+  protected def metricsReporter: ActorRef
 
   protected def callbackHandler: CallbackHandler
 
@@ -329,6 +332,20 @@ trait OmiService
               unwrappedRequest match {
                 case Success(request: OmiRequest) =>
                   
+                  { 
+                    val pathCount = request match { 
+                        case odfRequest: OdfRequest => odfRequest.odf.getLeafPaths.size 
+                        case resp: ResponseRequest => resp.odf.getLeafPaths.size
+                        case req: OmiRequest => 0
+                      }
+                    metricsReporter ! NewRequest( 
+                      requestToken, 
+                      request.user, 
+                      request.requestTypeString, 
+                      request.attributeStr, 
+                      pathCount
+                    )
+                  }
                   //timer.step("Unwrapped request")
                   defineCallbackForRequest(request, currentConnectionCallback).flatMap {
                     request: OmiRequest => 
@@ -412,6 +429,15 @@ trait OmiService
               val endTime = currentTimestamp
               val duration = ((endTime.getTime() - startTime.getTime())/1000.0).toDouble
               metric.observe(duration)
+              metricsReporter ! ResponseUpdate( 
+                requestToken, 
+                f match {
+                  case Success( r: ResponseRequest) => 
+                    r.odf.getLeafPaths.size
+                  case Failure( t )=> 0
+                }, 
+                endTime.getTime() - startTime.getTime()
+              )
           }
 
       }

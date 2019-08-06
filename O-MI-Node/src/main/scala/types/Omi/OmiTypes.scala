@@ -164,6 +164,7 @@ sealed trait OmiRequest extends RequestWrapper with JavaOmiRequest {
     )
 
   } 
+  def requestTypeString: String 
 
   final implicit def asXMLByteSource: Source[ByteString, NotUsed] = parseEventsToByteSource(asXMLEvents)
   
@@ -247,6 +248,7 @@ sealed trait RequestWrapper {
     case finite: FiniteDuration => finite.toMillis.toDouble/1000.0
     case infinite: Duration.Infinite => -1.0
   }
+  def attributeStr: String = ""
 
   final def handleTTL: FiniteDuration = if (ttl.isFinite) {
     if (ttl.toSeconds != 0)
@@ -539,6 +541,14 @@ case class ReadRequest(
                         requestToken: Option[Long] = None
                       ) extends OmiRequest with OdfRequest {
   user = user0
+  def requestTypeString: String = "read"
+  override def attributeStr: String = s"""ttl="${ttlAsSeconds}"""" + 
+     callback.map{ cb => s""" callback="${cb.address}"""" }.getOrElse("") + 
+     newest.map{ n => s""" newest="$n"""" }.getOrElse("") +
+     oldest.map{ n => s""" oldest="$n"""" }.getOrElse("") +
+     maxLevels.map{ n => s""" maxlevels="$n"""" }.getOrElse("") +
+     begin.map{ ts => s""" begin="${timestampToDateTimeString(ts)}"""" }.getOrElse("") +
+     end.map{ ts => s""" end="${timestampToDateTimeString(ts)}\"""" }.getOrElse("") 
 
   // def this(
   // odf: ODF ,
@@ -618,6 +628,8 @@ case class PollRequest(
                         ttlLimit: Option[Timestamp] = None,
                         requestToken: Option[Long] = None
                       ) extends OmiRequest {
+  def requestTypeString: String = "poll"
+  override def attributeStr: String = s"""ttl="${ttlAsSeconds}"""" +callback.map{ cb => s""" callback="${cb.address}"""" }.getOrElse("") 
 
   user = user0
 
@@ -683,6 +695,8 @@ case class SubscriptionRequest(
   require(ttl >= 0.seconds, s"Invalid ttl, should be positive (or +infinite): $ttl")
   user = user0
 
+  override def attributeStr: String = s"""interval="${interval.toSeconds}" ttl="${ttlAsSeconds}"""" +callback.map{ cb => s""" callback="${cb.address}"""" }.getOrElse("") 
+  def requestTypeString: String = "subscription"
   def withCallback: Option[Callback] => SubscriptionRequest = cb => this.copy(callback = cb)
   def withRequestToken: Option[Long] => SubscriptionRequest = id => this.copy(requestToken = id )
 
@@ -747,6 +761,8 @@ case class WriteRequest(
 
   user = user0
 
+  override def attributeStr: String = s"""ttl="${ttlAsSeconds}"""" + callback.map{ cb => s""" callback="${cb.address}"""" }.getOrElse("")  
+  def requestTypeString: String = "write"
   def withCallback: Option[Callback] => WriteRequest = cb => this.copy(callback = cb)
   def withRequestToken: Option[Long] => WriteRequest = id => this.copy(requestToken = id )
 
@@ -798,6 +814,8 @@ case class CallRequest(
                         ttlLimit: Option[Timestamp] = None,
                         requestToken: Option[Long] = None
                       ) extends OmiRequest with OdfRequest with PermissiveRequest {
+  override def attributeStr: String = s"""ttl="${ttlAsSeconds}"""" + callback.map{ cb => s""" callback="${cb.address}"""" }.getOrElse("")  
+  def requestTypeString: String = "call"
   user = user0
 
   def withCallback: Option[Callback] => CallRequest = cb => this.copy(callback = cb)
@@ -852,6 +870,8 @@ case class DeleteRequest(
                           requestToken: Option[Long] = None
                         ) extends OmiRequest with OdfRequest with PermissiveRequest {
   user = user0
+  override def attributeStr: String = s"""ttl="${ttlAsSeconds}"""" + callback.map{ cb => s""" callback="${cb.address}"""" }.getOrElse("") 
+  def requestTypeString: String = "delete"
 
   def withCallback: Option[Callback] => DeleteRequest = cb => this.copy(callback = cb)
   def withRequestToken: Option[Long] => DeleteRequest = id => this.copy(requestToken = id )
@@ -908,6 +928,8 @@ case class CancelRequest(
                         ) extends OmiRequest {
   user = user0
 
+  override def attributeStr: String = s"""ttl="${ttlAsSeconds}""""
+  def requestTypeString: String = "cancel"
   implicit def asCancelRequest: xmlTypes.CancelRequestType = xmlTypes.CancelRequestType(
     None,
     requestIDs.map {
@@ -962,6 +984,8 @@ case class ResponseRequest(
 
   def resultsAsJava(): JIterable[OmiResult] = asJavaIterable(results)
 
+  override def attributeStr: String = s"""ttl="${ttlAsSeconds}"""" + callback.map{ cb => s""" callback="${cb.address}"""" }.getOrElse("") 
+  def requestTypeString: String = "response"
   def withCallback: Option[Callback] => ResponseRequest = cb => this.copy(callback = cb)
   def withRequestToken: Option[Long] => ResponseRequest = id => this.copy(requestToken = id )
 
