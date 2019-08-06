@@ -340,6 +340,7 @@ trait OmiService
                       }
                     metricsReporter ! NewRequest( 
                       requestToken, 
+                      startTime,
                       request.user, 
                       request.requestTypeString, 
                       request.attributeStr, 
@@ -432,6 +433,7 @@ trait OmiService
               metric.observe(duration)
               metricsReporter ! ResponseUpdate( 
                 requestToken, 
+                startTime,
                 f match {
                   case Success( r: ResponseRequest) => 
                     r.odf.getLeafPaths.size

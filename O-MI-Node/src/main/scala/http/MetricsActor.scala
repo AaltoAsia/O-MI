@@ -36,10 +36,10 @@ class MetricsReporter(val configName: String, val settings: OmiConfigExtension) 
     timers.startPeriodicTimer("report",Report,5.minutes)
   }
   def receive ={
-    case NewRequest(requestToken: Long, user: UserInfo, requestType: String, attributes: String, pathCount: Int) =>
-      requestLog.add(requestToken,user,requestType,attributes,pathCount)
-    case ResponseUpdate( requestToken: Long, pathCount: Int, duration: Long) =>
-      requestLog.updateFromResponse(requestToken,pathCount,duration)
+    case NewRequest(requestToken: Long, timestamp: Timestamp, user: UserInfo, requestType: String, attributes: String, pathCount: Int) =>
+      requestLog.add(requestToken, timestamp, user,requestType,attributes,pathCount)
+    case ResponseUpdate( requestToken: Long, timestamp: Timestamp, pathCount: Int, duration: Long) =>
+      requestLog.updateFromResponse(requestToken,timestamp,pathCount,duration)
     case Report => 
       if( settings.metricsEnabled ){
         val current = currentTimestamp
@@ -57,8 +57,8 @@ class MetricsReporter(val configName: String, val settings: OmiConfigExtension) 
 }
 
 object MetricsReporter{
-  case class NewRequest(requestToken: Long, user: UserInfo, requestType: String, attributes: String, pathCount: Int)
-  case class ResponseUpdate( requestToken: Long, pathCount: Int, duration: Long)
+  case class NewRequest(requestToken: Long, timestamp: Timestamp, user: UserInfo, requestType: String, attributes: String, pathCount: Int)
+  case class ResponseUpdate( requestToken: Long, timestamp: Timestamp, pathCount: Int, duration: Long)
   case object Report
   def props(settings: OmiConfigExtension): Props ={
     Props( new MetricsReporter( "access-log", settings))
@@ -129,12 +129,12 @@ trait MonitoringDB{
   }
   class RequestLog() extends TableQuery[RequestTable]( new RequestTable(_)){
 
-    def add( requestToken: Long, user: UserInfo, requestType: String, attributes: String, pathCount: Int) = {
-      val dbio = this += RequestEvent(requestToken,user.name,user.remoteAddress.toString,currentTimestamp,requestType,attributes,pathCount,None,None)
+    def add( requestToken: Long, timestamp: Timestamp, user: UserInfo, requestType: String, attributes: String, pathCount: Int) = {
+      val dbio = this += RequestEvent(requestToken,user.name,user.remoteAddress.toString,timestamp,requestType,attributes,pathCount,None,None)
       dbio
     }
-    def updateFromResponse( requestToken: Long, pathCount: Int, duration: Long) ={
-      this.filter( _.requestToken === requestToken ).sortBy(_.timestamp.desc).take(1).map{ event => (event.responsePaths, event.duration)}.update((pathCount,duration))
+    def updateFromResponse( requestToken: Long,timestamp: Timestamp,  pathCount: Int, duration: Long) ={
+      this.filter( row => row.requestToken === requestToken && row.timestamp === timestamp).map{ event => (event.responsePaths, event.duration)}.update((pathCount,duration))
     }
     def uniqueRemoteAddressesAfter( afterTimestamp: Timestamp) ={
       this.filter( _.timestamp >= afterTimestamp).map( r => r.remoteAddress ).distinct.length
