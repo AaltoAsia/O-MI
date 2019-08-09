@@ -75,7 +75,6 @@ abstract trait Parser[Result] {
       val factory: SchemaFactory =
         SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI)
 
-      //println( scopeToStr(xml.scope))
       val schema: Schema = factory.newSchema(schemaPath)
       val validator: Validator = schema.newValidator()
       validator.validate(new StreamSource(new StringReader(xml)))

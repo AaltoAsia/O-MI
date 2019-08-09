@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- edited by Kary Fr�mling (Aalto University) -->
+<!-- edited by Kary Framling (Aalto University) -->
 <!-- Root Data Model Schema -->
-<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns="http://www.opengroup.org/xsd/odf/1.0/" targetNamespace="http://www.opengroup.org/xsd/odf/1.0/" elementFormDefault="qualified" attributeFormDefault="unqualified" version="1.0">
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns="http://www.opengroup.org/xsd/odf/2.0/" targetNamespace="http://www.opengroup.org/xsd/odf/2.0/" elementFormDefault="qualified" attributeFormDefault="unqualified" version="2.0">
 	<xs:element name="Objects" type="ObjectsType">
 		<xs:annotation>
 			<xs:documentation>Data Model Root Element</xs:documentation>
@@ -16,6 +16,11 @@
 				<xs:documentation>Schema version used.</xs:documentation>
 			</xs:annotation>
 		</xs:attribute>
+		<xs:attribute name="prefix" type="xs:string" use="optional">
+			<xs:annotation>
+				<xs:documentation>Prefix definitions according to RDFa convention.</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
 		<xs:anyAttribute processContents="lax">
 			<xs:annotation>
 				<xs:documentation>Proprietary or extended attributes.</xs:documentation>
@@ -24,7 +29,7 @@
 	</xs:complexType>
 	<xs:complexType name="ObjectType">
 		<xs:sequence>
-			<xs:element name="id" type="QlmIDType" minOccurs="1" maxOccurs="unbounded"/>
+			<xs:element name="id" type="IoTIdType" minOccurs="1" maxOccurs="unbounded"/>
 			<xs:element name="description" type="DescriptionType" minOccurs="0" maxOccurs="unbounded"/>
 			<xs:element name="InfoItem" type="InfoItemType" minOccurs="0" maxOccurs="unbounded"/>
 			<xs:element name="Object" type="ObjectType" minOccurs="0" maxOccurs="unbounded"/>
@@ -38,7 +43,7 @@
 	</xs:complexType>
 	<xs:complexType name="InfoItemType">
 		<xs:sequence>
-			<xs:element name="name" type="QlmIDType" minOccurs="0" maxOccurs="unbounded">
+			<xs:element name="altname" type="IoTIdType" minOccurs="0" maxOccurs="unbounded">
 				<xs:annotation>
 					<xs:documentation>Optional list of other names for the same InfoItem.</xs:documentation>
 				</xs:annotation>
@@ -91,7 +96,7 @@
 			</xs:extension>
 		</xs:simpleContent>
 	</xs:complexType>
-	<xs:complexType name="QlmIDType">
+	<xs:complexType name="IoTIdType">
 		<xs:simpleContent>
 			<xs:extension base="xs:string">
 				<xs:attribute name="idType" type="xs:string" use="optional">
@@ -128,6 +133,7 @@
 		</xs:sequence>
 		<xs:attribute name="type" type="xs:string" use="optional" default="xs:string"/>
 		<xs:attribute name="dateTime" type="xs:dateTime" use="optional"/>
-		<xs:attribute name="unixTime" type="xs:long" use="optional"/>
+		<xs:attribute name="unixTime" type="xs:double" use="optional"/>
+		<xs:anyAttribute processContents="lax"/>
 	</xs:complexType>
 </xs:schema>

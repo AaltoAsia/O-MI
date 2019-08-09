@@ -17,15 +17,45 @@ import org.specs2.concurrent.ExecutionEnv
 import org.specs2.mutable._
 import org.specs2.specification.BeforeAfterAll
 import testHelpers._
-import parsing.OmiParser
+//import parsing.OmiParser // schema validation
 
 import scala.concurrent._
 import scala.concurrent.duration._
-import scala.util.Try
+import scala.util.{Try, Success, Failure}
+
+
+import java.io.{IOException, StringReader}
+import javax.xml.transform.{Source => JavaSource}
+import javax.xml.transform.stream.StreamSource
+import javax.xml.XMLConstants
+import javax.xml.validation.SchemaFactory
+import org.xml.sax.SAXException
+
 import scala.xml._
 
-
 class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAfterAll {
+
+  def schemaPath = Array[JavaSource](
+    new StreamSource(getClass
+      .getClassLoader.getResourceAsStream("omi.xsd")),
+    new StreamSource(getClass
+      .getClassLoader.getResourceAsStream("odf.xsd"))
+    )
+  def validatorFactory = Try{
+      val factory = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI)
+      factory.newSchema(schemaPath)
+  }
+  /**
+    * Method for checking does given xml conform schema of parser.
+    *
+    * @param xml xml structure to check
+    * @return IOException if schema files were not found, SAXException if schema errors occurred
+    */
+  def schemaValidation(xml: String) =
+    validatorFactory flatMap {factory => Try{
+      val validator = factory.newValidator()
+      validator.validate(new StreamSource(new StringReader(xml)))
+    }}
 
 
   val omiServer = new TestOmiServer()
@@ -67,8 +97,16 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
   lazy val schemaTests = allTextAreas.zipWithIndex.map{case (ta, index) =>
     s"Schema validation for O-MI sample #$index" >> {
       val omiString = ta.text
-      val schemaValidation: Seq[types.ParseError] = OmiParser.schemaValidation(omiString)
-      schemaValidation must beEmpty 
+      val validation = schemaValidation(omiString)
+
+      validation showAs {
+        case Failure(reason: SAXException) =>
+          val omiSample = printer.format(XML.loadString(omiString))
+          s"\n$reason \n\nIn sample: \n\n$omiSample\n"
+        case Failure(e) =>
+          s"$e \n"
+        case Success(x) => ""
+      } must beSuccessfulTry 
     }
   }
 
@@ -229,9 +267,14 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
   }
 
   "Automatic System Tests" should {
+
+    section("schema")
     "Schema validation of tests" >> {
       org.specs2.specification.core.Fragments.empty.append(schemaTests)
     }
+    section("schema")
+
+    section("http")
     "Write Test" >> {
       dbConnection.clearDB()
       //Only 1 write test
@@ -396,6 +439,9 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
         }
       })
     }
+    section("http")
+
+    section("websocket")
     "Web Socket test" >> {
       system.log.info(
         """
@@ -743,5 +789,6 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
         }
       }
     }
+    section("websocket")
   }
 }
