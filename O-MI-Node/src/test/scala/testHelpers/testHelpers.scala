@@ -65,7 +65,8 @@ class TestOmiServer() extends OmiNode with OmiServiceTestImpl {
     singleStores,
     requestHandler,
     callbackHandler,
-    requestStorage
+    requestStorage,
+    metricsReporter
   )
 
 
@@ -95,6 +96,7 @@ trait OmiServiceTestImpl extends OmiService with AnyActorSystem {
     new CallbackHandler(settings, singleStores)(system, materializer)
 
 
+  lazy val metricsReporter = system.actorOf(MetricsReporter.props(settings),"metric-reporter")
   lazy implicit val dbConnection = new TestDB("test")(
     system,
     singleStores,
@@ -440,6 +442,7 @@ class OmiServiceDummy extends OmiService with Mockito {
   override implicit def materializer: ActorMaterializer = ???
 
   override protected def subscriptionManager: ActorRef = ???
+  protected def metricsReporter: ActorRef = ???
 
   implicit val settings: OmiConfigExtension = OmiConfig(system)
 }
