@@ -12,6 +12,7 @@ import slick.sql._
 import slick.jdbc.JdbcProfile
 import slick.lifted.{Index, ProvenShape}
 import slick.jdbc.meta.MTable
+import slick.lifted.{Index, ProvenShape}
 import io.prometheus.client._
 import scala.concurrent.ExecutionContext.Implicits.global
 //import scala.collection.JavaConversions.iterableAsScalaIterable
@@ -33,13 +34,13 @@ class MetricsReporter(val configName: String, val settings: OmiConfigExtension) 
   final val uniqueUsersGauge =  checkEnabled(() => Gauge.build().name("omi_unique_users").help("Unique uesr of O-MI Node over duration").labelNames("duration").register())
 
   if( settings.metricsEnabled ){
-    timers.startPeriodicTimer("report",Report,5.minutes)
+    timers.startPeriodicTimer("report",Report,10.seconds)
   }
   def receive ={
     case NewRequest(requestToken: Long, timestamp: Timestamp, user: UserInfo, requestType: String, attributes: String, pathCount: Int) =>
-      requestLog.add(requestToken, timestamp, user,requestType,attributes,pathCount)
+      db.run(requestLog.add(requestToken, timestamp, user,requestType,attributes,pathCount))
     case ResponseUpdate( requestToken: Long, timestamp: Timestamp, pathCount: Int, duration: Long) =>
-      requestLog.updateFromResponse(requestToken,timestamp,pathCount,duration)
+      db.run(requestLog.updateFromResponse(requestToken,timestamp,pathCount,duration))
     case Report => 
       if( settings.metricsEnabled ){
         val current = currentTimestamp
@@ -101,10 +102,10 @@ trait MonitoringDB{
   }
   case class RequestEvent( 
     requestToken: Long, 
-    username: Option[String], 
-    remoteAddress: String, 
+    username: Option[Long], 
+    remoteAddress: Long, 
     timestamp: Timestamp, 
-    requestType: String, 
+    requestType: Short, 
     attributes: String, 
     requestLeafPathCount: Int,
     responseLeafPathCount: Option[Int],
@@ -116,21 +117,35 @@ trait MonitoringDB{
     import dc.profile.api._
 
     def requestToken: Rep[Long] = column[Long]("REQUEST_TOKEN")
-    def username: Rep[String] = column[String]("USERNAME")
-    def remoteAddress: Rep[String] = column[String]("REMOTE")
+    def username: Rep[Option[Long]] = column[Option[Long]]("USERNAME")
+    def remoteAddress: Rep[Long] = column[Long]("REMOTE")
     def timestamp: Rep[Timestamp] = column[Timestamp]("TIMESTAMP", O.SqlType("TIMESTAMP(3)"))
-    def requestType: Rep[String] = column[String]("REQUESTTYPE")
+    def requestType: Rep[Short] = column[Short]("REQUESTTYPE")
     def attributes: Rep[String] = column[String]("ATTRIBUTES")
     def requestedPaths: Rep[Int] = column[Int]("REQUESTED_PATHS")
-    def responsePaths: Rep[Int] = column[Int]("RESPONSED_PATHS")
-    def duration: Rep[Long] = column[Long]("DURATION")
+    def responsePaths: Rep[Option[Int]] = column[Option[Int]]("RESPONSED_PATHS")
+    def duration: Rep[Option[Long]] = column[Option[Long]]("DURATION")
     def pk = primaryKey("pk",(requestToken,timestamp))
-    def * = (requestToken,username.?,remoteAddress,timestamp,requestType,attributes,requestedPaths,responsePaths.?,duration.?) <> (RequestEvent.tupled, RequestEvent.unapply)
+    def * : ProvenShape[RequestEvent] = (requestToken,username,remoteAddress,timestamp,requestType,attributes,requestedPaths,responsePaths,duration) <> (RequestEvent.tupled, RequestEvent.unapply)
   }
   class RequestLog() extends TableQuery[RequestTable]( new RequestTable(_)){
 
+    def requestTypeStrTo(str: String): Short ={
+      str match {
+        case "write" => 1
+        case "read" => 2
+        case "subscription" => 3
+        case "poll" => 4
+        case "cancel" => 5
+        case "response" => 6
+        case "delete" => 7
+        case "call" => 9
+        case other => -1
+      }
+    }
     def add( requestToken: Long, timestamp: Timestamp, user: UserInfo, requestType: String, attributes: String, pathCount: Int) = {
-      val dbio = this += RequestEvent(requestToken,user.name,user.remoteAddress.toString,timestamp,requestType,attributes,pathCount,None,None)
+      println( user.remoteAddress.toString )
+      val dbio = this += RequestEvent(requestToken,user.name.map(_.hashCode.toLong),user.remoteAddress.map(_.hashCode.toLong).getOrElse(0L),timestamp,requestTypeStrTo(requestType),attributes,pathCount,None,None)
       dbio
     }
     def updateFromResponse( requestToken: Long,timestamp: Timestamp,  pathCount: Int, duration: Long) ={
