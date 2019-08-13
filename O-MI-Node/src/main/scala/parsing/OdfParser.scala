@@ -35,7 +35,8 @@ object OdfParser extends Parser[OdfParseResult] {
   val schemaName = "odf.xsd"
 
   protected[this] override def schemaPath: Array[Source] = Array[Source](
-    new StreamSource(getClass.getClassLoader.getResourceAsStream("odf.xsd"))
+    new StreamSource(getClass.getClassLoader.getResourceAsStream("odf.xsd")),
+    new StreamSource(getClass.getClassLoader.getResourceAsStream("odf-old.xsd"))
   )
 
   /* ParseResult is either a ParseError or an ODFNode, both defined in TypeClasses.scala*/

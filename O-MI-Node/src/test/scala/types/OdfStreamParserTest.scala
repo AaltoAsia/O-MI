@@ -443,18 +443,18 @@ class OdfEventBuilderTest extends Specification {
             "test",
             iiPath,
             Some("test"),
-            Vector(QlmID("testing2"),QlmID("testing1")),
+            Vector(QlmID("testing1"),QlmID("testing2")),
             Set(Description("testing",Some("ENG")),Description("testing",Some("FIN"))),
             Vector(DoubleValue(1.3,testTime),DoubleValue(1.2,testTime)),
           Some(MetaData(
             Vector(
               InfoItem(
-                "test2",
-                mdPath/"test2"
-              ),
-              InfoItem(
                 "test1",
                 mdPath/"test1"
+              ),
+              InfoItem(
+                "test2",
+                mdPath/"test2"
               )
             )
           ))
@@ -830,12 +830,12 @@ class OdfEventBuilderTest extends Specification {
           Some(MetaData(
             Vector(
               InfoItem(
-                "test2",
-                mdPath/"test2"
-              ),
-              InfoItem(
                 "test1",
                 mdPath/"test1"
+              ),
+              InfoItem(
+                "test2",
+                mdPath/"test2"
               )
             )
           )),
@@ -989,12 +989,12 @@ class OdfEventBuilderTest extends Specification {
           MetaData(
             Vector(
               InfoItem(
-                "test2",
-                mdPath/"test2"
-              ),
-              InfoItem(
                 "test1",
                 mdPath/"test1"
+              ),
+              InfoItem(
+                "test2",
+                mdPath/"test2"
               )
             )
           )

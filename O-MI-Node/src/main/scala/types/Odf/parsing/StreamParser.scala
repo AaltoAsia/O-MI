@@ -38,6 +38,7 @@ object ODFStreamParser {
     .map(ByteString(_))
     .via(XmlParsing.parser)
     .via(new ODFParserFlow)
+
   private class ODFParserFlow extends GraphStage[FlowShape[ParseEvent,ODF]] {
     val in = Inlet[ParseEvent]("ODFParserFlowF.in")
     val out = Outlet[ODF]("ODFParserFlow.out")
@@ -45,29 +46,27 @@ object ODFStreamParser {
 
     override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
       private var state: EventBuilder[_] = new ODFEventBuilder(None,currentTimestamp)
-
-
-      setHandler(out, new OutHandler {
-        override def onPull(): Unit ={
-          if( isClosed(in)) {
-            //???
-          } else {
-            pull(in)
-          }
-        }
-      })
+      private var done: Boolean = false
 
       setHandler(in, new InHandler {
         override def onPush(): Unit = {
           val event: ParseEvent = grab(in)
+
+          state = state.parse(event)
+
           Try{
-            state = state.parse(event) 
             state match {
               case builder: ODFEventBuilder if builder.isComplete  =>
-                push(out,builder.build )
+                if( !done ){
+                  done = true
+                  push(out,builder.build )
+                  pull(in)
+                }
               case other: EventBuilder[_] =>
                 if( other.isComplete )
-                  failStage(ODFParserError("Non ODFBuilder is complete"))
+                  failStage(ODFParserError("Non EnvelopeBuilder is complete"))
+                else
+                  pull(in)
             }
           }.recover{
             case error: ODFParserError => 
@@ -75,17 +74,17 @@ object ODFStreamParser {
             case t: Throwable => 
               failStage( t)
           }
-          if( isClosed(in)) {
-            //???
-          } else {
-            pull(in)
-          }
-        }
 
-        override def onUpstreamFinish(): Unit = {
-          completeStage()
         }
       })
+
+      setHandler(out, new OutHandler {
+        override def onPull(): Unit = {
+          if( !done )
+            pull(in)
+        }
+      })
+
     }
   }
 }

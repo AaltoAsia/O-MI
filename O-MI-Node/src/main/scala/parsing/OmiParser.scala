@@ -34,6 +34,10 @@ object OmiParser extends Parser[OmiParseResult] {
 
   protected[this] override def schemaPath: Array[Source] = Array[Source](
                                                                           new StreamSource(getClass
+                                                                                             .getClassLoader.getResourceAsStream("omi-old.xsd")),
+                                                                          new StreamSource(getClass
+                                                                                             .getClassLoader.getResourceAsStream("odf-old.xsd")),
+                                                                          new StreamSource(getClass
                                                                                              .getClassLoader.getResourceAsStream("omi.xsd")),
                                                                           new StreamSource(getClass
                                                                                              .getClassLoader.getResourceAsStream("odf.xsd"))

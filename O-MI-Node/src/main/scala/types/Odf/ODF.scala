@@ -296,6 +296,10 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
        )
    }*/
 
+  final def asXMLDocument(odfVersion: Option[OdfVersion]=None): SeqView[ParseEvent, Iterable[_]] = {
+    asXMLEvents(odfVersion) ++
+    Seq(EndDocument)
+  }
   final def asXMLEvents(odfVersion: Option[OdfVersion]=None): SeqView[ParseEvent, Iterable[_]] = {
 
     /*object ResponseOrdering extends scala.math.Ordering[Node] {

@@ -49,6 +49,7 @@ class ODFEventBuilder(
   }
   def parse( event: ParseEvent ): EventBuilder[_] = {
     event match{
+      case StartDocument => this
       case startElement: StartElement if startElement.localName == "Objects" =>
         if( position == 0){
           val correctNS = startElement.namespace.forall{
@@ -78,8 +79,9 @@ class ODFEventBuilder(
             complete = true
             this
         }
-          case event: ParseEvent =>
-            unexpectedEventHandle( " before Objects element.", event, this)
+      case EndDocument if complete => this
+      case event: ParseEvent =>
+        unexpectedEventHandle( " before Objects element.", event, this)
     }
   }
 }
@@ -99,7 +101,7 @@ class ObjectEventBuilder(
   private var attributes: Map[String,String] = Map.empty
   final def isComplete: Boolean = previous.isEmpty && complete
   def build: Object = Object(
-    ids.toVector,
+    ids.reverse.toVector,
     path,
     typeAttribute,
     Description.unionReduce(descriptions.toSet),
@@ -237,7 +239,7 @@ class MetaDataEventBuilder(
   private var path = infoItemPath / "MetaData"
   private var complete: Boolean = false 
   final def isComplete: Boolean = previous.isEmpty && complete
-  def build: MetaData = MetaData( infoItems.toVector)
+  def build: MetaData = MetaData( infoItems.reverse.toVector)
 
   def addInfoItem( ii: InfoItem): MetaDataEventBuilder = {
     infoItems = ii :: infoItems
@@ -309,7 +311,7 @@ class InfoItemEventBuilder(
       nameAttribute,
       path,
       typeAttribute,
-      names.toVector,
+      names.reverse.toVector,
       Description.unionReduce(descriptions.toSet),
       values.toVector.sortBy(_.timestamp.getTime),
       metaData,
@@ -495,6 +497,8 @@ extends EventBuilder[Value[_]]{
                           new ODFEventBuilder(Some(this),receiveTime)
                         case startElement: StartElement if startElement.localName == "Objects" =>
                           throw ODFParserError(s"Objects inside value without correct type attribute. Found attribute $typeAttribute.")
+                        case content: TextEvent if content.text.replaceAll("\\s","").isEmpty => 
+                          this
                         case content: TextEvent if typeAttribute == "odf" => 
                           throw ODFParserError(s"Expected Objects inside value because of type attribute $typeAttribute.")
                         case content: TextEvent => 
