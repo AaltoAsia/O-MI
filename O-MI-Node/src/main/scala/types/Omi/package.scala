@@ -20,9 +20,6 @@ import java.util.GregorianCalendar
 import java.time.{ZoneId, OffsetDateTime}
 
 import javax.xml.datatype.{DatatypeFactory, XMLGregorianCalendar}
-import parsing.xmlGen._
-import parsing.xmlGen.scalaxb.DataRecord
-import parsing.xmlGen.xmlTypes._
 
 import scala.collection.Iterable
 import scala.collection.JavaConverters._
@@ -37,30 +34,6 @@ package object OmiTypes {
   type RequestID = Long
 
   def getPaths(request: OdfRequest): Seq[Path] = request.odf.getLeafPaths.toSeq
-
-  def requestToEnvelope(request: OmiEnvelopeTypeOption, ttl: Double): xmlTypes.OmiEnvelopeType = {
-    val namespace = Some("omi.xsd")
-    //val version = "1.0" //TODO remove unused?
-    val datarecord = request match {
-      case read: xmlTypes.ReadRequestType =>
-        scalaxb.DataRecord[xmlTypes.ReadRequestType](namespace, Some("read"), read)
-      case write: xmlTypes.WriteRequestType =>
-        scalaxb.DataRecord[xmlTypes.WriteRequestType](namespace, Some("write"), write)
-      case call: xmlTypes.CallRequestType =>
-        scalaxb.DataRecord[xmlTypes.CallRequestType](namespace, Some("call"), call)
-      case delete: xmlTypes.DeleteRequestType =>
-        scalaxb.DataRecord[xmlTypes.DeleteRequestType](namespace, Some("delete"), delete)
-      case cancel: xmlTypes.CancelRequestType =>
-        scalaxb.DataRecord[xmlTypes.CancelRequestType](namespace, Some("cancel"), cancel)
-      case response: xmlTypes.ResponseListType =>
-        scalaxb.DataRecord[xmlTypes.ResponseListType](namespace, Some("response"), response)
-    }
-    xmlTypes.OmiEnvelopeType(datarecord, Map("@version" -> DataRecord("1.0"), "@ttl" -> DataRecord(ttl)))
-  }
-
-  def omiEnvelopeToXML(omiEnvelope: OmiEnvelopeType): NodeSeq = {
-    scalaxb.toXML[OmiEnvelopeType](omiEnvelope, Some("omi"), Some("omiEnvelope"), omiDefaultScope)
-  }
 
   def timestampToXML(timestamp: Timestamp): XMLGregorianCalendar = {
     val cal = new GregorianCalendar()

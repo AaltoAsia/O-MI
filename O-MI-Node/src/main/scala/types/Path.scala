@@ -82,15 +82,6 @@ class Path private(pathSeq: Vector[String]) extends Serializable { // TODO: test
     Path(this.toSeq ++ Seq(id.id))
   }
 
-  /**
-    * Add new id/name to end of paths
-    *
-    * @param id QlmID to be added to end of Path.
-    * @return new path with added id at end.
-    */
-  def /(id: OdfTypes.OdfQlmID): Path = {
-    Path(this.toSeq ++ Seq(id.value))
-  }
 
   def append(str: String): Path = this / str
 

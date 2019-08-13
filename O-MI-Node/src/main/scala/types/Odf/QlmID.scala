@@ -5,8 +5,6 @@ import java.sql.Timestamp
 import akka.stream.alpakka.xml._
 
 import database.journal.{PQlmid, PTimestamp}
-import parsing.xmlGen.scalaxb.DataRecord
-import parsing.xmlGen.xmlTypes.QlmIDType
 
 import scala.collection.immutable.HashMap
 import scala.collection.{Map, Seq}
@@ -38,35 +36,6 @@ case class QlmID(
       optionUnion(startDate, other.startDate),
       optionUnion(endDate, other.endDate),
       attributes ++ other.attributes
-    )
-  }
-
-  implicit def asQlmIDType: QlmIDType = {
-    val idTypeAttr: Seq[(String, DataRecord[Any])] = idType.map {
-      typ =>
-        "@idType" -> DataRecord(typ)
-    }.toSeq
-    val tagTypeAttr: Seq[(String, DataRecord[Any])] = tagType.map {
-      typ =>
-        "@tagType" -> DataRecord(typ)
-    }.toSeq
-
-    val startDateAttr = startDate.map {
-      startDate =>
-        "@startDate" -> DataRecord(timestampToXML(startDate))
-    }.toSeq
-    val endDateAttr = endDate.map {
-      endDate =>
-        "@endDate" -> DataRecord(timestampToXML(endDate))
-    }.toSeq
-    QlmIDType(
-      id,
-      (
-        idTypeAttr ++
-          tagTypeAttr ++
-          startDateAttr ++
-          endDateAttr
-        ).toMap ++ attributesToDataRecord(attributes)
     )
   }
 

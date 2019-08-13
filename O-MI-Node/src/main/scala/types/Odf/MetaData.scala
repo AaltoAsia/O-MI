@@ -2,7 +2,6 @@ package types
 package odf
 
 import database.journal.PMetaData
-import parsing.xmlGen.xmlTypes.MetaDataType
 import akka.stream.alpakka.xml._
 
 import scala.collection.immutable.Set
@@ -67,8 +66,6 @@ case class MetaData(
       iis.map { ii => ii.copy(values = ii.values.sortBy(_.timestamp.getTime).headOption.toVector) }
     )
   }
-
-  implicit def asMetaDataType: MetaDataType = MetaDataType(infoItems.map(_.asInfoItemType))
 
   def persist(): PMetaData = PMetaData(infoItems.map(ii => ii.path.toString -> ii.persist.ii).collect {
     case (ipath, Some(infoi)) => ipath -> infoi

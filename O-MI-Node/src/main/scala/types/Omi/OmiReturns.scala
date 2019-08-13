@@ -2,9 +2,6 @@ package types
 package OmiTypes
 
 import scala.collection.SeqView
-import parsing.xmlGen.scalaxb.DataRecord
-import parsing.xmlGen.xmlTypes
-import types.OdfTypes.OdfTreeCollection
 import akka.stream.alpakka.xml._
 
 object ReturnCode extends Enumeration {
@@ -54,14 +51,6 @@ class OmiReturn(
     this.getClass == other.getClass
   }
 
-  def toReturnType: xmlTypes.ReturnType = {
-    xmlTypes.ReturnType(
-      "",
-      Map("@returnCode" -> DataRecord(returnCode),
-        "@description" -> DataRecord(description)
-      ) ++ types.OdfTypes.attributesToDataRecord(extraAttributes)
-    )
-  }
   def asXMLEvents: SeqView[ParseEvent,Seq[_]] ={
     Vector(
       StartElement("return",
@@ -131,7 +120,7 @@ object Returns {
   }
 
   case class SubscribedPathsNotFound(
-                                      paths: OdfTreeCollection[Path]
+                                      paths: Vector[Path]
                                     ) extends OmiReturn(ReturnCode.NotFound) with ReturnTypes.NotFound {
     override val description: Option[String] = Some(s"Following paths not found but are subscribed:" +
       paths.mkString("\n"))

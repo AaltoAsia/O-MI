@@ -1,10 +1,6 @@
 package types
 package odf
 
-
-import parsing.xmlGen.xmlTypes.{ObjectType, ObjectsType, InfoItemType}
-import parsing.xmlGen.{odfDefaultScope, scalaxb}
-
 import scala.collection.immutable.{HashMap, TreeSet}
 import scala.collection.{mutable, Map, Seq, SortedSet => CSortedSet, SeqView}
 import akka.stream.alpakka.xml._
@@ -231,44 +227,6 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
 
    def addNodes(nodesToAdd: Iterable[Node]): ODF
 
-   implicit def asObjectsType: ObjectsType = {
-     //val timer = LapTimer(println)
-     val parentPath2IIt: mutable.Map[Path,Iterable[InfoItemType]] = mutable.Map.empty
-     val objs: mutable.Buffer[Object] = mutable.Buffer.empty
-     var objects = Objects()
-     //timer.step("aOT: init")
-     for( n <- nodes.values ){
-       n match {
-         case ii: InfoItem => 
-           val parent = ii.path.getParent
-           parentPath2IIt.update(parent, (parentPath2IIt.get(parent).toVector.flatten ++ Vector(ii.asInfoItemType) ))
-         case obj: Object => objs += obj
-         case obj: Objects => objects = obj
-       }
-     }
-     //timer.step("aOT: node grouping")
-     val parentPath2Objs: Map[Path,Iterable[Tuple2[Path,ObjectType]]] = objs.map{
-       case obj: Object => 
-         obj.path -> obj.asObjectType( parentPath2IIt.get(obj.path).toSeq.flatten, Seq.empty)
-     }.groupBy(_._1.getParent)  
-     //timer.step("aOT: IIs to parents")
-     def temp(path:Path, obj: ObjectType): ObjectType ={
-       val cobjs: Iterable[ObjectType] = parentPath2Objs.get(path).toSeq.flatten.map{
-         case ( p: Path, ot: ObjectType) => temp(p,ot)
-       }
-       obj.copy( ObjectValue = cobjs.toSeq ) 
-     }
-     val topObjects: Iterable[ObjectType] = parentPath2Objs.get( Path("Objects") ).toSeq.flatten.map{
-       case (path: Path, obj: ObjectType) =>  temp(path, obj) 
-
-     }
-     //timer.step("aOT: Objs to top object s")
-     val objsT =objects.asObjectsType( topObjects )
-     //timer.step("Objects type")
-     //timer.total()
-     objsT
-   }
-
    def update(that: ODF): ODF
 
    def valuesRemoved: ODF
@@ -413,17 +371,6 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
 
    } 
    events 
-  }
-
-  @deprecated("Use .asXMLEvents or .asXMLStream instead", "2.0.2")
-  final implicit def asXML: NodeSeq = {
-    //val timer = LapTimer(println)
-    val objsType = asObjectsType
-    //timer.step("as XML, as ObjectType")
-    val xml = scalaxb.toXML[ObjectsType](objsType, None, Some("Objects"), odfDefaultScope)
-    //timer.step("as XML, scalaxb.toXML")
-    //timer.total()
-    xml //.asInstanceOf[Elem] % new UnprefixedAttribute("xmlns","odf.xsd", Node.NoAttributes)
   }
 
   override def toString: String = {

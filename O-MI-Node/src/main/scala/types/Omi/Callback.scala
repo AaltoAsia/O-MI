@@ -80,21 +80,4 @@ object Callback {
     }
   }
 
-  /*
-  def toDefined( rcb: RawCallback, connection: ConnectionIdentifier): DefinedCallback = {
-    val httpSchemas = Vector("http", "https")
-    rcb.address match{
-      case "0" => CurrentConnectionCallback(connection) 
-      case addr if isValidUri(uri) => 
-        val uri = Uri(addr) 
-        uri.schema match {
-          case schema if httpSchema.contains(schema) =>
-            HTTPCallback(uri)
-        }
-      case
-    
-    }
-  }
-  */
-
 }

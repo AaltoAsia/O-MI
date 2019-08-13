@@ -18,7 +18,6 @@ package responses
 import akka.util.Timeout
 import akka.stream.alpakka.xml._
 import database._
-import parsing.xmlGen.{defaultScope, scalaxb, xmlTypes}
 import types._
 import types.odf._
 

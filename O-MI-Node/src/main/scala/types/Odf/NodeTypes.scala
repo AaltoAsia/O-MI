@@ -4,8 +4,6 @@ package odf
 import akka.stream.alpakka.xml.{Attribute, EndElement, ParseEvent, StartElement}
 import database.journal.PPersistentNode.NodeType.{Ii, Obj, Objs}
 import database.journal.{PInfoItem, PObject, PObjects, PPersistentNode}
-import parsing.xmlGen.scalaxb.DataRecord
-import parsing.xmlGen.xmlTypes.{InfoItemType, ObjectType, ObjectsType}
 
 import scala.language.implicitConversions
 import scala.collection.{Seq, SeqView}
@@ -80,15 +78,6 @@ case class Objects(
         case _ => optionUnion(this.version, that.version)
       },
       attributeUnion(attributes, that.attributes)
-    )
-  }
-
-  implicit def asObjectsType(objects: Iterable[ObjectType]): ObjectsType = {
-    ObjectsType(
-      objects.toSeq,
-      attributes = attributesToDataRecord(attributes) ++ version.map {
-        version: String => "@version" -> DataRecord(version)
-      }
     )
   }
 
@@ -227,20 +216,6 @@ case class Object(
     }
   }
 
-  implicit def asObjectType(infoitems: Iterable[InfoItemType], objects: Iterable[ObjectType]): ObjectType = {
-    ObjectType(
-      /*Seq( QlmID(
-        path.last, // require checks (also in OdfObject)
-        attributes = Map.empty
-      )),*/
-      ids.map(_.asQlmIDType), //
-      descriptions.map(des => des.asDescriptionType).toVector,
-      infoitems.toSeq,
-      objects.toSeq,
-      attributes = (
-        attributesToDataRecord(attributes) ++ typeAttribute.map { n => "@type" -> DataRecord(n) })
-    )
-  }
 
   def readTo(to: Object): Object = {
     val pathsMatches = path == to.path
@@ -378,36 +353,6 @@ case class InfoItem(
 
   }
 
-  /*
-  def intersection( that: InfoItem ): InfoItem ={
-    val typeMatches = typeAttribute.forall {
-      typeStr: String =>
-        that.typeAttribute.forall {
-          otherTypeStr: String => typeStr == otherTypeStr
-        }
-    }
-    val pathsMatches = path == that.path
-    assert( nameAttribute == that.nameAttribute && pathsMatches && typeMatches )
-    new InfoItem(
-      nameAttribute,
-      path,
-      that.typeAttribute.orElse( typeAttribute),
-      if( that.names.nonEmpty ){
-        QlmID.unionReduce( that.names ++ names).toVector.filter{ id => id.id.nonEmpty}
-      } else Vector.empty,
-      if( that.descriptions.nonEmpty ){
-        Description.unionReduce(that.descriptions ++ descriptions).toVector.filter(desc => desc.text.nonEmpty)
-      } else Vector.empty,
-      values,
-      (metaData, that.metaData) match{
-        case (Some( md ), Some( omd )) => Some( omd.union(md) )
-        case ( Some(md), None) => Some( MetaData( Vector()))
-        case (None, _) => None
-      },
-      that.attributes ++ attributes
-    )
-  }*/
-
   def union(that: InfoItem): InfoItem = {
     val pathsMatches = path == that.path
     assert(nameAttribute == that.nameAttribute && pathsMatches)
@@ -460,42 +405,6 @@ case class InfoItem(
     }
   }
 
-  def asInfoItemType: InfoItemType = {
-    val nameTags = if (this.names.exists(id => id.id == nameAttribute) && this.names.length == 1) {
-      this.names.filter {
-        qlmid =>
-          qlmid.idType.nonEmpty ||
-            qlmid.tagType.nonEmpty ||
-            qlmid.startDate.nonEmpty ||
-            qlmid.endDate.nonEmpty ||
-            qlmid.attributes.nonEmpty
-      }
-    } else if (!this.names.exists(id => id.id == nameAttribute) && this.names.nonEmpty) {
-      this.names ++ Vector(QlmID(nameAttribute))
-    } else {
-      this.names
-    }
-
-    InfoItemType(
-      nameTags.map {
-        qlmid => qlmid.asQlmIDType
-      },
-      this.descriptions.toVector.map {
-        des: Description =>
-          des.asDescriptionType
-      },
-      this.metaData.map(_.asMetaDataType).toSeq,
-      //Seq(QlmIDType(path.lastOption.getOrElse(throw new IllegalArgumentException(s"OdfObject should have longer than one segment path: $path")))),
-      this.values.map {
-        value: Value[Any] => value.asValueType
-      },
-      HashMap(
-        "@name" -> DataRecord(
-          nameAttribute
-        )
-      ) ++ attributesToDataRecord(this.attributes) ++ typeAttribute.map { ta => "@type" -> DataRecord(ta) }.toVector
-    )
-  }
 
   def hasStaticData: Boolean = {
     attributes.nonEmpty ||
