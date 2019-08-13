@@ -118,9 +118,11 @@ class InfluxDBImplementation
                    begin: Option[Timestamp],
                    end: Option[Timestamp],
                    newest: Option[Int],
-                   oldest: Option[Int])(implicit timeout: Timeout): Future[Option[ODF]] = {
+                   oldest: Option[Int],
+                   maxLevels: Option[Int]
+                 )(implicit timeout: Timeout): Future[Option[ODF]] = {
     val iODF = ImmutableODF(nodes)
-    getNBetweenNewTypes(iODF, begin, end, newest, oldest)
+    getNBetweenNewTypes(iODF, begin, end, newest, oldest, maxLevels)
   }
 
 
@@ -133,14 +135,15 @@ class InfluxDBImplementation
                            beginO: Option[Timestamp],
                            endO: Option[Timestamp],
                            newestO: Option[Int],
-                           oldestO: Option[Int]
+                           oldestO: Option[Int],
+                           maxLevels: Option[Int]
                          ): Future[Option[ImmutableODF]] = {
     if (oldestO.nonEmpty) {
       Future.failed(new Exception("Oldest attribute is not allowed with InfluxDB."))
     } else {
       for {
         cachedODF <- singleStores.getHierarchyTree()
-        requestedODF: ODF = cachedODF.select(requestODF)
+        requestedODF: ODF = cachedODF.selectSubTree(requestODF.getLeafPaths,maxLevels)
         requestedIIs: Seq[InfoItem] = requestedODF.getInfoItems.toSeq
         res: Option[ODF] <- (beginO, endO, newestO) match {
           case (None, None, None) => singleStores.readValues(requestedIIs.map(_.path))

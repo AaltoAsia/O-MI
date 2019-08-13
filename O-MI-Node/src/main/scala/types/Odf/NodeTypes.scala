@@ -154,7 +154,7 @@ case class Object(
       id == pl
   }
 
-  def tmy = s"Ids don't contain last id in path. ${path.last} not in (${idsToStr().mkString(",")})"
+  def tmy = s"Ids don't contain last id in path. ${ path.last } not in (${idsToStr().mkString(",")})"
 
   assert(idTest, tmy)
 

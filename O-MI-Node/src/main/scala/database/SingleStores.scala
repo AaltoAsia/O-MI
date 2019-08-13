@@ -16,7 +16,9 @@ import types.Path
 import types.odf._
 import journal._
 import types.OmiTypes.Version._
-import types.OmiTypes.ResponseRequest
+import types.OmiTypes.{ResponseRequest, RequestIDRequest}
+import utils.SimpleMonad._
+import utils.OptionT
 
 import LatestStore._
 import HierarchyStore._
@@ -48,7 +50,7 @@ trait SingleStores {
       snapshotF
     }
 
-    log.info("Taking journal snapshot")
+    log.debug("Taking journal snapshot")
     val res: Future[Seq[Unit]] = Future.sequence(Seq(
       trySnapshot(latestStore, "latestStore"),
       trySnapshot(hierarchyStore, "hierarchyStore"),
@@ -163,15 +165,57 @@ trait SingleStores {
 
   val DefaultRequestInfo = PRequestInfo(omiVersion=1.0, odfVersion=None) // TODO: Default version to configuration?
 
-  def getRequestInfo(response: ResponseRequest): Future[PRequestInfo] =
-    response.requestID.map{id => getRequestInfo(id)}
-        .getOrElse(Future.successful(DefaultRequestInfo))
+  def getRequestInfo(response: ResponseRequest): Future[PRequestInfo] = {
 
-  def getRequestInfo(requestId: Long): Future[PRequestInfo] =
-    (requestInfoStore ? GetInfo(requestId)).mapTo[PRequestInfo]
+    val preDefault = OptionT(Future.successful(response.requestInfo))
 
-  def peekRequestInfo(requestId: Long): Future[PRequestInfo] =
-    (requestInfoStore ? PeekInfo(requestId)).mapTo[PRequestInfo]
+    if (response.requestToken.isEmpty) log.info("Response doesn't have a request token, O-DF/O-MI versions unknown (FIXME)")
+    
+
+    val subscriptionIdF = Future.successful(
+      for {
+        result <- response.results.headOption
+        requestID <- result.requestIDs.headOption
+      } yield requestID
+    )
+
+
+    val subscriptionInfo = for {
+      requestID <- OptionT(subscriptionIdF)
+      subInfo   <- OptionT(peekRequestInfo(requestID)) // do not remove
+    } yield subInfo
+
+    val requestInfo = for {
+      requestID    <- OptionT(subscriptionIdF map Option.apply) // optional
+      requestToken <- OptionT(Future.successful(response.requestToken))
+      requestInfo  <- OptionT{
+        if (requestID exists (_ == requestToken)) peekRequestInfo(requestToken) // do not remove
+        else getRequestInfo(requestToken) // remove
+      }
+    } yield requestInfo
+    
+    val result = requestInfo.flatMap{
+      case ri if ri.odfVersion.isEmpty =>
+        subscriptionInfo.map{si =>
+          ri.copy(odfVersion=si.odfVersion)
+        } orElse OptionT.some(ri)
+      case ri => OptionT.some(ri)
+    } orElse preDefault orElse subscriptionInfo getOrElse DefaultRequestInfo
+
+    //for {
+    //  a <- requestInfo.run
+    //  b <- subscriptionInfo.run
+    //  c <- result
+    //  _ = println(s"GET REQUEST INFO: ${response.requestToken} $a $b $c")
+    //} yield c
+    result
+  }
+
+  def getRequestInfo(requestId: Long): Future[Option[PRequestInfo]] = {
+    (requestInfoStore ? GetInfo(requestId)).mapTo[Option[PRequestInfo]]}
+
+  def peekRequestInfo(requestId: Long): Future[Option[PRequestInfo]] =
+    (requestInfoStore ? PeekInfo(requestId)).mapTo[Option[PRequestInfo]]
 
   def peekAllRequestInfo(): Future[LongMap[PRequestInfo]] =
     (requestInfoStore ? PeekAll()).mapTo[LongMap[PRequestInfo]]

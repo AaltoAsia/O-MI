@@ -398,7 +398,7 @@ class SubscriptionManager(
             failedResults = if (missedPaths.nonEmpty) Vector(Results.SubscribedPathsNotFound(missedPaths)) else Vector
               .empty
             responseTTL = iSub.interval
-            response = ResponseRequest((succResult ++ failedResults), responseTTL)
+            response = ResponseRequest((succResult ++ failedResults), responseTTL, requestToken=Some(id))
 
             callbackF <- callbackHandler
               .sendCallback(iSub.callback, response) // FIXME: change resultXml to ResponseRequest(..., responseTTL)
@@ -438,6 +438,8 @@ class SubscriptionManager(
     * @return Boolean indicating if the removing was successful
     */
   private def removeSubscription(id: Long): Future[Boolean] = {
+    singleStores.getRequestInfo(id) // remove entry from request info store
+
     Option(intervalMap.get(id)).foreach(_.cancel())
 
     lazy val removePS = singleStores.removePollSub(id)
@@ -510,7 +512,7 @@ class SubscriptionManager(
       .map(allSubs => (allSubs.events ++ allSubs.intervals ++ allSubs.polls).map(_.id))
 
     def getNewId: Future[Long] = {
-      (subscription.requestID match {
+      (subscription.requestToken match {
         case Some(id) => Future.successful(id)
         case None => Future.failed(new Error("No request id"))
       }).fallbackTo {

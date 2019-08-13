@@ -44,7 +44,7 @@ trait DBWriteHandler extends DBHandlerBase {
       .toOption.getOrElse(Duration.Inf)
 
     log.debug(s"Sending data to event sub: $id.")
-    val fresponseRequest: Future[ResponseRequest] = fodf.map(odf => Responses.Poll(id, odf, responseTTL))
+    val fresponseRequest: Future[ResponseRequest] = fodf.map(odf => Responses.Poll(id, odf, responseTTL).withRequestToken(Some(id)))
     log.debug(s"Sending in progress; Subscription subId:$id addr:$callbackAddr interval:-1")
     //log.debug("Send msg:\n" + xmlMsg)
 

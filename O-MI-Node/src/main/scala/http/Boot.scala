@@ -46,6 +46,7 @@ import responses.{CallbackHandler, RequestHandler, SubscriptionManager}
 import types.OmiTypes.Returns.ReturnTypes._
 import types.OmiTypes._
 import types.odf._
+import io.prometheus.client._
 
 class OmiServer extends OmiNode {
 
@@ -58,23 +59,7 @@ class OmiServer extends OmiNode {
     * Settings loaded by akka (typesafe config) and our [[OmiConfigExtension]]
     */
   val settings: OmiConfigExtension = OmiConfig(system)
-
-  if(settings.kamonEnabled){
-    //TODO: Add other reporters? Additional depncies...
-      Kamon.addReporter(new InfluxDBReporter())
-      system.log.info(s"Started influxdb reporter for Kamon.")
-      //Enablest system metric monitoring with Kamon, but needs Sigar to work
-      //TODO: Add Sigar to depencies?
-      Try{
-        SystemMetrics.startCollecting()
-        system.registerOnTermination{ a: Unit => SystemMetrics.stopCollecting()}
-      } match {
-        case Failure(ex) =>
-          system.log.warning(s"Starting system metrics collection failed because: $ex")
-          system.log.warning(s"System metrics will not be collected.")
-        case Success(_) =>
-      }
-  }
+  val metricsReporter = system.actorOf(MetricsReporter.props(settings),"metric-reporter")
 
   val singleStores = SingleStores(settings)
   val dbConnection: DB = settings.databaseImplementation.toUpperCase match {
@@ -120,7 +105,7 @@ class OmiServer extends OmiNode {
       singleStores,
       callbackHandler,
       new CLIHelper(singleStores, dbConnection)
-    ),
+    )(settings),
     "database-handler"
   )
 
@@ -180,6 +165,7 @@ class OmiServer extends OmiNode {
     requestHandler,
     callbackHandler,
     tempRequestInfoStore,
+    metricsReporter
   )
 
 

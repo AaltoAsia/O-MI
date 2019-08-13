@@ -51,6 +51,8 @@ import scala.xml.NodeSeq
 import util._
 import utils._
 import TemporaryRequestInfoStore._
+import io.prometheus.client._
+import MetricsReporter.{NewRequest,ResponseUpdate}
 
 trait OmiServiceAuthorization
   extends ExtensibleAuthorization
@@ -73,7 +75,8 @@ class OmiServiceImpl(
                       val singleStores: SingleStores,
                       protected val requestHandler: ActorRef,
                       protected val callbackHandler: CallbackHandler,
-                      protected val requestStorage: ActorRef
+                      protected val requestStorage: ActorRef,
+                      protected val metricsReporter: ActorRef
                     )
   extends {
     // Early initializer needed (-- still doesn't seem to work)
@@ -104,13 +107,15 @@ class OmiServiceImpl(
 trait OmiService
   extends CORSSupport
     with WebSocketOMISupport
-    with OmiServiceAuthorization {
+    with OmiServiceAuthorization 
+    with OMIServiceMetrics {
 
 
   protected def log: org.slf4j.Logger
 
   protected def requestStorage: ActorRef
   protected def requestHandler: ActorRef
+  protected def metricsReporter: ActorRef
 
   protected def callbackHandler: CallbackHandler
 
@@ -125,6 +130,7 @@ trait OmiService
     getFromDirectory("./html")
   } else getFromDirectory("O-MI-Node/html")
   //val staticHtml = getFromResourceDirectory("html")
+
 
 
   /** Some trickery to extract the _decoded_ uri path: */
@@ -283,19 +289,19 @@ trait OmiService
 
       val startTime = currentTimestamp
 
-      
-
       val originalReq = RawRequestWrapper(requestSource, UserInfo(remoteAddress = Some(remote)))
+      val labeledMetric = Metrics.requestHistogram.map{ hist => hist.labels(originalReq.requestTypeString)}
 
       val omiVersion = OmiVersion.fromNameSpace(originalReq.omiEnvelope.namespace.getOrElse("default"))
       val odfVersion = originalReq.odfObjects.map{ objs => OdfVersion.fromNameSpace(objs.namespace.getOrElse("default") )}
 
-      val requestID = Await.result(
+      val requestToken = Await.result(
         singleStores.addRequestInfo(startTime.getTime()*1000 + originalReq.handleTTL.toSeconds, omiVersion, odfVersion),
         originalReq.handleTTL) // TODO better infinite ttl handling (not only this line, overall)
+      val rt = Some(requestToken)
 
-      requestStorage ! AddRequest( requestID )
-      requestStorage ! AddInfos( requestID, Seq(
+      requestStorage ! AddRequest( requestToken )
+      requestStorage ! AddInfos( requestToken, Seq(
         RequestTimestampInfo("start-time",  startTime),
         RequestAnyInfo("omiVersion", omiVersion),
         RequestAnyInfo("odfVersion", odfVersion)
@@ -318,27 +324,39 @@ trait OmiService
         case Success((req: RequestWrapper, user: UserInfo)) => { // Authorized
           //timer.step("Permission test")
           req.user = UserInfo(user.remoteAddress, user.name) //Copy user info to requestwrapper
-          requestStorage ! AddInfos( requestID, Seq( RequestTimestampInfo("pre-parse-time",  currentTimestamp)))
           val parsed = req.parsed
           //timer.step("Parsed")
-          requestStorage ! AddInfos( requestID, Seq( RequestTimestampInfo("post-parse-time",  currentTimestamp)))
           parsed match {
             case Right(requests) =>
               val unwrappedRequest = req.unwrapped // NOTE: Be careful when implementing multi-request messages
               unwrappedRequest match {
                 case Success(request: OmiRequest) =>
                   
+                  { 
+                    val pathCount = request match { 
+                        case odfRequest: OdfRequest => odfRequest.odf.getLeafPaths.size 
+                        case resp: ResponseRequest => resp.odf.getLeafPaths.size
+                        case req: OmiRequest => 0
+                      }
+                    metricsReporter ! NewRequest( 
+                      requestToken, 
+                      startTime,
+                      request.user, 
+                      request.requestTypeString, 
+                      request.attributeStr, 
+                      pathCount
+                    )
+                  }
                   //timer.step("Unwrapped request")
                   defineCallbackForRequest(request, currentConnectionCallback).flatMap {
                     request: OmiRequest => 
                       //timer.step("Callback defined")
-                      requestStorage ! AddInfos( requestID, Seq( RequestTimestampInfo("callback-time",  currentTimestamp)))
-                      val handle: Future[ResponseRequest] = handleOmiRequest(request.withRequestID(Some(requestID)))
+                      //requestStorage ! AddInfos( requestToken, Seq( RequestTimestampInfo("callback-time",  currentTimestamp)))
+                      val handle: Future[ResponseRequest] = handleOmiRequest(request.withRequestToken(rt))
                       handle.map{
                         response =>
                         //timer.step("Request handled")
-                        requestStorage ! AddInfos( requestID, Seq( RequestTimestampInfo("handle-end-time",  currentTimestamp)))
-                        response.withRequestID(Some(requestID)) //TODO: Clean requestID passing
+                        response
                       }
                   }.recover {
                     case e: TimeoutException => Responses.TTLTimeout(Some(e.getMessage))
@@ -374,7 +392,7 @@ trait OmiService
 
 
       // if timeoutfuture completes first then timeout is returned
-      Future.firstCompletedOf(Seq(responseF, ttlPromise.future)) map {
+      val fresult = Future.firstCompletedOf(Seq(responseF, ttlPromise.future)) map {
         response: ResponseRequest =>
           
           //timer.step("Omi response ready")
@@ -384,11 +402,11 @@ trait OmiService
             log.debug(s"Error code $statusO with received request")
           }
 
-          //requestStorage ! AddInfos( requestID, Seq( RequestTimestampInfo("toXML-start-time",  currentTimestamp)))
+          //requestStorage ! AddInfos( requestToken, Seq( RequestTimestampInfo("toXML-start-time",  currentTimestamp)))
           //timer.step("Omi response status check")
           //val xmlResponse = response.asXML // return
           ////timer.step("Omi response to XML")
-          //requestStorage ! AddInfos( requestID, Seq( RequestTimestampInfo("toXML-end-time",  currentTimestamp)))
+          //requestStorage ! AddInfos( requestToken, Seq( RequestTimestampInfo("toXML-end-time",  currentTimestamp)))
           //timer.total()
 
           //val xmlStream = Source
@@ -400,12 +418,33 @@ trait OmiService
           //HttpEntity.CloseDelimited(ContentType.`text/xml(UTF-8)`, xmlStream)
           //
           //
-          requestStorage ! AddInfos( requestID, Seq( RequestTimestampInfo("final-time",  currentTimestamp)))
-          requestStorage ! RemoveRequest( requestID )
+          requestStorage ! AddInfos( requestToken, Seq( RequestTimestampInfo("final-time",  currentTimestamp)))
+          requestStorage ! RemoveRequest( requestToken )
 
-          response
+          response.withRequestToken(rt) //TODO: Clean requestToken passing
       }
 
+      fresult.onComplete{
+        f => 
+          labeledMetric.foreach{
+            metric =>
+              val endTime = currentTimestamp
+              val duration = ((endTime.getTime() - startTime.getTime())/1000.0).toDouble
+              metric.observe(duration)
+              metricsReporter ! ResponseUpdate( 
+                requestToken, 
+                startTime,
+                f match {
+                  case Success( r: ResponseRequest) => 
+                    r.odf.getLeafPaths.size
+                  case Failure( t )=> 0
+                }, 
+                endTime.getTime() - startTime.getTime()
+              )
+          }
+
+      }
+      fresult
     }.recover{
 
       case ex: IllegalArgumentException => {
@@ -417,6 +456,8 @@ trait OmiService
         Future.failed(ex)
       }
     }
+    
+    //.map(f => f.map(_.withRequestToken(rt))) //TODO: Clean requestToken passing
   }
 
   def handleOmiRequest(request: OmiRequest): Future[ResponseRequest] = {
@@ -437,12 +478,18 @@ trait OmiService
               )
             )
           case Some(callback: DefinedCallback) => {
-            (requestHandler ? other).mapTo[ResponseRequest] map { response =>
-              callbackHandler.sendCallback(callback, response)
-            }
-            Future.successful(
-              Responses.Success(description = Some("OK, callback job started"))
-            )
+            val reqToken = request.requestToken
+            val immediateResponse = Responses.OKCallback.withRequestToken(reqToken).withRequestInfoFrom(singleStores)
+            val formatInfo = immediateResponse.map(_.requestInfo)
+
+            for {
+              r <- (requestHandler ? other).mapTo[ResponseRequest]
+              info <- formatInfo
+              response = r.withRequestToken(reqToken).withRequestInfo(info.getOrElse(singleStores.DefaultRequestInfo))
+              _ <- callbackHandler.sendCallback(callback, response)
+            } yield ()
+
+            immediateResponse
           }
         }
     }
@@ -451,10 +498,10 @@ trait OmiService
   def chunkedStream(fResponse: Future[ResponseRequest]): ResponseEntity = {
     val chunkStream =
       Source.fromFutureSource(for {
-        response <- fResponse
-        versions <- singleStores.getRequestInfo(response)
+        r <- fResponse
+        response <- r.withRequestInfoFrom(singleStores)
         
-      } yield response.asXMLByteSourceWithVersion(versions))
+      } yield response.asXMLByteSource)
         .map(HttpEntity.ChunkStreamPart.apply)
 
     HttpEntity.Chunked(ContentTypes.`text/xml(UTF-8)`, chunkStream)
@@ -546,6 +593,7 @@ trait OmiService
 
             val response = handleRequest(hasPermissionTest, decodedSource, remote = user)
             onSuccess(response) {r =>
+              
               complete(HttpResponse(entity=chunkedStream(r)))
             }
           }
@@ -627,7 +675,7 @@ trait OmiService
 /**
   * This trait implements websocket support for O-MI message handling using akka-http
   */
-trait WebSocketOMISupport extends WebSocketUtil {
+trait WebSocketOMISupport extends WebSocketUtil with OMIServiceMetrics {
   self: OmiService =>
   protected def system: ActorSystem
 
@@ -675,6 +723,7 @@ trait WebSocketOMISupport extends WebSocketUtil {
       case ws.TextMessage.Strict("") =>
 
       case textMessage: ws.TextMessage =>
+        
         val futureResponse: Future[ws.TextMessage] = for {
           r2 <- handleRequest(hasPermissionTest,
             textMessage.textStream.filter{ str => str.nonEmpty},
@@ -682,12 +731,13 @@ trait WebSocketOMISupport extends WebSocketUtil {
             user
           )
           r <- r2
-          versions <- singleStores.getRequestInfo(r)
-        } yield ws.TextMessage.Streamed(r.asXMLSourceWithVersion(versions))
+
+          response <- r.withRequestInfoFrom(singleStores)
+        } yield ws.TextMessage.Streamed(response.asXMLSource)
 
         queue.send(futureResponse)
       case msg: ws.Message => 
-          queue.send(Future.successful(ws.TextMessage("")))
+          queue.send(Future.successful(ws.TextMessage("Error: Could not process ws message, use text instead of binary")))
     }
     /*
     val msgSink = Sink.foreach[Future[String]] { future: Future[String] =>
@@ -757,6 +807,7 @@ trait WebSocketUtil {
         case e @ (Success(_: QueueOfferResult) | Failure(_)) => // Others mean failure
           log.warn(s"WebSocket response queue failed, reason: $e")
           removeRelatedSub()
+          sendHandler(Responses.InternalError(Some(e.toString)))
       }
       result
     }
@@ -765,12 +816,21 @@ trait WebSocketUtil {
       send(
         singleStores
           .map(ss =>
-              ss.getRequestInfo(response)
-                .map(v => response.asXMLSourceWithVersion(v)))
+              response.withRequestInfoFrom(ss)
+                .map(r => r.asXMLSource))
           .getOrElse(Future.successful(response.asXMLSource))
           .map(ws.TextMessage.Streamed(_))
       , Vector(connectionIdentifier)) map { _ => () }
     }
   }
 
+}
+
+trait OMIServiceMetrics {
+  def settings: OmiConfigExtension
+  object Metrics{
+
+    def checkEnabled[T](f: () => T): Option[T] = if( settings.metricsEnabled ) Some(f()) else None
+    final val requestHistogram =  checkEnabled(() => Histogram.build().name("omi_request_duration").help("Duration of active O-MI Request").labelNames("request").register())
+  }
 }

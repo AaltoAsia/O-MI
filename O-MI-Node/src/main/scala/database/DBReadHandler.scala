@@ -33,6 +33,16 @@ trait DBReadHandler extends DBHandlerBase {
             )
           ))
         )
+      case read: ReadRequest if 
+        read.newest.exists{ n => n > settings.maximumNewest } || 
+        read.oldest.exists{ n => n > settings.maximumNewest } =>
+        Future.successful(
+          ResponseRequest(Vector(
+            Results.InvalidRequest(
+              Some(read.newest.map(_=>"newest").getOrElse("oldest") + " > " + settings.maximumNewest)
+            )
+          ))
+        )
       case default: ReadRequest =>
         log.debug(
           s"Read(" +
@@ -40,6 +50,7 @@ trait DBReadHandler extends DBHandlerBase {
             default.end.map { t => s"end: $t," }.getOrElse("") +
             default.newest.map { t => s"newest: $t," }.getOrElse("") +
             default.oldest.map { t => s"oldest: $t," }.getOrElse("") +
+            default.maxLevels.map { t => s"oldest: $t," }.getOrElse("") +
             s"ttl: ${default.ttl} )"
         )
 
@@ -54,7 +65,8 @@ trait DBReadHandler extends DBHandlerBase {
           read.begin,
           read.end,
           read.newest,
-          read.oldest
+          read.oldest,
+          read.maxLevels
         )
 
         // NOTE: Might go off sync with tree or values if the request is large,
@@ -62,7 +74,7 @@ trait DBReadHandler extends DBHandlerBase {
         //val mdtimer = LapTimer(log.info)
         val fmetadataTree: Future[ImmutableODF] = singleStores.getHierarchyTree()
 
-        val fodfWithMetaData: Future[ODF] = fmetadataTree.map(_.readTo(requestedODF).valuesRemoved)
+        val fodfWithMetaData: Future[ODF] = fmetadataTree.map(_.readTo(requestedODF,read.maxLevels).valuesRemoved)
         log.debug( s" Requested paths: " + leafs.map{ _.path}.mkString("\n"))
 
         val resultF = odfWithValuesO.flatMap {

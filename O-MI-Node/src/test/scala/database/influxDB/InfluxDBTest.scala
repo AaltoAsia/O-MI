@@ -258,7 +258,7 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
               httpExtMock,
               settings
             )(system,singleStores)
-            influx.getNBetween(iis,None,None,None,Some(n))
+            influx.getNBetween(iis,None,None,None,Some(n),None)
           }.recover{ case NonFatal(t) => t.getMessage()} must beEqualTo("Oldest attribute is not allowed with InfluxDB.").await 
        }
        val timestamp = currentTimestamp
@@ -298,7 +298,7 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
             )(system,singleStores)
 
             val leaf = Vector( Object( Path("Objects","Obj")))
-            influx.getNBetween(leaf,None,None,None,None)
+            influx.getNBetween(leaf,None,None,None,None,None)
           } must beEqualTo(
               Some(ImmutableODF(Vector(
                 Object( Path("Objects","Obj")).copy( descriptions= Set(Description("test"))),
@@ -351,7 +351,7 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
             )(system,singleStores)
 
             val leaf = Vector( Object( Path("Objects","Obj")))
-            influx.getNBetween(leaf,Some(timestamp),None,None,None)
+            influx.getNBetween(leaf,Some(timestamp),None,None,None,None)
           } must beEqualTo(
             Some(ImmutableODF(Vector(
               Object( Path("Objects","Obj")).copy( descriptions= Set(Description("test"))),
@@ -393,7 +393,7 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
             )(system,singleStores)
 
             val leaf = Vector( Object( Path("Objects","Obj")))
-            influx.getNBetween(leaf,None,Some(timestamp),None,None)
+            influx.getNBetween(leaf,None,Some(timestamp),None,None,None)
             } must beEqualTo(
               correctFloatResults
             ).await
@@ -432,7 +432,7 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
             )(system,singleStores)
 
             val leaf = Vector( Object( Path("Objects","Obj")))
-            influx.getNBetween(leaf,None,None,Some(n),None)
+            influx.getNBetween(leaf,None,None,Some(n),None,None)
           } must beEqualTo(
             correctFloatResults
           ).await
@@ -470,7 +470,7 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
             )(system,singleStores)
 
             val leaf = Vector( Object( Path("Objects","Obj")))
-            influx.getNBetween(leaf,Some(timestamp),Some(timestamp),None,None)
+            influx.getNBetween(leaf,Some(timestamp),Some(timestamp),None,None,None)
           } must beEqualTo(
             correctFloatResults
           ).await
@@ -509,7 +509,7 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
             )(system,singleStores)
 
             val leaf = Vector( Object( Path("Objects","Obj")))
-            influx.getNBetween(leaf,Some(timestamp),None,Some(n),None)
+            influx.getNBetween(leaf,Some(timestamp),None,Some(n),None,None)
           } must beEqualTo(
             correctFloatResults
           ).await
@@ -548,7 +548,7 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
             )(system,singleStores)
 
             val leaf = Vector( Object( Path("Objects","Obj")))
-            influx.getNBetween(leaf,None,Some(timestamp),Some(n),None)
+            influx.getNBetween(leaf,None,Some(timestamp),Some(n),None,None)
           } must beEqualTo(
             correctFloatResults
           ).await
@@ -587,7 +587,7 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
             )(system,singleStores)
 
             val leaf = Vector( Object( Path("Objects","Obj")))
-            influx.getNBetween(leaf,Some(timestamp),Some(timestamp),Some(n),None)
+            influx.getNBetween(leaf,Some(timestamp),Some(timestamp),Some(n),None,None)
           } must beEqualTo(correctFloatResults).await
        }
        "log any execption during execution" >>  testInit{ implicit system: ActorSystem =>
@@ -620,7 +620,7 @@ class InfluxDBTest( implicit ee: ExecutionEnv )
             )(system,singleStores)
 
             val leaf = Vector( Object( Path("Objects","Obj")))
-            influx.getNBetween(leaf,Some(timestamp),None,None,None)
+            influx.getNBetween(leaf,Some(timestamp),None,None,None,None)
           }.recover{
               case NonFatal(e) => e.getMessage() 
             }  must beEqualTo("test failure").await 

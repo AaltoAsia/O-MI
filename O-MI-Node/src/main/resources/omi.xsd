@@ -1,14 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- edited with XMLSpy v2012 rel. 2 (x64) (http://www.altova.com) by Kary Främling (Aalto University) -->
-<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns="http://www.opengroup.org/xsd/omi/1.0/" targetNamespace="http://www.opengroup.org/xsd/omi/1.0/" elementFormDefault="qualified" attributeFormDefault="unqualified" version="1.0">
-	<xs:element name="omiEnvelope" type="OmiEnvelopeType">
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns="http://www.opengroup.org/xsd/omi/2.0/" targetNamespace="http://www.opengroup.org/xsd/omi/2.0/" elementFormDefault="qualified" attributeFormDefault="unqualified" version="2.0">
+	<xs:element name="omiEnvelope" type="OmiEnvelopeType"/>
+	<xs:complexType name="OmiEnvelopeType">
 		<xs:annotation>
 			<xs:documentation>Root element of Open Messaging Interface.</xs:documentation>
 		</xs:annotation>
-	</xs:element>
-	<xs:complexType name="OmiEnvelopeType">
 		<xs:sequence>
-			<xs:choice>
+			<xs:choice maxOccurs="unbounded">
 				<xs:element name="read" type="ReadRequestType"/>
 				<xs:element name="write" type="WriteRequestType"/>
 				<xs:element name="response" type="ResponseListType"/>
@@ -30,7 +29,16 @@
 				<xs:union memberTypes="PositiveDouble DoubleMinusOne"/>
 			</xs:simpleType>
 		</xs:attribute>
-                <xs:anyAttribute processContents="lax" /> <!-- Added for authentication tokens and similar extensions -->
+		<xs:attribute name="authorization" type="xs:string" use="optional">
+			<xs:annotation>
+				<xs:documentation>Authorization header contents according to RFC 7235, section 4.2: Authorization. Since O-MI v2.0.</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:anyAttribute processContents="lax">
+			<xs:annotation>
+				<xs:documentation>Proprietary or extended attributes. Since O-MI v2.0.</xs:documentation>
+			</xs:annotation>
+		</xs:anyAttribute>
 	</xs:complexType>
 	<xs:simpleType name="PositiveDouble">
 		<xs:restriction base="xs:double">
@@ -54,21 +62,23 @@
 			<xs:documentation>Payload for the protocol</xs:documentation>
 		</xs:annotation>
 		<xs:sequence>
-			<xs:any namespace="##other" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+			<xs:any namespace="##other" processContents="strict" minOccurs="0" maxOccurs="unbounded"/>
 		</xs:sequence>
 	</xs:complexType>
 	<xs:complexType name="RequestBaseType" abstract="true">
 		<xs:annotation>
-			<xs:documentation>Base type for "read" and "write" requests.</xs:documentation>
+			<xs:documentation>Base type for "read", "write", "call" and "delete" requests.</xs:documentation>
 		</xs:annotation>
 		<xs:sequence>
 			<xs:element name="nodeList" type="NodesType" minOccurs="0"/>
-			<xs:element name="requestID" type="xs:string" minOccurs="0" maxOccurs="unbounded">
-				<xs:annotation>
-					<xs:documentation>"requestID" is only included when "polling" for data that corresponds to an earlier subscription that returned the corresponding Id.</xs:documentation>
-				</xs:annotation>
-			</xs:element>
-			<xs:element name="msg" type="MsgType" minOccurs="0"/>
+			<xs:choice>
+				<xs:element name="requestID" type="xs:string" minOccurs="0" maxOccurs="unbounded">
+					<xs:annotation>
+						<xs:documentation>"requestID" is only included when "polling" for data that corresponds to an earlier subscription that returned the corresponding Id.</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+				<xs:element name="msg" type="MsgType" minOccurs="0"/>
+			</xs:choice>
 		</xs:sequence>
 		<xs:attribute name="callback" type="xs:anyURI" use="optional">
 			<xs:annotation>
@@ -93,12 +103,12 @@
 				<xs:attribute name="interval" use="optional">
 					<xs:annotation>
 						<xs:documentation>
-              If an "interval" attribute is included, it indicates that this is a subscription request that uses the given interval.
-              Values 0 (as often as data can be read from the target),
-              -1 (very time the subscribed target publishes/pushes a new value)
-              and -2 (every time the subscribed target (typically a PEID or device) connects to an O-MI node)
-              have special significations.
-            </xs:documentation>
+							If an "interval" attribute is included, it indicates that this is a subscription request that uses the given interval.
+							Values 0 (as often as data can be read from the target),
+							-1 (very time the subscribed target publishes/pushes a new value)
+							and -2 (every time the subscribed target (typically a PEID or device) connects to an O-MI node)
+							have special significations.
+						</xs:documentation>
 					</xs:annotation>
 					<xs:simpleType>
 						<xs:union memberTypes="PositiveDouble DoubleMinusOne DoubleMinusTwo"/>
@@ -127,6 +137,11 @@
 				<xs:attribute name="all" type="xs:boolean" use="optional">
 					<xs:annotation>
 						<xs:documentation>Retrieve all available values. all="true" overrides other begin/end/oldest/newest attributes. From Version 2.0 onwards.</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="maxlevels" type="xs:positiveInteger" use="optional">
+					<xs:annotation>
+						<xs:documentation>The maximum number of levels (Object/InfoItem) to return from an O-DF hierarchy, for instance. The leaf Object(s) of the read request are counted as level zero, so "maxlevels=1" signifies that the only the next level of Objects/InfoItems should be returned. From Version 2.0 onwards.</xs:documentation>
 					</xs:annotation>
 				</xs:attribute>
 			</xs:extension>
@@ -179,7 +194,7 @@
 			</xs:element>
 			<xs:element name="requestID" type="IdType" minOccurs="0" maxOccurs="unbounded">
 				<xs:annotation>
-					<xs:documentation>not needed if this is a response to a "immediate"/"non-callback" request, i.e. just status reply with "return" or reponse with "value".</xs:documentation>
+					<xs:documentation>not needed if this is a response to a "immediate"/"non-callback" request, i.e. just status reply with "return" or response with "value".</xs:documentation>
 				</xs:annotation>
 			</xs:element>
 			<xs:element name="msg" type="MsgType" minOccurs="0">
@@ -213,12 +228,16 @@
 					</xs:annotation>
 					<xs:simpleType>
 						<xs:restriction base="xs:token">
-							<xs:pattern value="2[0-9]{2}|4[0-9]{2}|5[0-9]{2}|6[0-9]{2}"/>
+							<xs:pattern value="2[0-9]{2}|4[0-9]{2}|5[0-9]{2}"/>
 						</xs:restriction>
 					</xs:simpleType>
 				</xs:attribute>
 				<xs:attribute name="description" type="xs:string" use="optional"/>
-                                <xs:anyAttribute processContents="lax" />
+				<xs:anyAttribute processContents="lax">
+					<xs:annotation>
+						<xs:documentation>Proprietary or extended attributes. Since O-MI v2.0.</xs:documentation>
+					</xs:annotation>
+				</xs:anyAttribute>
 			</xs:extension>
 		</xs:simpleContent>
 	</xs:complexType>

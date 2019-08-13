@@ -210,7 +210,9 @@ trait DB {
                    begin: Option[Timestamp],
                    end: Option[Timestamp],
                    newest: Option[Int],
-                   oldest: Option[Int])(implicit timeout: Timeout): Future[Option[ODF]]
+                   oldest: Option[Int],
+                   maxLevels: Option[Int]
+                 )(implicit timeout: Timeout): Future[Option[ODF]]
 
   /**
     * Used to set many values efficiently to the database.

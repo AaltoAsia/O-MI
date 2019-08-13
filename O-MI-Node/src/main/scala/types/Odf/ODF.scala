@@ -216,7 +216,7 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
    /*
     * Select paths and their descedants from this ODF.
     */
-   def selectSubTree(pathsToGet: Set[Path]): ODF
+   def selectSubTree(pathsToGet: Set[Path], generationDifference: Option[Int] = None): ODF
 
    /*
     * Select paths and their ancestors from this ODF.
@@ -411,6 +411,7 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
    events 
   }
 
+  @deprecated("Use .asXMLEvents or .asXMLStream instead", "2.0.2")
   final implicit def asXML: NodeSeq = {
     //val timer = LapTimer(println)
     val objsType = asObjectsType
@@ -440,7 +441,7 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
 
   override lazy val hashCode: Int = this.nodes.hashCode
 
-  def readTo(to: ODF): ODF
+  def readTo(to: ODF, generationDifference: Option[Int] = None): ODF
 
   def readToNodes(to: ODF, generationDifference: Option[Int] = None): Iterable[Node] = {
     val wantedPaths: TreeSet[Path] = TreeSet(selectSubTreePaths(to.getLeafPaths, generationDifference).intersect(paths).toSeq:_*)(PathOrdering)

@@ -73,6 +73,7 @@ lazy val omiNode = (project in file("O-MI-Node")).
         scalapb.gen() -> (sourceManaged in Compile).value
         ),
       //Revolver.settings,
+      addCompilerPlugin("org.typelevel" %% "kind-projector" % "0.10.3"),
       libraryDependencies ++= commonDependencies ++ testDependencies)): _*)
 
 lazy val agents = (project in file("Agents")).

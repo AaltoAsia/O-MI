@@ -16,8 +16,15 @@ import org.specs2.matcher._
 import types.odf._
 import types._
 
-class OmiTypesTest extends Specification with XmlMatchers{
-  val testTime: Timestamp = Timestamp.valueOf("2018-08-09 16:00:00")
+import akka.stream.ActorMaterializer
+import akka.stream.scaladsl.Sink
+import testHelpers.Actorstest
+import scala.xml.XML
+
+class OmiTypesTest(implicit ee: ExecutionEnv) extends Specification with XmlMatchers{
+  implicit val system = Actorstest.createSilentAs()
+  implicit val mat = ActorMaterializer()
+  val testTime: Timestamp = Timestamp.valueOf("2018-08-09 16:00:01.001")
   val countForRead: Int  = 785634129
   val callback = RawCallback("http://test.com")
   val exampleDirStr = "/OmiRequestExamples"
@@ -114,6 +121,7 @@ class OmiTypesTest extends Specification with XmlMatchers{
         Some(testTime),
         Some(countForRead),
         None,
+        None,
         Some(callback)
       ),
       getClass.getResource(exampleDirStr + "/ReadWithTimewindowNewestAndCallback.xml" )
@@ -126,6 +134,7 @@ class OmiTypesTest extends Specification with XmlMatchers{
         Some(testTime),
         None,
         Some(countForRead),
+        None,
         Some(callback)
       ), 
       getClass.getResource( exampleDirStr + "/ReadWithTimewindowOldestAndCallback.xml")
@@ -181,6 +190,9 @@ class OmiTypesTest extends Specification with XmlMatchers{
               val xml: Elem = OmiParser.XMLParser.loadString(timeCorrected)
             "to XML test" >> {
               request.asXML must beEqualToIgnoringSpace( xml )
+            }
+            "to streaming XML test" >> {
+              request.asXMLSource.runWith(Sink.fold("")(_ + _)).map(XML loadString _) must beEqualToIgnoringSpace( xml ).await(1,20.seconds)
             }
             //This may not be needed? 
             //Timestamp do not match 

@@ -67,7 +67,7 @@ class TypesTest extends Specification {
 
   def e1 = !ParseErrorList("test error").isInstanceOf[OmiRequest]
 
-  def e2 = ReadRequest(OldTypeConverter.convertOdfObjects(OdfObjects()), None, None, None, None, None, 0.seconds)
+  def e2 = ReadRequest(OldTypeConverter.convertOdfObjects(OdfObjects()), None, None, None, None, None, None, 0.seconds)
     .isInstanceOf[OmiRequest]
 
   def e3 = WriteRequest(OldTypeConverter.convertOdfObjects(OdfObjects()), None, 10.seconds).isInstanceOf[OmiRequest]
@@ -130,12 +130,12 @@ class TypesTest extends Specification {
   }
 
   def omiTypes1 = {
-    val reg1 = ReadRequest(OldTypeConverter.convertOdfObjects(OdfObjects()), None, None, None, None, None)
+    val reg1 = ReadRequest(OldTypeConverter.convertOdfObjects(OdfObjects()), None, None, None, None,None,  None)
     val reg2 = ReadRequest(OldTypeConverter.convertOdfObjects(OdfObjects()),
       None,
       None,
       None,
-      None,
+      None,None, 
       Some(HTTPCallback(Uri("Http://google.com"))))
     reg1.hasCallback should be equalTo (false) and (
       reg2.hasCallback should be equalTo (true)) and (
@@ -146,9 +146,9 @@ class TypesTest extends Specification {
   }
 
   def omiTypes2 = {
-    val reg1 = ReadRequest(OldTypeConverter.convertOdfObjects(OdfObjects()), None, None, None, None, None, 0 seconds)
-    val reg2 = ReadRequest(OldTypeConverter.convertOdfObjects(OdfObjects()), None, None, None, None, None, 5 seconds)
-    val reg3 = ReadRequest(OldTypeConverter.convertOdfObjects(OdfObjects()), None, None, None, None, None, Duration.Inf)
+    val reg1 = ReadRequest(OldTypeConverter.convertOdfObjects(OdfObjects()), None, None, None, None,None,  None, 0 seconds)
+    val reg2 = ReadRequest(OldTypeConverter.convertOdfObjects(OdfObjects()), None, None, None, None,None,  None, 5 seconds)
+    val reg3 = ReadRequest(OldTypeConverter.convertOdfObjects(OdfObjects()), None, None, None, None,None,  None, Duration.Inf)
 
     reg1.handleTTL must be equalTo (2 minutes) and (
       reg2.handleTTL must be equalTo (5 seconds)) and (
