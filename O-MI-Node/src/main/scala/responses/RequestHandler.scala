@@ -261,7 +261,7 @@ class RequestHandler(
         splitAndHandle(write){
           case request: WriteRequest =>
             implicit val to: Timeout = Timeout(request.handleTTL)
-            write.requestID.foreach{
+            write.requestToken.foreach{
               id =>
                 requestStore ! AddInfos(id,Vector( 
                   RequestStringInfo( "request-type", "response" ),

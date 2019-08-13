@@ -239,13 +239,13 @@ class OmiConfigExtension(val config: Config) extends Extension
     case object WriteWithoutEvents extends ResponseSetting
     case object Ignore extends ResponseSetting
     def apply: String => ResponseSetting = {
-      case "Write" => Write
-      case "WriteWithoutEvents" => WriteWithoutEvents
-      case "None" | "Ignore" => Ignore
+      case "write" => Write
+      case "writewithoutevents" => WriteWithoutEvents
+      case "none" | "ignore" => Ignore
       case _ => throw new MatchError("Not a valid configuration value for responseHandling")
     }
   }
-  val responseHandling: ResponseSetting = ResponseSetting.apply(config.getString("omi-service.responseHandling"))
+  val responseHandling: ResponseSetting = ResponseSetting.apply(config.getString("omi-service.responseHandling").toLowerCase)
 }
 
 

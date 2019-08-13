@@ -75,7 +75,7 @@ object ChangeEvent {
 /**
   * Received new value with newer timestamp but value is the same as the previous
   */
-case class SameValueEvent(infoItem: InfoItem) extends InfoItemEvent
+case class SameValueEvent(override val infoItem: InfoItem) extends ChangeEvent(infoItem)
 
 /*
  * New InfoItem (is also ChangeEvent)
