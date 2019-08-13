@@ -4,6 +4,11 @@ package odf
 import java.sql.Timestamp
 import java.util.GregorianCalendar
 
+import scala.concurrent._
+import org.specs2.concurrent.ExecutionEnv
+import akka.actor.ActorSystem
+import akka.stream.ActorMaterializer
+import akka.stream.scaladsl._
 import javax.xml.datatype.{DatatypeFactory, XMLGregorianCalendar}
 import org.specs2.matcher.XmlMatchers._
 import org.specs2.mutable._
@@ -12,11 +17,15 @@ import org.specs2.specification.{Scope,AfterAll}
 
 import types.OdfTypes._
 import types.{Path => OdfPath}
+import utils._
 
 import scala.collection.immutable.HashMap
 
-class OdfTypesTest extends Specification {
+class OdfTypesTest(implicit ee: ExecutionEnv ) extends Specification {
   val testTime: Timestamp = Timestamp.valueOf("2017-05-11 15:44:55")
+  implicit val system = ActorSystem()
+  implicit val materializer = ActorMaterializer()
+  import system.dispatcher
   sequential
   "Object" should {
     "union correctly" >> objectUnionTest
@@ -30,13 +39,14 @@ class OdfTypesTest extends Specification {
     val o_df = ImmutableODF(testingNodes)
     "should parse correctly XML created from ODF to equal ODF" in fromXMLTest(o_df)
   }
+  /*
   "Converters" should {
     //TODO: What shoul be tested? Conversion may lose data.
     "convert from old to new and have same XML" in convertedOldHasSameXML
     "convert from new to old and have same XML" in convertedNewHasSameXML
     "Convert from old to new and back to old and stay the same" in repeatedOldConvertTest
     "Convert from new to old and back to new and stay the same" in repeatedNewConvertTest
-  }
+  }*/
   class IODFTest (
     val nodes: Seq[Node]
   ) extends Scope{
@@ -339,6 +349,9 @@ class OdfTypesTest extends Specification {
       case Right(o) => o
       case Left(errors: Seq[_]) =>
         println("PARSING FAILED:\n" + errors.mkString("\n"))
+        throw new Exception("Parsing failed!")
+      case Left(errors) =>
+        println("PARSING FAILED:\n" + errors.toString)
         throw new Exception("Parsing failed!")
     }
     val newType = OldTypeConverter.convertOdfObjects(oldType)
@@ -707,6 +720,9 @@ class OdfTypesTest extends Specification {
       case Left(errors: Seq[_]) =>
         println("PARSING FAILED:\n" + errors.mkString("\n"))
         throw new Exception("Parsing failed!")
+      case Left(errors) =>
+        println("PARSING FAILED:\n" + errors.toString)
+        throw new Exception("Parsing failed!")
     }
     val newType = OldTypeConverter.convertOdfObjects(oldType)
     val backToOld = NewTypeConverter.convertODF(newType)
@@ -1022,47 +1038,49 @@ class OdfTypesTest extends Specification {
   def fromXMLTest(
     o_df: ODF
   ) = {
-    ODFParser.parse(o_df.asXML.toString) should beRight {
-      o: ImmutableODF =>
+    val f = parseEventsToByteSource(o_df.asXMLDocument()).map[String](_.utf8String).via(types.odf.parser.ODFStreamParser.parserFlow).runWith(Sink.fold[ODF,ODF](ImmutableODF())(_ union _)) 
+    f.map{
+      o: ODF =>
         val iODF = o_df.toImmutable
         lazy val parsedOdfPaths = o.getPaths.toSet
         lazy val correctOdfPaths = iODF.getPaths.toSet
         lazy val pathCheck = (parsedOdfPaths must contain(correctOdfPaths)) and
-          ((parsedOdfPaths -- correctOdfPaths) must beEmpty) and ((correctOdfPaths -- parsedOdfPaths) must beEmpty)
+        ((parsedOdfPaths -- correctOdfPaths) must beEmpty) and ((correctOdfPaths -- parsedOdfPaths) must beEmpty)
         lazy val parsedII = o.getInfoItems.toSet
         lazy val correctII = iODF.getInfoItems.toSet
         lazy val iICheck = {
-          (parsedII -- correctII) must beEmpty
-        } and {
           (correctII -- parsedII) must beEmpty
+        } and {
+          (parsedII -- correctII) must beEmpty
         } and {
           parsedII must contain(correctII)
         }
-        if ((parsedII -- correctII).nonEmpty) {
-          println("Parsed IIs:\n" + parsedII.mkString("\n"))
-          println("Correct IIs:\n" + correctII.mkString("\n"))
-          println("Parsed -- Correct IIs:\n" + (parsedII -- correctII).mkString("\n"))
-        } else if ((correctII -- parsedII).nonEmpty) {
-          println("Correct -- ParsedIIs:\n" + (correctII -- parsedII).mkString("\n"))
-        }
-        lazy val parsedObj = o.getObjects.toSet
-        lazy val correctObj = iODF.getObjects.toSet
-        lazy val objCheck = {
-          (parsedObj -- correctObj) must beEmpty
-        } and {
-          (correctObj -- parsedObj) must beEmpty
-        } and {
-          parsedObj must contain(correctObj)
-        }
-        lazy val parsedMap = o.getNodesMap
-        lazy val correctMap = iODF.getNodesMap
-        lazy val mapCheck = parsedMap.toSet must contain(correctMap.toSet)
+            if ((parsedII -- correctII).nonEmpty) {
+              println("Parsed IIs:\n" + parsedII.mkString("\n"))
+              println("Correct IIs:\n" + correctII.mkString("\n"))
+              println("Parsed -- Correct IIs:\n" + (parsedII -- correctII).mkString("\n"))
+            } else if ((correctII -- parsedII).nonEmpty) {
+              println("Correct -- ParsedIIs:\n" + (correctII -- parsedII).mkString("\n"))
+            }
+            lazy val parsedObj = o.getObjects.toSet
+            lazy val correctObj = iODF.getObjects.toSet
+            lazy val objCheck = {
+              (parsedObj -- correctObj) must beEmpty
+              } and {
+                (correctObj -- parsedObj) must beEmpty
+                } and {
+                  parsedObj must contain(correctObj)
+                }
+                lazy val parsedMap = o.getNodesMap
+                lazy val correctMap = iODF.getNodesMap
+                lazy val mapCheck = parsedMap.toSet must contain(correctMap.toSet)
 
-        println(s"Parsed hashCode: ${o.hashCode}, correct HashCode: ${iODF.hashCode}")
-        println(s"Parsed paths equals correct: ${o.paths equals iODF.paths}")
-        println(s"Parsed nodes equals correct: ${o.nodes equals iODF.nodes}")
-        pathCheck and iICheck and objCheck and mapCheck and (o must beEqualTo(iODF))
-    }
+                println(s"Parsed hashCode: ${o.hashCode}, correct HashCode: ${iODF.hashCode}")
+                println(s"Parsed paths equals correct: ${o.paths equals iODF.paths}")
+                println(s"Parsed nodes equals correct: ${o.nodes equals iODF.nodes}")
+                val checks  = pathCheck and iICheck and objCheck and mapCheck and (o must beEqualTo(iODF))
+                checks
+    }.await
   }
 
   def testingNodesAsXML = {
@@ -1080,11 +1098,11 @@ class OdfTypesTest extends Specification {
             <InfoItem name="A"/>
             <InfoItem name="B"/>
           </MetaData>
-          <value unixTime={(testTime.getTime / 1000).toString} type="xs:int" dateTime={timestampToXML(testTime)
+          <value unixTime={( new Timestamp(testTime.getTime() + 2).getTime / 1000).toString} type="xs:int" dateTime={timestampToXML(new Timestamp(testTime.getTime() + 2))
             .toString}>93</value>
-          <value unixTime={(testTime.getTime / 1000).toString} type="xs:float" dateTime={timestampToXML(testTime)
+          <value unixTime={(new Timestamp(testTime.getTime() + 1).getTime / 1000).toString} type="xs:float" dateTime={timestampToXML(new Timestamp(testTime.getTime() + 1))
             .toString}>51.9</value>
-          <value unixTime={(testTime.getTime / 1000).toString} dateTime={timestampToXML(testTime).toString}>81.5</value>
+          <value unixTime={(new Timestamp(testTime.getTime() ).getTime / 1000).toString} dateTime={timestampToXML(new Timestamp(testTime.getTime() )).toString}>81.5</value>
         </InfoItem>
       </Object>
       <Object>
@@ -1128,11 +1146,7 @@ class OdfTypesTest extends Specification {
         )
       ),
       descriptions = testingDescription,
-      values = Vector(
-        Value(93, testTime),
-        Value("51.9", "xs:float", testTime),
-        Value("81.5", testTime)
-      ),
+      values = testingValues,
       metaData = Some(MetaData(
         Vector(
           InfoItem(
@@ -1170,6 +1184,11 @@ class OdfTypesTest extends Specification {
       attributes = testingAttributes
     )
   )
+  def testingValues = Vector(
+        Value("81.5", new Timestamp(testTime.getTime())),
+        Value("51.9", "xs:float", new Timestamp(testTime.getTime() + 1)),
+        Value(93, new Timestamp(testTime.getTime() + 2))
+      )
 
   def testingAttributes = Map {
     "testing" -> "true"

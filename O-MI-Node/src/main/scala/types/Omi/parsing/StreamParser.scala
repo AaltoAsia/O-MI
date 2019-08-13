@@ -39,6 +39,7 @@ object OMIStreamParser {
     .via(XmlParsing.parser)
   def omiParserFlow: OMIParserFlow = new OMIParserFlow
   def parserFlow: Flow[String,OmiRequest,NotUsed] = xmlParserFlow.via(omiParserFlow)
+
   class OMIParserFlow extends GraphStage[FlowShape[ParseEvent, OmiRequest]] {
     val in = Inlet[ParseEvent]("OMIParserFlowF.in")
     val out = Outlet[OmiRequest]("OMIParserFlow.out")

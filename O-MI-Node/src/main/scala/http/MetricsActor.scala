@@ -144,8 +144,7 @@ trait MonitoringDB{
       }
     }
     def add( requestToken: Long, timestamp: Timestamp, user: UserInfo, requestType: String, attributes: String, pathCount: Int) = {
-      println( user.remoteAddress.toString )
-      val dbio = this += RequestEvent(requestToken,user.name.map(_.hashCode.toLong),user.remoteAddress.map(_.hashCode.toLong).getOrElse(0L),timestamp,requestTypeStrTo(requestType),attributes,pathCount,None,None)
+      val dbio = this += RequestEvent(requestToken,user.name.map(_.hashCode.toLong),user.remoteAddress.flatMap(_.toIP).map( _.copy(port = None).hashCode.toLong).getOrElse(0L),timestamp,requestTypeStrTo(requestType),attributes,pathCount,None,None)
       dbio
     }
     def updateFromResponse( requestToken: Long,timestamp: Timestamp,  pathCount: Int, duration: Long) ={
