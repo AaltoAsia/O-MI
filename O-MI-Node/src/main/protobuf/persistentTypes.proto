@@ -83,9 +83,10 @@ message PMetaData {
 message PInfoItem {
     string typeName = 1;
     repeated PQlmid names = 2;
-    repeated PDescription descriptions =3;
+    repeated PDescription descriptions = 3;
     PMetaData metadata = 4;
     map<string, string> attributes = 5;
+    PValueList value = 6;
 }
 message PUnion {
     option (scalapb.message).extends = "database.journal.Models.Event";

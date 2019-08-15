@@ -10,7 +10,6 @@ import types.Path
 import types.odf._
 
 
-
 //Event and Commands are separate in case there is need to develop further and add Event and Command handlers
 
 object LatestStore {

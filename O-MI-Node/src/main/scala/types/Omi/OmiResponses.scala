@@ -5,6 +5,8 @@ import types.odf._
 
 import scala.concurrent.duration._
 import scala.xml.NodeSeq
+import scala.collection.SeqView
+import akka.stream.alpakka.xml._
 
 object Responses {
   def Success(
@@ -64,8 +66,8 @@ object Responses {
     ttl
   )
 
-  def NoResponse(): ResponseRequest = new ResponseRequest(OdfCollection.empty, 0.seconds) {
-    override val asXML: NodeSeq = xml.NodeSeq.Empty
+  def NoResponse(): ResponseRequest = new ResponseRequest(OdfCollection()) {
+    override def asXMLEvents: SeqView[ParseEvent,Seq[_]] = Seq(StartDocument, EndDocument).view
   }
 
   def NotFound(description: String): ResponseRequest = NotFound(Some(description))

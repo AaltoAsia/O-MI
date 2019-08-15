@@ -12,10 +12,13 @@ import types.OmiTypes._
 import types.Path._
 import types._
 import types.odf._
+import types.odf.parser.ODFStreamParser
+import akka.stream.scaladsl.FileIO
+import akka.stream.ActorMaterializer
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
-import scala.concurrent.Future
+import scala.concurrent.{Future, Await}
 import scala.concurrent.duration._
 import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
@@ -41,6 +44,7 @@ class ParkingAgent(
 ) extends ResponsibleScalaInternalAgent{
 
   import context.dispatcher
+  implicit val m = ActorMaterializer()
 
   def configStringToPath( name: String ): Path ={
     Path(config.getString(name))
@@ -66,17 +70,17 @@ class ParkingAgent(
 
   //File used to populate node with initial state
   {
-    val startStateFile =  new File(config.getString("initialStateFile"))
+    val startStatePath = java.nio.file.Paths.get(config.getString("initialStateFile"))
+    val startStateFile = startStatePath.toFile
     val initialODF: ImmutableODF = if( startStateFile.exists() && startStateFile.canRead() ){
-      val xml = XML.loadFile(startStateFile)
-      ODFParser.parse( xml) match {
-        case Left(errors) =>
-          val msg = errors.asScala.toSeq.mkString("\n")
+      val f = ODFStreamParser.byteStringParser( FileIO.fromPath(startStatePath) ) transform {
+        case Failure(errors) =>
           log.warning(s"Odf has errors, $name could not be configured.")
-          log.info(msg)
-          throw AgentConfigurationException(s"File $startStateFile could not be parsed, because of following errors: $msg")
-        case Right(odf: ImmutableODF) => odf
+          log.info(errors.toString)
+          Failure(AgentConfigurationException(s"File $startStateFile could not be parsed, because of following errors: $errors"))
+        case Success(odf: ODF) => Success(odf.toImmutable)
       }
+      Await.result(f, 5.minute)
     } else if( !startStateFile.exists() ){
       throw AgentConfigurationException(s"Could not get initial state for $name. File $startStateFile do not exists.")
     } else {

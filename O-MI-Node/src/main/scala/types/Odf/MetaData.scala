@@ -7,6 +7,8 @@ import akka.stream.alpakka.xml._
 import scala.collection.immutable.Set
 import scala.collection.SeqView
 
+import akka.stream.Materializer
+
 object MetaData {
   def empty: MetaData = MetaData(Vector.empty)
 }
@@ -67,7 +69,7 @@ case class MetaData(
     )
   }
 
-  def persist(): PMetaData = PMetaData(infoItems.map(ii => ii.path.toString -> ii.persist.ii).collect {
+  def persist(implicit mat: Materializer): PMetaData = PMetaData(infoItems.map(ii => ii.path.toString -> ii.persist.ii).collect {
     case (ipath, Some(infoi)) => ipath -> infoi
   }.toMap)
 

@@ -3,11 +3,13 @@ package odf
 
 import akka.stream.alpakka.xml.{Attribute, EndElement, ParseEvent, StartElement}
 import database.journal.PPersistentNode.NodeType.{Ii, Obj, Objs}
-import database.journal.{PInfoItem, PObject, PObjects, PPersistentNode}
+import database.journal.{PInfoItem, PObject, PObjects, PPersistentNode, PValueList}
 
 import scala.language.implicitConversions
 import scala.collection.{Seq, SeqView}
 import scala.collection.immutable.{HashMap, Map}
+
+import akka.stream.Materializer
 
 sealed trait Node {
   def createAncestors: Seq[Node]
@@ -20,7 +22,7 @@ sealed trait Node {
 
   def hasStaticData: Boolean
 
-  def persist: PPersistentNode.NodeType // = PersistentNode(path.toString,attributes)
+  def persist(implicit mat: Materializer): PPersistentNode.NodeType // = PersistentNode(path.toString,attributes)
 }
 object Objects {
   val empty: Objects = Objects()
@@ -88,7 +90,7 @@ case class Objects(
     )
   }
 
-  def persist: PPersistentNode.NodeType = Objs(PObjects(version.getOrElse(""), attributes))
+  def persist(implicit mat: Materializer): PPersistentNode.NodeType = Objs(PObjects(version.getOrElse(""), attributes))
 }
 
 object Object {
@@ -244,7 +246,7 @@ case class Object(
     )
   }
 
-  def persist: PPersistentNode.NodeType = Obj(PObject(typeAttribute.getOrElse(""),
+  def persist(implicit mat: Materializer): PPersistentNode.NodeType = Obj(PObject(typeAttribute.getOrElse(""),
     ids.map(_.persist),
     descriptions.map(_.persist()).toSeq,
     attributes))
@@ -457,11 +459,12 @@ case class InfoItem(
     )
   }
 
-  def persist: PPersistentNode.NodeType = Ii(PInfoItem(typeAttribute.getOrElse(""),
+  def persist(implicit mat: Materializer): PPersistentNode.NodeType = Ii(PInfoItem(typeAttribute.getOrElse(""),
     names.map(_.persist),
     descriptions.map(_.persist()).toSeq,
-    metaData.map(_.persist()),
-    attributes))
+    metaData.map(_.persist),
+    attributes
+    ))
   final implicit def asXMLEvents: SeqView[ParseEvent,Seq[_]] = {
     Seq(
       StartElement(

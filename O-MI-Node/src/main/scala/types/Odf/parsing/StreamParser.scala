@@ -19,6 +19,7 @@ import java.sql.Timestamp
 import scala.util.Try
 import scala.collection.JavaConverters._
 import scala.collection.immutable.HashMap
+import concurrent.Future
 
 import akka.NotUsed
 import akka.util._
@@ -34,12 +35,21 @@ import utils._
 
 /** Parser for data in O-DF format */
 object ODFStreamParser {
+  def parse(str: String)(implicit mat: Materializer) = stringParser(Source.single(str))
+  def stringParser(source: Source[String, _])(implicit mat: Materializer): Future[ODF] =
+    source.via(parserFlow).runWith(Sink.fold[ODF,ODF](ImmutableODF())(_ union _))
+  def byteStringParser(source: Source[ByteString, _])(implicit mat: Materializer): Future[ODF] =
+    source.via(parserFlowByteString).runWith(Sink.fold[ODF,ODF](ImmutableODF())(_ union _))
+
+  def parserFlowByteString: Flow[ByteString,ODF,NotUsed] = Flow[ByteString]
+    .via(XmlParsing.parser)
+    .via(new ODFParserFlow)
   def parserFlow: Flow[String,ODF,NotUsed] = Flow[String]
     .map(ByteString(_))
     .via(XmlParsing.parser)
     .via(new ODFParserFlow)
 
-  private class ODFParserFlow extends GraphStage[FlowShape[ParseEvent,ODF]] {
+  class ODFParserFlow extends GraphStage[FlowShape[ParseEvent,ODF]] {
     val in = Inlet[ParseEvent]("ODFParserFlowF.in")
     val out = Outlet[ODF]("ODFParserFlow.out")
     override val shape = FlowShape(in, out)

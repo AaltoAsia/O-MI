@@ -2,24 +2,23 @@ package types;
 
 import types.OmiTypes.Results;
 import types.OmiTypes.OmiResult;
-import types.OdfTypes.OdfObjects;
-import types.odf.OldTypeConverter;
+import types.odf.ODF;
 
 final public class ResultFactory{
   public static OmiResult Success(
       Iterable<Long > requestIDs,
-      OdfObjects odf,
+      ODF odf,
       String description
     ){
     return new Results.Success(
         types.JavaHelpers.requestIDsFromJava(requestIDs),
-        scala.Option.apply(OldTypeConverter.convertOdfObjects(odf)),
+        scala.Option.apply(odf),
         scala.Option.apply(description)
     );
   }
 
   public static OmiResult Success(
-      OdfObjects odf,
+      ODF odf,
       String description
     ){
     return Success(null, odf, description);
@@ -33,13 +32,13 @@ final public class ResultFactory{
   }
   public static OmiResult Success(
       Iterable<Long > requestIDs,
-      OdfObjects odf
+      ODF odf
     ){
     return Success(requestIDs, odf, null);
   }
 
   public static OmiResult Success(
-      OdfObjects odf
+      ODF odf
     ){
     return Success(null, odf, null);
   }

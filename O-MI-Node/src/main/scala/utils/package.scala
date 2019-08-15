@@ -25,4 +25,5 @@ package object utils {
       .via( XmlWriting.writer )
       .filter(_.nonEmpty)
   }
+  def parseEventsToStringSource( events: Iterable[ParseEvent] ) = parseEventsToByteSource(events).map[String](_.utf8String)
 }

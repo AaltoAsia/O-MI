@@ -1038,7 +1038,7 @@ class OdfTypesTest(implicit ee: ExecutionEnv ) extends Specification {
   def fromXMLTest(
     o_df: ODF
   ) = {
-    val f = parseEventsToByteSource(o_df.asXMLDocument()).map[String](_.utf8String).via(types.odf.parser.ODFStreamParser.parserFlow).runWith(Sink.fold[ODF,ODF](ImmutableODF())(_ union _)) 
+    val f = parseEventsToStringSource(o_df.asXMLDocument()).via(types.odf.parser.ODFStreamParser.parserFlow).runWith(Sink.fold[ODF,ODF](ImmutableODF())(_ union _)) 
     f.map{
       o: ODF =>
         val iODF = o_df.toImmutable

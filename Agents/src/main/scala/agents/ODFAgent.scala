@@ -11,6 +11,9 @@ import com.typesafe.config.Config
 import types.OmiTypes.{OmiResult, ResponseRequest, Results, WriteRequest}
 import types.ParseError
 import types.odf._
+import types.odf.parser._
+import akka.stream.scaladsl.FileIO
+import akka.stream.ActorMaterializer
 
 import scala.collection.JavaConverters
 import scala.collection.mutable.{Queue => MutableQueue}
@@ -39,6 +42,7 @@ class ODFAgent(
   requestHandler: ActorRef, 
   dbHandler: ActorRef
 ) extends ScalaInternalAgentTemplate(requestHandler,dbHandler){
+  implicit val m = ActorMaterializer()
    val interval : FiniteDuration= config.getDuration("interval", TimeUnit.SECONDS).seconds
    val odfQueue : MutableQueue[ODF]= MutableQueue()
   
@@ -49,16 +53,16 @@ class ODFAgent(
   def date: Date = new java.util.Date()
 
   override def preStart: Unit ={
+    val filepath = config.getString("file")
     val file =  new File(config.getString("file"))
     if( file.exists() && file.canRead() ){
-      val xml = XML.loadFile(file)
-      ODFParser.parse( xml ) match {
-        case Left( errors ) =>
-          val msg = JavaConverters.iterableAsScalaIterable(errors).mkString("\n")
+      //val xml = XML.loadFile(file)
+      ODFStreamParser.byteStringParser( FileIO fromPath java.nio.file.Paths.get(filepath) ) onComplete {
+        case Failure( errors ) =>
           log.warning(s"Odf has errors, $name could not be configured.")
-          log.debug(msg)
-          throw ParseError.combineErrors( JavaConverters.iterableAsScalaIterable(errors) )
-        case Right(odfObjects) => odfQueue.enqueue(odfObjects)
+          log.debug(errors.toString)
+          throw errors
+        case Success(odfObjects) => odfQueue.enqueue(odfObjects)
       }
     } else if( file.exists() ){
       val msg = s"File $config could not be read. $name could not be configured."

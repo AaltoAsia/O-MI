@@ -11,6 +11,16 @@ import scala.collection.immutable.HashMap
 import scala.collection.SeqView
 import scala.util.{Failure, Success, Try}
 
+import scala.concurrent.duration._
+import scala.concurrent.Await
+
+import utils.parseEventsToByteSource
+
+import akka.stream.scaladsl.Sink
+import akka.stream.Materializer
+
+import types.OmiTypes.Version.OdfVersion.OdfVersion2
+
 trait Value[+V] extends Element{
   val value: V
   val typeAttribute: String
@@ -18,7 +28,7 @@ trait Value[+V] extends Element{
 
   def retime(newTimestamp: Timestamp): Value[V]
 
-  def persist: PPersistentValue = PPersistentValue(timestamp.getTime, typeAttribute, value match {
+  def persist(implicit mat: Materializer): PPersistentValue = PPersistentValue(timestamp.getTime, typeAttribute, value match {
     case s: Short => ProtoLongValue(s.toLong)
     case i: Int => ProtoLongValue(i)
     case l: Long => ProtoLongValue(l)
@@ -27,7 +37,7 @@ trait Value[+V] extends Element{
     case b: Boolean => ProtoBoolValue(b)
     case s: String => ProtoStringValue(s)
     case odf: ODF => //[scala.collection.Map[Path,Node],scala.collection.SortedSet[Path]] =>
-      ProtoStringValue(odf.asXML.toString())
+      ProtoStringValue(Await.result(parseEventsToByteSource(odf.asXMLEvents(Some(OdfVersion2))).runWith(Sink.fold("")(_+_)), 1 minute))
     case a: Any => ProtoStringValue(a.toString)
   })
   def asXMLEvents: SeqView[ParseEvent,Seq[_]] = {
