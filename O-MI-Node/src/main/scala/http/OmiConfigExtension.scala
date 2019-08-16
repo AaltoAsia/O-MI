@@ -111,8 +111,12 @@ class OmiConfigExtension(val config: Config) extends Extension
   //Maximum value that is accepted for newest and oldest parameters of O-MI read request.
   val maximumNewest: Int = config.getInt("omi-service.maximum-newest-attribute")
   
-  val metricsEnabled: Boolean = config.getBoolean("omi-service.metrics-enabled")
-  val prometheusPort: Int = config.getInt("omi-service.prometheus-export-port")
+  val metricsEnabled: Boolean = config.getBoolean("omi-service.metrics.enabled")
+  val prometheusPort: Int = config.getInt("omi-service.metrics.prometheus-export-port")
+  object metrics {
+    val Metrics = config getConfig "omi-service.metrics"
+    val requestDurationBuckets = Metrics.getDoubleList("requestDurationBuckets").asScala.map(_.doubleValue).toSeq
+  }
   // Authorization
   val allowedRequestTypes: Set[MessageType] = config.getStringList("omi-service.allowRequestTypesForAll").asScala
     .map((x) => MessageType(x.toLowerCase)).toSet
@@ -152,7 +156,7 @@ class OmiConfigExtension(val config: Config) extends Extension
       }.toMap
     }
 
-    val parameters: Config = authAPIServiceV2.getConfig("parameters")
+    val parameters: Config = authAPIServiceV2 getConfig("parameters")
     val parametersFromRequest: ParameterExtraction = mapmap(parameters.getConfig("fromRequest"))
     val parametersFromAuthentication: ParameterExtraction = mapmap(parameters.getConfig("fromAuthentication"))
     val parametersToAuthentication: ParameterExtraction = mapmap(parameters.getConfig("toAuthentication"))

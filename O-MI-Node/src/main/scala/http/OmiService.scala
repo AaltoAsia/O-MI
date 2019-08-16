@@ -831,6 +831,6 @@ trait OMIServiceMetrics {
   object Metrics{
 
     def checkEnabled[T](f: () => T): Option[T] = if( settings.metricsEnabled ) Some(f()) else None
-    final val requestHistogram =  checkEnabled(() => Histogram.build().name("omi_request_duration").help("Duration of active O-MI Request").labelNames("request").register())
+    final val requestHistogram =  checkEnabled(() => Histogram.build().buckets(settings.metrics.requestDurationBuckets:_*).name("omi_request_duration").help("Duration of active O-MI Request").labelNames("request").register())
   }
 }
