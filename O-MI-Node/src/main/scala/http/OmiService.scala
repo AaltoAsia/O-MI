@@ -579,25 +579,20 @@ trait OmiService
     */
   val postFormXMLRequest: Route = post {
     makePermissionTestFunction() { hasPermissionTest =>
-      headerValue{
-        header: HttpHeader =>
-          header match {
-            case ct: headers.`Content-Type` if ct.is("application/x-www-form-urlencoded") => 
-              Some(true)
-            case other: HttpHeader => None
-          }
-      }{ correctCT =>
-        extractDataBytes { requestSource =>
-          extractClientIP { user =>
-            val decodedSource = requestSource.via(byteStringToUTF8Flow).via(urlDecoderFlow)
-
-            val response = handleRequest(hasPermissionTest, decodedSource, remote = user)
-            onSuccess(response) {r =>
-              
-              complete(HttpResponse(entity=chunkedStream(r)))
-            }
-          }
-        }
+      extractRequestEntity {
+            case e if e.contentType.mediaType == MediaTypes.`application/x-www-form-urlencoded` => 
+                val requestSource = e.dataBytes
+                extractClientIP { user =>
+                  val decodedSource = requestSource.via(byteStringToUTF8Flow).via(urlDecoderFlow)
+//.map{x => println(x); x}
+                  val response = handleRequest(hasPermissionTest, decodedSource, remote = user)
+                  onSuccess(response) {r =>
+                    
+                    complete(HttpResponse(entity=chunkedStream(r)))
+                  }
+                }
+            case other =>
+              reject
       }
     }
   }
@@ -653,7 +648,7 @@ trait OmiService
               case error: java.lang.NumberFormatException => 
                 new ParseError("Invalid url encoding: " + error.getMessage, "")
               case error: Throwable => error
-            }
+            }.map{x => println(x); x}
 
   // Combine all handlers
   val myRoute: Route = corsEnabled {
