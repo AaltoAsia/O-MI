@@ -584,7 +584,6 @@ trait OmiService
                 val requestSource = e.dataBytes
                 extractClientIP { user =>
                   val decodedSource = requestSource.via(byteStringToUTF8Flow).via(urlDecoderFlow)
-//.map{x => println(x); x}
                   val response = handleRequest(hasPermissionTest, decodedSource, remote = user)
                   onSuccess(response) {r =>
                     
@@ -602,53 +601,53 @@ trait OmiService
               var msgHandled = false
               var bufferString =""
               str: String => {
-                bufferString += str
+                bufferString += str.replace("+", " ")
                 if( !msgHandled ){
                   if( bufferString.startsWith("msg=") ){
                     val (_,content) = bufferString.splitAt("msg=".size)
                     bufferString = content
                     msgHandled = true
-                  } 
-                  Vector.empty
-                } else { 
-                  if( bufferString.contains("%") ){
-                    def decode(encodedString: String, result: String = ""): String ={
-                      val i = encodedString.indexOf("%")
-                      if( i > -1 ){
-                        if( i + 2 >= encodedString.size ){
-                          bufferString = encodedString
-                          result
-                        } else {
-                          var (res: String, tail: String) = encodedString.splitAt(i)
-                          val encoded = tail.slice(1,3)
-                          val value = new String(Array(Integer.parseInt(encoded,16).toByte),"utf-8")
-                          res = res + value
-                          decode(tail.drop(3), result + res)
-                        }
-                      } else {
-                        bufferString = ""
-                        val res =result + encodedString
-                        res
-                      }
-                    }
-                    val decoded = decode( bufferString )
-                    if( decoded.nonEmpty){
-                      Vector(decoded)
-                    } else {
-                      Vector.empty
-                    } 
                   } else {
-                    val res = Vector(bufferString)
-                    bufferString = ""
-                    res
+                    Vector.empty
                   }
+                }
+                if( bufferString.contains("%") ){
+                  def decode(encodedString: String, result: String = ""): String ={
+                    val i = encodedString.indexOf("%")
+                    if( i > -1 ){
+                      if( i + 2 >= encodedString.size ){
+                        bufferString = encodedString
+                        result
+                      } else {
+                        var (res: String, tail: String) = encodedString.splitAt(i)
+                        val encoded = tail.slice(1,3)
+                        val value = new String(Array(Integer.parseInt(encoded,16).toByte),"utf-8")
+                        res = res + value
+                        decode(tail.drop(3), result + res)
+                      }
+                    } else {
+                      bufferString = ""
+                      val res =result + encodedString
+                      res
+                    }
+                  }
+                  val decoded = decode( bufferString )
+                  if( decoded.nonEmpty){
+                    Vector(decoded)
+                  } else {
+                    Vector.empty
+                  } 
+                } else {
+                  val res = Vector(bufferString)
+                  bufferString = ""
+                  res
                 }
               }
             }.mapError{
               case error: java.lang.NumberFormatException => 
                 new ParseError("Invalid url encoding: " + error.getMessage, "")
               case error: Throwable => error
-            }.map{x => println(x); x}
+            }
 
   // Combine all handlers
   val myRoute: Route = corsEnabled {
