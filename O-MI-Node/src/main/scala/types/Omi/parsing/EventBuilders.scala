@@ -75,10 +75,16 @@ class EnvelopeEventBuilder(
           throw OMIParserError("Wrong namespace url.")
         val ver = startElement.attributes.get("version")
         val ttlO = startElement.attributes.get("ttl").flatMap{
-          str: String => Try{parseTTL(str.toDouble)}.toOption
+          str: String => 
+            Try{
+              println("ttl check: " + str + " " + str.toDouble )
+              parseTTL(str.toDouble)
+            }.toOption
         }
-        if( ttlO.isEmpty || ver.isEmpty ){
-          FailedEventBuilder(Some(this), "No correct ttl or version as attribute in omiEnvelope", receiveTime)
+        if( ttlO.isEmpty ){
+          throw OMIParserError("No correct ttl as attribute in omiEnvelope")
+        } else if( ver.isEmpty ){
+          throw OMIParserError("No correct version as attribute in omiEnvelope")
         } else {
           version = ver.getOrElse("2.0")
           ttl = ttlO.getOrElse(Duration.Inf)

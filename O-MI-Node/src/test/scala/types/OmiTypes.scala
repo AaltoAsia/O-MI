@@ -9,17 +9,22 @@ import parsing.OMIStreamParser
 
 import scala.xml.Elem
 import scala.concurrent.duration._
+import scala.concurrent.Future
 import org.specs2.concurrent.ExecutionEnv
 import org.specs2.mutable._
 import org.specs2.mutable.Specification
 import org.specs2.matcher._
-import types.odf._
-import types._
+import scala.xml.XML
+import akka.stream._
+import akka.stream.stage._
+import akka.stream.scaladsl._
+import akka.stream.alpakka.xml._
+import akka.stream.alpakka.xml.scaladsl._
 
 import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.Sink
+import types.odf._
+import types._
 import testHelpers.Actorstest
-import scala.xml.XML
 
 class OmiTypesTest(implicit ee: ExecutionEnv) extends Specification with XmlMatchers{
   implicit val system = Actorstest.createSilentAs()
@@ -181,22 +186,48 @@ class OmiTypesTest(implicit ee: ExecutionEnv) extends Specification with XmlMatc
       getClass.getResource( exampleDirStr + "/DeleteWithCallback.xml")
     )  
   )
+  def correctTimestamp(timestamp: String) ={
+    val form = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS")
+    //form.setTimeZone(TimeZone.getTimeZone("UTC"))
+
+    val parsedTimestamp = form.parse(timestamp)
+
+    form.setTimeZone(TimeZone.getDefault)
+    form.applyPattern("yyyy-MM-dd'T'HH:mm:ss.SSSXXX")
+
+    form.format(parsedTimestamp)
+  }
   "OmiTypes" >> {
     org.specs2.specification.core.Fragments.empty.append(
       requestFileTests.map{
         case RequestFileTest(description, request, fileUrl) =>
           s"$description" >> {
-            val timeCorrected = setTimezoneToSystemLocale(OmiParser.XMLParser.load( fileUrl ).toString)
-              val xml: Elem = OmiParser.XMLParser.loadString(timeCorrected)
+            def fileSource =  FileIO.fromPath( java.nio.file.Paths.get(fileUrl.toURI()) )
+            def eventSource = fileSource.via(XmlParsing.parser)
+            val eventsF : Future[Seq[ParseEvent]]= eventSource.map{
+              case se: StartElement if se.attributes.contains("begin") ||  se.attributes.contains("end")  =>
+                se.copy( attributesList = se.attributesList.map{
+                  case attr: Attribute if attr.name == "end" || attr.name == "begin"=>
+                      attr.copy(value = correctTimestamp(attr.value))
+                  case attr: Attribute => attr
+                })
+              case pe: ParseEvent => pe
+            }.runWith( Sink.collection[ParseEvent, Seq[ParseEvent]])
             "to XML test" >> {
-              request.asXML must beEqualToIgnoringSpace( xml )
+              eventsF.map{
+                events =>
+                  request.asXMLEvents must contain( events)
+              }.await
             }
             "to streaming XML test" >> {
-              request.asXMLSource.runWith(Sink.fold("")(_ + _)).map(XML loadString _) must beEqualToIgnoringSpace( xml ).await(1,20.seconds)
+              val xmlF= fileSource.runWith(Sink.fold("")(_ + _)).map(XML loadString _)
+              request.asXMLSource.runWith(Sink.fold("")(_ + _)).map(XML loadString _).flatMap{ xml => xmlF.map{ fileXml => xml must beEqualToIgnoringSpace( fileXml ) } }.await(1,20.seconds)
             }
             //This may not be needed? 
             //Timestamp do not match 
-            "from XML test" >> {OmiParser.parse(xml.toString) must beRight( contain( request ) )}
+            "from XML test" >> {
+              OMIStreamParser.parse(java.nio.file.Paths.get(fileUrl.toURI()) ).map{ parsed => parsed should beEqualTo(request) }.await
+            }
           }
       }
     )

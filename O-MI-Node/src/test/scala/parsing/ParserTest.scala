@@ -77,46 +77,42 @@ class ParserTest( implicit ee: ExecutionEnv ) extends Specification with Matcher
     """
 
   def e1 = {
-    invalidOmiTest(
-      "incorrect xml", "ScalaXMLError"
-    )
+    invalidOmiTestThrowable("incorrect xml", "Unexpected character 'i' (code 105) in prolog")
   }
 
   /*
    * case ParseError("Incorrect prefix :: _ ) matches to list that has that parse error in the head position
    */
   def e2 = {
-    invalidOmiTest(
-      omiReadTest.replace("omiEnvelope", "pmi:omiEnvelope"), "SchemaError"
+    invalidOmiTestThrowable(
+      omiReadTest.replace("omiEnvelope", "pmi:omiEnvelope"),  "Unbound namespace prefix 'pmi' (for element name 'pmi:omiEnvelope')"
     )
-
   }
 
   def e3 = {
     invalidOmiTest(
-      omiReadTest.replace("omiEnvelope", "Envelope"), "SchemaError"
+      omiReadTest.replace("omiEnvelope", "Envelope"), "OMIParserError"
     )
 
   }
 
   def e4 = {
-    invalidOmiTest(
+    invalidOmiTestThrowable(
       """<omiEnvelope ttl="10" version="1.0" xsi:schemaLocation="omi.xsd omi.xsd" xmlns="http://www.opengroup.org/xsd/omi/1.0/" >
       </omiEnvelope>""",
-      "SchemaError" 
+      "Unbound namespace prefix 'xsi' (for attribute name 'xsi:schemaLocation')" 
     )
   }
 
   def e5 = {
     invalidOmiTest(
-      omiReadTest.replace(""" ttl="10" """, """ ttl="" """), "SchemaError" 
-    )
+      omiReadTest.replace(""" ttl="10"""", """ ttl="""""), "OMIParserError" )
   }
 
   def e6 = {
     val temp = "daer"
     invalidOmiTest(
-      omiReadTest.replace("read", s"$temp"), "SchemaError" 
+      omiReadTest.replace("read", s"$temp"), "OMIParserError" 
     )
   }
 
@@ -517,10 +513,20 @@ class ParserTest( implicit ee: ExecutionEnv ) extends Specification with Matcher
     </omiEnvelope>"""
 
   def reparseRequest(request: OmiRequest): Future[OmiRequest] = request.asXMLSource.via(OMIStreamParser.parserFlow).runWith(Sink.head[OmiRequest]) 
-  def validOmiTest(request: OmiRequest): MatchResult[Future[SeqView[ParseEvent,Seq[_]]]] = {
+  def validOmiTest(request: OmiRequest): Result = {
 
+    def strConcatSink= Sink.fold[String, String]("")(_+_)
     val reparsed: Future[OmiRequest] = reparseRequest(request)
-        reparsed.map( _.asXMLEvents) should beEqualTo(request.asXMLEvents).await
+    reparsed.flatMap{ 
+      reReq => 
+        reReq.asXMLSource.runWith(strConcatSink).flatMap{ 
+          strReq => 
+            request.asXMLSource.runWith(strConcatSink).map{
+              correctStr => 
+                strReq should beEqualTo(correctStr)
+            }
+        }
+    }.await
   }
 
   def validOmiTest(text: String): Result = {
@@ -558,6 +564,16 @@ class ParserTest( implicit ee: ExecutionEnv ) extends Specification with Matcher
     }.map{
       case str: String => 
         str must contain(errorType)
+    }.await
+  }
+  def invalidOmiTestThrowable(text: String, errorMsg: String): Result = {
+    val result = OMIStreamParser.parse(text)
+    result.recover{
+      case t: Throwable =>
+        t.getMessage()
+    }.map{
+      case str: String => 
+        str must contain(errorMsg)
     }.await
   }
 

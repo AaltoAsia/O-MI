@@ -19,7 +19,7 @@ import java.sql.Timestamp
 import scala.util.Try
 import scala.collection.JavaConverters._
 import scala.collection.immutable.HashMap
-import concurrent.Future
+import scala.concurrent.Future
 
 import akka.NotUsed
 import akka.util._

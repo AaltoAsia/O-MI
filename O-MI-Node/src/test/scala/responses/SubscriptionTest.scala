@@ -186,18 +186,19 @@ class SubscriptionTest extends Specification with BeforeAfterAll {
       val sub3Id = addSub(5, -1, Seq(Path("p", "1")))
 
       def pollIds: Vector[Vector[Value[Any]]] = for {
-        response <- Vector(sub1Id, sub2Id, sub3Id)
+        subResponse <- Vector(sub1Id, sub2Id, sub3Id)
 
-        vectorResult <- (for {
-          result <- response.results.headOption
+        vectorResult <- (
+          for {
+            result <- subResponse.results.headOption
 
-          rID <- result.requestIDs.headOption
+            rID <- result.requestIDs.headOption
 
-          response = pollSub(rID)
+            response = pollSub(rID)
 
-          result <- response.results.headOption
-          odf <- result.odf
-        } yield odf.getInfoItems flatMap { info => info.values }
+            result <- response.results.headOption
+            odf <- result.odf
+          } yield odf.getInfoItems.toVector.flatMap{ info: InfoItem => info.values }
         ).toVector
 
       } yield vectorResult
