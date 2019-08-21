@@ -1,11 +1,11 @@
-package types.OmiTypes
+package types.omi
 
 import java.net.URL
 import java.text.SimpleDateFormat
 import java.util.TimeZone
 import java.sql.Timestamp
 
-import parsing.OmiParser
+import parsing.OMIStreamParser
 
 import scala.xml.Elem
 import scala.concurrent.duration._

@@ -9,7 +9,7 @@ import akka.event.LoggingAdapter;
 import akka.util.Timeout;
 import scala.concurrent.ExecutionContext;
 import scala.concurrent.Future;
-import types.OmiTypes.*;
+import types.omi.*;
 
 import static akka.pattern.Patterns.ask;
 
@@ -75,7 +75,7 @@ public abstract class JavaInternalAgent extends AbstractActor implements Interna
   }
 
       
-  final ExecutionContext ec = context().dispatcher();
+  protected final ExecutionContext ec = context().dispatcher();
   final protected void respond(Object msg ){
     ActorRef senderRef = getSender();
     senderRef.tell(msg,getSelf());

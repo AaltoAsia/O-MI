@@ -114,7 +114,7 @@ object Models {
       case "odf" if pv.valueType.isProtoStringValue =>
         ODFValue(
           Await.result(Source.single(pv.getProtoStringValue)
-            .via(types.odf.parser.ODFStreamParser.parserFlow)
+            .via(types.odf.parsing.ODFStreamParser.parserFlow)
             .runWith(Sink.fold[ODF,ODF](ImmutableODF())(_ union _)),
             1.minute)
             , new Timestamp(pv.timeStamp))

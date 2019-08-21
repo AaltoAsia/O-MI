@@ -12,7 +12,7 @@
  +    limitations under the License.                                              +
  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 package types
-package OmiTypes
+package omi
 
 import java.lang.{Iterable => JIterable}
 import java.net.URI
@@ -35,7 +35,7 @@ import akka.stream.{Materializer, ClosedShape}
 import akka.stream.scaladsl._
 import akka.stream.alpakka.xml._
 import utils._
-import parser.OMIStreamParser
+import parsing.OMIStreamParser
 import database.journal.PRequestInfo
 import database.SingleStores
 
@@ -418,7 +418,7 @@ class RawRequestWrapper(val rawSource: Source[String,_], private val user0: User
 
   val ttl: Duration =
     omiEnvelope.attributes.get("ttl")
-      .map { (ttlStr) => parser.parseTTL(ttlStr.toDouble) }
+      .map { (ttlStr) => parsing.parseTTL(ttlStr.toDouble) }
       .getOrElse(parseError("couldn't parse ttl"))
 
   /**
@@ -503,7 +503,7 @@ object RawRequestWrapper {
 
 }
 
-import types.OmiTypes.RawRequestWrapper.MessageType
+import types.omi.RawRequestWrapper.MessageType
 
 /**
   * One-time-read request

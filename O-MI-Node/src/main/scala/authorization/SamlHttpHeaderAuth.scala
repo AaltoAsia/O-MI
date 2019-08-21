@@ -19,7 +19,7 @@ import akka.http.scaladsl.server.Directive1
 import akka.http.scaladsl.server.Directives.optionalHeaderValue
 import authorization.Authorization.{AuthorizationExtension, CombinedTest, PermissionTest, UnauthorizedEx}
 import http.OmiConfigExtension
-import types.OmiTypes._
+import types.omi._
 
 import scala.util.{Failure, Success}
 

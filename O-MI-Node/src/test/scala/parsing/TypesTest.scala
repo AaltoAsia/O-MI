@@ -6,13 +6,12 @@ import akka.http.scaladsl.model.Uri
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl
 import org.specs2._
-import types.OdfTypes.OdfTreeCollection._
-import types.OdfTypes._
-import types.OmiTypes._
+import types.odf._
+import types.odf.OdfCollection._
+import types.omi._
 import types.Path._
 import types._
 import testHelpers._
-import types.odf.OldTypeConverter
 
 import scala.concurrent.duration._
 import scala.xml._
@@ -26,21 +25,6 @@ class TypesTest extends Specification {
   def is =
     s2"""
   This is Specification to check inheritance for Types. Also testing Path Object
-
-  Types should specify type inheritance for
-    OmiRequest inherited by
-      ReadRequest         $e2
-      WriteRequest			      $e3
-      SubscriptionRequest	      $e4
-      ResponseRequest	          $e5
-      CancelRequest		      $e6
-    OmiRequest not inherited by
-      ParseError        $e1
-      OdfInfoItem		  $e10
-      OdfObject		      $e11
-    OdfElement inherited by
-      OdfInfoItem		  $e100
-      OdfObject			  $e101
 
   Path 
     Path object should
@@ -64,34 +48,6 @@ class TypesTest extends Specification {
   OmiTypes test
     $omiTypes1
     """
-
-  def e1 = !ParseErrorList("test error").isInstanceOf[OmiRequest]
-
-  def e2 = ReadRequest(OldTypeConverter.convertOdfObjects(OdfObjects()), None, None, None, None, None, None, 0.seconds)
-    .isInstanceOf[OmiRequest]
-
-  def e3 = WriteRequest(OldTypeConverter.convertOdfObjects(OdfObjects()), None, 10.seconds).isInstanceOf[OmiRequest]
-
-  def e4 = SubscriptionRequest(1.seconds, OldTypeConverter.convertOdfObjects(OdfObjects()), None, None, None, 0.seconds)
-    .isInstanceOf[OmiRequest]
-
-  def e5 = {
-    ResponseRequest(Seq(OmiResult(Returns.Success()))).isInstanceOf[OmiRequest]
-  }
-
-  def e6 = CancelRequest(Vector.empty, 10.seconds).isInstanceOf[OmiRequest]
-
-  def e10 = {
-    !OdfInfoItem(Path("Objects", "obj1", "sensor")).isInstanceOf[OmiRequest]
-  }
-
-  def e11 = !OdfObject(Seq(), Path("Objects", "TypesTest"), Seq(), Seq()).isInstanceOf[OmiRequest]
-
-  def e100 = {
-    OdfInfoItem(Path("Objects", "obj1", "sensor")).isInstanceOf[OdfNode]
-  }
-
-  def e101 = OdfObject(Seq(), Path("Objects", "TypesTest"), Seq(), Seq()).isInstanceOf[OdfNode]
 
   def e200 = Path("test", "test2").toSeq should be equalTo (Path(Seq("test", "test2")))
 
@@ -130,8 +86,8 @@ class TypesTest extends Specification {
   }
 
   def omiTypes1 = {
-    val reg1 = ReadRequest(OldTypeConverter.convertOdfObjects(OdfObjects()), None, None, None, None,None,  None)
-    val reg2 = ReadRequest(OldTypeConverter.convertOdfObjects(OdfObjects()),
+    val reg1 = ReadRequest(ImmutableODF(), None, None, None, None,None,  None)
+    val reg2 = ReadRequest(ImmutableODF(),
       None,
       None,
       None,
@@ -140,15 +96,14 @@ class TypesTest extends Specification {
     reg1.hasCallback should be equalTo (false) and (
       reg2.hasCallback should be equalTo (true)) and (
       reg2.callbackAsUri must beSome.like { case a => a.isInstanceOf[URI] }) and (
-      reg2.asXML must beAnInstanceOf[NodeSeq]) and (
       reg2.parsed must beRight) and (
       reg2.unwrapped must beSuccessfulTry) 
   }
 
   def omiTypes2 = {
-    val reg1 = ReadRequest(OldTypeConverter.convertOdfObjects(OdfObjects()), None, None, None, None,None,  None, 0 seconds)
-    val reg2 = ReadRequest(OldTypeConverter.convertOdfObjects(OdfObjects()), None, None, None, None,None,  None, 5 seconds)
-    val reg3 = ReadRequest(OldTypeConverter.convertOdfObjects(OdfObjects()), None, None, None, None,None,  None, Duration.Inf)
+    val reg1 = ReadRequest(ImmutableODF(), None, None, None, None,None,  None, 0 seconds)
+    val reg2 = ReadRequest(ImmutableODF(), None, None, None, None,None,  None, 5 seconds)
+    val reg3 = ReadRequest(ImmutableODF(), None, None, None, None,None,  None, Duration.Inf)
 
     reg1.handleTTL must be equalTo (2 minutes) and (
       reg2.handleTTL must be equalTo (5 seconds)) and (

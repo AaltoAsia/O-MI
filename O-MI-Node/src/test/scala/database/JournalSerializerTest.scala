@@ -2,13 +2,17 @@ package database
 
 import java.sql.Timestamp
 
+import akka.stream.ActorMaterializer
 import journal._
 import journal.serialization.JournalProtoBufSerializer
 import org.specs2.Specification
 import org.specs2.specification.core.SpecStructure
+import org.specs2.concurrent.ExecutionEnv
 import types.Path
 import types.odf._
-class JournalSerializerTest extends Specification {
+import testHelpers._
+class JournalSerializerTest(implicit ee: ExecutionEnv) extends Specification with SilentActorSystem{
+  implicit val mat = ActorMaterializer()
   val JournalSerializer = new JournalProtoBufSerializer()
   def is: SpecStructure = s2"""
   Journal Serializer should serialize and deserialize protobuf classes correctly

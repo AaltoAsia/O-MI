@@ -1,5 +1,5 @@
 package types
-package OmiTypes
+package omi
 
 import utils._
 import scala.util.Try
@@ -9,7 +9,7 @@ import java.time.OffsetDateTime
 import akka.stream.alpakka.xml._
 import types._
 
-package object `parser` {
+package object `parsing` {
   def unexpectedEventHandle(msg: String, event: ParseEvent, builder: EventBuilder[_]): EventBuilder[_] ={
     event match {
       case content: TextEvent if content.text.replaceAll("\\s","").nonEmpty => throw OMIParserError(s"Unexpected text content( ${content.text} ) $msg")

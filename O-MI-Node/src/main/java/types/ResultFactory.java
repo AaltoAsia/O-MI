@@ -1,7 +1,7 @@
 package types;
 
-import types.OmiTypes.Results;
-import types.OmiTypes.OmiResult;
+import types.omi.Results;
+import types.omi.OmiResult;
 import types.odf.ODF;
 
 final public class ResultFactory{

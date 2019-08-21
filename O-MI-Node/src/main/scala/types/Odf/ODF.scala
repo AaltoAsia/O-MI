@@ -4,12 +4,17 @@ package odf
 import scala.collection.immutable.{HashMap, TreeSet}
 import scala.collection.{mutable, Map, Seq, SortedSet => CSortedSet, SeqView}
 import akka.stream.alpakka.xml._
+import akka.stream.scaladsl._
+import akka.NotUsed
+import akka.util.ByteString
+import utils._
+import scala.collection.JavaConverters._
 import scala.xml.NodeSeq
 import types.Path.PathOrdering
 import types.Path
 
-import types.OmiTypes.Version.OdfVersion
-import types.OmiTypes.Version.OdfVersion._
+import types.omi.Version.OdfVersion
+import types.omi.Version.OdfVersion._
 
 /** O-DF structure
   */
@@ -174,6 +179,9 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
     }.toSet
   }
 
+  def replaceValues[C <: java.util.Collection[Value[java.lang.Object]]]( pathToValues: java.util.Map[Path,C]): ODF = replaceValues(pathToValues.asScala.mapValues{ col => col.asScala})
+  def replaceValues( pathToValues: Iterable[(Path,Iterable[Value[_]])]): ODF
+  def replaceValues( pathToValues: Map[Path,Iterable[Value[_]]]): ODF = replaceValues( pathToValues.toIterable )
   final def get(path: Path): Option[Node] = nodes.get(path)
 
   /**
@@ -254,6 +262,9 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
        )
    }*/
 
+  final implicit def asXMLByteSource(odfVersion: Option[OdfVersion]=None): Source[ByteString, NotUsed] = parseEventsToByteSource(asXMLEvents(odfVersion))
+  
+  final implicit def asXMLSource(odfVersion: Option[OdfVersion]=None): Source[String, NotUsed] = asXMLByteSource(odfVersion).map[String](_.utf8String)
   final def asXMLDocument(odfVersion: Option[OdfVersion]=None): SeqView[ParseEvent, Iterable[_]] = {
     asXMLEvents(odfVersion) ++
     Seq(EndDocument)

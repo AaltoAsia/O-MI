@@ -6,7 +6,7 @@ import java.util.concurrent.TimeUnit
 import agentSystem._
 import akka.actor.{Actor, ActorRef, Cancellable, Props}
 import com.typesafe.config.Config
-import types.OmiTypes.{OmiResult, ResponseRequest, Results, WriteRequest}
+import types.omi.{OmiResult, ResponseRequest, Results, WriteRequest}
 import types.Path
 import types.odf._
 

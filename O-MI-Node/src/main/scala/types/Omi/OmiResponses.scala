@@ -1,5 +1,5 @@
 package types
-package OmiTypes
+package omi
 
 import types.odf._
 

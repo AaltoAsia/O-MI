@@ -12,8 +12,8 @@
  +    limitations under the License.                                              +
  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 package types
-package OmiTypes
-package parser
+package omi
+package parsing
 
 import java.sql.Timestamp
 import scala.collection.JavaConverters._
@@ -31,7 +31,7 @@ import akka.stream.alpakka.xml.scaladsl._
 
 import types._
 import types.odf._
-import types.odf.parser.ODFEventBuilder
+import types.odf.parsing.ODFEventBuilder
 import utils._
 
 private object RequestPosition extends Enumeration {

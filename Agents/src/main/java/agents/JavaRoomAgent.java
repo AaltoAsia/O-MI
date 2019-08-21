@@ -15,19 +15,10 @@ import scala.concurrent.duration.Duration;
 import scala.concurrent.duration.FiniteDuration;
 import scala.util.Random;
 import types.JavaHelpers;
-import types.OldOdfFactory;
 import types.OmiFactory;
-import types.OdfTypes.OdfObjects;
-import types.OdfTypes.OdfObject;
-import types.OdfTypes.OdfInfoItem;
-import types.OdfTypes.OdfDescription;
-import types.OdfTypes.OdfValue;
-import types.OdfTypes.OdfMetaData;
-import types.OdfTypes.OdfTreeCollection;
-import types.OmiTypes.OmiResult;
-import types.OmiTypes.WriteRequest;
-import types.OmiTypes.ResponseRequest;
-import types.OmiTypes.Results;
+import types.OdfFactory;
+import types.omi.*;
+import types.odf.*;
 import types.Path;
 
 import java.sql.Timestamp;
@@ -69,7 +60,7 @@ public class JavaRoomAgent extends JavaInternalAgent {
   protected Random rnd = new Random();
 
   //Our O-DF structure
-  protected OdfObjects odf;
+  protected ODF odf;
 
   // Constructor
   public JavaRoomAgent(Config conf, final ActorRef requestHandler, final ActorRef dbHandler){
@@ -109,52 +100,55 @@ public class JavaRoomAgent extends JavaInternalAgent {
   /**
    * Method for creating O-DF structure to be populated by this JavaInternalAgent.
    */
-  public OdfObjects createOdf(){
+  public ODF createOdf(){
 
     //Reset writeCount
     writeCount = 0;
     //O-DF Object s as child of O-DF Objects
-    Vector<OdfObject> objects = new Vector<>();
-    objects.add( createExampleRoom() );
+    Vector<Node> nodes = new Vector<>();
+    nodes.addAll( createExampleRoom() );
     
     //Create O-DF Objects
-    return OldOdfFactory.createOdfObjects(objects); 
+    return OdfFactory.createImmutableODF(nodes); 
   }
 
   /**
    * Method for creating O-DF Object for path Objects/ExampleRoom.
    */
-  public OdfObject createExampleRoom(){
+  public Vector<Node> createExampleRoom(){
+
+    Vector<Node> nodes = new Vector<>();
 
     Path path = new Path( "Objects/ExampleRoom" );
-
-    OdfDescription description = OldOdfFactory.createOdfDescription(
+    Vector<Description> descriptions = new Vector<>();
+    Description description = OdfFactory.createDescription(
         "Example room filled with examples"
     );
-
-    //Child O-DF InfoItems of ExampleRoom
-    Vector<OdfInfoItem> infoItems = new Vector<>();
-    OdfInfoItem location = createLocation(path); 
-    infoItems.add(location);
-
-    //Child O-DF Object of ExampleRoom
-    Vector<OdfObject> objects = new Vector<>();
-    objects.add( createSensorBox(path));
+    descriptions.add(description);
 
     //Create an actual O-DF Object
-    return OldOdfFactory.createOdfObject(
+    nodes.add(OdfFactory.createObject(
         path,
-        infoItems,
-        objects,
-        description
-    );
+        descriptions
+    ));
+
+    //Child O-DF InfoItems of ExampleRoom
+    InfoItem location = createLocation(path); 
+    nodes.add(location);
+
+    //Child O-DF Object of ExampleRoom
+    nodes.addAll( createSensorBox(path));
+
+    return nodes;
   }
 
   /**
    * Method for creating O-DF Object for a SensorBox.
    * @param parentPath Path of parent O-DF Object.
    */
-  public OdfObject createSensorBox( Path parentPath){
+  public Vector<Node> createSensorBox( Path parentPath){
+
+    Vector<Node> nodes = new Vector<>();
 
     //Generate path from path of parent O-DF Object 
     Path path = new Path( parentPath.toString() +"/SensorBox" );
@@ -164,27 +158,23 @@ public class JavaRoomAgent extends JavaInternalAgent {
     String parentId = parentArray[ parentArray.length - 1];//Last
 
     //Create a description
-    OdfDescription description = OldOdfFactory.createOdfDescription(
+    Vector<Description> descriptions = new Vector<>();
+    Description description = OdfFactory.createDescription(
         "SensorBox in " + parentId
     );
+    descriptions.add(description);
+
+    nodes.add(OdfFactory.createObject(
+        path,
+        descriptions
+    ));
 
     //O-DF InfoItems of sensors in SensorBox
-    Vector<OdfInfoItem> infoItems = new Vector<>();
-    infoItems.add( createLocation(path) );
-    infoItems.add( createSensor("Temperature","Celsius",path) );
-    infoItems.add( createSensor("Humidity","Percentage of water in air",path) );
-
-    //SensorBox doesn't have child O-DF Object s
-    Vector<OdfObject> objects = new Vector<>();
-
+    nodes.add( createLocation(path) );
+    nodes.add( createSensor("Temperature","Celsius",path) );
+    nodes.add( createSensor("Humidity","Percentage of water in air",path) );
     //Create O-DY Object for SensorBox
-    return OldOdfFactory.createOdfObject(
-        path,
-        infoItems,
-        objects,
-        description
-
-    );
+    return nodes;
   }
 
   /**
@@ -193,7 +183,7 @@ public class JavaRoomAgent extends JavaInternalAgent {
    * @param unit Unit of measured values.
    * @param parentPath Path of parent O-DF Object.
    */
-  public OdfInfoItem createSensor( String name, String unit, Path parentPath){
+  public InfoItem createSensor( String name, String unit, Path parentPath){
     //Generate path from path of parent O-DF Object 
     Path path = new Path( parentPath.toString() + "/" + name );
 
@@ -201,7 +191,7 @@ public class JavaRoomAgent extends JavaInternalAgent {
     String[] parentArray = parentPath.toArray(); 
     String parentId = parentArray[ parentArray.length - 1];//Last
 
-    // Generate new OdfValue<Object> 
+    // Generate new Value<java.lang.Object> 
     // timestamp for the value
     Timestamp timestamp =  new Timestamp(new java.util.Date().getTime());
     // type metadata, default is xs:string
@@ -210,49 +200,50 @@ public class JavaRoomAgent extends JavaInternalAgent {
     String newValueStr = rnd.nextDouble() +""; 
 
     // Multiple values can be added at the same time but we add one
-    Vector<OdfValue<Object>> values = new Vector<>();
+    Vector<Value<java.lang.Object>> values = new Vector<>();
  
-    // OdfValue has type parameter for type of value, Object is used to avoid problems
+    // Value has type parameter for type of value, Object is used to avoid problems
     // with having values with different types in same Collection.
     // Currently only following types are accepted:
     // String, Short, Int, Long, Float and Double.
     // Any other type is converted to String with toString(),
     // but typeStr is not changed.
-    OdfValue<Object> value = OldOdfFactory.createOdfValue(
+    Value<java.lang.Object> value = OdfFactory.createValue(
         newValueStr, typeStr, timestamp
     );
     values.add(value);
 
     //Create Unit meta data for the sensor. 
-    Vector<OdfValue<Object>> metaValues = new Vector<>();
-    OdfValue<Object> metaValue = OldOdfFactory.createOdfValue(
+    Vector<Value<java.lang.Object>> metaValues = new Vector<>();
+    Value<java.lang.Object> metaValue = OdfFactory.createValue(
         unit, "xs:string", timestamp
     );
     metaValues.add(metaValue);
 
-    Vector<OdfInfoItem> metaInfoItems = new Vector<>();
-    OdfInfoItem metaInfoItem = OldOdfFactory.createOdfInfoItem(
+    Vector<InfoItem> metaInfoItems = new Vector<>();
+    InfoItem metaInfoItem = OdfFactory.createInfoItem(
        new Path( path.toString() +"/MetaData/Unit"), 
        metaValues
     );
     metaInfoItems.add(metaInfoItem);
 
-    OdfMetaData metaData = OldOdfFactory.createOdfMetaData(
+    MetaData metaData = OdfFactory.createMetaData(
       metaInfoItems    
     );
 
     //Create description for the sensor.
-    OdfDescription description = OldOdfFactory.createOdfDescription(
+    Vector<Description> descriptions = new Vector<>();
+    Description description = OdfFactory.createDescription(
         name + " sensor of " + parentId
     );
+    descriptions.add(description);
 
     // Create O-DF InfoItem for the sensor. 
-    return OldOdfFactory.createOdfInfoItem(
+    return OdfFactory.createInfoItem(
         path, 
+        descriptions,
         values,
-        description,
         metaData
-
     );
   }
 
@@ -263,7 +254,7 @@ public class JavaRoomAgent extends JavaInternalAgent {
    *  <a href="https://github.com/AaltoAsia/O-MI/blob/warp10integration/warp10-documentation.md">warp10 integration documentation</a>.
    * @param parentPath Path of parent O-DF Object.
    */
-  public OdfInfoItem createLocation( Path parentPath){
+  public InfoItem createLocation( Path parentPath){
     //Generate path from path of parent O-DF Object 
     Path path = new Path( parentPath.toString() + "/location"  );
 
@@ -271,7 +262,7 @@ public class JavaRoomAgent extends JavaInternalAgent {
     String[] parentArray = parentPath.toArray(); 
     String parentId = parentArray[ parentArray.length - 1];//Last
 
-    // Generate new OdfValue<Object> 
+    // Generate new Value<java.lang.Object> 
 
     // timestamp for the value
     Timestamp timestamp =  new Timestamp(new java.util.Date().getTime());
@@ -281,47 +272,49 @@ public class JavaRoomAgent extends JavaInternalAgent {
     String newValueStr = "+" + rnd.nextDouble() + "+" +rnd.nextDouble() + "+" + rnd.nextInt(15000) +"CRSWGS_84"; 
 
     // Multiple values can be added at the same time but we add one
-    Vector<OdfValue<Object>> values = new Vector<>();
+    Vector<Value<java.lang.Object>> values = new Vector<>();
 
-    // OdfValue has type parameter for type of value, Object is used to avoid problems
+    // Value has type parameter for type of value, Object is used to avoid problems
     // with having values with different types in same Collection.
     // Currently only following types are accepted:
     // String, Short, Int, Long, Float and Double.
     // Any other type is converted to String with toString(),
     // but type attribute of O-DF InfoItem is not changed.
-    OdfValue<Object> value = OldOdfFactory.createOdfValue(
+    Value<java.lang.Object> value = OdfFactory.createValue(
         newValueStr, timestamp
     );
     values.add(value);
 
     //Create type meta data about location.
-    Vector<OdfValue<Object>> metaValues = new Vector<>();
-    OdfValue<Object> metaValue = OldOdfFactory.createOdfValue(
+    Vector<Value<java.lang.Object>> metaValues = new Vector<>();
+    Value<java.lang.Object> metaValue = OdfFactory.createValue(
         "ISO 6709", timestamp
     );
     metaValues.add(metaValue);
 
-    Vector<OdfInfoItem> metaInfoItems = new Vector<>();
-    OdfInfoItem metaInfoItem = OldOdfFactory.createOdfInfoItem(
+    Vector<InfoItem> metaInfoItems = new Vector<>();
+    InfoItem metaInfoItem = OdfFactory.createInfoItem(
        new Path( path.toString() +"/MetaData/type"), 
        metaValues
     );
     metaInfoItems.add(metaInfoItem);
 
-    OdfMetaData metaData = OldOdfFactory.createOdfMetaData(
+    MetaData metaData = OdfFactory.createMetaData(
       metaInfoItems    
     );
 
     //Create description for the location.
-    OdfDescription description = OldOdfFactory.createOdfDescription(
+    Vector<Description> descriptions = new Vector<>();
+    Description description = OdfFactory.createDescription(
         "Location of " + parentId
     );
+    descriptions.add(description);
 
     // Create O-DF InfoItem for location.
-    return OldOdfFactory.createOdfInfoItem(
+    return OdfFactory.createInfoItem(
         path, 
+        descriptions,
         values,
-        description,
         metaData
 
     );
@@ -338,15 +331,15 @@ public class JavaRoomAgent extends JavaInternalAgent {
     NumberFormat nf = NumberFormat.getInstance();
 
     //All O-DF InfoItems in O-DF structure 
-    Collection<OdfInfoItem> infoItems = JavaConversions.asJavaCollection(odf.infoItems());
+    Collection<InfoItem> infoItems = JavaConversions.asJavaCollection(odf.getInfoItems());
 
     //Collection of new values per path
-    Map<Path, scala.collection.immutable.Vector<OdfValue<Object>>> pathValuePairs = new HashMap<>();
+    Map<Path, Vector<Value<java.lang.Object>>> pathValuePairs = new HashMap<>();
 
     //Generate new value for each O-DF InfoItem
-    for( OdfInfoItem item : infoItems){
+    for( InfoItem item : infoItems){
       //Get old values
-      Collection<OdfValue<Object>> oldValues = JavaConversions.asJavaCollection(item.values());
+      Collection<Value<java.lang.Object>> oldValues = JavaConversions.asJavaCollection(item.values());
 
       // timestamp for the value
       Timestamp timestamp =  new Timestamp(new java.util.Date().getTime());
@@ -357,15 +350,15 @@ public class JavaRoomAgent extends JavaInternalAgent {
       String oldValueStr = ""; 
 
       //There should be only one value stored in oldValues
-      Iterator<OdfValue<Object>> iterator = oldValues.iterator();
+      Iterator<Value<java.lang.Object>> iterator = oldValues.iterator();
       if( iterator.hasNext() ){
-        OdfValue<Object> old = iterator.next();
+        Value<java.lang.Object> old = iterator.next();
 
         //Multiplier for generating new value 
         double multiplier = 1 + rnd.nextGaussian() * 0.05 ; 
 
         //Extract type and value of old
-        typeStr = old.typeValue();
+        typeStr = old.typeAttribute();
         oldValueStr = old.value().toString();
 
         try{
@@ -430,24 +423,21 @@ public class JavaRoomAgent extends JavaInternalAgent {
       }
 
       // Multiple values can be added at the same time but we add one
-      Vector<OdfValue<Object>> newValues = new Vector<>();
-      OdfValue<Object> value = OldOdfFactory.createOdfValue(
+      Vector<Value<java.lang.Object>> newValues = new Vector<>();
+      Value<java.lang.Object> value = OdfFactory.createValue(
           newValueStr, typeStr, timestamp
       );
       newValues.add(value);
 
       //Add to pathValuePairs
-      pathValuePairs.put(item.path(), OdfTreeCollection.fromJava(newValues));
+      pathValuePairs.put(item.path(), newValues);
     }
 
-    //Convert Map to Scala Map
-    scala.collection.mutable.Map<Path,scala.collection.immutable.Vector<OdfValue<Object>>> scalaMap= 
-      JavaConversions.mapAsScalaMap(pathValuePairs);
 
     //Replaces old values with new
     //Odf* classes are immutable, so they need be copied to be edited.
     //We should change as much as we can with single copy to avoid creating garbage.
-    odf = odf.withValues( JavaHelpers.mutableMapToImmutable(scalaMap) );
+    odf = odf.replaceValues( pathValuePairs );
   }
 
   /**
@@ -459,7 +449,7 @@ public class JavaRoomAgent extends JavaInternalAgent {
     updateOdf();
     //MetaData and description should be written only once
     if( writeCount == 2 ){
-      odf = odf.allMetaDatasRemoved();
+      odf = odf.metaDatasRemoved().descriptionsRemoved().attributesRemoved();
     } else writeCount += 1;
 
     // This sends debug log message to O-MI Node logs if

@@ -236,6 +236,16 @@ case class ImmutableODF private[odf](
     case obj: Objects => obj.copy( attributes = HashMap())
   }.toVector: _*))
 
+  def replaceValues( pathToValues: Iterable[(Path,Iterable[Value[_]])]): ImmutableODF={
+    val updates = pathToValues.flatMap{
+      case ( path: Path, values: Iterable[Value[_]] ) =>
+        nodes.get(path).collect{
+          case ii: InfoItem =>
+            path -> ii.copy( values = values.toVector)
+        }
+    }
+    new ImmutableODF(nodes ++ updates)
+  }
   def toImmutable: ImmutableODF = this
 
   def toMutable: MutableODF = MutableODF(

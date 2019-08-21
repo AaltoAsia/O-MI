@@ -13,7 +13,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 package types
 package odf
-package parser
+package parsing
 
 import java.sql.Timestamp
 import scala.collection.JavaConverters._
@@ -30,7 +30,7 @@ import akka.stream.alpakka.xml.scaladsl._
 
 import types._
 import odf._
-import types.OmiTypes.parser.{ResultEventBuilder,OdfRequestEventBuilder}
+import types.omi.parsing.{ResultEventBuilder,OdfRequestEventBuilder}
 import utils._
 
 

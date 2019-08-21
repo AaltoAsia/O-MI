@@ -19,7 +19,7 @@ import akka.http.scaladsl.server._
 import akka.http.scaladsl.server.util.Tupler._
 import http.OmiConfigExtension
 import org.slf4j.{Logger, LoggerFactory}
-import types.OmiTypes._
+import types.omi._
 
 import scala.util.{Failure, Success, Try}
 

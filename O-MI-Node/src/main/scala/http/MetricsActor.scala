@@ -3,7 +3,7 @@ package http
 import akka.actor._
 import java.sql.Timestamp
 import scala.concurrent.duration._
-import types.OmiTypes.UserInfo
+import types.omi.UserInfo
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent._
 //import slick.driver.H2Driver.api._

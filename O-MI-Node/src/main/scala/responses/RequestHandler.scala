@@ -27,7 +27,7 @@ import database.SingleStores
 import agentSystem.AgentEvents._
 import agentSystem.{AgentName, AgentResponsibilities, Responsible, ResponsibleAgent, ResponsibleNode}
 import http.OmiConfigExtension
-import types.OmiTypes._
+import types.omi._
 import types.odf.ImmutableODF
 import types.Path
 import http.TemporaryRequestInfoStore._

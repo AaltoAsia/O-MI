@@ -21,7 +21,7 @@ import akka.actor.ActorRef
 import akka.pattern.ask
 import akka.util.Timeout
 import http.OmiConfigExtension
-import types.OmiTypes._
+import types.omi._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future

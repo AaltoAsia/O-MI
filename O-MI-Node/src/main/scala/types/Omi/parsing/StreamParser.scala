@@ -12,11 +12,12 @@
  +    limitations under the License.                                              +
  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 package types
-package OmiTypes
-package parser
+package omi
+package parsing
 
 import java.sql.Timestamp
 import scala.util.Try
+import scala.concurrent.Future
 import scala.collection.JavaConverters._
 import scala.collection.immutable.HashMap
 
@@ -34,6 +35,15 @@ import utils._
 
 /** Parser for data in O-DF format */
 object OMIStreamParser {
+  def parse(filePath: java.nio.file.Path)(implicit mat: Materializer): Future[OmiRequest] = stringParser(FileIO.fromPath(filePath).map(_.utf8String))
+  def parse(str: String)(implicit mat: Materializer): Future[OmiRequest] = stringParser(Source.single(str))
+  def stringParser(source: Source[String, _])(implicit mat: Materializer): Future[OmiRequest] =
+    source.via(parserFlow).runWith(Sink.head[OmiRequest])
+  def byteStringParser(source: Source[ByteString, _])(implicit mat: Materializer): Future[OmiRequest] =
+    source.via(parserFlowByteString).runWith(Sink.head[OmiRequest])
+  def parserFlowByteString: Flow[ByteString,OmiRequest,NotUsed] = Flow[ByteString]
+    .via(XmlParsing.parser)
+    .via(new OMIParserFlow)
   def xmlParserFlow: Flow[String,ParseEvent,NotUsed] = Flow[String]
     .map(ByteString(_))
     .via(XmlParsing.parser)

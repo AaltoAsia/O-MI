@@ -24,7 +24,7 @@ import database._
 import http.CLICmds.{GetSubsWithPollData, ListSubsCmd, SubInfoCmd}
 import http.OmiConfigExtension
 import responses.CallbackHandler.{CallbackFailure, MissingConnection}
-import types.OmiTypes._
+import types.omi._
 import types._
 import types.odf._
 

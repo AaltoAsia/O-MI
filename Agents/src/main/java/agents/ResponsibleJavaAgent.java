@@ -11,14 +11,7 @@ import com.typesafe.config.Config;
 import scala.concurrent.ExecutionContext;
 import scala.concurrent.Future;
 import scala.concurrent.duration.Duration;
-import types.OmiTypes.OmiResult;
-import types.OmiTypes.WriteRequest;
-import types.OmiTypes.DeleteRequest;
-import types.OmiTypes.ReadRequest;
-import types.OmiTypes.ResponseRequest;
-import types.OmiTypes.CallRequest;
-import types.OmiTypes.Results;
-import types.OmiTypes.Responses;
+import types.omi.*;
 
 import java.util.concurrent.TimeUnit;
 

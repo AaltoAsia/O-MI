@@ -10,7 +10,7 @@ import org.specs2.mutable._
 import org.specs2.matcher._
 import org.specs2.specification.{Scope,AfterAll}
 
-import types.OdfTypes._
+import types.odf._
 import types.{Path => OdfPath}
 
 import scala.collection.immutable.HashMap

@@ -1,7 +1,7 @@
 package database
 
 import responses.CallbackHandler._
-import types.OmiTypes._
+import types.omi._
 import types.Path
 import types.odf._
 import utils._

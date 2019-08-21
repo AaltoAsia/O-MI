@@ -19,7 +19,7 @@ import utils.parseEventsToByteSource
 import akka.stream.scaladsl.Sink
 import akka.stream.Materializer
 
-import types.OmiTypes.Version.OdfVersion.OdfVersion2
+import types.omi.Version.OdfVersion.OdfVersion2
 
 trait Value[+V] extends Element{
   val value: V

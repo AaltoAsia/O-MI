@@ -36,8 +36,8 @@ import database.SingleStores
 import org.slf4j.LoggerFactory
 import responses.CallbackHandler._
 import responses.{CallbackHandler, RESTHandler, RemoveSubscription}
-import types.OmiTypes.Callback._
-import types.OmiTypes._
+import types.omi.Callback._
+import types.omi._
 import types.odf._
 import types.{ParseError, Path}
 

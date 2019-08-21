@@ -6,7 +6,7 @@ import akka.http.scaladsl.model.Uri
 import CustomJsonProtocol._
 import org.specs2.mutable.Specification
 import spray.json._
-import types.OmiTypes.HTTPCallback
+import types.omi.HTTPCallback
 import types.Path
 import types.odf.Value
 

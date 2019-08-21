@@ -1,5 +1,5 @@
 package types
-package OmiTypes
+package omi
 
 import scala.collection.SeqView
 import akka.stream.alpakka.xml._
@@ -17,7 +17,7 @@ object ReturnCode extends Enumeration {
   val Timeout = "503"
 }
 
-import types.OmiTypes.ReturnCode._
+import types.omi.ReturnCode._
 
 trait JavaOmiReturn {
   def descriptionAsJava: String

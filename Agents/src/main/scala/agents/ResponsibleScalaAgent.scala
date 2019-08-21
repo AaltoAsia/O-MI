@@ -3,7 +3,7 @@ package agents
 import agentSystem._
 import akka.actor.{Actor, ActorRef, Props}
 import com.typesafe.config.Config
-import types.OmiTypes._
+import types.omi._
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success}

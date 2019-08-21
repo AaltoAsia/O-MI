@@ -8,10 +8,10 @@ import java.util.concurrent.TimeUnit
 import agentSystem._
 import akka.actor.{ActorRef, Cancellable, Props}
 import com.typesafe.config.Config
-import types.OmiTypes.{OmiResult, ResponseRequest, Results, WriteRequest}
+import types.omi.{OmiResult, ResponseRequest, Results, WriteRequest}
 import types.ParseError
 import types.odf._
-import types.odf.parser._
+import types.odf.parsing._
 import akka.stream.scaladsl.FileIO
 import akka.stream.ActorMaterializer
 

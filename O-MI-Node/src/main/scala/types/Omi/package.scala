@@ -29,7 +29,7 @@ import scala.xml.NodeSeq
   * Package containing classes presenting O-MI request internally.
   *
   */
-package object OmiTypes {
+package object omi {
   type OmiParseResult = Either[Iterable[ParseError], Iterable[OmiRequest]]
   type RequestID = Long
 

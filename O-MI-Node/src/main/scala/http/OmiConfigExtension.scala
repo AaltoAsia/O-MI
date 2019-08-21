@@ -28,7 +28,7 @@ import akka.http.scaladsl.model.Uri
 import com.typesafe.config.{Config, ConfigException}
 import org.slf4j.LoggerFactory
 
-import types.OmiTypes.RawRequestWrapper.MessageType
+import types.omi.RawRequestWrapper.MessageType
 import types.Path
 
 import agentSystem.AgentSystemConfigExtension

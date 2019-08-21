@@ -7,16 +7,13 @@ import org.specs2.mock.Mockito
 import java.sql.Timestamp
 import org.specs2.mock.Mockito.mock
 import org.specs2.mutable.Specification
-import types.odf.ImmutableODF
-import types.odf._
 import testHelpers.{DummyHierarchyStore, Actorstest}
 import akka.stream.ActorMaterializer
 import scala.collection.immutable.{HashMap, Vector}
-import types.Path
 import scala.concurrent.duration._
+import scala.util.Try
 import scala.concurrent.Await
 import org.specs2.specification.AfterAll
-import types.OmiTypes._
 import org.specs2.concurrent.ExecutionEnv
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers
@@ -31,7 +28,10 @@ import scala.collection.immutable
 import scala.concurrent.Future
 import com.typesafe.config._
 import http.OmiConfigExtension
-import util.Try
+import types.Path
+import types.omi._
+import types.odf.ImmutableODF
+import types.odf._
 
 class AuthAPIServiceMock(
     config: Config = ConfigFactory.empty()
@@ -92,8 +92,8 @@ class AuthServiceTest(implicit ee: ExecutionEnv) extends AuthServiceTestEnv{
         ))),
         HashMap("customAttribute" -> "attr")
       )
-    , InfoItem.build(Path("Objects/PrivateObject/PublicItem"))
-    , InfoItem.build(Path("Objects/PrivateObject/PublicObject/PublicItem"))
+    , InfoItem.build(fromPath(Path("Objects/PrivateObject/PublicItem")))
+    , InfoItem.build(fromPath(Path("Objects/PrivateObject/PublicObject/PublicItem")))
     , InfoItem.build(Path("Objects/PrivateObject/PublicObject/PrivateItem"))
     , InfoItem.build(Path("Objects/PublicObject/PrivateItem"))
     , InfoItem.build(Path("Objects/PublicObject/PublicItem"))

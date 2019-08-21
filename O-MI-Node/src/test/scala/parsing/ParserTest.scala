@@ -2,167 +2,46 @@ package parsing
 
 import java.sql.Timestamp
 
+import scala.concurrent.Future
+import scala.collection.SeqView
+import akka.stream.scaladsl.Sink
+import akka.stream.alpakka.xml._
+import akka.stream.ActorMaterializer
 import org.specs2._
-import types.OdfTypes.OdfTreeCollection._
-import types.OmiTypes._
+import types.omi._
 import types._
 import types.odf._
+import types.omi.parsing.OMIStreamParser
+import types.odf.parsing.ODFStreamParser
+import utils._
+import testHelpers._
 
 import scala.xml.NodeSeq
 //import java.lang.Iterable
 import org.specs2.matcher.XmlMatchers._
 import org.specs2.matcher._
+import org.specs2.concurrent.ExecutionEnv
+import org.specs2.execute.Result
 
 import scala.concurrent.duration._
 
 /*
  * Test class for testing parsing parsing package
- * tests e1   - e99 are for testing OmiParser general methods
+ * tests e1   - e99 are for testing OMIStreamParser general methods
  * tests e100 - e199 are for testing write request
  * tests e200 - e299 are for testing response messages
  * tests e300 - e399 are for testing read requests
  * tests e400 - e499 are for testing OdfParser class
  */
 
-class ParserTest extends Specification with MatcherMacros {
-//  val write_response_odf: OdfObjects = {
-//    /*Right(
-//      Iterable(
-//        WriteRequest(
-//          10.0, */ OdfObjects(
-//      Iterable(
-//        OdfObject(
-//          Seq(),
-//          Path("Objects", "SmartHouse"), Iterable(
-//            OdfInfoItem(
-//              Path("Objects", "SmartHouse", "PowerConsumption"), Iterable(
-//                OdfValue(
-//                  "180", "xs:string",
-//                  Timestamp.valueOf("2014-12-18 15:34:52"))), None, None), OdfInfoItem(
-//              Path("Objects", "SmartHouse", "Moisture"), Iterable(
-//                OdfValue(
-//                  "0.20", "xs:string",
-//                  new Timestamp(1418916892L * 1000))), None, None)), Iterable(
-//            OdfObject(
-//              Seq(),
-//              Path("Objects", "SmartHouse", "SmartFridge"), Iterable(
-//                OdfInfoItem(
-//                  Path("Objects", "SmartHouse", "SmartFridge", "PowerConsumption"), Iterable(
-//                    OdfValue(
-//                      "56", "xs:string",
-//                      Timestamp.valueOf("2014-12-18 15:34:52"))), None, None)), Iterable(), None, None), OdfObject(
-//              Seq(),
-//              Path("Objects", "SmartHouse", "SmartOven"), Iterable(
-//                OdfInfoItem(
-//                  Path("Objects", "SmartHouse", "SmartOven", "PowerOn"), Iterable(
-//                    OdfValue(
-//                      "1", "xs:string",
-//                      Timestamp.valueOf("2014-12-18 15:34:52"))), None, None)), Iterable(), None, None)), None, None),
-//        OdfObject(
-//          Seq(),
-//          Path("Objects", "SmartCar"), Iterable(
-//            OdfInfoItem(
-//              Path("Objects", "SmartCar", "Fuel"),
-//              Vector(OdfValue(
-//                "30",
-//                "xs:string",
-//                Timestamp.valueOf("2014-12-18 15:34:52")
-//              )),
-//              None,
-//              Some(OdfMetaData(
-//                Vector(OdfInfoItem(
-//                  Path("Objects", "SmartCar", "Fuel/MetaData", "Units"),
-//                  Vector(OdfValue(
-//                    "Litre",
-//                    "xs:string",
-//                    Timestamp.valueOf("2014-12-18 15:34:52")
-//                  ))
-//                ))
-//              ))
-//            )),
-//          Iterable(), None, None),
-//        OdfObject(
-//          Seq(),
-//          Path("Objects", "SmartCottage"), Iterable(), Iterable(
-//            OdfObject(
-//              Seq(),
-//              Path("Objects", "SmartCottage", "Heater"), Iterable(), Iterable(), None, None), OdfObject(
-//              Seq(),
-//              Path("Objects", "SmartCottage", "Sauna"), Iterable(), Iterable(), None, None), OdfObject(
-//              Seq(),
-//              Path("Objects", "SmartCottage", "Weather"), Iterable(), Iterable(), None, None)), None, None)), None)
-//  }
-//  val readOdf: OdfObjects = {
-//    OdfObjects(
-//      Iterable(
-//        OdfObject(
-//          Seq(),
-//          Path("Objects", "SmartHouse"),
-//          Iterable(
-//            OdfInfoItem(
-//              Path("Objects", "SmartHouse", "PowerConsumption"),
-//              Iterable(),
-//              None,
-//              None),
-//            OdfInfoItem(
-//              Path("Objects", "SmartHouse", "Moisture"),
-//              Iterable(),
-//              None,
-//              None)),
-//          Iterable(
-//            OdfObject(
-//              Seq(),
-//              Path("Objects", "SmartHouse", "SmartFridge"),
-//              Iterable(
-//                OdfInfoItem(
-//                  Path("Objects", "SmartHouse", "SmartFridge", "PowerConsumption"),
-//                  Iterable(),
-//                  None,
-//                  None)),
-//              Iterable(),
-//              None,
-//              None),
-//            OdfObject(
-//              Seq(),
-//              Path("Objects", "SmartHouse", "SmartOven"),
-//              Iterable(
-//                OdfInfoItem(
-//                  Path("Objects", "SmartHouse", "SmartOven", "PowerConsumption"),
-//                  Iterable(),
-//                  None,
-//                  None)),
-//              Iterable(),
-//              None,
-//              None)),
-//          None,
-//          None),
-//        OdfObject(
-//          Seq(),
-//          Path("Objects", "SmartCar"),
-//          Iterable(
-//            OdfInfoItem(
-//              Path("Objects", "SmartCar", "Fuel"),
-//              Iterable(),
-//              None,
-//              None)),
-//          Iterable(),
-//          None,
-//          None),
-//        OdfObject(
-//          Nil,
-//          Path("Objects", "SmartCottage"),
-//          Iterable(),
-//          Iterable(),
-//          None,
-//          None)),
-//      None)
-//  }
+class ParserTest( implicit ee: ExecutionEnv ) extends Specification with MatcherMacros with SilentActorSystem{
+  implicit val materializer = ActorMaterializer()
 
   def is =
     s2"""
   This is Specification to check the parsing functionality.
 
-  OmiParser should give certain result for
+  OMIStreamParser should give certain result for
     message with
       incorrect XML       $e1
       incorrect prefix    $e2
@@ -200,10 +79,6 @@ class ParserTest extends Specification with MatcherMacros {
   def e1 = {
     invalidOmiTest(
       "incorrect xml", "ScalaXMLError"
-      // ,
-      // Set(
-      //   ParseError("OmiParser: Invalid XML: Content is not allowed in prolog.")
-      // )
     )
   }
 
@@ -213,10 +88,6 @@ class ParserTest extends Specification with MatcherMacros {
   def e2 = {
     invalidOmiTest(
       omiReadTest.replace("omiEnvelope", "pmi:omiEnvelope"), "SchemaError"
-      /*,
-      Set(
-        ParseError("OmiParser: Invalid XML, schema failure: The prefix \"pmi\" for element \"pmi:omiEnvelope\" is not bound.")
-      )*/
     )
 
   }
@@ -224,10 +95,6 @@ class ParserTest extends Specification with MatcherMacros {
   def e3 = {
     invalidOmiTest(
       omiReadTest.replace("omiEnvelope", "Envelope"), "SchemaError"
-      /*,
-      Set(
-        ParseError("OmiParser: Invalid XML, schema failure: cvc-elt.1: Cannot find the declaration of element \'Envelope\'.")
-      )*/
     )
 
   }
@@ -236,29 +103,20 @@ class ParserTest extends Specification with MatcherMacros {
     invalidOmiTest(
       """<omiEnvelope ttl="10" version="1.0" xsi:schemaLocation="omi.xsd omi.xsd" xmlns="http://www.opengroup.org/xsd/omi/1.0/" >
       </omiEnvelope>""",
-      "SchemaError" /*,
-      Set(
-        ParseError("OmiParser: Invalid XML, schema failure: cvc-complex-type.2.4.b: The content of element 'omiEnvelope' is not complete. One of '{\"omi.xsd\":read, \"omi.xsd\":write, \"omi.xsd\":response, \"omi.xsd\":cancel}' is expected.")
-      )*/
+      "SchemaError" 
     )
   }
 
   def e5 = {
     invalidOmiTest(
-      omiReadTest.replace(""" ttl="10" """, """ ttl="" """), "SchemaError" /*,
-        Set(
-          ParseError("OmiParser: Invalid XML, schema failure: cvc-datatype-valid.1.2.1: '' is not a valid value for 'double'.")
-        )*/
+      omiReadTest.replace(""" ttl="10" """, """ ttl="" """), "SchemaError" 
     )
   }
 
   def e6 = {
     val temp = "daer"
     invalidOmiTest(
-      omiReadTest.replace("read", s"$temp"), "SchemaError" /*,
-        Set(
-          ParseError(s"OmiParser: Invalid XML, schema failure: cvc-complex-type.2.4.a: Invalid content was found starting with element '$temp'." + " One of '{\"omi.xsd\":read, \"omi.xsd\":write, \"omi.xsd\":response, \"omi.xsd\":cancel}' is expected.")
-        )*/
+      omiReadTest.replace("read", s"$temp"), "SchemaError" 
     )
   }
 
@@ -268,20 +126,14 @@ class ParserTest extends Specification with MatcherMacros {
 
   def e101 = {
     invalidOmiTest(
-      omiWriteTest.toString.replace("write msgformat=\"odf\"", "write"), "OMIParserError" /*,
-        Set(ParseError("OmiParser: Missing msgformat attribute."))*/
+      omiWriteTest.toString.replace("write msgformat=\"odf\"", "write"), "OMIParserError" 
     )
   }
 
-  //  def e102 = {
-  //    val temp = OmiParser.parse(omiWriteTest.toString.replace("""msgformat="odf"""", """msgformat="pdf""""))
-  //    temp.head should be equalTo (ParseError("Unknown message format."))
-  //  }
 
   def e103 = {
     invalidOmiTest(
       omiWriteTest.toString.replace("msg", "msn"), "SchemaError"
-      //Set(ParseError("OmiParser: Invalid XML, schema failure: cvc-complex-type.2.4.a: Invalid content was found starting with element 'msn'. One of '{\"omi.xsd\":nodeList, \"omi.xsd\":requestID, \"omi.xsd\":msg}' is expected."))
     )
   }
 
@@ -294,7 +146,6 @@ class ParserTest extends Specification with MatcherMacros {
     </omiEnvelope>
     invalidOmiTest(
       temp, "SchemaError"
-      //Set(ParseError("No Objects child found in msg."))
     )
 
 
@@ -319,7 +170,7 @@ class ParserTest extends Specification with MatcherMacros {
 
 
   def e204 = {
-    val temp = //OmiParser.parse(
+    val temp =
       """
       <omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="10">
       <response>
@@ -330,24 +181,19 @@ class ParserTest extends Specification with MatcherMacros {
       </result> 
     </response>
   </omiEnvelope>
-  """ //, None)
-    //temp should be equalTo Left(Iterable(ParseError("No Objects child found in msg.")))
+  """ 
     invalidOmiTest(temp, "SchemaError")
 
   }
 
   def e205 = {
-    val temp = //OmiParser.parse(
-      omiResponseTest.replace("<return returnCode=\"200\"/>", "") //, None)
-    //temp.isLeft === true
-
-    //temp.left.get.head should be equalTo ParseError("OmiParser: Invalid XML, schema failure: cvc-complex-type.2.4.a: Invalid content was found starting with element 'msg'. One of '{\"omi.xsd\":return}' is expected.")
+    val temp = omiResponseTest.replace("<return returnCode=\"200\"/>", "")
 
     invalidOmiTest(temp, "SchemaError")
   }
 
   def e206 = {
-    val temp =// OmiParser.parse(
+    val temp =
       """<?xml version="1.0" encoding="UTF-8"?>
       <omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="10">
       <response>
@@ -360,19 +206,13 @@ class ParserTest extends Specification with MatcherMacros {
         </result>
       </response>
     </omiEnvelope>
-    """ //)
-        // (temp.isRight) and {
-        //   temp.right.get.head should be equalTo ResponseRequest(Iterable(OmiResult(OmiTypes.Returns.Success(), Iterable.empty[Long], Some(OdfObjects(OdfTreeCollection())))), 10 seconds)
-        // }
-        invalidOmiTest(temp, "SchemaError")
+    """ 
+    invalidOmiTest(temp, "SchemaError")
 
   }
 
   def e207 = {
-    val temp = //OmiParser.parse(
-      omiResponseTest.replace("returnCode=\"200\"", "") //, None)
-    //temp.isLeft === true
-    //temp.left.get.head should be equalTo ParseError("OmiParser: Invalid XML, schema failure: cvc-complex-type.4: Attribute 'returnCode' must appear on element 'return'.")
+    val temp = omiResponseTest.replace("returnCode=\"200\"", "") //, None)
     invalidOmiTest(temp, "SchemaError")
   }
 
@@ -381,40 +221,30 @@ class ParserTest extends Specification with MatcherMacros {
   }
 
   def e301 = {
-    val temp = //OmiParser.parse(
-      omiReadTest.replace("""read msgformat="odf"""", "read")
-    //, None)
-    //temp should be equalTo Left(Iterable(ParseError("OmiParser: Missing msgformat attribute.")))
-
+    val temp =omiReadTest.replace("""read msgformat="odf"""", "read")
     invalidOmiTest(temp, "SchemaError")
   }
 
   def e303 = {
-    val temp = //OmiParser.parse(
-      omiReadTest.replace("msg", "msn") //, None)
-    //temp.isLeft === true
-    //temp.left.get.head should be equalTo ParseError("OmiParser: Invalid XML, schema failure: cvc-complex-type.2.4.a: Invalid content was found starting with element 'msn'. One of '{\"omi.xsd\":nodeList, \"omi.xsd\":requestID, \"omi.xsd\":msg}' is expected.")
-
+    val temp = omiReadTest.replace("msg", "msn") 
     invalidOmiTest(temp, "SchemaError")
   }
 
   def e304 = {
-    val temp =// OmiParser.parse(
-      """
+    val temp ="""
       <omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="10">
       <read msgformat="odf" >
         <msg xmlns="http://www.opengroup.org/xsd/odf/1.0/"  xmlns:odf="http://www.opengroup.org/xsd/odf/1.0/" xmlns:xs="http://www.w3.org/2001/XMLSchema">
       </msg>
     </read>
   </omiEnvelope>
-  """ //, None)
-        //temp should be equalTo Left(Iterable(ParseError("No Objects child found in msg.")))
-        invalidOmiTest(temp, "SchemaError")
+  """ 
+  invalidOmiTest(temp, "SchemaError")
 
   }
 
   def e305 = {
-    val temp = OmiParser.parse(
+    val temp = validOmiTest(
       """<?xml version="1.0" encoding="UTF-8"?>
       <omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="10">
       <read msgformat="odf">
@@ -423,8 +253,9 @@ class ParserTest extends Specification with MatcherMacros {
         </Objects>
       </msg>
     </read>
-  </omiEnvelope>""")
-    temp should be equalTo Right(Iterable(ReadRequest(ODF(Objects.empty))))
+  </omiEnvelope>"""
+  )
+    temp 
 
   }
 
@@ -438,8 +269,6 @@ class ParserTest extends Specification with MatcherMacros {
 
   def e401 = {
     invalidOdfTest("incorrect xml", "ScalaXMLError").pendingUntilFixed
-    //val temp = OdfParser.parse("incorrect xml", None)
-    //temp should be equalTo Left(Iterable(ParseError("Invalid XML: Content is not allowed in prolog.")))
   }
 
   def e402 = {
@@ -464,7 +293,6 @@ class ParserTest extends Specification with MatcherMacros {
             </Object>
             """ //, None)
     invalidOdfTest(temp, "SchemaError").pendingUntilFixed
-    //temp should be equalTo Left(Iterable( ParseError("OdfParser: Invalid XML, schema failure: cvc-elt.1: Cannot find the declaration of element 'Object'.")))
 
   }
 
@@ -477,11 +305,7 @@ class ParserTest extends Specification with MatcherMacros {
         <requestID>456</requestID>
       </cancel>
     </omiEnvelope>"""
-    val temp = OmiParser.parse(omiCancelTest)
-    temp.isRight === true
-    val temp2 = temp.right.get.head.asInstanceOf[CancelRequest]
-    //Some type problem here with iterators
-    temp2 should be equalTo CancelRequest(Vector(123, 456))
+    validOmiTest(omiCancelTest) and validOmiTest(CancelRequest(Vector(123, 456)))
   }
 
   lazy val omiReadTest =
@@ -549,7 +373,6 @@ class ParserTest extends Specification with MatcherMacros {
   )
 
   lazy val omiWriteTest =
-  // <?xml version="1.0" encoding="UTF-8"?>
     <omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="10.0" xmlns:xs="http://www.w3.org/2001/XMLSchema">
       <write msgformat="odf" callback="http://testing.test">
         <msg>
@@ -616,12 +439,6 @@ class ParserTest extends Specification with MatcherMacros {
           ))
       )))
     )),
-      //Some( MetaData(
-      //  "<MetaData xmlns=\"odf.xsd\" xmlns=\"omi.xsd\" xmlns:xs=\"http://www.w3.org/2001/XMLSchema\"" +
-      //  " xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"><InfoItem name=\"Units\"><value type=\"xs:String\">" +
-      //  "Litre</value></InfoItem></MetaData>"
-      //        )
-      //    )
 
     InfoItem(
       Path("Objects", "SmartHouse", "SmartFridge", "PowerConsumption"),
@@ -641,8 +458,8 @@ class ParserTest extends Specification with MatcherMacros {
     Some(HTTPCallback("http://testing.test"))
   )
   lazy val responseRequestTest = ResponseRequest(
-    Seq(OmiResult(
-      OmiTypes.Returns.Success(),
+    OdfCollection(OmiResult(
+      omi.Returns.Success(),
       odf = Some(writeOdf)
     ))
   )
@@ -699,104 +516,76 @@ class ParserTest extends Specification with MatcherMacros {
       </response>
     </omiEnvelope>"""
 
-  def validOmiTest(request: OmiRequest): MatchResult[OmiParseResult] = {
-    val xml = request.asXML
-    val text = xml.toString
-    val result = OmiParser.parse(text)
+  def reparseRequest(request: OmiRequest): Future[OmiRequest] = request.asXMLSource.via(OMIStreamParser.parserFlow).runWith(Sink.head[OmiRequest]) 
+  def validOmiTest(request: OmiRequest): MatchResult[Future[SeqView[ParseEvent,Seq[_]]]] = {
 
-    result should beRight {
-      requests: Iterable[OmiRequest] => {
-        requests should have size (1)
-      } and {
-        requests.headOption.get.asXML should beEqualToIgnoringSpace(request.asXML)
-      }
-    }
+    val reparsed: Future[OmiRequest] = reparseRequest(request)
+        reparsed.map( _.asXMLEvents) should beEqualTo(request.asXMLEvents).await
   }
 
-  def validOmiTest(text: String): MatchResult[OmiParseResult] = {
-    val result = OmiParser.parse(text)
+  def validOmiTest(text: String): Result = {
+    val result = OMIStreamParser.parse(text)
 
-    result should beRight {
-      requests: Iterable[OmiRequest] =>
-        requests should have size (1)
-        requests.headOption should beSome {
-          request: OmiRequest =>
-            request.asXML.toString should be equalTo text
-        }
-    }
+    result.flatMap{
+      request: OmiRequest =>
+        request.asXMLSource.runWith(Sink.fold("")(_ + _))
+    }.map{ 
+      strReq: String => 
+      strReq should beEqualTo(text)
+    }.await
   }
 
-  def validOmiTest(xml: NodeSeq): MatchResult[OmiParseResult] = {
-    val text = xml.toString
-    val result = OmiParser.parse(text)
+  def validOmiTest(xml: NodeSeq): Result= validOmiTest(xml.toString) 
 
-    result should beRight {
-      requests: Iterable[OmiRequest] =>
-        requests should have size (1)
-        requests.headOption should beSome {
-          request: OmiRequest =>
-            request.asXML should beEqualToIgnoringSpace(xml)
-        }
-    }
+  def invalidOmiTest(xml: NodeSeq, error: ParseError): Result= invalidOmiTest(xml.toString,error)
+
+  def invalidOmiTest(text: String, error: ParseError): Result= {
+
+    val result = OMIStreamParser.parse(text)
+    result.failed.map{
+      t =>
+        t should be equalTo error
+    }.await
   }
 
-  def invalidOmiTest(xml: NodeSeq, errors: Set[ParseError]): MatchResult[OmiParseResult] = {
-    val text = xml.toString
-    val result = OmiParser.parse(text)
-    result should beLeft {
-      parseErrors: Iterable[ParseError] =>
-        parseErrors.toSet should be equalTo errors
-    }
+  def invalidOmiTest(xml: NodeSeq, errorType: String): Result= invalidOmiTest(xml.toString,errorType)
+
+  def invalidOmiTest(text: String, errorType: String): Result = {
+    val result = OMIStreamParser.parse(text)
+    result.recover{
+      case pe: ParseError =>
+        parseErrorTypeToString(pe) 
+    }.map{
+      case str: String => 
+        str must contain(errorType)
+    }.await
   }
 
-  def invalidOmiTest(text: String, errors: Set[ParseError]): MatchResult[OmiParseResult] = {
-    val result = OmiParser.parse(text)
+  def reparseODF(odf: ODF): Future[ODF] = odf.asXMLSource().via(ODFStreamParser.parserFlow).runWith(Sink.fold[ImmutableODF,ODF](ImmutableODF())(_ union _)) 
+  def validOdfTest(odf: ODF): Result= {
 
-    result should beLeft {
-      parseErrors: Iterable[ParseError] =>
-        parseErrors.toSet should be equalTo errors
-    }
+    val result = reparseODF(odf)
+
+    result.map{r_odf => r_odf should beEqualTo(odf)}.await
   }
 
-  def invalidOmiTest(xml: NodeSeq, errorType: String): MatchResult[OmiParseResult] = {
-    val text = xml.toString
-    val result = OmiParser.parse(text)
-    result should beLeft {
-      parseErrors: Iterable[ParseError] =>
-        parseErrors.map(parseErrorTypeToString) must contain(errorType)
-    }
+  def invalidOdfTest(text: String, errorType: String): Result= {
+    val result = ODFStreamParser.parse(text)
+
+    result.recover{
+      case pe: ParseError => parseErrorTypeToString(pe) 
+    }.map{
+      case str: String =>
+      str must contain(errorType)
+    }.await
   }
+  def invalidOdfTest(text: String, error: ParseError): Result= {
 
-  def invalidOmiTest(text: String, errorType: String): MatchResult[OmiParseResult] = {
-    val result = OmiParser.parse(text)
-
-    result should beLeft {
-      parseErrors: Iterable[ParseError] =>
-        parseErrors.map(parseErrorTypeToString) must contain(errorType)
-    }
-  }
-
-  def validOdfTest(odf: ODF): MatchResult[OdfParseResult] = {
-    val xml = odf.asXML
-    // May not be correct?
-    val text = xml.toString
-    val result = ODFParser.parse(text)
-
-    result should beRight(odf)
-  }
-
-  def invalidOdfTest(text: String, errorType: String): MatchResult[OdfParseResult] = {
-    val result = ODFParser.parse(text)
-
-    result should beLeft {
-      parseErrors: Iterable[ParseError] =>
-        parseErrors.map(parseErrorTypeToString) must contain(errorType)
-      /*
-    case asdf =>
-      println("TYPE MISSMATCH" )
-      throw new Exception("TYPE MISSMATCH")
-      */
-    }
+    val result = ODFStreamParser.parse(text)
+    result.failed.map{
+      t =>
+        t should be equalTo error
+    }.await
   }
 
   def parseErrorTypeToString(pe: ParseError): String = {
@@ -804,7 +593,7 @@ class ParserTest extends Specification with MatcherMacros {
       case _: SchemaError => "SchemaError"
       case _: ScalaXMLError => "ScalaXMLError"
       case _: ScalaxbError => "ScalaxbError"
-      case _: ODFParserError => "ODFParserError"
+      case _: ODFParserError => "ODFSreamParserError"
       case _: OMIParserError => "OMIParserError"
       case _: ParseErrorList => "ParserErrorList"
       case _ => throw pe

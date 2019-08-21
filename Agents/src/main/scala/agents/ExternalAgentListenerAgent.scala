@@ -26,10 +26,10 @@ import authorization.IpAuthorization
 import com.typesafe.config.Config
 import http.{OmiConfig, OmiConfigExtension}
 import org.slf4j.LoggerFactory
-import types.OmiTypes._
+import types.omi._
 import types._
 import types.odf.{ImmutableODF}
-import types.odf.parser.ODFStreamParser
+import types.odf.parsing.ODFStreamParser
 import akka.stream.ActorMaterializer
 
 import scala.collection.JavaConverters
@@ -91,7 +91,7 @@ class ExternalAgentListener(
 
       // Code for ip address authorization check
       val user = RemoteAddress(remote)//remote.getAddress())
-      val requestForPermissionCheck = OmiTypes.WriteRequest(ImmutableODF(), None, Duration.Inf)
+      val requestForPermissionCheck = omi.WriteRequest(ImmutableODF(), None, Duration.Inf)
 
       if( authorization.ipHasPermission(user)(requestForPermissionCheck).isSuccess ){
         log.info(s"Agent connected from $remote to $local")

@@ -1,5 +1,5 @@
 package types
-package OmiTypes
+package omi
 
 import java.lang.{Iterable => JIterable}
 

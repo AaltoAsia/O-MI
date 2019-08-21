@@ -28,7 +28,7 @@ import parsing.xmlGen.omi.MsgType;
 import parsing.xmlGen.omi.ObjectFactory;
 import parsing.xmlGen.omi.OmiEnvelopeType;
 import parsing.xmlGen.omi.WriteRequestType;
-import types.OmiTypes.UserInfo;
+import types.omi.UserInfo;
 import types.Path;
 
 import javax.xml.bind.JAXBContext;

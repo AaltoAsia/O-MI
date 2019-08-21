@@ -131,6 +131,32 @@ public class OdfFactory{
    */
   public static InfoItem createInfoItem(
     Path path,
+    Iterable<Description> descriptions,
+    Iterable<Value<java.lang.Object>> values,
+    MetaData metaData
+  ){
+    return createInfoItem(
+        path,
+        null,
+        new Vector<QlmID>(),
+        descriptions,
+        values,
+        metaData,
+        new HashMap<>()
+    );
+  }
+
+  /**
+   *
+   * @param path Path of O-DF InfoItem.
+   * @param values Values stored in InfoItem.
+   * @param descriptions Description of InfoItem.
+   * @param metaData MetaData of InfoItem.
+   * @param typeValue type parameter of InfoItem.
+   * @return InfoItem
+   */
+  public static InfoItem createInfoItem(
+    Path path,
     String typeValue,
     Iterable<Description> descriptions,
     Iterable<Value<java.lang.Object>> values,
@@ -193,6 +219,26 @@ public class OdfFactory{
         scala.Option.apply(typeValue),
         Description.unionReduce(OdfCollection.fromJava(descriptions).toSet()),
         toScalaImmutableMap(attr)
+    );
+  }
+  /**
+   *
+   * @param path Path of O-DF Object.
+   * @param descriptions Description of O-DF Object.
+   * @return Object
+   */
+  public static types.odf.Object createObject(
+    Path path,
+    Iterable<Description> descriptions
+  ){
+    Vector<QlmID> ids = new Vector<QlmID>();
+    ids.add(createQlmID(path.toSeq().last()));
+    return createObject(
+        ids,
+        path,
+        descriptions,
+        null,
+        new HashMap<>()
     );
   }
 
@@ -276,6 +322,18 @@ public class OdfFactory{
         scala.Option.apply(startDate),
         scala.Option.apply(endDate),
         toScalaImmutableMap(attr)
+    );
+  }
+  public static QlmID createQlmID(
+      String id
+  ){
+    return createQlmID(
+        id,
+        null,
+        null,
+        null,
+        null,
+        new HashMap<>()
     );
   }
 

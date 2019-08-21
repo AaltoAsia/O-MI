@@ -23,7 +23,7 @@ import http.OmiConfigExtension
 import org.slf4j.{Logger, LoggerFactory}
 import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
-import types.OmiTypes.OmiReturn
+import types.omi.OmiReturn
 import types.Path
 import types.odf._
 

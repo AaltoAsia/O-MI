@@ -13,7 +13,7 @@
  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 package types
 package odf
-package parser
+package parsing
 
 import java.sql.Timestamp
 import java.time.{ZoneOffset,OffsetDateTime, ZoneId}
@@ -32,7 +32,7 @@ import akka.stream.alpakka.xml.scaladsl._
 
 import types._
 import odf._
-import types.OmiTypes.parser.{ResultEventBuilder,OdfRequestEventBuilder}
+import types.omi.parsing._
 import utils._
 
 

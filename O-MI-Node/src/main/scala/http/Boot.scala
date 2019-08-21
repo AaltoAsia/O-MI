@@ -43,8 +43,8 @@ import database._
 import influxDB._
 import http.OmiServer._
 import responses.{CallbackHandler, RequestHandler, SubscriptionManager}
-import types.OmiTypes.Returns.ReturnTypes._
-import types.OmiTypes._
+import types.omi.Returns.ReturnTypes._
+import types.omi._
 import types.odf._
 import io.prometheus.client._
 

@@ -21,7 +21,7 @@ import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.server.Directives.extract
 import authorization.Authorization.{AuthorizationExtension, CombinedTest, UnauthorizedEx}
 import database._
-import types.OmiTypes._
+import types.omi._
 import types.Path
 
 import scala.collection.JavaConverters._

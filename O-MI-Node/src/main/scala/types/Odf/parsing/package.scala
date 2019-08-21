@@ -8,7 +8,7 @@ import java.time.OffsetDateTime
 import akka.stream.alpakka.xml._
 import types._
 
-package object `parser` {
+package object `parsing` {
   def solveTimestamp(dateTime: Option[Timestamp], unixTime: Option[Timestamp], receiveTime: Timestamp): Timestamp = {
     (dateTime,unixTime) match{
       case (Some(dTs), Some(uTs)) => dTs

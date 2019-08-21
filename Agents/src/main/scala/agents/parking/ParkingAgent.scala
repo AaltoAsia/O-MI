@@ -8,11 +8,11 @@ import agents.parking.UserGroup._
 import agents.parking.VehicleType._
 import akka.actor.{ActorRef, Props}
 import com.typesafe.config.Config
-import types.OmiTypes._
+import types.omi._
 import types.Path._
 import types._
 import types.odf._
-import types.odf.parser.ODFStreamParser
+import types.odf.parsing.ODFStreamParser
 import akka.stream.scaladsl.FileIO
 import akka.stream.ActorMaterializer
 

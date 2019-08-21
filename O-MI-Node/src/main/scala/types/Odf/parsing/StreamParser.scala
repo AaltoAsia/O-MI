@@ -13,7 +13,7 @@
  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 package types
 package odf
-package parser
+package parsing
 
 import java.sql.Timestamp
 import scala.util.Try
@@ -35,7 +35,8 @@ import utils._
 
 /** Parser for data in O-DF format */
 object ODFStreamParser {
-  def parse(str: String)(implicit mat: Materializer) = stringParser(Source.single(str))
+  def parse(filePath: java.nio.file.Path)(implicit mat: Materializer): Future[ODF] = stringParser(FileIO.fromPath(filePath).map(_.utf8String))
+  def parse(str: String)(implicit mat: Materializer): Future[ODF] = stringParser(Source.single(str))
   def stringParser(source: Source[String, _])(implicit mat: Materializer): Future[ODF] =
     source.via(parserFlow).runWith(Sink.fold[ODF,ODF](ImmutableODF())(_ union _))
   def byteStringParser(source: Source[ByteString, _])(implicit mat: Materializer): Future[ODF] =

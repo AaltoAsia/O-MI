@@ -32,7 +32,7 @@ import types.odf._
 import akka.stream.{ActorMaterializer, Materializer}
 import akka.stream.scaladsl.{Sink,FileIO}
 import utils._
-import types.odf.parser.ODFStreamParser._
+import types.odf.parsing.ODFStreamParser._
 import akka.stream.alpakka.xml.scaladsl._
 
 import scala.concurrent.ExecutionContext.Implicits.global

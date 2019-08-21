@@ -7,7 +7,7 @@ import akka.actor.{ActorRef, ActorSystem}
 import akka.util.Timeout
 import http.OmiConfigExtension
 import org.slf4j.{Logger, LoggerFactory}
-import types.OmiTypes.{OmiReturn, ReturnCode}
+import types.omi.{OmiReturn, ReturnCode}
 import types.Path
 import types.odf._
 import utils._

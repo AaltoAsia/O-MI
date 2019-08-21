@@ -1,11 +1,11 @@
 package types
-package OmiTypes
+package omi
 
 import java.net.InetAddress
 
 import akka.http.scaladsl.model.Uri
 import database.journal.PCallback
-import types.OmiTypes.Callback._
+import types.omi.Callback._
 
 import scala.util.Try
 
