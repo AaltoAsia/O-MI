@@ -267,26 +267,11 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
   
   final implicit def asXMLSource(odfVersion: Option[OdfVersion]=None): Source[String, NotUsed] = asXMLByteSource(odfVersion).map[String](_.utf8String)
   final def asXMLDocument(odfVersion: Option[OdfVersion]=None): SeqView[ParseEvent, Iterable[_]] = {
+    Seq(StartDocument).view ++
     asXMLEvents(odfVersion) ++
     Seq(EndDocument)
   }
   final def asXMLEvents(odfVersion: Option[OdfVersion]=None): SeqView[ParseEvent, Iterable[_]] = {
-
-    /*object ResponseOrdering extends scala.math.Ordering[Node] {
-      def compare(l: Node, r: Node): Int = {
-        if( PathOrdering.compare(l.path.getParent, r.path.getParent) == 0){
-
-          (l,r) match {
-            case (ii:InfoItem,obj: Object) => -1
-            case (obj: Object, ii: InfoItem) => 1
-            case (nl: Node, nr: Node) => 
-              PathOrdering.compare(l.path,r.path)
-          }
-          } else {
-            PathOrdering.compare(l.path,r.path)
-          }
-      }
-    }*/
    def sort = {
      //val timer = LapTimer(println)
      var iis: List[InfoItem] = List.empty

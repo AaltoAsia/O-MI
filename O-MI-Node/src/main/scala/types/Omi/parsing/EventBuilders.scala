@@ -77,7 +77,6 @@ class EnvelopeEventBuilder(
         val ttlO = startElement.attributes.get("ttl").flatMap{
           str: String => 
             Try{
-              println("ttl check: " + str + " " + str.toDouble )
               parseTTL(str.toDouble)
             }.toOption
         }

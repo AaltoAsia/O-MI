@@ -10,12 +10,14 @@ import akka.stream.alpakka.xml._
 import scala.collection.immutable.HashMap
 import scala.collection.SeqView
 import scala.util.{Failure, Success, Try}
+import scala.concurrent.ExecutionContext.Implicits.global
 
 import scala.concurrent.duration._
-import scala.concurrent.Await
+import scala.concurrent._
 
 import utils.parseEventsToByteSource
 
+import akka.util.ByteString
 import akka.stream.scaladsl.Sink
 import akka.stream.Materializer
 
@@ -28,7 +30,7 @@ trait Value[+V] extends Element{
 
   def retime(newTimestamp: Timestamp): Value[V]
 
-  def persist(implicit mat: Materializer): PPersistentValue = PPersistentValue(timestamp.getTime, typeAttribute, value match {
+  def persist(implicit mat: Materializer, ec: ExecutionContext): PPersistentValue = PPersistentValue(timestamp.getTime, typeAttribute, value match {
     case s: Short => ProtoLongValue(s.toLong)
     case i: Int => ProtoLongValue(i)
     case l: Long => ProtoLongValue(l)
@@ -37,7 +39,10 @@ trait Value[+V] extends Element{
     case b: Boolean => ProtoBoolValue(b)
     case s: String => ProtoStringValue(s)
     case odf: ODF => //[scala.collection.Map[Path,Node],scala.collection.SortedSet[Path]] =>
-      ProtoStringValue(Await.result(parseEventsToByteSource(odf.asXMLEvents(Some(OdfVersion2))).runWith(Sink.fold("")(_+_)), 1 minute))
+      val f: Future[String] = parseEventsToByteSource(odf.asXMLDocument(Some(OdfVersion2))).runWith(Sink.fold(""){
+        case ( result: String, bStr: ByteString ) => result + bStr.utf8String
+      })
+      ProtoStringValue(Await.result(f, 1 minute))
     case a: Any => ProtoStringValue(a.toString)
   })
   def asXMLEvents: SeqView[ParseEvent,Seq[_]] = {

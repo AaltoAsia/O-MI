@@ -29,6 +29,7 @@ object PollDataStore {
 // id= "polldatastore"
 class PollDataStore(override val persistenceId: String) extends JournalStore {
 
+  import context.dispatcher
   private var state: Map[Long, Map[String, Seq[PPersistentValue]]] = Map()
   private def merge[A, B](a: Map[A, B], b: Map[A, B])(mergef: (B, Option[B]) => B): Map[A, B] = {
     val (bigger, smaller) = if (a.size > b.size) (a, b) else (b, a)

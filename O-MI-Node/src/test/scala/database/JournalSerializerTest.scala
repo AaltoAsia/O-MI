@@ -120,7 +120,7 @@ class JournalSerializerTest(implicit ee: ExecutionEnv) extends Specification wit
     val intValue = IntValue(20,ts)
     val longValue = LongValue(20,ts)
     val booleanValue = BooleanValue(value = true, ts)
-    val odfValue = ODFValue(ImmutableODF(Seq(Objects(), Object(Path("Objects/test")))),ts)
+    val odfValue = ODFValue(ImmutableODF(Seq(Objects(Some("2.0")), Object(Path("Objects/test")))),ts)
     val stringValue = StringPresentedValue("testValue",ts, "testValuetype")
     testValue(floatValue) and
     testValue(doubleValue) and

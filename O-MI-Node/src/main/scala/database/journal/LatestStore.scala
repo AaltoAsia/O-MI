@@ -31,6 +31,7 @@ object LatestStore {
 }
 class LatestStore(override val persistenceId: String) extends JournalStore {
 
+  import context.dispatcher
   private var state: Map[Path, Value[Any]] = Map()
 
 
