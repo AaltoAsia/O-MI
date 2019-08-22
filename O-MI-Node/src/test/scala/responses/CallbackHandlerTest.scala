@@ -11,6 +11,7 @@ import http.OmiConfig
 import org.specs2.concurrent.ExecutionEnv
 import org.specs2.mutable._
 import testHelpers.{Actorstest, SystemTestCallbackServer, DummySingleStores}
+import scala.xml.XML
 import types.omi._
 import testHelpers._
 import scala.concurrent.duration._
@@ -27,7 +28,7 @@ class CallbackHandlerTest(implicit ee: ExecutionEnv) extends Specification {
       val (server,probe) = initCallbackServer(port)
       val ttl = Duration(2, "seconds")
       val msg = Responses.Success(ttl = ttl)
-      val msgStr = msg.asXMLSource.runWith(Sink.fold("")(_ + _))
+      val msgStr = msg.asXMLSource.runWith(Sink.fold("")(_ + _)).map{ str => XML.loadString(str)}
 
       val settings = OmiConfig(system)
 
@@ -44,7 +45,7 @@ class CallbackHandlerTest(implicit ee: ExecutionEnv) extends Specification {
       val port = 20004
       val ttl = Duration(10, "seconds")
       val msg = Responses.Success(ttl = ttl)
-      val msgStr = msg.asXMLSource.runWith(Sink.fold("")(_ + _))
+      val msgStr = msg.asXMLSource.runWith(Sink.fold("")(_ + _)).map{ str => XML.loadString(str)}
 
       val settings = OmiConfig(system)
       val callbackHandler = new CallbackHandler(settings, new DummySingleStores())(system, materializer)

@@ -4,6 +4,8 @@ import java.sql.Timestamp
 
 import scala.concurrent.Future
 import scala.collection.SeqView
+import scala.xml.Elem
+import scala.xml.XML
 import akka.stream.scaladsl.Sink
 import akka.stream.alpakka.xml._
 import akka.stream.ActorMaterializer
@@ -59,7 +61,6 @@ class ParserTest( implicit ee: ExecutionEnv ) extends Specification with Matcher
       correct message     $e200
       missing Objects     $e204
       missing result node $e205
-      no objects to parse $e206
       missing return code $e207
     read request with
       correct message     $e300
@@ -129,7 +130,7 @@ class ParserTest( implicit ee: ExecutionEnv ) extends Specification with Matcher
 
   def e103 = {
     invalidOmiTest(
-      omiWriteTest.toString.replace("msg", "msn"), "SchemaError"
+      omiWriteTest.toString.replace("msg", "msn"), "OMIParserError"
     )
   }
 
@@ -141,7 +142,7 @@ class ParserTest( implicit ee: ExecutionEnv ) extends Specification with Matcher
       </write>
     </omiEnvelope>
     invalidOmiTest(
-      temp, "SchemaError"
+      temp, "OMIParserError"
     )
 
 
@@ -155,7 +156,7 @@ class ParserTest( implicit ee: ExecutionEnv ) extends Specification with Matcher
         </msg>
       </write>
     </omiEnvelope>
-    invalidOmiTest(temp, "SchemaError")
+    invalidOmiTest(temp, "ODFStreamParserError")
 
   }
 
@@ -166,9 +167,7 @@ class ParserTest( implicit ee: ExecutionEnv ) extends Specification with Matcher
 
 
   def e204 = {
-    val temp =
-      """
-      <omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="10">
+    val temp = <omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="10">
       <response>
         <result msgformat="odf" > 
           <return returnCode="200" /> 
@@ -177,39 +176,20 @@ class ParserTest( implicit ee: ExecutionEnv ) extends Specification with Matcher
       </result> 
     </response>
   </omiEnvelope>
-  """ 
-    invalidOmiTest(temp, "SchemaError")
+
+    invalidOmiTest(temp, "ODFStreamParserError")
 
   }
 
   def e205 = {
     val temp = omiResponseTest.replace("<return returnCode=\"200\"/>", "")
 
-    invalidOmiTest(temp, "SchemaError")
-  }
-
-  def e206 = {
-    val temp =
-      """<?xml version="1.0" encoding="UTF-8"?>
-      <omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="10">
-      <response>
-        <result msgformat="odf" >
-          <return returnCode="200" />
-          <msg xmlns="http://www.opengroup.org/xsd/odf/1.0/"  xmlns:odf="http://www.opengroup.org/xsd/odf/1.0/" xmlns:xs="http://www.w3.org/2001/XMLSchema">
-          <Objects>
-            </Objects>
-          </msg>
-        </result>
-      </response>
-    </omiEnvelope>
-    """ 
-    invalidOmiTest(temp, "SchemaError")
-
+    invalidOmiTest(temp, "OMIParserError")
   }
 
   def e207 = {
     val temp = omiResponseTest.replace("returnCode=\"200\"", "") //, None)
-    invalidOmiTest(temp, "SchemaError")
+    invalidOmiTest(temp, "OMIParserError")
   }
 
   def e300 = {
@@ -218,12 +198,12 @@ class ParserTest( implicit ee: ExecutionEnv ) extends Specification with Matcher
 
   def e301 = {
     val temp =omiReadTest.replace("""read msgformat="odf"""", "read")
-    invalidOmiTest(temp, "SchemaError")
+    invalidOmiTest(temp, "OMIParserError")
   }
 
   def e303 = {
     val temp = omiReadTest.replace("msg", "msn") 
-    invalidOmiTest(temp, "SchemaError")
+    invalidOmiTest(temp, "OMIParserError")
   }
 
   def e304 = {
@@ -235,22 +215,13 @@ class ParserTest( implicit ee: ExecutionEnv ) extends Specification with Matcher
     </read>
   </omiEnvelope>
   """ 
-  invalidOmiTest(temp, "SchemaError")
+  invalidOmiTest(temp, "ODFStreamParserError")
 
   }
 
   def e305 = {
-    val temp = validOmiTest(
-      """<?xml version="1.0" encoding="UTF-8"?>
-      <omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/"  version="1.0" ttl="10">
-      <read msgformat="odf">
-        <msg >
-          <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/"  xmlns:odf="http://www.opengroup.org/xsd/odf/1.0/" xmlns:xs="http://www.w3.org/2001/XMLSchema">
-        </Objects>
-      </msg>
-    </read>
-  </omiEnvelope>"""
-  )
+    val request=  ReadRequest(ImmutableODF(Vector(Objects()))) 
+    val temp = validOmiTest(request)
     temp 
 
   }
@@ -288,20 +259,13 @@ class ParserTest( implicit ee: ExecutionEnv ) extends Specification with Matcher
               </Object>
             </Object>
             """ //, None)
-    invalidOdfTest(temp, "SchemaError").pendingUntilFixed
+    invalidOdfTest(temp, "OMIParserError").pendingUntilFixed
 
   }
 
   def e500 = {
-    val omiCancelTest =
-      """<?xml version="1.0" encoding="UTF-8"?>
-      <omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="10">
-      <cancel>
-        <requestID>123</requestID>
-        <requestID>456</requestID>
-      </cancel>
-    </omiEnvelope>"""
-    validOmiTest(omiCancelTest) and validOmiTest(CancelRequest(Vector(123, 456)))
+    val request = CancelRequest(Vector(123, 456))
+    validOmiTest(request) and validOmiTest(request)
   }
 
   lazy val omiReadTest =
@@ -409,21 +373,22 @@ class ParserTest( implicit ee: ExecutionEnv ) extends Specification with Matcher
         </msg>
       </write>
     </omiEnvelope>
-  lazy val testTimestamp = new Timestamp(1418909692)
+  lazy val testTimestamp1 = new Timestamp(1418909692)
+  lazy val testTimestamp2 = new Timestamp(1418919692)
   lazy val writeOdf: ODF = ODF(
     InfoItem(
       Path("Objects", "SmartHouse", "PowerConsumption"),
       Vector(
-        Value("193.1", "xs:double", testTimestamp),
-        Value("1.1", "xs:double", testTimestamp)
+        Value("1.1", "xs:double", testTimestamp1),
+        Value("193.1", "xs:double", testTimestamp2)
       )
     ),
 
     InfoItem.build((
       Path("Objects", "SmartHouse", "Moisture"),
       Vector[Value[Any]](
-        Value("193.1", "xs:double", timestamp = testTimestamp),
-        Value("1.1", "xs:double", timestamp = testTimestamp)
+        Value("1.1", "xs:double", timestamp = testTimestamp1),
+        Value("193.1", "xs:double", timestamp = testTimestamp2)
       ),
       Description(" test"), 
       MetaData(Vector(InfoItem(
@@ -431,7 +396,7 @@ class ParserTest( implicit ee: ExecutionEnv ) extends Specification with Matcher
           Vector(Value(
             "Litre",
             "xs:string",
-            testTimestamp
+            testTimestamp1
           ))
       )))
     )),
@@ -439,8 +404,8 @@ class ParserTest( implicit ee: ExecutionEnv ) extends Specification with Matcher
     InfoItem(
       Path("Objects", "SmartHouse", "SmartFridge", "PowerConsumption"),
       Vector(
-        Value("193.1", "xs:double", testTimestamp),
-        Value("1.1", "xs:double", testTimestamp)
+        Value("193.1", "xs:double", testTimestamp1),
+        Value("1.1", "xs:double", testTimestamp2)
       )
     ),
 
@@ -519,11 +484,11 @@ class ParserTest( implicit ee: ExecutionEnv ) extends Specification with Matcher
     val reparsed: Future[OmiRequest] = reparseRequest(request)
     reparsed.flatMap{ 
       reReq => 
-        reReq.asXMLSource.runWith(strConcatSink).flatMap{ 
+        reReq.asXMLSource.runWith(strConcatSink).map{ str => XML.loadString(str)}.flatMap{ 
           strReq => 
-            request.asXMLSource.runWith(strConcatSink).map{
+            request.asXMLSource.runWith(strConcatSink).map{ str => XML.loadString(str)}.map{
               correctStr => 
-                strReq should beEqualTo(correctStr)
+                strReq should beEqualToIgnoringSpace(correctStr)
             }
         }
     }.await
@@ -577,7 +542,7 @@ class ParserTest( implicit ee: ExecutionEnv ) extends Specification with Matcher
     }.await
   }
 
-  def reparseODF(odf: ODF): Future[ODF] = odf.asXMLSource().via(ODFStreamParser.parserFlow).runWith(Sink.fold[ImmutableODF,ODF](ImmutableODF())(_ union _)) 
+  def reparseODF(odf: ODF): Future[ODF] = odf.asXMLDocumentSource().via(ODFStreamParser.parserFlow).runWith(Sink.fold[ImmutableODF,ODF](ImmutableODF())(_ union _)) 
   def validOdfTest(odf: ODF): Result= {
 
     val result = reparseODF(odf)
@@ -606,10 +571,10 @@ class ParserTest( implicit ee: ExecutionEnv ) extends Specification with Matcher
 
   def parseErrorTypeToString(pe: ParseError): String = {
     pe match {
-      case _: SchemaError => "SchemaError"
+      case _: OMIParserError => "OMIParserError"
       case _: ScalaXMLError => "ScalaXMLError"
       case _: ScalaxbError => "ScalaxbError"
-      case _: ODFParserError => "ODFSreamParserError"
+      case _: ODFParserError => "ODFStreamParserError"
       case _: OMIParserError => "OMIParserError"
       case _: ParseErrorList => "ParserErrorList"
       case _ => throw pe

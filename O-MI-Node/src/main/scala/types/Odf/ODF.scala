@@ -262,6 +262,7 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
        )
    }*/
 
+  final implicit def asXMLDocumentSource(odfVersion: Option[OdfVersion]=None): Source[String, NotUsed] = parseEventsToByteSource(asXMLDocument(odfVersion)).map[String](_.utf8String)
   final implicit def asXMLByteSource(odfVersion: Option[OdfVersion]=None): Source[ByteString, NotUsed] = parseEventsToByteSource(asXMLEvents(odfVersion))
   
   final implicit def asXMLSource(odfVersion: Option[OdfVersion]=None): Source[String, NotUsed] = asXMLByteSource(odfVersion).map[String](_.utf8String)

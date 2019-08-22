@@ -309,7 +309,8 @@ object ImmutableODF {
         if (mutableHMap.contains(node.path)) {
           (node, mutableHMap.get(node.path)) match {
             case (ii: InfoItem, Some(oii: InfoItem)) =>
-              mutableHMap.update(ii.path, ii.union(oii))
+              val nii = ii.union(oii)
+              mutableHMap.update(nii.path,nii.copy(values = nii.values.sortBy(_.timestamp.getTime)))
             case (obj: Object, Some(oo: Object)) =>
               mutableHMap.update(obj.path,obj.union(oo))
             case (obj: Objects, Some(oo: Objects)) =>
