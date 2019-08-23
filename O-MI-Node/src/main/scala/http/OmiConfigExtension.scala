@@ -117,15 +117,6 @@ class OmiConfigExtension(val config: Config) extends Extension
   val allowedRequestTypes: Set[MessageType] = config.getStringList("omi-service.allowRequestTypesForAll").asScala
     .map((x) => MessageType(x.toLowerCase)).toSet
 
-  // Old External AuthAPIService V1
-  val authAPIServiceV1: Config =
-    Try(config getConfig "omi-service.authorization") orElse
-      Try(config getConfig "omi-service.authAPI.v1") get
-
-  val enableExternalAuthorization: Boolean = authAPIServiceV1.getBoolean("enable-external-authorization-service")
-  val enableAuthAPIServiceV1: Boolean = authAPIServiceV1.getBoolean("enable-external-authorization-service")
-  val externalAuthorizationPort: Int = authAPIServiceV1.getInt("authorization-service-port")
-  val externalAuthUseHttps: Boolean = authAPIServiceV1.getBoolean("use-https")
 
   // External AuthAPIService V2
   case object AuthApiV2 {

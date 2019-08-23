@@ -24,7 +24,7 @@ case class ParkingFacility(
     import ParkingFacility.mvType
     var nodes = Seq(
       Object( 
-        Vector( QlmID( name )),
+        Vector( OdfID( name )),
         path,
         typeAttribute = Some(s"${mvType(prefix)}")
       )

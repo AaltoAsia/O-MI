@@ -83,13 +83,6 @@ class OmiServiceImpl(
     override val log = LoggerFactory.getLogger(classOf[OmiService])
   } with OmiService {
 
-  //example auth API service code in java directory of the project
-  if( settings.enableExternalAuthorization) {
-    log.info("External Auth API v1 module enabled")
-    log.info(s"External Authorization port ${settings.externalAuthorizationPort}")
-    log.info(s"External Authorization useHttps ${settings.externalAuthUseHttps}")
-    registerApi(new AuthAPIService(settings.externalAuthUseHttps, settings.externalAuthorizationPort))
-  }
 
   //example auth API service code in java directory of the project
   if( settings.AuthApiV2.enable) {

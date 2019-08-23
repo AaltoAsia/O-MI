@@ -75,7 +75,7 @@ public class OdfFactory{
   public static InfoItem createInfoItem(
     Path path,
     String typeValue,
-    Iterable<QlmID> names,
+    Iterable<OdfID> names,
     Iterable<Description> descriptions,
     Iterable<Value<java.lang.Object>> values,
     MetaData metaData,
@@ -112,7 +112,7 @@ public class OdfFactory{
     return createInfoItem(
         path,
         typeValue,
-        new Vector<QlmID>(),
+        new Vector<OdfID>(),
         descriptions,
         values,
         metaData,
@@ -138,7 +138,7 @@ public class OdfFactory{
     return createInfoItem(
         path,
         null,
-        new Vector<QlmID>(),
+        new Vector<OdfID>(),
         descriptions,
         values,
         metaData,
@@ -166,7 +166,7 @@ public class OdfFactory{
     return createInfoItem(
         path,
         typeValue,
-        new Vector<QlmID>(),
+        new Vector<OdfID>(),
         descriptions,
         values,
         metaData,
@@ -190,7 +190,7 @@ public class OdfFactory{
     return createInfoItem(
         path,
         null,
-        new Vector<QlmID>(),
+        new Vector<OdfID>(),
         new Vector<Description>(),
         values,
         null,
@@ -200,14 +200,14 @@ public class OdfFactory{
 
   /**
    *
-   * @param ids QlmIDs of O-DF Object
+   * @param ids OdfIDs of O-DF Object
    * @param path Path of O-DF Object.
    * @param descriptions Description of O-DF Object.
    * @param typeValue Type of an O-DF Object
    * @return Object
    */
   public static types.odf.Object createObject(
-    Iterable<QlmID> ids,
+    Iterable<OdfID> ids,
     Path path,
     Iterable<Description> descriptions,
     String typeValue,
@@ -231,8 +231,8 @@ public class OdfFactory{
     Path path,
     Iterable<Description> descriptions
   ){
-    Vector<QlmID> ids = new Vector<QlmID>();
-    ids.add(createQlmID(path.toSeq().last()));
+    Vector<OdfID> ids = new Vector<OdfID>();
+    ids.add(createOdfID(path.toSeq().last()));
     return createObject(
         ids,
         path,
@@ -307,7 +307,7 @@ public class OdfFactory{
     );
   }
 
-  public static QlmID createQlmID(
+  public static OdfID createOdfID(
       String id,
       String idType,
       String tagType,
@@ -315,7 +315,7 @@ public class OdfFactory{
       Timestamp endDate,
       Map<String,String> attr
   ){
-    return new QlmID(
+    return new OdfID(
         id,
         scala.Option.apply(idType),
         scala.Option.apply(tagType),
@@ -324,10 +324,10 @@ public class OdfFactory{
         toScalaImmutableMap(attr)
     );
   }
-  public static QlmID createQlmID(
+  public static OdfID createOdfID(
       String id
   ){
-    return createQlmID(
+    return createOdfID(
         id,
         null,
         null,

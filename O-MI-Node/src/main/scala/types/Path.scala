@@ -75,17 +75,17 @@ class Path private(pathSeq: Vector[String]) extends Serializable { // TODO: test
   /**
     * Add new id/name to end of paths
     *
-    * @param id QlmID to be added to end of Path.
+    * @param id OdfID to be added to end of Path.
     * @return new path with added id at end.
     */
-  def /(id: odf.QlmID): Path = {
+  def /(id: odf.OdfID): Path = {
     Path(this.toSeq ++ Seq(id.id))
   }
 
 
   def append(str: String): Path = this / str
 
-  //def append(id: QlmID ): Path = this / id
+  //def append(id: OdfID ): Path = this / id
 
   /**
     * Get list of ancestors from this path, e.g "/a/b/c/d" => "/a", "/a/b", "/a/b/c", "a/b/c/d"

@@ -5,7 +5,7 @@ import java.sql.Timestamp
 import database.journal.PPersistentNode.NodeType.{Ii, Obj, Objs}
 import database.EventSub
 import types.Path
-import types.odf.{BooleanValue, Description, DoubleValue, FloatValue, ODF, ImmutableODF, InfoItem, IntValue, LongValue, MetaData, ODFValue, Object, Objects, QlmID, ShortValue, Value}
+import types.odf.{BooleanValue, Description, DoubleValue, FloatValue, ODF, ImmutableODF, InfoItem, IntValue, LongValue, MetaData, ODFValue, Object, Objects, OdfID, ShortValue, Value}
 import utils._
 import akka.stream.Materializer
 import akka.stream.scaladsl.{Source, Sink}
@@ -38,7 +38,7 @@ object Models {
       path.last,
       path,
       Option(pinfo.typeName).filter(_.nonEmpty),
-      pinfo.names.map(id => buildQlmIDFromProtobuf(id)).toVector,
+      pinfo.names.map(id => buildOdfIDFromProtobuf(id)).toVector,
       pinfo.descriptions.map(d => Description(d.text, Option(d.lang).filter(_.nonEmpty))).toSet,
       metaData = pinfo.metadata
         .map(md => MetaData(md.infoItems.map { case (p, ii) => buildInfoItemFromProtobuf(p, ii) }.toVector)),
@@ -46,8 +46,8 @@ object Models {
     )
   }
 
-  def buildQlmIDFromProtobuf(pqlmid: PQlmid): QlmID = {
-    QlmID(
+  def buildOdfIDFromProtobuf(pqlmid: PQlmid): OdfID = {
+    OdfID(
       pqlmid.id,
       Option(pqlmid.idType).filter(_.nonEmpty),
       Option(pqlmid.tagType).filter(_.nonEmpty),
@@ -59,7 +59,7 @@ object Models {
 
   def buildObjectFromProtobuf(path: String, pobj: PObject): Object = {
     Object(
-      pobj.ids.map(id => buildQlmIDFromProtobuf(id)).toVector,
+      pobj.ids.map(id => buildOdfIDFromProtobuf(id)).toVector,
       Path(path),
       Option(pobj.typeName).filter(_.nonEmpty),
       pobj.descriptions.map(d => Description(d.text, Option(d.lang).filter(_.nonEmpty))).toSet,

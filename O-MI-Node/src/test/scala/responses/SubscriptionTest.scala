@@ -369,7 +369,7 @@ class SubscriptionTest( implicit ee: ExecutionEnv ) extends Specification with B
 
   def addSubForObject(ttl: Long, interval: Long, path: String, callback: String = "") = {
     val pp = Path("Objects", "SubscriptionTest")
-    val odf = ImmutableODF(Object(OdfCollection(QlmID(path)), pp / path))
+    val odf = ImmutableODF(Object(OdfCollection(OdfID(path)), pp / path))
     val req = SubscriptionRequest(interval seconds,
       odf,
       None,

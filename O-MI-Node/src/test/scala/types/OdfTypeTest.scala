@@ -337,12 +337,12 @@ class OdfTypesTest(implicit ee: ExecutionEnv ) extends Specification {
         "II3",
         Path("Objects", "ObjectU", "II3"),
         names = Vector(
-          QlmID(
+          OdfID(
             "II2O1",
             Some("TestID"),
             Some("TestTag")
           ),
-          QlmID(
+          OdfID(
             "II2O2",
             Some("TestID"),
             Some("TestTag")
@@ -372,12 +372,12 @@ class OdfTypesTest(implicit ee: ExecutionEnv ) extends Specification {
         "II3",
         Path("Objects", "ObjectA", "II3"),
         names = Vector(
-          QlmID(
+          OdfID(
             "II2O1",
             Some("TestID"),
             Some("TestTag")
           ),
-          QlmID(
+          OdfID(
             "II2O2",
             Some("TestID"),
             Some("TestTag")
@@ -405,7 +405,7 @@ class OdfTypesTest(implicit ee: ExecutionEnv ) extends Specification {
       ),
       Object(
         Vector(
-          QlmID(
+          OdfID(
             "ObjectD",
             Some("TestID"),
             Some("TestTag")
@@ -434,12 +434,12 @@ class OdfTypesTest(implicit ee: ExecutionEnv ) extends Specification {
         "II3",
         Path("Objects", "ObjectU", "II3"),
         names = Vector(
-          QlmID(
+          OdfID(
             "II2O1",
             Some("TestID"),
             Some("TestTag")
           ),
-          QlmID(
+          OdfID(
             "II2O2",
             Some("TestID"),
             Some("TestTag")
@@ -469,12 +469,12 @@ class OdfTypesTest(implicit ee: ExecutionEnv ) extends Specification {
         "II3",
         Path("Objects", "ObjectA", "II3"),
         names = Vector(
-          QlmID(
+          OdfID(
             "II2O1",
             Some("TestID"),
             Some("TestTag")
           ),
-          QlmID(
+          OdfID(
             "II2O2",
             Some("TestID"),
             Some("TestTag")
@@ -502,7 +502,7 @@ class OdfTypesTest(implicit ee: ExecutionEnv ) extends Specification {
       ),
       Object(
         Vector(
-          QlmID(
+          OdfID(
             "ObjectD",
             Some("TestID"),
             Some("TestTag")
@@ -531,12 +531,12 @@ class OdfTypesTest(implicit ee: ExecutionEnv ) extends Specification {
         "II3",
         Path("Objects", "ObjectU", "II3"),
         names = Vector(
-          QlmID(
+          OdfID(
             "II2O1",
             Some("TestID"),
             Some("TestTag")
           ),
-          QlmID(
+          OdfID(
             "II2O2",
             Some("TestID"),
             Some("TestTag")
@@ -566,12 +566,12 @@ class OdfTypesTest(implicit ee: ExecutionEnv ) extends Specification {
         "II3",
         Path("Objects", "ObjectA", "II3"),
         names = Vector(
-          QlmID(
+          OdfID(
             "II2O1",
             Some("TestID"),
             Some("TestTag")
           ),
-          QlmID(
+          OdfID(
             "II2O2",
             Some("TestID"),
             Some("TestTag")
@@ -599,7 +599,7 @@ class OdfTypesTest(implicit ee: ExecutionEnv ) extends Specification {
       ),
       Object(
         Vector(
-          QlmID(
+          OdfID(
             "ObjectD",
             Some("TestID"),
             Some("TestTag")
@@ -628,7 +628,7 @@ class OdfTypesTest(implicit ee: ExecutionEnv ) extends Specification {
       "II",
       Path("Objects", "Obj", "II"),
       typeAttribute = Some("test"),
-      names = Vector(QlmID("II1")),
+      names = Vector(OdfID("II1")),
       descriptions = Set(
         Description("test", Some("English")),
         Description("test", Some("Finnish"))
@@ -640,7 +640,7 @@ class OdfTypesTest(implicit ee: ExecutionEnv ) extends Specification {
     val rII = InfoItem(
       "II",
       Path("Objects", "Obj", "II"),
-      names = Vector(QlmID("II2")),
+      names = Vector(OdfID("II2")),
       typeAttribute = Some("testi"),
       descriptions = Set(
         Description("testi", Some("Finnish")),
@@ -654,7 +654,7 @@ class OdfTypesTest(implicit ee: ExecutionEnv ) extends Specification {
       "II",
       Path("Objects", "Obj", "II"),
       typeAttribute = Some("testi"),
-      names = Vector(QlmID("II2"), QlmID("II1")),
+      names = Vector(OdfID("II2"), OdfID("II1")),
       descriptions = Set(
         Description("test", Some("English")),
         Description("testi", Some("Finnish")),
@@ -698,7 +698,7 @@ class OdfTypesTest(implicit ee: ExecutionEnv ) extends Specification {
     val lII = InfoItem(
       "II",
       Path("Objects", "Obj", "II"),
-      names = Vector(QlmID("II1")),
+      names = Vector(OdfID("II1")),
       descriptions = Set(Description("test", Some("English"))),
       typeAttribute = Some("oldtype"),
       values = Vector(Value("test", testTime)),
@@ -708,7 +708,7 @@ class OdfTypesTest(implicit ee: ExecutionEnv ) extends Specification {
     val rII = InfoItem(
       "II",
       Path("Objects", "Obj", "II"),
-      names = Vector(QlmID("II2")),
+      names = Vector(OdfID("II2")),
       descriptions = Set(Description("test", Some("Finnish"))),
       typeAttribute = Some("newtype"),
       values = Vector(Value(31, testTime)),
@@ -718,7 +718,7 @@ class OdfTypesTest(implicit ee: ExecutionEnv ) extends Specification {
     val correct = InfoItem(
       "II",
       Path("Objects", "Obj", "II"),
-      names = Vector(QlmID("II2"), QlmID("II1")),
+      names = Vector(OdfID("II2"), OdfID("II1")),
       descriptions = Set(Description("test", Some("English")), Description("test", Some("Finnish"))),
       typeAttribute = Some("newtype"),
       values = Vector(Value("test", testTime), Value(31, testTime)),
@@ -735,21 +735,21 @@ class OdfTypesTest(implicit ee: ExecutionEnv ) extends Specification {
 
   def objectUnionTest = {
     val lObj = Object(
-      Vector(QlmID("Obj"), QlmID("O1")),
+      Vector(OdfID("Obj"), OdfID("O1")),
       Path("Objects", "Obj"),
       Some("test1"),
       Set(Description("test", Some("English"))),
       HashMap("test1" -> "test")
     )
     val rObj = Object(
-      Vector(QlmID("Obj"), QlmID("O2")),
+      Vector(OdfID("Obj"), OdfID("O2")),
       Path("Objects", "Obj"),
       Some("test2"),
       Set(Description("test", Some("Finnish"))),
       HashMap("test2" -> "test")
     )
     val correct = Object(
-      Vector(QlmID("O2"), QlmID("O1"), QlmID("Obj")),
+      Vector(OdfID("O2"), OdfID("O1"), OdfID("Obj")),
       Path("Objects", "Obj"),
       Some("test2"),
       Set(Description("test", Some("English")), Description("test", Some("Finnish"))),
@@ -760,21 +760,21 @@ class OdfTypesTest(implicit ee: ExecutionEnv ) extends Specification {
 
   def objectUpdateTest = {
     val lObj = Object(
-      Vector(QlmID("Obj"), QlmID("O1")),
+      Vector(OdfID("Obj"), OdfID("O1")),
       Path("Objects", "Obj"),
       Some("test1"),
       Set(Description("test", Some("English"))),
       HashMap("test1" -> "test")
     )
     val rObj = Object(
-      Vector(QlmID("Obj"), QlmID("O2")),
+      Vector(OdfID("Obj"), OdfID("O2")),
       Path("Objects", "Obj"),
       Some("test2"),
       Set(Description("test", Some("Finnish"))),
       HashMap("test2" -> "test")
     )
     val correct = Object(
-      Vector(QlmID("O2"), QlmID("O1"), QlmID("Obj")),
+      Vector(OdfID("O2"), OdfID("O1"), OdfID("Obj")),
       Path("Objects", "Obj"),
       Some("test2"),
       Set(Description("test", Some("English")), Description("test", Some("Finnish"))),
@@ -870,12 +870,12 @@ class OdfTypesTest(implicit ee: ExecutionEnv ) extends Specification {
       "II1",
       Path("Objects", "ObjectN", "SubObj", "II1"),
       names = Vector(
-        QlmID(
+        OdfID(
           "II2O1",
           Some("TestID"),
           Some("TestTag")
         ),
-        QlmID(
+        OdfID(
           "II2O2",
           Some("TestID"),
           Some("TestTag")
@@ -1021,12 +1021,12 @@ class OdfTypesTest(implicit ee: ExecutionEnv ) extends Specification {
       "II2",
       Path("Objects", "ObjectA", "II2"),
       names = Vector(
-        QlmID(
+        OdfID(
           "II2O1",
           Some("TestID"),
           Some("TestTag")
         ),
-        QlmID(
+        OdfID(
           "II2O2",
           Some("TestID"),
           Some("TestTag")
@@ -1054,12 +1054,12 @@ class OdfTypesTest(implicit ee: ExecutionEnv ) extends Specification {
     ),
     Object(
       Vector(
-        QlmID(
+        OdfID(
           "ObjectCC",
           Some("TestID"),
           Some("TestTag")
         ),
-        QlmID(
+        OdfID(
           "OCC",
           Some("TestID"),
           Some("TestTag")

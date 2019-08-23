@@ -38,7 +38,7 @@ case class Plug(
     val path: Path= parentPath / id
     Seq(
       Object( 
-        Vector( QlmID( id)),
+        Vector( OdfID( id)),
         path,
         typeAttribute = Some(s"${mvType(prefix)}")
       )

@@ -71,7 +71,7 @@ class JournalSerializerTest(implicit ee: ExecutionEnv) extends Specification wit
     val orig = InfoItem(
       Path(path),
       Some("testType"),
-      Vector(QlmID("test1", Some("testType"),Some("tagtype"),None,None,Map("testKey"->"testValue"))),
+      Vector(OdfID("test1", Some("testType"),Some("tagtype"),None,None,Map("testKey"->"testValue"))),
       Set(Description("description text",Some("english"))),
       Vector.empty,
       None,
@@ -80,7 +80,7 @@ class JournalSerializerTest(implicit ee: ExecutionEnv) extends Specification wit
     persisted must beSome and (Models.buildInfoItemFromProtobuf(path, persisted.get) === orig )
   }
   private def buildQlmid = {
-    val orig = QlmID(
+    val orig = OdfID(
       "test",
       Some("idType"),
       Some("tagtype"),
@@ -89,7 +89,7 @@ class JournalSerializerTest(implicit ee: ExecutionEnv) extends Specification wit
       Map("testkey" -> "testvalue")
     )
     val persisted = orig.persist
-    Models.buildQlmIDFromProtobuf(persisted) === orig
+    Models.buildOdfIDFromProtobuf(persisted) === orig
   }
   private def buildObject = {
     val path = "Objects/TestObject"

@@ -21,7 +21,7 @@ case class OpeningHoursSpecification(
     val path: Path= parentPath / name
     Seq(
       Object( 
-        Vector( QlmID( name)),
+        Vector( OdfID( name)),
         path,
         typeAttribute = Some(s"${mvType(prefix)}")
       )

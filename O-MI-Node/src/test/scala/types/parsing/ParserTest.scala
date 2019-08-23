@@ -315,7 +315,7 @@ class ParserTest( implicit ee: ExecutionEnv ) extends Specification with Matcher
     ),
 
     Object(
-      Vector(new QlmID("Heater")),
+      Vector(new OdfID("Heater")),
       Path("Objects", "SmartCottage", "Heater")
     )
   )

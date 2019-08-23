@@ -46,7 +46,7 @@ class OmiTypesTest(implicit ee: ExecutionEnv) extends Specification with XmlMatc
     StringValue( "test", testTime),
     DoubleValue( 5.3, testTime)
   )
-  def createQlmId(id: String) = QlmID(id,Some("testId"),Some("testTag"),Some(testTime),Some(testTime))
+  def createQlmId(id: String) = OdfID(id,Some("testId"),Some("testTag"),Some(testTime),Some(testTime))
   def createObj( id: String, parentPath: Path ) ={
     Object(
         Vector(createQlmId(id)),

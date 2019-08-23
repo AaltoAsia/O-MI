@@ -346,7 +346,7 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
                 }.toList
 
                 )) ++ obj.ids.view.flatMap{
-                  case id: QlmID => id.asXMLEvents("id")
+                  case id: OdfID => id.asXMLEvents("id")
                   } ++ obj.descriptions.view.flatMap{
                     case desc: Description =>
                       desc.asXMLEvents
@@ -406,7 +406,7 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
           case (Some(ii: InfoItem), None) =>
             ii.copy(
               names = {
-                if (ii.names.nonEmpty) Vector(QlmID("")) else Vector.empty
+                if (ii.names.nonEmpty) Vector(OdfID("")) else Vector.empty
               },
               descriptions = {
                 if (ii.descriptions.nonEmpty) Set(Description("")) else Set.empty

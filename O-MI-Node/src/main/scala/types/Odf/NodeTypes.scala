@@ -97,7 +97,7 @@ object Object {
   def apply(
              path: Path
            ): Object = Object(
-    Vector(QlmID(path.last)),
+    Vector(OdfID(path.last)),
     path
   )
 
@@ -105,7 +105,7 @@ object Object {
              path: Path,
              typeAttribute: Option[String]
            ): Object = Object(
-    Vector(QlmID(path.last)),
+    Vector(OdfID(path.last)),
     path,
     typeAttribute
   )
@@ -116,7 +116,7 @@ object Object {
              descriptions: Set[Description],
              attributes: Map[String, String]
            ): Object = Object(
-    Vector(QlmID(path.last)),
+    Vector(OdfID(path.last)),
     path,
     typeAttribute,
     descriptions,
@@ -125,7 +125,7 @@ object Object {
 }
 
 case class Object(
-                   ids: Vector[QlmID],
+                   ids: Vector[OdfID],
                    path: Path,
                    typeAttribute: Option[String] = None,
                    descriptions: Set[Description] = Set.empty,
@@ -135,7 +135,7 @@ case class Object(
   assert(path.length > 1, "Length of path of Object is not greater than 1 (Objects/).")
 
   def idsToStr(): Vector[String] = ids.map {
-    id: QlmID =>
+    id: OdfID =>
       id.id
   }
 
@@ -154,7 +154,7 @@ case class Object(
     val containSameId = ids.map(_.id).toSet.intersect(that.ids.map(_.id).toSet).nonEmpty
     assert(containSameId && pathsMatches)
     Object(
-      QlmID.unionReduce(ids ++ that.ids).toVector,
+      OdfID.unionReduce(ids ++ that.ids).toVector,
       path,
       that.typeAttribute.orElse(typeAttribute),
       Description.unionReduce(descriptions ++ that.descriptions),
@@ -175,7 +175,7 @@ case class Object(
     val containSameId = ids.map(_.id).toSet.intersect(that.ids.map(_.id).toSet).nonEmpty
     assert(containSameId && pathsMatches)
     Object(
-      QlmID.unionReduce(ids ++ that.ids).toVector,
+      OdfID.unionReduce(ids ++ that.ids).toVector,
       path,
       optionAttributeUnion(typeAttribute, that.typeAttribute),
       Description.unionReduce(descriptions ++ that.descriptions),
@@ -192,7 +192,7 @@ case class Object(
         } else {
           Object(
             Vector(
-              new QlmID(
+              new OdfID(
                 ancestorPath.last
               )
             ),
@@ -209,7 +209,7 @@ case class Object(
     } else {
       Object(
         Vector(
-          QlmID(
+          OdfID(
             parentPath.last
           )
         ),
@@ -237,9 +237,9 @@ case class Object(
     } else if (this.descriptions.nonEmpty) {
       Vector(Description("", None))
     } else Vector.empty
-    //TODO: Filter ids based on QlmID attributes
+    //TODO: Filter ids based on OdfID attributes
     to.copy(
-      ids = QlmID.unionReduce(ids ++ to.ids).toVector,
+      ids = OdfID.unionReduce(ids ++ to.ids).toVector,
       typeAttribute = typeAttribute.orElse(to.typeAttribute),
       descriptions = desc.toSet,
       attributes = attributes ++ to.attributes
@@ -300,7 +300,7 @@ object InfoItem {
   def apply(
              path: Path,
              typeAttribute: Option[String],
-             names: Vector[QlmID],
+             names: Vector[OdfID],
              descriptions: Set[Description],
              values: Vector[Value[Any]],
              metaData: Option[MetaData],
@@ -323,7 +323,7 @@ case class InfoItem(
                      nameAttribute: String,
                      path: Path,
                      typeAttribute: Option[String] = None,
-                     names: Vector[QlmID] = Vector.empty,
+                     names: Vector[OdfID] = Vector.empty,
                      descriptions: Set[Description] = Set.empty,
                      values: Vector[Value[Any]] = Vector.empty,
                      metaData: Option[MetaData] = None,
@@ -340,7 +340,7 @@ case class InfoItem(
       nameAttribute,
       path,
       that.typeAttribute.orElse(typeAttribute),
-      QlmID.unionReduce(names ++ that.names).toVector.filter { id => id.id.nonEmpty },
+      OdfID.unionReduce(names ++ that.names).toVector.filter { id => id.id.nonEmpty },
       Description.unionReduce(descriptions ++ that.descriptions).toVector.filter(desc => desc.text.nonEmpty).toSet,
       if (that.values.nonEmpty) that.values else values,
       that.metaData.flatMap {
@@ -362,7 +362,7 @@ case class InfoItem(
       nameAttribute,
       path,
       optionAttributeUnion(this.typeAttribute, that.typeAttribute),
-      QlmID.unionReduce(names ++ that.names).toVector,
+      OdfID.unionReduce(names ++ that.names).toVector,
       Description.unionReduce(descriptions ++ that.descriptions).toSet,
       values ++ that.values,
       (metaData, that.metaData) match {
@@ -381,7 +381,7 @@ case class InfoItem(
         } else {
           Object(
             Vector(
-              new QlmID(
+              new OdfID(
                 ancestorPath.last
               )
             ),
@@ -398,7 +398,7 @@ case class InfoItem(
     } else {
       Object(
         Vector(
-          new QlmID(
+          new OdfID(
             parentPath.last
           )
         ),
@@ -447,10 +447,10 @@ case class InfoItem(
         if (this.metaData.nonEmpty) Some(MetaData(Vector()))
         else None
     }
-    //TODO: Filter names based on QlmID attributes
+    //TODO: Filter names based on OdfID attributes
 
     to.copy(
-      names = QlmID.unionReduce(names ++ to.names).toVector,
+      names = OdfID.unionReduce(names ++ to.names).toVector,
       typeAttribute = typeAttribute.orElse(to.typeAttribute),
       values = to.values ++ this.values,
       descriptions = desc.toSet,
@@ -479,7 +479,7 @@ case class InfoItem(
         }.toList
       )
     ).view ++ names.view.flatMap{
-      case id: QlmID => id.asXMLEvents("name")
+      case id: OdfID => id.asXMLEvents("name")
     } ++ descriptions.view.flatMap{
       case desc: Description =>
         desc.asXMLEvents

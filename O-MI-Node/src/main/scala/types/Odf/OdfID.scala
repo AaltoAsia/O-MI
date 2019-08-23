@@ -9,17 +9,17 @@ import database.journal.{PQlmid, PTimestamp}
 import scala.collection.immutable.HashMap
 import scala.collection.{Map, Seq}
 
-object QlmID {
+object OdfID {
 
-  def unionReduce(ids: Seq[QlmID]): Seq[QlmID] = {
+  def unionReduce(ids: Seq[OdfID]): Seq[OdfID] = {
     ids.groupBy(_.id).map {
       case (id, _ids) =>
-        _ids.foldLeft(QlmID(id))(_ union _)
+        _ids.foldLeft(OdfID(id))(_ union _)
     }.toVector
   }
 }
 
-case class QlmID(
+case class OdfID(
                   id: String,
                   idType: Option[String] = None,
                   tagType: Option[String] = None,
@@ -27,9 +27,9 @@ case class QlmID(
                   endDate: Option[Timestamp] = None,
                   attributes: Map[String, String] = HashMap.empty
                 ) extends Element {
-  def union(other: QlmID): QlmID = {
+  def union(other: OdfID): OdfID = {
     assert(id == other.id)
-    QlmID(
+    OdfID(
       id,
       optionUnion(idType, other.idType),
       optionUnion(tagType, other.tagType),

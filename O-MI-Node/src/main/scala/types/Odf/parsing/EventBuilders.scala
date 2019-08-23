@@ -96,7 +96,7 @@ class ObjectEventBuilder(
   private var path: Path = parentPath
   private var typeAttribute: Option[String] = None
   private var descriptions: List[Description] = List.empty
-  private var ids: List[QlmID] = List.empty
+  private var ids: List[OdfID] = List.empty
   private var complete: Boolean = false 
   private var attributes: Map[String,String] = Map.empty
   final def isComplete: Boolean = previous.isEmpty && complete
@@ -116,7 +116,7 @@ class ObjectEventBuilder(
       this
     }
 
-    def addId( id: QlmID ): ObjectEventBuilder  ={
+    def addId( id: OdfID ): ObjectEventBuilder  ={
       ids = id :: ids
       if( mainId.isEmpty ){
         mainId = id.id
@@ -298,7 +298,7 @@ class InfoItemEventBuilder(
 ) extends EventBuilder[InfoItem]{
   private var descriptions: List[Description] = List.empty
   private var values: List[Value[_]] = List.empty
-  private var names: List[QlmID] = List.empty
+  private var names: List[OdfID] = List.empty
   private var nameAttribute: String =""
   private var typeAttribute: Option[String] = None
   private var path: Path = objectPath
@@ -330,7 +330,7 @@ class InfoItemEventBuilder(
     values = value :: values
     this
   } 
-  def addName( name: QlmID ): InfoItemEventBuilder  ={
+  def addName( name: OdfID ): InfoItemEventBuilder  ={
     names = name :: names
     this
   } 
@@ -599,7 +599,7 @@ class DescriptionEventBuilder(
 class IdEventBuilder( 
   val previous: Option[EventBuilder[_]], 
   implicit  val receiveTime: Timestamp = currentTimestamp
-) extends EventBuilder[QlmID] {
+) extends EventBuilder[OdfID] {
   private var openingTag: String = "id"
   private var tagType: Option[String] = None
   private var idType: Option[String] = None
@@ -609,7 +609,7 @@ class IdEventBuilder(
   private var id: String = ""
   private var attributes: Map[String,String] = Map.empty
   final def isComplete: Boolean = previous.isEmpty && complete
-  def build: QlmID = QlmID(id,idType,tagType,startDate,endDate,attributes)
+  def build: OdfID = OdfID(id,idType,tagType,startDate,endDate,attributes)
   object Position extends Enumeration {
     type Position = Value
     val OpenTag, Content, CloseTag = Value 

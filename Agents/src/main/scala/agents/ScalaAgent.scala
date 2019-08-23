@@ -120,7 +120,7 @@ class ScalaAgent(
 
     // Create OdfInfoItem to contain the value. 
     val infoItem: InfoItem =
-      InfoItem(path,None,Vector.empty[QlmID],Set(description),odfValues,Some(metaData),Map.empty[String,String])
+      InfoItem(path,None,Vector.empty[OdfID],Set(description),odfValues,Some(metaData),Map.empty[String,String])
 
     // Method createAncestors generates O-DF structure from the path of an OdfNode 
     // and returns the root, OdfObjects

@@ -75,7 +75,7 @@ case class ImmutableODF private[odf](
           case (Some(ii: InfoItem), None) =>
             ii.copy(
               names = {
-                if (ii.names.nonEmpty) Vector(QlmID("")) else Vector.empty
+                if (ii.names.nonEmpty) Vector(OdfID("")) else Vector.empty
               },
               descriptions = {
                 if (ii.descriptions.nonEmpty) Set(Description("")) else Set.empty

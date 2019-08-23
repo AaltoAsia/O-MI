@@ -59,7 +59,7 @@ class MutableODFTest extends Specification {
       "II2",
       OdfPath("Objects", "ObjectA", "II2"),
       names = Vector(
-        QlmID(
+        OdfID(
           "II2O1",
           Some("TestID"),
           Some("TestTag")
@@ -91,7 +91,7 @@ class MutableODFTest extends Specification {
     ),
     Object(
       Vector(
-        QlmID(
+        OdfID(
           "ObjectCC",
           Some("TestID"),
           Some("TestTag")

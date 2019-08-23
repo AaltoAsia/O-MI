@@ -141,7 +141,7 @@ object RESTHandler {
           Future.successful(Right(events))
         case Some(RESTRequest.name) => 
           val events =  Vector(StartDocument, StartElement("InfoItem",List(Attribute("name",ii.nameAttribute)))).view ++ ii.names.toSeq.view.flatMap{
-            case id: QlmID => id.asXMLEvents("name")
+            case id: OdfID => id.asXMLEvents("name")
           } ++ Vector(EndElement("InfoItem"),EndDocument)
           Future.successful(Right(events))
         case Some(RESTRequest.description) => 
@@ -166,7 +166,7 @@ object RESTHandler {
             )
           ).view ++ 
           ii.names.view.flatMap{
-            case id: QlmID => id.asXMLEvents("name")
+            case id: OdfID => id.asXMLEvents("name")
           } ++ 
           ii.descriptions.headOption.map{
             case desc: Description =>
@@ -222,7 +222,7 @@ object RESTHandler {
                   }.toList
                 )
             ).view ++ obj.ids.view.flatMap{
-              case id: QlmID => id.asXMLEvents("id")
+              case id: OdfID => id.asXMLEvents("id")
             } ++ Vector(EndElement("Object"),EndDocument)
           Future.successful(Right(events))
         case None =>
@@ -240,7 +240,7 @@ object RESTHandler {
                   }.toList
                 )
               ).view ++ obj.ids.view.flatMap{
-                id: QlmID => id.asXMLEvents("id")
+                id: OdfID => id.asXMLEvents("id")
               } ++ obj.descriptions.headOption.map{
                 case desc: Description =>
                   Vector(StartElement("description"),EndElement("description"))
@@ -257,7 +257,7 @@ object RESTHandler {
                       }.toList
                     )
                   ).view ++ subObj.ids.flatMap{
-                    id: QlmID =>
+                    id: OdfID =>
                       id.asXMLEvents("id")
                   } ++ Vector(
                     EndElement("Object" )
@@ -322,7 +322,7 @@ object RESTHandler {
                       }.toList
                     )
                   ).view ++ subObj.ids.flatMap{
-                    id: QlmID =>
+                    id: OdfID =>
                       id.asXMLEvents("id")
                   } ++ Vector(
                     EndElement("Object" )
