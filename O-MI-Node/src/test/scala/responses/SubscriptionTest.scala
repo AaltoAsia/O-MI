@@ -4,12 +4,15 @@ import agentSystem.AgentSystem
 import akka.pattern.ask
 import akka.stream.ActorMaterializer
 import akka.util.Timeout
+import akka.stream.scaladsl._
 import org.specs2.matcher.XmlMatchers._
 import org.specs2.mutable._
 import org.specs2.specification.BeforeAfterAll
+import org.specs2.concurrent.ExecutionEnv
 
 import scala.concurrent.Await
 import scala.util.Try
+import scala.xml.XML
 
 //import responses.Common._
 import java.sql.Timestamp
@@ -41,9 +44,10 @@ case class SubscriptionRequest(
 ) extends OmiRequest with SubLike with OdfRequest
 
  */
-class SubscriptionTest extends Specification with BeforeAfterAll {
+class SubscriptionTest( implicit ee: ExecutionEnv ) extends Specification with BeforeAfterAll {
   implicit val system = testHelpers.Actorstest.createAs()
   implicit val materializer: ActorMaterializer = ActorMaterializer()(system)
+  import system.dispatcher
   implicit val settings = OmiConfig(system)
   implicit val callbackHandler: CallbackHandler = new CallbackHandler(settings, new DummySingleStores())(system, materializer)
   val analytics = None
@@ -255,16 +259,17 @@ class SubscriptionTest extends Specification with BeforeAfterAll {
     }
 
     "return failure notification with correct structure when polling a nonexistent subscription" >> {
-      todo
-      /*
       val id = 5000
-      val returnMsg = pollSub(id).asXML
+      val returnMsgF = pollSub(id).asXMLSource.runWith(Sink.fold("")(_+_)).map( XML loadString _)
 
-      returnMsg must \("response") \ ("result") \ ("return",
+      returnMsgF.map{ 
+        returnMsg =>
+          val desc = returnMsg must \("response") \ ("result") \ ("return",
                                                     "returnCode" -> "404",
                                                     "description" -> s"Some requestIDs were not found.")
-      returnMsg must \("response") \ ("result") \ ("requestID") \> s"$id"
-      */
+          val idC = returnMsg must \("response") \ ("result") \ ("requestID") \> s"$id"
+          desc and idC
+      }.await
 
     }
 
@@ -318,14 +323,19 @@ class SubscriptionTest extends Specification with BeforeAfterAll {
     }
 
     "subscription should be removed when the ttl expired" >> {
-      todo
-      /*
-      val subId = addSub(1, 5, Seq(Path("p", "1"))).asXML.\\("requestID").text.toInt
+      val subId = Await.result(addSub(1, 5, Seq(Path("p", "1"))).asXMLSource.runWith(Sink.fold("")(_+_)).map( XML loadString _).map{
+        xmlRes => xmlRes.\\("requestID").text.toInt
+      }, 5.seconds)
       Thread.sleep(10)
-      pollSub(subId).asXML must \("response") \ ("result") \ ("return", "returnCode" -> "200")
+      pollSub(subId).asXMLSource.runWith(Sink.fold("")(_+_)).map( XML loadString _).map{
+        xmlRes =>
+        xmlRes must \("response") \ ("result") \ ("return", "returnCode" -> "200")
+      }.await
       Thread.sleep(1200)
-      pollSub(subId).asXML must \("response") \ ("result") \ ("return", "returnCode" -> "404")
-      */
+      pollSub(subId).asXMLSource.runWith(Sink.fold("")(_+_)).map( XML loadString _).map{
+        xmlRes => 
+          xmlRes must \("response") \ ("result") \ ("return", "returnCode" -> "404")
+      }.await
     }
   }
 

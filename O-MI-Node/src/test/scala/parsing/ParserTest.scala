@@ -156,7 +156,7 @@ class ParserTest( implicit ee: ExecutionEnv ) extends Specification with Matcher
         </msg>
       </write>
     </omiEnvelope>
-    invalidOmiTest(temp, "ODFStreamParserError")
+    invalidOmiTest(temp, "ODFParserError")
 
   }
 
@@ -177,7 +177,7 @@ class ParserTest( implicit ee: ExecutionEnv ) extends Specification with Matcher
     </response>
   </omiEnvelope>
 
-    invalidOmiTest(temp, "ODFStreamParserError")
+    invalidOmiTest(temp, "ODFParserError")
 
   }
 
@@ -215,7 +215,7 @@ class ParserTest( implicit ee: ExecutionEnv ) extends Specification with Matcher
     </read>
   </omiEnvelope>
   """ 
-  invalidOmiTest(temp, "ODFStreamParserError")
+  invalidOmiTest(temp, "ODFParserError")
 
   }
 
@@ -235,12 +235,11 @@ class ParserTest( implicit ee: ExecutionEnv ) extends Specification with Matcher
   }
 
   def e401 = {
-    invalidOdfTest("incorrect xml", "ScalaXMLError").pendingUntilFixed
+    invalidOdfTestThrowable("incorrect xml", "Unexpected character 'i' (code 105) in prolog")
   }
 
   def e402 = {
-    val temp = //OdfParser.parse(
-      """
+    val temp = """
       <Object>
         <Object>
           <id>SmartHouse</id>
@@ -258,9 +257,8 @@ class ParserTest( implicit ee: ExecutionEnv ) extends Specification with Matcher
                 <id>SmartCottage</id>
               </Object>
             </Object>
-            """ //, None)
-    invalidOdfTest(temp, "OMIParserError").pendingUntilFixed
-
+            """ 
+    invalidOdfTest(temp, "ODFParserError")
   }
 
   def e500 = {
@@ -568,13 +566,21 @@ class ParserTest( implicit ee: ExecutionEnv ) extends Specification with Matcher
         t should be equalTo error
     }.await
   }
+  def invalidOdfTestThrowable(text: String, error: String): Result= {
+
+    val result = ODFStreamParser.parse(text)
+    result.failed.map{
+      t: Throwable =>
+        t.getMessage must contain(error)
+    }.await
+  }
 
   def parseErrorTypeToString(pe: ParseError): String = {
     pe match {
       case _: OMIParserError => "OMIParserError"
       case _: ScalaXMLError => "ScalaXMLError"
       case _: ScalaxbError => "ScalaxbError"
-      case _: ODFParserError => "ODFStreamParserError"
+      case _: ODFParserError => "ODFParserError"
       case _: OMIParserError => "OMIParserError"
       case _: ParseErrorList => "ParserErrorList"
       case _ => throw pe
