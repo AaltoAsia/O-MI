@@ -1,8 +1,7 @@
 <omiEnvelope ttl="10.0" version="1.0" xmlns="http://www.opengroup.org/xsd/omi/1.0/">
   <read  end="2018-08-09T16:00:01.001" begin="2018-08-09T16:00:01.001" msgformat="odf" newest="785634129" callback="http://test.com">
     <msg>
-      <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" >
-      </Objects>
+      <Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/" />
     </msg>
   </read>
 </omiEnvelope>

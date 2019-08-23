@@ -4,6 +4,7 @@ import java.net.URL
 import java.text.SimpleDateFormat
 import java.util.TimeZone
 import java.sql.Timestamp
+import java.nio.file.Paths
 
 import parsing.OMIStreamParser
 
@@ -24,6 +25,7 @@ import akka.stream.alpakka.xml.scaladsl._
 import akka.stream.ActorMaterializer
 import types.odf._
 import types._
+import utils._
 import testHelpers.Actorstest
 
 class OmiTypesTest(implicit ee: ExecutionEnv) extends Specification with XmlMatchers{
@@ -32,8 +34,9 @@ class OmiTypesTest(implicit ee: ExecutionEnv) extends Specification with XmlMatc
   val testTime: Timestamp = Timestamp.valueOf("2018-08-09 16:00:01.001")
   val countForRead: Int  = 785634129
   val callback = RawCallback("http://test.com")
-  val exampleDirStr = "/OmiRequestExamples"
-  //val exampleDir = java.nio.file.Paths.get(exampleDirStr)
+  val exampleDirStr = "./src/test/resources/OmiRequestExamples"
+  println( Paths.get(exampleDirStr).toAbsolutePath.toString)
+  //val exampleDir = Paths.get(exampleDirStr)
   //require( java.nio.file.Files.exists(exampleDir), s"$exampleDirStr does not exist" )
   //require( java.nio.file.Files.isDirectory(exampleDir), s"$exampleDirStr is not directory" )
 
@@ -94,7 +97,7 @@ class OmiTypesTest(implicit ee: ExecutionEnv) extends Specification with XmlMatc
       */
     )
   )
-  case class RequestFileTest(description: String, request: OmiRequest, filepath: URL )
+  case class RequestFileTest(description: String, request: OmiRequest, filepath: java.nio.file.Path )
   def setTimezoneToSystemLocale(in: String): String = {
     val date = """(end|begin)\s*=\s*"(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?(?:(?:\+|-)\d{2}:\d{2})?)"""".r
 
@@ -129,7 +132,7 @@ class OmiTypesTest(implicit ee: ExecutionEnv) extends Specification with XmlMatc
         None,
         Some(callback)
       ),
-      getClass.getResource(exampleDirStr + "/ReadWithTimewindowNewestAndCallback.xml" )
+      Paths.get(exampleDirStr, "ReadWithTimewindowNewestAndCallback.xml" )
     ),
     RequestFileTest(
       "Read with begin, end, oldest and callback", 
@@ -142,7 +145,7 @@ class OmiTypesTest(implicit ee: ExecutionEnv) extends Specification with XmlMatc
         None,
         Some(callback)
       ), 
-      getClass.getResource( exampleDirStr + "/ReadWithTimewindowOldestAndCallback.xml")
+      Paths.get( exampleDirStr, "ReadWithTimewindowOldestAndCallback.xml")
     ), 
     RequestFileTest(
       "Poll with callback", 
@@ -150,7 +153,7 @@ class OmiTypesTest(implicit ee: ExecutionEnv) extends Specification with XmlMatc
         Some(callback),
         Vector(countForRead:Long)
       ), 
-      getClass.getResource( exampleDirStr + "/PollWithCallback.xml")
+      Paths.get( exampleDirStr, "PollWithCallback.xml")
     ), 
     RequestFileTest(
       "Subscription with callback", 
@@ -159,7 +162,7 @@ class OmiTypesTest(implicit ee: ExecutionEnv) extends Specification with XmlMatc
         odf,
         callback = Some(callback)
       ), 
-      getClass.getResource( exampleDirStr + "/SubscriptionWithCallback.xml")
+      Paths.get( exampleDirStr, "SubscriptionWithCallback.xml")
     ), 
     RequestFileTest(
       "Write with callback", 
@@ -167,7 +170,7 @@ class OmiTypesTest(implicit ee: ExecutionEnv) extends Specification with XmlMatc
         odf,
         Some(callback)
       ), 
-      getClass.getResource( exampleDirStr + "/WriteWithCallback.xml")
+      Paths.get( exampleDirStr, "WriteWithCallback.xml")
     ), 
     RequestFileTest(
       "Call with callback", 
@@ -175,7 +178,7 @@ class OmiTypesTest(implicit ee: ExecutionEnv) extends Specification with XmlMatc
         odf,
         Some(callback)
       ), 
-      getClass.getResource( exampleDirStr + "/CallWithCallback.xml")
+      Paths.get( exampleDirStr, "CallWithCallback.xml")
     ), 
     RequestFileTest(
       "Delete with callback", 
@@ -183,26 +186,26 @@ class OmiTypesTest(implicit ee: ExecutionEnv) extends Specification with XmlMatc
         odf,
         Some(callback)
       ), 
-      getClass.getResource( exampleDirStr + "/DeleteWithCallback.xml")
+      Paths.get( exampleDirStr, "DeleteWithCallback.xml")
     )  
   )
   def correctTimestamp(timestamp: String) ={
-    val form = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS")
+    val form = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX")
     //form.setTimeZone(TimeZone.getTimeZone("UTC"))
 
     val parsedTimestamp = form.parse(timestamp)
 
     form.setTimeZone(TimeZone.getDefault)
-    form.applyPattern("yyyy-MM-dd'T'HH:mm:ss.SSSXXX")
+    form.applyPattern("yyyy-MM-dd'T'HH:mm:ss.SSS")
 
     form.format(parsedTimestamp)
   }
   "OmiTypes" >> {
     org.specs2.specification.core.Fragments.empty.append(
       requestFileTests.map{
-        case RequestFileTest(description, request, fileUrl) =>
+        case RequestFileTest(description, request, filePath) =>
           s"$description" >> {
-            def fileSource =  FileIO.fromPath( java.nio.file.Paths.get(fileUrl.toURI()) )
+            def fileSource =  FileIO.fromPath( filePath)
             def eventSource = fileSource.via(XmlParsing.parser)
             val eventsF : Future[Seq[ParseEvent]]= eventSource.map{
               case se: StartElement if se.attributes.contains("begin") ||  se.attributes.contains("end")  =>
@@ -214,19 +217,25 @@ class OmiTypesTest(implicit ee: ExecutionEnv) extends Specification with XmlMatc
               case pe: ParseEvent => pe
             }.runWith( Sink.collection[ParseEvent, Seq[ParseEvent]])
             "to XML test" >> {
-              eventsF.map{
-                events =>
-                  request.asXMLEvents must contain( events)
-              }.await
+                fileSource.map(_.utf8String).runWith(Sink.fold("")(_ + _)).map(XML loadString _).flatMap{
+                  correctXml =>
+                    val events =request.asXMLEvents.map{
+                      case se: StartElement if se.attributes.contains("begin") ||  se.attributes.contains("end")  =>
+                        se.copy( attributesList = se.attributesList.map{
+                          case attr: Attribute if attr.name == "end" || attr.name == "begin"=>
+                            attr.copy(value = correctTimestamp(attr.value))
+                          case attr: Attribute => attr
+                        })
+                      case pe: ParseEvent => pe
+                    }
+                  parseEventsToByteSource(events).map(_.utf8String).runWith(Sink.fold("")(_ + _)).map(XML loadString _).map{
+                      genXml =>
+                        genXml must beEqualToIgnoringSpace( correctXml ) 
+                    }
+                }.await
             }
-            "to streaming XML test" >> {
-              val xmlF= fileSource.runWith(Sink.fold("")(_ + _)).map(XML loadString _)
-              request.asXMLSource.runWith(Sink.fold("")(_ + _)).map(XML loadString _).flatMap{ xml => xmlF.map{ fileXml => xml must beEqualToIgnoringSpace( fileXml ) } }.await(1,20.seconds)
-            }
-            //This may not be needed? 
-            //Timestamp do not match 
             "from XML test" >> {
-              OMIStreamParser.parse(java.nio.file.Paths.get(fileUrl.toURI()) ).map{ parsed => parsed should beEqualTo(request) }.await
+              OMIStreamParser.parse(filePath ).map{ parsed => parsed should beEqualTo(request) }.await
             }
           }
       }

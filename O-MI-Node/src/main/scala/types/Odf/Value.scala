@@ -10,7 +10,6 @@ import akka.stream.alpakka.xml._
 import scala.collection.immutable.HashMap
 import scala.collection.SeqView
 import scala.util.{Failure, Success, Try}
-import scala.concurrent.ExecutionContext.Implicits.global
 
 import scala.concurrent.duration._
 import scala.concurrent._
