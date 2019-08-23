@@ -233,17 +233,6 @@ trait SingleStores {
   }
 
 
-  /**
-    * Logic for updating values based on timestamps.
-    * If timestamp is same or the new value timestamp is after old value return true else false
-    *
-    * @param oldValue old value(from latestStore)
-    * @param newValue the new value to be added
-    * @return
-    */
-  def valueShouldBeUpdated(oldValue: Value[Any], newValue: Value[Any]): Boolean = {
-    oldValue.timestamp before newValue.timestamp
-  }
 
 
   /**
@@ -262,7 +251,7 @@ trait SingleStores {
 
     oldValueOpt match {
       case Some(oldValue) =>
-        if (valueShouldBeUpdated(oldValue, newValue)) {
+        if (SingleStores.valueShouldBeUpdated(oldValue, newValue)) {
           // NOTE: This effectively discards incoming data that is older than the latest received value
           if (oldValue.value != newValue.value) {
             Some(ChangeEvent(InfoItem(path, Vector(newValue))))
@@ -322,5 +311,17 @@ object SingleStores{
     val subStore: ActorRef = system.actorOf(SubStore.props())
     val pollDataStore: ActorRef = system.actorOf(PollDataStore.props())
     val requestInfoStore: ActorRef = system.actorOf(RequestInfoStore.props())
+  }
+
+  /**
+    * Logic for updating values based on timestamps.
+    * If timestamp is same or the new value timestamp is after old value return true else false
+    *
+    * @param oldValue old value(from latestStore)
+    * @param newValue the new value to be added
+    * @return
+    */
+  def valueShouldBeUpdated(oldValue: Value[Any], newValue: Value[Any]): Boolean = {
+    ! ( oldValue.timestamp equals newValue.timestamp )
   }
 } 

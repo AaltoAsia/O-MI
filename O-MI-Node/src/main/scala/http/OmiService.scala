@@ -572,25 +572,19 @@ trait OmiService
     */
   val postFormXMLRequest: Route = post {
     makePermissionTestFunction() { hasPermissionTest =>
-      headerValue{
-        header: HttpHeader =>
-          header match {
-            case ct: headers.`Content-Type` if ct.is("application/x-www-form-urlencoded") => 
-              Some(true)
-            case other: HttpHeader => None
-          }
-      }{ correctCT =>
-        extractDataBytes { requestSource =>
-          extractClientIP { user =>
-            val decodedSource = requestSource.via(byteStringToUTF8Flow).via(urlDecoderFlow)
-
-            val response = handleRequest(hasPermissionTest, decodedSource, remote = user)
-            onSuccess(response) {r =>
-              
-              complete(HttpResponse(entity=chunkedStream(r)))
-            }
-          }
-        }
+      extractRequestEntity {
+            case e if e.contentType.mediaType == MediaTypes.`application/x-www-form-urlencoded` => 
+                val requestSource = e.dataBytes
+                extractClientIP { user =>
+                  val decodedSource = requestSource.via(byteStringToUTF8Flow).via(urlDecoderFlow)
+                  val response = handleRequest(hasPermissionTest, decodedSource, remote = user)
+                  onSuccess(response) {r =>
+                    
+                    complete(HttpResponse(entity=chunkedStream(r)))
+                  }
+                }
+            case other =>
+              reject
       }
     }
   }
@@ -600,46 +594,46 @@ trait OmiService
               var msgHandled = false
               var bufferString =""
               str: String => {
-                bufferString += str
+                bufferString += str.replace("+", " ")
                 if( !msgHandled ){
                   if( bufferString.startsWith("msg=") ){
                     val (_,content) = bufferString.splitAt("msg=".size)
                     bufferString = content
                     msgHandled = true
-                  } 
-                  Vector.empty
-                } else { 
-                  if( bufferString.contains("%") ){
-                    def decode(encodedString: String, result: String = ""): String ={
-                      val i = encodedString.indexOf("%")
-                      if( i > -1 ){
-                        if( i + 2 >= encodedString.size ){
-                          bufferString = encodedString
-                          result
-                        } else {
-                          var (res: String, tail: String) = encodedString.splitAt(i)
-                          val encoded = tail.slice(1,3)
-                          val value = new String(Array(Integer.parseInt(encoded,16).toByte),"utf-8")
-                          res = res + value
-                          decode(tail.drop(3), result + res)
-                        }
-                      } else {
-                        bufferString = ""
-                        val res =result + encodedString
-                        res
-                      }
-                    }
-                    val decoded = decode( bufferString )
-                    if( decoded.nonEmpty){
-                      Vector(decoded)
-                    } else {
-                      Vector.empty
-                    } 
                   } else {
-                    val res = Vector(bufferString)
-                    bufferString = ""
-                    res
+                    Vector.empty
                   }
+                }
+                if( bufferString.contains("%") ){
+                  def decode(encodedString: String, result: String = ""): String ={
+                    val i = encodedString.indexOf("%")
+                    if( i > -1 ){
+                      if( i + 2 >= encodedString.size ){
+                        bufferString = encodedString
+                        result
+                      } else {
+                        var (res: String, tail: String) = encodedString.splitAt(i)
+                        val encoded = tail.slice(1,3)
+                        val value = new String(Array(Integer.parseInt(encoded,16).toByte),"utf-8")
+                        res = res + value
+                        decode(tail.drop(3), result + res)
+                      }
+                    } else {
+                      bufferString = ""
+                      val res =result + encodedString
+                      res
+                    }
+                  }
+                  val decoded = decode( bufferString )
+                  if( decoded.nonEmpty){
+                    Vector(decoded)
+                  } else {
+                    Vector.empty
+                  } 
+                } else {
+                  val res = Vector(bufferString)
+                  bufferString = ""
+                  res
                 }
               }
             }.mapError{
@@ -824,6 +818,6 @@ trait OMIServiceMetrics {
   object Metrics{
 
     def checkEnabled[T](f: () => T): Option[T] = if( settings.metricsEnabled ) Some(f()) else None
-    final val requestHistogram =  checkEnabled(() => Histogram.build().name("omi_request_duration").help("Duration of active O-MI Request").labelNames("request").register())
+    final val requestHistogram =  checkEnabled(() => Histogram.build().buckets(settings.metrics.requestDurationBuckets:_*).name("omi_request_duration").help("Duration of active O-MI Request").labelNames("request").register())
   }
 }

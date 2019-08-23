@@ -36,7 +36,7 @@ import database.influxDB.InfluxDBConfigExtension
 
 class OmiConfigExtension(val config: Config) extends Extension
                                                      with AgentSystemConfigExtension {
-  val log = LoggerFactory.getLogger("Config")
+  val log = LoggerFactory getLogger "Config"
 
   /**
     * Throws exceptions if invalid url, returns the input parameter if success
@@ -45,12 +45,12 @@ class OmiConfigExtension(val config: Config) extends Extension
     val uri = Uri(address)
     val hostAddress = uri.authority.host.address
     // Test address validity (throws exceptions when invalid)
-    InetAddress.getByName(hostAddress)
+    InetAddress getByName hostAddress
 
     uri
   }
 
-  val callbackAuthorizationEnabled: Boolean = config.getBoolean("omi-service.callback-authorization-enabled")
+  val callbackAuthorizationEnabled: Boolean = config getBoolean "omi-service.callback-authorization-enabled"
 
   /**
     * Implicit conversion from java.time.Duration to scala.concurrent.FiniteDuration
@@ -61,32 +61,31 @@ class OmiConfigExtension(val config: Config) extends Extension
   implicit def toFiniteDuration(dur: java.time.Duration): FiniteDuration = Duration.fromNanos(dur.toNanos)
 
   // Node special settings
-  val ports: Map[String, Int] = config.getObject("omi-service.ports").unwrapped().asScala.toMap.mapValues {
+  val ports: Map[String, Int] = (config getObject "omi-service.ports").unwrapped().asScala.toMap.mapValues {
     case port: java.lang.Integer => port.toInt
     case port: java.lang.Object =>
       throw new Exception("Configs omi-service.ports contain non integer values")
   }
-  val webclientPort: Int = config.getInt("omi-service.ports.webclient")
+  val webclientPort: Int = config getInt "omi-service.ports.webclient"
   val externalAgentPort: Int = ports("external-agents")
-  val cliPort: Int = config.getInt("omi-service.ports.cli")
+  val cliPort: Int = config getInt "omi-service.ports.cli"
   /** Save at least this much data per InfoItem */
-  val numLatestValues: Int = config.getInt("omi-service.num-latest-values-stored")
+  val numLatestValues: Int = config getInt "omi-service.num-latest-values-stored"
 
   /** Minimum supported interval for interval based subscriptions */
-  val minSubscriptionInterval: FiniteDuration = config
-    .getDuration("omi-service.min-subscription-interval", TimeUnit.SECONDS).seconds
+  val minSubscriptionInterval: FiniteDuration = config getDuration "omi-service.min-subscription-interval"
 
   /** Save some interesting setting values to this path */
 
-  val settingsOdfPath: Path = Path(config.getString("omi-service.settings-read-odfpath"))
+  val settingsOdfPath: Path = Path(config getString "omi-service.settings-read-odfpath")
 
 
-  val trimInterval: FiniteDuration = config.getDuration("omi-service.trim-interval")
+  val trimInterval: FiniteDuration = config getDuration "omi-service.trim-interval"
 
-  val snapshotInterval: FiniteDuration = config.getDuration("omi-service.snapshot-interval")
-  val oldestSavedSnapshot: FiniteDuration = config.getDuration("omi-service.snapshot-delete-older")
+  val snapshotInterval: FiniteDuration = config getDuration "omi-service.snapshot-interval"
+  val oldestSavedSnapshot: FiniteDuration = config getDuration "omi-service.snapshot-delete-older"
   /** fast journal databases paths */
-  Try(config.getString("journalDBs.directory"))
+  Try(config getString "journalDBs.directory")
     .foreach(value =>
                if (value != "./logs/journalDBs")
                  log.error("Invalid setting found",
@@ -98,34 +97,38 @@ class OmiConfigExtension(val config: Config) extends Extension
                else log
                  .warn("deprecated setting found in config: journalDBs.directory. Directory location config moved to " +
                          "under akka.persistence config path."))
-  val writeToDisk = config.getBoolean("journalDBs.write-to-disk")
+  val writeToDisk = config getBoolean "journalDBs.write-to-disk"
 
-  Try(config.getBytes("journalDBs.max-journal-filesize"))
+  Try(config getBytes "journalDBs.max-journal-filesize")
     .foreach(value => log.warn("deprecated setting found in config: journalDBs.max-journal-filesize"))
 
   // Listen interfaces and ports
 
-  val interface: String = config.getString("omi-service.interface")
-  val externalAgentInterface: String = config.getString("omi-service.external-agent-interface")
+  val interface: String = config getString "omi-service.interface"
+  val externalAgentInterface: String = config getString "omi-service.external-agent-interface"
 
   //Maximum value that is accepted for newest and oldest parameters of O-MI read request.
-  val maximumNewest: Int = config.getInt("omi-service.maximum-newest-attribute")
+  val maximumNewest: Int = config getInt "omi-service.maximum-newest-attribute"
   
-  val metricsEnabled: Boolean = config.getBoolean("omi-service.metrics-enabled")
-  val prometheusPort: Int = config.getInt("omi-service.prometheus-export-port")
+  val metricsEnabled: Boolean = config getBoolean "omi-service.metrics.enabled"
+  val prometheusPort: Int = config getInt "omi-service.metrics.prometheus-export-port"
+  object metrics {
+    val Metrics = config getConfig "omi-service.metrics"
+    val requestDurationBuckets = (Metrics getDoubleList "requestDurationBuckets").asScala.map(_.doubleValue).toSeq
+  }
   // Authorization
-  val allowedRequestTypes: Set[MessageType] = config.getStringList("omi-service.allowRequestTypesForAll").asScala
+  val allowedRequestTypes: Set[MessageType] = (config getStringList "omi-service.allowRequestTypesForAll").asScala
     .map((x) => MessageType(x.toLowerCase)).toSet
 
 
   // External AuthAPIService V2
   case object AuthApiV2 {
     val authAPIServiceV2: Config = config getConfig "omi-service.authAPI.v2"
-    val enable: Boolean = authAPIServiceV2.getBoolean("enable")
-    val authenticationEndpoint: Uri = testUri(authAPIServiceV2.getString("authentication.url"))
-    val omiHttpHeadersToAuthentication: Set[String] = authAPIServiceV2
-      .getStringList("authentication.copy-request-headers").asScala.toSet
-    val authorizationEndpoint: Uri = testUri(authAPIServiceV2.getString("authorization.url"))
+    val enable: Boolean = authAPIServiceV2 getBoolean "enable"
+    val authenticationEndpoint: Uri = testUri(authAPIServiceV2 getString "authentication.url")
+    val omiHttpHeadersToAuthentication: Set[String] =
+      (authAPIServiceV2 getStringList "authentication.copy-request-headers").asScala.toSet
+    val authorizationEndpoint: Uri = testUri(authAPIServiceV2 getString "authorization.url")
 
     type ParameterExtraction = Map[String, Map[String, String]]
 
@@ -138,18 +141,18 @@ class OmiConfigExtension(val config: Config) extends Extension
     def mapmap(c: Config): ParameterExtraction = {
       c.root().keySet.asScala.toSet.map {
         key: String =>
-          val innerConfig = c.getConfig(key)
+          val innerConfig = c getConfig key
           key.toLowerCase -> cmap(innerConfig)
       }.toMap
     }
 
-    val parameters: Config = authAPIServiceV2.getConfig("parameters")
-    val parametersFromRequest: ParameterExtraction = mapmap(parameters.getConfig("fromRequest"))
-    val parametersFromAuthentication: ParameterExtraction = mapmap(parameters.getConfig("fromAuthentication"))
-    val parametersToAuthentication: ParameterExtraction = mapmap(parameters.getConfig("toAuthentication"))
-    val parametersToAuthorization: ParameterExtraction = mapmap(parameters.getConfig("toAuthorization"))
-    val parametersConstants: Map[String, String] = cmap(parameters.getConfig("initial"))
-    val parametersSkipOnEmpty: Seq[String] = parameters.getStringList("skipAuthenticationOnEmpty").asScala
+    val parameters: Config = authAPIServiceV2 getConfig("parameters")
+    val parametersFromRequest: ParameterExtraction = mapmap(parameters getConfig "fromRequest")
+    val parametersFromAuthentication: ParameterExtraction = mapmap(parameters getConfig "fromAuthentication")
+    val parametersToAuthentication: ParameterExtraction = mapmap(parameters getConfig "toAuthentication")
+    val parametersToAuthorization: ParameterExtraction = mapmap(parameters getConfig "toAuthorization")
+    val parametersConstants: Map[String, String] = cmap(parameters getConfig "initial")
+    val parametersSkipOnEmpty: Seq[String] = (parameters getStringList "skipAuthenticationOnEmpty").asScala
 
     def toRequestBuilder(method: String): RequestBuilding.RequestBuilder = method.toLowerCase match {
       case "get" => Get
@@ -161,29 +164,29 @@ class OmiConfigExtension(val config: Config) extends Extension
       case x => throw new MatchError(s"Invalid http method in configuration: $x")
     }
 
-    val authenticationMethod: RequestBuilder = toRequestBuilder(authAPIServiceV2.getString("authentication.method"))
-    val authorizationMethod: RequestBuilder = toRequestBuilder(authAPIServiceV2.getString("authorization.method"))
+    val authenticationMethod: RequestBuilder = toRequestBuilder(authAPIServiceV2 getString "authentication.method")
+    val authorizationMethod: RequestBuilder = toRequestBuilder(authAPIServiceV2 getString "authorization.method")
   }
 
 
   //IP
-  val inputWhiteListUsers: Vector[String] = config.getStringList("omi-service.input-whitelist-users").asScala.toVector
+  val inputWhiteListUsers: Vector[String] = (config getStringList "omi-service.input-whitelist-users").asScala.toVector
 
-  val inputWhiteListIps: Vector[Vector[Byte]] = config.getStringList("omi-service.input-whitelist-ips").asScala.toVector
+  val inputWhiteListIps: Vector[Vector[Byte]] = (config getStringList "omi-service.input-whitelist-ips").asScala.toVector
     .map {
       s: String =>
-        val ip = inetAddrToBytes(InetAddress.getByName(s))
+        val ip = inetAddrToBytes(InetAddress getByName s)
         ip.toVector
     }
 
-  val inputWhiteListSubnets: Map[InetAddress, Int] = config.getStringList("omi-service.input-whitelist-subnets").asScala
+  val inputWhiteListSubnets: Map[InetAddress, Int] = (config getStringList "omi-service.input-whitelist-subnets").asScala
     .map {
       case (str: String) =>
         val parts = str.split("/")
         require(parts.length == 2)
         val mask = parts.head
         val bits = parts.last
-        val ip = InetAddress.getByName(mask) //inetAddrToBytes(InetAddress.getByName(mask))
+        val ip = InetAddress getByName mask //inetAddrToBytes(InetAddress.getByName(mask))
         (ip, bits.toInt)
     }.toMap
 
@@ -193,25 +196,23 @@ class OmiConfigExtension(val config: Config) extends Extension
 
 
   /** Time in seconds how long to wait until retrying sending. */
-  val callbackDelay: FiniteDuration = config.getDuration("omi-service.callback-delay", TimeUnit.SECONDS).seconds
+  val callbackDelay: FiniteDuration = config getDuration "omi-service.callback-delay"
 
   /** Time in milliseconds how long to keep trying to resend the messages to callback addresses in case of infinite
     * durations */
-  val callbackTimeout: FiniteDuration = config.getDuration("omi-service.callback-timeout", TimeUnit.MILLISECONDS)
-    .milliseconds
-  val startTimeout: FiniteDuration = config.getDuration("omi-service.start-timeout")
-  val journalTimeout: FiniteDuration = config.getDuration("omi-service.journal-ask-timeout", TimeUnit.MILLISECONDS)
-    .milliseconds
+  val callbackTimeout: FiniteDuration = config getDuration "omi-service.callback-timeout"
+  val startTimeout: FiniteDuration = config getDuration "omi-service.start-timeout"
+  val journalTimeout: FiniteDuration = config getDuration "omi-service.journal-ask-timeout"
 
   //Haw many messages queued to be send via WS connection, if overflown
   //connection fails
-  val websocketQueueSize: Int = config.getInt("omi-service.websocket-queue-size")
+  val websocketQueueSize: Int = config getInt "omi-service.websocket-queue-size"
 
-  val kamonEnabled: Boolean = Option(config.getBoolean("omi-service.kamon-enabled")).getOrElse(false)
-  val databaseImplementation: String = config.getString("omi-service.database")
+  val kamonEnabled: Boolean = Option(config getBoolean "omi-service.kamon-enabled") getOrElse false
+  val databaseImplementation: String = config getString "omi-service.database"
   val influx: Option[InfluxDBConfigExtension] = if( databaseImplementation.toLowerCase.startsWith("influx" ) ) {
     Try{
-      val influxConf = config.getConfig("influxDB-config")
+      val influxConf = config getConfig "influxDB-config"
       Some(influxConf)
     }.recover {
       case exp: ConfigException.Missing => None
@@ -221,7 +222,22 @@ class OmiConfigExtension(val config: Config) extends Extension
     }
   } else None
 
-  val admins: Vector[String] = config.getStringList("omi-service.admins").asScala.toVector
+  val admins: Vector[String] = (config getStringList "omi-service.admins").asScala.toVector
+
+
+  trait ResponseSetting
+  object ResponseSetting {
+    case object Write extends ResponseSetting
+    case object WriteWithoutEvents extends ResponseSetting
+    case object Ignore extends ResponseSetting
+    def apply: String => ResponseSetting = {
+      case "write" => Write
+      case "writewithoutevents" => WriteWithoutEvents
+      case "none" | "ignore" => Ignore
+      case _ => throw new MatchError("Not a valid configuration value for responseHandling")
+    }
+  }
+  val responseHandling: ResponseSetting = ResponseSetting.apply(config getString "omi-service.responseHandling" toLowerCase)
 }
 
 

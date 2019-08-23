@@ -873,7 +873,8 @@ case class ResponseRequest(
         case (objects, write) => objects.union(write.odf).toImmutable
       },
       None,
-      ttl
+      ttl,
+      requestToken = requestToken
     )
   }
 

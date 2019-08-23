@@ -22,3 +22,13 @@ trait EventBuilder[T] {
   def isComplete: Boolean
   def build: T
 }
+trait SpecialEventHandling {
+  def write: omi.WriteRequest
+  def valueShouldBeUpdated: (odf.Value[Any], odf.Value[Any]) => Boolean
+  def triggerEvent: database.InfoItemEvent => Boolean
+}
+case class WithoutEvents(write: omi.WriteRequest) extends SpecialEventHandling {
+  def valueShouldBeUpdated = database.SingleStores.valueShouldBeUpdated _
+  def triggerEvent = {_ => false}
+}
+

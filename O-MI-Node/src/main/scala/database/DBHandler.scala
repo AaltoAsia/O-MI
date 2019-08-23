@@ -6,6 +6,7 @@ import agentSystem.{AgentName, AgentResponsibilities}
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import responses.{CLIHelperT, CallbackHandler}
 import types.omi._
+import types._
 
 import scala.collection.mutable.{Map => MutableMap}
 import scala.concurrent.Future
@@ -54,6 +55,7 @@ class DBHandler(
                ) extends DBReadHandler
   with DBWriteHandler with DBDeleteHandler {
 
+
   import context.dispatcher
 
   def receive: PartialFunction[Any, Unit] = {
@@ -64,6 +66,13 @@ class DBHandler(
         permissionCheckFuture(write).flatMap {
           case false => Future.successful(permissionFailureResponse)
           case true => handleWrite(write)
+        }
+      )
+    case sp: SpecialEventHandling =>
+      respond(
+        permissionCheckFuture(sp.write).flatMap {
+          case false => Future.successful(permissionFailureResponse)
+          case true => handleWrite(sp)
         }
       )
     case read: ReadRequest =>
