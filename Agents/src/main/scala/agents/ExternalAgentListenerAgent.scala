@@ -32,7 +32,6 @@ import types.odf.{ImmutableODF}
 import types.odf.parsing.ODFStreamParser
 import akka.stream.ActorMaterializer
 
-import scala.collection.JavaConverters
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._

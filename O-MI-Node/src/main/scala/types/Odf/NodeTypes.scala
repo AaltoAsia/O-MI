@@ -3,7 +3,7 @@ package odf
 
 import akka.stream.alpakka.xml.{Attribute, EndElement, ParseEvent, StartElement}
 import database.journal.PPersistentNode.NodeType.{Ii, Obj, Objs}
-import database.journal.{PInfoItem, PObject, PObjects, PPersistentNode, PValueList}
+import database.journal.{PInfoItem, PObject, PObjects, PPersistentNode}
 
 import scala.language.implicitConversions
 import scala.collection.{Seq, SeqView}

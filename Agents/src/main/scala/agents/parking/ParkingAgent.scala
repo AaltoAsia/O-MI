@@ -1,6 +1,5 @@
 package agents.parking
 
-import java.io.File
 import java.sql.Timestamp
 
 import agentSystem._
@@ -16,13 +15,11 @@ import types.odf.parsing.ODFStreamParser
 import akka.stream.scaladsl.FileIO
 import akka.stream.ActorMaterializer
 
-import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.concurrent.{Future, Await}
 import scala.concurrent.duration._
 import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
-import scala.xml.XML
 import utils._
 
 object ParkingAgent extends PropsCreator{

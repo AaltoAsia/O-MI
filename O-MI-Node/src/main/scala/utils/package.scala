@@ -1,5 +1,4 @@
 import scala.language.implicitConversions
-import java.time.OffsetDateTime
 import java.sql.Timestamp
 import javax.xml.datatype.DatatypeFactory
 import java.util.Date
@@ -27,5 +26,5 @@ package object utils {
       .via( XmlWriting.writer )
       .filter(_.nonEmpty)
   }
-  def parseEventsToStringSource( events: Iterable[ParseEvent] ) = parseEventsToByteSource(events).map[String](_.utf8String)
+  def parseEventsToStringSource( events: Iterable[ParseEvent] ): Source[String,NotUsed]  = parseEventsToByteSource(events).map[String](_.utf8String)
 }

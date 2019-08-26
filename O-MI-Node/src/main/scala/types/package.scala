@@ -13,7 +13,6 @@
  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 
 package types
-import java.sql.Timestamp
 import akka.stream.alpakka.xml._
 
 trait EventBuilder[T] {
@@ -21,6 +20,9 @@ trait EventBuilder[T] {
   def previous: Option[EventBuilder[_]]
   def isComplete: Boolean
   def build: T
+}
+trait NoPreviousEventBuilder[T] extends EventBuilder[T] {
+  final val previous: Option[EventBuilder[_]] = None
 }
 trait SpecialEventHandling {
   def write: omi.WriteRequest

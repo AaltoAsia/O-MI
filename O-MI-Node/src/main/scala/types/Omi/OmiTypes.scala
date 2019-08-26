@@ -22,88 +22,74 @@ import javax.xml.stream.XMLInputFactory
 import akka.NotUsed
 import akka.actor.ActorRef
 import akka.http.scaladsl.model.RemoteAddress
-import types.odf._
 
 import scala.collection.JavaConverters._
 import scala.collection.SeqView
 import scala.concurrent.duration._
 import scala.concurrent._
 import scala.util.{Failure, Success, Try}
-import scala.xml.NodeSeq
 import akka.util.ByteString
 import akka.stream.{Materializer, ClosedShape}
 import akka.stream.scaladsl._
 import akka.stream.alpakka.xml._
+import types.odf._
 import utils._
 import parsing.OMIStreamParser
 import database.journal.PRequestInfo
 import database.SingleStores
 
-
-
 abstract class Version private (val number: Double, val standard: String) {
   val namespace: String = f"http://www.opengroup.org/xsd/$standard/$number%.1f/"
 }
+
 object Version {
-  abstract class OmiVersion private (n: Double) extends Version(n, "omi")
+  abstract class OmiVersion private[omi] (n: Double) extends Version(n, "omi")
+  case object OmiVersion1  extends OmiVersion(1.0)
+  case object OmiVersion1b extends OmiVersion(1.0){ override val namespace = "omi.xsd" }
+  case object OmiVersion2  extends OmiVersion(2.0)
   object OmiVersion {
-    case object OmiVersion1  extends OmiVersion(1.0)
-    case object OmiVersion1b extends OmiVersion(1.0){ override val namespace = "omi.xsd" }
-    case object OmiVersion2  extends OmiVersion(2.0)
+    def fromNumber: Double => OmiVersion = {
+      case 2.0 => OmiVersion2
+      case 1.0 => OmiVersion1
+      case _   => OmiVersion2
+    }
+    def fromStringNumber: String => OmiVersion = {
+      case "2.0" | "2" => OmiVersion2
+      case "1.0" | "1" => OmiVersion1
+      case _ => OmiVersion2
+    }
+    def fromNameSpace: String => OmiVersion = {
+      case OmiVersion2.namespace => OmiVersion2
+      case OmiVersion1.namespace => OmiVersion1
+      case OmiVersion1b.namespace => OmiVersion1b
+      case _ => OmiVersion2
+    }
   }
 
-  abstract class OdfVersion private (n: Double, val msgFormat: String = "odf") extends Version(n, "odf")
+  abstract class OdfVersion private[omi] (n: Double, val msgFormat: String = "odf") extends Version(n, "odf")
+  case object OdfVersion1  extends OdfVersion(1.0)
+  case object OdfVersion1b extends OdfVersion(1.0){ override val namespace = "odf.xsd" }
+  case object OdfVersion2  extends OdfVersion(2.0)
   object OdfVersion {
-    case object OdfVersion1  extends OdfVersion(1.0)
-    case object OdfVersion1b extends OdfVersion(1.0){ override val namespace = "odf.xsd" }
-    case object OdfVersion2  extends OdfVersion(2.0)
+    def fromNumber: Double => OdfVersion = {
+      case 2.0 => OdfVersion2
+      case 1.0 => OdfVersion1
+      case _   => OdfVersion2
+    }
+    def fromStringNumber: String => OdfVersion = {
+      case "2.0" | "2" => OdfVersion2
+      case "1.0" | "1" => OdfVersion1
+      case _   => OdfVersion2
+    }
+    def fromNameSpace: String => OdfVersion = {
+      case OdfVersion2.namespace => OdfVersion2
+      case OdfVersion1.namespace => OdfVersion1
+      case OdfVersion1b.namespace => OdfVersion1b
+      case _   => OdfVersion2
+    }
   }
 }
 import Version._
-import Version.OmiVersion._
-import Version.OdfVersion._
-
-object OmiVersion {
-  def fromNumber: Double => OmiVersion = {
-    case 2.0 => OmiVersion2
-    case 1.0 => OmiVersion1
-    case _   => OmiVersion2
-  }
-  def fromStringNumber: String => OmiVersion = {
-    case "2.0" | "2" => OmiVersion2
-    case "1.0" | "1" => OmiVersion1
-    case _ => OmiVersion2
-  }
-  def fromNameSpace: String => OmiVersion = {
-    case OmiVersion2.namespace => OmiVersion2
-    case OmiVersion1.namespace => OmiVersion1
-    case OmiVersion1b.namespace => OmiVersion1b
-    case _ => OmiVersion2
-  }
-}
-object OdfVersion {
-  def fromNumber: Double => OdfVersion = {
-    case 2.0 => OdfVersion2
-    case 1.0 => OdfVersion1
-    case _   => OdfVersion2
-  }
-  def fromStringNumber: String => OdfVersion = {
-    case "2.0" | "2" => OdfVersion2
-    case "1.0" | "1" => OdfVersion1
-    case _   => OdfVersion2
-  }
-  def fromNameSpace: String => OdfVersion = {
-    case OdfVersion2.namespace => OdfVersion2
-    case OdfVersion1.namespace => OdfVersion1
-    case OdfVersion1b.namespace => OdfVersion1b
-    case _   => OdfVersion2
-  }
-}
-
-
-
-
-
 
 trait JavaOmiRequest {
   def callbackAsJava(): JIterable[Callback]

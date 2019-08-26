@@ -23,7 +23,6 @@ import types.odf._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import scala.xml.NodeSeq
 import scala.collection.SeqView
 
 object RESTHandler {

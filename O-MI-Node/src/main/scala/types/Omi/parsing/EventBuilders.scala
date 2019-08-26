@@ -16,18 +16,10 @@ package omi
 package parsing
 
 import java.sql.Timestamp
-import scala.collection.JavaConverters._
-import scala.collection.immutable.HashMap
 import scala.concurrent.duration._
 import scala.util.Try
 
-import akka.NotUsed
-import akka.util._
-import akka.stream._
-import akka.stream.stage._
-import akka.stream.scaladsl._
 import akka.stream.alpakka.xml._
-import akka.stream.alpakka.xml.scaladsl._
 
 import types._
 import types.odf._
@@ -38,13 +30,20 @@ private object RequestPosition extends Enumeration {
   type RequestPosition = Value
   val OpenRequest, NodeList, RequestId, OpenMsg, OpenObjects, CloseMsg, CloseRequest = Value
 }
-import RequestPosition.{RequestPosition,OpenRequest, NodeList, RequestId, OpenMsg, OpenObjects, 
+import RequestPosition.{RequestPosition,OpenRequest, RequestId, OpenMsg, OpenObjects, 
   CloseMsg, CloseRequest} 
+sealed trait EventBuilderWithRequestIds[T] extends EventBuilder[T] {
+  protected var requestIds: List[Long] = List.empty
+  def addRequestId( id: Long ): EventBuilderWithRequestIds[T] ={
+    requestIds = id :: requestIds
+    this
+  }
+}
 class EnvelopeEventBuilder(
-  val previous: Option[EventBuilder[_]], 
   implicit val receiveTime: Timestamp = currentTimestamp
-) extends EventBuilder[OmiRequest]{
-  private var version: String = "2.0"
+) extends NoPreviousEventBuilder[OmiRequest]{
+  //Version is not stored in request
+  //private var version: String = "2.0"
   private var ttl: Duration = 0.seconds
   private var request: Option[OmiRequest] = None
   private var complete: Boolean = false 
@@ -85,7 +84,7 @@ class EnvelopeEventBuilder(
         } else if( ver.isEmpty ){
           throw OMIParserError("No correct version as attribute in omiEnvelope")
         } else {
-          version = ver.getOrElse("2.0")
+          //version = ver.getOrElse("2.0")
           ttl = ttlO.getOrElse(Duration.Inf)
           this
         }
@@ -104,11 +103,7 @@ class EnvelopeEventBuilder(
       case endElement: EndElement if endElement.localName == "omiEnvelope" =>
         if( request.nonEmpty ){
           complete = true
-          previous match {
-            case None => this
-            case Some( builder: EventBuilder[_] ) => 
-              throw OMIParserError("Wrong previous builder for omiEnvelope.")
-          }
+          this
         } else
             throw OMIParserError("OmiEnvelope completed without request.")
       case event: ParseEvent if complete =>
@@ -129,7 +124,7 @@ trait OdfRequestEventBuilder[T] extends EventBuilder[T] {
 }
 class WriteEventBuilder(
   val ttl: Duration, 
-  val previous: Option[EventBuilder[_]], 
+  val previous: Option[EnvelopeEventBuilder], 
   implicit val receiveTime: Timestamp = currentTimestamp 
 ) extends OdfRequestEventBuilder[WriteRequest]{
   private var msgformat: String = ""
@@ -207,7 +202,7 @@ class WriteEventBuilder(
 }
 class CallEventBuilder( 
   val ttl: Duration, 
-  val previous: Option[EventBuilder[_]], 
+  val previous: Option[EnvelopeEventBuilder], 
   implicit val receiveTime: Timestamp = currentTimestamp 
 ) extends OdfRequestEventBuilder[CallRequest]{
   private var msgformat: String = ""
@@ -285,7 +280,7 @@ class CallEventBuilder(
 }
 class DeleteEventBuilder( 
   val ttl: Duration, 
-  val previous: Option[EventBuilder[_]], 
+  val previous: Option[EnvelopeEventBuilder], 
   implicit val receiveTime: Timestamp = currentTimestamp 
 ) extends OdfRequestEventBuilder[DeleteRequest]{
   private var msgformat: String = ""
@@ -363,9 +358,9 @@ class DeleteEventBuilder(
 }
 class ReadEventBuilder( 
   val ttl: Duration, 
-  val previous: Option[EventBuilder[_]], 
+  val previous: Option[EnvelopeEventBuilder], 
   implicit val receiveTime: Timestamp = currentTimestamp 
-) extends OdfRequestEventBuilder[OmiRequest]{
+) extends OdfRequestEventBuilder[OmiRequest] with EventBuilderWithRequestIds[OmiRequest]{
   private var msgformat: Option[String] = None
   private var callback: Option[Callback] = None
   private var position: RequestPosition = OpenRequest
@@ -377,11 +372,6 @@ class ReadEventBuilder(
   private var maxLevels: Option[Int] = None
   private var all: Option[Boolean] = None
 
-  private var requestIds: List[Long] = List.empty
-  def addRequestId( id: Long ): ReadEventBuilder ={
-    requestIds = id :: requestIds
-    this
-  }
   def build: OmiRequest ={
     intervalO match{
       case Some(interval:Duration) =>
@@ -487,20 +477,28 @@ class ReadEventBuilder(
           case startElement: StartElement if startElement.localName == "nodeList" =>
             throw OMIParserError("nodeList is not supported by O-MI Node.")
           case startElement: StartElement if startElement.localName == "msg" =>
-            position = CloseMsg
             msgformat match {
               case Some("odf") =>
-                new ODFEventBuilder(Some(this),receiveTime)
+                position = OpenObjects
+                this
               case Some(unknown: String) => 
                 throw OMIParserError(s"Unknown msgformat: $unknown. Do not know how to parse content inside msg element.")
               case None =>
-                throw OMIParserError(s"No msgformat. Do not know how to parse content inside msg element.")
+                throw OMIParserError(s"No msgFormat given. Do not know how to parse content inside msg element.")
             }
           case endElement: EndElement if endElement.localName == "msg" =>
             position = CloseRequest
             this
           case event: ParseEvent =>
             unexpectedEventHandle("before msg element.", event, this)
+        }
+      case OpenObjects =>
+        event match {
+          case startElement: StartElement if startElement.localName == "Objects" =>
+            position = CloseMsg
+            new ODFEventBuilder(Some(this),receiveTime).parse(event)
+          case event: ParseEvent =>
+            unexpectedEventHandle("in msg element.", event, this)
         }
       case CloseMsg =>
         event match {
@@ -529,17 +527,12 @@ class ReadEventBuilder(
 }
 class CancelEventBuilder( 
   val ttl: Duration, 
-  val previous: Option[EventBuilder[_]], 
+  val previous: Option[EnvelopeEventBuilder], 
   implicit val receiveTime: Timestamp = currentTimestamp 
-) extends OdfRequestEventBuilder[CancelRequest]{
-  private var callback: Option[Callback] = None
+) extends EventBuilderWithRequestIds[CancelRequest]{
+  private var complete: Boolean = false
+  final def isComplete: Boolean = previous.isEmpty && complete
   private var position: RequestPosition = OpenRequest
-  private var requestIds: List[Long] = List.empty
-
-  def addRequestId( id: Long ): CancelEventBuilder ={
-    requestIds = id :: requestIds
-    this
-  }
   def build: CancelRequest = CancelRequest(requestIds.toVector,ttl)
   def parse( event: ParseEvent ): EventBuilder[_] ={
     position match {
@@ -581,7 +574,7 @@ class CancelEventBuilder(
   }
 }
 class RequestIdEventBuilder( 
-  val previous: Option[EventBuilder[_]], 
+  val previous: Option[EventBuilderWithRequestIds[_]], 
   implicit val receiveTime: Timestamp = currentTimestamp 
 ) extends EventBuilder[Long]{
     object Position extends Enumeration {
@@ -637,7 +630,6 @@ class RequestIdEventBuilder(
                     state.addRequestId(build)
                   case Some(state: ResultEventBuilder) => 
                     state.addRequestId(build)
-                  case Some(state: EventBuilder[_]) => throw OMIParserError("RequestId state after wrong state. Previous should be read.")
                   case None =>
                     this
                 }
@@ -650,7 +642,7 @@ class RequestIdEventBuilder(
 
 class ResponseEventBuilder( 
   val ttl: Duration, 
-  val previous: Option[EventBuilder[_]], implicit val receiveTime: Timestamp = currentTimestamp 
+  val previous: Option[EnvelopeEventBuilder], implicit val receiveTime: Timestamp = currentTimestamp 
 ) extends EventBuilder[ResponseRequest]{
     object Position extends Enumeration {
       type Position = Value
@@ -706,8 +698,6 @@ class ResponseEventBuilder(
               previous match {
                 case Some(builder: EnvelopeEventBuilder) => 
                   builder.setRequest(build)
-                case Some(state: EventBuilder[_]) => 
-                  throw OMIParserError("ResponseEventBuilder after wrong EventBuilder. Previous should be omiEnvelope.")
                 case None =>
                   this
               }
@@ -721,25 +711,19 @@ class ResponseEventBuilder(
 class ResultEventBuilder( 
   val previous: Option[EventBuilder[_]], 
   implicit val receiveTime: Timestamp = currentTimestamp 
-) extends EventBuilder[OmiResult]{
+) extends EventBuilderWithRequestIds[OmiResult]{
     object Position extends Enumeration {
       type Position = Value
       val OpenResult, Return, RequestIds, OpenMsg,CloseMsg, CloseResult = Value 
     }
     import Position._
-    private var callback: Option[Callback] = None
     private var position: Position = OpenResult 
     private var complete: Boolean = false
     private var odf: Option[ODF] = None
     private var msgformat: Option[String] = None
     private var returnCode: Option[String] = None
     private var returnDescription: Option[String] = None 
-    private var requestIds: List[Long] = List.empty
   final def isComplete: Boolean = previous.isEmpty && complete
-    def addRequestId( id: Long ): ResultEventBuilder ={
-      requestIds = id :: requestIds
-      this
-    }
     def addODF( _odf: ODF ): ResultEventBuilder ={
       odf = Some(_odf)
       this

@@ -32,6 +32,23 @@ import java.util.concurrent.TimeUnit;
  * Parses given file for O-DF structure and updates it's values.
  */
 public class JavaFileAgent extends JavaInternalAgent {
+
+  protected ActorMaterializer materializer = ActorMaterializer.create(context());
+  protected Config config;
+
+  protected FiniteDuration interval;
+
+  protected String pathToFile;
+  protected File file;
+  protected ODF odf;
+
+  protected int writeCount = 0;
+
+  protected Cancellable intervalJob = null;
+
+  //Random for generating new values for path.
+  protected Random rnd = new Random();
+
   /**
    *  THIS STATIC METHOD MUST EXISTS FOR JavaInternalAgent. 
    *  WITHOUT IT JavaInternalAgent CAN NOT BE INITIALIZED.
@@ -51,23 +68,6 @@ public class JavaFileAgent extends JavaInternalAgent {
       }
     });
   }
-
-  protected ActorMaterializer materializer = ActorMaterializer.create(context());
-  protected Config config;
-
-  protected FiniteDuration interval;
-
-  protected String pathToFile;
-  protected File file;
-  protected ODF odf;
-
-  protected int writeCount = 0;
-
-  protected Cancellable intervalJob = null;
-
-  //Random for generating new values for path.
-  protected Random rnd = new Random();
-
 
   // Constructor
   public JavaFileAgent(

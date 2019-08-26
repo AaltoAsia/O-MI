@@ -31,6 +31,17 @@ import java.util.concurrent.TimeUnit;
  * Can be used in testing or as a base for other agents.
  */
 public class JavaRoomAgent extends JavaInternalAgent {
+
+  //Interval between writes and cancellable job run after every interval. 
+  protected FiniteDuration interval;
+  protected Cancellable intervalJob;
+
+  //Random for generating new values for path.
+  protected Random rnd = new Random();
+
+  //Our O-DF structure
+  protected ODF odf;
+
   /**
    *  THIS STATIC FACTORY METHOD MUST EXISTS FOR JavaInternalAgent 
    *  WITHOUT IT JavaInternalAgent CAN NOT BE INITIALIZED.
@@ -51,16 +62,6 @@ public class JavaRoomAgent extends JavaInternalAgent {
       }
     });
   }
-
-  //Interval between writes and cancellable job run after every interval. 
-  protected FiniteDuration interval;
-  protected Cancellable intervalJob;
-
-  //Random for generating new values for path.
-  protected Random rnd = new Random();
-
-  //Our O-DF structure
-  protected ODF odf;
 
   // Constructor
   public JavaRoomAgent(Config conf, final ActorRef requestHandler, final ActorRef dbHandler){

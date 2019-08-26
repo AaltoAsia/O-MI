@@ -17,7 +17,7 @@ package http
 
 import java.io.{BufferedWriter, File, FileWriter}
 import java.net.InetSocketAddress
-import java.nio.file.{Path=>FilePath,Paths}
+import java.nio.file.{Paths}
 
 import agentSystem.{AgentInfo, AgentName, NewCLI}
 import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, Props}
@@ -364,7 +364,7 @@ class OmiNodeCLI(
         //val file = new File(filePath)
         val file = Paths.get(filePath)
         //val bw = new BufferedWriter(new FileWriter(file))
-        val res = Await.result(parseEventsToByteSource(odf.asXMLDocument()).runWith(FileIO.toPath(file)), 1.hour) // FIXME: stream straight to file
+        Await.result(parseEventsToByteSource(odf.asXMLDocument()).runWith(FileIO.toPath(file)), 1.hour) // FIXME: stream straight to file
         //val printer = new scala.xml.PrettyPrinter(200, 2)
         //bw.write(printer.format(res.head))
         //bw.close()

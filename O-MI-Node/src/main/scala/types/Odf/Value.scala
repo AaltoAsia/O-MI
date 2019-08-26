@@ -3,24 +3,20 @@ package odf
 
 import java.sql.Timestamp
 
-import database.journal.PPersistentValue
-import database.journal.PPersistentValue.ValueTypeOneof.{ProtoBoolValue, ProtoDoubleValue, ProtoLongValue, ProtoStringValue}
-import akka.stream.alpakka.xml._
-
-import scala.collection.immutable.HashMap
 import scala.collection.SeqView
 import scala.util.{Failure, Success, Try}
-
 import scala.concurrent.duration._
 import scala.concurrent._
-
-import utils.parseEventsToByteSource
 
 import akka.util.ByteString
 import akka.stream.scaladsl.Sink
 import akka.stream.Materializer
+import akka.stream.alpakka.xml._
 
-import types.omi.Version.OdfVersion.OdfVersion2
+import utils.parseEventsToByteSource
+import database.journal.PPersistentValue
+import database.journal.PPersistentValue.ValueTypeOneof.{ProtoBoolValue, ProtoDoubleValue, ProtoLongValue, ProtoStringValue}
+import types.omi.Version.OdfVersion2
 
 trait Value[+V] extends Element{
   val value: V
@@ -41,7 +37,7 @@ trait Value[+V] extends Element{
       val f: Future[String] = parseEventsToByteSource(odf.asXMLDocument(Some(OdfVersion2))).runWith(Sink.fold(""){
         case ( result: String, bStr: ByteString ) => result + bStr.utf8String
       })
-      ProtoStringValue(Await.result(f, 1 minute))
+      ProtoStringValue(Await.result(f, 1.minute))
     case a: Any => ProtoStringValue(a.toString)
   })
   def asXMLEvents: SeqView[ParseEvent,Seq[_]] = {

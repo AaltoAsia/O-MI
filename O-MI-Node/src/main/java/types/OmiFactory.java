@@ -953,7 +953,7 @@ final public class OmiFactory{
   public static OmiResult createOmiResult(
       OmiReturn returnValue
       ){
-    scala.collection.immutable.Vector<java.lang.Object> empty = Vector.empty().toVector();
+    Vector<java.lang.Object> empty = Vector.empty().toVector();
     return OmiResult$.MODULE$.apply(
         returnValue,
         empty,

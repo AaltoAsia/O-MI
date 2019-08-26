@@ -15,7 +15,6 @@
 package http
 
 import java.net.InetAddress
-import java.util.concurrent.TimeUnit
 
 import scala.collection.JavaConverters._
 import scala.concurrent.duration._

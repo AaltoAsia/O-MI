@@ -16,7 +16,7 @@ import types.Path
 import types.odf._
 import journal._
 import types.omi.Version._
-import types.omi.{ResponseRequest, RequestIDRequest}
+import types.omi.ResponseRequest
 import utils.SimpleMonad._
 import utils.OptionT
 

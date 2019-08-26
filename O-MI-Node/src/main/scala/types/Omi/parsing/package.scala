@@ -2,10 +2,7 @@ package types
 package omi
 
 import utils._
-import scala.util.Try
 import scala.concurrent.duration._
-import java.sql.Timestamp
-import java.time.OffsetDateTime
 import akka.stream.alpakka.xml._
 import types._
 

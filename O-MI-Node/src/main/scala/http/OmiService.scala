@@ -244,7 +244,7 @@ trait OmiService
                   val xmlWithNamespace = xmlResp.take(2).map{
                     // take StartDocument and first StartElement
                     case s: StartElement =>
-                      val ns = Version.OdfVersion.OdfVersion1.namespace
+                      val ns = Version.OdfVersion1.namespace
                       s.copy(namespace=Some(ns),namespaceCtx=List(Namespace(ns)))
                     case x => x // noop
                   } ++ xmlResp.drop(2)
@@ -285,8 +285,8 @@ trait OmiService
       val originalReq = RawRequestWrapper(requestSource, UserInfo(remoteAddress = Some(remote)))
       val labeledMetric = Metrics.requestHistogram.map{ hist => hist.labels(originalReq.requestTypeString)}
 
-      val omiVersion = OmiVersion.fromNameSpace(originalReq.omiEnvelope.namespace.getOrElse("default"))
-      val odfVersion = originalReq.odfObjects.map{ objs => OdfVersion.fromNameSpace(objs.namespace.getOrElse("default") )}
+      val omiVersion = Version.OmiVersion.fromNameSpace(originalReq.omiEnvelope.namespace.getOrElse("default"))
+      val odfVersion = originalReq.odfObjects.map{ objs => Version.OdfVersion.fromNameSpace(objs.namespace.getOrElse("default") )}
 
       val requestToken = Await.result(
         singleStores.addRequestInfo(startTime.getTime()*1000 + originalReq.handleTTL.toSeconds, omiVersion, odfVersion),

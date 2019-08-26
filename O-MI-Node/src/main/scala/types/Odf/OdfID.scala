@@ -46,7 +46,7 @@ case class OdfID(
     endDate.map(time => PTimestamp(time.getTime)),
     attributes.toMap)
   
-  def asXMLEvents(label:String) ={
+  def asXMLEvents(label:String): Iterable[ParseEvent] ={
     Seq(
       StartElement( label,
         tagType.map{

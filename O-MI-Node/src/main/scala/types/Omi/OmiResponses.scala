@@ -4,7 +4,6 @@ package omi
 import types.odf._
 
 import scala.concurrent.duration._
-import scala.xml.NodeSeq
 import scala.collection.SeqView
 import akka.stream.alpakka.xml._
 

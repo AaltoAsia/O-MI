@@ -9,17 +9,14 @@ import agentSystem._
 import akka.actor.{ActorRef, Cancellable, Props}
 import com.typesafe.config.Config
 import types.omi.{OmiResult, ResponseRequest, Results, WriteRequest}
-import types.ParseError
 import types.odf._
 import types.odf.parsing._
 import akka.stream.scaladsl.FileIO
 import akka.stream.ActorMaterializer
 
-import scala.collection.JavaConverters
 import scala.collection.mutable.{Queue => MutableQueue}
 import scala.concurrent.duration._
 import scala.util.{Failure, Random, Success}
-import scala.xml._
 
 object ODFAgent extends PropsCreator{
   def props( config: Config, requestHandler: ActorRef, dbHandler: ActorRef ): Props = {

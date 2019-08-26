@@ -15,10 +15,7 @@ package types
 package odf
 package parsing
 
-import java.sql.Timestamp
 import scala.util.Try
-import scala.collection.JavaConverters._
-import scala.collection.immutable.HashMap
 import scala.concurrent.Future
 
 import akka.NotUsed

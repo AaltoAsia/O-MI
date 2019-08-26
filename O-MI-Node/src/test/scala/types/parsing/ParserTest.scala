@@ -215,7 +215,7 @@ class ParserTest( implicit ee: ExecutionEnv ) extends Specification with Matcher
     </read>
   </omiEnvelope>
   """ 
-  invalidOmiTest(temp, "ODFParserError")
+  invalidOmiTest(temp, "OMIParserError")
 
   }
 

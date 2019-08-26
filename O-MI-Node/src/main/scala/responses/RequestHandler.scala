@@ -33,7 +33,6 @@ import types.Path
 import types._
 import http.TemporaryRequestInfoStore._
 import utils._
-import io.prometheus.client._
 
 object RequestHandler {
   def props(

@@ -10,7 +10,6 @@ import org.slf4j.{Logger, LoggerFactory}
 import types.omi.{OmiReturn, ReturnCode}
 import types.Path
 import types.odf._
-import utils._
 
 import scala.concurrent.Future
 
