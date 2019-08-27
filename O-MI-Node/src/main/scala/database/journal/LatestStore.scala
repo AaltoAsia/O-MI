@@ -10,7 +10,6 @@ import types.Path
 import types.odf._
 
 
-
 //Event and Commands are separate in case there is need to develop further and add Event and Command handlers
 
 object LatestStore {
@@ -32,6 +31,7 @@ object LatestStore {
 }
 class LatestStore(override val persistenceId: String) extends JournalStore {
 
+  import context.dispatcher
   private var state: Map[Path, Value[Any]] = Map()
 
 

@@ -5,8 +5,12 @@ import java.sql.Timestamp
 import database.journal.PPersistentNode.NodeType.{Ii, Obj, Objs}
 import database.EventSub
 import types.Path
-import types.odf.{BooleanValue, Description, DoubleValue, FloatValue, ImmutableODF, InfoItem, IntValue, LongValue, MetaData, ODFParser, ODFValue, Object, Objects, QlmID, ShortValue, Value}
+import types.odf._
 import utils._
+import akka.stream.Materializer
+import akka.stream.scaladsl.{Source, Sink}
+import scala.concurrent.Await
+import scala.concurrent.duration._
 
 object Models {
 
@@ -34,7 +38,7 @@ object Models {
       path.last,
       path,
       Option(pinfo.typeName).filter(_.nonEmpty),
-      pinfo.names.map(id => buildQlmIDFromProtobuf(id)).toVector,
+      pinfo.names.map(id => buildOdfIDFromProtobuf(id)).toVector,
       pinfo.descriptions.map(d => Description(d.text, Option(d.lang).filter(_.nonEmpty))).toSet,
       metaData = pinfo.metadata
         .map(md => MetaData(md.infoItems.map { case (p, ii) => buildInfoItemFromProtobuf(p, ii) }.toVector)),
@@ -42,8 +46,8 @@ object Models {
     )
   }
 
-  def buildQlmIDFromProtobuf(pqlmid: PQlmid): QlmID = {
-    QlmID(
+  def buildOdfIDFromProtobuf(pqlmid: PQlmid): OdfID = {
+    OdfID(
       pqlmid.id,
       Option(pqlmid.idType).filter(_.nonEmpty),
       Option(pqlmid.tagType).filter(_.nonEmpty),
@@ -55,7 +59,7 @@ object Models {
 
   def buildObjectFromProtobuf(path: String, pobj: PObject): Object = {
     Object(
-      pobj.ids.map(id => buildQlmIDFromProtobuf(id)).toVector,
+      pobj.ids.map(id => buildOdfIDFromProtobuf(id)).toVector,
       Path(path),
       Option(pobj.typeName).filter(_.nonEmpty),
       pobj.descriptions.map(d => Description(d.text, Option(d.lang).filter(_.nonEmpty))).toSet,
@@ -93,7 +97,7 @@ object Models {
     }
   }
 
-  def asValue(pv: PPersistentValue): Value[Any] = {
+  def asValue(pv: PPersistentValue)(implicit mat: Materializer): Value[Any] = {
     pv.typeName match {
       case "xs:float" if pv.valueType.isProtoDoubleValue =>
         FloatValue(pv.getProtoDoubleValue.toFloat, new Timestamp(pv.timeStamp))
@@ -108,7 +112,12 @@ object Models {
       case "xs:boolean" if pv.valueType.isProtoBoolValue =>
         BooleanValue(pv.getProtoBoolValue, new Timestamp(pv.timeStamp))
       case "odf" if pv.valueType.isProtoStringValue =>
-        ODFValue(ODFParser.parse(pv.getProtoStringValue).right.get, new Timestamp(pv.timeStamp))
+        ODFValue(
+          Await.result(Source.single(pv.getProtoStringValue)
+            .via(types.odf.parsing.ODFStreamParser.parserFlow)
+            .runWith(Sink.fold[ODF,ODF](ImmutableODF())(_ union _)),
+            1.minute)
+            , new Timestamp(pv.timeStamp))
       case str: String if pv.valueType.isProtoStringValue =>
         Value(pv.getProtoStringValue, pv.typeName, new Timestamp(pv.timeStamp))
       case other => throw new Exception(s"Error while deserializing value: $other")

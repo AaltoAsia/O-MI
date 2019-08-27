@@ -2,13 +2,17 @@ package database
 
 import java.sql.Timestamp
 
+import akka.stream.ActorMaterializer
 import journal._
 import journal.serialization.JournalProtoBufSerializer
 import org.specs2.Specification
 import org.specs2.specification.core.SpecStructure
+import org.specs2.concurrent.ExecutionEnv
 import types.Path
 import types.odf._
-class JournalSerializerTest extends Specification {
+import testHelpers._
+class JournalSerializerTest(implicit ee: ExecutionEnv) extends Specification with SilentActorSystem{
+  implicit val mat = ActorMaterializer()
   val JournalSerializer = new JournalProtoBufSerializer()
   def is: SpecStructure = s2"""
   Journal Serializer should serialize and deserialize protobuf classes correctly
@@ -67,7 +71,7 @@ class JournalSerializerTest extends Specification {
     val orig = InfoItem(
       Path(path),
       Some("testType"),
-      Vector(QlmID("test1", Some("testType"),Some("tagtype"),None,None,Map("testKey"->"testValue"))),
+      Vector(OdfID("test1", Some("testType"),Some("tagtype"),None,None,Map("testKey"->"testValue"))),
       Set(Description("description text",Some("english"))),
       Vector.empty,
       None,
@@ -76,7 +80,7 @@ class JournalSerializerTest extends Specification {
     persisted must beSome and (Models.buildInfoItemFromProtobuf(path, persisted.get) === orig )
   }
   private def buildQlmid = {
-    val orig = QlmID(
+    val orig = OdfID(
       "test",
       Some("idType"),
       Some("tagtype"),
@@ -85,7 +89,7 @@ class JournalSerializerTest extends Specification {
       Map("testkey" -> "testvalue")
     )
     val persisted = orig.persist
-    Models.buildQlmIDFromProtobuf(persisted) === orig
+    Models.buildOdfIDFromProtobuf(persisted) === orig
   }
   private def buildObject = {
     val path = "Objects/TestObject"
@@ -116,7 +120,7 @@ class JournalSerializerTest extends Specification {
     val intValue = IntValue(20,ts)
     val longValue = LongValue(20,ts)
     val booleanValue = BooleanValue(value = true, ts)
-    val odfValue = ODFValue(ImmutableODF(Seq(Objects(), Object(Path("Objects/test")))),ts)
+    val odfValue = ODFValue(ImmutableODF(Seq(Objects(Some("2.0")), Object(Path("Objects/test")))),ts)
     val stringValue = StringPresentedValue("testValue",ts, "testValuetype")
     testValue(floatValue) and
     testValue(doubleValue) and

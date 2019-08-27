@@ -16,7 +16,7 @@ import org.json4s.JsonDSL._
 import org.json4s.native.JsonMethods._
 import org.json4s.{JObject, JString, _}
 import org.slf4j.{Logger, LoggerFactory}
-import types.OmiTypes._
+import types.omi._
 import types.Path
 import types.odf._
 

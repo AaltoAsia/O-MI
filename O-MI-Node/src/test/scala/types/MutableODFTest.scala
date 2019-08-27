@@ -10,7 +10,7 @@ import org.specs2.mutable._
 import org.specs2.matcher._
 import org.specs2.specification.{Scope,AfterAll}
 
-import types.OdfTypes._
+import types.odf._
 import types.{Path => OdfPath}
 
 import scala.collection.immutable.HashMap
@@ -59,7 +59,7 @@ class MutableODFTest extends Specification {
       "II2",
       OdfPath("Objects", "ObjectA", "II2"),
       names = Vector(
-        QlmID(
+        OdfID(
           "II2O1",
           Some("TestID"),
           Some("TestTag")
@@ -91,7 +91,7 @@ class MutableODFTest extends Specification {
     ),
     Object(
       Vector(
-        QlmID(
+        OdfID(
           "ObjectCC",
           Some("TestID"),
           Some("TestTag")

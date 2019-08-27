@@ -1,11 +1,11 @@
 package types
-package OmiTypes
+package omi
 
 import java.net.InetAddress
 
 import akka.http.scaladsl.model.Uri
 import database.journal.PCallback
-import types.OmiTypes.Callback._
+import types.omi.Callback._
 
 import scala.util.Try
 
@@ -79,22 +79,5 @@ object Callback {
         throw new Exception(s"$scheme is not supported. Only http and https are supported schemas for callback.")
     }
   }
-
-  /*
-  def toDefined( rcb: RawCallback, connection: ConnectionIdentifier): DefinedCallback = {
-    val httpSchemas = Vector("http", "https")
-    rcb.address match{
-      case "0" => CurrentConnectionCallback(connection) 
-      case addr if isValidUri(uri) => 
-        val uri = Uri(addr) 
-        uri.schema match {
-          case schema if httpSchema.contains(schema) =>
-            HTTPCallback(uri)
-        }
-      case
-    
-    }
-  }
-  */
 
 }

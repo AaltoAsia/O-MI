@@ -4,7 +4,7 @@ import java.net.{InetAddress, URI}
 
 import org.specs2.Specification
 import org.specs2.mock.Mockito
-import types.OmiTypes._
+import types.omi._
 import testHelpers.OmiServiceDummy
 import akka.http.scaladsl.model.RemoteAddress
 import types.odf._

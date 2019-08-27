@@ -1,25 +1,12 @@
 package types;
 
 import scala.collection.immutable.HashMap;
+import scala.collection.immutable.Vector;
 import scala.concurrent.duration.Duration;
-import types.OdfTypes.OdfObjects;
-import types.OdfTypes.OdfTreeCollection;
-import types.OmiTypes.UserInfo;
-import types.OmiTypes.ReadRequest;
-import types.OmiTypes.Callback;
-import types.OmiTypes.RawCallback;
-import types.OmiTypes.PollRequest;
-import types.OmiTypes.WriteRequest;
-import types.OmiTypes.SubscriptionRequest;
-import types.OmiTypes.ResponseRequest;
-import types.OmiTypes.ResponseRequest$;
-import types.OmiTypes.CancelRequest;
-import types.OmiTypes.OmiReturn;
-import types.OmiTypes.OmiReturn$;
-import types.OmiTypes.OmiResult;
-import types.OmiTypes.OmiResult$;
+import types.odf.ODF;
+import types.odf.OdfCollection;
+import types.omi.*;
 import types.odf.ImmutableODF;
-import types.odf.OldTypeConverter;
 
 import java.sql.Timestamp;
 
@@ -41,7 +28,7 @@ final public class OmiFactory{
    */
   public static ReadRequest createReadRequest(
       Duration ttl,
-      OdfObjects odf,
+      ODF odf,
       Timestamp begin,
       Timestamp end,
       int newest,
@@ -51,7 +38,7 @@ final public class OmiFactory{
       ){
     Callback cb = new RawCallback(callback);
     return new ReadRequest(
-        OldTypeConverter.convertOdfObjects(odf),
+        odf,
         scala.Option.apply(begin),
         scala.Option.apply(end),
         scala.Option.apply(newest),
@@ -79,7 +66,7 @@ final public class OmiFactory{
    */
   public static ReadRequest createReadRequest(
       Duration ttl,
-      OdfObjects odf,
+      ODF odf,
       Timestamp begin,
       Timestamp end,
       int newest,
@@ -88,7 +75,7 @@ final public class OmiFactory{
       ){
     Callback cb = new RawCallback(callback);
     return new ReadRequest(
-        OldTypeConverter.convertOdfObjects(odf),
+        odf,
         scala.Option.apply(begin),
         scala.Option.apply(end),
         scala.Option.apply(newest),
@@ -151,14 +138,14 @@ final public class OmiFactory{
    */
   public static ReadRequest createReadRequest(
       Duration ttl,
-      OdfObjects odf,
+      ODF odf,
       Timestamp begin,
       Timestamp end,
       int newest,
       int oldest
       ){
     return new ReadRequest(
-        OldTypeConverter.convertOdfObjects(odf),
+        odf,
         scala.Option.apply(begin),
         scala.Option.apply(end),
         scala.Option.apply(newest),
@@ -218,12 +205,12 @@ final public class OmiFactory{
    */
   public static ReadRequest createReadRequest(
       Duration ttl,
-      OdfObjects odf,
+      ODF odf,
       Timestamp begin,
       Timestamp end
       ){
     return new ReadRequest(
-        OldTypeConverter.convertOdfObjects(odf),
+        odf,
         scala.Option.apply(begin),
         scala.Option.apply(end),
         scala.Option.empty(),
@@ -278,11 +265,11 @@ final public class OmiFactory{
    */
   public static ReadRequest createReadRequest(
       Duration ttl,
-      OdfObjects odf,
+      ODF odf,
       Timestamp begin
       ){
     return new ReadRequest(
-        OldTypeConverter.convertOdfObjects(odf),
+        odf,
         scala.Option.apply(begin),
         scala.Option.empty(),
         scala.Option.empty(),
@@ -339,37 +326,7 @@ final public class OmiFactory{
    */
   public static ReadRequest createReadRequest(
       Duration ttl,
-      OdfObjects odf,
-      int newest
-      ){
-    return new ReadRequest(
-        OldTypeConverter.convertOdfObjects(odf),
-        scala.Option.empty(),
-        scala.Option.empty(),
-        scala.Option.apply(newest),
-        scala.Option.empty(),
-        scala.Option.empty(),
-        scala.Option.empty(),
-        ttl,
-        new UserInfo(UserInfo.apply$default$1(),UserInfo.apply$default$2()),
-        scala.Option.empty(),
-        scala.Option.empty(),
-        scala.Option.empty()
-
-
-        );
-      }
-
-  /**
-   *
-   * @param ttl Time to live of request.
-   * @param odf O-DF structure to be read.
-   * @param newest Number of newest values to be read.
-   * @return ReadRequest
-   */
-  public static ReadRequest createReadRequest(
-      Duration ttl,
-      ImmutableODF odf,
+      ODF odf,
       int newest
       ){
     return new ReadRequest(
@@ -394,6 +351,36 @@ final public class OmiFactory{
    *
    * @param ttl Time to live of request.
    * @param odf O-DF structure to be read.
+   * @param newest Number of newest values to be read.
+   * @return ReadRequest
+   */
+  public static ReadRequest createReadRequest(
+      Duration ttl,
+      ImmutableODF odf,
+      int newest
+      ){
+    return new ReadRequest(
+        odf,
+        scala.Option.empty(),
+        scala.Option.empty(),
+        scala.Option.apply(newest),
+        scala.Option.empty(),
+        scala.Option.empty(),
+        scala.Option.empty(),
+        ttl,
+        new UserInfo(UserInfo.apply$default$1(),UserInfo.apply$default$2()),
+        scala.Option.empty(),
+        scala.Option.empty(),
+        scala.Option.empty()
+
+
+        );
+      }
+
+  /**
+   *
+   * @param ttl Time to live of request.
+   * @param odf O-DF structure to be read.
    * @param begin Timestamp defining begin of time frame to be read.
    * @param end Timestamp defining end of time frame to be read.
    * @param callback Callback address were results of this request should be sent.
@@ -401,14 +388,14 @@ final public class OmiFactory{
    */
   public static ReadRequest createReadRequest(
       Duration ttl,
-      OdfObjects odf,
+      ODF odf,
       Timestamp begin,
       Timestamp end,
       String callback
       ){
     Callback cb = new RawCallback(callback);
     return new ReadRequest(
-        OldTypeConverter.convertOdfObjects(odf),
+        odf,
         scala.Option.apply(begin),
         scala.Option.apply(end),
         scala.Option.empty(),
@@ -468,14 +455,14 @@ final public class OmiFactory{
    */
   public static ReadRequest createReadRequest(
       Duration ttl,
-      OdfObjects odf,
+      ODF odf,
       Timestamp begin,
       String callback
 
       ){
     Callback cb = new RawCallback(callback);
     return new ReadRequest(
-        OldTypeConverter.convertOdfObjects(odf),
+        odf,
         scala.Option.apply(begin),
         scala.Option.empty(),
         scala.Option.empty(),
@@ -534,13 +521,13 @@ final public class OmiFactory{
    */
   public static ReadRequest createReadRequest(
       Duration ttl,
-      OdfObjects odf,
+      ODF odf,
       int newest,
       String callback
       ){
     Callback cb = new RawCallback(callback);
     return new ReadRequest(
-        OldTypeConverter.convertOdfObjects(odf),
+        odf,
         scala.Option.empty(),
         scala.Option.empty(),
         scala.Option.apply(newest),
@@ -596,12 +583,12 @@ final public class OmiFactory{
    */
   public static ReadRequest createReadRequest(
       Duration ttl,
-      OdfObjects odf,
+      ODF odf,
       String callback
       ){
     Callback cb = new RawCallback(callback);
     return new ReadRequest(
-        OldTypeConverter.convertOdfObjects(odf),
+        odf,
         scala.Option.empty(),
         scala.Option.empty(),
         scala.Option.empty(),
@@ -655,10 +642,10 @@ final public class OmiFactory{
    */
   public static ReadRequest createReadRequest(
       Duration ttl,
-      OdfObjects odf
+      ODF odf
       ){
     return new ReadRequest(
-        OldTypeConverter.convertOdfObjects(odf),
+        odf,
         scala.Option.empty(),
         scala.Option.empty(),
         scala.Option.empty(),
@@ -761,13 +748,13 @@ final public class OmiFactory{
   public static SubscriptionRequest createSubscriptionRequest(
       Duration ttl,
       Duration interval,
-      OdfObjects odf,
+      ODF odf,
       String callback
       ){
     Callback cb = new RawCallback(callback);
     return new SubscriptionRequest(
         interval,
-        OldTypeConverter.convertOdfObjects(odf),
+        odf,
         scala.Option.empty(),
         scala.Option.empty(),
         scala.Option.apply(cb),
@@ -821,11 +808,11 @@ final public class OmiFactory{
   public static SubscriptionRequest createSubscriptionRequest(
       Duration ttl,
       Duration interval,
-      OdfObjects odf
+      ODF odf
       ){
     return new SubscriptionRequest(
         interval,
-        OldTypeConverter.convertOdfObjects(odf),
+        odf,
         scala.Option.empty(),
         scala.Option.empty(),
         scala.Option.empty(),
@@ -878,7 +865,7 @@ final public class OmiFactory{
       Iterable<OmiResult> results
       ){
     return ResponseRequest$.MODULE$.applySimple(
-        OdfTreeCollection.fromJava(results),
+        OdfCollection.fromJava(results),
         ttl
     );
   }
@@ -913,12 +900,12 @@ final public class OmiFactory{
   public static OmiResult createOmiResult(
       OmiReturn returnValue,
       Iterable<Long > requestIDs,
-      OdfObjects odf
+      ODF odf
       ){
     return OmiResult$.MODULE$.apply(
         returnValue,
         types.JavaHelpers.requestIDsFromJava(requestIDs),
-        scala.Option.apply( OldTypeConverter.convertOdfObjects(odf))
+        scala.Option.apply( odf)
         );
       }
 
@@ -966,7 +953,7 @@ final public class OmiFactory{
   public static OmiResult createOmiResult(
       OmiReturn returnValue
       ){
-    scala.collection.immutable.Vector<java.lang.Object> empty = OdfTreeCollection.empty();
+    Vector<java.lang.Object> empty = Vector.empty().toVector();
     return OmiResult$.MODULE$.apply(
         returnValue,
         empty,
@@ -1016,12 +1003,12 @@ final public class OmiFactory{
    */
   public static WriteRequest createWriteRequest(
       Duration ttl,
-      OdfObjects odf,
+      ODF odf,
       String callback
       ){
     Callback cb = new RawCallback(callback);
     return new WriteRequest(
-        OldTypeConverter.convertOdfObjects(odf),
+        odf,
         scala.Option.apply(cb),
         ttl,
         new UserInfo(UserInfo.apply$default$1(),UserInfo.apply$default$2()),
@@ -1064,10 +1051,10 @@ final public class OmiFactory{
    */
   public static WriteRequest createWriteRequest(
       Duration ttl,
-      OdfObjects odf
+      ODF odf
       ){
     return new WriteRequest(
-        OldTypeConverter.convertOdfObjects(odf),
+        odf,
         scala.Option.empty(),
         ttl,
         new UserInfo(UserInfo.apply$default$1(),UserInfo.apply$default$2()),

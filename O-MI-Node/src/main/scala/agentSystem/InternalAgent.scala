@@ -16,7 +16,7 @@ package agentSystem
 import akka.actor.{ActorLogging, ActorRef}
 import akka.pattern.ask
 import akka.util.Timeout
-import types.OmiTypes._
+import types.omi._
 
 import scala.concurrent.{Future, Promise}
 /**

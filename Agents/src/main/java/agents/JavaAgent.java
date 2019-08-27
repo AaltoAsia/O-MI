@@ -13,18 +13,14 @@ import scala.concurrent.Future;
 import scala.concurrent.duration.Duration;
 import scala.concurrent.duration.FiniteDuration;
 import scala.util.Random;
-import types.OldOdfFactory;
-import types.OdfTypes.OdfInfoItem;
-import types.OdfTypes.OdfObjects;
-import types.OdfTypes.OdfValue;
-import types.OdfTypes.OdfDescription;
-import types.OdfTypes.OdfMetaData;
 import types.OmiFactory;
-import types.OmiTypes.OmiResult;
-import types.OmiTypes.WriteRequest;
-import types.OmiTypes.ResponseRequest;
-import types.OmiTypes.Results;
+import types.OdfFactory;
+import types.omi.OmiResult;
+import types.omi.WriteRequest;
+import types.omi.ResponseRequest;
+import types.omi.Results;
 import types.Path;
+import types.odf.*;
 
 import java.sql.Timestamp;
 import java.util.Vector;
@@ -102,7 +98,7 @@ public class JavaAgent extends JavaInternalAgent {
    */
   public void update() {
 
-    // Generate new OdfValue<Object> 
+    // Generate new Value<Object> 
 
     // timestamp for the value
     Timestamp timestamp =  new Timestamp(new java.util.Date().getTime());
@@ -112,43 +108,45 @@ public class JavaAgent extends JavaInternalAgent {
     String newValueStr = rnd.nextDouble() +""; 
 
     // Multiple values can be added at the same time but we add one
-    Vector<OdfValue<Object>> values = new Vector<>();
+    Vector<Value<java.lang.Object>> values = new Vector<>();
 
-    //OdfValues value can be stored as: string, short, int, long, float or double
-    OdfValue<Object> value = OldOdfFactory.createOdfValue(
+    //Values value can be stored as: string, short, int, long, float or double
+    Value<java.lang.Object> value = OdfFactory.createValue(
         newValueStr, typeStr, timestamp
     );
     values.add(value);
     //Create description
-    OdfDescription description = OldOdfFactory.createOdfDescription( "Temperature sensor in SensorBox");
+    Vector<Description> descriptions = new Vector<>();
+    Description description = OdfFactory.createDescription( "Temperature sensor in SensorBox");
+    descriptions.add(description);
 
     // Create O-DF MetaData
-    Vector<OdfInfoItem> metaItems = new Vector<>();
-    Vector<OdfValue<Object>> metaValues = new Vector<>();
-    OdfValue<Object> metaValue = OldOdfFactory.createOdfValue(
+    Vector<InfoItem> metaItems = new Vector<>();
+    Vector<Value<java.lang.Object>> metaValues = new Vector<>();
+    Value<java.lang.Object> metaValue = OdfFactory.createValue(
         "Celsius", "xs:string", timestamp
     );
     metaValues.add(metaValue);
-    OdfInfoItem metaItem = OldOdfFactory.createOdfInfoItem(
+    InfoItem metaItem = OdfFactory.createInfoItem(
         new Path( path + "/MetaData/Units"),
         metaValues
     );
     metaItems.add(metaItem);
-    OdfMetaData metaData = OldOdfFactory.createOdfMetaData(metaItems);
+    MetaData metaData = OdfFactory.createMetaData(metaItems);
 
 
-    // Create OdfInfoItem to contain the value. 
-    OdfInfoItem infoItem = OldOdfFactory.createOdfInfoItem(
+    // Create InfoItem to contain the value. 
+    InfoItem infoItem = OdfFactory.createInfoItem(
         path, 
+        descriptions,
         values,
-        description,
         metaData
     );
 
-    // createAncestors generates O-DF structure from the path of an OdfNode 
-    // and returns the root, OdfObjects
-    OdfObjects objects = infoItem.createAncestors();
+    Vector<Node> nodes = new Vector<>();
+    nodes.add(infoItem);
 
+    ODF odf = OdfFactory.createImmutableODF(nodes);
     // This sends debug log message to O-MI Node logs if
     // debug level is enabled (in logback.xml and application.conf)
     log.debug(name() + " pushing data...");
@@ -157,7 +155,7 @@ public class JavaAgent extends JavaInternalAgent {
     // interval as time to live
     WriteRequest write = OmiFactory.createWriteRequest(
         interval, // ttl
-        objects   // O-DF
+        odf
     );
     
 

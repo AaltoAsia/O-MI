@@ -24,9 +24,7 @@ import database._
 import http.CLICmds.{GetSubsWithPollData, ListSubsCmd, SubInfoCmd}
 import http.OmiConfigExtension
 import responses.CallbackHandler.{CallbackFailure, MissingConnection}
-import types.OdfTypes.OdfTreeCollection.seqToOdfTreeCollection
-import types.OdfTypes._
-import types.OmiTypes._
+import types.omi._
 import types._
 import types.odf._
 
@@ -315,7 +313,7 @@ class SubscriptionManager(
             calculatedData: Vector[Value[Any]] => path -> calculatedData
           }
       }
-      iisWithValues: Seq[InfoItem] = pollData.map {
+      iisWithValues: Iterable[InfoItem] = pollData.map {
         case (path: Path, values: Seq[Value[Any]]) =>
           InfoItem(path, values)
       }
@@ -382,8 +380,8 @@ class SubscriptionManager(
           val ret: Future[Unit] = for {
             hTree: ImmutableODF <- singleStores.getHierarchyTree()
             subedTree: ODF = hTree.selectSubTree(iSub.paths.toSet).metaDatasRemoved.descriptionsRemoved
-            datas: Seq[(Path, Value[Any])] <-
-            singleStores.readValues(subedTree.getInfoItems.map(_.path))
+            datas: Iterable[(Path, Value[Any])] <-
+            singleStores.readValues(subedTree.getInfoItems.map(_.path).toSeq)
 
             odfWithValues = subedTree.union(
               ImmutableODF(datas.map {
@@ -394,7 +392,7 @@ class SubscriptionManager(
             missedPaths = iSub.paths.filterNot {
               path: Path => foundPaths.contains(path)
             }
-            succResult = Vector(Results.Success(OdfTreeCollection(iSub.id), Some(odfWithValues)))
+            succResult = Vector(Results.Success(Vector(iSub.id), Some(odfWithValues)))
             failedResults = if (missedPaths.nonEmpty) Vector(Results.SubscribedPathsNotFound(missedPaths)) else Vector
               .empty
             responseTTL = iSub.interval

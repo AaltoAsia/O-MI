@@ -75,7 +75,7 @@ public class OdfFactory{
   public static InfoItem createInfoItem(
     Path path,
     String typeValue,
-    Iterable<QlmID> names,
+    Iterable<OdfID> names,
     Iterable<Description> descriptions,
     Iterable<Value<java.lang.Object>> values,
     MetaData metaData,
@@ -112,7 +112,33 @@ public class OdfFactory{
     return createInfoItem(
         path,
         typeValue,
-        new Vector<QlmID>(),
+        new Vector<OdfID>(),
+        descriptions,
+        values,
+        metaData,
+        new HashMap<>()
+    );
+  }
+
+  /**
+   *
+   * @param path Path of O-DF InfoItem.
+   * @param values Values stored in InfoItem.
+   * @param descriptions Description of InfoItem.
+   * @param metaData MetaData of InfoItem.
+   * @param typeValue type parameter of InfoItem.
+   * @return InfoItem
+   */
+  public static InfoItem createInfoItem(
+    Path path,
+    Iterable<Description> descriptions,
+    Iterable<Value<java.lang.Object>> values,
+    MetaData metaData
+  ){
+    return createInfoItem(
+        path,
+        null,
+        new Vector<OdfID>(),
         descriptions,
         values,
         metaData,
@@ -140,7 +166,7 @@ public class OdfFactory{
     return createInfoItem(
         path,
         typeValue,
-        new Vector<QlmID>(),
+        new Vector<OdfID>(),
         descriptions,
         values,
         metaData,
@@ -164,7 +190,7 @@ public class OdfFactory{
     return createInfoItem(
         path,
         null,
-        new Vector<QlmID>(),
+        new Vector<OdfID>(),
         new Vector<Description>(),
         values,
         null,
@@ -174,14 +200,14 @@ public class OdfFactory{
 
   /**
    *
-   * @param ids QlmIDs of O-DF Object
+   * @param ids OdfIDs of O-DF Object
    * @param path Path of O-DF Object.
    * @param descriptions Description of O-DF Object.
    * @param typeValue Type of an O-DF Object
    * @return Object
    */
   public static types.odf.Object createObject(
-    Iterable<QlmID> ids,
+    Iterable<OdfID> ids,
     Path path,
     Iterable<Description> descriptions,
     String typeValue,
@@ -193,6 +219,26 @@ public class OdfFactory{
         scala.Option.apply(typeValue),
         Description.unionReduce(OdfCollection.fromJava(descriptions).toSet()),
         toScalaImmutableMap(attr)
+    );
+  }
+  /**
+   *
+   * @param path Path of O-DF Object.
+   * @param descriptions Description of O-DF Object.
+   * @return Object
+   */
+  public static types.odf.Object createObject(
+    Path path,
+    Iterable<Description> descriptions
+  ){
+    Vector<OdfID> ids = new Vector<OdfID>();
+    ids.add(createOdfID(path.toSeq().last()));
+    return createObject(
+        ids,
+        path,
+        descriptions,
+        null,
+        new HashMap<>()
     );
   }
 
@@ -261,7 +307,7 @@ public class OdfFactory{
     );
   }
 
-  public static QlmID createQlmID(
+  public static OdfID createOdfID(
       String id,
       String idType,
       String tagType,
@@ -269,13 +315,25 @@ public class OdfFactory{
       Timestamp endDate,
       Map<String,String> attr
   ){
-    return new QlmID(
+    return new OdfID(
         id,
         scala.Option.apply(idType),
         scala.Option.apply(tagType),
         scala.Option.apply(startDate),
         scala.Option.apply(endDate),
         toScalaImmutableMap(attr)
+    );
+  }
+  public static OdfID createOdfID(
+      String id
+  ){
+    return createOdfID(
+        id,
+        null,
+        null,
+        null,
+        null,
+        new HashMap<>()
     );
   }
 

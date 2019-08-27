@@ -36,8 +36,8 @@ import database.SingleStores
 import org.slf4j.LoggerFactory
 import responses.CallbackHandler._
 import responses.{CallbackHandler, RESTHandler, RemoveSubscription}
-import types.OmiTypes.Callback._
-import types.OmiTypes._
+import types.omi.Callback._
+import types.omi._
 import types.odf._
 import types.{ParseError, Path}
 
@@ -83,13 +83,6 @@ class OmiServiceImpl(
     override val log = LoggerFactory.getLogger(classOf[OmiService])
   } with OmiService {
 
-  //example auth API service code in java directory of the project
-  if( settings.enableExternalAuthorization) {
-    log.info("External Auth API v1 module enabled")
-    log.info(s"External Authorization port ${settings.externalAuthorizationPort}")
-    log.info(s"External Authorization useHttps ${settings.externalAuthUseHttps}")
-    registerApi(new AuthAPIService(settings.externalAuthUseHttps, settings.externalAuthorizationPort))
-  }
 
   //example auth API service code in java directory of the project
   if( settings.AuthApiV2.enable) {
@@ -251,7 +244,7 @@ trait OmiService
                   val xmlWithNamespace = xmlResp.take(2).map{
                     // take StartDocument and first StartElement
                     case s: StartElement =>
-                      val ns = Version.OdfVersion.OdfVersion1.namespace
+                      val ns = Version.OdfVersion1.namespace
                       s.copy(namespace=Some(ns),namespaceCtx=List(Namespace(ns)))
                     case x => x // noop
                   } ++ xmlResp.drop(2)
@@ -292,8 +285,8 @@ trait OmiService
       val originalReq = RawRequestWrapper(requestSource, UserInfo(remoteAddress = Some(remote)))
       val labeledMetric = Metrics.requestHistogram.map{ hist => hist.labels(originalReq.requestTypeString)}
 
-      val omiVersion = OmiVersion.fromNameSpace(originalReq.omiEnvelope.namespace.getOrElse("default"))
-      val odfVersion = originalReq.odfObjects.map{ objs => OdfVersion.fromNameSpace(objs.namespace.getOrElse("default") )}
+      val omiVersion = Version.OmiVersion.fromNameSpace(originalReq.omiEnvelope.namespace.getOrElse("default"))
+      val odfVersion = originalReq.odfObjects.map{ objs => Version.OdfVersion.fromNameSpace(objs.namespace.getOrElse("default") )}
 
       val requestToken = Await.result(
         singleStores.addRequestInfo(startTime.getTime()*1000 + originalReq.handleTTL.toSeconds, omiVersion, odfVersion),

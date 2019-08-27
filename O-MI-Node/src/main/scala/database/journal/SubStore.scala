@@ -8,7 +8,7 @@ import akka.actor.Props
 import akka.persistence._
 import PAddSub.SubType._
 import database._
-import types.OmiTypes.HTTPCallback
+import types.omi.HTTPCallback
 import types.Path
 import SubStore._
 

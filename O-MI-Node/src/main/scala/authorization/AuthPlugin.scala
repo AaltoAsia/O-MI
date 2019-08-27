@@ -21,8 +21,7 @@ import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.server.Directives.extract
 import authorization.Authorization.{AuthorizationExtension, CombinedTest, UnauthorizedEx}
 import database._
-import types.OdfTypes._
-import types.OmiTypes._
+import types.omi._
 import types.Path
 
 import scala.collection.JavaConverters._
@@ -161,7 +160,7 @@ trait AuthApiProvider extends AuthorizationExtension {
                   case r: SubscriptionRequest => Success(r.copy(odf = nODF))
                   case r: WriteRequest => Success(r.copy(odf = nODF))
                   case r: ResponseRequest => Success(r.copy(results =
-                    OdfTreeCollection(r.results.head.copy(odf = Some(nODF))) // TODO: make better copy logic?
+                    r.results.headOption.map{ res => res.copy(odf = Some(nODF))}.toVector // TODO: make better copy logic?
                   ))
                   case r: AnyRef => Failure(new NotImplementedError(
                     s"Partial authorization granted for ${maybePaths.asScala.toSeq.mkString(", ")}, BUT request '${

@@ -11,34 +11,42 @@
 +    See the License for the specific language governing permissions and         +
 +    limitations under the License.                                              +
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
-package types
-package odf
-package parser
+package types.odf.parsing
 
 import java.sql.Timestamp
-import scala.collection.JavaConverters._
-import scala.collection.immutable.HashMap
 import scala.util.{Try, Failure, Success}
 
-import akka.NotUsed
-import akka.util._
-import akka.stream._
-import akka.stream.stage._
-import akka.stream.scaladsl._
 import akka.stream.alpakka.xml._
-import akka.stream.alpakka.xml.scaladsl._
 
 import types._
 import odf._
-import types.OmiTypes.parser.{ResultEventBuilder,OdfRequestEventBuilder}
+import types.omi.parsing.{ResultEventBuilder,OdfRequestEventBuilder}
 import utils._
 
+sealed trait EventBuilderWithInfoItems[T] extends EventBuilder[T] {
+  def addInfoItem( ii: InfoItem): EventBuilderWithInfoItems[T]
+}
+sealed trait EventBuilderWithDescriptions[T] extends EventBuilder[T] {
+  protected var descriptions: List[Description] = List.empty
+    def addDescription( desc: Description): EventBuilderWithDescriptions[T] ={
+      descriptions = desc :: descriptions
+      this
+    } 
+}
+sealed trait EventBuilderWithOdfIDs[T] extends EventBuilder[T] {
+    def addId( id: OdfID ): EventBuilderWithOdfIDs[T]
+}
+
+sealed trait EventBuilderWithSubNodes[T] extends EventBuilder[T] {
+    def addSubNode( node: Node): EventBuilderWithSubNodes[T] = addSubNodes(List(node))
+    def addSubNodes( nodes: Iterable[Node]): EventBuilderWithSubNodes[T]  
+}
 
 class ODFEventBuilder( 
   val previous: Option[EventBuilder[_]], 
   implicit val receiveTime: Timestamp = currentTimestamp 
-) extends EventBuilder[ImmutableODF]{
-  private var position: Int = 0
+) extends EventBuilderWithSubNodes[ImmutableODF]{
+  private var objectsDefined: Boolean= false
   private var odf: MutableODF = MutableODF()
   private var complete: Boolean = false 
   final def isComplete: Boolean = previous.isEmpty && complete
@@ -51,7 +59,8 @@ class ODFEventBuilder(
     event match{
       case StartDocument => this
       case startElement: StartElement if startElement.localName == "Objects" =>
-        if( position == 0){
+        if( !objectsDefined ){
+          objectsDefined = true
           val correctNS = startElement.namespace.forall{
             str: String =>
               str.startsWith("http://www.opengroup.org/xsd/odf/")
@@ -59,9 +68,9 @@ class ODFEventBuilder(
           if( !correctNS )
             throw ODFParserError("Wrong namespace url.")
           val version = startElement.attributes.get("version")
-        val attributes = startElement.attributes.filter{ case (key:String,_)=> key != "version"}
-        odf.add( Objects(version, attributes))
-        this
+          val attributes = startElement.attributes.filter{ case (key:String,_)=> key != "version"}
+          odf.add( Objects(version, attributes))
+          this
         } else 
           throw ODFParserError("Objects is defined twice")
 
@@ -75,6 +84,8 @@ class ODFEventBuilder(
             state.addODF(odf)
           case Some( state: ResultEventBuilder ) =>
             state.addODF(odf)
+          case Some( state ) =>
+            throw ODFParserError("Unknown previous builder.")
           case None =>
             complete = true
             this
@@ -88,15 +99,17 @@ class ODFEventBuilder(
 
 class ObjectEventBuilder(
   val parentPath: Path,
-  val previous: Option[EventBuilder[_]], 
+  val previous: Option[EventBuilderWithSubNodes[_]], 
   implicit  val receiveTime: Timestamp = currentTimestamp
-)  extends EventBuilder[Object]{
+)  extends EventBuilderWithSubNodes[Object] 
+  with EventBuilderWithOdfIDs[Object] 
+  with EventBuilderWithInfoItems[Object] 
+  with EventBuilderWithDescriptions[Object]{
   private var subNodes: List[Node] = List.empty
   private var mainId = ""
   private var path: Path = parentPath
   private var typeAttribute: Option[String] = None
-  private var descriptions: List[Description] = List.empty
-  private var ids: List[QlmID] = List.empty
+  private var ids: List[OdfID] = List.empty
   private var complete: Boolean = false 
   private var attributes: Map[String,String] = Map.empty
   final def isComplete: Boolean = previous.isEmpty && complete
@@ -107,25 +120,25 @@ class ObjectEventBuilder(
     Description.unionReduce(descriptions.toSet),
     attributes
   )
-    def addSubNode( node: Node): ObjectEventBuilder = {
+  def addInfoItem( ii: InfoItem): ObjectEventBuilder = {
+    subNodes = ii :: subNodes
+    this
+  }
+    override def addSubNode( node: Node): ObjectEventBuilder = {
       subNodes = node :: subNodes
       this
     }
-    def addSubNodes( nodes: List[Node]): ObjectEventBuilder = {
-      subNodes = nodes ++ subNodes
+    def addSubNodes( nodes: Iterable[Node]): ObjectEventBuilder = {
+      subNodes = subNodes ++ nodes.toList
       this
     }
 
-    def addId( id: QlmID ): ObjectEventBuilder  ={
+    def addId( id: OdfID ): ObjectEventBuilder  ={
       ids = id :: ids
       if( mainId.isEmpty ){
         mainId = id.id
         path = parentPath / mainId
       }
-      this
-    } 
-    def addDescription( desc: Description): ObjectEventBuilder ={
-      descriptions = desc :: descriptions
       this
     } 
     object Position extends Enumeration {
@@ -234,16 +247,16 @@ class MetaDataEventBuilder(
   val infoItemPath: Path,
   val previous: Option[InfoItemEventBuilder], 
   implicit  val receiveTime: Timestamp = currentTimestamp
-) extends EventBuilder[MetaData]{
+) extends EventBuilderWithInfoItems[MetaData]{
   private var infoItems: List[InfoItem] = List.empty
-  private var path = infoItemPath / "MetaData"
+  private val path = infoItemPath / "MetaData"
   private var complete: Boolean = false 
   final def isComplete: Boolean = previous.isEmpty && complete
   def build: MetaData = MetaData( infoItems.reverse.toVector)
 
-  def addInfoItem( ii: InfoItem): MetaDataEventBuilder = {
+  def addInfoItem( ii: InfoItem ): MetaDataEventBuilder ={
     infoItems = ii :: infoItems
-    this
+    this 
   }
   object Position extends Enumeration {
     type Position = Value
@@ -280,7 +293,6 @@ class MetaDataEventBuilder(
                     complete = true
                     previous match{
                       case Some(state: InfoItemEventBuilder) => state.addMetaData( build )
-                      case Some(state: EventBuilder[_]) => throw ODFParserError("MetaData after something else than InfoItem")
                       case None =>
                         this
                     }
@@ -293,12 +305,13 @@ class MetaDataEventBuilder(
 
 class InfoItemEventBuilder(
   val objectPath: Path, 
-  val previous: Option[EventBuilder[_]],
+  val previous: Option[EventBuilderWithInfoItems[_]],
   implicit val receiveTime: Timestamp = currentTimestamp
-) extends EventBuilder[InfoItem]{
-  private var descriptions: List[Description] = List.empty
+) extends EventBuilderWithDescriptions[InfoItem]
+  with EventBuilderWithOdfIDs[InfoItem] 
+{
   private var values: List[Value[_]] = List.empty
-  private var names: List[QlmID] = List.empty
+  private var names: List[OdfID] = List.empty
   private var nameAttribute: String =""
   private var typeAttribute: Option[String] = None
   private var path: Path = objectPath
@@ -322,15 +335,12 @@ class InfoItemEventBuilder(
     metaData = Some(metaD)
     this
   }
-  def addDescription( desc: Description): InfoItemEventBuilder ={
-    descriptions = desc :: descriptions
-    this
-  } 
   def addValue( value: Value[_]): InfoItemEventBuilder ={
     values = value :: values
     this
   } 
-  def addName( name: QlmID ): InfoItemEventBuilder  ={
+  def addId( id: OdfID ): InfoItemEventBuilder = addName(id)
+  def addName( name: OdfID ): InfoItemEventBuilder  ={
     names = name :: names
     this
   } 
@@ -436,7 +446,7 @@ class InfoItemEventBuilder(
 }
 
 class ValueEventBuilder(
-  val  previous: Option[EventBuilder[_]],
+  val  previous: Option[InfoItemEventBuilder],
   implicit val  receiveTime: Timestamp = currentTimestamp)
 extends EventBuilder[Value[_]]{
   private var timestamp: Timestamp = receiveTime
@@ -516,14 +526,11 @@ extends EventBuilder[Value[_]]{
                               valueStr = valueStr+ content.text
                               position = CloseTag
                               this
-                            case content: TextEvent if typeAttribute == "odf" => 
-                              throw ODFParserError(s"Textafter Objects inside value.")
                             case endElement: EndElement if endElement.localName == "value" =>
                               complete = true
                               previous match {
                                 case Some(state: InfoItemEventBuilder) => 
                                   state.addValue( build)
-                                case Some(state: EventBuilder[_]) => throw ODFParserError("Value state after wrong state. Previous should be InfoItem.")
                                 case None =>
                                   this
                               }
@@ -535,7 +542,7 @@ extends EventBuilder[Value[_]]{
 }
 
 class DescriptionEventBuilder(
-  val  previous: Option[EventBuilder[_]], 
+  val  previous: Option[EventBuilderWithDescriptions[_]], 
   implicit val  receiveTime: Timestamp = currentTimestamp
 ) extends EventBuilder[Description] {
   private var lang: Option[String] = None 
@@ -585,7 +592,6 @@ class DescriptionEventBuilder(
                         state.addDescription(build)
                       case Some(state: ObjectEventBuilder ) =>  
                         state.addDescription(build)
-                      case Some(state: EventBuilder[_]) => throw ODFParserError("Description state after wrong state. Previous should be InfoItem or Object")
                       case None =>
                         this
                     }
@@ -597,9 +603,9 @@ class DescriptionEventBuilder(
 }
 
 class IdEventBuilder( 
-  val previous: Option[EventBuilder[_]], 
+  val previous: Option[EventBuilderWithOdfIDs[_]], 
   implicit  val receiveTime: Timestamp = currentTimestamp
-) extends EventBuilder[QlmID] {
+) extends EventBuilder[OdfID] {
   private var openingTag: String = "id"
   private var tagType: Option[String] = None
   private var idType: Option[String] = None
@@ -609,7 +615,7 @@ class IdEventBuilder(
   private var id: String = ""
   private var attributes: Map[String,String] = Map.empty
   final def isComplete: Boolean = previous.isEmpty && complete
-  def build: QlmID = QlmID(id,idType,tagType,startDate,endDate,attributes)
+  def build: OdfID = OdfID(id,idType,tagType,startDate,endDate,attributes)
   object Position extends Enumeration {
     type Position = Value
     val OpenTag, Content, CloseTag = Value 
@@ -675,7 +681,6 @@ class IdEventBuilder(
                   state.addId( build ) 
                 else
                   throw ODFParserError("name or altName element should not be used for Object")
-              case Some(state: EventBuilder[_]) => throw ODFParserError("Id state after wrong state. Previous should be InfoItem or Object")
               case None =>
                 complete = true
                 this

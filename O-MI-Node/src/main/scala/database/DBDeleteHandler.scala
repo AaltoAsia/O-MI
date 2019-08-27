@@ -1,6 +1,6 @@
 package database
 
-import types.OmiTypes.{DeleteRequest, ResponseRequest, Results}
+import types.omi.{DeleteRequest, ResponseRequest, Results}
 
 import scala.concurrent.Future
 

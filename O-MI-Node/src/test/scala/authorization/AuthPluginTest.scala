@@ -8,7 +8,7 @@ import java.lang.{Iterable => JavaIterable}
 import scala.concurrent.duration._
 import akka.actor.ActorSystem
 
-import types.OmiTypes._
+import types.omi._
 //import types.odf.ImmutableODF
 import types.odf._
 import types.Path

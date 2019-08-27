@@ -56,7 +56,7 @@ case class ParkingSpace(
     }.getOrElse("")
     Seq(
       Object( 
-        Vector( QlmID( id)),
+        Vector( OdfID( id)),
         path,
         typeAttribute = Some(s"${mvType(Some(prefix))}")
       )

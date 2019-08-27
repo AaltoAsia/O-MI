@@ -4,14 +4,15 @@ import agentSystem.AgentSystem
 import akka.pattern.ask
 import akka.stream.ActorMaterializer
 import akka.util.Timeout
+import akka.stream.scaladsl._
 import org.specs2.matcher.XmlMatchers._
 import org.specs2.mutable._
 import org.specs2.specification.BeforeAfterAll
-import types.OdfTypes.{OdfInfoItem, OdfValue}
-import types.odf.ImmutableODF
+import org.specs2.concurrent.ExecutionEnv
 
 import scala.concurrent.Await
 import scala.util.Try
+import scala.xml.XML
 
 //import responses.Common._
 import java.sql.Timestamp
@@ -22,10 +23,9 @@ import journal.LatestStore.ErasePathCommand
 import journal.HierarchyStore.GetTree
 import http.OmiConfig
 import http.TemporaryRequestInfoStore
-import types.OdfTypes._
-import types.OmiTypes._
+import types.omi._
+import types.odf._
 import types._
-import types.odf.{NewTypeConverter, OldTypeConverter}
 import testHelpers.{Actorstest, DummySingleStores}
 
 import scala.concurrent.duration._
@@ -37,16 +37,17 @@ import scala.concurrent.duration._
 case class SubscriptionRequest(
   ttl: Duration,
   interval: Duration,
-  odf: OdfObjects ,
+  odf: Objects ,
   newest: Option[ Int ] = None,
   oldest: Option[ Int ] = None,
   callback: Option[ String ] = None
 ) extends OmiRequest with SubLike with OdfRequest
 
  */
-class SubscriptionTest extends Specification with BeforeAfterAll {
+class SubscriptionTest( implicit ee: ExecutionEnv ) extends Specification with BeforeAfterAll {
   implicit val system = testHelpers.Actorstest.createAs()
   implicit val materializer: ActorMaterializer = ActorMaterializer()(system)
+  import system.dispatcher
   implicit val settings = OmiConfig(system)
   implicit val callbackHandler: CallbackHandler = new CallbackHandler(settings, new DummySingleStores())(system, materializer)
   val analytics = None
@@ -103,13 +104,13 @@ class SubscriptionTest extends Specification with BeforeAfterAll {
   val date = calendar.getTime
   val testtime = new java.sql.Timestamp(date.getTime)
 
-  def pollValues(subIdO: Option[Long]): Vector[OdfValue[Any]] = subIdO.flatMap {
+  def pollValues(subIdO: Option[Long]): Vector[Value[Any]] = subIdO.flatMap {
     subId =>
       pollSub(subId).results.headOption.flatMap {
         result =>
           result.odf.map {
-            objects =>
-              getInfoItems(NewTypeConverter.convertODF(objects)).flatMap {
+            odf=>
+              odf.getInfoItems.flatMap {
                 info => info.values
               }
           }
@@ -188,20 +189,21 @@ class SubscriptionTest extends Specification with BeforeAfterAll {
       val sub2Id = addSub(5, -1, Seq(Path("p", "2")))
       val sub3Id = addSub(5, -1, Seq(Path("p", "1")))
 
-      def pollIds: Vector[Vector[OdfValue[Any]]] = for {
-        response <- Vector(sub1Id, sub2Id, sub3Id)
+      def pollIds: Vector[Vector[Value[Any]]] = for {
+        subResponse <- Vector(sub1Id, sub2Id, sub3Id)
 
-        vectorResult <- (for {
-          result <- response.results.headOption
+        vectorResult <- (
+          for {
+            result <- subResponse.results.headOption
 
-          rID <- result.requestIDs.headOption
+            rID <- result.requestIDs.headOption
 
-          response = pollSub(rID)
+            response = pollSub(rID)
 
-          result <- response.results.headOption
-          objects <- result.odf
-        } yield getInfoItems(NewTypeConverter.convertODF(objects)) flatMap { info => info.values }
-          ).toVector
+            result <- response.results.headOption
+            odf <- result.odf
+          } yield odf.getInfoItems.toVector.flatMap{ info: InfoItem => info.values }
+        ).toVector
 
       } yield vectorResult
 
@@ -222,7 +224,7 @@ class SubscriptionTest extends Specification with BeforeAfterAll {
         .flatMap { result => result.requestIDs.headOption }
 
       Thread.sleep(2000)
-      val values: Vector[OdfValue[Any]] = pollValues(subIdO)
+      val values: Vector[Value[Any]] = pollValues(subIdO)
       values must have size (0)
     }
 
@@ -232,10 +234,10 @@ class SubscriptionTest extends Specification with BeforeAfterAll {
         .flatMap { result => result.requestIDs.headOption }
 
       Thread.sleep(2000)
-      val valuesEmpty: Vector[OdfValue[Any]] = pollValues(subIdO)
+      val valuesEmpty: Vector[Value[Any]] = pollValues(subIdO)
       val emptyCheck = valuesEmpty must have size (0)
       Thread.sleep(2000)
-      val values: Vector[OdfValue[Any]] = pollValues(subIdO)
+      val values: Vector[Value[Any]] = pollValues(subIdO)
       val sizeCheck = values must have size (1)
       emptyCheck and sizeCheck
     }
@@ -247,10 +249,10 @@ class SubscriptionTest extends Specification with BeforeAfterAll {
         .flatMap { result => result.requestIDs.headOption }
 
       Thread.sleep(2000)
-      val values1: Vector[OdfValue[Any]] = pollValues(subIdO)
+      val values1: Vector[Value[Any]] = pollValues(subIdO)
       val sizeCheck1 = values1 must have size (2)
       Thread.sleep(2000)
-      val values2: Vector[OdfValue[Any]] = pollValues(subIdO)
+      val values2: Vector[Value[Any]] = pollValues(subIdO)
       val sizeCheck2 = values2 must have size (2)
       sizeCheck1 and sizeCheck2
 
@@ -258,12 +260,16 @@ class SubscriptionTest extends Specification with BeforeAfterAll {
 
     "return failure notification with correct structure when polling a nonexistent subscription" >> {
       val id = 5000
-      val returnMsg = pollSub(id).asXML
+      val returnMsgF = pollSub(id).asXMLSource.runWith(Sink.fold("")(_+_)).map( XML loadString _)
 
-      returnMsg must \("response") \ ("result") \ ("return",
+      returnMsgF.map{ 
+        returnMsg =>
+          val desc = returnMsg must \("response") \ ("result") \ ("return",
                                                     "returnCode" -> "404",
                                                     "description" -> s"Some requestIDs were not found.")
-      returnMsg must \("response") \ ("result") \ ("requestID") \> s"$id"
+          val idC = returnMsg must \("response") \ ("result") \ ("requestID") \> s"$id"
+          desc and idC
+      }.await
 
     }
 
@@ -317,18 +323,26 @@ class SubscriptionTest extends Specification with BeforeAfterAll {
     }
 
     "subscription should be removed when the ttl expired" >> {
-      val subId = addSub(1, 5, Seq(Path("p", "1"))).asXML.\\("requestID").text.toInt
+      val subId = Await.result(addSub(1, 5, Seq(Path("p", "1"))).asXMLSource.runWith(Sink.fold("")(_+_)).map( XML loadString _).map{
+        xmlRes => xmlRes.\\("requestID").text.toInt
+      }, 5.seconds)
       Thread.sleep(10)
-      pollSub(subId).asXML must \("response") \ ("result") \ ("return", "returnCode" -> "200")
+      pollSub(subId).asXMLSource.runWith(Sink.fold("")(_+_)).map( XML loadString _).map{
+        xmlRes =>
+        xmlRes must \("response") \ ("result") \ ("return", "returnCode" -> "200")
+      }.await
       Thread.sleep(1200)
-      pollSub(subId).asXML must \("response") \ ("result") \ ("return", "returnCode" -> "404")
+      pollSub(subId).asXMLSource.runWith(Sink.fold("")(_+_)).map( XML loadString _).map{
+        xmlRes => 
+          xmlRes must \("response") \ ("result") \ ("return", "returnCode" -> "404")
+      }.await
     }
   }
 
   def initDB() = {
     //pathPrefix
     //val pp = Path("Objects", "SubscriptionTest")
-    val pathAndvalues: Iterable[(Path, Vector[OdfValue[Any]])] = Seq(
+    val pathAndvalues: Iterable[(Path, Vector[Value[Any]])] = Seq(
       (Path("p", "1"), nv("1")),
       (Path("p", "2"), nv("2")),
       (Path("p", "3"), nv("3")),
@@ -355,9 +369,9 @@ class SubscriptionTest extends Specification with BeforeAfterAll {
 
   def addSubForObject(ttl: Long, interval: Long, path: String, callback: String = "") = {
     val pp = Path("Objects", "SubscriptionTest")
-    val odf = OdfTypes.createAncestors(OdfObject(OdfTreeCollection(OdfQlmID(path)), pp / path))
+    val odf = ImmutableODF(Object(OdfCollection(OdfID(path)), pp / path))
     val req = SubscriptionRequest(interval seconds,
-      OldTypeConverter.convertOdfObjects(odf),
+      odf,
       None,
       None,
       None,
@@ -379,18 +393,18 @@ class SubscriptionTest extends Specification with BeforeAfterAll {
   }
 
   //add new value easily
-  def addValue(path: Path, nv: Vector[OdfValue[Any]]): Unit = {
+  def addValue(path: Path, nv: Vector[Value[Any]]): Unit = {
     val pp = Path("Objects", "SubscriptionTest")
-    val odf = OdfTypes.createAncestors(OdfInfoItem(pp / path, nv))
-    val writeReq = WriteRequest(OldTypeConverter.convertOdfObjects(odf))
+    val odf = ImmutableODF(InfoItem(pp / path, nv))
+    val writeReq = WriteRequest(odf)
     implicit val timeout = Timeout(10 seconds)
     val future = requestHandler ? writeReq
     Await.ready(future, 10 seconds) // InputPusher.handlePathValuePairs(Seq((pp / path, nv)))
   }
 
   //create new odfValue value easily
-  def nv(value: String, timestamp: Long = 0L): Vector[OdfValue[Any]] = {
-    Vector(OdfValue(
+  def nv(value: String, timestamp: Long = 0L): Vector[Value[Any]] = {
+    Vector(Value(
       value,
       "",
       new Timestamp(testtime.getTime + timestamp)

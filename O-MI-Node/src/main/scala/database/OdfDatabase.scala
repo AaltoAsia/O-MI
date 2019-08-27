@@ -6,7 +6,7 @@ import akka.util.Timeout
 import http.OmiConfigExtension
 import org.slf4j.{Logger, LoggerFactory}
 import slick.jdbc.meta.MTable
-import types.OmiTypes._
+import types.omi._
 import types.Path
 import types.odf._
 

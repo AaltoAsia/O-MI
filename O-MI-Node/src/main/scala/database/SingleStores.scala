@@ -15,8 +15,8 @@ import http.OmiConfigExtension
 import types.Path
 import types.odf._
 import journal._
-import types.OmiTypes.Version._
-import types.OmiTypes.{ResponseRequest, RequestIDRequest}
+import types.omi.Version._
+import types.omi.ResponseRequest
 import utils.SimpleMonad._
 import utils.OptionT
 

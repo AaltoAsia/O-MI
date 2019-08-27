@@ -7,7 +7,7 @@ import scala.concurrent.{Future, ExecutionContext}
 import akka.http.scaladsl.model.Uri
 
 import database.SingleStores
-import types.OmiTypes._
+import types.omi._
 import types.odf._
 import types.Path
 

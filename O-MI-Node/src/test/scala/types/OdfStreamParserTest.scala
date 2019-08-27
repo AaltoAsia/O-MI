@@ -13,7 +13,7 @@
  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 package types
 package odf
-package parser
+package parsing
 
 import java.sql.Timestamp
 import java.time.{ZoneOffset,OffsetDateTime, ZoneId}
@@ -32,7 +32,7 @@ import akka.stream.alpakka.xml.scaladsl._
 
 import types._
 import odf._
-import types.OmiTypes.parser.{ResultEventBuilder,OdfRequestEventBuilder}
+import types.omi.parsing._
 import utils._
 
 
@@ -102,7 +102,7 @@ class OdfEventBuilderTest extends Specification {
             Characters("testing"),
             EndElement("id")
           )
-        ) must beSuccessfulTry.withValue(QlmID("testing"))
+        ) must beSuccessfulTry.withValue(OdfID("testing"))
       }
       "from correct events with attributes" >> {
         buildFromEvents(
@@ -112,7 +112,7 @@ class OdfEventBuilderTest extends Specification {
             Characters("testing"),
             EndElement("id")
           )
-        ) must beSuccessfulTry.withValue(QlmID("testing",Some("ENG"),Some("ENG"),Some(testTime),Some(testTime)))
+        ) must beSuccessfulTry.withValue(OdfID("testing",Some("ENG"),Some("ENG"),Some(testTime),Some(testTime)))
       }
       "from correct events with incorrect startDate attribute" >> {
         buildFromEvents(
@@ -189,7 +189,7 @@ class OdfEventBuilderTest extends Specification {
             Characters("testing"),
             EndElement("name")
           )
-        ) must beSuccessfulTry.withValue(QlmID("testing"))
+        ) must beSuccessfulTry.withValue(OdfID("testing"))
       }
       "from correct events with attributes" >> {
         buildFromEvents(
@@ -199,7 +199,7 @@ class OdfEventBuilderTest extends Specification {
             Characters("testing"),
             EndElement("name")
           )
-        ) must beSuccessfulTry.withValue(QlmID("testing",Some("ENG"),Some("ENG"),Some(testTime),Some(testTime)))
+        ) must beSuccessfulTry.withValue(OdfID("testing",Some("ENG"),Some("ENG"),Some(testTime),Some(testTime)))
       }
       "from correct events with incorrect startDate attribute" >> {
         buildFromEvents(
@@ -443,7 +443,7 @@ class OdfEventBuilderTest extends Specification {
             "test",
             iiPath,
             Some("test"),
-            Vector(QlmID("testing1"),QlmID("testing2")),
+            Vector(OdfID("testing1"),OdfID("testing2")),
             Set(Description("testing",Some("ENG")),Description("testing",Some("FIN"))),
             Vector(DoubleValue(1.3,testTime),DoubleValue(1.2,testTime)),
           Some(MetaData(
@@ -606,7 +606,7 @@ class OdfEventBuilderTest extends Specification {
             "test",
             iiPath,
             Some("test"),
-            Vector(QlmID("testing1")),
+            Vector(OdfID("testing1")),
             Set.empty,
             Vector(DoubleValue(1.2,testTime))
           )
@@ -631,7 +631,7 @@ class OdfEventBuilderTest extends Specification {
               "test",
               iiPath,
               Some("test"),
-              Vector(QlmID("testing1")),
+              Vector(OdfID("testing1")),
               Set.empty,
               Vector.empty,
               Some(MetaData(
@@ -668,7 +668,7 @@ class OdfEventBuilderTest extends Specification {
             "test",
             iiPath,
             Some("test"),
-            Vector(QlmID("testing1")),
+            Vector(OdfID("testing1")),
             Set.empty,
             Vector(DoubleValue(1.2,testTime)),
           Some(MetaData(
@@ -701,7 +701,7 @@ class OdfEventBuilderTest extends Specification {
             "test",
             iiPath,
             Some("test"),
-            Vector(QlmID("testing1")),
+            Vector(OdfID("testing1")),
             Set(Description("testing",Some("ENG"))),
             Vector.empty
           )
@@ -729,7 +729,7 @@ class OdfEventBuilderTest extends Specification {
             "test",
             iiPath,
             Some("test"),
-            Vector(QlmID("testing1")),
+            Vector(OdfID("testing1")),
             Set(Description("testing",Some("ENG"))),
             Vector.empty,
           Some(MetaData(
@@ -758,7 +758,7 @@ class OdfEventBuilderTest extends Specification {
             "test",
             iiPath,
             Some("test"),
-            Vector(QlmID("testing1")),
+            Vector(OdfID("testing1")),
             Set.empty,
             Vector.empty
           )
@@ -1070,7 +1070,7 @@ class OdfEventBuilderTest extends Specification {
             )
         ) must beSuccessfulTry.withValue(
           Object(
-            Vector(QlmID("testing")),
+            Vector(OdfID("testing")),
             objPath,
             Some("test"),
             Set(Description("testing"))
@@ -1091,7 +1091,7 @@ class OdfEventBuilderTest extends Specification {
             )
         ) must beSuccessfulTry.withValue(
           Object(
-            Vector(QlmID("testing")),
+            Vector(OdfID("testing")),
             objPath,
             Some("test")
           )
@@ -1114,7 +1114,7 @@ class OdfEventBuilderTest extends Specification {
             )
         ) must beSuccessfulTry.withValue(
           Object(
-            Vector(QlmID("testing")),
+            Vector(OdfID("testing")),
             objPath,
             Some("test"),
             Set(Description("testing"))
@@ -1140,7 +1140,7 @@ class OdfEventBuilderTest extends Specification {
             )
         ) must beSuccessfulTry.withValue(
           Object(
-            Vector(QlmID("testing")),
+            Vector(OdfID("testing")),
             objPath,
             Some("test"),
             Set(Description("testing"))
@@ -1169,7 +1169,7 @@ class OdfEventBuilderTest extends Specification {
             )
         ) must beSuccessfulTry.withValue(
           Object(
-            Vector(QlmID("testing")),
+            Vector(OdfID("testing")),
             objPath,
             Some("test"),
             Set(Description("testing"))
@@ -1200,7 +1200,7 @@ class OdfEventBuilderTest extends Specification {
             )
         ) must beSuccessfulTry.withValue(
           Object(
-            Vector(QlmID("testing")),
+            Vector(OdfID("testing")),
             objPath,
             Some("test"),
             Set(Description("testing"))
@@ -1223,7 +1223,7 @@ class OdfEventBuilderTest extends Specification {
             )
         ) must beSuccessfulTry.withValue(
           Object(
-            Vector(QlmID("testing")),
+            Vector(OdfID("testing")),
             objPath,
             Some("test")
           )
@@ -1250,7 +1250,7 @@ class OdfEventBuilderTest extends Specification {
             )
         ) must beSuccessfulTry.withValue(
           Object(
-            Vector(QlmID("testing")),
+            Vector(OdfID("testing")),
             objPath,
             Some("test")
           )
@@ -1275,7 +1275,7 @@ class OdfEventBuilderTest extends Specification {
             )
         ) must beSuccessfulTry.withValue(
           Object(
-            Vector(QlmID("testing")),
+            Vector(OdfID("testing")),
             objPath,
             Some("test")
           )

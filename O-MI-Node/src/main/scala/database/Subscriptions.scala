@@ -22,7 +22,7 @@ import akka.http.scaladsl.model.Uri
 import journal.Models.PersistentSub
 import journal._
 import spray.json.{DefaultJsonProtocol, JsArray, JsNull, JsNumber, JsObject, JsString, JsValue, RootJsonFormat}
-import types.OmiTypes._
+import types.omi._
 import types._
 import types.odf._
 

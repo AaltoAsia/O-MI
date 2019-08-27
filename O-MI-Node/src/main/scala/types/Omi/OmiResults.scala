@@ -1,11 +1,8 @@
 package types
-package OmiTypes
+package omi
 
 import java.lang.{Iterable => JIterable}
 
-import parsing.xmlGen.scalaxb.DataRecord
-import parsing.xmlGen.xmlTypes._
-import parsing.xmlGen.{omiDefaultScope, xmlTypes}
 import types.odf._
 
 import scala.collection.SeqView
@@ -41,43 +38,6 @@ class OmiResult(
             odf: Option[ODF] = this.odf
           ): OmiResult = OmiResult(returnValue, requestIDs, odf)
 
-  implicit def asRequestResultType: xmlTypes.RequestResultType = {
-    val idTypes = requestIDs.map {
-      id => xmlTypes.IdType(id.toString)
-    }
-    val msg = odf.map {
-      objects =>
-        MsgType(
-          Seq(
-            DataRecord(None, Some("Objects"), objects.asXML
-              /*
-              Some("omi.xsd"),
-              Some("msg"),
-              odfMsg(
-                scalaxb.toXML[ObjectsType]( objects.asObjectsType, None, Some("Objects"),
-                  omiDefaultScope))
-              */
-            )
-          )
-        )
-
-    }
-    val attributeRecords = Map(
-      "@targetType" -> DataRecord(TargetTypeType.fromString("node", omiDefaultScope))
-    ) ++ odf.map {
-      objects =>
-        "@msgformat" -> DataRecord("odf")
-    }
-
-    xmlTypes.RequestResultType(
-      returnValue.toReturnType,
-      idTypes,
-      msg,
-      None,
-      None,
-      attributeRecords
-    )
-  }
 
   override def equals(other: Any): Boolean = {
     other match {

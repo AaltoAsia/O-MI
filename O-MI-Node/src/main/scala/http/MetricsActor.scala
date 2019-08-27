@@ -3,20 +3,17 @@ package http
 import akka.actor._
 import java.sql.Timestamp
 import scala.concurrent.duration._
-import types.OmiTypes.UserInfo
+import types.omi.UserInfo
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent._
 //import slick.driver.H2Driver.api._
 import slick.basic.DatabaseConfig
-import slick.sql._
 import slick.jdbc.JdbcProfile
-import slick.lifted.{Index, ProvenShape}
 import slick.jdbc.meta.MTable
-import slick.lifted.{Index, ProvenShape}
+import slick.lifted.{ProvenShape}
 import io.prometheus.client._
 import scala.concurrent.ExecutionContext.Implicits.global
 //import scala.collection.JavaConversions.iterableAsScalaIterable
-import types.Path
 import utils._
 
 
@@ -79,8 +76,8 @@ trait MonitoringDB{
     val findTables = db.run(namesOfCurrentTables)
     findTables.flatMap {
       tableNames: Set[String] =>
-        val queries = if (tableNames.contains("REQUEST_LOG")) {
-          slick.dbio.DBIOAction.successful()
+        val queries= if (tableNames.contains("REQUEST_LOG")) {
+          slick.dbio.DBIOAction.successful[Unit](())
         } else {
           requestLog.schema.create
         }

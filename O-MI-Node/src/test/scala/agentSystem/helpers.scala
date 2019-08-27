@@ -1,13 +1,13 @@
 package agentSystem
 
-import agentSystem.AgentEvents._
-import akka.actor.{Actor, ActorRef, Props, Terminated}
-import com.typesafe.config.Config
-import http.CLICmds._
-import types.OmiTypes.{CallRequest, ResponseRequest, Responses, WriteRequest}
-
 import scala.collection.mutable.{Map => MutableMap}
 import scala.concurrent.Future
+import akka.actor.{Actor, ActorRef, Props, Terminated}
+import com.typesafe.config.Config
+
+import agentSystem.AgentEvents._
+import http.CLICmds._
+import types.omi._
 
 trait UnhandledReceive extends Actor{
   def receive = {

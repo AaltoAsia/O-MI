@@ -16,7 +16,7 @@ package types
 
 import java.util.Dictionary
 
-import types.OmiTypes.ResponseRequest
+import types.omi.ResponseRequest
 
 import scala.collection.JavaConverters._
 import scala.concurrent.Future

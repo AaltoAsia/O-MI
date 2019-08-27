@@ -1,19 +1,18 @@
 package types
 package odf
 
-
-import parsing.xmlGen.xmlTypes.{ObjectType, ObjectsType, InfoItemType}
-import parsing.xmlGen.{odfDefaultScope, scalaxb}
-
 import scala.collection.immutable.{HashMap, TreeSet}
-import scala.collection.{mutable, Map, Seq, SortedSet => CSortedSet, SeqView}
+import scala.collection.{ Map, Seq, SortedSet => CSortedSet, SeqView}
 import akka.stream.alpakka.xml._
-import scala.xml.NodeSeq
+import akka.stream.scaladsl._
+import akka.NotUsed
+import akka.util.ByteString
+import utils._
+import scala.collection.JavaConverters._
 import types.Path.PathOrdering
 import types.Path
 
-import types.OmiTypes.Version.OdfVersion
-import types.OmiTypes.Version.OdfVersion._
+import types.omi.Version._
 
 /** O-DF structure
   */
@@ -178,6 +177,13 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
     }.toSet
   }
 
+  def replaceValues[C <: java.util.Collection[Value[java.lang.Object]]]( pathToValues: java.util.Map[Path,C]): ODF = {
+    replaceValues(pathToValues.asScala.mapValues{ col => col.asScala})
+  }
+  def replaceValues( pathToValues: Iterable[(Path,Iterable[Value[_]])]): ODF
+  def replaceValues( pathToValues: Map[Path,Iterable[Value[_]]]): ODF = {
+    replaceValues( pathToValues.toIterable )
+  }
   final def get(path: Path): Option[Node] = nodes.get(path)
 
   /**
@@ -231,44 +237,6 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
 
    def addNodes(nodesToAdd: Iterable[Node]): ODF
 
-   implicit def asObjectsType: ObjectsType = {
-     //val timer = LapTimer(println)
-     val parentPath2IIt: mutable.Map[Path,Iterable[InfoItemType]] = mutable.Map.empty
-     val objs: mutable.Buffer[Object] = mutable.Buffer.empty
-     var objects = Objects()
-     //timer.step("aOT: init")
-     for( n <- nodes.values ){
-       n match {
-         case ii: InfoItem => 
-           val parent = ii.path.getParent
-           parentPath2IIt.update(parent, (parentPath2IIt.get(parent).toVector.flatten ++ Vector(ii.asInfoItemType) ))
-         case obj: Object => objs += obj
-         case obj: Objects => objects = obj
-       }
-     }
-     //timer.step("aOT: node grouping")
-     val parentPath2Objs: Map[Path,Iterable[Tuple2[Path,ObjectType]]] = objs.map{
-       case obj: Object => 
-         obj.path -> obj.asObjectType( parentPath2IIt.get(obj.path).toSeq.flatten, Seq.empty)
-     }.groupBy(_._1.getParent)  
-     //timer.step("aOT: IIs to parents")
-     def temp(path:Path, obj: ObjectType): ObjectType ={
-       val cobjs: Iterable[ObjectType] = parentPath2Objs.get(path).toSeq.flatten.map{
-         case ( p: Path, ot: ObjectType) => temp(p,ot)
-       }
-       obj.copy( ObjectValue = cobjs.toSeq ) 
-     }
-     val topObjects: Iterable[ObjectType] = parentPath2Objs.get( Path("Objects") ).toSeq.flatten.map{
-       case (path: Path, obj: ObjectType) =>  temp(path, obj) 
-
-     }
-     //timer.step("aOT: Objs to top object s")
-     val objsT =objects.asObjectsType( topObjects )
-     //timer.step("Objects type")
-     //timer.total()
-     objsT
-   }
-
    def update(that: ODF): ODF
 
    def valuesRemoved: ODF
@@ -296,27 +264,20 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
        )
    }*/
 
+  final implicit def asXMLDocumentSource(odfVersion: Option[OdfVersion]=None): Source[String, NotUsed] = {
+    parseEventsToByteSource(asXMLDocument(odfVersion)).map[String](_.utf8String)
+  }
+  final implicit def asXMLByteSource(odfVersion: Option[OdfVersion]=None): Source[ByteString, NotUsed] = {
+    parseEventsToByteSource(asXMLEvents(odfVersion))
+  }
+  
+  final implicit def asXMLSource(odfVersion: Option[OdfVersion]=None): Source[String, NotUsed] = asXMLByteSource(odfVersion).map[String](_.utf8String)
   final def asXMLDocument(odfVersion: Option[OdfVersion]=None): SeqView[ParseEvent, Iterable[_]] = {
+    Seq(StartDocument).view ++
     asXMLEvents(odfVersion) ++
     Seq(EndDocument)
   }
   final def asXMLEvents(odfVersion: Option[OdfVersion]=None): SeqView[ParseEvent, Iterable[_]] = {
-
-    /*object ResponseOrdering extends scala.math.Ordering[Node] {
-      def compare(l: Node, r: Node): Int = {
-        if( PathOrdering.compare(l.path.getParent, r.path.getParent) == 0){
-
-          (l,r) match {
-            case (ii:InfoItem,obj: Object) => -1
-            case (obj: Object, ii: InfoItem) => 1
-            case (nl: Node, nr: Node) => 
-              PathOrdering.compare(l.path,r.path)
-          }
-          } else {
-            PathOrdering.compare(l.path,r.path)
-          }
-      }
-    }*/
    def sort = {
      //val timer = LapTimer(println)
      var iis: List[InfoItem] = List.empty
@@ -391,7 +352,7 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
                 }.toList
 
                 )) ++ obj.ids.view.flatMap{
-                  case id: QlmID => id.asXMLEvents("id")
+                  case id: OdfID => id.asXMLEvents("id")
                   } ++ obj.descriptions.view.flatMap{
                     case desc: Description =>
                       desc.asXMLEvents
@@ -413,17 +374,6 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
 
    } 
    events 
-  }
-
-  @deprecated("Use .asXMLEvents or .asXMLStream instead", "2.0.2")
-  final implicit def asXML: NodeSeq = {
-    //val timer = LapTimer(println)
-    val objsType = asObjectsType
-    //timer.step("as XML, as ObjectType")
-    val xml = scalaxb.toXML[ObjectsType](objsType, None, Some("Objects"), odfDefaultScope)
-    //timer.step("as XML, scalaxb.toXML")
-    //timer.total()
-    xml //.asInstanceOf[Elem] % new UnprefixedAttribute("xmlns","odf.xsd", Node.NoAttributes)
   }
 
   override def toString: String = {
@@ -462,7 +412,7 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
           case (Some(ii: InfoItem), None) =>
             ii.copy(
               names = {
-                if (ii.names.nonEmpty) Vector(QlmID("")) else Vector.empty
+                if (ii.names.nonEmpty) Vector(OdfID("")) else Vector.empty
               },
               descriptions = {
                 if (ii.descriptions.nonEmpty) Set(Description("")) else Set.empty
