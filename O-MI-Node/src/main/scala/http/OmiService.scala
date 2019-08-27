@@ -100,8 +100,7 @@ class OmiServiceImpl(
 trait OmiService
   extends CORSSupport
     with WebSocketOMISupport
-    with OmiServiceAuthorization 
-    with OMIServiceMetrics {
+    with OmiServiceAuthorization {
 
 
   protected def log: org.slf4j.Logger
@@ -283,7 +282,6 @@ trait OmiService
       val startTime = currentTimestamp
 
       val originalReq = RawRequestWrapper(requestSource, UserInfo(remoteAddress = Some(remote)))
-      val labeledMetric = Metrics.requestHistogram.map{ hist => hist.labels(originalReq.requestTypeString)}
 
       val omiVersion = Version.OmiVersion.fromNameSpace(originalReq.omiEnvelope.namespace.getOrElse("default"))
       val odfVersion = originalReq.odfObjects.map{ objs => Version.OdfVersion.fromNameSpace(objs.namespace.getOrElse("default") )}
@@ -419,23 +417,18 @@ trait OmiService
 
       fresult.onComplete{
         f => 
-          labeledMetric.foreach{
-            metric =>
-              val endTime = currentTimestamp
-              val duration = ((endTime.getTime() - startTime.getTime())/1000.0).toDouble
-              metric.observe(duration)
-              metricsReporter ! ResponseUpdate( 
-                requestToken, 
-                startTime,
-                f match {
-                  case Success( r: ResponseRequest) => 
-                    r.odf.getLeafPaths.size
-                  case Failure( t )=> 0
-                }, 
-                endTime.getTime() - startTime.getTime()
-              )
-          }
-
+          val endTime = currentTimestamp
+          metricsReporter ! ResponseUpdate( 
+            requestToken, 
+            originalReq.requestTypeString,
+            startTime,
+            f match {
+              case Success( r: ResponseRequest) => 
+                r.odf.getLeafPaths.size
+              case Failure( t )=> 0
+            }, 
+            endTime.getTime() - startTime.getTime()
+          )
       }
       fresult
     }.recover{
@@ -662,7 +655,7 @@ trait OmiService
 /**
   * This trait implements websocket support for O-MI message handling using akka-http
   */
-trait WebSocketOMISupport extends WebSocketUtil with OMIServiceMetrics {
+trait WebSocketOMISupport extends WebSocketUtil {
   self: OmiService =>
   protected def system: ActorSystem
 
@@ -813,11 +806,3 @@ trait WebSocketUtil {
 
 }
 
-trait OMIServiceMetrics {
-  def settings: OmiConfigExtension
-  object Metrics{
-
-    def checkEnabled[T](f: () => T): Option[T] = if( settings.metricsEnabled ) Some(f()) else None
-    final val requestHistogram =  checkEnabled(() => Histogram.build().buckets(settings.metrics.requestDurationBuckets:_*).name("omi_request_duration").help("Duration of active O-MI Request").labelNames("request").register())
-  }
-}

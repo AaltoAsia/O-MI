@@ -28,7 +28,25 @@ class MetricsReporter(val configName: String, val settings: OmiConfigExtension) 
   } else None
 
   def checkEnabled[T](f: () => T): Option[T] = if( settings.metricsEnabled ) Some(f()) else None  
-  final val uniqueUsersGauge =  checkEnabled(() => Gauge.build().name("omi_unique_users").help("Unique uesr of O-MI Node over duration").labelNames("duration").register())
+  final val uniqueUsersGauge =  checkEnabled(() => Gauge.build().name("omi_unique_users").help("Unique user of O-MI Node over duration").labelNames("duration").register())
+  final val requestSizeHistogram =  checkEnabled(() => Histogram.build()
+    .name("omi_request_size")
+    .help("Size of request per type")
+    .labelNames("request")
+    .buckets(settings.metrics.requestSizeBuckets:_*)
+    .register())
+  final val requestResponseSizeHistogram =  checkEnabled(() => Histogram.build()
+    .name("omi_request_response_size")
+    .help("Size of request per type")
+    .labelNames("request")
+    .buckets(settings.metrics.requestSizeBuckets:_*)
+    .register())
+  final val requestDurationHistogram =  checkEnabled(() => Histogram.build()
+    .buckets(settings.metrics.requestDurationBuckets:_*)
+    .name("omi_request_duration")
+    .help("Duration of active O-MI Request")
+    .labelNames("request").register()
+    )
 
   if( settings.metricsEnabled ){
     timers.startPeriodicTimer("report",Report,10.seconds)
@@ -36,8 +54,11 @@ class MetricsReporter(val configName: String, val settings: OmiConfigExtension) 
   def receive ={
     case NewRequest(requestToken: Long, timestamp: Timestamp, user: UserInfo, requestType: String, attributes: String, pathCount: Int) =>
       db.run(requestLog.add(requestToken, timestamp, user,requestType,attributes,pathCount))
-    case ResponseUpdate( requestToken: Long, timestamp: Timestamp, pathCount: Int, duration: Long) =>
+      requestSizeHistogram.map(_.labels(requestType).observe(pathCount))
+    case ResponseUpdate( requestToken: Long, requestType:String, timestamp: Timestamp, pathCount: Int, duration: Long) =>
       db.run(requestLog.updateFromResponse(requestToken,timestamp,pathCount,duration))
+      requestResponseSizeHistogram.map(_.labels(requestType).observe(pathCount))
+      requestDurationHistogram.map{ hist => hist.labels(requestType).observe( (duration/1000.0).toDouble)}
     case Report => 
       if( settings.metricsEnabled ){
         val current = currentTimestamp
@@ -56,7 +77,7 @@ class MetricsReporter(val configName: String, val settings: OmiConfigExtension) 
 
 object MetricsReporter{
   case class NewRequest(requestToken: Long, timestamp: Timestamp, user: UserInfo, requestType: String, attributes: String, pathCount: Int)
-  case class ResponseUpdate( requestToken: Long, timestamp: Timestamp, pathCount: Int, duration: Long)
+  case class ResponseUpdate( requestToken: Long, requestType: String, timestamp: Timestamp, pathCount: Int, duration: Long)
   case object Report
   def props(settings: OmiConfigExtension): Props ={
     Props( new MetricsReporter( "access-log", settings))
