@@ -575,7 +575,7 @@ class SystemTest(implicit ee: ExecutionEnv) extends Specification with BeforeAft
           } yield r
           Await.ready(res, 20 seconds)
 
-          val res1 = wsProbe1.receiveN(6, 30 seconds) //4 subscription updates and 2 write confirmations
+          val res1 = wsProbe1.receiveN(6, 60 seconds) //4 subscription updates and 2 write confirmations
           val res2 = wsProbe2.receiveN(2, 30 seconds) //2 write confirmations(subscribed to unchanging ii)
           wsServer1.close()
           wsServer2.close()
