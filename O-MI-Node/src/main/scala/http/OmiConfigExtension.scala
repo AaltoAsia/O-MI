@@ -114,6 +114,8 @@ class OmiConfigExtension(val config: Config) extends Extension
   object metrics {
     val Metrics = config getConfig "omi-service.metrics"
     val requestDurationBuckets = (Metrics getDoubleList "requestDurationBuckets").asScala.map(_.doubleValue).toSeq
+    val dbOperationDurationBuckets = (Metrics getDoubleList "dbOperationDurationBuckets").asScala.map(_.doubleValue).toSeq
+    val dbOperationSizeBuckets = (Metrics getDoubleList "dbOperationSizeBuckets").asScala.map(_.doubleValue).toSeq
   }
   // Authorization
   val allowedRequestTypes: Set[MessageType] = (config getStringList "omi-service.allowRequestTypesForAll").asScala
@@ -207,7 +209,6 @@ class OmiConfigExtension(val config: Config) extends Extension
   //connection fails
   val websocketQueueSize: Int = config getInt "omi-service.websocket-queue-size"
 
-  val kamonEnabled: Boolean = Option(config getBoolean "omi-service.kamon-enabled") getOrElse false
   val databaseImplementation: String = config getString "omi-service.database"
   val influx: Option[InfluxDBConfigExtension] = if( databaseImplementation.toLowerCase.startsWith("influx" ) ) {
     Try{

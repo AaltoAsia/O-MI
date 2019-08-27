@@ -2,18 +2,20 @@ package database
 
 import java.sql.Timestamp
 
-import akka.util.Timeout
-import http.OmiConfigExtension
-import org.slf4j.{Logger, LoggerFactory}
-import slick.jdbc.meta.MTable
-import types.omi._
-import types.Path
-import types.odf._
-
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.stm._
 import scala.concurrent.{Await, Future}
 import scala.util.{Failure, Success}
+
+import akka.util.Timeout
+import org.slf4j.{Logger, LoggerFactory}
+import slick.jdbc.meta.MTable
+import io.prometheus.client._
+
+import http.OmiConfigExtension
+import types.omi._
+import types.Path
+import types.odf._
 
 trait OdfDatabase extends Tables with DB with TrimmableDB {
 
@@ -22,6 +24,19 @@ trait OdfDatabase extends Tables with DB with TrimmableDB {
   protected val settings: OmiConfigExtension
   protected val singleStores: SingleStores
   protected val log: Logger = LoggerFactory.getLogger("O-DF-database")
+  protected object metrics {
+    def checkEnabled[T](f: () => T): Option[T] = if( settings.metricsEnabled ) Some(f()) else None
+    val dbOperationDurationHistogram: Option[Histogram] = checkEnabled( () => Histogram.build()
+      .name("omi_db_operation_duration")
+      .help("Duration of db operations caused by request")
+      .labelNames("request")
+      .buckets(settings.metrics.dbOperationDurationBuckets:_*).register())
+    val dbOperationSizeHistogram: Option[Histogram] = checkEnabled(() => Histogram.build()
+      .name("omi_db_operation_size")
+      .help("Size of operation passed to db as amount of leaf paths")
+      .labelNames("request") 
+      .buckets(settings.metrics.dbOperationSizeBuckets:_*).register())
+  }
   val pathToDBPath: TMap[Path, DBPath] = TMap()
 
   def initialize(): Unit = {
@@ -32,52 +47,52 @@ trait OdfDatabase extends Tables with DB with TrimmableDB {
           //Found needed table, check for value tables
           /*
           val currentPathsF: Future[Seq[Path]] = db.run(pathsTable.currentPaths)
-            currentPathsF.foreach{
-              paths: Seq[Path] => 
-                log.info(s"Found following paths in DB:${paths.mkString("\n")}") 
+          currentPathsF.foreach{
+            paths: Seq[Path] => 
+              log.info(s"Found following paths in DB:${paths.mkString("\n")}") 
           }*/
-          val infoItemDBPaths = pathsTable.selectAllInfoItems
+         val infoItemDBPaths = pathsTable.selectAllInfoItems
 
-          val valueTablesCreation = infoItemDBPaths.flatMap {
-            dbPaths =>
-              val actions = dbPaths.collect {
-                case DBPath(Some(id), path, true) =>
-                  val pathValues = new PathValues(path, id)
-                  valueTables += path -> pathValues
-                  //Check if table exists, is not create it
-                  if (!tableNames.contains(pathValues.name)) {
-                    Some(pathValues.schema.create.map {
-                      u: Unit =>
-                        log.debug(s"Created values table ${pathValues.name} for $path")
-                        pathValues.name
-                    })
-                  } else None
-              }.flatten
-              //Action for creating missing Paths
-              val countOfTables = actions.length
-              log
-                .info(s"Found total of ${dbPaths.length} InfoItems. Creating missing tables for $countOfTables tables.")
-              DBIO.sequence(actions)
-          }
-          valueTablesCreation
-        } else {
-          if (tableNames.nonEmpty) {
-            val msg = s"Database contains unknown tables while PATHSTABLE could not be found.\n Found following tables:\n${
-              tableNames
-                .mkString(", ")
-            }"
-            log.warn(msg)
-          } else {
-            log.info(s"No tables found. Creating PATHSTABLE.")
-          }
-          val queries = pathsTable.schema.create.map {
-            u: Unit =>
-              log.debug("Created PATHSTABLE.")
-              Seq("PATHSTABLE")
-          }
-          queries
-        }
-        db.run(queries.transactionally)
+         val valueTablesCreation = infoItemDBPaths.flatMap {
+           dbPaths =>
+             val actions = dbPaths.collect {
+               case DBPath(Some(id), path, true) =>
+                 val pathValues = new PathValues(path, id)
+                 valueTables += path -> pathValues
+                 //Check if table exists, is not create it
+                 if (!tableNames.contains(pathValues.name)) {
+                   Some(pathValues.schema.create.map {
+                     u: Unit =>
+                       log.debug(s"Created values table ${pathValues.name} for $path")
+                       pathValues.name
+                   })
+                 } else None
+             }.flatten
+             //Action for creating missing Paths
+             val countOfTables = actions.length
+             log
+               .info(s"Found total of ${dbPaths.length} InfoItems. Creating missing tables for $countOfTables tables.")
+               DBIO.sequence(actions)
+         }
+         valueTablesCreation
+       } else {
+         if (tableNames.nonEmpty) {
+           val msg = s"Database contains unknown tables while PATHSTABLE could not be found.\n Found following tables:\n${
+             tableNames
+               .mkString(", ")
+           }"
+           log.warn(msg)
+         } else {
+           log.info(s"No tables found. Creating PATHSTABLE.")
+         }
+         val queries = pathsTable.schema.create.map {
+           u: Unit =>
+             log.debug("Created PATHSTABLE.")
+             Seq("PATHSTABLE")
+         }
+         queries
+       }
+       db.run(queries.transactionally)
     }
     val populateMap = createMissingTables.flatMap {
       tablesCreated: Seq[String] =>
@@ -94,20 +109,20 @@ trait OdfDatabase extends Tables with DB with TrimmableDB {
                   }
                 }
             }
-          } else {
-            pathsTable.result.map {
-              dbPaths =>
-                atomic { implicit txn =>
-                  pathToDBPath ++= dbPaths.map { dbPath => dbPath.path -> dbPath }
-                }
-            }
+        } else {
+          pathsTable.result.map {
+            dbPaths =>
+              atomic { implicit txn =>
+                pathToDBPath ++= dbPaths.map { dbPath => dbPath.path -> dbPath }
+              }
           }
+        }
         db.run(actions.transactionally)
     }
     val initialization = populateMap
     initialization.onComplete {
       case Success(path2DBPath) =>
-      //log.info( s"Initialized DB successfully. ${path2DBPath.single.length} paths in DB." )
+        //log.info( s"Initialized DB successfully. ${path2DBPath.single.length} paths in DB." )
       case Failure(t) =>
         log.error("DB initialization failed.", t)
     }
@@ -140,10 +155,10 @@ trait OdfDatabase extends Tables with DB with TrimmableDB {
           newDbPath
       }
     }
-    if (ret.isInfoItem != isInfoItem)
-      throw new IllegalArgumentException(
-        s"$path has Object/InfoItem conflict; Request has ${if (isInfoItem) "InfoItem" else "Object"} " +
-          s"while DB has ${if (ret.isInfoItem) "InfoItem" else "Object"}")
+  if (ret.isInfoItem != isInfoItem)
+    throw new IllegalArgumentException(
+      s"$path has Object/InfoItem conflict; Request has ${if (isInfoItem) "InfoItem" else "Object"} " +
+    s"while DB has ${if (ret.isInfoItem) "InfoItem" else "Object"}")
     else ret
   }
 
@@ -164,9 +179,9 @@ trait OdfDatabase extends Tables with DB with TrimmableDB {
                 case dbpath@DBPath(None, _path, false) =>
                   dbpath.path -> dbpath
               }
-              .toMap
-            )
-        case _ => Map() // noop
+                .toMap
+              )
+            case _ => Map() // noop
       })
     }
 
@@ -189,6 +204,7 @@ trait OdfDatabase extends Tables with DB with TrimmableDB {
 
   def writeWithDBIOs(odf: ODF): Future[OmiReturn] = {
 
+    val timer = metrics.dbOperationDurationHistogram.map(_.labels("write").startTimer())
     val leafs = odf.getLeafs
 
     //Add new paths to PATHSTABLE and create new values tables for InfoItems
@@ -287,8 +303,12 @@ trait OdfDatabase extends Tables with DB with TrimmableDB {
     }
     log.debug("Running writing actions...")
     val future:Future[OmiReturn] = db.run(actions.transactionally)
-    future.foreach(default =>
-      log.debug("Writing finished."))
+    future.foreach{
+      default =>
+      timer.map(_.observeDuration())
+      metrics.dbOperationSizeHistogram.map(_.labels("write").observe( leafs.size ))
+      log.debug("Writing finished.")
+    }
     future
   }
 
@@ -301,18 +321,25 @@ trait OdfDatabase extends Tables with DB with TrimmableDB {
                    maxLevels: Option[Int]
                  )(implicit timeout: Timeout): Future[Option[ODF]] = {
     if (beginO.isEmpty && endO.isEmpty && newestO.isEmpty && oldestO.isEmpty) {
-      readLatestFromCache(
+      val timer = metrics.dbOperationDurationHistogram.map(_.labels("cache-read").startTimer())
+      val fResult = readLatestFromCache(
         nodes.map {
           node => node.path
         }.toSeq,
         maxLevels
       )
-
+      fResult.foreach{
+        odfO =>
+        timer.map(_.observeDuration());
+        metrics.dbOperationSizeHistogram.map(_.labels("cache-read").observe( nodes.size ))
+      }
+      fResult
     } else {
+      val timer = metrics.dbOperationDurationHistogram.map(_.labels("read").startTimer())
       val leafPaths = nodes.map {
         node => node.path
       }.toSet
-      singleStores.getHierarchyTree().flatMap{
+      val fResult = singleStores.getHierarchyTree().flatMap{
         odf: ODF => 
           val t = odf.subTreePaths(leafPaths, maxLevels).toVector
           //Filter only leafs
@@ -359,10 +386,17 @@ trait OdfDatabase extends Tables with DB with TrimmableDB {
             val r = db.run(finalAction.transactionally)
             r
       }
+      fResult.foreach{
+        odfO =>
+        timer.map(_.observeDuration())
+        metrics.dbOperationSizeHistogram.map(_.labels("read").observe( nodes.size ))
+      }
+      fResult
     }
   }
 
   def remove(path: Path)(implicit timeout: Timeout): Future[Seq[Int]] = {
+    val timer = metrics.dbOperationDurationHistogram.map(_.labels("remove").startTimer())
     val actionsO: Option[DBIOsw[Int]] = pathToDBPath.single.get(path).collect {
       case DBPath(Some(id), p, true) =>
         valueTables.get(path).map {
@@ -400,7 +434,7 @@ trait OdfDatabase extends Tables with DB with TrimmableDB {
             pathRemoves
         })
     }.flatten
-    actionsO match {
+    val futureResult =actionsO match {
       case Some(actions: DBIOsw[Int]) =>
         db.run(actions.transactionally).map { i: Int => Seq(i) }
       case None =>
@@ -410,15 +444,26 @@ trait OdfDatabase extends Tables with DB with TrimmableDB {
           )
         )
     }
+    futureResult.foreach{
+      res =>
+      timer.map(_.observeDuration())
+    }
+    futureResult
   }
 
   def trimDB(): Future[Seq[Int]] = {
+    val timer = metrics.dbOperationDurationHistogram.map(_.labels("trim").startTimer())
     val trimActions = valueTables.values.map {
       pathValues =>
         pathValues.trimToNNewestValues(settings.numLatestValues)
     }
     val deletionCounts = DBIO.sequence(trimActions)
-    db.run(deletionCounts.transactionally).map(_.toVector)
+    val f = db.run(deletionCounts.transactionally).map(_.toVector)
+    f.foreach{ 
+      ints => 
+      timer.map(_.observeDuration())
+    }
+    f
   }
 
   /**
