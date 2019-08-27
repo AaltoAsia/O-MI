@@ -32,7 +32,9 @@ import utils._
 
 /** Parser for data in O-DF format */
 object OMIStreamParser {
-  def parse(filePath: java.nio.file.Path)(implicit mat: Materializer, ec: ExecutionContext): Future[OmiRequest] = stringParser(FileIO.fromPath(filePath).map(_.utf8String))
+  def parse(filePath: java.nio.file.Path)(implicit mat: Materializer, ec: ExecutionContext): Future[OmiRequest] = {
+    stringParser(FileIO.fromPath(filePath).map(_.utf8String))
+  }
   def parse(str: String)(implicit mat: Materializer, ec: ExecutionContext): Future[OmiRequest] = stringParser(Source.single(str))
   def stringParser(source: Source[String, _])(implicit mat: Materializer, ec: ExecutionContext): Future[OmiRequest] =
     source.via(parserFlow).runWith(Sink.headOption[OmiRequest]).map{

@@ -5,7 +5,7 @@ import java.sql.Timestamp
 import database.journal.PPersistentNode.NodeType.{Ii, Obj, Objs}
 import database.EventSub
 import types.Path
-import types.odf.{BooleanValue, Description, DoubleValue, FloatValue, ODF, ImmutableODF, InfoItem, IntValue, LongValue, MetaData, ODFValue, Object, Objects, OdfID, ShortValue, Value}
+import types.odf._
 import utils._
 import akka.stream.Materializer
 import akka.stream.scaladsl.{Source, Sink}

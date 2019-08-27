@@ -177,7 +177,9 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
     }.toSet
   }
 
-  def replaceValues[C <: java.util.Collection[Value[java.lang.Object]]]( pathToValues: java.util.Map[Path,C]): ODF = replaceValues(pathToValues.asScala.mapValues{ col => col.asScala})
+  def replaceValues[C <: java.util.Collection[Value[java.lang.Object]]]( pathToValues: java.util.Map[Path,C]): ODF = {
+    replaceValues(pathToValues.asScala.mapValues{ col => col.asScala})
+  }
   def replaceValues( pathToValues: Iterable[(Path,Iterable[Value[_]])]): ODF
   def replaceValues( pathToValues: Map[Path,Iterable[Value[_]]]): ODF = {
     replaceValues( pathToValues.toIterable )

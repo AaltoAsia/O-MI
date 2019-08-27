@@ -26,6 +26,7 @@ public abstract class JavaInternalAgent extends AbstractActor implements Interna
   // TODO: static method cannot be defined in the interface?
 
   protected LoggingAdapter log = Logging.getLogger(getContext().system(), this);
+  protected final ExecutionContext ec = context().dispatcher();
 
   //protected Config config;
 
@@ -75,7 +76,6 @@ public abstract class JavaInternalAgent extends AbstractActor implements Interna
   }
 
       
-  protected final ExecutionContext ec = context().dispatcher();
   final protected void respond(Object msg ){
     ActorRef senderRef = getSender();
     senderRef.tell(msg,getSelf());

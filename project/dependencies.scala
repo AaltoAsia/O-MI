@@ -49,18 +49,6 @@ object Dependencies {
   val redis = "com.safety-data" %% "akka-persistence-redis" % "0.4.1"
   val alpakka = "com.lightbend.akka" %% "akka-stream-alpakka-xml" % "1.0.0"
 
-  //Kamon
-  val kamonDepencies = Seq(
-    "io.kamon" %% "kamon-core" % "1.1.3",
-    "io.kamon" %% "kamon-logback" % "1.0.2",
-    "io.kamon" %% "kamon-akka-2.5" % "1.1.2",
-    "io.kamon" %% "kamon-akka-http-2.5" % "1.1.2",
-    "io.kamon" %% "kamon-scala-future" % "1.0.0",
-    "io.kamon" %% "kamon-jdbc" % "1.0.2",
-    "io.kamon" %% "kamon-system-metrics" % "1.0.0",
-    "io.kamon" %% "kamon-akka-2.5" % "1.1.2",
-    "io.kamon" %% "kamon-influxdb" % "1.0.2"
-  )
 
   val prometheus = Seq(
     "io.prometheus" % "simpleclient" % "0.6.0",
@@ -111,7 +99,7 @@ object Dependencies {
     gson,
     redis,
     alpakka
-  ) ++ kamonDepencies ++ prometheus
+  ) ++ prometheus
 
   //val servletDependencies: Seq[ModuleID] = Seq(
   //  sprayServlet,

@@ -14,7 +14,6 @@ import scala.concurrent.Future;
 import scala.concurrent.duration.Duration;
 import scala.concurrent.duration.FiniteDuration;
 import scala.util.Random;
-import types.JavaHelpers;
 import types.OmiFactory;
 import types.OdfFactory;
 import types.omi.*;

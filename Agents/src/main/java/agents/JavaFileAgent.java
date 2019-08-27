@@ -15,7 +15,6 @@ import scala.concurrent.ExecutionContext;
 import scala.concurrent.Future;
 import scala.concurrent.duration.Duration;
 import scala.concurrent.duration.FiniteDuration;
-import scala.util.Either;
 import scala.util.Random;
 import types.odf.*;
 import types.odf.parsing.*;
