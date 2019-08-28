@@ -117,9 +117,26 @@ class SubscriptionManager(
     log.debug("Scheduling removesubscriptions for the first time...")
     //interval subs
     val intervalSubsF: Future[Set[IntervalSub]] = singleStores.getAllIntervalSubs()
+    intervalSubsF.foreach{
+      isubs =>
+        metricsReporter ! MetricsReporter.SetSubscriptionCount( true, "interval",isubs.size )
+    }
 
     val allESubsF: Future[Set[EventSub]] = singleStores.getAllEventSubs()
+    allESubsF.foreach{
+      esubs =>
+        metricsReporter ! MetricsReporter.SetSubscriptionCount( true, "event",esubs.size )
+    }
     val allPollSubsF: Future[Set[PolledSub]] = singleStores.getAllPollSubs()
+    allPollSubsF.foreach{
+      subs =>
+        val (intervals, events) = subs.partition{ 
+          case sub: PolledEventSub => false
+          case sub: PollIntervalSub => true
+        }
+        metricsReporter ! MetricsReporter.SetSubscriptionCount( false, "event",events.size )
+        metricsReporter ! MetricsReporter.SetSubscriptionCount( false, "interval",intervals.size )
+    }
     val currentTime: Long = System.currentTimeMillis()
     val setupFuture: Future[Unit] = for {
       intervalSubs <- intervalSubsF
@@ -524,15 +541,17 @@ class SubscriptionManager(
    * @return Subscription Id within Try monad if adding fails this is a Failure, otherwise Success(id)
    */
   private def subscribe(subscription: SubscriptionRequest): Future[Long] = {
-    val allSubsF = getAllSubs()
-    val allIdsF: Future[Set[Long]] = allSubsF
+    lazy val allSubsF = getAllSubs()
+    lazy val allIdsF: Future[Set[Long]] = allSubsF
       .map(allSubs => (allSubs.events ++ allSubs.intervals ++ allSubs.polls).map(_.id))
 
       def getNewId: Future[Long] = {
         (subscription.requestToken match {
           case Some(id) => Future.successful(id)
           case None => Future.failed(new Error("No request id"))
-          }).fallbackTo {
+          }).recoverWith {
+            case error: Error =>
+            log.warning("Using subscription id fallback generation because request token not found.")
             val nId: Long = rand.nextInt(Int.MaxValue)
             allIdsF.flatMap(allIds =>
                 if (allIds.contains(nId))
@@ -567,7 +586,7 @@ class SubscriptionManager(
             newSubId.onComplete {
               case Success(id) =>
                 log.info(s"Successfully added event subscription with id: $id and callback: $callback")
-                metricsReporter ! MetricsReporter.NewSubscription(subscription.callback.nonEmpty,"Event")
+                metricsReporter ! MetricsReporter.NewSubscription(subscription.callback.nonEmpty,"event")
               case other =>
             }
             newSubId

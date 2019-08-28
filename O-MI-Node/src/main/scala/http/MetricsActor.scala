@@ -67,7 +67,9 @@ class MetricsReporter(val configName: String, val settings: OmiConfigExtension) 
     case NewSubscription( hasCallback: Boolean, typeStr: String) =>
       activeSubscriptionsGauge.map{_.labels(hasCallback.toString,typeStr).inc()}
     case RemoveSubscription( hasCallback: Boolean, typeStr: String) =>
-      activeSubscriptionsGauge.map{_.labels(hasCallback.toString,typeStr).inc()}
+      activeSubscriptionsGauge.map{_.labels(hasCallback.toString,typeStr).dec()}
+    case SetSubscriptionCount( hasCallback: Boolean, typeStr: String, count: Int) =>
+      activeSubscriptionsGauge.map{_.labels(hasCallback.toString,typeStr).set(count)}
     case Report => 
       if( settings.metricsEnabled ){
         val current = currentTimestamp
@@ -88,6 +90,7 @@ object MetricsReporter{
   case class NewRequest(requestToken: Long, timestamp: Timestamp, user: UserInfo, requestType: String, attributes: String, pathCount: Int)
   case class ResponseUpdate( requestToken: Long, requestType: String, timestamp: Timestamp, pathCount: Int, duration: Long)
   case class NewSubscription( hasCallback: Boolean, typeStr: String)
+  case class SetSubscriptionCount( hasCallback: Boolean, typeStr: String, count: Int)
   case class RemoveSubscription( hasCallback: Boolean, typeStr: String)
   case object Report
   def props(settings: OmiConfigExtension): Props ={
