@@ -108,7 +108,8 @@ class OmiServer extends OmiNode {
     SubscriptionManager.props(
       settings,
       singleStores,
-      callbackHandler
+      callbackHandler,
+      metricsReporter
     ),
     "subscription-handler"
   )

@@ -107,7 +107,8 @@ trait OmiServiceTestImpl extends OmiService with AnyActorSystem {
   lazy val subscriptionManager = TestActorRef(SubscriptionManager.props(
     settings,
     singleStores,
-    callbackHandler
+    callbackHandler,
+    metricsReporter
   ))
 
   lazy val dbHandler = system.actorOf(

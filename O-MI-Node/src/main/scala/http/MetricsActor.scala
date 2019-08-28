@@ -47,6 +47,11 @@ class MetricsReporter(val configName: String, val settings: OmiConfigExtension) 
     .help("Duration of active O-MI Request")
     .labelNames("request").register()
     )
+  final val activeSubscriptionsGauge =  checkEnabled(() => Gauge.build()
+    .name("omi_active_subscriptions")
+    .help("Count of currently active subscriptions")
+    .labelNames("hasCallback","type").register()
+    )
 
   if( settings.metricsEnabled ){
     timers.startPeriodicTimer("report",Report,10.seconds)
@@ -59,6 +64,10 @@ class MetricsReporter(val configName: String, val settings: OmiConfigExtension) 
       db.run(requestLog.updateFromResponse(requestToken,timestamp,pathCount,duration))
       requestResponseSizeHistogram.map(_.labels(requestType).observe(pathCount))
       requestDurationHistogram.map{ hist => hist.labels(requestType).observe( (duration/1000.0).toDouble)}
+    case NewSubscription( hasCallback: Boolean, typeStr: String) =>
+      activeSubscriptionsGauge.map{_.labels(hasCallback.toString,typeStr).inc()}
+    case RemoveSubscription( hasCallback: Boolean, typeStr: String) =>
+      activeSubscriptionsGauge.map{_.labels(hasCallback.toString,typeStr).inc()}
     case Report => 
       if( settings.metricsEnabled ){
         val current = currentTimestamp
@@ -78,6 +87,8 @@ class MetricsReporter(val configName: String, val settings: OmiConfigExtension) 
 object MetricsReporter{
   case class NewRequest(requestToken: Long, timestamp: Timestamp, user: UserInfo, requestType: String, attributes: String, pathCount: Int)
   case class ResponseUpdate( requestToken: Long, requestType: String, timestamp: Timestamp, pathCount: Int, duration: Long)
+  case class NewSubscription( hasCallback: Boolean, typeStr: String)
+  case class RemoveSubscription( hasCallback: Boolean, typeStr: String)
   case object Report
   def props(settings: OmiConfigExtension): Props ={
     Props( new MetricsReporter( "access-log", settings))

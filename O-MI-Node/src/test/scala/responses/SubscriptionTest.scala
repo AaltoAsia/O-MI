@@ -27,6 +27,7 @@ import types.omi._
 import types.odf._
 import types._
 import testHelpers.{Actorstest, DummySingleStores}
+import http.MetricsReporter
 
 import scala.concurrent.duration._
 
@@ -49,6 +50,7 @@ class SubscriptionTest( implicit ee: ExecutionEnv ) extends Specification with B
   implicit val materializer: ActorMaterializer = ActorMaterializer()(system)
   import system.dispatcher
   implicit val settings = OmiConfig(system)
+  val metricsReporter = system.actorOf(MetricsReporter.props(settings),"metric-reporter")
   implicit val callbackHandler: CallbackHandler = new CallbackHandler(settings, new DummySingleStores())(system, materializer)
   val analytics = None
 
@@ -63,7 +65,8 @@ class SubscriptionTest( implicit ee: ExecutionEnv ) extends Specification with B
     SubscriptionManager.props(
       settings,
       singleStores,
-      callbackHandler
+      callbackHandler,
+      metricsReporter
     ), "subscription-handler"
   )
   val dbHandler = system.actorOf(

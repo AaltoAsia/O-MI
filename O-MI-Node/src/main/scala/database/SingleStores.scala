@@ -138,6 +138,9 @@ trait SingleStores {
   def getIntervalSub(id: Long): Future[Option[IntervalSub]] =
     (subStore ? GetIntervalSub(id)).mapTo[Option[IntervalSub]]
 
+  def getPolledSub(id: Long): Future[Option[PolledSub]] =
+    (subStore ? GetPolledSub(id)).mapTo[Option[PolledSub]]
+
   def getSubsForPath(path: Path): Future[Set[NotNewEventSub]] =
     (subStore ? GetSubsForPath(path)).mapTo[Set[NotNewEventSub]]
 
