@@ -17,10 +17,6 @@ package http
 import java.net.InetSocketAddress
 import java.util.Date
 
-import kamon.influxdb.InfluxDBReporter
-import kamon.Kamon
-import kamon.system.SystemMetrics
-
 import akka.actor.{ActorRef, ActorSystem, Props}
 import akka.http.scaladsl.Http.ServerBinding
 import akka.http.scaladsl.{Http, HttpExt}
@@ -43,10 +39,9 @@ import database._
 import influxDB._
 import http.OmiServer._
 import responses.{CallbackHandler, RequestHandler, SubscriptionManager}
-import types.OmiTypes.Returns.ReturnTypes._
-import types.OmiTypes._
+import types.omi.Returns.ReturnTypes._
+import types.omi._
 import types.odf._
-import io.prometheus.client._
 
 class OmiServer extends OmiNode {
 
@@ -113,7 +108,8 @@ class OmiServer extends OmiNode {
     SubscriptionManager.props(
       settings,
       singleStores,
-      callbackHandler
+      callbackHandler,
+      metricsReporter
     ),
     "subscription-handler"
   )

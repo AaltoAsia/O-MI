@@ -6,7 +6,7 @@ import java.util.concurrent.TimeUnit
 import agentSystem._
 import akka.actor.{Actor, ActorRef, Cancellable, Props}
 import com.typesafe.config.Config
-import types.OmiTypes.{OmiResult, ResponseRequest, Results, WriteRequest}
+import types.omi.{OmiResult, ResponseRequest, Results, WriteRequest}
 import types.Path
 import types.odf._
 
@@ -120,7 +120,7 @@ class ScalaAgent(
 
     // Create OdfInfoItem to contain the value. 
     val infoItem: InfoItem =
-      InfoItem(path,None,Vector.empty[QlmID],Set(description),odfValues,Some(metaData),Map.empty[String,String])
+      InfoItem(path,None,Vector.empty[OdfID],Set(description),odfValues,Some(metaData),Map.empty[String,String])
 
     // Method createAncestors generates O-DF structure from the path of an OdfNode 
     // and returns the root, OdfObjects

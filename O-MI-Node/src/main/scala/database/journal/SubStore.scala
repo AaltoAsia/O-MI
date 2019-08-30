@@ -8,7 +8,7 @@ import akka.actor.Props
 import akka.persistence._
 import PAddSub.SubType._
 import database._
-import types.OmiTypes.HTTPCallback
+import types.omi.HTTPCallback
 import types.Path
 import SubStore._
 
@@ -43,6 +43,8 @@ object SubStore {
   case object GetAllIntervalSubs extends Command
 
   case object GetAllPollSubs extends Command
+
+  case class GetPolledSub(id: Long) extends Command
 
   case class GetIntervalSub(id: Long) extends Command
 
@@ -421,6 +423,8 @@ class SubStore(override val persistenceId: String) extends JournalStore {
       sender() ! result
     case GetIntervalSub(id: Long) =>
       sender() ! intervalSubs.get(id)
+    case GetPolledSub(id: Long) =>
+      sender() ! idToSub.get(id)
     case GetSubsForPath(path: Path) =>
       val ids: Set[NotNewEventSub] = path.inits.flatMap(path => pathToSubs.get(path)).toSet.flatten.map(idToSub(_))
         .collect {

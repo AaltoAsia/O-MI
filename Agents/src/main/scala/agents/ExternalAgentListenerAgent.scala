@@ -26,11 +26,12 @@ import authorization.IpAuthorization
 import com.typesafe.config.Config
 import http.{OmiConfig, OmiConfigExtension}
 import org.slf4j.LoggerFactory
-import types.OmiTypes._
+import types.omi._
 import types._
-import types.odf.{ImmutableODF, ODFParser}
+import types.odf.{ImmutableODF}
+import types.odf.parsing.ODFStreamParser
+import akka.stream.ActorMaterializer
 
-import scala.collection.JavaConverters
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
@@ -89,7 +90,7 @@ class ExternalAgentListener(
 
       // Code for ip address authorization check
       val user = RemoteAddress(remote)//remote.getAddress())
-      val requestForPermissionCheck = OmiTypes.WriteRequest(ImmutableODF(), None, Duration.Inf)
+      val requestForPermissionCheck = omi.WriteRequest(ImmutableODF(), None, Duration.Inf)
 
       if( authorization.ipHasPermission(user)(requestForPermissionCheck).isSuccess ){
         log.info(s"Agent connected from $remote to $local")
@@ -130,6 +131,7 @@ class ExternalAgentHandler(
     sourceAddress: InetSocketAddress,
     requestHandler: ActorRef
   ) extends Actor with ActorLogging {
+  implicit val m = ActorMaterializer()
 
   import Tcp._
   private var storage: String = ""
@@ -154,40 +156,35 @@ class ExternalAgentHandler(
         case _ => //noop
       }
 
-      val lastCharIndex = storage.lastIndexWhere(!_.isWhitespace) //find last whiteSpace location
-      //check if the last part of the message contains closing xml tag
-      if(storage.slice(lastCharIndex - 9, lastCharIndex + 1).endsWith("</Objects>")) {
-
-        val parsedEntries = ODFParser.parse(storage)
-        storage = ""
-        parsedEntries match {
-          case Left(errors) =>
-            log.warning(
-              s"Malformed odf received from agent ${sender()}: " +
-                s"${JavaConverters.iterableAsScalaIterable(errors).mkString("\n")}")
-          case Right(odf) =>
-            val ttl  = Duration(5,SECONDS)
-            implicit val timeout: Timeout = Timeout(ttl)
-            val write = WriteRequest( odf, None,  Duration(5,SECONDS))
-            val result = (requestHandler ? write).mapTo[ResponseRequest]
-            result.onComplete{
-              case Success( response: ResponseRequest )=>
-                response.results.foreach{ 
-                  case wr: Results.Success =>
-                    // This sends debug log message to O-MI Node logs if
-                    // debug level is enabled (in logback.xml and application.conf)
-                    log.debug(s"$sourceAddress pushed data successfully.")
-                  case ie: OmiResult => 
-                    log.warning(s"Something went wrong when $sourceAddress wrote, $ie")
-                }
-                  case Failure( t: Throwable) => 
-                    // This sends debug log message to O-MI Node logs if
-                    // debug level is enabled (in logback.xml and application.conf)
-                    log.warning(s"$sourceAddress's write future failed, error: $t")
-            }
-            log.info(s"External agent sent data from $sender to AgentSystem")
-          case _ => // not possible
-        }
+      val parsedEntries = ODFStreamParser.parse(storage)
+      storage = ""
+      parsedEntries onComplete {
+        case Failure(errors) =>
+          log.warning(
+            s"Malformed odf received from agent ${sender()}: " +
+              s"${errors.toString}")
+        case Success(odf) =>
+          val ttl  = Duration(5,SECONDS)
+          implicit val timeout: Timeout = Timeout(ttl)
+          val write = WriteRequest( odf, None,  Duration(5,SECONDS))
+          val result = (requestHandler ? write).mapTo[ResponseRequest]
+          result.onComplete{
+            case Success( response: ResponseRequest )=>
+              response.results.foreach{ 
+                case wr: Results.Success =>
+                  // This sends debug log message to O-MI Node logs if
+                  // debug level is enabled (in logback.xml and application.conf)
+                  log.debug(s"$sourceAddress pushed data successfully.")
+                case ie: OmiResult => 
+                  log.warning(s"Something went wrong when $sourceAddress wrote, $ie")
+              }
+                case Failure( t: Throwable) => 
+                  // This sends debug log message to O-MI Node logs if
+                  // debug level is enabled (in logback.xml and application.conf)
+                  log.warning(s"$sourceAddress's write future failed, error: $t")
+          }
+          log.info(s"External agent sent data from $sender to AgentSystem")
+        case _ => // not possible
       }
     }
     case PeerClosed =>

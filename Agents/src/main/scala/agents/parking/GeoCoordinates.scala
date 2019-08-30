@@ -30,7 +30,7 @@ case class GeoCoordinates(
     val path: Path= parentPath / "geo"
     Seq(
       Object( 
-        Vector( QlmID( "geo")),
+        Vector( OdfID( "geo")),
         path,
         typeAttribute = Some(s"${mvType(prefix)}")
       ),

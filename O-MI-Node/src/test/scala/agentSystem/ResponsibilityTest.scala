@@ -12,7 +12,7 @@ import scala.collection.immutable._
 import agentSystem.AgentResponsibilities._
 import types.odf._
 import types._
-import types.OmiTypes._
+import types.omi._
 import testHelpers._
 
 class ResponsibilityTest( implicit ee: ExecutionEnv )  extends Specification with AfterAll{

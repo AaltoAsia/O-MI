@@ -107,7 +107,8 @@ trait OmiServiceTestImpl extends OmiService with AnyActorSystem {
   lazy val subscriptionManager = TestActorRef(SubscriptionManager.props(
     settings,
     singleStores,
-    callbackHandler
+    callbackHandler,
+    metricsReporter
   ))
 
   lazy val dbHandler = system.actorOf(
@@ -364,6 +365,12 @@ object Actorstest {
   val noisyLoggerConf = ConfigFactory.parseString(
     """
       akka.loggers = ["akka.testkit.TestEventListener"]
+access-log = {
+  url = "jdbc:h2:mem:test-log"
+  driver = "org.h2.Driver"
+  connectionPool = "HikariCP"
+  connectionTestQuery = "VALUES (1);"
+}
     """)
   def createAs() = ActorSystem("testsystem"+Random.nextInt, loggerConf.withFallback(ConfigFactory.load()))
   def createNoisyAs() = ActorSystem("testsystem"+Random.nextInt, noisyLoggerConf.withFallback(ConfigFactory.load()))

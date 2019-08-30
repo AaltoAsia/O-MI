@@ -21,7 +21,7 @@ case class PostalAddress(
     val path: Path= parentPath / "address"
     Seq(
       Object( 
-        Vector( QlmID( "address")),
+        Vector( OdfID( "address")),
         path,
         typeAttribute = Some(s"${mvType(prefix)}")
       )

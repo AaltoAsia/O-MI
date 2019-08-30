@@ -4,6 +4,7 @@ import akka.persistence._
 import akka.actor.ActorLogging
 import scala.concurrent.duration.Duration
 
+import akka.stream.{Materializer, ActorMaterializer}
 //import Models.Event
 
 /**
@@ -11,6 +12,7 @@ import scala.concurrent.duration.Duration
   */
 abstract class JournalStore extends PersistentActor with ActorLogging {
   //override def persistenceId: String = id
+  implicit val mat: Materializer = ActorMaterializer()
   
   val oldestSavedSnapshot: Long =
     Duration(

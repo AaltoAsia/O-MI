@@ -1,7 +1,7 @@
 package types;
 
-import types.OmiTypes.Returns;
-import types.OmiTypes.OmiReturn;
+import types.omi.Returns;
+import types.omi.OmiReturn;
 
 final public class ReturnFactory{
   public static OmiReturn Success(

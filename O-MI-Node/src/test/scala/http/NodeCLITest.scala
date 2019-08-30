@@ -20,7 +20,7 @@ import org.specs2.matcher._
 import org.specs2.mutable._
 import responses.{AllSubscriptions, CLIHelperT, RemoveSubscription}
 import testHelpers.Actorstest
-import types.OmiTypes._
+import types.omi._
 import types.Path
 import types.odf._
 

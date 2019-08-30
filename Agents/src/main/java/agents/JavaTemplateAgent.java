@@ -7,9 +7,9 @@ import akka.dispatch.OnFailure;
 import akka.dispatch.OnSuccess;
 import akka.japi.Creator;
 import com.typesafe.config.Config;
-import types.OmiTypes.OmiResult;
-import types.OmiTypes.ResponseRequest;
-import types.OmiTypes.Results;
+import types.omi.OmiResult;
+import types.omi.ResponseRequest;
+import types.omi.Results;
 
 /**
  * Template class for Java agents.

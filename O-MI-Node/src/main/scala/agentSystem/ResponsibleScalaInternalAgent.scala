@@ -14,7 +14,7 @@
 package agentSystem
 
 import akka.actor.ActorRef
-import types.OmiTypes._
+import types.omi._
 
 import scala.concurrent.Future
 

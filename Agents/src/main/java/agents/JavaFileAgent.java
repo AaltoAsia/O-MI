@@ -7,25 +7,19 @@ import akka.actor.Cancellable;
 import akka.actor.Props;
 import akka.dispatch.OnFailure;
 import akka.dispatch.OnSuccess;
+import akka.stream.ActorMaterializer;
 import akka.japi.Creator;
 import com.typesafe.config.Config;
-import parsing.OdfParser;
 import scala.collection.JavaConversions;
 import scala.concurrent.ExecutionContext;
 import scala.concurrent.Future;
 import scala.concurrent.duration.Duration;
 import scala.concurrent.duration.FiniteDuration;
-import scala.util.Either;
 import scala.util.Random;
+import types.odf.*;
+import types.odf.parsing.*;
+import types.omi.*;
 import types.*;
-import types.OdfTypes.OdfInfoItem;
-import types.OdfTypes.OdfObjects;
-import types.OdfTypes.OdfTreeCollection;
-import types.OdfTypes.OdfValue;
-import types.OmiTypes.OmiResult;
-import types.OmiTypes.WriteRequest;
-import types.OmiTypes.ResponseRequest;
-import types.OmiTypes.Results;
 
 import java.io.File;
 import java.sql.Timestamp;
@@ -37,6 +31,23 @@ import java.util.concurrent.TimeUnit;
  * Parses given file for O-DF structure and updates it's values.
  */
 public class JavaFileAgent extends JavaInternalAgent {
+
+  protected ActorMaterializer materializer = ActorMaterializer.create(context());
+  protected Config config;
+
+  protected FiniteDuration interval;
+
+  protected String pathToFile;
+  protected File file;
+  protected ODF odf;
+
+  protected int writeCount = 0;
+
+  protected Cancellable intervalJob = null;
+
+  //Random for generating new values for path.
+  protected Random rnd = new Random();
+
   /**
    *  THIS STATIC METHOD MUST EXISTS FOR JavaInternalAgent. 
    *  WITHOUT IT JavaInternalAgent CAN NOT BE INITIALIZED.
@@ -56,22 +67,6 @@ public class JavaFileAgent extends JavaInternalAgent {
       }
     });
   }
-
-  protected Config config;
-
-  protected FiniteDuration interval;
-
-  protected String pathToFile;
-  protected File file;
-  protected OdfObjects odf;
-
-  protected int writeCount = 0;
-
-  protected Cancellable intervalJob = null;
-
-  //Random for generating new values for path.
-  protected Random rnd = new Random();
-
 
   // Constructor
   public JavaFileAgent(
@@ -102,15 +97,20 @@ public class JavaFileAgent extends JavaInternalAgent {
           null                            //Sender?
           );
 
-      Either<Iterable<? extends ParseError>,OdfObjects> parseResult = OdfParser.parse(file);
-      if( parseResult.isLeft() ){
-        throw new InternalAgentConfigurationFailure( 
-          "Invalid O-DF structure"
-        );
-      } else {
-        odf = parseResult.right().get();
-        writeCount = 0;
-      }
+      Future<ODF> futureODF = ODFStreamParser.parse(file.toPath(),materializer);
+      futureODF.onSuccess(new OnSuccess<ODF>(){
+        public void onSuccess( ODF parsed){
+          odf = parsed;
+          writeCount = 0;
+        }
+      }, ec);
+      futureODF.onFailure(new OnFailure() {
+        public void onFailure( Throwable failure) throws InternalAgentConfigurationFailure {
+          throw new InternalAgentConfigurationFailure( 
+              "Invalid O-DF structure"
+              );
+        }
+      }, ec);
     } else if( !file.isFile()){
         throw new InternalAgentConfigurationFailure( 
             "File to be read for O-DF structure is not e file."
@@ -149,15 +149,15 @@ public class JavaFileAgent extends JavaInternalAgent {
     NumberFormat nf = NumberFormat.getInstance();
 
     //All O-DF InfoItems in O-DF structure 
-    Collection<OdfInfoItem> infoItems = JavaConversions.asJavaCollection(odf.infoItems());
+    Collection<InfoItem> infoItems = JavaConversions.asJavaCollection(odf.getInfoItems());
 
     //Collection of new values per path
-    Map<Path, scala.collection.immutable.Vector<OdfValue<Object>>> pathValuePairs = new HashMap<>();
+    Map<Path, Vector<Value<java.lang.Object>>> pathValuePairs = new HashMap<>();
 
     //Generate new value for each O-DF InfoItem
-    for( OdfInfoItem item : infoItems){
+    for( InfoItem item : infoItems){
       //Get old values
-      Collection<OdfValue<Object>> oldValues = JavaConversions.asJavaCollection(item.values());
+      Collection<Value<java.lang.Object>> oldValues = JavaConversions.asJavaCollection(item.values());
 
       // timestamp for the value
       Timestamp timestamp =  new Timestamp(new java.util.Date().getTime());
@@ -168,15 +168,15 @@ public class JavaFileAgent extends JavaInternalAgent {
       String oldValueStr = ""; 
 
       //There should be only one value stored in oldValues
-      Iterator<OdfValue<Object>> iterator = oldValues.iterator();
+      Iterator<Value<java.lang.Object>> iterator = oldValues.iterator();
       if( iterator.hasNext() ){
-        OdfValue<Object> old = iterator.next();
+        Value<java.lang.Object> old = iterator.next();
 
         //Multiplier for generating new value 
         double multiplier = 1 + rnd.nextGaussian() * 0.05 ; 
 
         //Extract type and value of old
-        typeStr = old.typeValue();
+        typeStr = old.typeAttribute();
         oldValueStr = old.value().toString();
 
         try{
@@ -241,24 +241,21 @@ public class JavaFileAgent extends JavaInternalAgent {
       }
 
       // Multiple values can be added at the same time but we add one
-      Vector<OdfValue<Object>> newValues = new Vector<>();
-      OdfValue<Object> value = OldOdfFactory.createOdfValue(
+      Vector<Value<java.lang.Object>> newValues = new Vector<>();
+      Value<java.lang.Object> value = OdfFactory.createValue(
           newValueStr, typeStr, timestamp
       );
       newValues.add(value);
 
       //Add to pathValuePairs
-      pathValuePairs.put(item.path(), OdfTreeCollection.fromJava(newValues));
+      pathValuePairs.put(item.path(), newValues);
     }
 
-    //Convert Map to Scala Map
-    scala.collection.mutable.Map<Path,scala.collection.immutable.Vector<OdfValue<Object>>> scalaMap= 
-      JavaConversions.mapAsScalaMap(pathValuePairs);
 
     //Replaces old values with new
     //Odf* classes are immutable, so they need be copied to be edited.
     //We should change as much as we can with single copy to avoid creating garbage.
-    odf = odf.withValues( JavaHelpers.mutableMapToImmutable(scalaMap) );
+    odf = odf.replaceValues( pathValuePairs);
   }
 
   /**
@@ -270,7 +267,7 @@ public class JavaFileAgent extends JavaInternalAgent {
     updateOdf();
     //MetaData and description should be written only once
     if( writeCount == 2 ){
-      odf = odf.allMetaDatasRemoved();
+      odf = odf.metaDatasRemoved().descriptionsRemoved().attributesRemoved();
     } else writeCount += 1;
 
     // This sends debug log message to O-MI Node logs if

@@ -75,7 +75,7 @@ case class ImmutableODF private[odf](
           case (Some(ii: InfoItem), None) =>
             ii.copy(
               names = {
-                if (ii.names.nonEmpty) Vector(QlmID("")) else Vector.empty
+                if (ii.names.nonEmpty) Vector(OdfID("")) else Vector.empty
               },
               descriptions = {
                 if (ii.descriptions.nonEmpty) Set(Description("")) else Set.empty
@@ -236,6 +236,16 @@ case class ImmutableODF private[odf](
     case obj: Objects => obj.copy( attributes = HashMap())
   }.toVector: _*))
 
+  def replaceValues( pathToValues: Iterable[(Path,Iterable[Value[_]])]): ImmutableODF={
+    val updates = pathToValues.flatMap{
+      case ( path: Path, values: Iterable[Value[_]] ) =>
+        nodes.get(path).collect{
+          case ii: InfoItem =>
+            path -> ii.copy( values = values.toVector)
+        }
+    }
+    new ImmutableODF(nodes ++ updates)
+  }
   def toImmutable: ImmutableODF = this
 
   def toMutable: MutableODF = MutableODF(
@@ -299,7 +309,8 @@ object ImmutableODF {
         if (mutableHMap.contains(node.path)) {
           (node, mutableHMap.get(node.path)) match {
             case (ii: InfoItem, Some(oii: InfoItem)) =>
-              mutableHMap.update(ii.path, ii.union(oii))
+              val nii = ii.union(oii)
+              mutableHMap.update(nii.path,nii.copy(values = nii.values.sortBy(_.timestamp.getTime)))
             case (obj: Object, Some(oo: Object)) =>
               mutableHMap.update(obj.path,obj.union(oo))
             case (obj: Objects, Some(oo: Objects)) =>

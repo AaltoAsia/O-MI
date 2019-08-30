@@ -3,20 +3,17 @@ package http
 import akka.actor._
 import java.sql.Timestamp
 import scala.concurrent.duration._
-import types.OmiTypes.UserInfo
+import types.omi.UserInfo
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent._
 //import slick.driver.H2Driver.api._
 import slick.basic.DatabaseConfig
-import slick.sql._
 import slick.jdbc.JdbcProfile
-import slick.lifted.{Index, ProvenShape}
 import slick.jdbc.meta.MTable
-import slick.lifted.{Index, ProvenShape}
+import slick.lifted.{ProvenShape}
 import io.prometheus.client._
 import scala.concurrent.ExecutionContext.Implicits.global
 //import scala.collection.JavaConversions.iterableAsScalaIterable
-import types.Path
 import utils._
 
 
@@ -31,7 +28,30 @@ class MetricsReporter(val configName: String, val settings: OmiConfigExtension) 
   } else None
 
   def checkEnabled[T](f: () => T): Option[T] = if( settings.metricsEnabled ) Some(f()) else None  
-  final val uniqueUsersGauge =  checkEnabled(() => Gauge.build().name("omi_unique_users").help("Unique uesr of O-MI Node over duration").labelNames("duration").register())
+  final val uniqueUsersGauge =  checkEnabled(() => Gauge.build().name("omi_unique_users").help("Unique user of O-MI Node over duration").labelNames("duration").register())
+  final val requestSizeHistogram =  checkEnabled(() => Histogram.build()
+    .name("omi_request_size")
+    .help("Size of request per type")
+    .labelNames("request")
+    .buckets(settings.metrics.requestSizeBuckets:_*)
+    .register())
+  final val requestResponseSizeHistogram =  checkEnabled(() => Histogram.build()
+    .name("omi_request_response_size")
+    .help("Size of request per type")
+    .labelNames("request")
+    .buckets(settings.metrics.requestSizeBuckets:_*)
+    .register())
+  final val requestDurationHistogram =  checkEnabled(() => Histogram.build()
+    .buckets(settings.metrics.requestDurationBuckets:_*)
+    .name("omi_request_duration")
+    .help("Duration of active O-MI Request")
+    .labelNames("request").register()
+    )
+  final val activeSubscriptionsGauge =  checkEnabled(() => Gauge.build()
+    .name("omi_active_subscriptions")
+    .help("Count of currently active subscriptions")
+    .labelNames("hasCallback","type").register()
+    )
 
   if( settings.metricsEnabled ){
     timers.startPeriodicTimer("report",Report,10.seconds)
@@ -39,8 +59,17 @@ class MetricsReporter(val configName: String, val settings: OmiConfigExtension) 
   def receive ={
     case NewRequest(requestToken: Long, timestamp: Timestamp, user: UserInfo, requestType: String, attributes: String, pathCount: Int) =>
       db.run(requestLog.add(requestToken, timestamp, user,requestType,attributes,pathCount))
-    case ResponseUpdate( requestToken: Long, timestamp: Timestamp, pathCount: Int, duration: Long) =>
+      requestSizeHistogram.map(_.labels(requestType).observe(pathCount))
+    case ResponseUpdate( requestToken: Long, requestType:String, timestamp: Timestamp, pathCount: Int, duration: Long) =>
       db.run(requestLog.updateFromResponse(requestToken,timestamp,pathCount,duration))
+      requestResponseSizeHistogram.map(_.labels(requestType).observe(pathCount))
+      requestDurationHistogram.map{ hist => hist.labels(requestType).observe( (duration/1000.0).toDouble)}
+    case NewSubscription( hasCallback: Boolean, typeStr: String) =>
+      activeSubscriptionsGauge.map{_.labels(hasCallback.toString,typeStr).inc()}
+    case RemoveSubscription( hasCallback: Boolean, typeStr: String) =>
+      activeSubscriptionsGauge.map{_.labels(hasCallback.toString,typeStr).dec()}
+    case SetSubscriptionCount( hasCallback: Boolean, typeStr: String, count: Int) =>
+      activeSubscriptionsGauge.map{_.labels(hasCallback.toString,typeStr).set(count)}
     case Report => 
       if( settings.metricsEnabled ){
         val current = currentTimestamp
@@ -59,7 +88,10 @@ class MetricsReporter(val configName: String, val settings: OmiConfigExtension) 
 
 object MetricsReporter{
   case class NewRequest(requestToken: Long, timestamp: Timestamp, user: UserInfo, requestType: String, attributes: String, pathCount: Int)
-  case class ResponseUpdate( requestToken: Long, timestamp: Timestamp, pathCount: Int, duration: Long)
+  case class ResponseUpdate( requestToken: Long, requestType: String, timestamp: Timestamp, pathCount: Int, duration: Long)
+  case class NewSubscription( hasCallback: Boolean, typeStr: String)
+  case class SetSubscriptionCount( hasCallback: Boolean, typeStr: String, count: Int)
+  case class RemoveSubscription( hasCallback: Boolean, typeStr: String)
   case object Report
   def props(settings: OmiConfigExtension): Props ={
     Props( new MetricsReporter( "access-log", settings))
@@ -79,8 +111,8 @@ trait MonitoringDB{
     val findTables = db.run(namesOfCurrentTables)
     findTables.flatMap {
       tableNames: Set[String] =>
-        val queries = if (tableNames.contains("REQUEST_LOG")) {
-          slick.dbio.DBIOAction.successful()
+        val queries= if (tableNames.contains("REQUEST_LOG")) {
+          slick.dbio.DBIOAction.successful[Unit](())
         } else {
           requestLog.schema.create
         }

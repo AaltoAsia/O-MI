@@ -8,16 +8,12 @@ import akka.japi.Creator;
 import com.typesafe.config.Config;
 import scala.concurrent.Future;
 import scala.concurrent.duration.Duration;
-import types.OldOdfFactory;
+import types.OdfFactory;
 import types.Path;
-import types.odf.NewTypeConverter;
-import types.odf.OldTypeConverter;
-import types.OmiTypes.ResponseRequest;
-import types.OmiTypes.CallRequest;
-import types.OmiTypes.Responses;
-import types.OdfTypes.OdfInfoItem;
-import types.OdfTypes.OdfNode;
-import types.OdfTypes.OdfValue;
+import types.odf.*;
+import types.omi.ResponseRequest;
+import types.omi.CallRequest;
+import types.omi.Responses;
 
 import java.sql.Timestamp;
 import java.util.Vector;
@@ -45,23 +41,26 @@ public class ResponsibleJavaAgentDemo extends ResponsibleJavaInternalAgent {
 
   public Future<ResponseRequest> handleCall(CallRequest call){
     try{
-      OdfNode node = NewTypeConverter.convertODF(call.odf()).get( new Path( "Objects/Service/Greeter" ) ).get();
-      OdfInfoItem ii = (OdfInfoItem)node;
-      OdfValue<Object> value = ii.values().head();
-      OdfValue<Object> newValue = OldOdfFactory.createOdfValue(
+      Node node = call.odf().get( new Path( "Objects/Service/Greeter" ) ).get();
+      InfoItem ii = (InfoItem)node;
+      Value<java.lang.Object> value = ii.values().head();
+      Value<java.lang.Object> newValue = OdfFactory.createValue(
           "Hello " + value.value().toString() + ", welcome to the Internet of Things.",
           new Timestamp(new java.util.Date().getTime())
       );  
-      Vector<OdfValue<Object>> values = new Vector<>();
+      Vector<Value<java.lang.Object>> values = new Vector<>();
       values.add( newValue );
-      OdfInfoItem new_ii = OldOdfFactory.createOdfInfoItem(
+
+      Vector<Node> nodes = new Vector<>();
+      InfoItem new_ii = OdfFactory.createInfoItem(
           new Path("Objects/Service/Greeting"),
           values 
       );
+      nodes.add(new_ii);
 
       return Futures.successful( 
           Responses.Success(
-            scala.Option.apply(OldTypeConverter.convertOdfObjects(new_ii.createAncestors())),
+            scala.Option.apply(OdfFactory.createImmutableODF(nodes)),
             Duration.apply(10,TimeUnit.SECONDS)
           )
       );

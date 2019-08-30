@@ -3,8 +3,6 @@ package odf
 
 import database.journal.PDescription
 import scala.collection.SeqView
-import parsing.xmlGen.scalaxb.DataRecord
-import parsing.xmlGen.xmlTypes._
 import akka.stream.alpakka.xml._
 
 object Description {
@@ -26,15 +24,6 @@ case class Description(
         other.text
       } else text,
       other.language.orElse(language)
-    )
-  }
-
-  implicit def asDescriptionType: DescriptionType = {
-    DescriptionType(
-      text,
-      language.fold(Map.empty[String, DataRecord[Any]]) {
-        n => Map("@lang" -> DataRecord(n))
-      }
     )
   }
 

@@ -24,12 +24,7 @@ import types.odf.Value;
 import types.odf.Description;
 import types.odf.MetaData;
 import types.OmiFactory;
-import types.OmiTypes.OmiResult;
-import types.OmiTypes.WriteRequest;
-import types.OmiTypes.CallRequest;
-import types.OmiTypes.ResponseRequest;
-import types.OmiTypes.Responses;
-import types.OmiTypes.Results;
+import types.omi.*;
 import types.Path;
 
 import java.sql.Timestamp;

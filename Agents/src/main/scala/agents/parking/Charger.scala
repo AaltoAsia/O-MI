@@ -49,7 +49,7 @@ case class Charger(
     }
     Seq(
       Object( 
-        Vector( QlmID( id)),
+        Vector( OdfID( id)),
         path,
         typeAttribute = Some(s"${mvType(prefix)}")
       )

@@ -180,6 +180,17 @@ class MutableODF private[odf](
     }
     this
   }
+  def replaceValues( pathToValues: Iterable[(Path,Iterable[Value[_]])]): MutableODF={
+    val updates = pathToValues.flatMap{
+      case ( path: Path, values: Iterable[Value[_]] ) =>
+        nodes.get(path).collect{
+          case ii: InfoItem =>
+            path -> ii.copy( values = values.toVector)
+        }
+    }
+    nodes ++= updates
+    this
+  }
 
   /*
    * Select paths and their descedants from this ODF.

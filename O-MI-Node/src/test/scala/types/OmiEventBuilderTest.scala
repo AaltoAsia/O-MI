@@ -12,8 +12,8 @@
  +    limitations under the License.                                              +
  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 package types
-package OmiTypes
-package parser
+package omi
+package parsing
 
 import java.sql.Timestamp
 import java.time.OffsetDateTime
@@ -33,8 +33,8 @@ import akka.stream.alpakka.xml.scaladsl._
 
 import types._
 import odf._
-import OmiTypes._
-import types.OmiTypes.parser.{ResultEventBuilder,OdfRequestEventBuilder}
+import omi._
+import types.omi.parsing.{ResultEventBuilder,OdfRequestEventBuilder}
 import utils._
 
 

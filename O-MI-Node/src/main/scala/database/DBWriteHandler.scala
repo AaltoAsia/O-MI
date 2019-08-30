@@ -1,10 +1,10 @@
 package database
 
-import parsing.xmlGen._
 import responses.CallbackHandler._
-import types.OmiTypes._
+import types.omi._
 import types.Path
 import types.odf._
+import utils._
 import types._
 
 import scala.concurrent.Future
@@ -15,6 +15,7 @@ import scala.util.control.NonFatal
 
 trait DBWriteHandler extends DBHandlerBase {
 
+  import context.dispatcher
   private def sendEventCallback(esub: EventSub, infoItems: Seq[InfoItem]): Unit = {
     val odf = ImmutableODF(infoItems)
     esub match {
@@ -40,7 +41,7 @@ trait DBWriteHandler extends DBHandlerBase {
     //and then intersect to get correct typeValues etc. from hierarchyTree
     //val odf = hTree.union(odfWithoutTypes.valuesRemoved).intersection(odfWithoutTypes)
     val responseTTL =
-    Try((esub.endTime.getTime - parsing.OdfParser.currentTime().getTime).milliseconds)
+    Try((esub.endTime.getTime - currentTimestamp.getTime).milliseconds)
       .toOption.getOrElse(Duration.Inf)
 
     log.debug(s"Sending data to event sub: $id.")

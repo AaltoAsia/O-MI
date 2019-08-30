@@ -18,7 +18,7 @@ import akka.util.Timeout
 
 import database.{DB, SingleStores, SingleStoresMaintainer}
 import http.OmiConfigExtension
-import types.OmiTypes._
+import types.omi._
 import types.Path
 import types.Path._
 import types.odf._

@@ -37,7 +37,7 @@ import akka.stream._
 import akka.stream.scaladsl._
 
 import responses.CallbackHandler._
-import types.OmiTypes._
+import types.omi._
 import database.SingleStores
 
 import http.{WebSocketUtil, OmiConfigExtension}

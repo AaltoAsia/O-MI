@@ -12,13 +12,11 @@
  +    limitations under the License.                                              +
  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 package types
-package OmiTypes
-package parser
+package omi
+package parsing
 
-import java.sql.Timestamp
 import scala.util.Try
-import scala.collection.JavaConverters._
-import scala.collection.immutable.HashMap
+import scala.concurrent._
 
 import akka.NotUsed
 import akka.util._
@@ -34,6 +32,25 @@ import utils._
 
 /** Parser for data in O-DF format */
 object OMIStreamParser {
+  def parse(filePath: java.nio.file.Path)(implicit mat: Materializer, ec: ExecutionContext): Future[OmiRequest] = {
+    stringParser(FileIO.fromPath(filePath).map(_.utf8String))
+  }
+  def parse(str: String)(implicit mat: Materializer, ec: ExecutionContext): Future[OmiRequest] = stringParser(Source.single(str))
+  def stringParser(source: Source[String, _])(implicit mat: Materializer, ec: ExecutionContext): Future[OmiRequest] =
+    source.via(parserFlow).runWith(Sink.headOption[OmiRequest]).map{
+      case None => 
+        throw OMIParserError("Parser never completes")
+      case Some( req: OmiRequest) => req
+    }
+  def byteStringParser(source: Source[ByteString, _])(implicit mat: Materializer, ec: ExecutionContext): Future[OmiRequest] =
+    source.via(parserFlowByteString).runWith(Sink.headOption[OmiRequest]).map{
+      case None => 
+        throw OMIParserError("Parser never completes")
+      case Some( req: OmiRequest) => req
+    }
+  def parserFlowByteString: Flow[ByteString,OmiRequest,NotUsed] = Flow[ByteString]
+    .via(XmlParsing.parser)
+    .via(new OMIParserFlow)
   def xmlParserFlow: Flow[String,ParseEvent,NotUsed] = Flow[String]
     .map(ByteString(_))
     .via(XmlParsing.parser)
@@ -46,7 +63,7 @@ object OMIStreamParser {
     override val shape = FlowShape(in, out)
 
     override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
-      private var state: EventBuilder[_] = new EnvelopeEventBuilder(None,currentTimestamp)
+      private var state: EventBuilder[_] = new EnvelopeEventBuilder()(currentTimestamp)
       private var done: Boolean = false
 
       //override def preStart(): Unit = pull(in)

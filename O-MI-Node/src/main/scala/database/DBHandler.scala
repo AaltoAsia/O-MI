@@ -5,7 +5,7 @@ import agentSystem.AgentEvents._
 import agentSystem.{AgentName, AgentResponsibilities}
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import responses.{CLIHelperT, CallbackHandler}
-import types.OmiTypes._
+import types.omi._
 import types._
 
 import scala.collection.mutable.{Map => MutableMap}

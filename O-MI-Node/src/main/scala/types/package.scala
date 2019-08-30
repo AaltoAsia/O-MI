@@ -13,7 +13,6 @@
  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 
 package types
-import java.sql.Timestamp
 import akka.stream.alpakka.xml._
 
 trait EventBuilder[T] {
@@ -22,20 +21,15 @@ trait EventBuilder[T] {
   def isComplete: Boolean
   def build: T
 }
-case class FailedEventBuilder(val previous: Option[EventBuilder[_]], val msg: String, implicit val receiveTime: Timestamp)  extends EventBuilder[ParseError]{
-    def parse( event: ParseEvent ): EventBuilder[ParseError] = {
-      this
-    }
-    final def isComplete: Boolean = false
-    def build: ParseError = ODFParserError(msg)
-} 
-
+trait NoPreviousEventBuilder[T] extends EventBuilder[T] {
+  final val previous: Option[EventBuilder[_]] = None
+}
 trait SpecialEventHandling {
-  def write: OmiTypes.WriteRequest
+  def write: omi.WriteRequest
   def valueShouldBeUpdated: (odf.Value[Any], odf.Value[Any]) => Boolean
   def triggerEvent: database.InfoItemEvent => Boolean
 }
-case class WithoutEvents(write: OmiTypes.WriteRequest) extends SpecialEventHandling {
+case class WithoutEvents(write: omi.WriteRequest) extends SpecialEventHandling {
   def valueShouldBeUpdated = database.SingleStores.valueShouldBeUpdated _
   def triggerEvent = {_ => false}
 }

@@ -15,7 +15,6 @@
 package http
 
 import java.net.InetAddress
-import java.util.concurrent.TimeUnit
 
 import scala.collection.JavaConverters._
 import scala.concurrent.duration._
@@ -28,7 +27,7 @@ import akka.http.scaladsl.model.Uri
 import com.typesafe.config.{Config, ConfigException}
 import org.slf4j.LoggerFactory
 
-import types.OmiTypes.RawRequestWrapper.MessageType
+import types.omi.RawRequestWrapper.MessageType
 import types.Path
 
 import agentSystem.AgentSystemConfigExtension
@@ -115,20 +114,15 @@ class OmiConfigExtension(val config: Config) extends Extension
   object metrics {
     val Metrics = config getConfig "omi-service.metrics"
     val requestDurationBuckets = (Metrics getDoubleList "requestDurationBuckets").asScala.map(_.doubleValue).toSeq
+    val requestSizeBuckets = (Metrics getDoubleList "requestSizeBuckets").asScala.map(_.doubleValue).toSeq
+    val requestResponseSizeBuckets = (Metrics getDoubleList "requestResponseSizeBuckets").asScala.map(_.doubleValue).toSeq
+    val dbOperationDurationBuckets = (Metrics getDoubleList "dbOperationDurationBuckets").asScala.map(_.doubleValue).toSeq
+    val dbOperationSizeBuckets = (Metrics getDoubleList "dbOperationSizeBuckets").asScala.map(_.doubleValue).toSeq
   }
   // Authorization
   val allowedRequestTypes: Set[MessageType] = (config getStringList "omi-service.allowRequestTypesForAll").asScala
     .map((x) => MessageType(x.toLowerCase)).toSet
 
-  // Old External AuthAPIService V1
-  val authAPIServiceV1: Config =
-    Try(config getConfig "omi-service.authorization") orElse
-      Try(config getConfig "omi-service.authAPI.v1") get
-
-  val enableExternalAuthorization: Boolean = authAPIServiceV1 getBoolean "enable-external-authorization-service"
-  val enableAuthAPIServiceV1: Boolean = authAPIServiceV1 getBoolean "enable-external-authorization-service"
-  val externalAuthorizationPort: Int = authAPIServiceV1 getInt "authorization-service-port"
-  val externalAuthUseHttps: Boolean = authAPIServiceV1 getBoolean "use-https"
 
   // External AuthAPIService V2
   case object AuthApiV2 {
@@ -217,7 +211,6 @@ class OmiConfigExtension(val config: Config) extends Extension
   //connection fails
   val websocketQueueSize: Int = config getInt "omi-service.websocket-queue-size"
 
-  val kamonEnabled: Boolean = Option(config getBoolean "omi-service.kamon-enabled") getOrElse false
   val databaseImplementation: String = config getString "omi-service.database"
   val influx: Option[InfluxDBConfigExtension] = if( databaseImplementation.toLowerCase.startsWith("influx" ) ) {
     Try{

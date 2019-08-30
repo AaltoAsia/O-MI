@@ -4,12 +4,12 @@ package odf
 import akka.stream.alpakka.xml.{Attribute, EndElement, ParseEvent, StartElement}
 import database.journal.PPersistentNode.NodeType.{Ii, Obj, Objs}
 import database.journal.{PInfoItem, PObject, PObjects, PPersistentNode}
-import parsing.xmlGen.scalaxb.DataRecord
-import parsing.xmlGen.xmlTypes.{InfoItemType, ObjectType, ObjectsType}
 
 import scala.language.implicitConversions
 import scala.collection.{Seq, SeqView}
 import scala.collection.immutable.{HashMap, Map}
+
+import akka.stream.Materializer
 
 sealed trait Node {
   def createAncestors: Seq[Node]
@@ -22,7 +22,7 @@ sealed trait Node {
 
   def hasStaticData: Boolean
 
-  def persist: PPersistentNode.NodeType // = PersistentNode(path.toString,attributes)
+  def persist(implicit mat: Materializer): PPersistentNode.NodeType // = PersistentNode(path.toString,attributes)
 }
 object Objects {
   val empty: Objects = Objects()
@@ -83,15 +83,6 @@ case class Objects(
     )
   }
 
-  implicit def asObjectsType(objects: Iterable[ObjectType]): ObjectsType = {
-    ObjectsType(
-      objects.toSeq,
-      attributes = attributesToDataRecord(attributes) ++ version.map {
-        version: String => "@version" -> DataRecord(version)
-      }
-    )
-  }
-
   def readTo(to: Objects): Objects = {
     to.copy(
       this.version.orElse(to.version),
@@ -99,14 +90,14 @@ case class Objects(
     )
   }
 
-  def persist: PPersistentNode.NodeType = Objs(PObjects(version.getOrElse(""), attributes))
+  def persist(implicit mat: Materializer): PPersistentNode.NodeType = Objs(PObjects(version.getOrElse(""), attributes))
 }
 
 object Object {
   def apply(
              path: Path
            ): Object = Object(
-    Vector(QlmID(path.last)),
+    Vector(OdfID(path.last)),
     path
   )
 
@@ -114,7 +105,7 @@ object Object {
              path: Path,
              typeAttribute: Option[String]
            ): Object = Object(
-    Vector(QlmID(path.last)),
+    Vector(OdfID(path.last)),
     path,
     typeAttribute
   )
@@ -125,7 +116,7 @@ object Object {
              descriptions: Set[Description],
              attributes: Map[String, String]
            ): Object = Object(
-    Vector(QlmID(path.last)),
+    Vector(OdfID(path.last)),
     path,
     typeAttribute,
     descriptions,
@@ -134,7 +125,7 @@ object Object {
 }
 
 case class Object(
-                   ids: Vector[QlmID],
+                   ids: Vector[OdfID],
                    path: Path,
                    typeAttribute: Option[String] = None,
                    descriptions: Set[Description] = Set.empty,
@@ -144,7 +135,7 @@ case class Object(
   assert(path.length > 1, "Length of path of Object is not greater than 1 (Objects/).")
 
   def idsToStr(): Vector[String] = ids.map {
-    id: QlmID =>
+    id: OdfID =>
       id.id
   }
 
@@ -163,7 +154,7 @@ case class Object(
     val containSameId = ids.map(_.id).toSet.intersect(that.ids.map(_.id).toSet).nonEmpty
     assert(containSameId && pathsMatches)
     Object(
-      QlmID.unionReduce(ids ++ that.ids).toVector,
+      OdfID.unionReduce(ids ++ that.ids).toVector,
       path,
       that.typeAttribute.orElse(typeAttribute),
       Description.unionReduce(descriptions ++ that.descriptions),
@@ -184,7 +175,7 @@ case class Object(
     val containSameId = ids.map(_.id).toSet.intersect(that.ids.map(_.id).toSet).nonEmpty
     assert(containSameId && pathsMatches)
     Object(
-      QlmID.unionReduce(ids ++ that.ids).toVector,
+      OdfID.unionReduce(ids ++ that.ids).toVector,
       path,
       optionAttributeUnion(typeAttribute, that.typeAttribute),
       Description.unionReduce(descriptions ++ that.descriptions),
@@ -201,7 +192,7 @@ case class Object(
         } else {
           Object(
             Vector(
-              new QlmID(
+              new OdfID(
                 ancestorPath.last
               )
             ),
@@ -218,7 +209,7 @@ case class Object(
     } else {
       Object(
         Vector(
-          QlmID(
+          OdfID(
             parentPath.last
           )
         ),
@@ -227,20 +218,6 @@ case class Object(
     }
   }
 
-  implicit def asObjectType(infoitems: Iterable[InfoItemType], objects: Iterable[ObjectType]): ObjectType = {
-    ObjectType(
-      /*Seq( QlmID(
-        path.last, // require checks (also in OdfObject)
-        attributes = Map.empty
-      )),*/
-      ids.map(_.asQlmIDType), //
-      descriptions.map(des => des.asDescriptionType).toVector,
-      infoitems.toSeq,
-      objects.toSeq,
-      attributes = (
-        attributesToDataRecord(attributes) ++ typeAttribute.map { n => "@type" -> DataRecord(n) })
-    )
-  }
 
   def readTo(to: Object): Object = {
     val pathsMatches = path == to.path
@@ -260,16 +237,16 @@ case class Object(
     } else if (this.descriptions.nonEmpty) {
       Vector(Description("", None))
     } else Vector.empty
-    //TODO: Filter ids based on QlmID attributes
+    //TODO: Filter ids based on OdfID attributes
     to.copy(
-      ids = QlmID.unionReduce(ids ++ to.ids).toVector,
+      ids = OdfID.unionReduce(ids ++ to.ids).toVector,
       typeAttribute = typeAttribute.orElse(to.typeAttribute),
       descriptions = desc.toSet,
       attributes = attributes ++ to.attributes
     )
   }
 
-  def persist: PPersistentNode.NodeType = Obj(PObject(typeAttribute.getOrElse(""),
+  def persist(implicit mat: Materializer): PPersistentNode.NodeType = Obj(PObject(typeAttribute.getOrElse(""),
     ids.map(_.persist),
     descriptions.map(_.persist()).toSeq,
     attributes))
@@ -323,7 +300,7 @@ object InfoItem {
   def apply(
              path: Path,
              typeAttribute: Option[String],
-             names: Vector[QlmID],
+             names: Vector[OdfID],
              descriptions: Set[Description],
              values: Vector[Value[Any]],
              metaData: Option[MetaData],
@@ -346,7 +323,7 @@ case class InfoItem(
                      nameAttribute: String,
                      path: Path,
                      typeAttribute: Option[String] = None,
-                     names: Vector[QlmID] = Vector.empty,
+                     names: Vector[OdfID] = Vector.empty,
                      descriptions: Set[Description] = Set.empty,
                      values: Vector[Value[Any]] = Vector.empty,
                      metaData: Option[MetaData] = None,
@@ -363,7 +340,7 @@ case class InfoItem(
       nameAttribute,
       path,
       that.typeAttribute.orElse(typeAttribute),
-      QlmID.unionReduce(names ++ that.names).toVector.filter { id => id.id.nonEmpty },
+      OdfID.unionReduce(names ++ that.names).toVector.filter { id => id.id.nonEmpty },
       Description.unionReduce(descriptions ++ that.descriptions).toVector.filter(desc => desc.text.nonEmpty).toSet,
       if (that.values.nonEmpty) that.values else values,
       that.metaData.flatMap {
@@ -378,36 +355,6 @@ case class InfoItem(
 
   }
 
-  /*
-  def intersection( that: InfoItem ): InfoItem ={
-    val typeMatches = typeAttribute.forall {
-      typeStr: String =>
-        that.typeAttribute.forall {
-          otherTypeStr: String => typeStr == otherTypeStr
-        }
-    }
-    val pathsMatches = path == that.path
-    assert( nameAttribute == that.nameAttribute && pathsMatches && typeMatches )
-    new InfoItem(
-      nameAttribute,
-      path,
-      that.typeAttribute.orElse( typeAttribute),
-      if( that.names.nonEmpty ){
-        QlmID.unionReduce( that.names ++ names).toVector.filter{ id => id.id.nonEmpty}
-      } else Vector.empty,
-      if( that.descriptions.nonEmpty ){
-        Description.unionReduce(that.descriptions ++ descriptions).toVector.filter(desc => desc.text.nonEmpty)
-      } else Vector.empty,
-      values,
-      (metaData, that.metaData) match{
-        case (Some( md ), Some( omd )) => Some( omd.union(md) )
-        case ( Some(md), None) => Some( MetaData( Vector()))
-        case (None, _) => None
-      },
-      that.attributes ++ attributes
-    )
-  }*/
-
   def union(that: InfoItem): InfoItem = {
     val pathsMatches = path == that.path
     assert(nameAttribute == that.nameAttribute && pathsMatches)
@@ -415,7 +362,7 @@ case class InfoItem(
       nameAttribute,
       path,
       optionAttributeUnion(this.typeAttribute, that.typeAttribute),
-      QlmID.unionReduce(names ++ that.names).toVector,
+      OdfID.unionReduce(names ++ that.names).toVector,
       Description.unionReduce(descriptions ++ that.descriptions).toSet,
       values ++ that.values,
       (metaData, that.metaData) match {
@@ -434,7 +381,7 @@ case class InfoItem(
         } else {
           Object(
             Vector(
-              new QlmID(
+              new OdfID(
                 ancestorPath.last
               )
             ),
@@ -451,7 +398,7 @@ case class InfoItem(
     } else {
       Object(
         Vector(
-          new QlmID(
+          new OdfID(
             parentPath.last
           )
         ),
@@ -460,42 +407,6 @@ case class InfoItem(
     }
   }
 
-  def asInfoItemType: InfoItemType = {
-    val nameTags = if (this.names.exists(id => id.id == nameAttribute) && this.names.length == 1) {
-      this.names.filter {
-        qlmid =>
-          qlmid.idType.nonEmpty ||
-            qlmid.tagType.nonEmpty ||
-            qlmid.startDate.nonEmpty ||
-            qlmid.endDate.nonEmpty ||
-            qlmid.attributes.nonEmpty
-      }
-    } else if (!this.names.exists(id => id.id == nameAttribute) && this.names.nonEmpty) {
-      this.names ++ Vector(QlmID(nameAttribute))
-    } else {
-      this.names
-    }
-
-    InfoItemType(
-      nameTags.map {
-        qlmid => qlmid.asQlmIDType
-      },
-      this.descriptions.toVector.map {
-        des: Description =>
-          des.asDescriptionType
-      },
-      this.metaData.map(_.asMetaDataType).toSeq,
-      //Seq(QlmIDType(path.lastOption.getOrElse(throw new IllegalArgumentException(s"OdfObject should have longer than one segment path: $path")))),
-      this.values.map {
-        value: Value[Any] => value.asValueType
-      },
-      HashMap(
-        "@name" -> DataRecord(
-          nameAttribute
-        )
-      ) ++ attributesToDataRecord(this.attributes) ++ typeAttribute.map { ta => "@type" -> DataRecord(ta) }.toVector
-    )
-  }
 
   def hasStaticData: Boolean = {
     attributes.nonEmpty ||
@@ -536,10 +447,10 @@ case class InfoItem(
         if (this.metaData.nonEmpty) Some(MetaData(Vector()))
         else None
     }
-    //TODO: Filter names based on QlmID attributes
+    //TODO: Filter names based on OdfID attributes
 
     to.copy(
-      names = QlmID.unionReduce(names ++ to.names).toVector,
+      names = OdfID.unionReduce(names ++ to.names).toVector,
       typeAttribute = typeAttribute.orElse(to.typeAttribute),
       values = to.values ++ this.values,
       descriptions = desc.toSet,
@@ -548,11 +459,12 @@ case class InfoItem(
     )
   }
 
-  def persist: PPersistentNode.NodeType = Ii(PInfoItem(typeAttribute.getOrElse(""),
+  def persist(implicit mat: Materializer): PPersistentNode.NodeType = Ii(PInfoItem(typeAttribute.getOrElse(""),
     names.map(_.persist),
     descriptions.map(_.persist()).toSeq,
-    metaData.map(_.persist()),
-    attributes))
+    metaData.map(_.persist),
+    attributes
+    ))
   final implicit def asXMLEvents: SeqView[ParseEvent,Seq[_]] = {
     Seq(
       StartElement(
@@ -567,7 +479,7 @@ case class InfoItem(
         }.toList
       )
     ).view ++ names.view.flatMap{
-      case id: QlmID => id.asXMLEvents("name")
+      case id: OdfID => id.asXMLEvents("name")
     } ++ descriptions.view.flatMap{
       case desc: Description =>
         desc.asXMLEvents

@@ -8,12 +8,12 @@ import akka.util.Timeout;
 import scala.concurrent.ExecutionContext;
 import scala.concurrent.Future;
 import scala.concurrent.duration.Duration;
-import types.OmiTypes.CallRequest;
-import types.OmiTypes.ResponseRequest;
-import types.OmiTypes.Responses;
-import types.OmiTypes.WriteRequest;
-import types.OmiTypes.ReadRequest;
-import types.OmiTypes.DeleteRequest;
+import types.omi.CallRequest;
+import types.omi.ResponseRequest;
+import types.omi.Responses;
+import types.omi.WriteRequest;
+import types.omi.ReadRequest;
+import types.omi.DeleteRequest;
 
 import java.util.concurrent.TimeUnit;
 

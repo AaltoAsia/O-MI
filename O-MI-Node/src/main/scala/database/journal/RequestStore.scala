@@ -6,7 +6,7 @@ import collection.immutable.LongMap
 import scala.util.Random
 
 import Models._
-import types.OmiTypes.Version._
+import types.omi.Version._
 
 object RequestInfoStore {
   //id given as parameter to make testing possible

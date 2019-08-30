@@ -37,8 +37,8 @@ import database.SingleStores
 import org.slf4j.LoggerFactory
 import responses.CallbackHandler._
 import responses.{CallbackHandler, RESTHandler, RemoveSubscription}
-import types.OmiTypes.Callback._
-import types.OmiTypes._
+import types.omi.Callback._
+import types.omi._
 import types.odf._
 import types.{ParseError, Path}
 
@@ -84,13 +84,6 @@ class OmiServiceImpl(
     override val log = LoggerFactory.getLogger(classOf[OmiService])
   } with OmiService {
 
-  //example auth API service code in java directory of the project
-  if( settings.enableExternalAuthorization) {
-    log.info("External Auth API v1 module enabled")
-    log.info(s"External Authorization port ${settings.externalAuthorizationPort}")
-    log.info(s"External Authorization useHttps ${settings.externalAuthUseHttps}")
-    registerApi(new AuthAPIService(settings.externalAuthUseHttps, settings.externalAuthorizationPort))
-  }
 
   //example auth API service code in java directory of the project
   if( settings.AuthApiV2.enable) {
@@ -108,8 +101,7 @@ class OmiServiceImpl(
 trait OmiService
   extends CORSSupport
     with WebSocketOMISupport
-    with OmiServiceAuthorization 
-    with OMIServiceMetrics {
+    with OmiServiceAuthorization {
 
 
   protected def log: org.slf4j.Logger
@@ -252,7 +244,7 @@ trait OmiService
                   val xmlWithNamespace = xmlResp.take(2).map{
                     // take StartDocument and first StartElement
                     case s: StartElement =>
-                      val ns = Version.OdfVersion.OdfVersion1.namespace
+                      val ns = Version.OdfVersion1.namespace
                       s.copy(namespace=Some(ns),namespaceCtx=List(Namespace(ns)))
                     case x => x // noop
                   } ++ xmlResp.drop(2)
@@ -291,10 +283,9 @@ trait OmiService
       val startTime = currentTimestamp
 
       val originalReq = RawRequestWrapper(requestSource, UserInfo(remoteAddress = Some(remote)))
-      val labeledMetric = Metrics.requestHistogram.map{ hist => hist.labels(originalReq.requestTypeString)}
 
-      val omiVersion = OmiVersion.fromNameSpace(originalReq.omiEnvelope.namespace.getOrElse("default"))
-      val odfVersion = originalReq.odfObjects.map{ objs => OdfVersion.fromNameSpace(objs.namespace.getOrElse("default") )}
+      val omiVersion = Version.OmiVersion.fromNameSpace(originalReq.omiEnvelope.namespace.getOrElse("default"))
+      val odfVersion = originalReq.odfObjects.map{ objs => Version.OdfVersion.fromNameSpace(objs.namespace.getOrElse("default") )}
 
       val requestToken = Await.result(
         singleStores.addRequestInfo(startTime.getTime()*1000 + originalReq.handleTTL.toSeconds, omiVersion, odfVersion),
@@ -427,23 +418,18 @@ trait OmiService
 
       fresult.onComplete{
         f => 
-          labeledMetric.foreach{
-            metric =>
-              val endTime = currentTimestamp
-              val duration = ((endTime.getTime() - startTime.getTime())/1000.0).toDouble
-              metric.observe(duration)
-              metricsReporter ! ResponseUpdate( 
-                requestToken, 
-                startTime,
-                f match {
-                  case Success( r: ResponseRequest) => 
-                    r.odf.getLeafPaths.size
-                  case Failure( t )=> 0
-                }, 
-                endTime.getTime() - startTime.getTime()
-              )
-          }
-
+          val endTime = currentTimestamp
+          metricsReporter ! ResponseUpdate( 
+            requestToken, 
+            originalReq.requestTypeString,
+            startTime,
+            f match {
+              case Success( r: ResponseRequest) => 
+                r.odf.getLeafPaths.size
+              case Failure( t )=> 0
+            }, 
+            endTime.getTime() - startTime.getTime()
+          )
       }
       fresult
     }.recover{
@@ -674,7 +660,7 @@ trait OmiService
 /**
   * This trait implements websocket support for O-MI message handling using akka-http
   */
-trait WebSocketOMISupport extends WebSocketUtil with OMIServiceMetrics {
+trait WebSocketOMISupport extends WebSocketUtil {
   self: OmiService =>
   protected def system: ActorSystem
 
@@ -825,11 +811,3 @@ trait WebSocketUtil {
 
 }
 
-trait OMIServiceMetrics {
-  def settings: OmiConfigExtension
-  object Metrics{
-
-    def checkEnabled[T](f: () => T): Option[T] = if( settings.metricsEnabled ) Some(f()) else None
-    final val requestHistogram =  checkEnabled(() => Histogram.build().buckets(settings.metrics.requestDurationBuckets:_*).name("omi_request_duration").help("Duration of active O-MI Request").labelNames("request").register())
-  }
-}

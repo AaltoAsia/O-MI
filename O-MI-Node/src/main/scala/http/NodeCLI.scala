@@ -17,6 +17,7 @@ package http
 
 import java.io.{BufferedWriter, File, FileWriter}
 import java.net.InetSocketAddress
+import java.nio.file.{Paths}
 
 import agentSystem.{AgentInfo, AgentName, NewCLI}
 import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, Props}
@@ -28,6 +29,11 @@ import database._
 import responses._
 import types.Path
 import types.odf._
+import akka.stream.{ActorMaterializer, Materializer}
+import akka.stream.scaladsl.{Sink,FileIO}
+import utils._
+import types.odf.parsing.ODFStreamParser._
+import akka.stream.alpakka.xml.scaladsl._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
@@ -104,6 +110,7 @@ class OmiNodeCLI(
   restore <filename for subs> <filename for odf>
   """ + "\r\n>"
   val ip: AgentName = sourceAddress.toString
+  implicit val mat: Materializer = ActorMaterializer()
 
   val commandTimeout: FiniteDuration = Duration.fromNanos(context.system.settings.config.getDuration("omi-service.journal-ask-timeout").toNanos)
   implicit val timeout: Timeout = commandTimeout
@@ -354,12 +361,13 @@ class OmiNodeCLI(
     val allData: Future[Option[ODF]] = removeHandler.getAllData()
     allData.map(aData => {
       aData.foreach(odf => {
-        val file = new File(filePath)
-        val bw = new BufferedWriter(new FileWriter(file))
-        val res = odf.asXML
-        val printer = new scala.xml.PrettyPrinter(200, 2)
-        bw.write(printer.format(res.head))
-        bw.close()
+        //val file = new File(filePath)
+        val file = Paths.get(filePath)
+        //val bw = new BufferedWriter(new FileWriter(file))
+        Await.result(parseEventsToByteSource(odf.asXMLDocument()).runWith(FileIO.toPath(file)), 1.hour) // FIXME: stream straight to file
+        //val printer = new scala.xml.PrettyPrinter(200, 2)
+        //bw.write(printer.format(res.head))
+        //bw.close()
       })
     })
   }
@@ -381,8 +389,13 @@ class OmiNodeCLI(
   }
 
   private def restoreDatabase(filePath: String) = {
-    val parsed: OdfParseResult = ODFParser.parse(new File(filePath))
-    parsed.right.map(odf => Await.ready(removeHandler.writeOdf(odf), 5 minutes))
+    val parsed = 
+      FileIO.fromPath(Paths.get(filePath))
+        //.via(types.odf.parser.ODFStreamParser.parserFlow)
+        .via(XmlParsing.parser)
+        .via(new ODFParserFlow)
+        .runWith(Sink.fold[ODF,ODF](ImmutableODF())(_ union _)) //ODFParser.parse(new File(filePath))
+    parsed.map(odf => Await.ready(removeHandler.writeOdf(odf.toImmutable), 10 minutes))
     "Done\r\n>"
   }
 
