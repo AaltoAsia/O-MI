@@ -327,7 +327,7 @@ class SubscriptionTest( implicit ee: ExecutionEnv ) extends Specification with B
 
     "subscription should be removed when the ttl expired" >> {
       val subId = Await.result(addSub(1, 5, Seq(Path("p", "1"))).asXMLSource.runWith(Sink.fold("")(_+_)).map( XML loadString _).map{
-        xmlRes => xmlRes.\\("requestID").text.toInt
+        xmlRes => xmlRes.\\("requestID").text.toLong
       }, 5.seconds)
       Thread.sleep(10)
       pollSub(subId).asXMLSource.runWith(Sink.fold("")(_+_)).map( XML loadString _).map{
@@ -359,7 +359,7 @@ class SubscriptionTest( implicit ee: ExecutionEnv ) extends Specification with B
       .foreach { case (path, values) => addValue(path, values) } //InputPusher.handlePathValuePairs(pathAndvalues)
   }
 
-  def addSub(ttl: Long, interval: Long, paths: Seq[Path], callback: String = "") = {
+  def addSub(ttl: Long, interval: Long, paths: Seq[Path], callback: String = ""): ResponseRequest = {
     val basePath = Path("Objects", "SubscriptionTest")
     val odfF = (singleStores.hierarchyStore ? GetTree) (new Timeout(2 minutes)).mapTo[ImmutableODF]
     val hTree: ImmutableODF = Await.result(odfF, Duration.Inf)

@@ -546,19 +546,20 @@ class SubscriptionManager(
       .map(allSubs => (allSubs.events ++ allSubs.intervals ++ allSubs.polls).map(_.id))
 
       def getNewId: Future[Long] = {
-        (subscription.requestToken match {
+        val idF = subscription.requestToken match {
           case Some(id) => Future.successful(id)
-          case None => Future.failed(new Error("No request id"))
-          }).recoverWith {
-            case error: Error =>
+          case None => 
             log.warning("Using subscription id fallback generation because request token not found.")
             val nId: Long = rand.nextInt(Int.MaxValue)
-            allIdsF.flatMap(allIds =>
+            allIdsF.flatMap{
+              allIds =>
                 if (allIds.contains(nId))
                   getNewId
                 else
-                  Future.successful(nId))
-          }
+                  Future.successful(nId)
+            }
+        }
+        idF 
       }
 
       val endTime = subEndTimestamp(subscription.ttl)
