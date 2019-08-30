@@ -17,15 +17,17 @@ import java.net.{InetAddress, URLEncoder}
 import java.sql.Timestamp
 import java.util.Date
 
-import scala.collection.mutable.{Map => MutableMap}
+import scala.collection.mutable.{Map => MutableMap}//, Queue => MutableQueue}
+import scala.collection.immutable.{Map, HashMap, Queue}
 import scala.concurrent._
 import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
 //import scala.xml.NodeSeq
 
-import akka.util.ByteString
-import akka.actor.{ActorSystem, Terminated}
+import akka.util.{ByteString, Timeout}
+import akka.actor.{ActorSystem, Terminated, Actor, ActorLogging, ActorRef, Timers, Props, PoisonPill}
 import akka.event.LogSource
+import akka.pattern.{ask}
 import org.slf4j.LoggerFactory
 import akka.http.scaladsl.client.RequestBuilding
 import akka.http.scaladsl.model._
@@ -42,23 +44,31 @@ import http.{WebSocketUtil, OmiConfigExtension}
 
 object CallbackHandler {
 
+  case class BufferedRequest(request: HttpRequest, deadline: Deadline, callback: HTTPCallback)
+
   case class CurrentConnection(identifier: Int, handler: SendHandler)
 
   val supportedProtocols = Vector("http", "https")
   type SendHandler = ResponseRequest => Future[Unit]
 
   // Base error
-  sealed class CallbackFailure(msg: String, callback: Callback) extends Exception(msg)
+  sealed class CallbackFailure(msg: String) extends Exception(msg)
+  sealed trait HttpCallbackFailure{ val call: BufferedRequest }
 
   // Errors
-  case class HttpError(status: StatusCode, callback: HTTPCallback) extends
-    CallbackFailure(s"Received HTTP status $status from ${callback.uri}.", callback)
+  case class HttpError(status: StatusCode, call: BufferedRequest) extends
+    CallbackFailure(s"Received HTTP status $status from ${call.request.uri}.")
+    with HttpCallbackFailure
+
+  case class HttpConnectionError(error: Throwable, call: BufferedRequest) extends
+    CallbackFailure(error.toString)
+    with HttpCallbackFailure
 
   case class ProtocolNotSupported(protocol: String, callback: Callback) extends
-    CallbackFailure(s"$protocol is not supported, use one of " + supportedProtocols.mkString(", "), callback)
+    CallbackFailure(s"$protocol is not supported, use one of " + supportedProtocols.mkString(", "))
 
   case class ForbiddenLocalhostPort(callback: Callback) extends
-    CallbackFailure(s"Callback address is forbidden.", callback)
+    CallbackFailure(s"Callback address is forbidden.")
 
   case class MissingConnection(callback: WebSocketCallback) extends
     CallbackFailure(s"CurrentConnection not found for ${
@@ -66,9 +76,150 @@ object CallbackHandler {
         case CurrentConnectionCallback(identifier) => identifier
         case WSCallback(uri) => uri
       }
-    }", callback)
+    }")
 
 }
+
+trait HttpSendLogic {
+  this: Actor with ActorLogging =>
+
+  protected val http: HttpExt
+  implicit val mat = ActorMaterializer()
+
+  def send(next: BufferedRequest)(implicit ec: ExecutionContext) = {
+    val failures: Try[HttpResponse] => Try[HttpResponse] = {
+      case Failure(error: Throwable) =>
+        log.info(s"Callback failed to ${next.request.uri}: $error")
+        Failure(HttpConnectionError(error, next))
+      case s: Success[HttpResponse] => s
+    }
+
+    val response = http singleRequest next.request
+    response transform failures flatMap check(next) onComplete {self ! _}
+  }
+
+  def check(next: BufferedRequest): HttpResponse => Future[BufferedRequest] = { response =>
+    if (response.status.isSuccess) {
+      //TODO: Handle content of response, possibly piggybacking
+      log.debug(
+        s"Successfully sent POST request to ${next.request.uri} with ${response.status}"
+      )
+      response.discardEntityBytes()
+      Future successful next
+    } else {
+      response.discardEntityBytes()
+      log.info(s"Callback http response status: ${response.status} at ${next.request.uri}")
+      Future failed HttpError(response.status, next)
+    }
+  }
+
+}
+
+
+object HttpQueue {
+  case object TrySend
+  case class EmptyPleaseKillMe(uri: Uri)
+  sealed trait TimerCommand
+  case class StartInterval(interval: FiniteDuration) extends TimerCommand
+  case object StopInterval extends TimerCommand
+  private case object TimerKey
+}
+
+class HttpQueue(
+  first: BufferedRequest,
+  protected val http: HttpExt
+) extends Actor with ActorLogging with Timers with HttpSendLogic {
+  import HttpQueue._
+  import context.dispatcher
+
+  // TODO: size limit for the queue
+  def receive = queued(Queue(first))
+  val uri = first.request.uri
+
+  def caseTimerCommand: Receive = {
+    case StartInterval(interval) =>
+      log.debug(s"StartInterval: $uri")
+      timers.startPeriodicTimer(TimerKey, TrySend, interval)
+    case StopInterval => timers.cancel(TimerKey)
+  }
+
+
+  // To stop receiving TrySend commands
+  def busy(successQueue: Queue[BufferedRequest], failureQueue: Queue[BufferedRequest]): Receive = caseTimerCommand orElse {
+    case newRequest: BufferedRequest =>
+      context become busy(successQueue enqueue newRequest, failureQueue enqueue newRequest)
+    case Success(_) =>
+      log.debug(s"TrySend: Success; $uri")
+      context become queued(successQueue)
+      self ! TrySend
+
+    case Failure(_) =>
+      context become queued(failureQueue)
+    case TrySend => // noop
+  }
+
+  def queued(httpQueue: Queue[BufferedRequest]): Receive = caseTimerCommand orElse {
+    case newRequest: BufferedRequest =>
+      context become queued(httpQueue enqueue newRequest)
+
+    case TrySend => 
+      httpQueue.dequeueOption match {
+        case Some((next, newQueue)) if next.deadline.isOverdue =>
+          log.debug(s"TrySend: ttl overdue; $uri")
+          context become queued(newQueue)
+          self ! TrySend
+
+        case Some((next, newQueue)) =>
+          log.debug(s"TrySend: trying next; $uri")
+          context become busy(newQueue, httpQueue)
+          send(next)
+
+        case None => 
+          log.debug(s"TrySend: Empty; $uri")
+          context become dying
+          sender() ! EmptyPleaseKillMe(uri)
+      }
+  }
+  def dying: Receive = {
+    case r: BufferedRequest => sender() ! r  // someone else process this
+    case TrySend => // noop
+  }
+
+}
+
+class HttpBufferRouter(
+  val settings: OmiConfigExtension,
+  protected val http: HttpExt
+) extends Actor with ActorLogging with HttpSendLogic {
+  import HttpQueue._
+  import context.dispatcher
+
+  def receive = queued(HashMap.empty)
+  def queued(httpQueues: Map[Uri, ActorRef]): Receive = {
+    case newRequest: BufferedRequest => // does not contain
+      httpQueues get newRequest.request.uri match {
+        case Some(queue) => queue ! newRequest
+        case None =>
+          send(newRequest)
+      }
+      sender() ! (())
+    case Success(_: BufferedRequest) => // noop
+    case Failure(e: HttpCallbackFailure) => 
+      val newRequest = e.call
+      val child = context.actorOf(Props(classOf[HttpQueue], newRequest, http))
+
+      context become queued( httpQueues + (newRequest.request.uri -> child))
+
+      child ! StartInterval(settings.callbackDelay)
+
+    case Failure(e) => log.warning(s"Unknown send error: $e")
+
+    case EmptyPleaseKillMe(uri) =>
+      context become queued(httpQueues - uri)
+      sender() ! PoisonPill
+  }
+}
+
 
 /**
   * Handles sending data to callback addresses
@@ -87,6 +238,8 @@ class CallbackHandler(
   val portsUsedByNode: Seq[Int] = settings.ports.values.toSeq
   val whenTerminated: Future[Terminated] = system.whenTerminated
 
+  val httpRouter = system.actorOf(Props(classOf[HttpBufferRouter], settings, httpExtension))
+
   protected def currentTimestamp = new Timestamp(new Date().getTime)
 
   implicit val logSource: LogSource[CallbackHandler] = (requestHandler: CallbackHandler) => requestHandler.toString
@@ -100,10 +253,10 @@ class CallbackHandler(
   private[this] def sendHttp(callback: HTTPCallback,
                              request: OmiRequest,
                              ttl: Duration): Future[Unit] = {
-    val tryUntil = new Timestamp(new Date().getTime + (ttl match {
-      case ttl: FiniteDuration => ttl.toMillis
-      case _ => settings.callbackTimeout.toMillis
-    }))
+    val tryUntil = (ttl match {
+      case ttl: FiniteDuration => ttl
+      case _ => settings.callbackTimeout
+    }).fromNow
 
 
     val address = callback.uri
@@ -127,57 +280,16 @@ class CallbackHandler(
     val httpRequest = RequestBuilding.Post(address, httpEntity)
 
     log.debug(
-      s"Trying to send POST request to $address, will keep trying until $tryUntil."
+      s"Trying to send POST request to $address, will keep trying for ${tryUntil.timeLeft.toSeconds} sec."
     )
 
-    val check: HttpResponse => Future[Unit] = { response =>
-      if (response.status.isSuccess) {
-        //TODO: Handle content of response, possible piggybacking
-        log.debug(
-          s"Successful send POST request to $address with ${response.status}"
-        )
-        response.discardEntityBytes()
-        Future.successful(())
-      } else {
-        response.discardEntityBytes()
-        log.warn(s"Http status: ${response.status}")
-        Future failed HttpError(response.status, callback)
-      }
-    }
+    implicit val timeout = Timeout(tryUntil.timeLeft)
 
-    def trySend = httpExtension.singleRequest(httpRequest) //httpHandler(request)
-
-    val retry = retryUntilWithCheck[HttpResponse, Unit](
-      settings.callbackDelay,
-      tryUntil
-    )(check)(trySend)
-
-    retry.failed.foreach {
-      _: Throwable =>
-        system.log.warning(
-          s"Failed to send POST request to $address after trying until ttl ended."
-        )
-    }
-    retry
-
+    httpRouter ? BufferedRequest(httpRequest, tryUntil, callback) map (_ => ())
+    // TODO return future
   }
 
-  private def retryUntilWithCheck[T, U](delay: FiniteDuration, tryUntil: Timestamp, attempt: Int = 1)
-                                       (check: T => Future[U])
-                                       (creator: => Future[T]): Future[U] = {
-    import system.dispatcher // execution context for futures
-    val future = creator
-    future.flatMap {
-      check
-    }.recoverWith {
-      case e if tryUntil.after(currentTimestamp) && !whenTerminated.isCompleted =>
-        log.debug(
-          s"Retrying after $delay. Will keep trying until $tryUntil. Attempt $attempt."
-        )
-        Thread.sleep(delay.toMillis)
-        retryUntilWithCheck[T, U](delay, tryUntil, attempt + 1)(check)(creator)
-    }
-  }
+
 
   /**
     * Send callback O-MI message to `address`
@@ -193,7 +305,7 @@ class CallbackHandler(
       sendCurrentConnection(cb, omiResponse, omiResponse.ttl)
     case cb: WSCallback =>
       sendWS(cb, omiResponse, omiResponse.ttl)
-    case _ => Future.failed(new CallbackFailure("Unknown callback type", callback))
+    case _ => Future.failed(new CallbackFailure("Unknown callback type"))
 
   }
 

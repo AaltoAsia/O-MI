@@ -16,6 +16,7 @@ package http
 
 import java.net.{InetAddress, URI, URLDecoder}
 import java.nio.file.{Files, Paths}
+import java.util.Date
 
 import akka.actor.{ActorRef, ActorSystem}
 import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport
@@ -485,7 +486,11 @@ trait OmiService
             for {
               r <- (requestHandler ? other).mapTo[ResponseRequest]
               info <- formatInfo
-              response = r.withRequestToken(reqToken).withRequestInfo(info.getOrElse(singleStores.DefaultRequestInfo))
+              response = r.copy(
+                ttl = request.ttl, //info.map(i => (i.endTime - new Date().getTime).milliseconds).getOrElse(request.ttl),
+                requestToken = reqToken,
+                requestInfo = info.orElse(singleStores.DefaultRequestInfo)
+              )
               _ <- callbackHandler.sendCallback(callback, response)
             } yield ()
 
