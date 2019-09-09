@@ -192,20 +192,22 @@ trait ODF //[M <: Map[Path,Node], S<: SortedSet[Path] ]
     * amount of generations younger.
     * Same as [[selectSubTreePaths]] but doesn't add ancestors of the subtrees
     */
-   final def subTreePaths(pathsToGet: Set[Path], generationDifference: Option[Int] = None): TreeSet[Path] = (
-     TreeSet( pathsToGet.flatMap {
+   final def subTreePaths(pathsToGet: Set[Path], generationDifference: Option[Int] = None): TreeSet[Path] = {
+     val results = TreeSet( pathsToGet.flatMap {
        wantedPath: Path =>
+         val wantedLength = wantedPath.toSeq.length
          paths.keysIteratorFrom(wantedPath).takeWhile {
            path: Path => path.startsWith(wantedPath)
          }.filter{
            path: Path => 
              generationDifference.forall{
                n =>
-                 path.length - wantedPath.length <= n
+                 path.toSeq.length - wantedLength <= n
             }
          }
      }.toSeq:_*)(PathOrdering)
-   )
+     results
+  }
 
    /**
     * Same as [[subTreePaths]] but adds ancestors of the subtrees
