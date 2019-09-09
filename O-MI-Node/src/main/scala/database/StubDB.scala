@@ -13,9 +13,9 @@ import types.odf._
 
 import scala.concurrent.Future
 
-class StubDB(val singleStores: SingleStores, val system: ActorSystem, val settings: OmiConfigExtension) extends DB {
+class StubDB(val singleStores: SingleStores, val system: ActorSystem, val settings: OmiConfigExtension) extends DB with CacheSupportDB{
 
-  import scala.concurrent.ExecutionContext.Implicits.global
+  import system.dispatcher
   protected val log: Logger = LoggerFactory.getLogger("Stub DB")
 
   def initialize(): Unit = Unit
@@ -49,35 +49,7 @@ class StubDB(val singleStores: SingleStores, val system: ActorSystem, val settin
                 )(implicit timeout: Timeout): Future[Option[ODF]] = {
     readLatestFromCache(requests.map {
       node => node.path
-    }.toSeq).map(Some(_))
-  }
-
-  def readLatestFromCache(requestedOdf: ODF): Future[ImmutableODF] = {
-    readLatestFromCache(requestedOdf.getLeafPaths.toSeq)
-  }
-
-  def currentTimestamp = new Timestamp( new Date().getTime)
-  def readLatestFromCache(leafPaths: Seq[Path]): Future[ImmutableODF] = {
-    //val timer = LapTimer(log.info)
-    val fp2iis: Future[Set[Path]] = singleStores.getHierarchyTree().map{
-      hTree => 
-        //timer.step("Got HT ODF")
-        val stp = hTree.subTreePaths(leafPaths.toSet)
-        //timer.step("HT ODF STP")
-        stp
-    }
-
-    val objectsWithValues: Future[ImmutableODF] = for {
-      p2iis: Set[Path] <- fp2iis
-      pathToValue  <-
-        singleStores.readValues(p2iis.toSeq)
-      objectsWithValues = ImmutableODF.createFromNodes(pathToValue.map(pv => InfoItem(pv._1,Vector(pv._2))))
-    } yield objectsWithValues
-
-    //objectsWithValues.foreach{
-    //  t => timer.step("objectsWithValues")
-    //}
-    objectsWithValues
+    }.toSeq, maxLevels)//.map(Some(_))
   }
 
   /**
