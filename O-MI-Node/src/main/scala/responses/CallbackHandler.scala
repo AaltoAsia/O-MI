@@ -40,6 +40,7 @@ import responses.CallbackHandler._
 import types.omi._
 import database.SingleStores
 
+import http.MetricsReporter.CallbackSent
 import http.{WebSocketUtil, OmiConfigExtension}
 
 object CallbackHandler {
@@ -90,8 +91,11 @@ trait HttpSendLogic {
     val failures: Try[HttpResponse] => Try[HttpResponse] = {
       case Failure(error: Throwable) =>
         log.info(s"Callback failed to ${next.request.uri}: $error")
+        context.actorSelection("/user/metric-reporter") ! CallbackSent(false,next.callback.uri)
         Failure(HttpConnectionError(error, next))
-      case s: Success[HttpResponse] => s
+      case s: Success[HttpResponse] =>
+        context.actorSelection("/user/metric-reporter") ! CallbackSent(true,next.callback.uri)
+        s
     }
 
     val response = http singleRequest next.request
@@ -133,7 +137,7 @@ class HttpQueue(
   import context.dispatcher
 
   // TODO: size limit for the queue
-  def receive = queued(Queue(first))
+  def receive = queued(Queue(first), 1)
   val uri = first.request.uri
 
   def caseTimerCommand: Receive = {
@@ -145,33 +149,33 @@ class HttpQueue(
 
 
   // To stop receiving TrySend commands
-  def busy(successQueue: Queue[BufferedRequest], failureQueue: Queue[BufferedRequest]): Receive = caseTimerCommand orElse {
+  def busy(successQueue: Queue[BufferedRequest], failureQueue: Queue[BufferedRequest], retries: Int): Receive = caseTimerCommand orElse {
     case newRequest: BufferedRequest =>
-      context become busy(successQueue enqueue newRequest, failureQueue enqueue newRequest)
+      context become busy(successQueue enqueue newRequest, failureQueue enqueue newRequest, retries)
     case Success(_) =>
       log.debug(s"TrySend: Success; $uri")
-      context become queued(successQueue)
+      context become queued(successQueue, 0)
       self ! TrySend
 
     case Failure(_) =>
-      context become queued(failureQueue)
+      context become queued(failureQueue, retries+1)
     case TrySend => // noop
   }
 
-  def queued(httpQueue: Queue[BufferedRequest]): Receive = caseTimerCommand orElse {
+  def queued(httpQueue: Queue[BufferedRequest], retries: Int): Receive = caseTimerCommand orElse {
     case newRequest: BufferedRequest =>
-      context become queued(httpQueue enqueue newRequest)
+      context become queued(httpQueue enqueue newRequest, retries)
 
     case TrySend => 
       httpQueue.dequeueOption match {
         case Some((next, newQueue)) if next.deadline.isOverdue =>
           log.debug(s"TrySend: ttl overdue; $uri")
-          context become queued(newQueue)
+          context become queued(newQueue, retries)
           self ! TrySend
 
         case Some((next, newQueue)) =>
           log.debug(s"TrySend: trying next; $uri")
-          context become busy(newQueue, httpQueue)
+          context become busy(newQueue, httpQueue, retries)
           send(next)
 
         case None => 
@@ -203,8 +207,8 @@ class HttpBufferRouter(
           send(newRequest)
       }
       sender() ! (())
-    case Success(_: BufferedRequest) => // noop
-    case Failure(e: HttpCallbackFailure) => 
+    case Success(_: BufferedRequest) => // Initial request succeeded: noop
+    case Failure(e: HttpCallbackFailure) => // Initial request failed, queue
       val newRequest = e.call
       val child = context.actorOf(Props(classOf[HttpQueue], newRequest, http))
 
@@ -226,7 +230,8 @@ class HttpBufferRouter(
   */
 class CallbackHandler(
                        protected val settings: OmiConfigExtension,
-                       protected val singleStores: SingleStores
+                       protected val singleStores: SingleStores,
+                       protected val metricsReporter: ActorRef
                      )(
                        protected implicit val system: ActorSystem,
                        protected implicit val materializer: ActorMaterializer

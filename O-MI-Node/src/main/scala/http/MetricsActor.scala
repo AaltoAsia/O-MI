@@ -14,6 +14,7 @@ import slick.lifted.{ProvenShape}
 import io.prometheus.client._
 import scala.concurrent.ExecutionContext.Implicits.global
 //import scala.collection.JavaConversions.iterableAsScalaIterable
+import akka.http.scaladsl.model.Uri
 import utils._
 
 
@@ -53,6 +54,13 @@ class MetricsReporter(val configName: String, val settings: OmiConfigExtension) 
     .labelNames("hasCallback","type").register()
     )
 
+  final val callbacksCounter = checkEnabled(() => Counter.build()
+    .name("omi_callback_count")
+    .help("Count of callback response sending tries")
+    .labelNames("succeeded")
+    .register()
+    )
+
   if( settings.metricsEnabled ){
     timers.startPeriodicTimer("report",Report,10.seconds)
   }
@@ -70,6 +78,8 @@ class MetricsReporter(val configName: String, val settings: OmiConfigExtension) 
       activeSubscriptionsGauge.map{_.labels(hasCallback.toString,typeStr).dec()}
     case SetSubscriptionCount( hasCallback: Boolean, typeStr: String, count: Int) =>
       activeSubscriptionsGauge.map{_.labels(hasCallback.toString,typeStr).set(count)}
+    case CallbackSent( succeeded, _ ) =>
+      callbacksCounter.map{_.labels(succeeded.toString).inc()}
     case Report => 
       if( settings.metricsEnabled ){
         val current = currentTimestamp
@@ -92,6 +102,7 @@ object MetricsReporter{
   case class NewSubscription( hasCallback: Boolean, typeStr: String)
   case class SetSubscriptionCount( hasCallback: Boolean, typeStr: String, count: Int)
   case class RemoveSubscription( hasCallback: Boolean, typeStr: String)
+  case class CallbackSent( succeeded: Boolean, uri: Uri )
   case object Report
   def props(settings: OmiConfigExtension): Props ={
     Props( new MetricsReporter( "access-log", settings))

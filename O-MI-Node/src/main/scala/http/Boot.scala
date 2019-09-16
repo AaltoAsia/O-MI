@@ -66,7 +66,8 @@ class OmiServer extends OmiNode {
     case "INFLUXDB" => new InfluxDBImplementation(
       settings
     )(system, singleStores)
-    case "WARP10" => ???
+    case "WARP10" => 
+      throw new Exception("Warp10 in another release, please check that you downloaded and started the correct one, or is your db settings correct.")
 
     case "NONE" => 
       new StubDB(singleStores, system, settings)
@@ -81,7 +82,7 @@ class OmiServer extends OmiNode {
       singleStores
     )*/
 
-  val callbackHandler: CallbackHandler = new CallbackHandler(settings, singleStores)(system, materializer)
+  val callbackHandler: CallbackHandler = new CallbackHandler(settings, singleStores, metricsReporter)(system, materializer)
   // val analytics: Option[ActorRef] =
   //   if(settings.enableAnalytics)
   //     Some(
