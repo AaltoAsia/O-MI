@@ -82,7 +82,7 @@ class OmiServer extends OmiNode {
       singleStores
     )*/
 
-  val callbackHandler: CallbackHandler = new CallbackHandler(settings, singleStores, metricsReporter)(system, materializer)
+  val callbackHandler: CallbackHandler = new CallbackHandler(settings, singleStores)(system, materializer)
   // val analytics: Option[ActorRef] =
   //   if(settings.enableAnalytics)
   //     Some(

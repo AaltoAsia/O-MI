@@ -231,7 +231,6 @@ class HttpBufferRouter(
 class CallbackHandler(
                        protected val settings: OmiConfigExtension,
                        protected val singleStores: SingleStores,
-                       protected val metricsReporter: ActorRef
                      )(
                        protected implicit val system: ActorSystem,
                        protected implicit val materializer: ActorMaterializer
