@@ -1,7 +1,6 @@
 package database
 
 import java.sql.Timestamp
-import java.util.Date
 
 import akka.actor.{ActorRef, ActorSystem}
 import akka.util.Timeout
@@ -15,7 +14,6 @@ import scala.concurrent.Future
 
 class StubDB(val singleStores: SingleStores, val system: ActorSystem, val settings: OmiConfigExtension) extends DB with CacheSupportDB{
 
-  import system.dispatcher
   protected val log: Logger = LoggerFactory.getLogger("Stub DB")
 
   def initialize(): Unit = Unit

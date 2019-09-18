@@ -1,13 +1,8 @@
 package database
 
-import java.sql.Timestamp
-import java.util.Date
 
-import akka.actor.{ActorRef, ActorSystem}
-import akka.util.Timeout
+import akka.actor.{ActorSystem}
 import http.OmiConfigExtension
-import org.slf4j.{Logger, LoggerFactory}
-import types.omi.{OmiReturn, ReturnCode}
 import types.Path
 import types.odf._
 

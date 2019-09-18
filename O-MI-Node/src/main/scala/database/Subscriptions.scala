@@ -39,7 +39,7 @@ sealed trait SavedSub {
   def persist(): PersistentSub
 }
 
-trait NotNewEventSub extends PolledSub
+sealed trait NotNewEventSub extends PolledSub
 
 sealed trait PolledSub extends SavedSub {
   val lastPolled: Timestamp

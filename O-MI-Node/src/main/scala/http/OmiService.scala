@@ -16,7 +16,6 @@ package http
 
 import java.net.{InetAddress, URI, URLDecoder}
 import java.nio.file.{Files, Paths}
-import java.util.Date
 
 import akka.actor.{ActorRef, ActorSystem}
 import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport
@@ -52,7 +51,6 @@ import scala.xml.NodeSeq
 import util._
 import utils._
 import TemporaryRequestInfoStore._
-import io.prometheus.client._
 import MetricsReporter.{NewRequest,ResponseUpdate}
 
 trait OmiServiceAuthorization

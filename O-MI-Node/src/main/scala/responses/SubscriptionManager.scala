@@ -129,10 +129,10 @@ class SubscriptionManager(
     }
     val allPollSubsF: Future[Set[PolledSub]] = singleStores.getAllPollSubs()
     allPollSubsF.foreach{
-      subs =>
+      case subs: Set[PolledSub] =>
         val (intervals, events) = subs.partition{ 
           case sub: PolledEventSub => false
-          case sub: PollIntervalSub => true
+          case sub: NotNewEventSub => true
         }
         metricsReporter ! MetricsReporter.SetSubscriptionCount( false, "event",events.size )
         metricsReporter ! MetricsReporter.SetSubscriptionCount( false, "interval",intervals.size )
