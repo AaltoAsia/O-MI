@@ -84,8 +84,8 @@ def commonSettings(moduleName: String) = Seq(
     "-Yinduction-heuristics",       // speeds up the compilation of inductive implicit resolution
     "-Ykind-polymorphism",          // type and method definitions with type parameters of arbitrary kinds
     "-Yliteral-types",              // literals can appear in type position
-    "-Xstrict-patmat-analysis",     // more accurate reporting of failures of match exhaustivity
-    "-Xlint:strict-unsealed-patmat" // warn on inexhaustive matches against unsealed traits
+    //"-Xstrict-patmat-analysis",     // more accurate reporting of failures of match exhaustivity
+    //"-Xlint:strict-unsealed-patmat" // warn on inexhaustive matches against unsealed traits
   ),
   scalacOptions in (Compile, console) --= Seq("-Ywarn-unused:imports", "-Xfatal-warnings"),
   scalacOptions in (Compile,doc) ++= Seq("-groups", "-implicits", "-diagrams", "-diagrams-debug"),
