@@ -15,12 +15,12 @@
 
 ######################
 # formLogic sub module
-formLogicExt = ($, WebOmi) ->
+formLogicExt = ($, WebOmi, consts) ->
   my = WebOmi.formLogic = {}
 
   # Sets xml or string to request field
   my.setRequest = (xml) ->
-    mirror = WebOmi.consts.requestCodeMirror
+    mirror = consts.requestCodeMirror
     if not xml?
       mirror.setValue ""
     else if typeof xml == "string"
@@ -32,7 +32,7 @@ formLogicExt = ($, WebOmi) ->
 
   # Gets the current request (possibly having users manual edits) as XMLDocument
   my.getRequest = () ->
-    str = WebOmi.consts.requestCodeMirror.getValue()
+    str = consts.requestCodeMirror.getValue()
     WebOmi.omi.parseXml str
 
   # Do stuff with RequestDocument and automatically write it back
@@ -45,26 +45,26 @@ formLogicExt = ($, WebOmi) ->
 
   my.getRequestOdf = () ->
     WebOmi.error "getRequestOdf is deprecated"
-    str = WebOmi.consts.requestCodeMirror.getValue()
+    str = consts.requestCodeMirror.getValue()
     o.evaluateXPath(str, '//odf:Objects')[0]
 
   # Remove current response from its CodeMirror and hide it with animation
   my.clearResponse = (doneCallback) ->
-    mirror = WebOmi.consts.responseCodeMirror
+    mirror = consts.responseCodeMirror
     mirror.setValue ""
-    WebOmi.consts.responseDiv.slideUp complete : ->
+    consts.responseDiv.slideUp complete : ->
       if doneCallback? then doneCallback()
 
   # Sets response (as a string or xml) and handles slide animation
   my.setResponse = (xml, doneCallback) ->
-    mirror = WebOmi.consts.responseCodeMirror
+    mirror = consts.responseCodeMirror
     if typeof xml == "string"
       mirror.setValue xml
     else
       mirror.setValue new XMLSerializer().serializeToString xml
     mirror.autoFormatAll()
     # refresh as we "resize" so more text will become visible
-    WebOmi.consts.responseDiv.slideDown complete : ->
+    consts.responseDiv.slideDown complete : ->
       mirror.refresh()
       if doneCallback? then doneCallback()
     mirror.refresh()
@@ -93,7 +93,6 @@ formLogicExt = ($, WebOmi) ->
   # whether callbackResponseHistoryModal is opened and the user can see the new results
   my.historyOpen = false
 
-  consts = WebOmi.consts
 
   consts.afterJquery ->
     consts.callbackResponseHistoryModal = $ '.callbackResponseHistory'
@@ -321,7 +320,7 @@ formLogicExt = ($, WebOmi) ->
             tmpTr.append codeMirrorContainer
             row.after tmpTr
               
-            responseCodeMirror = CodeMirror(codeMirrorContainer[0], WebOmi.consts.responseCMSettings)
+            responseCodeMirror = CodeMirror(codeMirrorContainer[0], consts.responseCMSettings)
             responseCodeMirror.setValue responseString
             responseCodeMirror.autoFormatAll()
             row.data 'mirror', responseCodeMirror
@@ -333,8 +332,8 @@ formLogicExt = ($, WebOmi) ->
           #  url = window.location.href                   #Save down the URL without hash.
           #  window.location.href = "#response"           #Go to the target element.
           #  window.history.replaceState(null,null,url)   #Don't like hashes. Changing it back.
-          #  WebOmi.util.flash WebOmi.consts.responseDiv
-          #WebOmi.consts.callbackResponseHistoryModal.modal 'hide'
+          #  WebOmi.util.flash consts.responseDiv
+          #consts.callbackResponseHistoryModal.modal 'hide'
       row
 
 
@@ -414,7 +413,6 @@ formLogicExt = ($, WebOmi) ->
   
   my.createWebSocket = (onopen, onclose, onmessage, onerror) -> # Should socket be created automaticly for my or 
     WebOmi.debug "Creating WebSocket."
-    consts = WebOmi.consts
     server = consts.serverUrl.val()
     socket = new WebSocket(server)
     socket.onopen = onopen
@@ -425,7 +423,6 @@ formLogicExt = ($, WebOmi) ->
   
   # send, callback is called with response text if successful
   my.send = (callback) ->
-    consts = WebOmi.consts
     my.clearResponse()
     server  = consts.serverUrl.val()
     request = consts.requestCodeMirror.getValue()
@@ -511,7 +508,6 @@ formLogicExt = ($, WebOmi) ->
 
   my.httpSend = (callback) ->
     WebOmi.debug "Sending request with HTTP POST."
-    consts = WebOmi.consts
     server  = consts.serverUrl.val()
     request = consts.requestCodeMirror.getValue()
     consts.progressBar.css "width", "50%"
@@ -540,7 +536,6 @@ formLogicExt = ($, WebOmi) ->
         callback response if callback?
   
   my.handleWSMessage = (message) ->
-    consts = WebOmi.consts
     #Check if response to subscription and put into subscription response view
     response = message.data
     if response.length == 0
@@ -609,7 +604,7 @@ formLogicExt = ($, WebOmi) ->
   # recursively build odf jstree from the Objects xml node
   my.buildOdfTree = (objectsNode) ->
     # imports
-    tree = WebOmi.consts.odfTree
+    tree = consts.odfTree
     	  
     treeData = genData objectsNode
     tree.settings.core.data = [treeData]
@@ -633,7 +628,7 @@ formLogicExt = ($, WebOmi) ->
   WebOmi # export
 
 # extend WebOmi
-window.WebOmi = formLogicExt($, window.WebOmi || {})
+window.WebOmi = formLogicExt($, window.WebOmi, window.WebOmi.consts)
 
 
 
@@ -674,21 +669,21 @@ window.WebOmi = formLogicExt($, window.WebOmi || {})
     consts.convertXmlCheckbox
       .on 'change', ->
         if this.checked
-          window.requestXml = WebOmi.consts.requestCodeMirror.getValue()
-          window.responseXml = WebOmi.consts.responseCodeMirror.getValue()
+          window.requestXml = consts.requestCodeMirror.getValue()
+          window.responseXml = consts.responseCodeMirror.getValue()
 
           jsonRequest = WebOmi.jsonConverter.parseOmiEnvelope(WebOmi.omi.parseXml(window.requestXml))
 
           if not jsonRequest?
             alert("Invalid O-MI/O-DF")
           else
-            WebOmi.consts.responseCodeMirror.removeOverlay WebOmi.consts.URLHighlightOverlay
-            WebOmi.consts.requestCodeMirror.setOption("mode","application/json")
-            WebOmi.consts.responseCodeMirror.setOption("mode","application/json")
-            WebOmi.consts.requestCodeMirror.setOption("readOnly",true)
+            consts.responseCodeMirror.removeOverlay consts.URLHighlightOverlay
+            consts.requestCodeMirror.setOption("mode","application/json")
+            consts.responseCodeMirror.setOption("mode","application/json")
+            consts.requestCodeMirror.setOption("readOnly",true)
 
             formLogic.setRequest = (json) ->
-              mirror = WebOmi.consts.requestCodeMirror
+              mirror = consts.requestCodeMirror
               if not json?
                 mirror.setValue ""
               else if typeof json == "string"
@@ -700,7 +695,7 @@ window.WebOmi = formLogicExt($, window.WebOmi || {})
             formLogic.setRequest( JSON.stringify(jsonRequest, null, 2))
             
             formLogic.setResponse = (xml, doneCallback) ->
-              mirror = WebOmi.consts.responseCodeMirror
+              mirror = consts.responseCodeMirror
               if typeof xml == "string"
                 window.responseXml = xml
                 mirror.setValue JSON.stringify(WebOmi.jsonConverter.parseOmiEnvelope(xml), null, 2)
@@ -709,7 +704,7 @@ window.WebOmi = formLogicExt($, window.WebOmi || {})
                 mirror.setValue JSON.stringify(WebOmi.jsonConverter.parseOmiEnvelope(xml), null, 2)
               mirror.autoFormatAll()
               # refresh as we "resize" so more text will become visible
-              WebOmi.consts.responseDiv.slideDown complete : ->
+              consts.responseDiv.slideDown complete : ->
                 mirror.refresh()
                 if doneCallback? then doneCallback()
               mirror.refresh()
@@ -719,7 +714,6 @@ window.WebOmi = formLogicExt($, window.WebOmi || {})
 
 
             formLogic.send = (callback) ->
-              consts = WebOmi.consts
               formLogic.clearResponse()
               server  = consts.serverUrl.val()
               request = window.requestXml #consts.requestCodeMirror.getValue()
@@ -731,13 +725,13 @@ window.WebOmi = formLogicExt($, window.WebOmi || {})
 
 
         else
-          WebOmi.consts.requestCodeMirror.setValue ""
-          WebOmi.consts.requestCodeMirror.setOption("mode","xml")
-          WebOmi.consts.responseCodeMirror.setOption("mode","xml")
-          WebOmi.consts.requestCodeMirror.setOption("readOnly", false)
+          consts.requestCodeMirror.setValue ""
+          consts.requestCodeMirror.setOption("mode","xml")
+          consts.responseCodeMirror.setOption("mode","xml")
+          consts.requestCodeMirror.setOption("readOnly", false)
           
           formLogic.setRequest = (xml) ->
-            mirror = WebOmi.consts.requestCodeMirror
+            mirror = consts.requestCodeMirror
             if not xml?
               mirror.setValue ""
             else if typeof xml == "string"
@@ -750,20 +744,19 @@ window.WebOmi = formLogicExt($, window.WebOmi || {})
           formLogic.setRequest(window.requestXml)
 
           formLogic.setResponse = (xml, doneCallback) ->
-            mirror = WebOmi.consts.responseCodeMirror
+            mirror = consts.responseCodeMirror
             if typeof xml == "string"
               mirror.setValue xml
             else
               mirror.setValue new XMLSerializer().serializeToString xml
             mirror.autoFormatAll()
             # refresh as we "resize" so more text will become visible
-            WebOmi.consts.responseDiv.slideDown complete : ->
+            consts.responseDiv.slideDown complete : ->
               mirror.refresh()
               if doneCallback? then doneCallback()
             mirror.refresh()
 
           formLogic.send = (callback) ->
-            consts = WebOmi.consts
             formLogic.clearResponse()
             server  = consts.serverUrl.val()
             request = consts.requestCodeMirror.getValue()
@@ -774,7 +767,7 @@ window.WebOmi = formLogicExt($, window.WebOmi || {})
           
           formLogic.setResponse(window.responseXml)
 
-          WebOmi.consts.responseCodeMirror.addOverlay WebOmi.consts.URLHighlightOverlay
+          consts.responseCodeMirror.addOverlay consts.URLHighlightOverlay
 
 
     # TODO: maybe move these to centralized place consts.ui._.something
@@ -812,7 +805,7 @@ window.WebOmi = formLogicExt($, window.WebOmi || {})
           consts.ui.request.set "read" # should trigger a new event
         else
           # update ui enabled/disabled settings (can have <msg>, interval, newest, oldest, timeframe?)
-          ui = WebOmi.consts.ui
+          ui = consts.ui
 
           readReqWidgets = [ui.newest, ui.oldest, ui.begin, ui.end]
           isReadReq = switch reqName

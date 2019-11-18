@@ -336,7 +336,8 @@ constsExt = ($, parent, util) ->
 
   # All of jquery initiliazation code is here
   # $ ->
-  fallback.ready ['jQuery', 'CodeMirror'], ->
+  fallback.ready ['jQuery', 'CodeMirror', 'codeMirrorExtension'], ->
+
     my.responseCMSettings = $.extend(
       readOnly : true
       , my.codeMirrorSettings
@@ -344,14 +345,12 @@ constsExt = ($, parent, util) ->
    
     
     # initialize UI
-    fallback.ready ['codeMirrorExtension'], ->
-
-      my.requestCodeMirror  = CodeMirror.fromTextArea $("#requestArea" )[0], my.codeMirrorSettings
-      my.responseCodeMirror = CodeMirror.fromTextArea $("#responseArea")[0], my.responseCMSettings
-      my.responseDiv        = $ '.response .CodeMirror'
-      my.responseDiv.hide()
-      
-      my.responseCodeMirror.addOverlay my.URLHighlightOverlay
+    my.requestCodeMirror  = CodeMirror.fromTextArea $("#requestArea" )[0], my.codeMirrorSettings
+    my.responseCodeMirror = CodeMirror.fromTextArea $("#responseArea")[0], my.responseCMSettings
+    my.responseDiv        = $ '.response .CodeMirror'
+    my.responseDiv.hide()
+    
+    my.responseCodeMirror.addOverlay my.URLHighlightOverlay
 
     # click events for codemirror url links
     $ '.well.response'
@@ -586,5 +585,5 @@ window.idesc = (myId) -> myId.replace( /( )/g, "_" )
 String.prototype.trim = String.prototype.trim || ->
   String(this).replace /^\s+|\s+$/g, ''
 
-window.Initialize = "ready"
+window.WebOmi.consts.afterJquery -> window.Initialize = "ready"
 
