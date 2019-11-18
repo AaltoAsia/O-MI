@@ -114,6 +114,7 @@ class OmiConfigExtension(val config: Config) extends Extension
   object metrics {
     val Metrics = config getConfig "omi-service.metrics"
     val requestDurationBuckets = (Metrics getDoubleList "requestDurationBuckets").asScala.map(_.doubleValue).toSeq
+    val callbackDurationBuckets = (Metrics getDoubleList "callbackDurationBuckets").asScala.map(_.doubleValue).toSeq
     val requestSizeBuckets = (Metrics getDoubleList "requestSizeBuckets").asScala.map(_.doubleValue).toSeq
     val requestResponseSizeBuckets = (Metrics getDoubleList "requestResponseSizeBuckets").asScala.map(_.doubleValue).toSeq
     val dbOperationDurationBuckets = (Metrics getDoubleList "dbOperationDurationBuckets").asScala.map(_.doubleValue).toSeq

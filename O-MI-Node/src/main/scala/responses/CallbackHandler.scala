@@ -88,13 +88,16 @@ trait HttpSendLogic {
   implicit val mat = ActorMaterializer()
 
   def send(next: BufferedRequest)(implicit ec: ExecutionContext) = {
+
+    val start = System.currentTimeMillis()
+    
     val failures: Try[HttpResponse] => Try[HttpResponse] = {
       case Failure(error: Throwable) =>
         log.info(s"Callback failed to ${next.request.uri}: $error")
-        context.actorSelection("/user/metric-reporter") ! CallbackSent(false,next.callback.uri)
+        context.actorSelection("/user/metric-reporter") ! CallbackSent(false, System.currentTimeMillis()-start, next.callback.uri)
         Failure(HttpConnectionError(error, next))
       case s: Success[HttpResponse] =>
-        context.actorSelection("/user/metric-reporter") ! CallbackSent(true,next.callback.uri)
+        context.actorSelection("/user/metric-reporter") ! CallbackSent(true, System.currentTimeMillis()-start, next.callback.uri)
         s
     }
 

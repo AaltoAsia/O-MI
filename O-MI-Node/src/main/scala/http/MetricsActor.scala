@@ -60,6 +60,12 @@ class MetricsReporter(val configName: String, val settings: OmiConfigExtension) 
     .labelNames("succeeded")
     .register()
     )
+  final val callbackDurationHistogram =  checkEnabled(() => Histogram.build()
+    .buckets(settings.metrics.callbackDurationBuckets:_*)
+    .name("omi_callback_duration")
+    .help("Duration of receiving a reply to sent O-MI callback responses")
+    .labelNames("protocol").register()
+    )
 
   if( settings.metricsEnabled ){
     timers.startPeriodicTimer("report",Report,10.seconds)
@@ -71,15 +77,16 @@ class MetricsReporter(val configName: String, val settings: OmiConfigExtension) 
     case ResponseUpdate( requestToken: Long, requestType:String, timestamp: Timestamp, pathCount: Int, duration: Long) =>
       db.run(requestLog.updateFromResponse(requestToken,timestamp,pathCount,duration))
       requestResponseSizeHistogram.map(_.labels(requestType).observe(pathCount))
-      requestDurationHistogram.map{ hist => hist.labels(requestType).observe( (duration/1000.0).toDouble)}
+      requestDurationHistogram.map{ hist => hist.labels(requestType).observe(duration/1000.0)}
     case NewSubscription( hasCallback: Boolean, typeStr: String) =>
       activeSubscriptionsGauge.map{_.labels(hasCallback.toString,typeStr).inc()}
     case RemoveSubscription( hasCallback: Boolean, typeStr: String) =>
       activeSubscriptionsGauge.map{_.labels(hasCallback.toString,typeStr).dec()}
     case SetSubscriptionCount( hasCallback: Boolean, typeStr: String, count: Int) =>
       activeSubscriptionsGauge.map{_.labels(hasCallback.toString,typeStr).set(count)}
-    case CallbackSent( succeeded, _ ) =>
+    case CallbackSent( succeeded, timeMs, _ ) =>
       callbacksCounter.map{_.labels(succeeded.toString).inc()}
+      callbackDurationHistogram.map{_.labels("http").observe(timeMs/1000.0)}
     case Report => 
       if( settings.metricsEnabled ){
         val current = currentTimestamp
@@ -102,7 +109,7 @@ object MetricsReporter{
   case class NewSubscription( hasCallback: Boolean, typeStr: String)
   case class SetSubscriptionCount( hasCallback: Boolean, typeStr: String, count: Int)
   case class RemoveSubscription( hasCallback: Boolean, typeStr: String)
-  case class CallbackSent( succeeded: Boolean, uri: Uri )
+  case class CallbackSent( succeeded: Boolean, timeMs:Long, uri: Uri )
   case object Report
   def props(settings: OmiConfigExtension): Props ={
     Props( new MetricsReporter( "access-log", settings))
