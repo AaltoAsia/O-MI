@@ -78,8 +78,8 @@ Start with this to test how the modules work.
     1. Create a write request
     2. Send and check that the result is `Unauthorized`
     3. Leave page open
-6. Open shell
-    1. Install httpie or (the http client of your choice) `sudo apt-get install httpie`
+6. Open shell (or http client tool)
+    1. Install httpie (or the http client of your choice) `sudo apt-get install httpie`
     2. Add your email address as username `http POST :8001/v1/add-user username=your@test.email`
     3. Add allow write rule to your user (automatically created group) `http POST :8001/v1/set-permissions group=your@user.email_USERGROUP permissions:='[{"path":"Objects","request":"wcd","allow":true}]'`
 7. Go back to O-MI Node webclient and send again. You should see returnCode=200.
@@ -135,7 +135,8 @@ By default, O-MI Node allows anyone to make any read requests. If some parts of 
       }
     }
     ```
-4. Configure nginx
+4. Create a CA certificate and a client key and sign it using your preferred tools. [(openssl)](https://gist.github.com/mtigas/952344)
+5. Configure nginx
     * put this outside server block to extract CN for the username (*remove "_legacy" if using older than v1.11.6*) and support websockets
         ```
         map $ssl_client_s_dn_legacy $ssl_client_s_dn_cn {
@@ -186,7 +187,7 @@ By default, O-MI Node allows anyone to make any read requests. If some parts of 
             }
         }
         ```
-5. (re)Start o-mi-node, o-mi-authorization and nginx
+6. (re)Start o-mi-node, o-mi-authorization and nginx
 
 ## Authentication in Kong API manager
 

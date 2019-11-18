@@ -75,16 +75,23 @@ For Windows: [O_MI_NODE_config.txt](https://github.com/AaltoAsia/O-MI/blob/maste
 See our [Authentication and authorization guide](https://github.com/AaltoAsia/O-MI/blob/development/docs/AuthenticationAuthorization.md)
 
 ## What are DB file locations? Where are the location settings?
-1. There is value history data in a h2 sql database in ./logs/sensorDB.h2.mv.db. It contains values and related data that is used only for read request parameters: begin, end, oldest, newest. The path is set in this setting:
-`slick-config.db.url = "jdbc:h2:file:./logs/sensorDB.h2;LOCK_TIMEOUT=10000"`
-The oldest values in the db are trimmed periodically every `trim-interval` to have `num-latest-values-stored` per InfoItem
 
-2. There are journals and snapshots of in-memory database in ./logs/journal and ./logs/snapshots. These contains the actual O-DF tree and all related metadata, subscriptions and the latest value of each InfoItem. The paths are set in settings:
-akka.persistence.journal.leveldb.dir = "./logs/journal"
-akka.persistence.snapshot-store.local.dir = "./logs/snapshots"
+The paths specified below are relative to the working directory of the O-MI Node, which is the root of extracted directory with zip and tar (tgz) releases or at `/usr/share/o-mi-node/` with linux packages deb and rpm. In installed packages (dep, rpm) the `./database/` direcotry contains links to `/var/lib/o-mi-node/database`.
+
+1. By default, there is value history data in a h2 sql database in `./database/valuehistorydb/sensorDB.h2.mv.db`.
+It contains values and related data that is used only for read request parameters: begin, end, oldest, newest. The path is set in this setting:
+`slick-config.db.url = "jdbc:h2:file:./database/valuehistorydb/sensorDB.h2;LOCK_TIMEOUT=10000"`
+Modify only the filepath, between the `:` and `;`.
+The oldest values in the db are trimmed periodically every `trim-interval` to have `num-latest-values-stored` per InfoItem.
+
+2. There are journals and snapshots of in-memory database in `./database/journaldb/journal` and `./database/journaldb/logs/snapshots`. These contains the actual O-DF tree and all related metadata, subscriptions and the latest value of each InfoItem. The paths are set in settings:
+```
+akka.persistence.journal.leveldb.dir = "./database/journaldb/journal"
+akka.persistence.snapshot-store.local.dir = ""./database/journaldb/snapshots"
+```
 
 ## How to deploy (linux and docker)?
-TODO
+See the [Readme "Running" section](https://github.com/AaltoAsia/O-MI#running)
 
 ## MacOS compilation problems
 Check that you have right Java JDK version.
