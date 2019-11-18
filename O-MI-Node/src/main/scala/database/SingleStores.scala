@@ -325,6 +325,6 @@ object SingleStores{
     * @return
     */
   def valueShouldBeUpdated(oldValue: Value[Any], newValue: Value[Any]): Boolean = {
-    ! ( oldValue.timestamp equals newValue.timestamp )
+    oldValue.timestamp before newValue.timestamp
   }
 } 
