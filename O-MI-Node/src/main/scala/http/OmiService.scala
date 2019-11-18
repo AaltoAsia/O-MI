@@ -641,10 +641,12 @@ trait OmiService
   // Combine all handlers
   val myRoute: Route = corsEnabled {
     path("") {
+      encodeResponse {
       webSocketUpgrade ~
         postFormXMLRequest ~
         postXMLRequest ~
         helloWorld
+      }
     } ~
       pathPrefix("html") {
         staticHtml
