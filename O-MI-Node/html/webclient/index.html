@@ -565,10 +565,10 @@
               <h4>
                 <span class="glyphicon glyphicon-envelope" aria-hidden="true"></span>
                 Request:
-                <button id="resetall" class="btn btn-sm btn-default" type="button">
+                <!--<button id="resetall" class="btn btn-sm btn-default" type="button">
                   <span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>
                   Reset All
-                </button>
+                </button>-->
                 <button id="send" type="button" class="btn btn-md btn-primary">
                   Send
                   <span class="glyphicon glyphicon-send" aria-hidden="true"></span>
@@ -589,11 +589,13 @@
                 <a id="response" class="anchor" href="#response" aria-hidden="true"></a>
                 <span class="glyphicon glyphicon-inbox" aria-hidden="true"></span>
                 Response:
-                <button class="btn callback-responses btn-md btn-default"
-                  data-toggle="modal" data-target=".callbackResponseHistory">
-                  <span class="label label-default historyCounter">0</span>
-                  Callback response history
-                </button>
+                <a data-toggle="tooltip" title="Opens list of callback responses; Use parameter callback=&quot;0&quot; to get responses here.">
+                  <button class="btn callback-responses btn-md btn-default"
+                    data-toggle="modal" data-target=".callbackResponseHistory">
+                    <span class="label label-default historyCounter">0</span>
+                    Callback response history
+                  </button>
+                </a>
               </h4>
               <div class="well response">
                 <div class="progress">
