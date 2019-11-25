@@ -39,7 +39,7 @@ import database.journal.PRequestInfo
 import database.SingleStores
 
 abstract class Version private (val number: Double, val standard: String) {
-  val numberString = "%.2f".formatLocal(java.util.Locale.US, number)
+  val numberString = "%.1f".formatLocal(java.util.Locale.US, number)
   val namespace: String = f"http://www.opengroup.org/xsd/$standard/$numberString/"
 }
 
