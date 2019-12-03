@@ -326,8 +326,8 @@
                   <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Server <span class="caret"></span></button>
                   <ul class="dropdown-menu">
                     <li class="dropdown-header">Change protocol</li>
-                    <li><a href="javascript:$('#targetService').each(function(){this.value = this.value.replace(/^http/, 'ws')});">Websocket</a></li>
-                    <li><a href="javascript:$('#targetService').each(function(){this.value = this.value.replace(/^ws/, 'http')});">HTTP (cannot receive callbacks)</a></li>
+                    <li><a onclick="javascript:$('#targetService').each(function(){this.value = this.value.replace(/^http/, 'ws')});">Websocket</a></li>
+                    <li><a onclick="javascript:$('#targetService').each(function(){this.value = this.value.replace(/^ws/, 'http')});">HTTP (cannot receive callbacks)</a></li>
                   </ul>
                 </div><!-- /btn-group -->
                 <input id="targetService" type="text" class="form-control" placeholder="Enter O-MI node url" value="http://localhost:8080/"  data-toggle="tooltip" title="Enter O-MI node url. Can be used to test any O-MI Node that has http CORS support." data-placement="bottom"/>
