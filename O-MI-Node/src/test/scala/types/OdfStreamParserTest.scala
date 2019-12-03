@@ -154,7 +154,7 @@ class OdfEventBuilderTest extends Specification {
             Characters("testing"),
             EndElement("id")
           )
-        ) must beFailedTry.withThrowable[ODFParserError]("O-DF Parser error: Unexpected end of id element when expected text content.")
+        ) must beFailedTry.withThrowable[ODFParserError]("O-DF Parser error: Unexpected end of id element when expected text content after .")
       }
       
       "with unexpected event after content in id element" >> {
@@ -241,7 +241,7 @@ class OdfEventBuilderTest extends Specification {
             Characters("testing"),
             EndElement("name")
           )
-        ) must beFailedTry.withThrowable[ODFParserError]("O-DF Parser error: Unexpected end of name element when expected text content.")
+        ) must beFailedTry.withThrowable[ODFParserError]("O-DF Parser error: Unexpected end of name element when expected text content after .")
       }
       
       "with unexpected event after content in name element" >> {
