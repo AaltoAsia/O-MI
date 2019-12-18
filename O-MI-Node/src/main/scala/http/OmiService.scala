@@ -771,11 +771,9 @@ trait WebSocketUtil {
 		def send(futureResponse: Future[ws.TextMessage], ids: Seq[RequestID]=Vector.empty): Future[QueueOfferResult] = {
       val result = for {
         response <- futureResponse
-        //if (response.nonEmpty)
 
         queue <- futureQueue
 
-        // TODO: check what happens when sending empty String
         queueResult <- queue offer response
       } yield queueResult
 
@@ -790,7 +788,7 @@ trait WebSocketUtil {
       result onComplete {
         case Success(QueueOfferResult.Enqueued) => // Ok
         case e @ (Success(_: QueueOfferResult) | Failure(_)) => // Others mean failure
-          log.warn(s"WebSocket response queue failed, reason: $e")
+          log.warn(s"WebSocket response (ids=${ids.mkString(",")}) queue failed, reason: $e")
           removeRelatedSub()
           // DO NOT SEND THE ERROR (because connection is probably broken)
       }
@@ -805,7 +803,10 @@ trait WebSocketUtil {
                 .map(r => r.asXMLSource))
           .getOrElse(Future.successful(response.asXMLSource))
           .map(ws.TextMessage.Streamed(_))
-      , Vector(connectionIdentifier)) map { _ => () }
+      , Vector(connectionIdentifier.toLong) ++ (
+          response.results.flatMap(_.requestIDs)
+        ) // NOTE: all requestIDs in results will be unsubscribed on if conn is closed
+      ) map { _ => () }
     }
   }
 
