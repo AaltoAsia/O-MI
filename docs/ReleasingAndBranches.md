@@ -11,7 +11,7 @@ Releasing
 2. Change version number in `/build.sbt` only
 3. Merge master->development: `git pull origin master` (contains usually readme/docs changes)
 4. Check that tests succeed: `sbt test`
-5. Commit `git add build.sbt && git commit -m "Increasing version to $(cat O-MI-Node/html/VERSION)"`
+5. Commit `git add build.sbt O-MI-Node/html/VERSION && git commit -m "Increasing version to $(cat O-MI-Node/html/VERSION)"`
 6. `git push`
 7. Merge development->master `git checkout master && git merge development && git push`
 
