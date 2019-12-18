@@ -792,7 +792,7 @@ trait WebSocketUtil {
         case e @ (Success(_: QueueOfferResult) | Failure(_)) => // Others mean failure
           log.warn(s"WebSocket response queue failed, reason: $e")
           removeRelatedSub()
-          sendHandler(Responses.InternalError(Some(e.toString)))
+          // DO NOT SEND THE ERROR (because connection is probably broken)
       }
       result
     }
