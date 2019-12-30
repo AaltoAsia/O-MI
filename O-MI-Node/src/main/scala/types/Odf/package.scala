@@ -1,9 +1,9 @@
 package types
 
 import java.lang.{Iterable => JavaIterable}
-import java.time.{ZoneId, OffsetDateTime}
+import java.time.{ZoneId, OffsetDateTime$}
 import java.sql.Timestamp
-import java.util.{Dictionary, GregorianCalendar}
+import java.util.{Dictionary, GregorianCalendar, TimeZone}
 
 import javax.xml.datatype.{DatatypeFactory, XMLGregorianCalendar}
 
@@ -23,7 +23,11 @@ package object odf extends InfoItem.Builders{
   }
 
   def timestampToDateTimeString(timestamp: Timestamp): String = {
-    OffsetDateTime.ofInstant(timestamp.toInstant(), ZoneId.systemDefault()).toString
+    val gc = new GregorianCalendar()
+    gc.setTimeInMillis(timestamp.getTime())
+    gc.setTimeZone( TimeZone.getTimeZone( ZoneId.systemDefault()))
+    DatatypeFactory.newInstance().newXMLGregorianCalendar( gc ).toXMLFormat()
+    //OffsetDateTime.ofInstant(timestamp.toInstant(), ZoneId.systemDefault()).toString
   }
   def optionUnion[A](left: Option[A], right: Option[A]): Option[A] = {
     right.orElse(left)
