@@ -481,10 +481,7 @@ extends EventBuilder[Value[_]]{
               }
             } match {
               case Failure(t) =>
-                startElement.attributes.get("dateTime").map{ 
-                  str: String =>
-                    throw ODFParserError(s"Invalid dateTime for value, $str.")
-                }
+                throw ODFParserError("Invalid dateTime for value.")
               case Success(ts) => ts
             }
             val unixTime = Try{
