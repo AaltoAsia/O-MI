@@ -12,7 +12,6 @@ import akka.stream.alpakka.xml.scaladsl.XmlWriting
 
 package object utils {
   def dateTimeStrToTimestamp(dateTimeString: String): Timestamp = {
-    val gc = DatatypeFactory.newInstance().newXMLGregorianCalendar(dateTimeString).toGregorianCalendar()
     Try{
       OffsetDateTime.parse( dateTimeString ).toInstant()
     }.orElse{
