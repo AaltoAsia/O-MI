@@ -36,9 +36,10 @@ def on_error(ws, error):
 def on_pong(ws, data):
     print("# Pong! #")
 
-def on_open(ws, request_message=""):
-    ws.send(request_message)
-    #ws.send("""<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="0"><read msgformat="odf" callback="0" interval="5"><msg><Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/"><Object><id>OMI-Service</id><Object><id>Settings</id><InfoItem name="num-latest-values-stored"/></Object></Object></Objects></msg></read></omiEnvelope>""")
+def on_open(ws, request_message):
+    if request_message:
+        ws.send(request_message)
+        #ws.send("""<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/1.0/" version="1.0" ttl="0"><read msgformat="odf" callback="0" interval="5"><msg><Objects xmlns="http://www.opengroup.org/xsd/odf/1.0/"><Object><id>OMI-Service</id><Object><id>Settings</id><InfoItem name="num-latest-values-stored"/></Object></Object></Objects></msg></read></omiEnvelope>""")
     print("# Connection Open #")
 
 def main(hostn, output,request):
