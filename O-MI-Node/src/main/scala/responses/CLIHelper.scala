@@ -51,18 +51,9 @@ class CLIHelper(val singleStores: SingleStores, dbConnection: DB)(implicit syste
     val odfF = singleStores.getHierarchyTree()
 
     Future.sequence(parentPaths.map { parentPath =>
-      val nodeO = odfF.map(_.get(parentPath))
-      nodeO.flatMap {
-        case Some(node) => {
+      odfF.flatMap {(odf) =>
 
-          odfF.foreach(_.getPaths.filter {
-            p: Path =>
-              node.path.isAncestorOf(p)
-          }.foreach { path =>
-            log.info(s"removing $path")
-            singleStores.erasePathData(path)
-          })
-
+          odf.subTreePaths(Set(parentPath)).foreach(singleStores.erasePathData)
 
           val dbRemoveFuture: Future[Int] = dbConnection.remove(parentPath).map(_.length).flatMap{
             n =>
@@ -76,8 +67,6 @@ class CLIHelper(val singleStores: SingleStores, dbConnection: DB)(implicit syste
 
           dbRemoveFuture
 
-        }
-        case None => Future.successful(0)
       }
     })
   }
