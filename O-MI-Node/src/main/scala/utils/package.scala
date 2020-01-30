@@ -1,5 +1,7 @@
 import scala.language.implicitConversions
+import scala.util.Try
 import java.sql.Timestamp
+import java.time.{ZoneId, OffsetDateTime, LocalDateTime}
 import javax.xml.datatype.DatatypeFactory
 import java.util.Date
 import akka.stream.scaladsl._
@@ -10,8 +12,16 @@ import akka.stream.alpakka.xml.scaladsl.XmlWriting
 
 package object utils {
   def dateTimeStrToTimestamp(dateTimeString: String): Timestamp = {
-    val gc = DatatypeFactory.newInstance().newXMLGregorianCalendar(dateTimeString).toGregorianCalendar()
-    Timestamp.from(gc.toInstant())
+    Try{
+      OffsetDateTime.parse( dateTimeString ).toInstant()
+    }.orElse{
+      Try{
+        LocalDateTime.parse( dateTimeString ).atZone(ZoneId.systemDefault).toInstant()
+      }
+    }.map{
+      instant =>
+      Timestamp.from(instant)
+    }.get
   }
   def merge[A, B](a: Map[A, B], b: Map[A, B])(mergef: (B, Option[B]) => B): Map[A, B] = {
     val (bigger, smaller) = if (a.size > b.size) (a, b) else (b, a)
