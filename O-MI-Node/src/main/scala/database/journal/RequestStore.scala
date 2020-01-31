@@ -55,7 +55,8 @@ class RequestInfoStore(override val persistenceId: String) extends JournalStore 
     case event: Change => updateState(event)
     case SnapshotOffer(_, snapshot: PRequestStore) =>// updateState(snapshot)
       infos = LongMap(snapshot.infos.toSeq:_*)
-    case x: Any => log.error("Recover not implemented for" + x.toString)
+    case RecoveryCompleted => log.info("Recovery completed")
+    case x: Any => log.error("Recover not implemented for " + x.toString)
   }
 
   def receiveCommand: Receive = receiveBoilerplate orElse {

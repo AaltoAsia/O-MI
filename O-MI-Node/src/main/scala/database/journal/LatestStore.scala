@@ -50,6 +50,7 @@ class LatestStore(override val persistenceId: String) extends JournalStore {
         case Failure(ex) => log.error(ex, "Failure while writing snapshot")
       }
     }
+    case RecoveryCompleted => log.info("Recovery completed")
   }
 
   val snapshotInterval = 100

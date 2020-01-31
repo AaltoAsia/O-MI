@@ -82,6 +82,7 @@ class PollDataStore(override val persistenceId: String) extends JournalStore {
   def receiveRecover: Receive = {
     case event: Event => updateState(event)
     case SnapshotOffer(_, snapshot: PPollData) => state = snapshot.subs.mapValues(_.paths.mapValues(_.values))
+    case RecoveryCompleted => log.info("Recovery completed")
   }
 
   def receiveCommand: Receive = receiveBoilerplate orElse {

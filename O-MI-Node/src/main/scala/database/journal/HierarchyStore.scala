@@ -42,6 +42,7 @@ class HierarchyStore(override val persistenceId: String) extends JournalStore {
   def receiveRecover: Receive = {
     case event: Event => updateState(event)
     case SnapshotOffer(_, snapshot: PUnion) => state = buildImmutableOdfFromProtobuf(snapshot.another)
+    case RecoveryCompleted => log.info("Recovery completed")
   }
 
   def receiveCommand: Receive = receiveBoilerplate orElse {

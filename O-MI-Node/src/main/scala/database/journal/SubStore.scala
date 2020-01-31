@@ -338,6 +338,7 @@ class SubStore(override val persistenceId: String) extends JournalStore {
       pathToSubs = recoverPathToSub(snapshot.pathToSubs)
       intervalSubs = recoverIntervalSubs(snapshot.intervalSubs)
     }
+    case RecoveryCompleted => log.info("Recovery completed")
   }
 
   def pollSub(pps: PPollSub): Option[PolledSub] = {
