@@ -84,9 +84,15 @@ else:
 
 
 #create output directory or exit if it is a file
+if args.output is None:
+    args.output = ""
 if os.path.isfile(args.output):
-    debug('Output directory is a file, directory expected')
+    eprint('Output directory is a file, directory expected')
     sys.exit(3)
+
+if args.nMax < 2:
+    eprint('Minimum newest value needs to be more than 1')
+    sys.exit(5)
 
 nMax = args.nMax
 url = args.url
