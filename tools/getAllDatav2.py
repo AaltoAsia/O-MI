@@ -30,10 +30,10 @@ parser.add_argument('--ssl-client-key', dest='cKey', default=None,
         help='File containing the private key. If omitted the key is taken from the cert file as well.')
 
 parser.add_argument('--odf-xmlns', dest='odfVersion', default="http://www.opengroup.org/xsd/odf/1.0/",
-        help='Xml namespace for the O-DF; This must match the uri in the input files, including the version number. Otherwise, xpath will not work. Will be assigned to "odf:" and "d" prefixes in XPath')
+        help='Xml namespace for the O-DF.')
 
 parser.add_argument('--omi-xmlns', dest='omiVersion', default="http://www.opengroup.org/xsd/omi/1.0/",
-        help='Xml namespace for the O-MI if needed in XPath queries. Will be assigned to "omi:" and "m" prefixes in XPath')
+        help='Xml namespace for the O-MI.')
 
 parser.add_argument('--omi-version', dest='version', default=None,
         help='Value of omiEnvelope version attribute. If empty attempts to parse from namespace or defaults to 1.0 if parsing fails.')
