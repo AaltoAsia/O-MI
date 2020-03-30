@@ -30,16 +30,16 @@ parser.add_argument('--ssl-client-key', dest='cKey', default=None,
         help='File containing the private key. If omitted the key is taken from the cert file as well.')
 
 parser.add_argument('--odf-xmlns', dest='odfVersion', default="http://www.opengroup.org/xsd/odf/1.0/",
-        help='Xml namespace for the O-DF.')
+        help='Xml namespace for the O-DF. Default: http://www.opengroup.org/xsd/odf/1.0/')
 
 parser.add_argument('--omi-xmlns', dest='omiVersion', default="http://www.opengroup.org/xsd/omi/1.0/",
-        help='Xml namespace for the O-MI.')
+        help='Xml namespace for the O-MI. Default: http://www.opengroup.org/xsd/omi/1.0/')
 
 parser.add_argument('--omi-version', dest='version', default=None,
-        help='Value of omiEnvelope version attribute. If empty attempts to parse from namespace or defaults to 1.0 if parsing fails.')
+        help='Value of omiEnvelope version attribute. If empty, attempts to parse from namespace or defaults to 1.0 if parsing fails.')
 
 parser.add_argument('--sort', dest='sort', default=False, action='store_true',
-        help='Sorts received values in ascending order, required if the target server does not sort values for the response messages')
+        help='Sorts received values, required if the target server does not sort values for the response messages. Latest value must be at top.')
 parser.add_argument('--chunk-size', dest='chunk_size', type=int, default=1024,
         help='Size of the response chunks written to file in bytes. Increasing this value might increase memory consumption. Default 1024')
 
@@ -122,7 +122,6 @@ def fullRequestBase(n,end=None):
     xmlbase = etree.fromstring(fullr) 
     if end:
         xmlbase.find(".//{%s}read" % ns['omi']).set("end", end)
-    
     return xmlbase
     
 
@@ -143,11 +142,25 @@ def update_odf(elem):
     for child in elem.getchildren():
         update_odf(child)
         tag = child.tag
-        if (tag == '{%s}InfoItem' % odfVersion) or (tag == '{%s}Object' % odfVersion):
-            child.insert(1,etree.Element('{%s}description' % odfVersion))
+        #important to go from bottom up
+        if (tag == '{%s}description' % odfVersion) or (tag == '{%s}MetaData' % odfVersion):
+            child.clear()
         if (tag == '{%s}InfoItem' % odfVersion):
-            child.remove(child.find('./{%s}value' % odfVersion))
-            child.append(etree.Element('{%s}MetaData' % odfVersion))
+            values = child.xpath("./odf:value", namespaces=ns)
+            for ivalue in values:
+                child.remove(ivalue)
+            #child.remove(child.find('./{%s}value' % odfVersion))
+
+## use method below if it is necessary to insert metadata and description tags to every element
+#def update_odf(elem):
+#    for child in elem.getchildren():
+#        update_odf(child)
+#        tag = child.tag
+#        if (tag == '{%s}InfoItem' % odfVersion) or (tag == '{%s}Object' % odfVersion):
+#            child.insert(1,etree.Element('{%s}description' % odfVersion))
+#        if (tag == '{%s}InfoItem' % odfVersion):
+#            child.remove(child.find('./{%s}value' % odfVersion))
+#            child.append(etree.Element('{%s}MetaData' % odfVersion))
 
 # Print iterations progress https://stackoverflow.com/a/34325723
 def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '█', printEnd = "\r"):
@@ -232,10 +245,12 @@ with Session() as s:
     
     objects = root.find(".//{%s}Objects" % odfVersion)
     
+    #insert description and metadata to the objects and infoitems even if they were not in the hierarchy?
     update_odf(objects)
     
     debug("request hierarchy successfully built")
-    
+
+    #update_odf removes metadata infoitems so they are not included in the leafs    
     leafs = objects.xpath("//odf:InfoItem|//odf:Object[count(./odf:InfoItem|./odf:Object) = 0]", namespaces = ns)
     
     numLeafs = len(leafs)
@@ -272,6 +287,11 @@ with Session() as s:
             reqBase.find(".//{%s}msg" % ns['omi']).append(requestOdf)
             r2 = s.post(url, data = etree.tostring(reqBase, encoding='UTF-8')).content
             rxml = etree.fromstring(r2)
+
+            retElements = rxml.xpath("omi:response/omi:result/omi:return[@returnCode!=200]", namespaces =ns)
+            for error in retElements:
+                eprint('Error for path: "', outputPath, '", with error: ',  etree.tostring(error,pretty_print= True, encoding='unicode'))
+
             #first iter
             if robjs is None:
                 robjs = rxml.find(".//{%s}Objects" % odfVersion)
