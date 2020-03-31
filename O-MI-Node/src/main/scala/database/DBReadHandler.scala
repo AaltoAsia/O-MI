@@ -78,11 +78,11 @@ trait DBReadHandler extends DBHandlerBase {
         log.debug( s" Requested paths: " + leafs.map{ _.path}.mkString("\n"))
 
         val resultF = odfWithValuesO.flatMap {
-          case Some(odfWithValues) =>
+          case odfWithValues: Option[ODF]  => //Some(odfWithValues) =>
             log.debug("Odf with values found.")
             
             //Select requested O-DF from metadataTree and remove MetaDatas and descriptions
-            val fmetaCombined: Future[ODF] = fodfWithMetaData.map(_.union(odfWithValues))
+            val fmetaCombined: Future[ODF] = odfWithValues.fold(fodfWithMetaData)( owv => fodfWithMetaData.map(_.union(owv)))
             val responseF = for {
               metaCombined <- fmetaCombined
               requestsPaths = leafs.map {
@@ -107,13 +107,6 @@ trait DBReadHandler extends DBHandlerBase {
               response => log.debug(s"Response with ${response.results.size} results")
             }
             responseF
-
-          case None =>
-            log.debug("Odf with values not found.")
-            val results =Vector(Results.NotFoundPaths(requestedODF))
-            val response = ResponseRequest(results)
-            log.debug(s"Response with ${results.size} results: " + results.mkString("\n"))
-            Future.successful(response)
         }
         resultF
     }
