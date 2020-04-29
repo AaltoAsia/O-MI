@@ -1,5 +1,5 @@
 #!/bin/bash
-# Send O-MI message from file to otaniemi3d using a client certificate
+# Send O-MI message from file to a https server with a client certificate
 
 URL=""
 CLIENTCERT=client.p12
