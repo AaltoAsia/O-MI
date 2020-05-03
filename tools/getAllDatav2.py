@@ -2,7 +2,7 @@
 import sys, os, argparse, re, functools, pathlib
 from requests import Session
 from copy import deepcopy
-import websocket
+#import websocket
 
 def eprint(*args, **kwargs): print(*args, file=sys.stderr, **kwargs)
 def noprint(*args, **kwargs): pass
@@ -20,8 +20,11 @@ parser = argparse.ArgumentParser(description=
     
 parser.add_argument('--output', '-o', dest='output', default=None, help='Output files directory')
 
+parser.add_argument('--odf-path', '--path', '-p', dest='odfPath', type=str, #nargs="+",
+        help="Select only InfoItems under some O-DF paths rather than read all.")
+
 parser.add_argument('--max-newest', '-n', dest='nMax', type=int, default=1000, 
-        help='Max value for newest parameter, if n is small, multiple request may be neccessary to query all the data from a single InfoItem.')
+        help='Max value for newest parameter, if n is small, multiple request may be neccessary to query all the data from a single InfoItem. Some servers might limit the newest parameter.')
 
 parser.add_argument('--ssl-client-cert', dest='cCert', default=None, 
         help='File containing the client certificate as well as any number of CA certificates needed to establish the authenticity of the certificate')
@@ -102,13 +105,53 @@ url = args.url
 # 2. create single request for each infoitem encountered with newest value set to nMax until all values read
 # 3. save the output in Objects.xml file in directory structure that resembles the ODF hierarchy
 
-hierarchyRequest = """<omiEnvelope xmlns="{omi}" version="{version}" ttl="0">
-     <read msgformat="odf">
-       <msg>
-         <Objects xmlns="{odf}"/>
-       </msg>
-     </read>
-   </omiEnvelope>""".format(omi=omiVersion, version=version, odf=odfVersion)
+
+# A simple function to create a O-DF/O-MI read request from O-DF path
+def hierarchyRequest(s):
+    if len(args.odfPath) > 0:
+        # simple xml building
+        hierarchyRequest = """<omiEnvelope xmlns="{omi}" version="{version}" ttl="0">
+             <read msgformat="odf">
+               <msg>
+                <Objects xmlns="{odf}">
+           """.format(omi=omiVersion, version=version, odf=odfVersion)
+        pathSegments = [s for s in args.odfPath.split("/") if len(s) > 0 and s != "Objects"]
+        debug(pathSegments)
+
+        # fetch the leaf to check whether it is Object or InfoItem
+
+        query = url + "/Objects/" + '/'.join(pathSegments)
+        result = s.get(query)
+        if result.status_code != 200:
+            eprint('O-DF query', query, 'failed (--odf-path):', result.text)
+            exit(1)
+        lastIsInfo = result.text.endswith("InfoItem>")
+        debug("Path", args.odfPath, "is an InfoItem" if lastIsInfo else "is an Object:")
+        #debug(result.text)
+        
+        close = 0
+        loopSegments = pathSegments[:-1] if lastIsInfo else pathSegments
+        for segment in loopSegments:
+            segment = segment.strip()
+            hierarchyRequest += '<Object><id>{}</id>'.format(segment)
+            close += 1
+        if lastIsInfo: hierarchyRequest += '<InfoItem name="{}" />'.format(pathSegments[-1])
+        for i in range(close):
+            hierarchyRequest += '</Object>'
+
+        hierarchyRequest += '</Objects> </msg> </read> </omiEnvelope>'
+        #debug(hierarchyRequest)
+
+        return hierarchyRequest
+
+    else:
+        return """<omiEnvelope xmlns="{omi}" version="{version}" ttl="0">
+             <read msgformat="odf">
+               <msg>
+                 <Objects xmlns="{odf}"/>
+               </msg>
+             </read>
+           </omiEnvelope>""".format(omi=omiVersion, version=version, odf=odfVersion)
 
 #create request with correct newest and end values
 def fullRequestBase(n,end=None):
@@ -240,7 +283,7 @@ with Session() as s:
     s.headers.update(headers)
     
     #hierarchy tree
-    r = s.post(url, data = hierarchyRequest).content
+    r = s.post(url, data = hierarchyRequest(s)).content
     root = etree.fromstring(r)
     
     objects = root.find(".//{%s}Objects" % odfVersion)
