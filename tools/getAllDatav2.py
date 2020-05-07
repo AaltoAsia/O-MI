@@ -18,9 +18,9 @@ parser = argparse.ArgumentParser(description=
         '''Get All Data from target server, including descriptions, metadata and historical values.
         The results are saved in files separated by each infoitem.''')
     
-parser.add_argument('--output', '-o', dest='output', default=None, help='Output files directory')
+parser.add_argument('--output', '-o', dest='output', default=None, help='Output files directory. If --single-file argument is used, the output value is interprented as file name.')
 
-parser.add_argument('--odf-path', '--path', '-p', dest='odfPath', type=str, #nargs="+",
+parser.add_argument('--odf-path', '--path', '-p', dest='odfPath', default="", type=str, #nargs="+",
         help="Select only InfoItems under some O-DF paths rather than read all.")
 
 parser.add_argument('--max-newest', '-n', dest='nMax', type=int, default=1000, 
@@ -43,6 +43,13 @@ parser.add_argument('--omi-version', dest='version', default=None,
 
 parser.add_argument('--sort', dest='sort', default=False, action='store_true',
         help='Sorts received values, required if the target server does not sort values for the response messages. Latest value must be at top.')
+
+parser.add_argument('--single-file', dest='single_file', default=False, action='store_true',
+        help='Store the results in a single file instead of a file strucure.')
+
+parser.add_argument('--compression', '-c', dest='compression', type=int, default=0, choices=range(0,10), 
+        help='If compression level is more than 0, gzip is used to compress the output files and .gz suffix is added to the output file.')
+
 parser.add_argument('--chunk-size', dest='chunk_size', type=int, default=1024,
         help='Size of the response chunks written to file in bytes. Increasing this value might increase memory consumption. Default 1024')
 
@@ -87,11 +94,22 @@ else:
 
 
 #create output directory or exit if it is a file
-if args.output is None:
-    args.output = ""
-if os.path.isfile(args.output):
-    eprint('Output directory is a file, directory expected')
-    sys.exit(3)
+fileName = "Objects.xml"
+if not args.single_file:
+    if args.output == None:
+        args.output = ""
+    if os.path.isfile(args.output):
+        eprint('Output directory is a file, directory expected')
+        sys.exit(3)
+else:
+    if args.output:
+        fileName = args.output
+
+if args.compression > 0:
+    if not fileName.endswith('.gz'):
+        fileName = fileName + '.gz'
+else:
+    args.compression = None
 
 if args.nMax < 2:
     eprint('Minimum newest value needs to be more than 1')
@@ -278,108 +296,228 @@ def getIdOrName(elem):
         sys.exit(4)
             
 #Create request session with the certificates and headers set
-with Session() as s:
-    s.cert = cert
-    s.headers.update(headers)
+if args.single_file:
+    with Session() as s:
+        with etree.xmlfile(fileName, encoding='utf-8', compression=args.compression) as xf: #encoding?
+            s.cert = cert
+            s.headers.update(headers)
+            
+            #hierarchy tree
+            r = s.post(url, data = hierarchyRequest(s)).content
+            root = etree.fromstring(r)
+            
+            objects = root.find(".//{%s}Objects" % odfVersion)
+            
+            #insert description and metadata to the objects and infoitems even if they were not in the hierarchy?
+            update_odf(objects)
+            
+            debug("request hierarchy successfully built")
     
-    #hierarchy tree
-    r = s.post(url, data = hierarchyRequest(s)).content
-    root = etree.fromstring(r)
+            #update_odf removes metadata infoitems so they are not included in the leafs    
+            leafs = objects.xpath("//odf:InfoItem|//odf:Object[count(./odf:InfoItem|./odf:Object) = 0]", namespaces = ns)
+            
+            numLeafs = len(leafs)
+            debug("number of leafs found: {}".format(numLeafs))
+            
+            #iterate all leafs and make request for each one
+            i = 0
+            with xf.element('omi:omiEnvelope',nsmap=ns):
+                with xf.element('omi:response'):
+                    printProgressBar(i, numLeafs, prefix='Progress', suffix='Complete', length= 50)
+                    for leaf in leafs:
+                        with xf.element('omi:result', {'msgformat': 'odf'}):
+                            el = etree.Element("{%s}return" % omiVersion, returnCode="200")
+                            xf.write(el,pretty_print=True)
+                            el = None
+                            i += 1
+                            #get ancestor odf elements
+                            ancestors = leaf.xpath("ancestor-or-self::odf:*", namespaces=ns)
+                            #build request Objects
+                            requestOdf = functools.reduce(combineElements, reversed(ancestors), True)
+                            ##outputPath = os.path.join(args.output, *list(map(getIdOrName, ancestors)))
+                            ##pathlib.Path(outputPath).mkdir(parents=True, exist_ok=True)
+                            ##output = os.path.join(outputPath, "Objects.xml")
     
-    objects = root.find(".//{%s}Objects" % odfVersion)
+                            #element to build the result in
+                            robjs = None
+                            #timestamp of the oldest value
+                            latest = None
+                            values = None
+                            #infoitem element of the robjs element
+                            rinfo = None
     
-    #insert description and metadata to the objects and infoitems even if they were not in the hierarchy?
-    update_odf(objects)
+                            numvalues = nMax
     
-    debug("request hierarchy successfully built")
-
-    #update_odf removes metadata infoitems so they are not included in the leafs    
-    leafs = objects.xpath("//odf:InfoItem|//odf:Object[count(./odf:InfoItem|./odf:Object) = 0]", namespaces = ns)
+                            #build odftree containing a single infoitem with all its values
+                            #if memory consumption becomes bottleneck, build the odf bit by bit
+                            while numvalues == nMax:
+                                reqBase = fullRequestBase(nMax, latest) 
+                                reqBase.find(".//{%s}msg" % ns['omi']).append(requestOdf)
+                                r2 = s.post(url, data = etree.tostring(reqBase, encoding='UTF-8')).content
+                                rxml = etree.fromstring(r2)
     
-    numLeafs = len(leafs)
-    debug("number of leafs found: {}".format(numLeafs))
+                                retElements = rxml.xpath("omi:response/omi:result/omi:return[@returnCode!=200]", namespaces =ns)
+                                for error in retElements:
+                                    eprint('Error for path: "', outputPath, '", with error: ',  etree.tostring(error,pretty_print= True, encoding='unicode'))
     
-    #iterate all leafs and make request for each one
-    i = 0
+                                #first iter
+                                if robjs is None:
+                                    robjs = rxml.find(".//{%s}Objects" % odfVersion)
+    
+                                #if leaf was object element or something else, then 
+                                #it doesn't contain values only desc or metadata
+                                if leaf.tag != "{%s}InfoItem" % odfVersion:
+                                    break
+    
+                                #Only one infoitem should exist that is inside an object
+                                rii = rxml.find(".//{%s}Object/{%s}InfoItem" % (odfVersion, odfVersion))
+    
+                                #first iter
+                                if rinfo is None:
+                                    rinfo = rii
+                                    if args.sort:
+                                        rinfo[:] = sorted(rinfo, key=getKey)
+                                    numvalues = len(rinfo.xpath("odf:value", namespaces = ns))
+                                #successive iter
+                                else:
+                                    try:
+                                        values = rii.xpath("odf:value[position()>1]", namespaces = ns)
+                                        numvalues = len(values) + 1 #ignoring first value
+                                        if numvalues == nMax:
+                                            latest = rii.xpath("odf:value[last()]", namespaces = ns)[0].get("dateTime")
+                                    except IndexError as e:
+                                        #debug("Empty value from respose")
+                                        values = []
+                                        numvalues = 0
+    
+                                    if args.sort:
+                                        for val in sorted(values, key=getKey):
+                                            rinfo.append(val)
+                                    else:
+                                        for val in values:
+                                            rinfo.append(val)
+                            with xf.element('omi:msg'):
+                                xf.write(robjs,pretty_print=args.pretty_print)
+                            #with open(output, 'wb') as handle:
+                            #    et = etree.ElementTree(robjs)
+                            #    et.write(handle, pretty_print=args.pretty_print)
+    
+    
+    
+                            #progressbar 1 request can take from 1 to 15 seconds ....
+                            printProgressBar(i, numLeafs, prefix='Progress', suffix='Complete', length= 50)
+                    
+                    #first write hierarchy to temp file
+                    #with open(output + "_", 'wb') as handle:
+                    #    r2 = s.post(url, data = etree.tostring(firstReqBase, encoding='UTF-8'), stream = True)
+                    #    if not r2.ok:
+                    #        debug("INVALID RESPONSE")
+                    #    for chunk in r2.iter_content(chunk_size=chunk_size):
+                    #        handle.write(chunk)
 
-    printProgressBar(i, numLeafs, prefix='Progress', suffix='Complete', length= 50)
-    for leaf in leafs:
-        i += 1
-        #get ancestor odf elements
-        ancestors = leaf.xpath("ancestor-or-self::odf:*", namespaces=ns)
-        #build request Objects
-        requestOdf = functools.reduce(combineElements, reversed(ancestors), True)
-        outputPath = os.path.join(args.output, *list(map(getIdOrName, ancestors)))
-        pathlib.Path(outputPath).mkdir(parents=True, exist_ok=True)
-        output = os.path.join(outputPath, "Objects.xml")
-
-        #element to build the result in
-        robjs = None
-        #timestamp of the oldest value
-        latest = None
-        values = None
-        #infoitem element of the robjs element
-        rinfo = None
-
-        numvalues = nMax
-
-        #build odftree containing a single infoitem with all its values
-        #if memory consumption becomes bottleneck, build the odf bit by bit
-        while numvalues == nMax:
-            reqBase = fullRequestBase(nMax, latest) 
-            reqBase.find(".//{%s}msg" % ns['omi']).append(requestOdf)
-            r2 = s.post(url, data = etree.tostring(reqBase, encoding='UTF-8')).content
-            rxml = etree.fromstring(r2)
-
-            retElements = rxml.xpath("omi:response/omi:result/omi:return[@returnCode!=200]", namespaces =ns)
-            for error in retElements:
-                eprint('Error for path: "', outputPath, '", with error: ',  etree.tostring(error,pretty_print= True, encoding='unicode'))
-
-            #first iter
-            if robjs is None:
-                robjs = rxml.find(".//{%s}Objects" % odfVersion)
-
-            #if leaf was object element or something else, then 
-            #it doesn't contain values only desc or metadata
-            if leaf.tag != "{%s}InfoItem" % odfVersion:
-                break
-
-            #Only one infoitem should exist that is inside an object
-            rii = rxml.find(".//{%s}Object/{%s}InfoItem" % (odfVersion, odfVersion))
-
-            #first iter
-            if rinfo is None:
-                rinfo = rii
-                if args.sort:
-                    rinfo[:] = sorted(rinfo, key=getKey)
-                numvalues = len(rinfo.xpath("odf:value", namespaces = ns))
-            #successive iter
-            else:
-                try:
-                    values = rii.xpath("odf:value[position()>1]", namespaces = ns)
-                    numvalues = len(values) + 1 #ignoring first value
-                    if numvalues == nMax:
-                        latest = rii.xpath("odf:value[last()]", namespaces = ns)[0].get("dateTime")
-                except IndexError as e:
-                    #debug("Empty value from respose")
-                    values = []
-                    numvalues = 0
-
-                if args.sort:
-                    for val in sorted(values, key=getKey):
-                        rinfo.append(val)
-                else:
-                    for val in values:
-                        rinfo.append(val)
-
-        with open(output, 'wb') as handle:
-            et = etree.ElementTree(robjs)
-            et.write(handle, pretty_print=args.pretty_print)
-
-
-
-        #progressbar 1 request can take from 1 to 15 seconds ....
+else:
+    with Session() as s:
+        s.cert = cert
+        s.headers.update(headers)
+        
+        #hierarchy tree
+        r = s.post(url, data = hierarchyRequest(s)).content
+        root = etree.fromstring(r)
+        
+        objects = root.find(".//{%s}Objects" % odfVersion)
+        
+        #insert description and metadata to the objects and infoitems even if they were not in the hierarchy?
+        update_odf(objects)
+        
+        debug("request hierarchy successfully built")
+    
+        #update_odf removes metadata infoitems so they are not included in the leafs    
+        leafs = objects.xpath("//odf:InfoItem|//odf:Object[count(./odf:InfoItem|./odf:Object) = 0]", namespaces = ns)
+        
+        numLeafs = len(leafs)
+        debug("number of leafs found: {}".format(numLeafs))
+        
+        #iterate all leafs and make request for each one
+        i = 0
+    
         printProgressBar(i, numLeafs, prefix='Progress', suffix='Complete', length= 50)
+        for leaf in leafs:
+            i += 1
+            #get ancestor odf elements
+            ancestors = leaf.xpath("ancestor-or-self::odf:*", namespaces=ns)
+            #build request Objects
+            requestOdf = functools.reduce(combineElements, reversed(ancestors), True)
+            outputPath = os.path.join(args.output, *list(map(getIdOrName, ancestors)))
+            pathlib.Path(outputPath).mkdir(parents=True, exist_ok=True)
+            output = os.path.join(outputPath, "Objects.xml")
+    
+            #element to build the result in
+            robjs = None
+            #timestamp of the oldest value
+            latest = None
+            values = None
+            #infoitem element of the robjs element
+            rinfo = None
+    
+            numvalues = nMax
+    
+            #build odftree containing a single infoitem with all its values
+            #if memory consumption becomes bottleneck, build the odf bit by bit
+            while numvalues == nMax:
+                reqBase = fullRequestBase(nMax, latest) 
+                reqBase.find(".//{%s}msg" % ns['omi']).append(requestOdf)
+                r2 = s.post(url, data = etree.tostring(reqBase, encoding='UTF-8')).content
+                rxml = etree.fromstring(r2)
+    
+                retElements = rxml.xpath("omi:response/omi:result/omi:return[@returnCode!=200]", namespaces =ns)
+                for error in retElements:
+                    eprint('Error for path: "', outputPath, '", with error: ',  etree.tostring(error,pretty_print= True, encoding='unicode'))
+    
+                #first iter
+                if robjs is None:
+                    robjs = rxml.find(".//{%s}Objects" % odfVersion)
+    
+                #if leaf was object element or something else, then 
+                #it doesn't contain values only desc or metadata
+                if leaf.tag != "{%s}InfoItem" % odfVersion:
+                    break
+    
+                #Only one infoitem should exist that is inside an object
+                rii = rxml.find(".//{%s}Object/{%s}InfoItem" % (odfVersion, odfVersion))
+    
+                #first iter
+                if rinfo is None:
+                    rinfo = rii
+                    if args.sort:
+                        rinfo[:] = sorted(rinfo, key=getKey)
+                    numvalues = len(rinfo.xpath("odf:value", namespaces = ns))
+                #successive iter
+                else:
+                    try:
+                        values = rii.xpath("odf:value[position()>1]", namespaces = ns)
+                        numvalues = len(values) + 1 #ignoring first value
+                        if numvalues == nMax:
+                            latest = rii.xpath("odf:value[last()]", namespaces = ns)[0].get("dateTime")
+                    except IndexError as e:
+                        #debug("Empty value from respose")
+                        values = []
+                        numvalues = 0
+    
+                    if args.sort:
+                        for val in sorted(values, key=getKey):
+                            rinfo.append(val)
+                    else:
+                        for val in values:
+                            rinfo.append(val)
+    
+            with open(output, 'wb') as handle:
+                et = etree.ElementTree(robjs)
+                et.write(handle, pretty_print=args.pretty_print)
+    
+    
+    
+            #progressbar 1 request can take from 1 to 15 seconds ....
+            printProgressBar(i, numLeafs, prefix='Progress', suffix='Complete', length= 50)
         
         #first write hierarchy to temp file
         #with open(output + "_", 'wb') as handle:
