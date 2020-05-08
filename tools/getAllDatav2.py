@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-import sys, os, argparse, re, functools, pathlib
+import sys, os, argparse, re, functools, pathlib, gzip
 from requests import Session
 from copy import deepcopy
 #import websocket
@@ -321,14 +321,13 @@ if args.single_file:
             
             #iterate all leafs and make request for each one
             i = 0
-            with xf.element('omi:omiEnvelope',nsmap=ns):
+            with xf.element('omi:omiEnvelope', {'ttl': '1.0', 'version': '1.0'}, nsmap=ns):
                 with xf.element('omi:response'):
-                    printProgressBar(i, numLeafs, prefix='Progress', suffix='Complete', length= 50)
+                    printProgressBar(i, numLeafs, prefix='Progress', suffix='%s/%s' % (i, numLeafs), length= 50)
                     for leaf in leafs:
                         with xf.element('omi:result', {'msgformat': 'odf'}):
-                            el = etree.Element("{%s}return" % omiVersion, returnCode="200")
-                            xf.write(el,pretty_print=True)
-                            el = None
+                            with xf.element('omi:return', {'returnCode':'200'}):
+                                pass
                             i += 1
                             #get ancestor odf elements
                             ancestors = leaf.xpath("ancestor-or-self::odf:*", namespaces=ns)
@@ -396,6 +395,7 @@ if args.single_file:
                                     else:
                                         for val in values:
                                             rinfo.append(val)
+                                printProgressBar(i, numLeafs, prefix='Progress', suffix='%s/%s - %s val      ' % (i, numLeafs, len(rinfo)), length= 50)
                             with xf.element('omi:msg'):
                                 xf.write(robjs,pretty_print=args.pretty_print)
                             #with open(output, 'wb') as handle:
@@ -405,7 +405,7 @@ if args.single_file:
     
     
                             #progressbar 1 request can take from 1 to 15 seconds ....
-                            printProgressBar(i, numLeafs, prefix='Progress', suffix='Complete', length= 50)
+                            printProgressBar(i, numLeafs, prefix='Progress', suffix='%s/%s                 ' % (i, numLeafs), length= 50)
                     
                     #first write hierarchy to temp file
                     #with open(output + "_", 'wb') as handle:
@@ -449,7 +449,7 @@ else:
             requestOdf = functools.reduce(combineElements, reversed(ancestors), True)
             outputPath = os.path.join(args.output, *list(map(getIdOrName, ancestors)))
             pathlib.Path(outputPath).mkdir(parents=True, exist_ok=True)
-            output = os.path.join(outputPath, "Objects.xml")
+            output = os.path.join(outputPath, fileName)
     
             #element to build the result in
             robjs = None
@@ -509,15 +509,22 @@ else:
                     else:
                         for val in values:
                             rinfo.append(val)
-    
-            with open(output, 'wb') as handle:
-                et = etree.ElementTree(robjs)
-                et.write(handle, pretty_print=args.pretty_print)
+
+                printProgressBar(i, numLeafs, prefix='Progress', suffix='%s/%s - %s val      ' % (i, numLeafs, len(rinfo)), length= 50)
+
+            if args.compression:
+                with gzip.open(output, 'wb', compresslevel = args.compression) as handle:
+                    et = etree.ElementTree(robjs)
+                    et.write(handle, pretty_print=args.pretty_print)
+            else:
+                with open(output, 'wb') as handle:
+                    et = etree.ElementTree(robjs)
+                    et.write(handle, pretty_print=args.pretty_print)
     
     
     
             #progressbar 1 request can take from 1 to 15 seconds ....
-            printProgressBar(i, numLeafs, prefix='Progress', suffix='Complete', length= 50)
+            printProgressBar(i, numLeafs, prefix='Progress', suffix='%s/%s                 ' % (i, numLeafs), length= 50)
         
         #first write hierarchy to temp file
         #with open(output + "_", 'wb') as handle:
