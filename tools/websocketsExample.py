@@ -1,4 +1,4 @@
-import asyncio, ssl
+import asyncio, ssl, time
 # pip install websocets lxml
 try:
     import websockets
@@ -69,19 +69,23 @@ def processResponse(response):
 
 async def subscribe():
     while True:
-        async with websockets.connect(websocketUrl, ssl=context) as ws:
-            await ws.send(subscription)
+        try:
+            async with websockets.connect(websocketUrl, ssl=context) as ws:
+                await ws.send(subscription)
 
-            while ws.open:
-                try:
-                    response = await ws.recv()
-                    print(response)
-                    processResponse(response)
+                while ws.open:
+                    try:
+                        response = await ws.recv()
+                        print(response)
+                        processResponse(response)
 
-                except websockets.exceptions.ConnectionClosedError as e:
-                    print(e)
+                    except websockets.exceptions.ConnectionClosedError as e:
+                        print(e)
 
-                print()
+                    print()
+        except OSError as e:
+            print(e)
+            time.sleep(10)
 
 
 asyncio.get_event_loop().run_until_complete(subscribe())
