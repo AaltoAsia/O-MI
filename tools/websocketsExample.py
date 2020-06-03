@@ -85,7 +85,7 @@ async def subscribe():
                     print()
         except OSError as e:
             print(e)
-            time.sleep(10)
+        time.sleep(10)
 
 
 asyncio.get_event_loop().run_until_complete(subscribe())
