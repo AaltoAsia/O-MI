@@ -243,17 +243,16 @@ trait Tables extends DBBase {
 
   val tableNames: TSet[String] = TSet.empty[String]
   def tableByNameExists(name: String): DBIOro[Boolean] = {
-    if( tableNames.single.contains(name) ){ 
+    if( tableNames.single.contains(name) ){
       DBIO.successful(true)
     } else {
       namesOfCurrentTables.map {
         names: Set[String] =>
           atomic { implicit txn =>
-            if( (tableNames &~ names).nonEmpty ) {
-              tableNames ++= names
-              val diff = tableNames &~ names
-              if( diff.nonEmpty ) 
-                tableNames --= diff
+            val diff = tableNames &~ names
+            tableNames ++= names
+            if( diff.nonEmpty ) {
+              tableNames --= diff
               tableNames.contains(name)
             } else names.contains(name)
           }
