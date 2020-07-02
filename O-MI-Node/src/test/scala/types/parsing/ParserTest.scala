@@ -75,6 +75,8 @@ class ParserTest( implicit ee: ExecutionEnv ) extends Specification with Matcher
       correct format      $e400
       incorrect XML       $e401
       incorrect label     $e402
+    DatatypeFactory should be thread safe
+      correct result      $e7
     """
 
   def e1 = {
@@ -115,6 +117,29 @@ class ParserTest( implicit ee: ExecutionEnv ) extends Specification with Matcher
     invalidOmiTest(
       omiReadTest.replace("read", s"$temp"), "OMIParserError" 
     )
+  }
+  def e7 = {
+    import java.util.GregorianCalendar
+    import java.util.TimeZone
+    import java.time.ZoneId
+    import javax.xml.datatype.{DatatypeFactory, XMLGregorianCalendar}
+
+    val ct = System.currentTimeMillis
+
+
+    val tempgc = new GregorianCalendar()
+    tempgc.setTimeInMillis(ct)
+    tempgc.setTimeZone(TimeZone.getTimeZone(ZoneId.systemDefault()))
+    val correct = DatatypeFactory.newInstance().newXMLGregorianCalendar(tempgc).toXMLFormat()
+    val datatypeFactory = DatatypeFactory.newInstance()
+    var storep = new Array[String](100000).par
+    storep = storep.map(_ => {
+      val gc = new GregorianCalendar()
+      gc.setTimeInMillis(ct)
+      gc.setTimeZone(TimeZone.getTimeZone(ZoneId.systemDefault()))
+      datatypeFactory.newXMLGregorianCalendar(gc).toXMLFormat()
+    })
+    storep.forall(_ == correct) must beTrue
   }
 
   def e100 = {
