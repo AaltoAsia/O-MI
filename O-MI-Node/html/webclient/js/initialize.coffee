@@ -284,7 +284,7 @@ constsExt = ($, parent, util) ->
         
         xhr.fail (xhr, msg, err) ->
           WebOmi.debug ["O-DF GET fail", xhr, msg, err]
-          alert "Failed to get Object(s): "+msg
+          alert "Failed to get Object(s): #{msg}; #{err}\n Depending on the error, check internet and server connection (to the url in the Server box) or data format might be incompatible."
     
     types :
       default :

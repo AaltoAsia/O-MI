@@ -59,6 +59,17 @@
       </InfoItem>
     </Object>
   </Object>
+  <Object>
+      <id>EmptyValueObject</id>
+      <InfoItem type="Extra" name="novalues">
+        <description>Human readable description.</description>
+        <MetaData>
+          <InfoItem name="metaData1">
+            <value unixTime="0" type="xs:string">42</value>
+          </InfoItem>
+        </MetaData>
+      </InfoItem>
+  </Object>
 </Objects>
 	    </textarea>
 	</article>
@@ -131,8 +142,19 @@
             </InfoItem>
             <InfoItem type="Extra2" name="Extra2">
               <value unixTime="9" type="xs:string">"test"</value>
-      </InfoItem>
+            </InfoItem>
           </Object>
+        </Object>
+        <Object>
+          <id>EmptyValueObject</id>
+          <InfoItem type="Extra" name="novalues">
+            <description>Human readable description.</description>
+            <MetaData>
+              <InfoItem name="metaData1">
+                <value unixTime="0" type="xs:string">42</value>
+              </InfoItem>
+            </MetaData>
+          </InfoItem>
         </Object>
       </Objects>
     </msg>
@@ -342,6 +364,13 @@
                 <value unixTime="9" >&quot;test&quot;</value>
               </InfoItem>
             </Object>
+          </Object>
+          <Object>
+            <id>EmptyValueObject</id>
+            <InfoItem type="Extra" name="novalues">
+              <description/>
+              <MetaData/>
+            </InfoItem>
           </Object>
         </Objects>
       </msg>
@@ -704,6 +733,60 @@
                 <value unixTime="2" type="xs:integer">2</value>
               </InfoItem>
             </Object>
+          </Object>
+        </Objects>
+      </msg>
+    </result>
+  </response>
+</omiEnvelope>
+		    </textarea>
+	    </div>
+	</article>
+    <article class="request-response single test">
+	    <h2> Empty values </h2>
+	    <div><p class="description">
+		User wants multiple values from InfoItem with no values
+		</p>
+		Argument:
+		<ul>
+		    <li>empty values</li>
+		</ul>
+	    </div>
+	    <div>
+		<h3>Request:</h3>
+		    <textarea  class="request" rows=20 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<omiEnvelope  xmlns="http://www.opengroup.org/xsd/omi/2.0/"  version="2.0" ttl="0.0">
+  <read msgformat="odf" newest="3">
+    <msg>
+      <Objects version="2.0" xmlns="http://www.opengroup.org/xsd/odf/2.0/" >
+        <Object>
+          <id>EmptyValueObject</id>
+          <InfoItem type="Extra" name="novalues">
+          </InfoItem>
+        </Object>
+      </Objects>
+    </msg>
+  </read>
+</omiEnvelope>
+		    </textarea>
+	    </div>
+	    <div>
+		<h3>Response:</h3>
+		    <textarea class="response" rows=30 cols=100 style="border: none;" readonly>
+<?xml version="1.0"?>
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/2.0/"   ttl="10.0" version="2.0">
+  <response>
+    <result msgformat="odf" >
+      <return returnCode="200"/>
+      <msg>
+        <Objects version="2.0" xmlns="http://www.opengroup.org/xsd/odf/2.0/" >
+          <Object>
+            <id>EmptyValueObject</id>
+            <InfoItem type="Extra" name="novalues">
+              <description/>
+              <MetaData/>
+            </InfoItem>
           </Object>
         </Objects>
       </msg>

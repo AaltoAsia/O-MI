@@ -15,6 +15,7 @@ package object odf extends InfoItem.Builders{
 
   type OdfParseResult = Either[JavaIterable[_ <:ParseError], ImmutableODF]
   type OdfCollection[T] = Vector[T]
+  val dataTypeFactory = DatatypeFactory.newInstance() //THIS MIGHT BE UNSAFE
 
   def timestampToXML(timestamp: Timestamp): XMLGregorianCalendar = {
     val cal = new GregorianCalendar()
@@ -26,7 +27,7 @@ package object odf extends InfoItem.Builders{
     val gc = new GregorianCalendar()
     gc.setTimeInMillis(timestamp.getTime())
     gc.setTimeZone( TimeZone.getTimeZone( ZoneId.systemDefault()))
-    DatatypeFactory.newInstance().newXMLGregorianCalendar( gc ).toXMLFormat()
+    dataTypeFactory.newXMLGregorianCalendar( gc ).toXMLFormat()
     //OffsetDateTime.ofInstant(timestamp.toInstant(), ZoneId.systemDefault()).toString
   }
   def optionUnion[A](left: Option[A], right: Option[A]): Option[A] = {
