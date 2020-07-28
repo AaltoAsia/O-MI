@@ -122,7 +122,7 @@ Setting up a development environment
 -----------------------------
 
 1. `git clone`
-2. [Install sbt](http://www.scala-sbt.org/0.13/tutorial/Setup.html)
+2. [Install sbt](https://www.scala-sbt.org/1.x/docs/Setup.html)
 3. (on windows: logout, or put sbt into PATH yourself)
 4. Open a cmd or shell to the `O-MI` project directory
 5. Then run `sbt` and in opened the ">" prompt run `reStart` to compile and run the O-MI Node
