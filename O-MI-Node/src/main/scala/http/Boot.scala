@@ -168,6 +168,18 @@ class OmiServer extends OmiNode {
 
   implicit val timeoutForBind: Timeout = Timeout(5.seconds)
 
+  //Shutdown hook to handle SIGINT(ctrl + c)
+  sys.addShutdownHook({
+    import system.dispatcher
+    system.log.info("exiting...")
+    val terminated =  for {
+      _ <- singleStores.takeSnapshot
+      ter <- shutdown()
+    } yield ter
+    Await.ready(terminated, 10 seconds)
+
+  })
+
 }
 
 trait OmiNode {
@@ -205,7 +217,6 @@ trait OmiNode {
     }
     bindingFuture
   }
-
   def shutdown(): Future[akka.actor.Terminated] = {
     val f = system.terminate()
     f
