@@ -48,6 +48,7 @@ object Dependencies {
 
   val redis = "com.safety-data" %% "akka-persistence-redis" % "0.4.1"
   val alpakka = "com.lightbend.akka" %% "akka-stream-alpakka-xml" % "1.0.0"
+  val jmdns = "org.jmdns" % "jmdns" % "3.5.5" // Service Discovery library
 
 
   val prometheus = Seq(
@@ -98,7 +99,8 @@ object Dependencies {
     scalaProto,
     gson,
     redis,
-    alpakka
+    alpakka,
+    jmdns
   ) ++ prometheus
 
   //val servletDependencies: Seq[ModuleID] = Seq(
