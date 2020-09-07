@@ -1,33 +1,24 @@
 package agents
 
-import java.sql.Timestamp
-import java.util.concurrent.TimeUnit
 import java.net.InetAddress
 
 import collection.JavaConverters._
 import javax.jmdns.JmDNS
 import javax.jmdns.ServiceInfo
 import agentSystem._
-import akka.actor.{Actor, ActorLogging, ActorRef, Cancellable, Props}
-import com.typesafe.config.{Config, ConfigValue}
-import types.omi.{OmiResult, ResponseRequest, Results, WriteRequest}
-import types.Path
-import types.odf._
+import akka.actor.{Actor, ActorRef, Props}
+import com.typesafe.config.Config
 
-import scala.concurrent.ExecutionContext.Implicits._
-import scala.concurrent.Future
-import scala.concurrent.duration._
-import scala.util.{Failure, Random, Success}
 import utils.RichConfig
 
 /**
- * Companion object for ScalaAgent. Extends PropsCreator to enforce recommended practice in Props creation.
+ * Companion object. Extends PropsCreator to enforce recommended practice in Props creation.
  *  <a href="http://doc.akka.io/docs/akka/2.4/scala/actors.html#Recommended_Practices">Akka recommends to</a>.
  *
  */
 object ServiceDiscoveryAgent extends PropsCreator{
   /**
-   * Method for creating Props for ScalaAgent.
+   * Method for creating Props for ServiceDiscoveryAgent.
    *  @param config Contains configuration for this agent, as given in application.conf.
    */
   def props( 
@@ -41,10 +32,8 @@ object ServiceDiscoveryAgent extends PropsCreator{
 }
 
 /**
-  * Pushes random numbers to given O-DF path at given interval.
- * Can be used in testing or as a base for other agents.
- * Extends ScalaInternalAgentTemplate that implements some basic functionality.
- *
+  * Agent for publishing service using dns-sd
+  *
  * @param config Contains configuration for this agent, as given in application.conf.
  */
 class ServiceDiscoveryAgent(
