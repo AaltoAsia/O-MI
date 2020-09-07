@@ -205,7 +205,11 @@ trait OmiNode {
     }
     bindingFuture
   }
+  sys.addShutdownHook({
+    system.log.info("exiting...")
+    Await.ready(shutdown(), 3 seconds)
 
+  })
   def shutdown(): Future[akka.actor.Terminated] = {
     val f = system.terminate()
     f
