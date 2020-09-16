@@ -37,7 +37,6 @@ import scala.concurrent.duration._
  */
 
 class ParserTest( implicit ee: ExecutionEnv ) extends Specification with MatcherMacros with SilentActorSystem{
-  implicit val materializer = ActorMaterializer()
 
   def is =
     s2"""

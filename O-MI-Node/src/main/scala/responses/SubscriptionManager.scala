@@ -147,7 +147,7 @@ class SubscriptionManager(
         val subTime = currentTime - iSub.startTime.getTime
         val initialDelay = (iSub.interval.toMillis - (subTime % iSub.interval.toMillis)).millis
         intervalMap
-          .putIfAbsent(iSub.id, intervalScheduler.schedule(initialDelay, iSub.interval, self, HandleIntervals(iSub.id)))
+          .putIfAbsent(iSub.id, intervalScheduler.scheduleAtFixedRate(initialDelay, iSub.interval, self, HandleIntervals(iSub.id)))
       }
       res: Unit = allSubs.foreach { sub =>
         if (sub.endTime.getTime != Long.MaxValue) {
@@ -225,7 +225,7 @@ class SubscriptionManager(
         case (sub: IntervalSub, _) if !existingIds.contains(sub.id) => {
           singleStores.addSub(sub).map(_ =>
               intervalMap
-                .put(sub.id, intervalScheduler.schedule(sub.interval, sub.interval, self, HandleIntervals(sub.id))))
+                .put(sub.id, intervalScheduler.scheduleAtFixedRate(sub.interval, sub.interval, self, HandleIntervals(sub.id))))
 
 
         }
@@ -624,7 +624,7 @@ class SubscriptionManager(
                         dur,
                         currentTimestamp)
                       addedSub <- singleStores.addSub(iSub)
-                      temp = intervalMap.put(newId, intervalScheduler.schedule(dur, dur, self, HandleIntervals(newId)))
+                      temp = intervalMap.put(newId, intervalScheduler.scheduleAtFixedRate(dur, dur, self, HandleIntervals(newId)))
                     } yield newId
                     newSubId.onComplete {
                       case Success(id) =>

@@ -32,7 +32,7 @@ class CallbackHandlerTest(implicit ee: ExecutionEnv) extends Specification {
 
       val settings = OmiConfig(system)
 
-      val callbackHandler = new CallbackHandler(settings, new DummySingleStores())(system, materializer)
+      val callbackHandler = new CallbackHandler(settings, new DummySingleStores())(system)
       callbackHandler.sendCallback(HTTPCallback(Uri(s"http://localhost:$port")), msg)
 
       probe.expectMsg(ttl, Option(Await.result(msgStr, 5.seconds)))
@@ -41,14 +41,13 @@ class CallbackHandlerTest(implicit ee: ExecutionEnv) extends Specification {
     }
 
     "Try to keep sending message until ttl is over" in new Actorstest(Actorstest.createSilentAs())  {
-      implicit val materializer = ActorMaterializer()
       val port = 20004
       val ttl = Duration(10, "seconds")
       val msg = Responses.Success(ttl = ttl)
       val msgStr = msg.asXMLSource.runWith(Sink.fold("")(_ + _)).map{ str => XML.loadString(str)}
 
       val settings = OmiConfig(system)
-      val callbackHandler = new CallbackHandler(settings, new DummySingleStores())(system, materializer)
+      val callbackHandler = new CallbackHandler(settings, new DummySingleStores())(system)
       callbackHandler.sendCallback(HTTPCallback(Uri(s"http://localhost:$port")), msg)
 
       Thread.sleep(500)

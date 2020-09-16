@@ -41,7 +41,8 @@ class ParkingAgent(
 ) extends ResponsibleScalaInternalAgent{
 
   import context.dispatcher
-  implicit val m = ActorMaterializer()
+
+  implicit val system = context.system
 
   def configStringToPath( name: String ): Path ={
     Path(config.getString(name))

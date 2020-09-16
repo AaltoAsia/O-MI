@@ -68,7 +68,6 @@ trait OmiServiceAuthorization
   */
 class OmiServiceImpl(
                       protected val system: ActorSystem,
-                      val materializer: ActorMaterializer,
                       protected val subscriptionManager: ActorRef,
                       val settings: OmiConfigExtension,
                       val singleStores: SingleStores,
@@ -87,7 +86,7 @@ class OmiServiceImpl(
   if( settings.AuthApiV2.enable) {
     log.info("External Auth API v2 modules enabled")
     log.info(s"External Auth API settings ${settings.AuthApiV2}")
-    registerApi(new AuthAPIServiceV2(singleStores.hierarchyStore, settings, system, materializer))
+    registerApi(new AuthAPIServiceV2(singleStores.hierarchyStore, settings, system))
   }
 
 }
@@ -110,11 +109,10 @@ trait OmiService
 
   protected def callbackHandler: CallbackHandler
 
-  protected val system: ActorSystem
+  protected implicit val system: ActorSystem
 
   import system.dispatcher
 
-  implicit def materializer: ActorMaterializer
   //Get the files from the html directory; http://localhost:8080/html/form.html
   //this version works with 'sbt run' and 're-start' as well as the packaged version
   val staticHtml: Route = if (Files.exists(Paths.get("./html"))) {
@@ -485,13 +483,14 @@ trait OmiService
   }
 
   def chunkedStream(fResponse: Future[ResponseRequest]): ResponseEntity = {
-    val chunkStream =
-      Source.fromFutureSource(for {
+    val chunkStream = {
+      Source.futureSource(for {
         r <- fResponse
         response <- r.withRequestInfoFrom(singleStores)
-        
-      } yield response.asXMLByteSource)
+
+        } yield response.asXMLByteSource)
         .map(HttpEntity.ChunkStreamPart.apply)
+    }
 
     HttpEntity.Chunked(ContentTypes.`text/xml(UTF-8)`, chunkStream)
   }
@@ -664,7 +663,6 @@ trait WebSocketOMISupport extends WebSocketUtil {
   self: OmiService =>
   protected def system: ActorSystem
 
-  implicit def materializer: ActorMaterializer
 
   protected def subscriptionManager: ActorRef
 
@@ -675,7 +673,7 @@ trait WebSocketOMISupport extends WebSocketUtil {
 
   def webSocketUpgrade: Route = //(implicit r: RequestContext): Directive0 =
     makePermissionTestFunction() { hasPermissionTest =>
-      extractUpgradeToWebSocket { wsRequest =>
+      extractWebSocketUpgrade { wsRequest =>
         extractClientIP { ip =>
 
           val (inSink, outSource) = createInSinkAndOutSource(hasPermissionTest, ip)

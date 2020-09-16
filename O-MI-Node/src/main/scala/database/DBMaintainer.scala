@@ -40,7 +40,7 @@ class DBMaintainer(
 
   private val trimInterval: FiniteDuration = settings.trimInterval
   log.info(s"scheduling database trimming every $trimInterval")
-  scheduler.schedule(trimInterval, trimInterval, self, TrimDB)
+  scheduler.scheduleWithFixedDelay(trimInterval,trimInterval,self,TrimDB)
 
   /**
     * Function for handling InputPusherCmds.

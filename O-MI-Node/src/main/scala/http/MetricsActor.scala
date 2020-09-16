@@ -68,7 +68,7 @@ class MetricsReporter(val configName: String, val settings: OmiConfigExtension) 
     )
 
   if( settings.metricsEnabled ){
-    timers.startPeriodicTimer("report",Report,10.seconds)
+    timers.startTimerAtFixedRate("report",Report,10.seconds)
   }
   def receive ={
     case NewRequest(requestToken: Long, timestamp: Timestamp, user: UserInfo, requestType: String, attributes: String, pathCount: Int) =>

@@ -40,7 +40,6 @@ trait AuthApiJsonSupport {
   //implicit val json4sFormats: Formats = DefaultFormats + new PathSerializer // + new NoneSerializer
   //implicit def jsonMarshaller[T <: AnyRef] = marshaller[T](jsonSerialization, json4sFormats)
 
-  protected implicit val materializer: ActorMaterializer
   protected val httpExtension: HttpExt
   protected implicit val system: ActorSystem
 
@@ -84,7 +83,6 @@ class AuthAPIServiceV2(
                         val hierarchyStore: ActorRef,
                         val settings: OmiConfigExtension,
                         protected implicit val system: ActorSystem,
-                        protected override implicit val materializer: ActorMaterializer
                       ) extends AuthApi with AuthApiJsonSupport {
 
   import settings.AuthApiV2._

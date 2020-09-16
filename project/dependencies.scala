@@ -4,22 +4,23 @@ import Keys._
 object Dependencies {
 
   //Akka 
-  val akkaV = "2.6.0-M2" // "2.6-SNAPSHOT" //"2.5.23"
+  val akkaV = "2.6.9" // "2.6-SNAPSHOT" //"2.5.23"
 
-  val akkaHttpV = "10.1.8"
+  val akkaHttpV = "10.2.0"
   val akkaActor       = "com.typesafe.akka" %% "akka-actor" % akkaV //
   val akkaSlf4j       = "com.typesafe.akka" %% "akka-slf4j" % akkaV
   val akkaStream      = "com.typesafe.akka" %% "akka-stream" % akkaV
   val akkaPersistance = "com.typesafe.akka" %% "akka-persistence" % akkaV
+  val akkaPersistanceQuery = "com.typesafe.akka" %% "akka-persistence-query" % akkaV // to fix incompatible versions
 
 
   val http         = "com.typesafe.akka" %% "akka-http-core" % akkaHttpV
   val httpExperimnt= "com.typesafe.akka" %% "akka-http" % akkaHttpV
   val httpXml      = "com.typesafe.akka" %% "akka-http-xml" % akkaHttpV
   val sprayJson    = "com.typesafe.akka" %% "akka-http-spray-json" % akkaHttpV 
-  val httpCors     = "ch.megard"         %% "akka-http-cors" % "0.4.1"
+  val httpCors     = "ch.megard"         %% "akka-http-cors" % "1.1.0"
   //Test dependencies
-  val specs2V = "4.3.0"
+  val specs2V = "4.10.0"
   val specs2       = "org.specs2"        %% "specs2-core"   % specs2V   % "test"
   val specs2match  = "org.specs2"        %% "specs2-matcher-extra" % specs2V % "test"
   val mockito	     = "org.specs2"        %% "specs2-mock"   % specs2V   % "test"
@@ -28,7 +29,7 @@ object Dependencies {
   val httpTestkit  = "com.typesafe.akka" %% "akka-http-testkit" % akkaHttpV % "test"
 
   //Slick
-  val slickV = "3.2.3"
+  val slickV = "3.3.3"
   val slick        = "com.typesafe.slick" %% "slick" % slickV //common
   val slickCodegen = "com.typesafe.slick" %% "slick-codegen"  % slickV //common
   val hikariCP     = "com.typesafe.slick" %% "slick-hikaricp" % slickV
@@ -39,15 +40,15 @@ object Dependencies {
   val leveldbjni   = "org.fusesource.leveldbjni"   % "leveldbjni-all"   % "1.8"
   //val json4s       = "org.json4s"         %% "json4s-native"  % "3.3.0" //common
   val postgres     = "org.postgresql"      % "postgresql"      % "9.4.1211"
-  val json4s       = "org.json4s"         %% "json4s-native"   % "3.6.6" //common
-  val json4sAkka   = "de.heikoseeberger"  %% "akka-http-json4s" % "1.26.0" //common
+  val json4s       = "org.json4s"         %% "json4s-native"   % "3.6.7" //common
+  val json4sAkka   = "de.heikoseeberger"  %% "akka-http-json4s" % "1.34.0" //common
 
   //etc
   val logback          = "ch.qos.logback" % "logback-classic" % "1.2.3"
   val scalaProto       = "com.thesamet.scalapb" %% "scalapb-runtime" % scalapb.compiler.Version.scalapbVersion % "protobuf"
 
-  val redis = "com.safety-data" %% "akka-persistence-redis" % "0.4.1"
-  val alpakka = "com.lightbend.akka" %% "akka-stream-alpakka-xml" % "1.0.0"
+  val redis = "com.safety-data" %% "akka-persistence-redis" % "0.4.2"
+  val alpakka = "com.lightbend.akka" %% "akka-stream-alpakka-xml" % "2.0.1"
   val jmdns = "org.jmdns" % "jmdns" % "3.5.5" // Service Discovery library
 
 
@@ -66,7 +67,7 @@ object Dependencies {
   //val scalaXML     = "org.scala-lang.modules"      %% "scala-xml"    % "2.11.0-M4"
 
   //STM
-  val stm          = "org.scala-stm"               %% "scala-stm"    % "0.8"
+  val stm          = "org.scala-stm"               %% "scala-stm"    % "0.9.1"
 
   //Java dependencies
   val gson         = "com.google.code.gson"         % "gson"         % "2.8.5"
@@ -98,7 +99,7 @@ object Dependencies {
     //commonsLang,
     scalaProto,
     gson,
-    redis,
+  //  redis,
     alpakka,
     jmdns
   ) ++ prometheus

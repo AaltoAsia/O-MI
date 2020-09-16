@@ -59,7 +59,6 @@ class TestOmiServer() extends OmiNode with OmiServiceTestImpl {
   // create omi service actor
   val omiService = new OmiServiceImpl(
     system,
-    materializer,
     subscriptionManager,
     settings,
     singleStores,
@@ -74,7 +73,7 @@ class TestOmiServer() extends OmiNode with OmiServiceTestImpl {
   if (settings.AuthApiV2.enable) {
     log.info("External Auth API v2 modules enabled")
     log.info(s"External Auth API settings ${settings.AuthApiV2}")
-    registerApi(new AuthAPIServiceV2(singleStores.hierarchyStore, settings, system, materializer))
+    registerApi(new AuthAPIServiceV2(singleStores.hierarchyStore, settings, system))
   }
 }
 
@@ -93,7 +92,7 @@ trait OmiServiceTestImpl extends OmiService with AnyActorSystem {
   lazy implicit val settings: OmiConfigExtension = OmiConfig(system)
   lazy implicit val singleStores: SingleStores = SingleStores(settings)
   lazy implicit val callbackHandler: CallbackHandler =
-    new CallbackHandler(settings, singleStores)(system, materializer)
+    new CallbackHandler(settings, singleStores)(system)
 
 
   lazy val metricsReporter = system.actorOf(MetricsReporter.props(settings),"metric-reporter")
@@ -446,7 +445,6 @@ class OmiServiceDummy extends OmiService with Mockito {
   override protected val system: ActorSystem = Actorstest.createAs()
   override val singleStores: SingleStores = mock[SingleStores]
 
-  override implicit def materializer: ActorMaterializer = ???
 
   override protected def subscriptionManager: ActorRef = ???
   protected def metricsReporter: ActorRef = ???

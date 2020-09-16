@@ -39,10 +39,10 @@ class ODFAgent(
   requestHandler: ActorRef, 
   dbHandler: ActorRef
 ) extends ScalaInternalAgentTemplate(requestHandler,dbHandler){
-  implicit val m = ActorMaterializer()
    val interval : FiniteDuration= config.getDuration("interval", TimeUnit.SECONDS).seconds
    val odfQueue : MutableQueue[ODF]= MutableQueue()
-  
+
+  implicit val system = context.system
   import scala.concurrent.ExecutionContext.Implicits._
   case class Update()
 	
@@ -74,7 +74,7 @@ class ODFAgent(
 
   // Schedule update and save job, for stopping
   // Will send Update message to self every interval
-  private val  updateSchedule : Cancellable = context.system.scheduler.schedule(
+  private val  updateSchedule : Cancellable = context.system.scheduler.scheduleWithFixedDelay(
     Duration(0, SECONDS),
     interval,
     self,

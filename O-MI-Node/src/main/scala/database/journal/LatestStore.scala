@@ -32,6 +32,7 @@ object LatestStore {
 class LatestStore(override val persistenceId: String) extends JournalStore {
 
   import context.dispatcher
+  implicit val mat = context.system
   private var state: Map[Path, Value[Any]] = Map()
 
 
@@ -54,7 +55,6 @@ class LatestStore(override val persistenceId: String) extends JournalStore {
   }
 
   val snapshotInterval = 100
-
   def receiveCommand: Receive = receiveBoilerplate orElse {
     case SaveSnapshot(msg) => sender() ! saveSnapshot(
       PWriteLatest(

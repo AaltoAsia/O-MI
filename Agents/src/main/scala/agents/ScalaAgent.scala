@@ -68,7 +68,7 @@ class ScalaAgent(
 
   // Schedule update and save job, for stopping
   // Will send Update() message to self every interval
-  private val updateSchedule: Cancellable= context.system.scheduler.schedule(
+  private val updateSchedule: Cancellable= context.system.scheduler.scheduleWithFixedDelay(
     Duration.Zero,//Delay start
     interval,//Interval between messages
     self,//To

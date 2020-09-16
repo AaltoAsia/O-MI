@@ -51,7 +51,7 @@ class SubscriptionTest( implicit ee: ExecutionEnv ) extends Specification with B
   import system.dispatcher
   implicit val settings = OmiConfig(system)
   val metricsReporter = system.actorOf(MetricsReporter.props(settings),"metric-reporter")
-  implicit val callbackHandler: CallbackHandler = new CallbackHandler(settings, new DummySingleStores())(system, materializer)
+  implicit val callbackHandler: CallbackHandler = new CallbackHandler(settings, new DummySingleStores())(system)
   val analytics = None
 
   implicit val singleStores = SingleStores(settings)

@@ -48,7 +48,6 @@ trait InfluxDBClient {
   implicit val system: ActorSystem
   import system.dispatcher // execution context for futures
   val httpExt = Http(system)
-  implicit val mat: Materializer = ActorMaterializer()
   implicit val logSourceType: LogSource[InfluxDBClient] = new LogSource[InfluxDBClient] {
     def genString(a:InfluxDBClient) = s"InfluxClient:${a.config.address}:${a.config.databaseName}"
   }

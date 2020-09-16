@@ -46,7 +46,7 @@ class SingleStoresMaintainer(
 
   if (settings.writeToDisk) {
     log.info(s"scheduling journal snapshot every $snapshotInterval")
-    scheduler.schedule(snapshotInterval, snapshotInterval, self, TakeSnapshot)
+    scheduler.scheduleWithFixedDelay(snapshotInterval,snapshotInterval,self,takeSnapshot)
   } else {
     log.info("using transient journal, taking snapshots is not in use.")
   }

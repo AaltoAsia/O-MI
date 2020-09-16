@@ -22,7 +22,6 @@ import akka.http.scaladsl.Http.ServerBinding
 import akka.http.scaladsl.{Http, HttpExt}
 import akka.io.{IO, Tcp}
 import akka.pattern.ask
-import akka.stream.ActorMaterializer
 import akka.util.Timeout
 import org.slf4j.{Logger, LoggerFactory}
 import responses.CLIHelper
@@ -48,7 +47,6 @@ class OmiServer extends OmiNode {
 
   // we need an ActorSystem to host our application in
   implicit val system: ActorSystem = ActorSystem("on-core")
-  implicit val materializer: ActorMaterializer = ActorMaterializer()(system) // execution context for future
 
   /**
     * Settings loaded by akka (typesafe config) and our [[OmiConfigExtension]]
@@ -82,7 +80,7 @@ class OmiServer extends OmiNode {
       singleStores
     )*/
 
-  val callbackHandler: CallbackHandler = new CallbackHandler(settings, singleStores)(system, materializer)
+  val callbackHandler: CallbackHandler = new CallbackHandler(settings, singleStores)(system)
   // val analytics: Option[ActorRef] =
   //   if(settings.enableAnalytics)
   //     Some(
@@ -155,7 +153,6 @@ class OmiServer extends OmiNode {
   // create omi service actor
   val omiService = new OmiServiceImpl(
     system,
-    materializer,
     subscriptionManager,
     settings,
     singleStores,
@@ -185,8 +182,6 @@ class OmiServer extends OmiNode {
 trait OmiNode {
   implicit def system: ActorSystem
 
-  implicit def materializer: ActorMaterializer
-
   def requestHandler: ActorRef
 
   def omiService: OmiService
@@ -208,8 +203,9 @@ trait OmiNode {
     */
   def bindHTTP()(implicit ec: ExecutionContext): Future[ServerBinding] = {
 
-    val bindingFuture =
-      httpExt.bindAndHandle(omiService.myRoute, settings.interface, settings.webclientPort)
+    val bindingFuture = {
+      httpExt.newServerAt(settings.interface, settings.webclientPort).bind(omiService.myRoute)
+    }
     bindingFuture.failed.foreach {
       case ex: Exception =>
         system.log.error(ex, "Failed to bind to {}:{}!", settings.interface, settings.webclientPort)

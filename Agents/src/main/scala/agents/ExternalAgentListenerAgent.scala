@@ -131,10 +131,10 @@ class ExternalAgentHandler(
     sourceAddress: InetSocketAddress,
     requestHandler: ActorRef
   ) extends Actor with ActorLogging {
-  implicit val m = ActorMaterializer()
 
   import Tcp._
   private var storage: String = ""
+  implicit val system = context.system
 
   /** Partial function for handling received messages.
     */

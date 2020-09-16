@@ -20,6 +20,7 @@ import HierarchyStore._
 
 
 class HierarchyStore(override val persistenceId: String) extends JournalStore {
+  implicit val system = context.system
 
   private var state: ImmutableODF = ImmutableODF() //: Map[String, PersistentNode] = Map()
 

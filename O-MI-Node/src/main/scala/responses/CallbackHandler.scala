@@ -85,7 +85,7 @@ trait HttpSendLogic {
   this: Actor with ActorLogging =>
 
   protected val http: HttpExt
-  implicit val mat = ActorMaterializer()
+  implicit val system = context.system
 
   def send(next: BufferedRequest)(implicit ec: ExecutionContext) = {
 
@@ -146,7 +146,7 @@ class HttpQueue(
   def caseTimerCommand: Receive = {
     case StartInterval(interval) =>
       log.debug(s"StartInterval: $uri")
-      timers.startPeriodicTimer(TimerKey, TrySend, interval)
+      timers.startTimerAtFixedRate(TimerKey, TrySend, interval)
     case StopInterval => timers.cancel(TimerKey)
   }
 
@@ -236,7 +236,6 @@ class CallbackHandler(
                        protected val singleStores: SingleStores,
                      )(
                        protected implicit val system: ActorSystem,
-                       protected implicit val materializer: ActorMaterializer
                      ) extends WebSocketUtil {
 
   import system.dispatcher
@@ -269,7 +268,7 @@ class CallbackHandler(
     val address = callback.uri
     val encodedSource = (request match {
         case response: ResponseRequest =>
-          Source.fromFutureSource(
+          Source.futureSource(
             response.withRequestInfoFrom(singleStores).map{r =>
               r.asXMLSource
             })

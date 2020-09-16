@@ -41,7 +41,6 @@ class AuthAPIServiceMock(
     DummyHierarchyStore(hierarchyStored)
     , new OmiConfigExtension(config.withFallback(Actorstest.silentLoggerConfFull))
     , system
-    , ActorMaterializer()
     )
   with Mockito
   with MustThrownExpectations
@@ -397,11 +396,13 @@ class AuthServiceTest(implicit ee: ExecutionEnv) extends AuthServiceTestEnv{
         }
         "form-urlencoded" in new AuthTest() {
           val res = createRequest(Post, uri, twoVars("form-urlencoded"), testVars)
-          res.entity.toString === "HttpEntity.Strict(application/x-www-form-urlencoded,Tok=myToken&foo=bar)"
+          res.entity.toString === "HttpEntity.Strict(application/x-www-form-urlencoded,19 bytes total)"
+          //res.entity.toString === "HttpEntity.Strict(application/x-www-form-urlencoded,Tok=myToken&foo=bar)"
         }
         "jsonbody" in new AuthTest {
           val res = createRequest(Post, uri, twoVars("jsonbody"), testVars)
-          res.entity.toString === """HttpEntity.Strict(application/json,{"Tok":"myToken","foo":"bar"})"""
+          res.entity.toString === """HttpEntity.Strict(application/json,29 bytes total)"""
+          //res.entity.toString === """HttpEntity.Strict(application/json,{"Tok":"myToken","foo":"bar"})"""
         }
       }
     }

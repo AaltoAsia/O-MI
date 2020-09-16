@@ -12,8 +12,6 @@ import akka.stream.{Materializer, ActorMaterializer}
   */
 abstract class JournalStore extends PersistentActor with ActorLogging {
   //override def persistenceId: String = id
-  implicit val mat: Materializer = ActorMaterializer()
-  
   val oldestSavedSnapshot: Long =
     Duration(
       context.system.settings.config.getDuration("omi-service.snapshot-delete-older").toMillis,

@@ -29,7 +29,6 @@ import database._
 import responses._
 import types.Path
 import types.odf._
-import akka.stream.{ActorMaterializer, Materializer}
 import akka.stream.scaladsl.{Sink,FileIO}
 import utils._
 import types.odf.parsing.ODFStreamParser._
@@ -73,7 +72,6 @@ object OmiNodeCLI {
              removeHandler: CLIHelperT,
              agentSystem: ActorRef,
              subscriptionManager: ActorRef
-           )(
            ): Props = Props(
     new OmiNodeCLI(
       connection,
@@ -110,9 +108,9 @@ class OmiNodeCLI(
   restore <filename for subs> <filename for odf>
   """ + "\r\n>"
   val ip: AgentName = sourceAddress.toString
-  implicit val mat: Materializer = ActorMaterializer()
 
-  val commandTimeout: FiniteDuration = Duration.fromNanos(context.system.settings.config.getDuration("omi-service.journal-ask-timeout").toNanos)
+  implicit val system = context.system
+  val commandTimeout: FiniteDuration = Duration.fromNanos(system.settings.config.getDuration("omi-service.journal-ask-timeout").toNanos)
   implicit val timeout: Timeout = commandTimeout
 
   override def preStart: Unit = {
