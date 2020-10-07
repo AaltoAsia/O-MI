@@ -74,6 +74,9 @@ class OmiConfigExtension(val config: Config) extends Extension
   /** Minimum supported interval for interval based subscriptions */
   val minSubscriptionInterval: FiniteDuration = config getDuration "omi-service.min-subscription-interval"
 
+  /** Maximum duration to wait for ongoing requests to complete before forceful termination*/
+  val shutdownHardDeadline: FiniteDuration = config getDuration "shutdown-hard-deadline"
+
   /** Save some interesting setting values to this path */
 
   val settingsOdfPath: Path = Path(config getString "omi-service.settings-read-odfpath")
