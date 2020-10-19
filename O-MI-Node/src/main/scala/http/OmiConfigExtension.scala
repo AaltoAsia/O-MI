@@ -75,7 +75,7 @@ class OmiConfigExtension(val config: Config) extends Extension
   val minSubscriptionInterval: FiniteDuration = config getDuration "omi-service.min-subscription-interval"
 
   /** Maximum duration to wait for ongoing requests to complete before forceful termination*/
-  val shutdownHardDeadline: FiniteDuration = config getDuration "shutdown-hard-deadline"
+  val shutdownHardDeadline: FiniteDuration = config getDuration "omi-service.shutdown-hard-deadline"
 
   /** Save some interesting setting values to this path */
 
