@@ -323,7 +323,7 @@ if args.single_file:
             objects = root.find(".//{%s}Objects" % odfVersion)
             
             #insert description and metadata to the objects and infoitems even if they were not in the hierarchy?
-            if not objects: print('ERROR, server returned:', r)
+            if objects is None: print('ERROR, server returned:', r)
             update_odf(objects)
             
             debug("request hierarchy successfully built")
@@ -452,7 +452,7 @@ else:
         objects = root.find(".//{%s}Objects" % odfVersion)
         
         #insert description and metadata to the objects and infoitems even if they were not in the hierarchy?
-        if not objects: print('ERROR, server returned:', r)
+        if objects is None: print('ERROR, server returned:', r)
         update_odf(objects)
         
         debug("request hierarchy successfully built")
