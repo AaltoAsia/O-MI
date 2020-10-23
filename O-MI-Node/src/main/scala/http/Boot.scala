@@ -27,7 +27,7 @@ import org.slf4j.{Logger, LoggerFactory}
 import responses.CLIHelper
 
 import scala.concurrent.duration._
-import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.concurrent.{Await, ExecutionContext, Future, Promise}
 import scala.util.{Failure, Success, Try}
 //import akka.http.WebBoot
 //import akka.http.javadsl.ServerBinding
@@ -47,6 +47,7 @@ class OmiServer extends OmiNode {
 
   // we need an ActorSystem to host our application in
   implicit val system: ActorSystem = ActorSystem("on-core")
+  import system.dispatcher
 
   /**
     * Settings loaded by akka (typesafe config) and our [[OmiConfigExtension]]
@@ -164,12 +165,29 @@ class OmiServer extends OmiNode {
 
 
   implicit val timeoutForBind: Timeout = Timeout(5.seconds)
+  val shutdownHardDeadline: FiniteDuration = settings.shutdownHardDeadline
+  val bindingPromise = Promise[ServerBinding]
 
+  def bindHTTP: Future[ServerBinding] = {
+    val bindingFuture = {
+      httpExt.newServerAt(settings.interface, settings.webclientPort).bind(omiService.myRoute)
+    }
+    bindingPromise.completeWith(bindingFuture)
+
+    bindingFuture.failed.foreach {
+      case ex: Exception =>
+        system.log.error(ex, "Failed to bind to {}:{}!", settings.interface, settings.webclientPort)
+
+    }
+    bindingFuture
+  }
   //Shutdown hook to handle SIGINT(ctrl + c)
   sys.addShutdownHook({
-    import system.dispatcher
     system.log.info("exiting...")
     val terminated =  for {
+      binding <- bindingPromise.future
+      _ <- binding.unbind()
+      _ <- binding.terminate(shutdownHardDeadline)
       _ <- singleStores.takeSnapshot
       ter <- shutdown()
     } yield ter
@@ -201,18 +219,8 @@ trait OmiNode {
 
   /** Start a new HTTP server on configured port with our service actor as the handler.
     */
-  def bindHTTP()(implicit ec: ExecutionContext): Future[ServerBinding] = {
+  def bindHTTP(): Future[ServerBinding]
 
-    val bindingFuture = {
-      httpExt.newServerAt(settings.interface, settings.webclientPort).bind(omiService.myRoute)
-    }
-    bindingFuture.failed.foreach {
-      case ex: Exception =>
-        system.log.error(ex, "Failed to bind to {}:{}!", settings.interface, settings.webclientPort)
-
-    }
-    bindingFuture
-  }
   def shutdown(): Future[akka.actor.Terminated] = {
     val f = system.terminate()
     f

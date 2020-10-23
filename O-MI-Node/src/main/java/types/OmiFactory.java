@@ -953,10 +953,9 @@ final public class OmiFactory{
   public static OmiResult createOmiResult(
       OmiReturn returnValue
       ){
-    Vector<java.lang.Object> empty = Vector.empty().toVector();
     return OmiResult$.MODULE$.apply(
         returnValue,
-        empty,
+        types.JavaHelpers.requestIDsFromJava(new java.util.ArrayList<Long>()),
         scala.Option.empty()
         );
       }

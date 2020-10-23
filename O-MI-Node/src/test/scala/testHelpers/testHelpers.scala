@@ -1,6 +1,6 @@
 package testHelpers
 
-import scala.concurrent.{Await, Future, Promise}
+import scala.concurrent.{Await, ExecutionContext, Future, Promise}
 import scala.concurrent.duration._
 import scala.language.postfixOps
 import scala.xml.{Node, PrettyPrinter, SAXParser, XML}
@@ -32,6 +32,7 @@ import database.SingleStores
 import database.TestDB
 import database.DBHandler
 import agentSystem._
+import akka.http.scaladsl.Http.ServerBinding
 import database.journal.HierarchyStore.GetTree
 import authorization._
 
@@ -41,7 +42,15 @@ class TestOmiServer() extends OmiNode with OmiServiceTestImpl {
   // we need an ActorSystem to host our application in
   implicit val system: ActorSystem = ActorSystem("on-core")
   implicit val materializer: ActorMaterializer = ActorMaterializer()(system) // execution context for futures
+  implicit val ec = system.dispatcher
 
+  def bindHTTP(): Future[ServerBinding] = {
+    val bindingFuture = httpExt.newServerAt(settings.interface, settings.webclientPort).bind(omiService.myRoute)
+    bindingFuture.failed.foreach{
+      case ex => system.log.error(ex, "Failed to bind to {}:{}!", settings.interface, settings.webclientPort)
+    }
+    bindingFuture
+  }
 
   implicit val cliListener = system.actorOf(
     Props(
