@@ -53,6 +53,8 @@ parser.add_argument('--compression', '-c', dest='compression', type=int, default
 parser.add_argument('--chunk-size', dest='chunk_size', type=int, default=1024,
         help='Size of the response chunks written to file in bytes. Increasing this value might increase memory consumption. Default 1024')
 
+parser.add_argument('--location', '-L', dest='location', action='store_true', help='Follow redirects.')
+
 parser.add_argument('--verbose', '-v', dest='debug',
         action='store_const',const=eprint, default=noprint, 
         help="Print extra information during processing")
@@ -117,6 +119,7 @@ if args.nMax < 2:
 
 nMax = args.nMax
 url = args.url
+redirect = args.location
 
 # 0. send readAll request to server to get hierarchy
 # 1. create hierarchy structure with metadata and description tags included
@@ -302,6 +305,17 @@ if args.single_file:
             s.cert = cert
             s.headers.update(headers)
             
+            r = s.get(url)
+            
+            #hierarchy tree
+            if url != r.url:
+                if redirect:
+                    url = r.url
+                else:
+                    eprint("Error: Request redirected to {}. Use -L parameter to follow redirections.".format(r.url))
+                    sys.exit(6)
+
+            
             #hierarchy tree
             r = s.post(url, data = hierarchyRequest(s)).content
             root = etree.fromstring(r)
@@ -420,7 +434,17 @@ else:
         s.cert = cert
         s.headers.update(headers)
         
+        r = s.get(url)
+
         #hierarchy tree
+        if url != r.url:
+            if redirect:
+                url = r.url
+            else:
+                eprint("Error: Request redirected to {}. Use -L parameter to follow redirections.".format(r.url))
+                sys.exit(6)
+
+
         r = s.post(url, data = hierarchyRequest(s)).content
         root = etree.fromstring(r)
         
