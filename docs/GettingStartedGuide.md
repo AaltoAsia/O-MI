@@ -51,14 +51,13 @@ Received response should contain current state of selected O-DF Structure or a e
 `Write` request
 ----------------
 Select `Write` from the O-MI Request selection. Now by selecting nodes from O-DF Structure they will appear in request. These
-can be edited through the request's text area. You can also add new nodes by right clicking O-DF Structure's node and selecting
-what you want to add. This will open a form where you can give all parameters you want.
+can be edited through the request's text area. You can also add new nodes by **right clicking** O-DF Structure's node and selecting
+what you want to add. This will open a form where you can give all parameters you want. Timestamp and type of an O-DF `<value>` can be skipped, then O-MI Node inserts current server time upon receiving and will either use the string type or try to infer the correct type, depending on the implementation or settings.
 
-O-MI Node will response with returnCode 200 if everything was ok, this will not quarantine that values were written. They may have
-been too old or have same timestamp as a value in the database.
+O-MI Node will response with returnCode 200 if everything was ok. This will not guarantee that values were written, if they are older than the latest value or have same timestamp as an existing value in the database, the server might have been configured to ignore those without giving an error.
 
 Because `Write` request makes possible to override current values and add new nodes, we want to restrict its usage. For this we have
-three white lists, one for each: IPs, subnets and Shibboleth users. These can be managed from `application.conf`.
+different settings: IPs, subnets, authentication proxy users or authentication api settings. These can be managed from `application.conf`.
 
 Agents
 ======
