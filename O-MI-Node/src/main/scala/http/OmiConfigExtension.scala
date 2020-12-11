@@ -86,6 +86,7 @@ class OmiConfigExtension(val config: Config) extends Extension
 
   val snapshotInterval: FiniteDuration = config getDuration "omi-service.snapshot-interval"
   val oldestSavedSnapshot: FiniteDuration = config getDuration "omi-service.snapshot-delete-older"
+  val snapshotTrimJournal: Boolean = config getBoolean "omi-service.snapshot-trim-journal"
   /** fast journal databases paths */
   Try(config getString "journalDBs.directory")
     .foreach(value =>
