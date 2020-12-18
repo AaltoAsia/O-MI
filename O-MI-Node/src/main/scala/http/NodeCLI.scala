@@ -428,9 +428,10 @@ class OmiNodeCLI(
     Await.result(removeHandler.takeSnapshot(),Duration.Inf)
     "Success\r\n>"
   }
-  private def trim(journal: String, seqNr: String) =
-    Await.result(removeHandler.trimJournal(journal, seqNr),Duration.Inf).toString
-
+  private def trim(journal: String, seqNr: String) = {
+    removeHandler.trimJournal(journal, seqNr)
+    "Command issued, check logs for results\r\n>"
+  }
   private def send(receiver: ActorRef)(msg: String): Unit =
     receiver ! Write(ByteString(msg))
 
