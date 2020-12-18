@@ -27,6 +27,7 @@ import types.odf._
 import scala.collection.mutable.{Map => MutableMap}
 import scala.concurrent.Future
 import scala.concurrent.duration._
+import scala.util.Try
 
 
 class NodeCLITest(implicit ee: ExecutionEnv) extends Specification {
@@ -70,6 +71,9 @@ class NodeCLITest(implicit ee: ExecutionEnv) extends Specification {
     val getAllData: Future[Option[ODF]] = Future.successful(Some(ImmutableODF(Vector(Objects()))))//new Exception("not implemented"))
 
     def writeOdf(odf: ImmutableODF) = Future.successful(())
+    def trimJournal(journal: String, number: String) = {
+      Future.fromTry(Try{number.toLong})
+    }
     def takeSnapshot() = Future.successful(())
     override def handlePathRemove(parentPaths: Iterable[Path]): Future[Seq[Int]] = {
       if (path == parentPaths.head || path.isAncestorOf(parentPaths.head)) {

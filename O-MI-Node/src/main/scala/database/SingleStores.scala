@@ -73,6 +73,19 @@ trait SingleStores {
     res
   }
 
+  /**
+    * Trim old journal events up to given sequence number.
+    */
+  def trimJournal(journal: String, seqNr: Long) = {
+    val store = journal.toLowerCase match {
+      case "lateststore" => latestStore
+      case "hierarchystore" => hierarchyStore
+      case "subStore" => subStore
+      case "pollDataStore" => pollDataStore
+    }
+    store ? Trim(seqNr)
+  }
+
 
   //LatestStore
   def writeValue(path: Path, value: Value[Any]): Future[Unit] =

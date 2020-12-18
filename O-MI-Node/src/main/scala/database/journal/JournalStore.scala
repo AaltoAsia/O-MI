@@ -13,9 +13,15 @@ import akka.event.Logging
 import http.OmiConfig
 
 /**
+  * Command to trim Journal messages up to given event sequence number.
+  */
+case class Trim(upToSeqNr: Long)
+
+/**
   * Common operations on all journal store classes
   */
 abstract class JournalStore extends PersistentActor with ActorLogging {
+
   val settings = OmiConfig(context.system)
   override val log = Logging(context.system, this)
 
@@ -40,5 +46,12 @@ abstract class JournalStore extends PersistentActor with ActorLogging {
       log.debug(s"Snapshots successfully deleted for $persistenceId with criteria: $crit")
     case DeleteSnapshotsFailure(crit, ex) =>
       log.error(ex, s"Failed to delete old snapshots for $persistenceId with criteria: $crit")
+
+    case Trim(seqNr) => 
+      log.info(s"Journal $persistenceId trimming to seq nr. $seqNr.")
+      deleteMessages(seqNr)
+    // This message didn't come here
+    //case DeleteMessagesSuccess =>
+    //  log.debug(s"Journal $persistenceId message deletion success")
   }
 }
