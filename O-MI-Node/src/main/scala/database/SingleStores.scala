@@ -60,7 +60,8 @@ trait SingleStores {
       trySnapshot(latestStore, "latestStore"),
       trySnapshot(hierarchyStore, "hierarchyStore"),
       trySnapshot(subStore, "subStore"),
-      trySnapshot(pollDataStore, "pollData"))
+      trySnapshot(pollDataStore, "pollData"),
+      trySnapshot(requestInfoStore, "requestInfoStore"))
     )
     res.onComplete {
       case Success(s) => {
@@ -80,8 +81,9 @@ trait SingleStores {
     val store = journal.toLowerCase match {
       case "lateststore" => latestStore
       case "hierarchystore" => hierarchyStore
-      case "subStore" => subStore
-      case "pollDataStore" => pollDataStore
+      case "substore" => subStore
+      case "polldatastore" => pollDataStore
+      case "requestinfostore" => requestInfoStore
     }
     store ? Trim(seqNr)
   }
@@ -246,6 +248,7 @@ trait SingleStores {
   val subStore: ActorRef
   val pollDataStore: ActorRef
   val requestInfoStore: ActorRef
+  //val stores: List[ActorRef]
 
   def buildODFFromValues(items: Seq[(Path, Value[Any])]): ODF = {
     ImmutableODF(items map { case (path, value) =>
@@ -332,6 +335,7 @@ object SingleStores{
     val subStore: ActorRef = system.actorOf(SubStore.props())
     val pollDataStore: ActorRef = system.actorOf(PollDataStore.props())
     val requestInfoStore: ActorRef = system.actorOf(RequestInfoStore.props())
+    //val stores = List(latestStore, hierarchyStore, subStore, pollDataStore, requestInfoStore)
   }
 
   /**
