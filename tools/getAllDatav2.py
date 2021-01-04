@@ -141,7 +141,7 @@ def hierarchyRequest(s):
 
         # fetch the leaf to check whether it is Object or InfoItem
 
-        query = url + "/Objects/" + '/'.join(pathSegments)
+        query = url.rstrip('/') + "/Objects/" + '/'.join(pathSegments)
         result = s.get(query)
         if result.status_code != 200:
             eprint('O-DF query', query, 'failed (--odf-path):', result.text)
@@ -323,6 +323,7 @@ if args.single_file:
             objects = root.find(".//{%s}Objects" % odfVersion)
             
             #insert description and metadata to the objects and infoitems even if they were not in the hierarchy?
+            if objects is None: print('ERROR, server returned:', r)
             update_odf(objects)
             
             debug("request hierarchy successfully built")
@@ -451,6 +452,7 @@ else:
         objects = root.find(".//{%s}Objects" % odfVersion)
         
         #insert description and metadata to the objects and infoitems even if they were not in the hierarchy?
+        if objects is None: print('ERROR, server returned:', r)
         update_odf(objects)
         
         debug("request hierarchy successfully built")

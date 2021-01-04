@@ -99,6 +99,7 @@ class OmiNodeCLI(
   start <agent classname>
   stop  <agent classname>
   snapshot
+  trimJournal <journalName> <upToThisSequenceNum>
   list agents 
   list subs 
   showSub <id>
@@ -427,6 +428,10 @@ class OmiNodeCLI(
     Await.result(removeHandler.takeSnapshot(),Duration.Inf)
     "Success\r\n>"
   }
+  private def trim(journal: String, seqNr: String) = {
+    removeHandler.trimJournal(journal, seqNr)
+    "Command issued, check logs for results\r\n>"
+  }
   private def send(receiver: ActorRef)(msg: String): Unit =
     receiver ! Write(ByteString(msg))
 
@@ -457,8 +462,8 @@ class OmiNodeCLI(
         case Vector("stop", agent) => send(sender)(stopAgent(agent))
         case Vector("remove", pathOrId) => send(sender)(remove(pathOrId))
         case Vector("backup", subFilePath, odfFilePath) => send(sender)(backupSubsAndDatabase(subFilePath, odfFilePath))
-        case Vector("restore", subFilePath, odfFilePath) => send(sender)(restoreSubsAndDatabase(subFilePath,
-          odfFilePath))
+        case Vector("restore", subFilePath, odfFilePath) => send(sender)(restoreSubsAndDatabase(subFilePath, odfFilePath))
+        case Vector("trimJournal", journal, seqNr) => send(sender)(trim(journal, seqNr))
         case Vector(cmd@_*) =>
           log.warning(s"Unknown command from $ip: " + cmd.mkString(" "))
           send(sender)("Unknown command. Use help to get information of current commands.\r\n>")

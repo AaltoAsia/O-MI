@@ -28,7 +28,7 @@ import types.odf._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.duration._
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 trait CLIHelperT {
   def handlePathRemove(parentPathS: Iterable[Path]): Future[Iterable[Int]]
@@ -38,6 +38,8 @@ trait CLIHelperT {
   def getAllData(): Future[Option[ODF]]
 
   def writeOdf(odf: ImmutableODF): Future[Unit]
+
+  def trimJournal(journal: String, seqNr: String): Future[Any]
 }
 
 class CLIHelper(val singleStores: SingleStores, dbConnection: DB)(implicit system: ActorSystem) extends CLIHelperT {
@@ -46,7 +48,14 @@ class CLIHelper(val singleStores: SingleStores, dbConnection: DB)(implicit syste
 
   implicit val logSource: LogSource[CLIHelper] = (handler: CLIHelper) => handler.toString
   protected val log: LoggingAdapter = Logging(system, this)
+
   def takeSnapshot(): Future[Any] = singleStores.takeSnapshot
+
+  def trimJournal(journal: String, seqNr: String): Future[Any] = for {
+    number <- Future.fromTry(Try{seqNr.toLong})
+    res <- singleStores.trimJournal(journal, number)
+  } yield res
+
   def handlePathRemove(parentPaths: Iterable[Path]): Future[Iterable[Int]] = {
     val odfF = singleStores.getHierarchyTree()
 

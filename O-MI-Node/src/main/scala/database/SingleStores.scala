@@ -5,10 +5,12 @@ import akka.actor.{ActorRef, ActorSystem}
 import akka.event.LoggingAdapter
 import akka.pattern.ask
 import akka.util.Timeout
+//import akka.event.{Logging, LogSource}
 import scala.concurrent.Future
 import scala.concurrent.duration.{Duration, FiniteDuration, MILLISECONDS}
 import scala.util.{Failure, Success}
 import collection.immutable.LongMap
+import org.slf4j.LoggerFactory
 
 import journal.Models.SaveSnapshot
 import http.OmiConfigExtension
@@ -31,7 +33,10 @@ trait SingleStores {
   import system.dispatcher
   protected val settings: OmiConfigExtension
   implicit val timeout: Timeout = Timeout(settings.journalTimeout)
-  val log: LoggingAdapter = system.log
+  //val log: LoggingAdapter = system.log
+  //val log: LoggingAdapter = Logging(system, this)(LogSource.fromAnyClass(this)))
+  val log = LoggerFactory.getLogger(classOf[SingleStores])
+
   def takeSnapshot: Future[Any] = {
     val start: FiniteDuration = Duration(System.currentTimeMillis(), MILLISECONDS)
 
@@ -45,7 +50,7 @@ trait SingleStores {
           val duration: FiniteDuration = end - start
           log.debug(s"Taking Snapshot for $errorName took $duration")
         }
-        case Failure(ex) => log.error(ex, s"Failed to take Snapshot of $errorName")
+        case Failure(ex) => log.error(s"Failed to take Snapshot of $errorName", ex)
       }
       snapshotF
     }
@@ -55,7 +60,8 @@ trait SingleStores {
       trySnapshot(latestStore, "latestStore"),
       trySnapshot(hierarchyStore, "hierarchyStore"),
       trySnapshot(subStore, "subStore"),
-      trySnapshot(pollDataStore, "pollData"))
+      trySnapshot(pollDataStore, "pollData"),
+      trySnapshot(requestInfoStore, "requestInfoStore"))
     )
     res.onComplete {
       case Success(s) => {
@@ -63,9 +69,23 @@ trait SingleStores {
         val duration: FiniteDuration = end - start
         log.info(s"Taking Snapshot took $duration")
       }
-      case Failure(ex) => log.error(ex, "Taking snapshot failed")
+      case Failure(ex) => log.error("Taking snapshot failed", ex)
     }
     res
+  }
+
+  /**
+    * Trim old journal events up to given sequence number.
+    */
+  def trimJournal(journal: String, seqNr: Long) = {
+    val store = journal.toLowerCase match {
+      case "lateststore" => latestStore
+      case "hierarchystore" => hierarchyStore
+      case "substore" => subStore
+      case "polldatastore" => pollDataStore
+      case "requestinfostore" => requestInfoStore
+    }
+    store ? Trim(seqNr)
   }
 
 
@@ -228,6 +248,7 @@ trait SingleStores {
   val subStore: ActorRef
   val pollDataStore: ActorRef
   val requestInfoStore: ActorRef
+  //val stores: List[ActorRef]
 
   def buildODFFromValues(items: Seq[(Path, Value[Any])]): ODF = {
     ImmutableODF(items map { case (path, value) =>
@@ -314,6 +335,7 @@ object SingleStores{
     val subStore: ActorRef = system.actorOf(SubStore.props())
     val pollDataStore: ActorRef = system.actorOf(PollDataStore.props())
     val requestInfoStore: ActorRef = system.actorOf(RequestInfoStore.props())
+    //val stores = List(latestStore, hierarchyStore, subStore, pollDataStore, requestInfoStore)
   }
 
   /**

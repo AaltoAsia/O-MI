@@ -62,7 +62,7 @@ class SingleStoresMaintainer(
     */
   override def receive: Actor.Receive = {
     case TakeSnapshot => {
-      takeSnapshot
+      val _ = takeSnapshot // return value not needed to be sent to self...
     }
   }
 }

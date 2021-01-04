@@ -11,7 +11,7 @@ It is possible to use different database driver for slick just by editing applic
 ```
 # The default H2 db configuration
 slick-config {
-  driver = "slick.driver.H2Driver$"
+  profile = "slick.jdbc.H2Profile$"
   db {
     url = "jdbc:h2:file:./logs/sensorDB.h2;LOCK_TIMEOUT=10000"
     driver = org.h2.Driver
@@ -24,7 +24,11 @@ slick-config {
 
 Supported SQL databeses are listed on the [Slick documentation](http://slick.lightbend.com/doc/3.2.1/supported-databases.html).
 
-All the drivers supported by slick are not tested with the reference implementation and might cause problems if some of the used database features are not supported. application.conf contains example configuration for postgres database.
+All the drivers supported by slick are not tested with the reference implementation and might cause problems if some of the used database features are not supported. application.conf contains an example configuration for Postgresql database.
+
+The `profile` setting should be an object or class from Slick that matches the used db. ([Slick documentation, forConfig method](http://scala-slick.org/doc/3.3.1/api/index.html#slick.basic.DatabaseConfig$@forConfig[P%3C:slick.basic.BasicProfile](path:String,config:com.typesafe.config.Config,classLoader:ClassLoader)(implicitevidence$1:scala.reflect.ClassTag[P]):slick.basic.DatabaseConfig[P])). You can check the "Known Subclasses" on the [documentation of JdbcProfile](https://scala-slick.org/doc/3.2.0/api/index.html#slick.jdbc.JdbcProfile) to find the correct profile.
+
+The `db` object contains the rest of the db settings as [documented here (in forConfig method)](http://scala-slick.org/doc/3.3.1/api/index.html#slick.jdbc.JdbcBackend$DatabaseFactoryDef@forConfig(String,Config,Driver,ClassLoader):Database)
 
 Other supported databases
 -------------------------

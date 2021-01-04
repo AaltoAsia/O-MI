@@ -6,15 +6,29 @@ import scala.concurrent.duration.Duration
 
 import akka.stream.{Materializer, ActorMaterializer}
 //import Models.Event
+//import org.slf4j.LoggerFactory
+import akka.event.Logging
+
+
+import http.OmiConfig
+
+/**
+  * Command to trim Journal messages up to given event sequence number.
+  */
+case class Trim(upToSeqNr: Long)
 
 /**
   * Common operations on all journal store classes
   */
 abstract class JournalStore extends PersistentActor with ActorLogging {
+
+  val settings = OmiConfig(context.system)
+  override val log = Logging(context.system, this)
+
   //override def persistenceId: String = id
   val oldestSavedSnapshot: Long =
     Duration(
-      context.system.settings.config.getDuration("omi-service.snapshot-delete-older").toMillis,
+      settings.oldestSavedSnapshot.toMillis,
       scala.concurrent.duration.MILLISECONDS).toMillis
 
 
@@ -22,6 +36,9 @@ abstract class JournalStore extends PersistentActor with ActorLogging {
     case SaveSnapshotSuccess(metadata @ SnapshotMetadata(snapshotPersistenceId, sequenceNr, timestamp)) => {
       log.debug(s"Save snapshot success: ${metadata.toString}")
       deleteSnapshots(SnapshotSelectionCriteria(maxTimestamp = timestamp - oldestSavedSnapshot ))
+      if (settings.snapshotTrimJournal) {
+        deleteMessages(sequenceNr - 1)
+      }
     }
     case SaveSnapshotFailure(metadata, reason) =>
       log.error(reason,  s"Save snapshot failure with: ${metadata.toString}")
@@ -29,5 +46,12 @@ abstract class JournalStore extends PersistentActor with ActorLogging {
       log.debug(s"Snapshots successfully deleted for $persistenceId with criteria: $crit")
     case DeleteSnapshotsFailure(crit, ex) =>
       log.error(ex, s"Failed to delete old snapshots for $persistenceId with criteria: $crit")
+
+    case Trim(seqNr) => 
+      log.info(s"Journal $persistenceId trimming to seq nr. $seqNr.")
+      deleteMessages(seqNr)
+    // This message didn't come here
+    //case DeleteMessagesSuccess =>
+    //  log.debug(s"Journal $persistenceId message deletion success")
   }
 }

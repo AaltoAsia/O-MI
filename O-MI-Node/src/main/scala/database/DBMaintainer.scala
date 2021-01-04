@@ -54,7 +54,7 @@ class DBMaintainer(
     case TakeSnapshot =>
       takeSnapshot
 
-    case _ => log.warning("Unknown message received.")
+    case x => log.warning(f"Unknown message received: $x")
 
   }
 }
