@@ -617,7 +617,7 @@
       }
       if ((idType != null) || (tagType != null) || (startDate != null) || (endDate != null)) {
         result = {
-          id: id,
+          value: id,
           idType: idType,
           tagType: tagType,
           startDate: startDate,
@@ -629,7 +629,7 @@
       }
     };
     my.parseObjects = function(xml) {
-      var ex, objects, prefix, result, version;
+      var ex, mapped, matches, objects, pattern, prefix, prefixes, result, version;
       if (xml == null) {
         return null;
       }
@@ -641,7 +641,19 @@
         version = null;
       }
       try {
-        prefix = my.exSingleAtt(my.evaluateXPath(xml, "./@prefix"));
+        prefixes = my.exSingleAtt(my.evaluateXPath(xml, "./@prefix"));
+        pattern = /([\w-]*): ?([^ ]*)/g;
+        matches = [...prefixes.matchAll(pattern)];
+        mapped = matches.map(function(x) {
+          return {
+            prefix: x[1],
+            address: x[2]
+          };
+        });
+        prefix = mapped.reduce(function(x, y) {
+          x[y.prefix] = y.address;
+          return x;
+        }, {});
       } catch (error) {
         ex = error;
         console.log(ex);
@@ -765,7 +777,7 @@
           altname: altnames,
           description: descriptions,
           MetaData: metadatas,
-          value: values
+          values: values
         });
       }
     };
@@ -775,7 +787,7 @@
         return null;
       }
       try {
-        text = my.exSingleNode(xml);
+        text = my.exSingleNode(xml).trim();
       } catch (error) {
         ex = error;
         console.log("Empty description");
@@ -792,7 +804,7 @@
       } else {
         return my.filterNullKeys({
           lang: lang,
-          text: text
+          value: text
         });
       }
     };
@@ -808,10 +820,9 @@
         infoitems = null;
       }
       if (infoitems != null) {
-        return {
-          InfoItem: infoitems
-        };
+        return infoitems;
       } else {
+        //{InfoItem: infoitems}
         return "";
       }
     };
@@ -849,6 +860,7 @@
           content = (function() {
             switch (type.toLowerCase()) {
               case "xs:string":
+                type = null;
                 return content;
               case "xs:integer":
                 return Number(content);
@@ -859,10 +871,12 @@
               case "xs:decimal":
                 return Number(content);
               case "xs:double":
+                type = null;
                 return Number(content);
               case "xs:integer":
                 return Number(content);
               case "xs:boolean":
+                type = null;
                 switch (content.toLowerCase()) {
                   case "true":
                     return true;
@@ -896,7 +910,7 @@
           type: type,
           dateTime: dateTime,
           unixTime: unixTime,
-          content: {
+          value: {
             Objects: objects
           }
         });
@@ -905,7 +919,7 @@
           type: type,
           dateTime: dateTime,
           unixTime: unixTime,
-          content: content
+          value: content
         });
       }
     };

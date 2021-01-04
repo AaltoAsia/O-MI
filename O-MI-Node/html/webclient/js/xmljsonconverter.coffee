@@ -531,7 +531,7 @@ xmlConverter = (WebOmi) ->
 
     if idType? or tagType? or startDate? or endDate?
       result = {
-        id: id
+        value: id
         idType: idType
         tagType: tagType
         startDate: startDate
@@ -551,7 +551,18 @@ xmlConverter = (WebOmi) ->
       console.log ex
       version = null
     try
-      prefix = my.exSingleAtt(my.evaluateXPath(xml,"./@prefix"))
+      prefixes = my.exSingleAtt(my.evaluateXPath(xml,"./@prefix"))
+      pattern = /([\w-]*): ?([^ ]*)/g
+
+      matches = [...prefixes.matchAll pattern]
+
+      mapped = matches.map (x) -> {prefix: x[1], address: x[2]}
+
+      prefix = mapped.reduce (x,y) ->
+        x[y.prefix] = y.address
+        x
+      ,{}
+
     catch ex
       console.log ex
       prefix = null
@@ -662,7 +673,7 @@ xmlConverter = (WebOmi) ->
         altname: altnames
         description: descriptions
         MetaData: metadatas
-        value: values
+        values: values
       })
 
   my.parseDescription = (xml) ->
@@ -670,7 +681,7 @@ xmlConverter = (WebOmi) ->
       return null
 
     try
-      text = my.exSingleNode(xml)
+      text = my.exSingleNode(xml).trim()
     catch ex
       console.log "Empty description"
       text = null
@@ -685,7 +696,7 @@ xmlConverter = (WebOmi) ->
     else
       my.filterNullKeys({
         lang: lang
-        text: text
+        value: text
       })
 
   my.parseMetaData = (xml) ->
@@ -698,7 +709,8 @@ xmlConverter = (WebOmi) ->
       infoitems = null
 
     if infoitems?
-      {InfoItem: infoitems}
+      infoitems
+      #{InfoItem: infoitems}
     else
       ""
   
@@ -730,14 +742,14 @@ xmlConverter = (WebOmi) ->
       content = my.exSingleNode(xml)
       if type?
         content = switch type.toLowerCase()
-          when "xs:string" then content
+          when "xs:string" then type = null; content
           when "xs:integer" then Number(content)
           when "xs:int" then Number(content)
           when "xs:long" then Number(content)
           when "xs:decimal" then Number(content)
-          when "xs:double" then Number(content)
+          when "xs:double" then type = null; Number(content)
           when "xs:integer" then Number(content)
-          when "xs:boolean" then switch content.toLowerCase()
+          when "xs:boolean" then type = null; switch content.toLowerCase()
             when "true" then true
             when "false" then false
             when "1" then true
@@ -757,7 +769,7 @@ xmlConverter = (WebOmi) ->
         type: type
         dateTime: dateTime
         unixTime: unixTime
-        content:
+        value:
           Objects: objects
       })
     else
@@ -765,7 +777,7 @@ xmlConverter = (WebOmi) ->
         type: type
         dateTime: dateTime
         unixTime: unixTime
-        content: content
+        value: content
       })
       
 
