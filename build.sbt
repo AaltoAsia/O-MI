@@ -27,13 +27,21 @@ addCommandAlias("systemTest", "omiNode/testOnly http.SystemTest")
 //}
 //}
 
+// Fail fast if wrong java version
+//initialize := {
+//  val _ = initialize.value // run the previous initialization
+//  val required = "1.8" // JAVA VERSION
+//  val current  = sys.props("java.specification.version")
+//  assert(current == required, s"Unsupported JDK: java.specification.version $current != $required")
+//}
+
 def commonSettings(moduleName: String) = Seq(
   name := s"O-MI-$moduleName",
   version := "3.1.5", // WARN: Release ver must be "x.y.z" (no dashes, '-')
-  scalaVersion := "2.12.6",
-  scalacOptions := Seq("-unchecked", "-feature", "-deprecation", "-encoding", "utf8", "-Xlint", s"-P:genjavadoc:out=${target.value}/java"),
+  scalaVersion := "2.12.11",
+  scalacOptions := Seq("-unchecked", "-feature", "-deprecation", "-encoding", "utf8", "-Xlint", s"-P:genjavadoc:out=${target.value}/java", "-target:jvm-1.8"),
   scalacOptions in (Compile,doc) ++= Seq("-groups", "-deprecation", "-implicits", "-diagrams", "-diagrams-debug", "-encoding", "utf8"),
-  //javacOptions += "-Xlint:unchecked",
+  javacOptions ++= Seq("-source", "1.8", "-target", "1.8"), //"-Xlint:unchecked",
   autoAPIMappings := true,
   exportJars := true,
   EclipseKeys.withSource := true,
@@ -48,12 +56,12 @@ def commonSettings(moduleName: String) = Seq(
 lazy val Javadoc = config("genjavadoc") extend Compile
 
 lazy val javadocSettings = inConfig(Javadoc)(Defaults.configSettings) ++ Seq(
-  addCompilerPlugin("com.typesafe.genjavadoc" %% "genjavadoc-plugin" % "0.11" cross CrossVersion.full),
+  addCompilerPlugin("com.typesafe.genjavadoc" %% "genjavadoc-plugin" % "0.16" cross CrossVersion.full),
   packageDoc in Compile := (packageDoc in Javadoc).value,
   sources in Javadoc :=
     (target.value / "java" ** "*.java").get ++
     (sources in Compile).value.filter(_.getName.endsWith(".java")),
-    javacOptions in Javadoc := Seq(),
+    javacOptions in Javadoc := Seq("--ignore-source-errors"),
     artifactName in packageDoc in Javadoc := ((sv, mod, art) =>
         "" + mod.name + "_" + sv.binary + "-" + mod.revision + "-javadoc.jar")
       )
@@ -110,7 +118,7 @@ lazy val root = (project in file(".")).
     ///////////////////////
     //Package information//
     ///////////////////////
-      maintainer := "Tuomas Kinnunen <tuomas.kinnunen@aalto.fi>",
+      maintainer := "Tuomas Keyriläinen <tuomas.keyrilainen@aalto.fi>",
       packageDescription := "Internet of Things data server",
       packageSummary := """Internet of Things data server implementing Open Messaging Interface and Open Data Format""",
 
@@ -250,7 +258,7 @@ lazy val root = (project in file(".")).
     //Prevent aggregation of following commands to sub projects//
     /////////////////////////////////////////////////////////////
       aggregate in reStart := false,
-      javaOptions in reStart ++= Seq("-XX:+UseG1GC", "-Xms128m", "-Xmx4g", "-XX:+CMSClassUnloadingEnabled"),
+      javaOptions in reStart ++= Seq("-XX:+UseG1GC", "-Xms128m", "-Xmx4g"), //, "-XX:+CMSClassUnloadingEnabled"),
       aggregate in reStop := false
       ): _*
   ).

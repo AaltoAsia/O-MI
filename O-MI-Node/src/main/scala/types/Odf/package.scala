@@ -1,7 +1,7 @@
 package types
 
 import java.lang.{Iterable => JavaIterable}
-import java.time.{ZoneId, OffsetDateTime$}
+import java.time.{ZoneId, OffsetDateTime}
 import java.sql.Timestamp
 import java.util.{Dictionary, GregorianCalendar, TimeZone}
 

@@ -35,9 +35,10 @@ class InternalAgentLoaderTest(implicit ee: ExecutionEnv) extends Specification {
     "store successfully started agents to agents " >> successfulAgents
   }
 
+  // DEBUG WITH `VeryNoisyActorstest` !
   def missingPropsJavaAgentTest = new NoisyActorstest() {
     val classname = "agentSystem.JavaNoPropsAgent"
-    val exception = new java.lang.NoSuchMethodException(s"$classname.props(com.typesafe.config.Config, akka.actor.ActorRef, akka.actor.ActorRef)")
+    val exception = new java.lang.NoSuchMethodException(s"$classname.props(com.typesafe.config.Config")
     val configStr =
       s"""
    agent-system{
@@ -372,7 +373,7 @@ class InternalAgentLoaderTest(implicit ee: ExecutionEnv) extends Specification {
 
     val requestHandler = TestActorRef(new TestDummyRequestHandler())
     val dbHandler = TestActorRef(new TestDummyDBHandler())
-    val filters = warnings.map { msg => EventFilter.warning(message = msg, occurrences = 1) }
+    val filters = warnings.map { msg => EventFilter.warning(start = msg, occurrences = 1) }
     filterEvents(filters) {
       _system.actorOf(TestLoader.props(config, dbHandler, requestHandler), "agent-loader")
     }

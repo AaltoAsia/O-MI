@@ -48,5 +48,5 @@ addSbtPlugin("io.kamon" % "sbt-aspectj-runner" % "1.1.0")
 addSbtPlugin("com.lightbend.sbt" % "sbt-javaagent" % "0.1.4")
 
 //https://github.com/sbt/sbt-unidoc
-addSbtPlugin("com.eed3si9n" % "sbt-unidoc" % "0.4.2")
+addSbtPlugin("com.eed3si9n" % "sbt-unidoc" % "0.4.3")
 

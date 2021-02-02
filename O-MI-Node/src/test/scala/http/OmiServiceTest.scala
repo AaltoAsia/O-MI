@@ -676,7 +676,7 @@ class OmiServiceTest(implicit ee: ExecutionEnv)
         case e => e.getMessage
       }
     
-      decoded must beEqualTo("Invalid url encoding: For input string: \"2M\"").await
+      decoded must startWith("Invalid url encoding: For input string: \"2M\"").await
     }
   }
   
