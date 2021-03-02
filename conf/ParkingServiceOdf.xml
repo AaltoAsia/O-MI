@@ -7,7 +7,7 @@
           <value>odf:Method</value>
         </InfoItem>
         <InfoItem name="odf:Parameter">
-          <value type="odf:Objects">
+          <value type="odf">
             <Objects>
               <Object type="FindParkingRequest">
                 <id>Parameters</id>
@@ -84,7 +84,7 @@
           </value>
         </InfoItem>
         <InfoItem name="odf:ReturnType">
-          <value type="odf:Objects">
+          <value type="odf">
             <Objects>
               <Object>
                 <id>ParkingService</id>
