@@ -74,9 +74,9 @@ Dependencies
 ------------
 
 * For running:
-    - Java 8 JRE (JDK on Mac)
+    - Java 11 JRE (JDK on Mac)
 * For building:
-    - Java 8 JDK
+    - Java 11 JDK
     - [SBT (Simple Build Tool)](http://www.scala-sbt.org/) or SBT enabled IDE
 
 

@@ -8,7 +8,7 @@ See https://github.com/AaltoAsia/O-MI/blob/master/README.md for the full readme 
 Dependencies
 ------------
 
-Java 8
+Java 11
 
 
 Running

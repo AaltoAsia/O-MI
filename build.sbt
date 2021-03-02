@@ -250,7 +250,7 @@ lazy val root = (project in file(".")).
         LinuxSymlink( s"/usr/share/${normalizedName.value}/database/journaldb", s"/var/lib/${normalizedName.value}/database/journaldb"),
       ),
       linuxPackageMappings in Rpm := configWithNoReplace((linuxPackageMappings in Rpm).value),
-      debianPackageDependencies in Debian ++= Seq("java8-runtime", "bash (>= 2.05a-11)"),
+      debianPackageDependencies in Debian ++= Seq("java11-runtime-headless", "bash (>= 2.05a-11)"),
       //debianNativeBuildOptions in Debian := Nil, // dpkg-deb's default compression (currently xz)
       debianNativeBuildOptions in Debian := Seq("-Zgzip", "-z3"), // gzip compression at level 3
 
