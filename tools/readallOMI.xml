@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
-<omi:omiEnvelope xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xmlns:omi="omi.xsd" version="1.0" ttl="0">
-  <read xmlns="omi.xsd" msgformat="odf">
-    <omi:msg>
-      <Objects xmlns="odf.xsd"/>
-    </omi:msg>
+<omiEnvelope xmlns="http://www.opengroup.org/xsd/omi/2.0/" version="2.0" ttl="0">
+  <read msgformat="odf">
+    <msg>
+      <Objects xmlns="http://www.opengroup.org/xsd/odf/2.0/"/>
+    </msg>
   </read>
-</omi:omiEnvelope>
+</omiEnvelope>
