@@ -29,7 +29,7 @@ object Dependencies {
   val httpTestkit  = "com.typesafe.akka" %% "akka-http-testkit" % akkaHttpV % "test"
 
   //Slick
-  val slickV = "3.3.3"
+  val slickV = "3.4.1"
   val slick        = "com.typesafe.slick" %% "slick" % slickV //common
   val slickCodegen = "com.typesafe.slick" %% "slick-codegen"  % slickV //common
   val hikariCP     = "com.typesafe.slick" %% "slick-hikaricp" % slickV
@@ -39,7 +39,7 @@ object Dependencies {
   val leveldb      = "org.iq80.leveldb"    % "leveldb"        % "0.10"
   val leveldbjni   = "org.fusesource.leveldbjni"   % "leveldbjni-all"   % "1.8"
   //val json4s       = "org.json4s"         %% "json4s-native"  % "3.3.0" //common
-  val postgres     = "org.postgresql"      % "postgresql"      % "9.4.1211"
+  val postgres     = "org.postgresql"      % "postgresql"      % "42.5.3"
   val json4s       = "org.json4s"         %% "json4s-native"   % "3.6.7" //common
   val json4sAkka   = "de.heikoseeberger"  %% "akka-http-json4s" % "1.34.0" //common
 

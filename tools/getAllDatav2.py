@@ -64,6 +64,9 @@ parser.add_argument('--pretty-print', dest='pretty_print', default=False, action
 
 parser.add_argument('--version', action='version', version='getAllData v2.0')
 
+parser.add_argument('--paths-from-odf-file', '-i', dest='hierarchyFile', type=open, default=None,
+                    help='O-DF or O-MI file that contains the InfoItem hierarchy that should be requested from the server. Can be used to provide large hierarchy when this script has problems with a read all request.')
+
 parser.add_argument('url', metavar='URL')
 
 
@@ -317,7 +320,7 @@ if args.single_file:
 
             
             #hierarchy tree
-            r = s.post(url, data = hierarchyRequest(s)).content
+            r = args.hierarchyFile.read() if args.hierarchyFile else s.post(url, data = hierarchyRequest(s)).content
             root = etree.fromstring(r)
             
             objects = root.find(".//{%s}Objects" % odfVersion)
@@ -446,7 +449,7 @@ else:
                 sys.exit(6)
 
 
-        r = s.post(url, data = hierarchyRequest(s)).content
+        r = args.hierarchyFile.read() if args.hierarchyFile else s.post(url, data = hierarchyRequest(s)).content
         root = etree.fromstring(r)
         
         objects = root.find(".//{%s}Objects" % odfVersion)
