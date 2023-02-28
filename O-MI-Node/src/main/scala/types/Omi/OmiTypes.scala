@@ -344,7 +344,7 @@ class RawRequestWrapper(val rawSource: Source[String,_], private val user0: User
   //val infoResult = broadcast.via(wantedEventsFlow).runWith(infoSink)
   //val parsedResult = broadcast.via(OMIStreamParser.omiParserFlow).runWith(parsedSink)
 
-  val rGraph: RunnableGraph[(_,Future[OmiRequest],Future[WrapperInfo])] = RunnableGraph.fromGraph(
+  lazy val rGraph: RunnableGraph[(_,Future[OmiRequest],Future[WrapperInfo])] = RunnableGraph.fromGraph(
     GraphDSL.create(
       eventSource,
       parsedSink,
@@ -359,7 +359,7 @@ class RawRequestWrapper(val rawSource: Source[String,_], private val user0: User
         ClosedShape
     }
   )
-  val (_,parsedResult,infoResult): (_,Future[OmiRequest],Future[WrapperInfo]) = rGraph.run()
+  lazy val (_,parsedResult,infoResult): (_,Future[OmiRequest],Future[WrapperInfo]) = rGraph.run()
 
   //import materializer.executionContext
   //FutureTimer(parsedResult, println, "parse")

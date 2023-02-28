@@ -56,6 +56,7 @@ class ParkingAgent(
   //Path to object containing all parking lots.
   val latitudePFIndex: mutable.SortedMap[ Double, Set[Path] ] = mutable.SortedMap.empty
   val longitudePFIndex: mutable.SortedMap[ Double, Set[Path] ] = mutable.SortedMap.empty
+  val reverseIndex: mutable.SortedMap[ Path, GeoCoordinates ] = mutable.SortedMap.empty(PathOrdering)
 
   val prefixes: mutable.Map[String,Set[String]] = mutable.Map(
     "http://www.schema.org/" -> Set("schema:","sdo:"),
@@ -164,6 +165,7 @@ class ParkingAgent(
                 case None =>
                   longitudePFIndex += gc.longitude -> Set(node.path)
               }
+              reverseIndex += node.path -> gc
           }
       }
       log.info( s"Current latitude index has: ${latitudePFIndex.values.map(_.size).sum} parking facilities")
@@ -318,6 +320,7 @@ class ParkingAgent(
   val distanceFromDestinationParamPath: Path = parameterPath / "DistanceFromDestination"
   val validForUserGroupParamPath: Path = parameterPath / "ParkingUserGroup"
   val chargerParamPath: Path = parameterPath / "Charger"
+  val limitPath: Path = parameterPath / "ResultCountLimit"
   var lastTime: Timestamp = currentTimestamp
   override def handleCall(call: CallRequest) : Future[ResponseRequest] = {
     //val timer = LapTimer(log.info)
@@ -413,9 +416,13 @@ class ParkingAgent(
                             }
 
                         }
+                        val limit = odf.get(limitPath).collect {
+                          case ii: InfoItem => ii.values.headOption.flatMap(v => Try{v.value.toString.toInt}.toOption)
+                          case _ => None
+                        }.flatten
                         log.debug("FindParking parameters parsed")
                         //timer.step("FindParking parameters parsed")
-                        findParking(destination, distance, vehicle, userGroup, charger, wantCharging)
+                        findParking(destination, distance, vehicle, userGroup, charger, wantCharging, limit)
                     }
                 }.getOrElse {
                   Future.successful {
@@ -462,7 +469,8 @@ class ParkingAgent(
     vehicle: Option[Vehicle], 
     userGroups: Seq[UserGroup], 
     charger: Option[Charger], 
-    wantCharging: Option[Boolean]
+    wantCharging: Option[Boolean],
+    limitO: Option[Int]
   ):Future[ResponseRequest] ={
       val timer = LapTimer(log.info)
       val radius: Double = 6371e3
@@ -470,25 +478,36 @@ class ParkingAgent(
       val latP: Set[Path]  = latitudePFIndex.keySet.dropWhile{
         latitude: Double  => 
           latitude.toRadians < destination.latitude.toRadians - deltaR
-      }.toSeq.reverse.dropWhile{
+      }.takeWhile{
         latitude: Double  => 
-          latitude.toRadians > destination.latitude.toRadians + deltaR
+          latitude.toRadians <= destination.latitude.toRadians + deltaR
       }.flatMap{
         latitude: Double  => 
           latitudePFIndex.get(latitude) 
       }.flatten.toSet
+
       val longP: Set[Path]  = longitudePFIndex.keySet.dropWhile{
         longitude: Double  => 
           longitude.toRadians < destination.longitude.toRadians - deltaR
-      }.toSeq.reverse.dropWhile{
+      }.takeWhile{
         longitude: Double  => 
-          longitude.toRadians > destination.longitude.toRadians + deltaR
+          longitude.toRadians <= destination.longitude.toRadians + deltaR
       }.flatMap{
         longitude: Double  => 
           longitudePFIndex.get(longitude) 
       }.flatten.toSet
-      val pfPaths: Set[Path] = latP.intersect(longP)
+
+      val allPfPaths: Set[Path] = latP.intersect(longP)
+
       timer.step("position filtered")
+      val pfPaths: Set[Path] = limitO match {
+        case Some(limit) if allPfPaths.size > limit =>
+          mutable.SortedMap(allPfPaths.map{p =>
+            reverseIndex(p).distanceTo(destination) -> p
+          }.toSeq: _*).take(limit).values.toSet
+        case None => allPfPaths
+      }
+      timer.step("distance sorted and limited")
       log.info( s"Current indexes has: ${latitudePFIndex.values.map(_.size).sum} parking facilities")
       log.info(s"Found ${pfPaths.size} parking facilities close to destination")
       if( pfPaths.isEmpty ){
@@ -519,7 +538,7 @@ class ParkingAgent(
                 }*/.map{
                   odf: ODF => 
                     log.debug( "Found Successful result with ODF")
-                    val correctParkingSpaceAndCapacityPaths  = odf.nodesWithType(ParkingFacility.mvType(Some("mv:"))).collect{
+                    val pfs  = odf.nodesWithType(ParkingFacility.mvType(Some("mv:"))).collect{
                       case obj: Object =>
                         ParkingFacility.parseOdf(obj.path, odf.toImmutable, prefixes.toMap) match {
                           case Success( ps: ParkingFacility ) =>
@@ -527,7 +546,9 @@ class ParkingAgent(
                           case Failure( e ) =>
                             throw e
                         }
-                    }.flatMap{
+                    }
+                    timer.step("parsed")
+                    val correctParkingSpaceAndCapacityPaths = pfs.flatMap{
                       case (path: Path, pf: ParkingFacility) =>
                         val correctParkingSpaces = pf.parkingSpaces.filter{ 
                           parkingSpace => 

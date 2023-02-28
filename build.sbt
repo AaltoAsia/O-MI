@@ -37,7 +37,7 @@ addCommandAlias("systemTest", "omiNode/testOnly http.SystemTest")
 
 def commonSettings(moduleName: String) = Seq(
   name := s"O-MI-$moduleName",
-  version := "3.1.5", // WARN: Release ver must be "x.y.z" (no dashes, '-')
+  version := "3.1.6", // WARN: Release ver must be "x.y.z" (no dashes, '-')
   scalaVersion := "2.12.11",
   scalacOptions := Seq("-unchecked", "-feature", "-deprecation", "-encoding", "utf8", "-Xlint", s"-P:genjavadoc:out=${target.value}/java", "-target:jvm-1.8"),
   scalacOptions in (Compile,doc) ++= Seq("-groups", "-deprecation", "-implicits", "-diagrams", "-diagrams-debug", "-encoding", "utf8"),
@@ -250,7 +250,7 @@ lazy val root = (project in file(".")).
         LinuxSymlink( s"/usr/share/${normalizedName.value}/database/journaldb", s"/var/lib/${normalizedName.value}/database/journaldb"),
       ),
       linuxPackageMappings in Rpm := configWithNoReplace((linuxPackageMappings in Rpm).value),
-      debianPackageDependencies in Debian ++= Seq("java11-runtime", "bash (>= 2.05a-11)"),
+      debianPackageDependencies in Debian ++= Seq("java11-runtime-headless", "bash (>= 2.05a-11)"),
       //debianNativeBuildOptions in Debian := Nil, // dpkg-deb's default compression (currently xz)
       debianNativeBuildOptions in Debian := Seq("-Zgzip", "-z3"), // gzip compression at level 3
 
